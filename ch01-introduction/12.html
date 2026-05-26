@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>12 · 응용 — 어디까지 — Chapter 1</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .app-stage { padding: 1.4rem 1rem 1rem; }
+  .app-tabs { display: flex; gap: .4rem; justify-content: center; padding: 0 0 1rem; flex-wrap: wrap; }
+  .app-tabs .btn { padding: .5rem 1rem; font-size: .78rem; }
+  .app-board { background: #fff; border: 1px solid var(--line-soft); border-radius: 10px; padding: 1.2rem; min-height: 320px; }
+  .app-board h4 { margin: 0 0 .8rem; font-family: var(--serif); font-size: 1.15rem; color: var(--structure); }
+  .app-board .acc-chart { display: block; width: 100%; max-width: 540px; margin: 0 auto 1rem; }
+  .app-board .case { font-size: .92rem; color: var(--ink-soft); line-height: 1.65; }
+  .app-board .case b { color: var(--ink); font-weight: 640; }
+  .app-board .lim { margin-top: 1rem; padding: .8rem 1rem; background: var(--style-bg); border-left: 3px solid var(--style); border-radius: 0 6px 6px 0; font-size: .88rem; color: var(--ink-soft); }
+  .app-board .lim b { color: var(--style); }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-Chapter 12 · 응용의 현재</span>
+      <h1>딥러닝은 <span class="t-structure">어디서</span><br>인간을 <span class="t-style">넘었고</span>, 어디는 <span class="t-style">멀었나</span></h1>
+      <p class="lede">표상학습, 깊이, 데이터, 계산, 모델 크기 — 다섯 축이 모인 결과가 응용으로 나타난다. 이 sub-chapter는 비전·언어·음성·게임·과학 다섯 분야에서 딥러닝이 어디까지 왔는지, 그리고 어디서는 여전히 인간이 훨씬 잘하는지를 정직하게 본다.</p>
+    </header>
+
+    <div class="prose">
+      <p>2025년 현재, 딥러닝의 응용을 평가하는 가장 정직한 방법은 "어디서 인간을 넘었고, 어디서는 멀었는지"를 영역별로 보는 것이다. 분야마다 답이 다르다. 어떤 분야에서는 5년 전에 이미 인간을 넘었고, 어떤 분야에서는 아직도 한참 부족하다. 이 sub-chapter는 다섯 개의 대표 분야를 살핀다. 비전(vision), 자연어(language), 음성(speech), 게임(games), 과학(science).</p>
+
+      <p>먼저 한 가지 주의. <em>"인간을 넘었다"는 말의 의미가 분야마다 다르다.</em> 어떤 분야에서는 평균적인 사람의 성능을, 어떤 분야에서는 전문가의 성능을, 어떤 분야에서는 정해진 벤치마크 데이터셋 위의 점수만을 가리킨다. 따라서 같은 "넘었다"라는 표현도 그 함의가 다르다. 아래 위젯의 각 분야별 설명에 그 정의를 함께 적어 둔다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 15</span><span>분야별 정확도 곡선 · 탭을 클릭해 보기</span></div>
+        <div class="app-stage">
+          <div class="app-tabs">
+            <button class="btn ghost on" data-app="vision">비전</button>
+            <button class="btn ghost" data-app="lang">언어</button>
+            <button class="btn ghost" data-app="speech">음성</button>
+            <button class="btn ghost" data-app="game">게임</button>
+            <button class="btn ghost" data-app="science">과학</button>
+          </div>
+          <div class="app-board" id="app-board"></div>
+        </div>
+      </div>
+      <p class="widget-cap">각 분야의 정확도 곡선은 대표 벤치마크 (ImageNet, GLUE, LibriSpeech, Go ELO, CASP)의 추이를 단순화한 것이다. 곡선의 모양과 인간 수준선 위치를 함께 보면 분야별 진척이 드러난다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>분야별 짧은 정리</h2>
+
+      <div class="analogy">
+        <b>육상의 종목별 기록.</b> 100m 단거리에서 인간을 넘은 기계는 자동차가 처음이지만, 마라톤에서는 여전히 인간 마라톤 선수가 우월하다. 산악 마라톤이라면 더 그렇다. 종목이 달라지면 비교의 결과도 달라진다. 딥러닝과 인간의 비교도 분야별로 정직하게 보면 결과가 다르다. "AI가 인간을 넘었다/못 넘었다"라는 한 줄로 답할 수 없는 이유다.
+      </div>
+
+      <p><strong>비전</strong>은 ImageNet 분류 같은 정해진 객체 인식 과제에서는 2015년 이후 인간 수준을 넘었다. 그러나 "장면의 인과적 이해", "처음 본 객체의 일반화", "이미지 안의 추론" 같은 더 깊은 과제에서는 여전히 인간이 우월하다. 예컨대 자동주행은 곧은 도로의 신호 인식은 거의 완벽하지만, 공사장의 임시 표지판이나 손짓하는 교통경찰 같은 비정형 상황에서는 사람만큼 유연하지 못하다.</p>
+
+      <p><strong>언어</strong>는 가장 극적인 발전을 보인 분야다. 2018년 BERT가 GLUE 벤치마크에서 인간 평균을 넘었고, 2020년 GPT-3가 few-shot learning으로 새 영역을 열었으며, 2022년 ChatGPT가 일반 대중에게 도달했다. 번역, 요약, 질의응답 같은 일반 NLP 과제는 평균적인 사람을 명확히 넘었다. 그러나 긴 문서의 일관된 추론, 외부 사실의 정확한 인용, 새로운 도메인의 정확한 지식은 여전히 부족하다. 환각(hallucination) 문제가 대표적이다.</p>
+
+      <p><strong>음성</strong>은 2017년 즈음 표준 음성 인식 벤치마크(LibriSpeech)에서 인간 수준에 도달했다. 영어 같은 자원 풍부한 언어는 거의 완벽하다. 그러나 강한 사투리, 잡음 환경, 자원 부족 언어에서는 여전히 인간 통역사가 우월하다.</p>
+
+      <p><strong>게임</strong>은 가장 일찍 인간을 넘은 분야 중 하나다. 체스(1997 Deep Blue), 바둑(2016 AlphaGo), Dota 2와 StarCraft 같은 실시간 전략 게임(2019)에서 모두 세계 챔피언급을 넘었다. 다만 모든 게임이 균등한 것은 아니다. 완전 정보 게임(체스·바둑)이 가장 쉽고, 부분 정보 + 실시간 + 팀 협업이 들어가면 어려워진다.</p>
+
+      <p><strong>과학</strong>은 가장 흥미로운 분야다. 2020년 AlphaFold 2가 단백질 구조 예측에서 사람의 X-ray 결정학에 가까운 정확도를 보였고, 이는 60년의 분자생물학 난제를 거의 풀어 버렸다. 화학 합성 경로 설계, 수학 정리 증명, 새로운 물질 발견 같은 영역에서도 빠른 진전이 있다. 다만 "새로운 가설을 세우는 능력"은 여전히 인간 과학자의 영역이다.</p>
+
+      <h2>응용에서 본 딥러닝의 일관된 패턴 — 셋</h2>
+
+      <p>다섯 분야를 모두 보면 한 가지 일관된 패턴이 보인다.</p>
+
+      <p>첫째, <strong>"명확한 정답이 있고 데이터가 풍부한 좁은 과제"에서 딥러닝은 거의 항상 인간을 넘는다.</strong> 비전의 객체 분류, 음성의 자막 생성, 게임의 점수 최대화가 모두 그렇다. 이 패턴은 sub-chapter 09의 데이터 폭발과 연결된다 — 정답이 명확할수록 데이터를 쉽게 모을 수 있고, 데이터가 많을수록 딥러닝이 강해진다.</p>
+
+      <p>둘째, <strong>"새로운 상황에 대한 일반화, 외부 사실의 정확성, 인과 추론"에서는 여전히 인간이 우월하다.</strong> 자율주행의 비정형 상황, LLM의 환각 문제, 과학의 새 가설 세우기가 모두 이 영역이다. 이 패턴은 "표상의 한계"와 관련이 있다. 딥러닝은 학습 데이터의 분포 안에서는 매우 강하지만, 그 밖으로 나가면 자신감 있게 틀리는 경향이 있다.</p>
+
+      <p>셋째, <strong>"인간과 협력하면 둘 다보다 잘하는 영역"이 점점 늘고 있다.</strong> 의료 영상 판독에서 의사와 AI가 함께 보면 단독보다 정확도가 높고, 코딩에서 Copilot이 도와주면 생산성이 30-50% 늘고, 글쓰기에서도 AI 보조가 점점 표준이 되고 있다. 이 협력 모델이 어쩌면 "인간 대체 vs 인간 보완"이라는 단순한 이분법보다 더 정확한 현재 그림이다.</p>
+
+      <div class="analogy">
+        <b>망원경과 천문학자.</b> 갈릴레오의 망원경이 등장했을 때, 그것이 천문학자를 대체할지 보완할지가 논쟁거리였다. 결과적으로 망원경은 천문학자를 대체하지 않았고, 천문학자가 망원경 없이 일하던 시대보다 훨씬 많은 발견을 가능하게 했다. 딥러닝도 비슷한 위치에 가까워지고 있다. 인간을 대체하기보다, 인간의 능력의 사정거리를 늘리는 도구로.
+      </div>
+
+      <h2>현재 응용의 한계와 다음 5년의 방향</h2>
+
+      <p>2025년 시점에서 딥러닝 응용의 가장 큰 한계는 세 가지다. <strong>첫째, 환각(hallucination)</strong>. LLM이 그럴듯하지만 사실이 아닌 정보를 자신감 있게 만드는 문제다. 의료, 법률, 과학 같은 사실 정확성이 결정적인 영역에서 도입의 가장 큰 장애물이다. 검색증강생성(RAG, retrieval-augmented generation)이 부분적 해법이지만 완전한 답은 아니다.</p>
+
+      <p><strong>둘째, 추론의 일관성</strong>. 같은 모델이 같은 질문에 매번 다른 답을 하고, 긴 사슬의 추론에서 중간 단계가 무너지는 경우가 많다. chain-of-thought prompting과 self-consistency 같은 기법이 부분 해법이지만, 인간 수준의 일관된 추론까지는 멀다.</p>
+
+      <p><strong>셋째, 새로운 도메인 일반화</strong>. 학습 분포에서 멀어진 입력에 대한 행동이 예측 불가능하다. 특히 안전이 중요한 응용(자동주행, 의료, 금융)에서는 이 점이 도입의 보수성을 만든다.</p>
+
+      <div class="analogy">
+        <b>비서와 변호사.</b> 비서가 아무리 똑똑해도 변호사를 대체하지는 못한다. 그러나 비서가 없으면 변호사가 일정·문서·연락 같은 잡일에 시간을 다 쓴다. 좋은 비서가 있으면 변호사는 진짜 변호 일에 집중할 수 있다. 현재 LLM의 위치가 비슷하다. 인간 전문가의 자리를 대체하지는 못하지만, 잡일과 초안 작업을 대신해 전문가의 시간을 본질에 집중시킨다.
+      </div>
+
+      <p>다음 5년의 연구는 이 세 가지를 푸는 방향으로 갈 것이다. 더 큰 모델보다 더 잘 검증된 모델, 더 많은 데이터보다 더 깨끗한 데이터, 더 강력한 단일 모델보다 도구와 협력하는 에이전트 — 이런 방향이 이미 시작되었다. 그 끝에 어떤 응용이 자리잡을지가 다음 10년의 흥미로운 질문이다.</p>
+
+      <p>이 sub-chapter의 정리. <strong>"딥러닝은 좁고 명확한 과제에서 인간을 압도하지만, 새로운 상황과 사실 정확성에서는 여전히 인간이 우월하다. 둘이 합쳐질 때 가장 큰 가치가 나온다."</strong> 다음 sub-chapter는 시험을 위한 마지막 정리 — 1장 전체에서 반드시 잡아야 할 정의·구분·예상 질문 — 으로 마무리한다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+const SUBS = [
+  { no:'01', t:'표상의 문제' },
+  { no:'02', t:'AI · ML · 표상학습 · DL' },
+  { no:'03', t:'표상학습이란 무엇인가' },
+  { no:'04', t:'깊이 1 — 표상의 사다리' },
+  { no:'05', t:'깊이 2 — 합성성' },
+  { no:'06', t:'역사 1 — 사이버네틱스' },
+  { no:'07', t:'역사 2 — 연결주의' },
+  { no:'08', t:'역사 3 — 부활과 폭발' },
+  { no:'09', t:'폭발 1 — 데이터' },
+  { no:'10', t:'폭발 2 — 계산' },
+  { no:'11', t:'폭발 3 — 모델 크기' },
+  { no:'12', t:'응용 — 어디까지' },
+  { no:'13', t:'시험 대비 체크리스트' },
+];
+function buildNav(cur) {
+  const ol = document.querySelector('.ch-nav ol');
+  ol.innerHTML = SUBS.map(s =>
+    `<li><a href="${s.no}.html"${s.no===cur?' class="current"':''}>${s.t}</a></li>`).join('');
+  document.querySelector('.topbar').innerHTML =
+    `<a class="home" href="index.html">← Ch.01 표지</a><span class="ch-mini">SUB ${cur} / 13</span>`;
+  const i = SUBS.findIndex(s => s.no === cur);
+  const prev = i > 0 ? SUBS[i-1] : { no:'', t:'챕터 표지로' };
+  const next = i < SUBS.length-1 ? SUBS[i+1] : { no:'', t:'챕터 표지로' };
+  const ph = prev.no ? prev.no+'.html' : 'index.html';
+  const nh = next.no ? next.no+'.html' : 'index.html';
+  document.querySelector('.ch-foot').innerHTML =
+    `<a href="${ph}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+    `<a href="${nh}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+}
+function progressBar() {
+  const bar = document.querySelector('.scroll-progress');
+  document.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max>0 ? (h.scrollTop/max)*100 : 0) + '%';
+  }, { passive: true });
+}
+
+const APPS = {
+  vision: {
+    title:'비전 · ImageNet Top-5 오차율',
+    series:[
+      [2010,28.2],[2011,25.8],[2012,15.3],[2013,11.7],[2014,7.4],[2015,3.57],[2016,2.99],[2017,2.25],[2020,1.3]
+    ],
+    human:5.0,
+    case:'<b>2012년 AlexNet</b>이 25.8% → 15.3%로 끌어내림. <b>2015년 ResNet</b>이 3.57%로 인간(약 5%) 수준 돌파. <b>2017년 이후</b>는 거의 평탄.',
+    lim:'<b>한계.</b> ImageNet은 깨끗하게 정리된 데이터셋이다. 실제 자율주행의 임시 표지판, 손짓하는 교통경찰 같은 비정형 상황에서는 여전히 인간이 우월.'
+  },
+  lang: {
+    title:'언어 · GLUE 벤치마크 점수',
+    series:[
+      [2018,70.0],[2018.5,80.5],[2019,87.6],[2019.5,90.4],[2020,90.6],[2021,91.3],[2023,93.0]
+    ],
+    human:87.1,
+    case:'<b>2018년 BERT</b>가 GLUE 평균을 70 → 80으로 끌어올림. <b>2019년 RoBERTa·T5</b>가 인간 평균(87.1)을 돌파. 이후 LLM들이 계속 갱신.',
+    lim:'<b>한계.</b> 환각(hallucination), 외부 사실의 정확한 인용, 새로운 도메인 지식은 여전히 부족. 긴 문서 일관성 있는 추론도 어려움.'
+  },
+  speech: {
+    title:'음성 · LibriSpeech WER (단어 오류율)',
+    series:[
+      [2014,15.0],[2016,8.5],[2017,5.8],[2019,3.1],[2020,2.1],[2022,1.4],[2023,1.0]
+    ],
+    human:5.83,
+    case:'<b>2017년</b> 인간 수준(약 5.8%)에 도달. <b>2023년 Whisper-Large</b>는 거의 1% 오류율. 영어 같은 자원 풍부한 언어에서.',
+    lim:'<b>한계.</b> 강한 사투리, 잡음 환경, 자원 부족 언어 (예: 우즈벡어, 콰콰우즈어)에서는 여전히 인간 통역사가 우월.'
+  },
+  game: {
+    title:'게임 · Go ELO 점수 (상위 모델)',
+    series:[
+      [2014,1800],[2015,2900],[2016,3700],[2017,4500],[2018,5200],[2019,5500]
+    ],
+    human:3600,
+    case:'<b>2016년 AlphaGo Lee</b>가 이세돌 9단(약 3,650 ELO) 격파. <b>2017년 AlphaGo Zero</b>는 사람 기보 없이 self-play로 학습. <b>2019년 AlphaStar</b>는 StarCraft 그랜드마스터급.',
+    lim:'<b>한계.</b> 완전 정보 게임은 인간을 압도. 그러나 부분 정보 + 실시간 + 팀 협업 (예: Dota 2)은 더 어려움. 게임 외 응용으로의 일반화도 한계.'
+  },
+  science: {
+    title:'과학 · CASP 단백질 구조 예측 GDT-TS',
+    series:[
+      [2008,30],[2012,40],[2014,48],[2016,55],[2018,68],[2020,87],[2022,91]
+    ],
+    human:80,
+    case:'<b>2020년 AlphaFold 2</b>가 GDT-TS 87점으로 X-ray 결정학(약 90점)에 근접. 60년의 분자생물학 난제를 거의 풀어 버림. 노벨화학상 (2024) 수상.',
+    lim:'<b>한계.</b> 단백질 구조는 잘 풀지만, "새로운 가설 세우기", "실험 설계", "결과 해석"은 여전히 인간 과학자의 영역.'
+  }
+};
+
+function drawAccChart(cv, app) {
+  const ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  ctx.clearRect(0,0,W,H);
+  const xs = app.series.map(p => p[0]);
+  const ys = app.series.map(p => p[1]);
+  const xMin = Math.min(...xs), xMax = Math.max(...xs);
+  const yMin = Math.min(...ys, app.human) * 0.8;
+  const yMax = Math.max(...ys, app.human) * 1.1;
+  const pad = 36;
+  function px(x) { return pad + ((x - xMin) / (xMax - xMin)) * (W - 2*pad); }
+  function py(y) { return H - pad - ((y - yMin) / (yMax - yMin)) * (H - 2*pad); }
+  // grid
+  ctx.strokeStyle = 'rgba(38,34,28,.06)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 5; i++) {
+    const y = pad + i * (H-2*pad)/4;
+    ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(W-pad, y); ctx.stroke();
+  }
+  // human line
+  ctx.strokeStyle = 'rgba(192,73,46,.7)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([5,3]);
+  ctx.beginPath(); ctx.moveTo(pad, py(app.human)); ctx.lineTo(W-pad, py(app.human)); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = 'rgba(192,73,46,.85)';
+  ctx.font = '11px monospace';
+  ctx.fillText('인간 수준', W-pad-60, py(app.human)-4);
+  // curve
+  ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--structure').trim();
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  app.series.forEach((p, i) => {
+    const x = px(p[0]), y = py(p[1]);
+    (i ? ctx.lineTo : ctx.moveTo).call(ctx, x, y);
+  });
+  ctx.stroke();
+  // dots
+  app.series.forEach(p => {
+    const x = px(p[0]), y = py(p[1]);
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--structure').trim();
+    ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI*2); ctx.fill();
+  });
+  // axes
+  ctx.fillStyle = 'rgba(94,82,71,.7)';
+  ctx.font = '10px monospace';
+  ctx.fillText(xMin+'', pad-5, H-pad+14);
+  ctx.fillText(xMax+'', W-pad-22, H-pad+14);
+}
+
+function showApp(key) {
+  const app = APPS[key];
+  const board = document.getElementById('app-board');
+  board.innerHTML = `
+    <h4>${app.title}</h4>
+    <canvas class="acc-chart" id="acc-cv" width="540" height="240"></canvas>
+    <p class="case">${app.case}</p>
+    <div class="lim">${app.lim}</div>`;
+  drawAccChart(document.getElementById('acc-cv'), app);
+}
+
+window.addEventListener('load', () => {
+  buildNav('12');
+  progressBar();
+  showApp('vision');
+  document.querySelectorAll('.app-tabs .btn').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('.app-tabs .btn').forEach(x => x.classList.remove('on'));
+      b.classList.add('on');
+      showApp(b.dataset.app);
+    });
+  });
+});
+</script>
+</body>
+</html>

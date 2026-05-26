@@ -3,32 +3,22 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>02 · 사전훈련과 미세조정 — Ch.15</title>
+<title>02 — 그리디 층별 사전훈련 — Ch.15</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
-  /* Freeze/Unfreeze 위젯 */
-  .ft-stage { padding: 1.4rem 1.2rem 1rem; }
-  .ft-layers { display: flex; flex-direction: column; gap: .5rem; max-width: 420px; margin: 0 auto 1rem; }
-  .ft-layer { display: grid; grid-template-columns: 5rem 1fr 5rem; align-items: center; gap: .7rem; padding: .7rem .9rem; border: 1px solid var(--line); border-radius: 9px; background: #fff; transition: all .2s var(--ease); cursor: pointer; }
-  .ft-layer.frozen { background: var(--structure-bg); border-color: var(--structure-lo); }
-  .ft-layer.trainable { background: var(--style-bg); border-color: var(--style-lo); }
-  .ft-layer .lname { font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); }
-  .ft-layer .ldesc { font-size: .8rem; color: var(--ink-soft); line-height: 1.35; }
-  .ft-layer .ltag { font-family: var(--mono); font-size: .68rem; padding: .15rem .45rem; border-radius: 4px; letter-spacing: .04em; text-align: center; }
-  .ft-layer.frozen .ltag { background: var(--structure); color: #fff; }
-  .ft-layer.trainable .ltag { background: var(--style); color: #fff; }
-  .ft-chart { display: flex; gap: .8rem; align-items: flex-end; justify-content: center; padding: .9rem 1.1rem; max-width: var(--measure); margin: 0 auto; border-top: 1px solid var(--line-soft); background: var(--paper); }
-  .ft-bar { display: flex; flex-direction: column; align-items: center; gap: .4rem; min-width: 6rem; }
-  .ft-bar .bv { width: 56px; background: linear-gradient(180deg, var(--structure-lo), var(--structure)); border-radius: 4px 4px 0 0; transition: height .35s var(--ease); }
-  .ft-bar .bv.warn { background: linear-gradient(180deg, var(--style-lo), var(--style)); }
-  .ft-bar .bv.good { background: linear-gradient(180deg, var(--structure-lo), var(--structure)); }
-  .ft-bar .blab { font-family: var(--mono); font-size: .7rem; color: var(--ink-faint); text-align: center; line-height: 1.4; }
-  .ft-bar .bnum { font-family: var(--serif); font-size: 1.1rem; color: var(--ink); font-weight: 600; }
-  .ft-verdict { padding: .9rem 1.2rem; border-top: 1px solid var(--line-soft); font-size: .9rem; color: var(--ink-soft); line-height: 1.55; }
-  .ft-verdict b.warn { color: var(--style); } .ft-verdict b.ok { color: var(--structure); }
+  .pt-stage { padding: 1.3rem 1.2rem 1rem; }
+  .pt-net { display: flex; align-items: flex-end; justify-content: center; gap: .8rem; padding: 1rem 0; }
+  .pt-layer { display: flex; flex-direction: column; align-items: center; gap: .3rem; transition: transform .25s var(--ease); }
+  .pt-layer .lbox { width: 64px; padding: .55rem 0; border-radius: 8px; border: 1px solid var(--line); background: #fff; font-family: var(--mono); font-size: .7rem; text-align: center; color: var(--ink-soft); transition: background .25s, border-color .25s, color .25s, box-shadow .25s; }
+  .pt-layer .ltag { font-family: var(--mono); font-size: .58rem; color: var(--ink-faint); letter-spacing: .1em; }
+  .pt-layer.active .lbox { background: var(--structure); border-color: var(--structure); color: #fff; box-shadow: 0 6px 18px -8px rgba(45,91,122,.5); }
+  .pt-layer.done .lbox { background: var(--structure-bg); border-color: var(--structure-lo); color: var(--structure); }
+  .pt-layer.finetune .lbox { background: var(--style); border-color: var(--style); color: #fff; box-shadow: 0 6px 18px -8px rgba(192,73,46,.5); }
+  .pt-step { padding: .9rem 1.1rem; border-top: 1px solid var(--line-soft); background: var(--paper); font-size: .88rem; color: var(--ink-soft); min-height: 3.5rem; line-height: 1.5; }
+  .pt-step b { color: var(--ink); }
 </style>
 </head>
 <body>
@@ -40,85 +30,60 @@
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Sub 02 · 라벨이 부족할 때 표상은 어디서 오는가</span>
-      <h1>사전훈련과 미세조정 — <span class="t-structure">왜</span> 작동하는가</h1>
-      <p class="lede">큰 데이터로 한번 만들어 둔 표상을 작은 데이터에 빌려쓴다. 단순한 발상인데 깊은 망의 학습 가능성 자체를 바꿔놓았다. 왜인가, 그리고 언제 무너지는가.</p>
+      <span class="kicker">Sub 02 — 2006년의 처방</span>
+      <h1>그리디 층별 <span class="t-structure">사전훈련</span></h1>
+      <p class="lede">지금은 한 번에 깊은 망을 학습하는 것이 당연해 보이지만, 2006년까지만 해도 5층만 넘어가면 학습이 거의 되지 않았다. 그 막힘을 뚫은 처방이 “한 층씩 따로 미리 학습한다”였다. 그 절차의 안과 밖.</p>
     </header>
 
     <div class="prose">
-      <p>2006년 이전에 깊은 망은 사실상 학습되지 않았다. 시그모이드 활성화와 무작위 초기화 조합에서 기울기는 깊은 층까지 거의 닿지 못하고 사라졌다(vanishing gradient). 힌튼(Hinton)과 베니지오(Bengio)가 제시한 돌파구는 의외였다. <strong>"깊은 망을 한꺼번에 풀려 들지 말고, 한 층씩 풀어라."</strong></p>
-      <p>이것이 <span class="t-structure">탐욕적 층별 비지도 사전훈련(greedy layer-wise unsupervised pretraining)</span>이다. 1번 층을 RBM(restricted Boltzmann machine)이나 오토인코더로 입력 분포에 맞춰 비지도로 학습한다. 그러면 1번 층의 출력은 입력의 압축된 표현이 된다. 그 표현을 다음 RBM의 입력으로 삼아 2번 층을 학습한다. 이 과정을 끝까지 반복한 뒤, 그 위에 분류 헤드를 얹어 라벨로 미세조정(fine-tuning)한다.</p>
+      <p>딥러닝을 처음 배우는 사람에게 “2006년에는 깊은 망 학습이 거의 안 됐다”는 말이 와닿지 않는다. 우리는 이미 ReLU, 적절한 가중치 초기화, 배치 정규화(batch normalization), Adam이라는 처방이 표준으로 자리잡은 시대에 살고 있어서다. 그러나 그 처방들이 등장하기 전, 5층 이상의 신경망은 한 가지 고질적 문제로 무너졌다. 기울기 소실(vanishing gradient)이다. 시그모이드(sigmoid)와 tanh로 쌓은 깊은 망에서는 역전파(backpropagation)된 기울기가 층을 지날 때마다 작아져 결국 0에 가까워졌고, 아래 층의 가중치는 사실상 업데이트되지 않았다.</p>
+      <p>이 막힘을 뚫은 사람이 2006년의 Hinton이었다. 그가 제안한 처방의 핵심은 단순했다: <strong>깊은 망의 학습을 한 번에 풀려고 하지 말고, 한 층씩 따로 학습하자.</strong> 이것이 그리디 층별 비지도 사전훈련(greedy layer-wise unsupervised pretraining)이다. “그리디(greedy)”는 알고리즘 용어로 “전역 최적화를 노리지 않고, 한 단계 한 단계 그 자리에서 최선을 고른다”는 뜻이다. “비지도(unsupervised)”는 라벨 없이 입력만으로 학습한다는 뜻이고, “사전훈련(pretraining)”은 본 과제(분류)를 시작하기 전에 따로 한다는 뜻이다.</p>
+
+      <h2>절차 — 한 층씩 어떻게 쌓는가</h2>
+      <p>절차는 다음과 같다. 먼저 첫 번째 은닉층(hidden layer)을 입력 데이터에 대한 제한된 볼츠만 머신(Restricted Boltzmann Machine, RBM) 또는 단일 층 오토인코더(autoencoder)로 학습한다. 즉, 첫 층은 “입력을 잘 압축했다가 다시 풀어내는 표상”을 만든다. 그 학습이 끝나면 첫 층의 가중치를 고정하고, 그 위에 두 번째 은닉층을 또다시 RBM 또는 오토인코더로 학습한다. 이때 두 번째 층이 보는 입력은 원본 픽셀이 아니라 첫 층이 만든 표상이다. 같은 절차를 원하는 깊이까지 반복한다. 모든 층의 비지도 사전훈련이 끝나면, 마지막에 분류 라벨을 사용해 전체 망을 함께 미세조정(fine-tuning)한다.</p>
+
+      <div class="widget">
+        <div class="widget-frame">
+          <div class="widget-label"><span class="lab-no">위젯 02</span><span>그리디 사전훈련 → 미세조정 흐름 (단계 토글)</span></div>
+          <div class="pt-stage">
+            <div class="pt-net" id="pt-net"></div>
+          </div>
+          <div class="widget-controls">
+            <div class="toggle-row" id="pt-steps"></div>
+          </div>
+          <div class="pt-step" id="pt-step">단계 버튼을 눌러 사전훈련이 한 층씩 어떻게 쌓이는지 확인하세요.</div>
+        </div>
+        <p class="widget-cap">파란색 = 현재 학습 중인 층, 옅은 파란색 = 학습 완료된(동결된) 층, 붉은색 = 마지막 미세조정 단계에서 라벨로 함께 업데이트되는 층. 사전훈련은 라벨 없이, 미세조정은 라벨로.</p>
+      </div>
+
+      <h2>왜 통했는가 — 세 가지 메커니즘</h2>
+      <p>그리디 사전훈련이 통한 이유는 한 가지가 아니라 세 가지 메커니즘이 겹쳐서다.</p>
+      <p><strong>첫째, 각 단계의 최적화가 얕은 문제로 줄어든다.</strong> 깊은 망 전체를 한 번에 학습하면 깊이만큼 복잡한 비볼록 손실 표면을 풀어야 한다. 그러나 한 층씩 학습하면 매 단계가 단층 모델 학습이 되어 훨씬 쉽다. 기울기 소실이 거의 일어나지 않는다.</p>
+      <p><strong>둘째, 라벨이 부족한 상황에서 라벨 없는 데이터가 도움이 된다.</strong> 분류 라벨은 모으는 데 비싸지만, 라벨 없는 입력 데이터(예: 인터넷 이미지)는 거의 무한히 있다. 비지도 사전훈련은 그 풍부한 데이터를 가중치 학습에 활용한다. 사전훈련된 가중치는 결과적으로 “자연 입력이 사는 매니폴드”의 정보를 담고 있으므로, 라벨이 적은 본 과제에도 좋은 출발점이 된다.</p>
+      <p><strong>셋째, 사전훈련은 정칙화(regularization) 효과를 가진다.</strong> 무작위 초기화에서 시작한 학습은 본 과제 손실을 최소화하는 어떤 한 점으로 수렴하지만, 사전훈련에서 시작한 학습은 “자연 데이터 분포를 잘 설명하는 영역” 안에서만 미세조정된다. 이 제약이 과적합(overfitting)을 줄인다. 책에서는 이 효과를 “초기화 자체가 사전(prior)으로 기능한다”라고 표현한다.</p>
 
       <div class="analogy">
-        <b>건물을 한 층씩 짓기.</b> 100층 건물을 한꺼번에 세우려고 콘크리트를 한 번에 부으면 무너진다. 1층을 굳히고, 그 위에 2층을 올리고, 굳기를 기다린 뒤 3층을 올린다. 끝까지 올린 다음에야 인테리어(미세조정)에 들어간다. 각 층을 짓는 동안은 다음 층의 무게를 신경 쓸 필요가 없다 — 그것이 "탐욕적"의 의미다. 깊은 망을 동시에 풀려고 했던 옛 시도가 "10층까지 콘크리트 한 방에 붓기"라면, 층별 사전훈련은 "한 층씩 굳히기"다.
+        <b>고층 빌딩을 한 층씩 짓기.</b> 100층 빌딩을 한 번에 짓는 것은 불가능하다. 아래층이 완성되어 굳어야 그 위에 다음 층을 올릴 수 있다. 그리디 층별 사전훈련도 같은 발상이다 — 아래 층 표상이 안정될 때까지 다음 층을 건드리지 않는다. 한 번에 모든 층을 흔들면 무너지기 때문이다. 이 비유에서 “미세조정”은 빌딩이 다 지어진 뒤에 외관과 내부 마감을 한꺼번에 다듬는 작업에 해당한다.
       </div>
 
-      <h2>왜 작동하나 — 두 가지 시선</h2>
-      <p>층별 사전훈련이 왜 깊은 망을 살려냈는지는 두 가지로 설명된다. 둘 다 시험에서 한 줄로 적을 수 있어야 한다.</p>
+      <h2>지금은 왜 잘 쓰지 않는가</h2>
+      <p>그리디 사전훈련은 2006년 이후 약 5-6년간 깊은 망 학습의 표준이었지만, 2012년 이후 점점 자취를 감췄다. 이유는 세 가지 처방이 그 자리를 대신했기 때문이다.</p>
+      <p><strong>(1) ReLU 활성화 함수.</strong> 시그모이드의 양 끝이 평탄해 기울기가 0으로 죽는 문제가 ReLU에서는 “음수 쪽만 0, 양수 쪽은 그대로 통과”라는 형태로 해결됐다. 기울기가 깊은 망을 지나도 작아지지 않으면, 한 번에 끝까지 학습할 수 있다.</p>
+      <p><strong>(2) 좋은 초기화(He, Xavier).</strong> 가중치를 무작위로 초기화할 때 분산을 어떻게 잡느냐가 깊은 망의 기울기 흐름을 결정한다는 사실이 정량적으로 밝혀졌다. 이제는 사전훈련 없이도 처음부터 깊은 망의 모든 층이 적절한 신호를 받는다.</p>
+      <p><strong>(3) 배치 정규화(batch normalization).</strong> 매 층마다 활성값의 평균과 분산을 정규화하면, 깊은 망의 학습이 훨씬 안정된다. 이 한 가지 처방이 그리디 사전훈련의 “한 층씩 안정화” 효과를 한 번에 대신해 준다.</p>
+      <p>이 세 처방이 정착하면서, 그리디 사전훈련은 “역사적으로 중요했지만 지금은 잘 쓰지 않는 처방”이 됐다. 그러나 그 안에 담긴 발상 — “표상 학습은 한 번에 끝나는 일이 아니라 단계적으로 쌓아 올리는 일”, “라벨 없는 데이터로 미리 좋은 초기화를 만들 수 있다” — 는 지금도 살아 있다. 비지도 사전훈련(3절)과 자기지도 학습(self-supervised learning)이라는 형태로 부활했다. 다음 sub에서 본다.</p>
 
-      <p><strong>(1) 최적화 시선.</strong> 각 RBM의 학습은 얕은(2층) 문제다. 얕은 문제의 손실 지형은 깊은 문제보다 훨씬 평평하고, 따라서 경사하강이 잘 작동한다. 깊은 망 전체를 한번에 풀려는 시도가 마치 한 거대한 산맥의 최저점을 찾는 것이라면, 층별 학습은 각 층마다 작은 골짜기에 멈추는 것이다. 그 멈춤점을 차곡차곡 쌓아 두면, 끝의 미세조정 단계에서는 "이미 좋은 출발점에서 약간만 움직이는" 문제가 된다.</p>
+      <h2>역사적 의의 — 발상 자체가 살아남았다</h2>
+      <p>그리디 사전훈련을 “지금은 쓰지 않으니 외울 필요 없다”라고 정리하면 시험에서 손해를 본다. 책은 명확히 강조한다 — 이 절차의 진짜 유산은 절차 자체가 아니라 그 안에 든 두 가지 발상이다. 첫째, 학습은 “라벨이 있는 본 과제”에만 매여 있을 필요가 없다는 것. 라벨 없는 입력만으로도 가중치를 의미 있는 방향으로 움직일 수 있다는 발상이 비지도/자기지도 학습의 모든 현대적 형태(BERT, GPT, CLIP, SimCLR)로 이어진다. 둘째, 초기화는 단순한 “시작점”이 아니라 학습 결과를 통째로 좌우하는 “사전(prior)”이라는 발상. 사전훈련 → 미세조정의 두 단계 구조는 지금도 모든 거대 모델의 표준이다. 시험에서 “그리디 사전훈련의 현대적 의의는?”이라는 질문이 나오면, 절차의 세부보다 이 두 발상을 답으로 떠올려야 한다.</p>
 
-      <p><strong>(2) 정칙화 시선.</strong> 사전훈련된 가중치는 라벨 없는 입력 분포 $p(x)$의 정보를 담고 있다. 미세조정은 그 출발점에서 시작하는 셈인데, 이는 마치 가중치 위에 어떤 <em>사전 분포(prior)</em>를 둔 것과 같다. 가중치는 무작위 초기화처럼 "어떤 값이든 동일하게 가능하다"고 출발하지 않고, "$p(x)$를 잘 설명하는 영역에 미리 와 있다"는 편향된 출발점에서 시작한다. 라벨 수가 적을 때 이 편향이 분산을 줄이고 일반화 성능을 끌어올린다.</p>
-
-      <div class="math-block">$$ \theta^* = \arg\min_{\theta} \; \underbrace{\mathcal{L}_{\text{task}}(\theta; \mathcal{D}_{\text{small}})}_{\text{미세조정}} \quad \text{from} \quad \theta_0 = \arg\min_{\theta} \underbrace{\mathcal{L}_{\text{recon}}(\theta; \mathcal{D}_{\text{big, unlabeled}})}_{\text{사전훈련}} $$</div>
-      <p class="math-note">미세조정 손실의 출발점 $\theta_0$를 무작위가 아니라 사전훈련 손실의 최소점으로 정한다. 사전훈련은 라벨이 필요 없으므로 큰 데이터셋으로 가능하고, 그 결과는 가중치 위의 사전(prior)으로 작동한다.</p>
-
-      <h2>현대적 사전훈련 — 같은 시선, 다른 알고리즘</h2>
-      <p>탐욕적 층별 사전훈련 자체는 2010년대 중반 이후 거의 쓰지 않는다. ReLU·배치 정규화·신중한 초기화(Xavier·He)·잔차 연결(residual connection)이 깊은 망의 학습 가능성 문제를 직접 해결했기 때문이다. 그러나 "큰 데이터로 한번 만든 표상을 작은 과제에 빌려 쓴다"는 발상 자체는 <strong>더 강력한 형태로 살아남았다</strong>.</p>
-
-      <p>오늘날 우리가 "사전훈련 모델"이라 부르는 것 — ImageNet에서 학습된 ResNet, 대규모 텍스트로 학습된 BERT·GPT, 웹 이미지·캡션 쌍으로 학습된 CLIP — 은 모두 같은 원리의 현대적 구현이다. 단, 두 가지가 달라졌다.</p>
-
-      <ul>
-        <li><strong>비지도가 아니라 자기지도(self-supervised)</strong> — 라벨 없는 데이터에서 "다음 단어 맞히기", "마스킹된 픽셀 복원", "같은 이미지 두 뷰는 가깝게"처럼 데이터 자체에서 가짜 목표를 만들어 학습한다. 결과적으로 라벨 없는 거대한 데이터를 진짜로 활용한다.</li>
-        <li><strong>층별이 아니라 끝까지 한 번에</strong> — 현대 옵티마이저·정규화는 깊은 망을 끝까지 풀 수 있게 해 준다. 층별 분리 학습은 더 이상 필요 없다.</li>
-      </ul>
-
-      <p>핵심은 변하지 않았다. 큰 데이터에서 표상을 만들어 두고, 작은 과제에 갖다 쓴다. 이것이 사전훈련의 영원한 골격이다.</p>
-
-      <h2>미세조정의 두 갈래 — Linear Probe vs Full Fine-tuning</h2>
-      <p>사전훈련 모델을 작은 과제에 적용하는 방법은 양극단 두 가지가 있다. 시험에 자주 나오는 구분이다.</p>
-
-      <p><strong>Linear Probe(선형 프로브).</strong> 사전훈련 모델의 모든 가중치를 <em>고정(freeze)</em>하고, 맨 위에 새 선형 분류기만 얹어 그것만 학습한다. 표상을 그대로 신뢰하는 보수적 방법이다. 데이터가 매우 적거나 도메인이 사전훈련과 비슷할 때 안전하다.</p>
-      <p><strong>Full Fine-tuning(전체 미세조정).</strong> 모든 층의 가중치를 작은 학습률로 함께 갱신한다. 데이터가 충분히 있고 도메인이 다소 다를 때 더 좋은 성능을 낼 수 있다. 다만 사전훈련된 좋은 표상을 망가뜨릴 위험(catastrophic forgetting)이 있다.</p>
-
-      <p>실무에서 가장 흔한 절충은 <strong>"위쪽 N층만 풀어 학습, 아래쪽은 고정"</strong>이다. 왜? 얕은 층(아래쪽)은 모서리·색·텍스처 같은 거의 도메인 무관한 특징을 잡고, 깊은 층(위쪽)은 점점 과제 특이적이 된다. 새 과제는 보통 "이미지의 기본적 시각 어휘"는 그대로 두고 위쪽만 새로 짜야 한다. 아래의 위젯에서 어느 층을 풀어야 할지를 직접 만져 보자.</p>
-    </div>
-
-    <div class="widget">
-      <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 02</span><span>Freeze · Unfreeze — 어느 층을 풀어 학습할까</span></div>
-        <div class="ft-stage">
-          <div class="ft-layers" id="ftlayers"></div>
-        </div>
-        <div class="ft-chart">
-          <div class="ft-bar">
-            <div class="bv good" id="ftA" style="height: 120px;"></div>
-            <div class="bnum" id="ftAn">85%</div>
-            <div class="blab">새 과제<br>정확도</div>
-          </div>
-          <div class="ft-bar">
-            <div class="bv warn" id="ftB" style="height: 50px;"></div>
-            <div class="bnum" id="ftBn">중간</div>
-            <div class="blab">과적합<br>위험</div>
-          </div>
-          <div class="ft-bar">
-            <div class="bv good" id="ftC" style="height: 80px;"></div>
-            <div class="bnum" id="ftCn">중간</div>
-            <div class="blab">학습<br>비용</div>
-          </div>
-        </div>
-        <div class="ft-verdict" id="ftverdict"></div>
-      </div>
-      <p class="widget-cap">각 층을 클릭해 동결(파랑) ↔ 학습(주황)을 토글한다. 데이터가 작고 도메인이 비슷하면 위쪽 1-2층만 풀고, 데이터가 많고 도메인이 멀면 더 깊이 풀어라. 모두 풀면 사전훈련의 의미가 사라지고 과적합 위험이 커진다.</p>
-    </div>
-
-    <div class="prose">
-      <h2>주의 — 사전훈련이 항상 도움이 되지는 않는다</h2>
-      <p>책은 솔직하게 한 가지를 짚는다. 사전훈련 목표가 다운스트림 과제와 잘 정렬되지 않으면 오히려 해가 될 수 있다. 예를 들어 픽셀 복원이라는 사전훈련 목표는 "픽셀의 정확한 위치"를 살리는 표상을 만든다. 그러나 다운스트림이 "이미지에 고양이가 있나?" 같은 의미 인식 과제라면, 그 픽셀 정밀도는 의미적으로 중요한 변동(자세·조명·종)을 압도하는 잡음이 된다. 이 경우 무작위 초기화에서 시작하는 편이 더 나을 수 있다.</p>
-
-      <p>이 통찰은 6번 절(인과 요소 기반 반지도학습)에서 다시 등장한다. 핵심 질문은 항상 같다 — "사전훈련 목표가 다운스트림에서 쓰일 진짜 인과 요인을 복원하는가?" 답이 예이면 사전훈련은 거대한 도움이고, 답이 아니오이면 잡음만 더할 뿐이다.</p>
-
-      <p>다음 절에서는 사전훈련을 <strong>전이학습(transfer learning)</strong>이라는 더 일반적인 틀에서 본다. 한 도메인에서 배운 표상이 왜 다른 도메인을 돕는가, 그리고 얼마나 도와줄 수 있는가의 한계를 다룬다.</p>
+      <h2>핵심 어휘 정리</h2>
+      <table class="symbols">
+        <tr><td>그리디 (greedy)</td><td>전역 최적이 아닌 한 단계마다 최선을 고르는 알고리즘 전략.</td></tr>
+        <tr><td>RBM</td><td>제한된 볼츠만 머신. 단층 비지도 학습기. 입력-은닉 양방향 가중치만 가짐.</td></tr>
+        <tr><td>사전훈련 (pretraining)</td><td>본 과제 시작 전, 다른 목표(보통 비지도 재구성)로 가중치를 미리 학습.</td></tr>
+        <tr><td>미세조정 (fine-tuning)</td><td>사전훈련된 가중치를 출발점으로 본 과제 라벨로 다시 학습.</td></tr>
+        <tr><td>기울기 소실 (vanishing gradient)</td><td>역전파된 기울기가 층을 지나며 0에 가까워지는 현상.</td></tr>
+      </table>
     </div>
 
     <nav class="ch-foot"></nav>
@@ -128,18 +93,25 @@
 <script>
   const SUBS = [
     { no:'01', t:'좋은 표상이란', f:'01.html' },
-    { no:'02', t:'사전훈련과 미세조정', f:'02.html' },
-    { no:'03', t:'전이학습·도메인 적응', f:'03.html' },
-    { no:'04', t:'분산 표상의 힘', f:'04.html' },
-    { no:'05', t:'깊이의 지수적 표현력', f:'05.html' },
-    { no:'06', t:'인과 요소와 반지도', f:'06.html' },
-    { no:'07', t:'시험 대비', f:'07.html' },
+    { no:'02', t:'그리디 층별 사전훈련', f:'02.html' },
+    { no:'03', t:'비지도 사전훈련', f:'03.html' },
+    { no:'04', t:'지도 사전훈련', f:'04.html' },
+    { no:'05', t:'전이학습 1 — 도메인이 돕는 원리', f:'05.html' },
+    { no:'06', t:'전이학습 2 — 미세조정 실전', f:'06.html' },
+    { no:'07', t:'도메인 적응', f:'07.html' },
+    { no:'08', t:'분산 표상 1 — 지수적 이득', f:'08.html' },
+    { no:'09', t:'분산 표상 2 — 합성성·의미 산수', f:'09.html' },
+    { no:'10', t:'깊이의 지수적 표현력', f:'10.html' },
+    { no:'11', t:'인과 요소', f:'11.html' },
+    { no:'12', t:'반지도 학습', f:'12.html' },
+    { no:'13', t:'사전으로서의 정칙화', f:'13.html' },
+    { no:'14', t:'시험 대비', f:'14.html' },
   ];
   const CURRENT = '02';
   (function buildNav() {
     document.querySelector('.topbar').innerHTML =
-      `<a class="home" href="index.html">← Chapter 15 · 표상 학습</a>` +
-      `<span class="ch-mini">SUB ${CURRENT} / 07</span>`;
+      `<a class="home" href="index.html">← Chapter 15 — 표상 학습</a>` +
+      `<span class="ch-mini">SUB ${CURRENT} / 14</span>`;
     document.querySelector('.ch-nav ol').innerHTML = SUBS.map(s =>
       `<li><a href="${s.f}" ${s.no === CURRENT ? 'class="current"' : ''}>${s.t}</a></li>`).join('');
     const i = SUBS.findIndex(s => s.no === CURRENT);
@@ -157,67 +129,47 @@
     document.addEventListener('scroll', onScroll, { passive: true }); onScroll();
   })();
 
-  // ===== 위젯: Freeze/Unfreeze 토글 =====
-  (function ftWidget() {
-    const LAYERS = [
-      { id: 0, name: 'Layer 1', desc: '엣지·색·텍스처', state: 'frozen' },
-      { id: 1, name: 'Layer 2', desc: '간단한 모양·패턴', state: 'frozen' },
-      { id: 2, name: 'Layer 3', desc: '복합 패턴·부위', state: 'frozen' },
-      { id: 3, name: 'Layer 4', desc: '객체 부분', state: 'frozen' },
-      { id: 4, name: 'Layer 5', desc: '과제 특이적 의미', state: 'trainable' },
-      { id: 5, name: 'Head', desc: '새 과제 분류 헤드', state: 'trainable' },
+  // 사전훈련 흐름 위젯
+  (function ptWidget() {
+    const layers = ['입력', '은닉1', '은닉2', '은닉3', '분류'];
+    const netEl = document.getElementById('pt-net');
+    const stepEl = document.getElementById('pt-step');
+    const stepsEl = document.getElementById('pt-steps');
+    layers.forEach((l, i) => {
+      const div = document.createElement('div');
+      div.className = 'pt-layer'; div.dataset.idx = i;
+      div.innerHTML = `<div class="lbox">${l}</div><div class="ltag">L${i}</div>`;
+      netEl.appendChild(div);
+    });
+    const states = [
+      { name: '시작', desc: '아직 어느 층도 학습되지 않은 무작위 초기 상태.', active: -1, done: [], finetune: false },
+      { name: '1. 은닉1 학습', desc: '<b>비지도 단계 1:</b> 입력에 대한 RBM/오토인코더로 첫 은닉층을 학습한다. 라벨 없이 입력을 잘 재구성하도록 가중치를 조정.', active: 1, done: [], finetune: false },
+      { name: '2. 은닉2 학습', desc: '<b>비지도 단계 2:</b> 은닉1 가중치를 동결하고, 은닉1의 출력을 입력으로 보고 은닉2를 학습한다. 라벨 여전히 없음.', active: 2, done: [1], finetune: false },
+      { name: '3. 은닉3 학습', desc: '<b>비지도 단계 3:</b> 같은 절차를 한 번 더. 이때 은닉3은 “두 단계 추상화된 표상”을 다시 압축한다.', active: 3, done: [1, 2], finetune: false },
+      { name: '4. 미세조정', desc: '<b>지도 단계:</b> 모든 사전훈련 끝. 분류 헤드를 붙이고, 라벨로 전체 망을 함께 미세조정. 가중치는 사전훈련 결과 근처에서만 미세하게 움직인다.', active: -1, done: [1, 2, 3], finetune: true },
     ];
-    const host = document.getElementById('ftlayers');
-    function render() {
-      host.innerHTML = LAYERS.map(l => `
-        <div class="ft-layer ${l.state}" data-id="${l.id}">
-          <span class="lname">${l.name}</span>
-          <span class="ldesc">${l.desc}</span>
-          <span class="ltag">${l.state === 'frozen' ? 'FROZEN' : 'TRAIN'}</span>
-        </div>`).join('');
-      host.querySelectorAll('.ft-layer').forEach(el => {
-        el.addEventListener('click', () => {
-          const id = parseInt(el.dataset.id);
-          const layer = LAYERS.find(l => l.id === id);
-          layer.state = (layer.state === 'frozen') ? 'trainable' : 'frozen';
-          render(); updateChart();
-        });
+    states.forEach((s, i) => {
+      const b = document.createElement('button');
+      b.className = 'btn ghost' + (i === 0 ? ' on' : '');
+      b.textContent = s.name;
+      b.addEventListener('click', () => {
+        stepsEl.querySelectorAll('.btn').forEach(x => x.classList.remove('on'));
+        b.classList.add('on');
+        applyState(i);
       });
+      stepsEl.appendChild(b);
+    });
+    function applyState(i) {
+      const s = states[i];
+      netEl.querySelectorAll('.pt-layer').forEach((el, idx) => {
+        el.classList.remove('active', 'done', 'finetune');
+        if (s.finetune && idx > 0) el.classList.add('finetune');
+        else if (s.done.includes(idx)) el.classList.add('done');
+        else if (idx === s.active) el.classList.add('active');
+      });
+      stepEl.innerHTML = s.desc;
     }
-    function updateChart() {
-      const trainCount = LAYERS.filter(l => l.state === 'trainable').length;
-      const headTrained = LAYERS[5].state === 'trainable';
-      // 새 과제 정확도: head는 풀려야 함. 위쪽부터 풀수록 좋아지다가, 너무 깊이 풀면 과적합·표상 망가짐
-      let acc;
-      if (!headTrained) acc = 35;
-      else if (trainCount === 1) acc = 75;  // head만
-      else if (trainCount === 2) acc = 88;  // head + L5
-      else if (trainCount === 3) acc = 90;
-      else if (trainCount === 4) acc = 86;
-      else if (trainCount === 5) acc = 76;
-      else acc = 65;  // 모두 풀면 (사전훈련 무의미)
-      // 과적합 위험: 많이 풀수록 높아짐
-      const overfit = Math.min(100, trainCount * 16 + (!headTrained ? -10 : 0));
-      // 학습 비용
-      const cost = trainCount * 16 + 5;
-
-      document.getElementById('ftA').style.height = (acc * 1.4) + 'px';
-      document.getElementById('ftAn').textContent = acc + '%';
-      document.getElementById('ftB').style.height = (overfit * 1.4) + 'px';
-      document.getElementById('ftBn').textContent = overfit < 30 ? '낮음' : overfit < 60 ? '중간' : '높음';
-      document.getElementById('ftC').style.height = (cost * 1.4) + 'px';
-      document.getElementById('ftCn').textContent = cost < 30 ? '낮음' : cost < 65 ? '중간' : '높음';
-
-      const v = document.getElementById('ftverdict');
-      let msg = '';
-      if (!headTrained) msg = '<b class="warn">헤드부터 풀어야 한다.</b> 새 과제의 분류 헤드는 반드시 학습 가능 상태여야 한다.';
-      else if (trainCount === 1) msg = '<b class="ok">Linear Probe.</b> 표상이 새 도메인과 잘 맞고 데이터가 매우 적을 때의 안전한 기본값.';
-      else if (trainCount === 2 || trainCount === 3) msg = '<b class="ok">위쪽 부분 풀기 — 추천 기본값.</b> 얕은 층의 도메인 무관 특징은 보존하고 깊은 층만 새 과제에 맞춘다.';
-      else if (trainCount === 4) msg = '데이터가 충분히 많고 도메인이 멀다면 합리적. 학습률을 작게.';
-      else msg = '<b class="warn">너무 많이 풀었다.</b> 사전훈련된 좋은 표상이 망가질 위험. 데이터가 정말 충분한가?';
-      v.innerHTML = msg;
-    }
-    render(); updateChart();
+    applyState(0);
   })();
 
   window.addEventListener('load', () => {

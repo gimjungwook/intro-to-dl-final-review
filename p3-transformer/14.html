@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>14 · Decoder 블록</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Chapter 14 · 디코더는 두 종류의 attention을 쓴다</span>
+      <h1>Decoder 블록 — Masked Self-Attention과<br><span class="t-style">Cross-Attention</span></h1>
+      <p class="lede">Encoder는 입력 시퀀스를 표현으로 압축한다. Decoder는 그 표현을 받아 출력 시퀀스를 한 토큰씩 생성한다. 그래서 Decoder 블록은 Encoder 블록보다 한 단계가 더 추가되어 — sub-layer 세 개로 구성된다. 새로 추가되는 두 부품은 (1) “미래를 가리는” masked self-attention과 (2) “인코더 출력을 참조하는” cross-attention이다.</p>
+    </header>
+
+    <div class="prose">
+      <h2>왜 Decoder가 따로 있는가</h2>
+      <p>먼저 “왜 Encoder 하나로 안 끝내고 Decoder를 따로 두는가”를 짚자. Encoder는 “입력 시퀀스 전체”를 한 번에 보고 표현으로 압축한다. 번역의 경우 영어 문장 "I am a student"를 보고 의미 표현을 만든다. 그러나 출력은 다르다 — 프랑스어 "Je suis un étudiant"를 한 토큰씩, 왼쪽에서 오른쪽으로 생성해야 한다.</p>
+
+      <p>“한 토큰씩 왼쪽에서 오른쪽으로”라는 제약이 핵심이다. 학습 시점에서는 정답인 출력 시퀀스 전체를 알지만, 추론 시점에서는 “이미 생성된 토큰”까지만 보고 다음 토큰을 예측해야 한다. 즉 디코더의 self-attention은 “자신의 미래를 보지 못하게” 막아야 한다. 이게 첫 번째 변경 — masked self-attention이다.</p>
+
+      <p>두 번째로, 디코더가 출력을 생성할 때 “입력에서 무엇을 봤는지”도 알아야 한다. "I"를 보고 프랑스어 "Je"를 만들 때, 디코더는 인코더가 입력 "I"에 대해 만든 표현을 참조해야 한다. 이걸 위해 “디코더의 query가 인코더의 key·value를 참조”하는 별도의 attention이 필요하다. 이게 두 번째 변경 — cross-attention이다.</p>
+
+      <h2>Decoder 블록의 3 sub-layer</h2>
+      <p>Decoder 블록은 정확히 다음 세 sub-layer로 구성된다. 각 sub-layer 뒤에는 Encoder와 마찬가지로 Add&Norm이 붙는다.</p>
+
+      <p><strong>Sub-layer 1: Masked Multi-Head Self-Attention.</strong> 디코더 입력(지금까지 생성된 토큰들)에서 Q·K·V를 모두 뽑되, 미래 위치를 보지 못하게 mask를 씌운다.<br>
+      <strong>Sub-layer 2: Multi-Head Cross-Attention.</strong> Q는 sub-layer 1의 출력에서, K·V는 Encoder의 최종 출력에서 가져온다. 디코더가 “인코더가 본 입력 시퀀스”를 참조하는 채널.<br>
+      <strong>Sub-layer 3: Feed-Forward Network.</strong> Encoder와 동일한 2층 MLP.</p>
+
+      <div class="math-block">$$ X \to \text{MaskedMHA} \to \text{Add\&Norm} \to \text{CrossMHA} \to \text{Add\&Norm} \to \text{FFN} \to \text{Add\&Norm} \to X' $$</div>
+      <p class="math-note">Encoder는 sub-layer 2개, Decoder는 sub-layer 3개. 추가되는 한 칸이 cross-attention이다.</p>
+
+      <h2>Sub-layer 1 — Masked Self-Attention</h2>
+      <p>디코더가 출력 시퀀스를 학습할 때 “teacher forcing”이라는 방식을 쓴다. 정답 출력 시퀀스 전체를 한꺼번에 입력으로 주고, 각 위치에서 “다음 토큰”을 예측하게 한다. 예를 들어 입력 "Je suis un étudiant"이 주어지면, 위치 1에서는 "Je"를 보고 "suis"를 예측, 위치 2에서는 "Je suis"를 보고 "un"을 예측, ... 식.</p>
+
+      <p>이때 self-attention이 “미래를 볼 수 있다면” 학습이 무너진다. 위치 1에서 "suis"를 예측해야 하는데, 위치 1의 query가 위치 2의 "suis"까지 attention으로 본다면 정답을 그대로 베껴서 만점을 받는다. 모델은 학습이 안 되고, 추론 시 미래가 없는 상황에서 갑자기 답을 못 만들게 된다.</p>
+
+      <p>그래서 Mask를 도입한다. 정확한 구현은 “attention 점수 행렬에서 미래 위치($j > i$)에 해당하는 칸을 매우 큰 음수($-\infty$ 또는 $-10^9$)로 채우는 것”이다.</p>
+
+      <div class="math-block">$$ \text{MaskedAttn}(Q, K, V) = \text{softmax}\!\left( \frac{QK^\top + M}{\sqrt{d_k}} \right) V $$</div>
+      <div class="math-block">$$ M_{ij} = \begin{cases} 0 & j \le i \\ -\infty & j > i \end{cases} $$</div>
+      <p class="math-note">$M \in \mathbb{R}^{N \times N}$가 mask 행렬. 상삼각(diagonal 윗부분)이 $-\infty$, 나머지는 0. softmax 후 $-\infty$는 $e^{-\infty} = 0$이 되어 그 위치의 가중치가 정확히 0이 된다. 즉 미래 토큰의 value는 어떤 가중치로도 결합되지 않는다.</p>
+
+      <div class="widget">
+        <div class="widget-frame">
+          <div class="widget-label"><span class="lab-no">위젯 14</span><span>Decoder Mask — 어디는 보고 어디는 못 보는가</span></div>
+          <div id="dm"></div>
+        </div>
+        <p class="widget-cap">행 = query 위치(현재 토큰), 열 = key 위치(참조할 토큰). 체크(✓)는 허용된 attention, $-\infty$는 차단된 attention. 자기 자리와 과거만 보고, 미래는 모두 막혔다 — 이게 “causal mask” 또는 “triangular mask”다.</p>
+      </div>
+
+      <h2>Sub-layer 2 — Cross-Attention</h2>
+      <p>Masked self-attention 다음은 cross-attention이다. 여기가 Encoder와 Decoder를 연결하는 다리다.</p>
+
+      <p>구조상 차이는 단순하다 — 같은 multi-head attention 모듈인데, Q는 디코더 안에서, K·V는 인코더의 최종 출력에서 가져온다. 즉 :</p>
+
+      <div class="math-block">$$ \text{CrossAttn} = \text{MultiHead}(Q_{\text{decoder}}, K_{\text{encoder}}, V_{\text{encoder}}) $$</div>
+      <p class="math-note">$Q_{\text{decoder}} \in \mathbb{R}^{N_{\text{out}} \times d_{model}}$는 디코더 sub-layer 1의 출력. $K_{\text{encoder}}, V_{\text{encoder}} \in \mathbb{R}^{N_{\text{in}} \times d_{model}}$는 인코더 최종 출력. 결과 모양은 $(N_{\text{out}}, d_{model})$ — 디코더 길이로 나옴.</p>
+
+      <p>의미적으로는 “디코더가 지금 만들려는 출력 토큰을 query로 삼아, 인코더가 본 입력 시퀀스 전체(key·value)에서 가장 관련 있는 부분을 가중합으로 가져온다.” 번역의 경우 디코더가 "Je"를 만들 때, "I am a student"의 4개 인코더 출력 중에서 "I" 위치에 가장 높은 attention 가중치를 주고 그 위치의 value를 참조한다.</p>
+
+      <p>중요한 점 — cross-attention에는 mask가 없다. 디코더가 인코더의 모든 위치를 다 볼 수 있다. 왜냐하면 인코더 출력은 입력 시퀀스 전체를 본 결과이고, 디코더가 출력을 만들 때 “입력의 어디든 자유롭게 참조”하는 게 자연스럽기 때문이다. 미래를 가리는 mask는 self-attention에만 필요하다(왜냐하면 self-attention에서 “미래”는 “디코더의 미래 출력”인데, cross-attention에서는 인코더 입력 전체가 이미 정해진 정적 자료이기 때문이다).</p>
+
+      <h2>Cross-Attention의 의미 — 번역의 예</h2>
+      <p>이 단계를 번역 예로 구체화하자. 입력 "I am a student"를 인코더에 넣으면 각 단어에 대해 4개의 표현 벡터가 나온다 — $E_1, E_2, E_3, E_4$. 디코더는 "Je"를 생성할 때, "Je"의 query 벡터를 만들어 $E_1, E_2, E_3, E_4$와 attention 점수를 계산한다. 잘 학습된 모델이라면 query가 $E_1$("I"의 표현)과 가장 유사하므로 $E_1$에 가장 큰 가중치가 가고, "Je"의 표현은 $E_1$의 정보를 주로 흡수한다.</p>
+
+      <p>이런 방식으로 디코더는 “출력의 각 위치에서 입력의 어느 부분을 참조해야 하는지”를 학습한다. 신기하게도 학습이 끝나면 cross-attention 가중치가 “전통적인 단어 정렬(word alignment)”과 매우 유사한 패턴을 보인다. 즉 cross-attention 행렬을 시각화하면 사람이 보기에 “이 영어 단어가 이 프랑스어 단어와 대응한다”의 정렬표가 자연스럽게 떠오른다.</p>
+
+      <h2>Sub-layer 3 — Feed-Forward</h2>
+      <p>마지막 sub-layer는 Encoder와 동일한 위치별 2층 MLP다. 수식·구조 모두 같다.</p>
+
+      <div class="math-block">$$ X' = \text{LN}(Z_2 + \text{FFN}(Z_2)) $$</div>
+      <p class="math-note">$Z_2$는 cross-attention 후 Add&Norm까지 거친 출력. FFN의 역할은 Encoder와 동일 — 토큰별 비선형 변환과 “세상 지식” 저장.</p>
+
+      <h2>Decoder 블록을 $N$개 쌓을 때 — Cross-Attention의 입력 공유</h2>
+      <p>Decoder도 Encoder처럼 같은 블록을 $N$개 쌓는다. 그런데 cross-attention에 중요한 디테일이 있다. <strong>$N$개의 Decoder 블록이 모두 같은 인코더 최종 출력을 K·V로 쓴다.</strong> 인코더 출력을 첫 디코더 블록만 보는 게 아니라, 모든 디코더 블록이 매번 참조한다.</p>
+
+      <p>왜 그런가? 인코더 출력은 “입력 문장의 의미 표현”이고, 디코더가 출력 토큰을 만드는 각 단계마다 이 의미를 다시 참조해야 하기 때문이다. 디코더 블록 1이 "Je"를 만들 때도 인코더 출력을 보고, 블록 2가 "suis"를 다듬을 때도 인코더 출력을 본다. 그래서 인코더 출력은 “디코더 모든 층이 공통으로 참조하는 메모리”의 역할을 한다.</p>
+
+      <h2>최종 출력 — Linear + Softmax</h2>
+      <p>$N$개의 Decoder 블록을 모두 통과한 결과는 $(N_{\text{out}}, d_{model})$ 모양의 텐서다. 이걸 그대로 토큰 확률 분포로 쓰진 않는다. 마지막에 한 단계가 더 있다.</p>
+
+      <div class="math-block">$$ P(\text{token}_i = w) = \text{softmax}(\text{Linear}(X'_i))_w $$</div>
+      <p class="math-note">$\text{Linear}$는 $d_{model}$차원을 어휘 크기 $V$로 매핑하는 가중치 행렬($d_{model} \times V$). softmax로 확률 분포로 변환. 각 위치에서 이 분포에서 가장 가능성 높은 토큰(또는 샘플링)이 출력 토큰.</p>
+
+      <p>여기서 한 가지 흥미로운 트릭이 있다. 마지막 Linear의 가중치 행렬을 “토큰 임베딩과 공유”하는 방식이 종종 쓰인다(weight tying). 토큰 임베딩 $E \in \mathbb{R}^{V \times d_{model}}$를 그대로 전치해 $E^\top$으로 마지막 Linear에 사용한다. 이 공유는 “토큰의 의미 표현”과 “토큰의 출력 분포”가 같은 공간을 공유해야 한다는 직관에 부합하며, 파라미터를 절약하고 학습을 안정화한다.</p>
+
+      <h2>Encoder vs Decoder — 두 줄로 비교</h2>
+      <p>지금까지 본 두 블록을 한 표로 정리하면 다음과 같다.</p>
+
+      <div class="math-block">$$ \text{Encoder: } X \xrightarrow{\text{MHA}} \xrightarrow{\text{LN}} \xrightarrow{\text{FFN}} \xrightarrow{\text{LN}} X' $$</div>
+      <div class="math-block">$$ \text{Decoder: } X \xrightarrow{\text{MaskedMHA}} \xrightarrow{\text{LN}} \xrightarrow{\text{CrossMHA}} \xrightarrow{\text{LN}} \xrightarrow{\text{FFN}} \xrightarrow{\text{LN}} X' $$</div>
+      <p class="math-note">Decoder는 Encoder에 “Cross-Attention 한 단계”가 끼어든 형태. Self-Attention에 mask가 씌워진다는 차이도 있다.</p>
+
+      <h2>요약 — 이 장의 핵심 4가지</h2>
+      <p><strong>(1) Decoder 블록은 sub-layer 3개로 구성된다.</strong> Masked self-attention, cross-attention, FFN. 각 뒤에 Add&Norm. <strong>(2) Masked self-attention은 “미래 토큰을 보지 못하도록” mask 행렬을 attention 점수에 더한다.</strong> 추론 시 자기회귀 생성을 학습 단계에서 흉내내기 위함. <strong>(3) Cross-attention은 Q를 디코더에서, K·V를 인코더 최종 출력에서 가져온다.</strong> 출력 토큰이 입력 시퀀스의 어디를 참조할지를 학습. <strong>(4) 디코더 마지막에는 Linear + Softmax로 토큰 확률 분포가 나온다.</strong> 다음 장에서는 이 디코더가 학습할 때와 추론할 때 어떻게 다르게 동작하는지를 본다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  window.addEventListener('load', () => {
+    TFR.buildNav('14');
+    const d = document.getElementById('dm');
+    TFR.onVisible(d, () => TFR.decoderMask(d));
+  });
+</script>
+<script src="assets/widgets.js"></script>
+</body>
+</html>

@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>12 — 반지도 학습 — Ch.15</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .ss-stage { padding: 1.4rem 1.2rem 1rem; }
+  .ss-canvas-wrap { border: 1px solid var(--line); border-radius: 10px; padding: 1rem; background: #fff; }
+  .ss-canvas-wrap canvas { display: block; width: 100%; height: 260px; border-radius: 6px; background: var(--paper); }
+  .ss-controls { display: flex; flex-direction: column; gap: .8rem; padding: 1rem 1.2rem; border-top: 1px solid var(--line-soft); background: var(--paper); }
+  .ss-controls .row { display: flex; align-items: center; gap: 1rem; }
+  .ss-controls label { font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); min-width: 7.5rem; }
+  .ss-controls input[type=range] { flex: 1; accent-color: var(--structure); }
+  .ss-controls .val { font-family: var(--mono); font-size: .82rem; color: var(--structure); min-width: 3.5rem; text-align: right; }
+  .ss-toggle { display: flex; gap: .5rem; padding: .8rem 1.2rem; background: var(--paper-2); border-top: 1px solid var(--line-soft); justify-content: center; flex-wrap: wrap; }
+  .ss-toggle button { padding: .45rem .9rem; border: 1px solid var(--line); background: #fff; font-family: var(--mono); font-size: .76rem; border-radius: 999px; cursor: pointer; color: var(--ink-soft); transition: all .15s; }
+  .ss-toggle button.on { background: var(--structure); color: #fff; border-color: var(--structure); }
+  .ss-verdict { padding: 1rem 1.2rem; border-top: 1px solid var(--line-soft); background: var(--paper); font-size: .9rem; color: var(--ink-soft); line-height: 1.55; min-height: 4rem; }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 12 — 라벨 없는 데이터의 두 얼굴</span>
+      <h1>반지도 학습 — <span class="t-structure">라벨 없는 분포</span>의 정보</h1>
+      <p class="lede">$p(x)$가 알려 주는 매니폴드 구조와 $p(y \mid x)$의 라벨 정보를 함께 쓰면, 라벨이 적어도 분류가 가능해진다. 그러나 “언제 돕고 언제 해치는가”의 갈림길이 분명히 존재한다.</p>
+    </header>
+
+    <div class="prose">
+      <p>반지도 학습(semi-supervised learning)의 발상은 단순하다 — 라벨이 있는 데이터 $\{(x_i, y_i)\}$와 라벨이 없는 데이터 $\{x_j\}$를 함께 학습에 활용한다. 비지도 사전훈련(3절)과 다른 점은, 두 데이터를 “순차적으로”(먼저 비지도, 그 다음 지도) 사용하는 것이 아니라 “동시에” 한 손실 함수 안에서 사용한다는 점이다.</p>
+      <p>현실에서 반지도가 매력적인 이유는 데이터 수집 비용의 비대칭 때문이다. 의료 영상에서 “이 영상이 폐렴 양성인지”라는 라벨을 한 명 한 명의 의사가 달아야 하는 반면, “이 영상은 폐 X-ray다”라는 사실은 별도 라벨 없이도 분명하다. 라벨 있는 100장과 라벨 없는 100,000장이 함께 있을 때, 후자를 어떻게 학습 자원으로 활용할 것인가가 반지도의 핵심 질문이다.</p>
+
+      <h2>왜 라벨 없는 데이터가 분류에 도움이 되는가</h2>
+      <p>이 질문은 직관적으로 답하기 어렵다. 라벨이 없는데 “이 입력이 어느 부류인지”를 어떻게 알겠는가? 답은 라벨 없는 데이터가 $p(x)$, 즉 입력의 분포 구조를 알려 주기 때문이다. 그리고 $p(x)$의 구조가 $p(y \mid x)$를 학습하는 데 강한 사전(prior) 역할을 한다는 점이 책의 핵심 주장이다.</p>
+      <p>구체적으로, 책은 “세 가정(cluster assumption, manifold assumption, smoothness assumption)” 위에서 반지도가 성립한다고 설명한다.</p>
+      <p><strong>(1) 클러스터 가정(cluster assumption).</strong> $p(x)$가 여러 군집(cluster)으로 나뉘어 있다면, 같은 군집 안의 점들은 같은 라벨을 가질 가능성이 높다. 라벨 있는 점이 한 군집에 떨어지면, 그 군집의 모든 라벨 없는 점에 같은 라벨을 “전염”시킬 수 있다.</p>
+      <p><strong>(2) 매니폴드 가정(manifold assumption).</strong> 자연 데이터는 휘어진 저차원 면 위에 산다. 분류 경계는 그 면 위가 아니라 면 사이의 저밀도 영역(low-density region)을 지나간다. 라벨 없는 데이터가 매니폴드의 모양을 알려 주면, 경계가 자연스럽게 “면을 가르지 않는” 위치로 잡힌다.</p>
+      <p><strong>(3) 평활성 가정(smoothness assumption).</strong> 가까운 두 입력은 같은 라벨을 가질 가능성이 높다. “가깝다”는 단순한 유클리드 거리가 아니라 매니폴드 위의 거리, 또는 표상 공간의 거리. 라벨 없는 데이터가 그 거리 구조를 정의한다.</p>
+
+      <div class="math-block">$$ \mathcal{L}_{\text{semi}} = \underbrace{\sum_i \ell(f(x_i), y_i)}_{\text{지도 손실}} + \lambda \underbrace{\sum_j \mathcal{R}(f, x_j)}_{\text{비지도 정칙화}} $$</div>
+      <p class="math-note">$\ell$ = 라벨된 데이터에 대한 분류 손실. $\mathcal{R}$ = 라벨 없는 데이터에 대한 정칙화 항(예: 엔트로피 최소화, 일관성 손실). $\lambda$가 두 항의 균형을 잡는 하이퍼파라미터.</p>
+
+      <h2>대표적 처방 — 세 가지</h2>
+      <p>이 가정들 위에서 만들어진 실용 알고리즘 세 가지.</p>
+      <p><strong>(1) 일관성 정칙화(consistency regularization).</strong> 같은 입력의 두 가지 작은 변형(예: 다른 데이터 증강)에 대해 모델이 같은 출력을 내도록 강제. FixMatch, Π-Model이 대표. 평활성 가정의 직접 구현.</p>
+      <p><strong>(2) 의사라벨링(pseudo-labeling).</strong> 7절(도메인 적응)에서 이미 본 절차. 라벨 있는 데이터로 먼저 학습 → 라벨 없는 데이터에 신뢰도 높은 예측을 “의사 라벨”로 채택 → 합쳐서 다시 학습. 클러스터 가정의 직접 구현.</p>
+      <p><strong>(3) 엔트로피 최소화(entropy minimization).</strong> 라벨 없는 데이터에 대한 예측 분포 $p(y \mid x_j)$의 엔트로피를 최소화한다. 즉, 모델이 “애매하게” 예측하는 것을 벌점. 결과적으로 결정 경계가 저밀도 영역으로 밀린다 — 매니폴드 가정의 직접 구현.</p>
+
+      <div class="analogy">
+        <b>지도 한 장과 친구 몇 명의 위치.</b> 낯선 도시에서 친구 다섯 명의 위치(라벨)만 표시된 백지도가 있다고 하자. 도로·강·산이 그려진 지도(라벨 없는 데이터 $p(x)$)가 있으면, 친구들이 어느 동네에 사는지, 그 동네에서 다른 친구를 찾으려면 어디로 가야 하는지 자연스럽게 추측할 수 있다. 백지도만 있으면 친구 다섯 명의 위치를 점으로 외울 수밖에 없지만, 도시 구조를 알면 “비슷한 동네 사람은 비슷한 라벨”이라는 추론이 가능하다. 반지도 학습이 정확히 이 일을 한다.
+      </div>
+
+      <h2>언제 돕고 언제 해치는가</h2>
+      <p>책은 명확히 경고한다 — 반지도가 항상 성능을 올리는 것은 아니다. 세 가정 중 어느 하나라도 데이터에 맞지 않으면, 반지도가 오히려 성능을 떨어뜨릴 수 있다. 대표적 실패 사례.</p>
+      <p><strong>실패 1 — 클러스터가 라벨과 어긋남.</strong> $p(x)$가 두 군집으로 나뉘어 있지만, 두 군집이 같은 라벨을 가질 수도 있고 다를 수도 있다. 예: “개” 사진이 “실내 개”와 “실외 개” 두 군집으로 나뉘는데, 두 군집 모두 라벨은 “개”. 의사라벨링이 잘못된 가정 위에서 두 군집을 분리하면 정확도가 떨어진다.</p>
+      <p><strong>실패 2 — 도메인 시프트가 있을 때.</strong> 라벨 없는 데이터의 분포가 본 과제 분포와 크게 다르면, $p(x)$의 정보가 본 과제 학습에 도움이 안 되거나 오히려 방해된다. 도메인 적응(7절)과 결합해야 안전.</p>
+      <p><strong>실패 3 — 라벨 데이터가 충분히 많을 때.</strong> 라벨이 10만 장 이상이면 라벨 없는 데이터 추가가 거의 효과를 못 낸다. 반지도의 이득은 라벨이 적은 영역에서만 크게 나타난다.</p>
+
+      <div class="widget">
+        <div class="widget-frame">
+          <div class="widget-label"><span class="lab-no">위젯 12</span><span>반지도 학습 — 라벨 비율과 결정 경계</span></div>
+          <div class="ss-stage">
+            <div class="ss-canvas-wrap">
+              <canvas id="ss-c" width="640" height="260"></canvas>
+            </div>
+            <div class="ss-controls">
+              <div class="row">
+                <label>라벨 비율</label>
+                <input type="range" id="ss-ratio" min="2" max="100" value="10">
+                <span class="val" id="ss-ratio-v">10%</span>
+              </div>
+            </div>
+            <div class="ss-toggle">
+              <button class="on" data-mode="sup">지도 학습만 (라벨된 점만 사용)</button>
+              <button data-mode="semi">반지도 (모든 점의 분포 활용)</button>
+            </div>
+            <div class="ss-verdict" id="ss-v">슬라이더로 라벨 비율을 줄여 보자. 라벨이 매우 적을 때(2-10%) 반지도와 지도학습의 결정 경계 차이가 가장 크게 벌어진다. 100%일 때는 둘이 거의 동일.</div>
+          </div>
+        </div>
+        <p class="widget-cap">두 휘어진 띠로 나뉜 자연 데이터(라벨 없는 점, 회색)와 라벨 부착된 일부(빨강/파랑). 지도학습만 쓰면 라벨된 점들 사이의 단순한 선형 경계를 그린다. 반지도는 띠 모양을 보고 경계를 “저밀도 영역(두 띠 사이)”에 정확히 그린다.</p>
+      </div>
+
+      <h2>거대 모델 시대의 반지도</h2>
+      <p>2020년대 이후, 반지도와 자기지도의 경계가 흐려졌다. CLIP은 라벨 없는 이미지-텍스트 쌍 4억 개로 학습해 “라벨 없는 분포”의 정보를 거의 무한 자원으로 활용한다. GPT 류는 “다음 토큰 예측”이라는 자기지도 과제로 학습한 후, 소수의 라벨된 예제로 미세조정 또는 인-컨텍스트 학습된다. 책의 반지도 분류는 “라벨 일부 + 라벨 없는 데이터 약간” 시나리오였지만, 같은 발상이 “라벨 거의 없음 + 라벨 없는 데이터 거의 무한”의 현대 시나리오로 일반화됐다.</p>
+      <p>핵심 직관은 같다 — $p(x)$를 충분히 잘 학습하면, $p(y \mid x)$ 학습은 그 위에 작은 미세조정만으로 가능하다. 책의 반지도 절은 그 직관의 출발점이고, 현대 LLM/파운데이션 모델은 그 직관의 가장 큰 형태의 실현이다.</p>
+
+      <h2>핵심 어휘 정리</h2>
+      <table class="symbols">
+        <tr><td>반지도 학습 (semi-supervised)</td><td>라벨 있는 + 라벨 없는 데이터를 동시에 활용하는 학습.</td></tr>
+        <tr><td>클러스터 가정</td><td>같은 군집 안의 점들은 같은 라벨을 가질 가능성이 높다.</td></tr>
+        <tr><td>매니폴드 가정</td><td>분류 경계는 매니폴드 사이의 저밀도 영역을 지난다.</td></tr>
+        <tr><td>일관성 정칙화</td><td>같은 입력의 다른 변형이 같은 출력을 내도록 강제.</td></tr>
+        <tr><td>엔트로피 최소화</td><td>모델이 라벨 없는 점에 대해 자신감 있는 예측을 내도록 유도.</td></tr>
+      </table>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'좋은 표상이란', f:'01.html' },
+    { no:'02', t:'그리디 층별 사전훈련', f:'02.html' },
+    { no:'03', t:'비지도 사전훈련', f:'03.html' },
+    { no:'04', t:'지도 사전훈련', f:'04.html' },
+    { no:'05', t:'전이학습 1 — 도메인이 돕는 원리', f:'05.html' },
+    { no:'06', t:'전이학습 2 — 미세조정 실전', f:'06.html' },
+    { no:'07', t:'도메인 적응', f:'07.html' },
+    { no:'08', t:'분산 표상 1 — 지수적 이득', f:'08.html' },
+    { no:'09', t:'분산 표상 2 — 합성성·의미 산수', f:'09.html' },
+    { no:'10', t:'깊이의 지수적 표현력', f:'10.html' },
+    { no:'11', t:'인과 요소', f:'11.html' },
+    { no:'12', t:'반지도 학습', f:'12.html' },
+    { no:'13', t:'사전으로서의 정칙화', f:'13.html' },
+    { no:'14', t:'시험 대비', f:'14.html' },
+  ];
+  const CURRENT = '12';
+  (function buildNav() {
+    document.querySelector('.topbar').innerHTML =
+      `<a class="home" href="index.html">← Chapter 15 — 표상 학습</a>` +
+      `<span class="ch-mini">SUB ${CURRENT} / 14</span>`;
+    document.querySelector('.ch-nav ol').innerHTML = SUBS.map(s =>
+      `<li><a href="${s.f}" ${s.no === CURRENT ? 'class="current"' : ''}>${s.t}</a></li>`).join('');
+    const i = SUBS.findIndex(s => s.no === CURRENT);
+    const prev = i > 0 ? SUBS[i-1] : { f:'index.html', t:'챕터 표지', no:'' };
+    const next = i < SUBS.length-1 ? SUBS[i+1] : { f:'index.html', t:'챕터 표지', no:'' };
+    document.querySelector('.ch-foot').innerHTML =
+      `<a href="${prev.f}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+      `<a href="${next.f}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+    const bar = document.querySelector('.scroll-progress');
+    const onScroll = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    document.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+  })();
+
+  (function ssWidget() {
+    const css = getComputedStyle(document.documentElement);
+    const STRUCT = css.getPropertyValue('--structure').trim();
+    const STYLE = css.getPropertyValue('--style').trim();
+    const FAINT = css.getPropertyValue('--ink-faint').trim();
+    const INK = css.getPropertyValue('--ink').trim();
+    const SOFT = css.getPropertyValue('--ink-soft').trim();
+    const SOFT_BG = css.getPropertyValue('--paper-sink').trim();
+
+    const canvas = document.getElementById('ss-c');
+    const ctx = canvas.getContext('2d');
+    const ratio = document.getElementById('ss-ratio');
+    const rVal = document.getElementById('ss-ratio-v');
+    const verdict = document.getElementById('ss-v');
+    let mode = 'sup';
+
+    // 두 휘어진 띠 (S 모양 두 개) 라벨된 + 라벨 없는 데이터
+    const class1 = [], class2 = [];
+    for (let i = 0; i < 120; i++) {
+      const t = i / 120;
+      const x = 60 + t * 520;
+      const y = 130 + Math.sin(t * Math.PI * 2.4) * 50 - 35;
+      class1.push({ x, y, label: 0 });
+      const y2 = 130 + Math.sin(t * Math.PI * 2.4 + Math.PI) * 50 + 35;
+      class2.push({ x, y: y2, label: 1 });
+    }
+    const all = [...class1, ...class2];
+
+    function render() {
+      const W = canvas.width = canvas.clientWidth * 2;
+      const H = canvas.height = 520;
+      ctx.scale(2, 2);
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W / 2, H / 2);
+
+      const p = parseInt(ratio.value, 10) / 100;
+      const labeledCount1 = Math.max(1, Math.floor(class1.length * p));
+      const labeledCount2 = Math.max(1, Math.floor(class2.length * p));
+      // 라벨 없는 점들 (회색)
+      all.forEach(pt => {
+        ctx.fillStyle = SOFT_BG;
+        ctx.beginPath(); ctx.arc(pt.x, pt.y, 2, 0, Math.PI * 2); ctx.fill();
+      });
+      // 라벨된 점 (선택된 비율)
+      const labeled1 = [], labeled2 = [];
+      for (let i = 0; i < labeledCount1; i++) {
+        const idx = Math.floor(i * class1.length / labeledCount1);
+        labeled1.push(class1[idx]);
+      }
+      for (let i = 0; i < labeledCount2; i++) {
+        const idx = Math.floor(i * class2.length / labeledCount2);
+        labeled2.push(class2[idx]);
+      }
+      labeled1.forEach(pt => {
+        ctx.fillStyle = STRUCT;
+        ctx.beginPath(); ctx.arc(pt.x, pt.y, 5, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
+      });
+      labeled2.forEach(pt => {
+        ctx.fillStyle = STYLE;
+        ctx.beginPath(); ctx.arc(pt.x, pt.y, 5, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
+      });
+
+      // 결정 경계
+      if (mode === 'sup') {
+        // 지도 학습: 라벨된 점들의 평균 사이를 가르는 직선
+        let mx1 = 0, my1 = 0, mx2 = 0, my2 = 0;
+        labeled1.forEach(pt => { mx1 += pt.x; my1 += pt.y; });
+        labeled2.forEach(pt => { mx2 += pt.x; my2 += pt.y; });
+        mx1 /= labeled1.length; my1 /= labeled1.length;
+        mx2 /= labeled2.length; my2 /= labeled2.length;
+        // 중심점 사이의 수직 이등분선
+        const cx = (mx1 + mx2) / 2;
+        const cy = (my1 + my2) / 2;
+        const dx = mx2 - mx1, dy = my2 - my1;
+        const len = Math.sqrt(dx * dx + dy * dy) || 1;
+        const nx = -dy / len, ny = dx / len;
+        ctx.strokeStyle = INK; ctx.lineWidth = 1.6; ctx.setLineDash([5, 4]);
+        ctx.beginPath();
+        ctx.moveTo(cx - nx * 300, cy - ny * 300);
+        ctx.lineTo(cx + nx * 300, cy + ny * 300);
+        ctx.stroke(); ctx.setLineDash([]);
+        ctx.fillStyle = INK; ctx.font = '10px monospace';
+        ctx.fillText('지도 경계 (라벨 평균 이등분)', 12, 16);
+      } else {
+        // 반지도: 두 띠 사이를 따라가는 곡선
+        ctx.strokeStyle = INK; ctx.lineWidth = 1.6; ctx.setLineDash([5, 4]);
+        ctx.beginPath();
+        for (let i = 0; i <= 240; i++) {
+          const t = i / 240;
+          const x = 60 + t * 520;
+          // 두 띠의 중간선
+          const y1 = 130 + Math.sin(t * Math.PI * 2.4) * 50 - 35;
+          const y2 = 130 + Math.sin(t * Math.PI * 2.4 + Math.PI) * 50 + 35;
+          const ym = (y1 + y2) / 2;
+          if (i === 0) ctx.moveTo(x, ym); else ctx.lineTo(x, ym);
+        }
+        ctx.stroke(); ctx.setLineDash([]);
+        ctx.fillStyle = INK; ctx.font = '10px monospace';
+        ctx.fillText('반지도 경계 (저밀도 영역 따라감)', 12, 16);
+      }
+
+      rVal.textContent = parseInt(ratio.value, 10) + '%';
+      if (mode === 'sup') {
+        verdict.innerHTML = `<b>지도 학습.</b> 라벨 ${parseInt(ratio.value, 10)}%만 사용. 라벨된 점이 적을수록 경계가 직선적이고 데이터의 휘어진 구조를 따라가지 못한다.`;
+      } else {
+        verdict.innerHTML = `<b>반지도 학습.</b> 같은 라벨 비율(${parseInt(ratio.value, 10)}%)이지만, 라벨 없는 점들의 분포 정보까지 활용해 경계가 두 띠 사이를 정확히 따라간다. 라벨 비율이 낮을수록 격차가 크다.`;
+      }
+    }
+
+    ratio.addEventListener('input', render);
+    document.querySelectorAll('.ss-toggle button').forEach(b => {
+      b.addEventListener('click', () => {
+        document.querySelectorAll('.ss-toggle button').forEach(x => x.classList.remove('on'));
+        b.classList.add('on');
+        mode = b.dataset.mode;
+        render();
+      });
+    });
+    window.addEventListener('resize', render);
+    render();
+  })();
+
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
+        throwOnError: false,
+      });
+    }
+  });
+</script>
+</body>
+</html>

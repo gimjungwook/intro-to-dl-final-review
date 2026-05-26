@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>11. 베이즈 규칙 — 사전이 사후로</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .bayes-stage { padding: 1.4rem 1.1rem; display: grid; gap: 1rem; }
+  .bayes-canvas { width: 100%; height: 240px; display: block; background: #fff; border: 1px solid var(--line-soft); border-radius: 7px; }
+  .obs-row { display: grid; grid-template-columns: 1fr auto auto auto; align-items: center; gap: .5rem; padding: .6rem .8rem; background: var(--paper-2); border-radius: 7px; font-family: var(--mono); font-size: .76rem; }
+  .obs-row .lab { color: var(--ink-soft); }
+  .obs-row button { font-family: var(--mono); font-size: .72rem; padding: .35rem .7rem; border-radius: 5px; border: 1px solid var(--line); background: #fff; color: var(--ink); cursor: pointer; }
+  .obs-row button:hover { background: var(--ink); color: var(--paper); }
+  .obs-row .count { font-weight: 600; color: var(--style); padding: 0 .5rem; }
+  .bp-tab { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: .5rem; font-family: var(--mono); font-size: .78rem; }
+  .bp-tab .item { padding: .55rem .8rem; background: var(--paper-2); border-radius: 7px; }
+  .bp-tab .item .lab { display: block; font-size: .66rem; color: var(--ink-faint); letter-spacing: .12em; text-transform: uppercase; margin-bottom: .2rem; }
+  .bp-tab .item .val { font-size: 1rem; font-weight: 600; color: var(--ink); }
+  .bp-tab .item.pri .val { color: var(--ink-soft); }
+  .bp-tab .item.lik .val { color: var(--structure); }
+  .bp-tab .item.post .val { color: var(--style); }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-chapter 11. 추론의 가장 기본 규칙</span>
+      <h1>베이즈 규칙 —<br><span class="t-style">사전</span>이 <span class="t-style">사후</span>로 좁아지는 한 줄</h1>
+      <p class="lede">의사가 진단을 갱신할 때, 분류기가 예측을 만들 때, 머신러닝이 모델 파라미터를 추정할 때 — 모두 같은 한 줄의 식을 쓴다. 이 식은 별도로 외워야 할 공식이 아니라, 결합 분포의 두 가지 분해 방향을 등식으로 적어 놓은 것뿐이다. 그러나 그 한 줄이 추론(inference)의 거의 모든 것을 결정한다.</p>
+    </header>
+
+    <div class="prose">
+      <p>3장의 절반을 분포의 카탈로그에 썼다. 이제 그 분포들을 가지고 무엇을 할지를 본다. 가장 자주 하는 일은 추론(inference) — 일부 정보를 보고 보지 못한 부분에 대한 분포를 갱신하는 일이다. 이 갱신을 한 줄로 적는 식이 <strong>베이즈 규칙(Bayes' rule)</strong>이다.</p>
+
+      <p>먼저 3번 페이지에서 본 결합 분포의 두 가지 분해 방향을 떠올리자. $p(x, y) = p(x | y) p(y) = p(y | x) p(x)$. 같은 결합 확률을 두 가지로 풀 수 있다. 가운데와 오른쪽이 같으니, 양변을 정리하면 다음을 얻는다.</p>
+
+      <div class="math-block">$$ p(y | x) = \frac{p(x | y) \, p(y)}{p(x)} $$</div>
+      <p class="math-note">베이즈 규칙. $y$가 우리가 알고 싶은 변수, $x$가 관측된 변수일 때 가장 흔히 등장하는 형태.</p>
+
+      <p>이게 베이즈 규칙이다. 외울 게 따로 없다 — 결합 분포의 두 분해를 등식으로 만든 것이 전부다. 그런데 이 한 줄이 강력한 이유는, 식의 각 항이 모두 의미 있는 이름을 가지기 때문이다.</p>
+
+      <h2>네 항의 이름과 의미</h2>
+      <p>위 식의 네 항은 각각 베이즈 추론에서 표준적인 이름을 가진다. 시험과 실무 모두에서 이 이름들이 그대로 쓰이므로 한 번에 익혀 두자.</p>
+
+      <ul>
+        <li><strong>$p(y | x)$ — 사후 분포(posterior)</strong>. 관측 $x$를 본 뒤 $y$에 대한 우리의 갱신된 믿음.</li>
+        <li><strong>$p(x | y)$ — 우도(likelihood)</strong>. $y$가 어떤 값이라고 가정했을 때 우리가 본 관측 $x$가 얼마나 그럴듯한가.</li>
+        <li><strong>$p(y)$ — 사전 분포(prior)</strong>. 관측을 보기 전 $y$에 대한 우리의 초기 믿음.</li>
+        <li><strong>$p(x)$ — 증거(evidence) 또는 주변 우도(marginal likelihood)</strong>. 관측 $x$가 (어떤 $y$ 값이든) 얼마나 자주 일어나는지의 정규화 상수.</li>
+      </ul>
+
+      <p>이 네 이름을 정확히 외우면, 베이즈 규칙은 다음 한 문장으로 압축된다 — <em>사후 = (우도 × 사전) / 증거</em>. 또는 비례 표기로 더 간결하게 <em>사후 ∝ 우도 × 사전</em>이라고 쓰기도 한다. 분모 $p(x)$는 $y$에 의존하지 않는 정규화 상수이므로, 사후의 모양을 결정하는 것은 우도와 사전의 곱이다.</p>
+
+      <h2>왜 이 형태인가 — 같은 분해, 두 방향</h2>
+      <p>베이즈 규칙이 왜 이런 형태를 가지는지는, "결합 분포는 두 가지 방향으로 분해된다"는 한 문장으로 설명된다. 한 방향은 $y$를 먼저 뽑고 $y$에서 $x$를 뽑는 것 — $p(x | y) p(y)$. 다른 방향은 $x$를 먼저 뽑고 $x$에서 $y$를 뽑는 것 — $p(y | x) p(x)$. 두 방향이 같은 결합 확률을 만들어 내므로, 한 방향을 알면 다른 방향을 얻을 수 있다. 베이즈 규칙은 그 변환 식이다.</p>
+
+      <p>실용적으로는 두 방향 중 한 방향이 더 계산하기 쉬울 때가 많다. 의료 진단을 예로 들자. "어떤 환자가 폐렴이라면 기침이라는 증상이 나올 확률"은 의학 문헌에서 비교적 잘 알려져 있다 — 이것이 우도 $p(\text{기침} | \text{폐렴})$이다. 그러나 우리가 정작 알고 싶은 양은 그 반대다 — "이 환자가 기침을 한다면 폐렴일 확률" $p(\text{폐렴} | \text{기침})$. 베이즈 규칙은 알기 쉬운 방향(우도)에서 알고 싶은 방향(사후)으로 가는 다리다.</p>
+
+      <h2>사후가 좁아지는 이유 — 곱셈이 분포를 좁힌다</h2>
+      <p>사후는 항상 사전과 같거나 더 좁다(또는 같은 정도). 이게 왜 그런지 직관적으로 이해하면, 베이즈 규칙이 "데이터에 의한 학습"의 가장 단순한 모델이라는 점이 분명해진다.</p>
+
+      <p>사전이 어떤 모양이든 — 평평한 균등 분포든, 종 모양 가우시안이든 — 우도를 곱하면 사전이 우도가 큰 영역에서 살아남고, 우도가 작은 영역에서 깎인다. 두 분포의 곱은 두 분포가 모두 큰 자리에서만 큰 값을 가진다. 즉 사전과 우도의 곱(=정규화 전 사후)은 두 정보가 일치하는 곳에 집중되고, 다른 곳은 깎인다. 정규화 후의 사후가 사전보다 좁아지는 이유다.</p>
+
+      <p>관측이 여러 개 들어오면 이 효과가 누적된다. 첫 관측 후 사후가 사전보다 좁아진다 — 이 사후가 두 번째 관측을 받을 때의 새 사전이 된다. 두 번째 사후는 다시 더 좁아진다. 관측을 한 개씩 추가할 때마다 분포가 좁아진다 — 이 누적 좁힘이 곧 학습이다.</p>
+
+      <div class="analogy">
+        머릿속에 있는 신념을 측정 기구로 비유해보자. 사전은 가지고 있는 자(measuring stick) 한 자루다 — 평소 어떤 값이 그럴듯하다고 생각하는지의 표현. 관측은 정확도가 다른 또 다른 자다. 두 자를 겹쳐 놓고 "두 자가 모두 가리키는 자리"만 살린다. 두 자가 일치하는 구간은 보통 한쪽 자보다 좁다. <b>관측이 들어올 때마다 자를 한 자루씩 겹쳐 좁혀 가는 과정이 베이즈 추론이다.</b> 자가 많을수록 좁아지고 정확해진다 — 단, 자들이 일관된 방향을 가리킬 때만.
+      </div>
+
+      <h2>위젯 — 관측을 한 개씩 추가하면 사후가 좁아진다</h2>
+      <p>아래 위젯은 동전의 앞면 확률 $\theta$를 추정하는 가장 단순한 베이즈 문제다. 사전은 $\theta$에 대한 우리의 초기 믿음 — 처음에는 어떤 값일지 모르므로 평평한 분포다. 관측을 한 번씩 추가할 때마다(앞면 또는 뒷면) 사후가 갱신된다. 관측이 늘어날수록 사후가 좁아지는 모습을 본다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 11</span><span>베이즈 갱신 — 사전, 우도, 사후가 좁아지는 과정</span></div>
+        <div class="bayes-stage">
+          <canvas id="byC" class="bayes-canvas" width="700" height="240"></canvas>
+          <div class="bp-tab">
+            <div class="item"><span class="lab">관측 앞면 (H)</span><span class="val" id="cH">0</span></div>
+            <div class="item"><span class="lab">관측 뒷면 (T)</span><span class="val" id="cT">0</span></div>
+            <div class="item post"><span class="lab">사후 평균</span><span class="val" id="pM">0.50</span></div>
+          </div>
+          <div class="obs-row">
+            <span class="lab">관측 추가</span>
+            <button id="addH">+ 앞면</button>
+            <button id="addT">+ 뒷면</button>
+            <button id="reset">초기화</button>
+          </div>
+        </div>
+        <div class="widget-controls">
+          <span style="font-family: var(--mono); font-size: .72rem; color: var(--ink-faint);">검은 선 = 사후 분포, 회색 영역 = 사전, 사후 평균은 (H+1)/(H+T+2) (Laplace smoothing)</span>
+        </div>
+      </div>
+      <p class="widget-cap">+ 앞면을 5번, + 뒷면을 5번 누르면 사후가 0.5 근처에 집중된다. + 앞면만 10번 누르면 사후가 1쪽으로 강하게 쏠린다. 관측이 늘수록 분포가 좁아지고, 사후 평균은 관측 비율에 가까워진다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>분모 $p(x)$를 어떻게 계산하는가 — 주변화</h2>
+      <p>베이즈 규칙의 분모 $p(x)$는 직접 알기 어려운 경우가 많다. 그러나 결합 분포로 풀어 쓰면 다음과 같이 적힌다.</p>
+
+      <div class="math-block">$$ p(x) = \sum_{y} p(x | y) \, p(y) \qquad \text{(이산)} \qquad p(x) = \int p(x | y) \, p(y) \, dy \qquad \text{(연속)} $$</div>
+      <p class="math-note">$y$의 모든 가능성에 대해 우도×사전을 다 더하거나 적분. 베이즈 규칙의 분모는 분자(우도×사전)의 모든 $y$에 대한 합/적분.</p>
+
+      <p>왜 이렇게 쓰나. $p(x)$는 결합 분포 $p(x, y)$를 $y$ 방향으로 주변화(marginalize)해서 얻은 양이고, 결합은 우도×사전으로 풀린다. 그래서 분모는 결국 "분자에 등장하는 양들을 가능한 모든 $y$에 대해 더한 것"이다. 시험에서 자주 "분모는 분자의 정규화 상수다"라는 표현이 나오는데, 정확히 이 의미다.</p>
+
+      <p>실용적으로 이 분모는 계산하기 매우 비쌀 수 있다. $y$가 고차원 연속 변수일 때 적분이 닫힌 형태로 안 풀리는 경우가 흔하다. 이 어려움을 우회하는 두 가지 흔한 전략이 (1) MCMC 같은 샘플링 방법, (2) 변분 추론(variational inference)이다. 두 방법 모두 분모를 직접 계산하지 않고 사후를 근사한다 — 이게 14장 정도에서 다시 등장한다.</p>
+
+      <h2>분류기와 베이즈 — 사후 분포가 곧 분류기 출력</h2>
+      <p>분류기의 출력이 정확히 베이즈 규칙의 사후 분포다. 입력 이미지 $x$가 들어왔을 때 클래스 $y$의 확률 $p(y | x)$가 곧 사후다. 베이즈 규칙으로 풀어 쓰면 $p(y | x) = p(x | y) p(y) / p(x)$ — 우도 $p(x | y)$는 "클래스 $y$에 속하는 이미지가 $x$와 같이 생겼을 확률", 사전 $p(y)$는 "데이터셋 안에서 클래스 $y$의 비율", 분모는 정규화 상수다.</p>
+
+      <p>판별 모델(discriminative model)과 생성 모델(generative model)의 차이도 베이즈 관점에서 깔끔히 정리된다. 판별 모델은 사후 $p(y | x)$를 직접 학습한다. 생성 모델은 우도 $p(x | y)$와 사전 $p(y)$를 학습한 뒤 베이즈 규칙으로 사후를 만든다. 두 접근은 같은 분류기 출력을 만들지만, 생성 모델은 추가로 "그 클래스에 속하는 새 데이터를 만들어 낼 수 있다"는 장점이 있다.</p>
+
+      <h2>딥러닝에서 베이즈가 나타나는 자리</h2>
+      <p>구체 예시. 첫째, 분류기 출력 자체가 사후 분포다. 둘째, 베이즈 신경망(Bayesian neural network)은 가중치 자체에 사전 분포를 두고, 데이터로부터 가중치의 사후를 학습한다. 셋째, 변분 자가부호기(variational autoencoder, VAE)는 잠재변수에 대한 사후 $p(z | x)$를 근사한다. 넷째, 강화학습의 톰슨 샘플링(Thompson sampling)은 보상 분포에 대한 사후에서 행동을 뽑는다. 모두 베이즈 규칙이 골격을 이루는 자리들이다.</p>
+
+      <h2>시험에서 자주 묻는 한 줄</h2>
+      <p>시험 직전 정리. <strong>$p(y | x) = p(x | y) p(y) / p(x)$. 분자 = 우도 × 사전. 분모 = 증거 = $\sum_y p(x|y) p(y)$ (정규화 상수). 사후는 사전보다 좁다(또는 같음). 관측이 누적되면 사후가 점점 좁아진다 = 학습.</strong> 객관식에서 "사후가 사전보다 항상 평평하다"는 보기가 보이면 틀린 보기다(반대다 — 좁아진다). 그리고 "베이즈 규칙은 별도의 정리가 아니라 결합 분포의 분해에서 따라 나오는 등식"이라는 점도 함께 기억하자.</p>
+
+      <p>다음 페이지부터는 정보이론(information theory)이다. 분포의 불확실성을 재는 엔트로피(entropy)부터 시작해, 두 분포의 차이를 재는 KL 발산, 그리고 분류 손실로 매일 쓰이는 교차 엔트로피까지 차례로 본다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const CH = [
+    { no:'01', t:'왜 확률이 필요한가', f:'01.html' },
+    { no:'02', t:'확률변수와 분포 — PMF vs PDF', f:'02.html' },
+    { no:'03', t:'결합·주변·조건부 분포', f:'03.html' },
+    { no:'04', t:'연쇄법칙 — 결합을 조건부의 곱으로', f:'04.html' },
+    { no:'05', t:'독립과 조건부 독립', f:'05.html' },
+    { no:'06', t:'기대값 — 분포를 한 숫자로', f:'06.html' },
+    { no:'07', t:'분산과 공분산 — 무상관 ≠ 독립', f:'07.html' },
+    { no:'08', t:'흔한 분포 1 — Bernoulli, Categorical', f:'08.html' },
+    { no:'09', t:'흔한 분포 2 — Gaussian', f:'09.html' },
+    { no:'10', t:'흔한 분포 3 — Mixture, Dirac', f:'10.html' },
+    { no:'11', t:'베이즈 규칙 — 사전이 사후로', f:'11.html' },
+    { no:'12', t:'정보이론 1 — 엔트로피', f:'12.html' },
+    { no:'13', t:'정보이론 2 — KL 발산의 비대칭', f:'13.html' },
+    { no:'14', t:'정보이론 3 — 교차 엔트로피 = NLL', f:'14.html' },
+    { no:'15', t:'시험 대비 체크리스트', f:'15.html' },
+  ];
+  function buildNav(curr) {
+    const tb = document.querySelector('.topbar');
+    if (tb) tb.innerHTML =
+      `<a class="home" href="index.html">← Ch.3 확률과 정보이론</a>` +
+      `<span class="ch-mini">SUB-CHAPTER ${curr} of 15</span>`;
+    const ol = document.querySelector('.ch-nav ol');
+    if (ol) ol.innerHTML = CH.map(c =>
+      `<li><a href="${c.f}" ${c.no === curr ? 'class="current"' : ''}>${c.t}</a></li>`).join('');
+    const foot = document.querySelector('.ch-foot');
+    if (foot) {
+      const i = CH.findIndex(c => c.no === curr);
+      const prev = i > 0 ? CH[i-1] : { f:'index.html', t:'표지로', no:'' };
+      const next = i < CH.length-1 ? CH[i+1] : { f:'index.html', t:'표지로', no:'' };
+      foot.innerHTML =
+        `<a href="${prev.f}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+        `<a href="${next.f}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+    }
+    const bar = document.querySelector('.scroll-progress');
+    if (bar) {
+      const onS = () => {
+        const h = document.documentElement;
+        const m = h.scrollHeight - h.clientHeight;
+        bar.style.width = (m > 0 ? (h.scrollTop / m) * 100 : 0) + '%';
+      };
+      document.addEventListener('scroll', onS, { passive: true });
+      onS();
+    }
+  }
+
+  let H = 0, T = 0;
+
+  /* Beta(a, b) PDF using log gamma approximation via simple normalization */
+  function logFact(n) {
+    let s = 0;
+    for (let k = 2; k <= n; k++) s += Math.log(k);
+    return s;
+  }
+  function betaPDF(theta, a, b) {
+    if (theta <= 0 || theta >= 1) return 0;
+    /* unnormalized */
+    return Math.pow(theta, a - 1) * Math.pow(1 - theta, b - 1);
+  }
+
+  function drawBayes() {
+    const c = document.getElementById('byC');
+    const ctx = c.getContext('2d');
+    const W = c.width, H2 = c.height;
+    ctx.clearRect(0, 0, W, H2);
+    ctx.strokeStyle = 'rgba(38,34,28,0.18)';
+    ctx.beginPath(); ctx.moveTo(20, H2 - 25); ctx.lineTo(W - 10, H2 - 25); ctx.stroke();
+    /* x ticks 0, 0.5, 1 */
+    [0, 0.25, 0.5, 0.75, 1].forEach(t => {
+      const px = 20 + t * (W - 30);
+      ctx.fillStyle = 'rgba(38,34,28,0.5)';
+      ctx.font = '10px "Spline Sans Mono", monospace';
+      ctx.fillText(t.toFixed(2), px - 9, H2 - 10);
+      ctx.strokeStyle = 'rgba(38,34,28,0.08)';
+      ctx.beginPath(); ctx.moveTo(px, 5); ctx.lineTo(px, H2 - 25); ctx.stroke();
+    });
+
+    const SAMP = 400;
+    const a = H + 1, b = T + 1;
+
+    /* compute max for scaling */
+    let maxY = 0;
+    const ys = new Array(SAMP);
+    for (let i = 0; i < SAMP; i++) {
+      const x = i / (SAMP - 1);
+      const y = betaPDF(x, a, b);
+      ys[i] = y;
+      if (y > maxY) maxY = y;
+    }
+    /* normalize numerically */
+    let area = 0;
+    for (const y of ys) area += y / SAMP;
+    const yn = ys.map(y => y / area);
+    const newMax = Math.max(...yn);
+
+    /* prior = uniform (a=b=1) — flat at 1 */
+    ctx.fillStyle = 'rgba(38,34,28,0.07)';
+    const flatY = 1 / newMax * (H2 - 40);
+    ctx.fillRect(20, H2 - 25 - flatY, W - 30, flatY);
+
+    /* posterior curve */
+    ctx.fillStyle = 'rgba(192,73,46,0.18)';
+    ctx.beginPath();
+    ctx.moveTo(20, H2 - 25);
+    for (let i = 0; i < SAMP; i++) {
+      const x = i / (SAMP - 1);
+      const px = 20 + x * (W - 30);
+      const py = (H2 - 25) - yn[i] / newMax * (H2 - 40);
+      ctx.lineTo(px, py);
+    }
+    ctx.lineTo(W - 10, H2 - 25); ctx.closePath(); ctx.fill();
+
+    ctx.strokeStyle = '#26221C';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = 0; i < SAMP; i++) {
+      const x = i / (SAMP - 1);
+      const px = 20 + x * (W - 30);
+      const py = (H2 - 25) - yn[i] / newMax * (H2 - 40);
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+
+    /* posterior mean = a / (a + b) */
+    const mean = a / (a + b);
+    const meanPx = 20 + mean * (W - 30);
+    ctx.strokeStyle = '#C0492E';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 3]);
+    ctx.beginPath(); ctx.moveTo(meanPx, 5); ctx.lineTo(meanPx, H2 - 25); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#C0492E';
+    ctx.font = 'bold 11px "Spline Sans Mono", monospace';
+    ctx.fillText('μ = ' + mean.toFixed(3), meanPx + 5, 15);
+
+    document.getElementById('cH').textContent = H;
+    document.getElementById('cT').textContent = T;
+    document.getElementById('pM').textContent = mean.toFixed(3);
+  }
+
+  window.addEventListener('load', () => {
+    buildNav('11');
+    document.getElementById('addH').addEventListener('click', () => { H++; drawBayes(); });
+    document.getElementById('addT').addEventListener('click', () => { T++; drawBayes(); });
+    document.getElementById('reset').addEventListener('click', () => { H = 0; T = 0; drawBayes(); });
+    drawBayes();
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$', right:'$$', display:true}, {left:'$', right:'$', display:false}],
+        throwOnError: false,
+      });
+    }
+  });
+</script>
+</body>
+</html>

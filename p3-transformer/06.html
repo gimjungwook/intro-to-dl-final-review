@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>06 · Scaled Dot-Product Attention</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Chapter 06 · 논문의 핵심 한 줄</span>
+      <h1>Scaled Dot-Product Attention —<br><span class="t-style">softmax(QK<sup>⊤</sup>/√d_k)V</span> 를 한 줄씩</h1>
+      <p class="lede">이 한 줄이 Vaswani et al. 2017 논문의 심장이다. 한 번에 다 풀면 헷갈리니, 네 개의 작은 연산으로 쪼개서 각각 어떤 일이 일어나는지 차례로 본다.</p>
+    </header>
+
+    <div class="prose">
+      <p>먼저 식을 적어 두고 시작하자.</p>
+
+      <div class="math-block">$$ \text{Attention}(Q, K, V) \;=\; \text{softmax}\!\left(\frac{Q K^\top}{\sqrt{d_k}}\right) V $$</div>
+      <p class="math-note">$Q, K, V$ = 각각 $N \times d_k$ 행렬(앞 장에서 만든 그것). $\sqrt{d_k}$ = Key 차원의 제곱근(스케일 인자). $\text{softmax}$ = 행 단위로 적용되어 가중치 합이 1이 되게 한다.</p>
+
+      <p>이 한 줄을 네 단계로 나눠 보자.</p>
+
+      <p><strong>STEP 1.</strong> $Q K^\top$ — 점수표(score matrix) 만들기.<br>
+      <strong>STEP 2.</strong> $\div \sqrt{d_k}$ — 스케일링.<br>
+      <strong>STEP 3.</strong> $\text{softmax}(\cdot)$ — 가중치로 정규화.<br>
+      <strong>STEP 4.</strong> 그 가중치 행렬을 $V$에 곱해 가중 평균.</p>
+
+      <h2>STEP 1 — $Q K^\top$ 의 의미</h2>
+      <p>$Q$는 $N \times d_k$, $K$는 $N \times d_k$다. $K^\top$은 $K$를 전치(transpose, 행과 열을 뒤집음)한 $d_k \times N$ 행렬이다. 그러므로 $Q K^\top$은 $N \times N$ 행렬이다.</p>
+
+      <p>이 $N \times N$ 행렬의 한 원소 $(i, j)$ 위치는 무엇을 담고 있을까. 행렬 곱셈의 정의를 따라가 보면, $i$번째 행($Q$의 $i$번째 행 = 토큰 $i$의 Query 벡터 $q_i$)과 $j$번째 열($K^\top$의 $j$번째 열 = $K$의 $j$번째 행 = 토큰 $j$의 Key 벡터 $k_j$)의 내적이다.</p>
+
+      <div class="math-block">$$ (Q K^\top)_{ij} \;=\; q_i \cdot k_j \;=\; \sum_{d=1}^{d_k} (q_i)_d (k_j)_d $$</div>
+      <p class="math-note">$(q_i)_d$ = 토큰 $i$의 Query 벡터의 $d$번째 성분. 그 곱들의 합이 두 벡터의 내적.</p>
+
+      <p>의미를 풀어 보면, $(Q K^\top)_{ij}$는 <strong>"토큰 $i$의 Query가 토큰 $j$의 Key와 얼마나 잘 매칭되는가"</strong>의 점수다. 앞 장의 도서관 비유로 말하면, 책 $j$의 표지를 검색어 $i$로 들여다본 결과. 점수가 크다는 것은 두 벡터가 같은 방향을 가리킨다는 뜻이고, 매칭이 좋다는 뜻이다.</p>
+
+      <p>한 번의 행렬 곱셈으로 $N \times N$ 개의 모든 쌍이 동시에 계산된다는 점이 마법이다. 토큰이 100개면 10,000개의 점수가 GPU에서 한 클럭 안에 나온다. RNN이라면 길이만큼 직렬로 처리해야 할 일을 행렬 곱 한 번에 끝낸다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 05</span><span>Scaled Dot-Product 단계별 계산</span></div>
+        <div id="sd"></div>
+      </div>
+      <p class="widget-cap">실제 작은 예제 — 토큰 3개(고양이, 쥐, 치즈)와 d_k=4. Q는 "고양이"의 query 한 개. K와 V는 세 토큰의 것. 점수 → 스케일 → softmax → 가중합의 네 단계가 차례로 보인다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>STEP 2 — $\div \sqrt{d_k}$ 스케일링</h2>
+      <p>점수표 $QK^\top$을 그대로 softmax에 넣으면 한 가지 문제가 생긴다. <strong>$d_k$가 크면 내적의 결과가 매우 큰 값(또는 매우 작은 음수)이 되기 쉽다</strong>. 그 이유는 다음 장에서 자세히 풀지만, 직관적으로는 이렇다.</p>
+
+      <p>두 벡터의 내적은 $d_k$개의 곱셈을 모두 더한 값이다. 각 성분이 평균 0, 분산 1인 임의의 분포를 따른다면, 내적의 분산은 $d_k$다. 즉 $d_k$가 64라면 내적값의 표준편차가 8 정도가 된다. 그러면 어떤 값은 16, 24처럼 매우 크게 나오고, 그 큰 값이 softmax를 거치면 거의 확률 1로 쏠려 버린다. 한 토큰이 다른 한 토큰만 보고 나머지를 거의 무시하는 극단적 분포가 된다.</p>
+
+      <p>해결책은 단순하다. <strong>내적의 결과를 표준편차 정도로 나눠 주면 된다.</strong> 표준편차가 $\sqrt{d_k}$이므로, $QK^\top$ 전체를 $\sqrt{d_k}$로 나누면 결과의 표준편차가 다시 1 수준이 된다. softmax는 알맞은 부드러움의 분포를 만든다.</p>
+
+      <div class="math-block">$$ \frac{(Q K^\top)_{ij}}{\sqrt{d_k}} \;=\; \frac{q_i \cdot k_j}{\sqrt{d_k}} $$</div>
+      <p class="math-note">분모로 $\sqrt{d_k}$ 사용. $d_k = 64$면 분모는 8. 점수의 분산이 1 수준으로 줄어 softmax가 한 점에 쏠리지 않는다.</p>
+
+      <h2>STEP 3 — softmax로 행 단위 정규화</h2>
+      <p>스케일링된 점수표에 softmax를 적용한다. <strong>중요한 것은 softmax가 "행 단위"로 적용된다는 점이다.</strong> 한 행에는 토큰 $i$의 모든 점수가 들어 있다. 그 한 행 안에서 합이 1이 되도록 정규화한다.</p>
+
+      <div class="math-block">$$ A_{ij} \;=\; \frac{\exp\!\left( (Q K^\top)_{ij} / \sqrt{d_k} \right)}{\sum_{l=1}^{N} \exp\!\left( (Q K^\top)_{il} / \sqrt{d_k} \right)} $$</div>
+      <p class="math-note">$A_{ij}$ = 최종 attention 가중치. 분모는 $i$행의 모든 토큰에 대한 지수의 합. 따라서 $\sum_j A_{ij} = 1$.</p>
+
+      <p>결과 $A$는 $N \times N$의 가중치 행렬이다. 한 행은 토큰 $i$가 모든 토큰에 어떻게 주의를 나눠 주는지를 보여 주는 확률 분포다. 다른 행 사이에는 정규화가 없다. 행마다 따로 합이 1이다.</p>
+
+      <h2>STEP 4 — $A V$ 가중 평균</h2>
+      <p>이제 마지막 단계. 가중치 행렬 $A$를 Value 행렬 $V$에 곱한다.</p>
+
+      <div class="math-block">$$ \text{Attention}(Q, K, V) \;=\; A V $$</div>
+      <p class="math-note">$A$ = $N \times N$ 가중치, $V$ = $N \times d_v$ 값. 곱은 $N \times d_v$. 한 행이 한 토큰의 새 표현.</p>
+
+      <p>이 곱의 $i$번째 행을 풀어 쓰면 $\sum_{j} A_{ij} v_j$인데, 이는 정확히 "토큰 $j$의 Value 벡터를 가중치 $A_{ij}$로 더한 가중 평균"이다. 우리가 2장에서 직관적으로 정의했던 그 가중 평균이 마침내 행렬 식으로 압축되어 나타난다.</p>
+
+      <h2>전체 흐름을 한 번 더</h2>
+      <p>(1) $Q$와 $K^\top$을 곱해 $N \times N$의 점수표를 만들고, (2) $\sqrt{d_k}$로 나눠 분산을 안정시키고, (3) 행 단위 softmax로 합 1의 가중치를 만들고, (4) 그 가중치를 $V$에 곱해 가중 평균을 얻는다. 결과는 $N \times d_v$ 행렬이고, 한 행이 한 토큰의 새 표현이다.</p>
+
+      <div class="analogy">
+        <b>요리 비유 ─</b> $QK^\top/\sqrt{d_k}$는 양념을 만드는 단계. softmax는 양념의 균형을 잡아 끼얹는 단계. 마지막 $\cdot V$는 그 양념을 음식 위에 뿌리는 단계. 양념(가중치)은 미리 정해진 것이 아니라, 매번 음식(시퀀스)에 따라 새로 만들어진다.
+      </div>
+
+      <p>이 한 줄이 Transformer의 가장 작은 단위다. 다음 장에서는 그 안의 한 가지 — 왜 굳이 $\sqrt{d_k}$로 나눠야 하는가 — 를 더 깊게 들여다본다. 거기에 그래디언트 흐름과 학습 안정성의 이유가 숨어 있다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  window.addEventListener('load', () => {
+    TFR.buildNav('06');
+    const s = document.getElementById('sd');
+    TFR.onVisible(s, () => TFR.scaledDotStep(s));
+  });
+</script>
+<script src="assets/widgets.js"></script>
+</body>
+</html>

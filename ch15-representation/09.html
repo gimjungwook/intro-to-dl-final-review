@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>09 — 분산 표상 2 — Ch.15</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .arith-stage { padding: 1.4rem 1.2rem 1rem; }
+  .arith-canvas-wrap { border: 1px solid var(--line); border-radius: 10px; padding: 1rem; background: #fff; }
+  .arith-canvas-wrap canvas { display: block; width: 100%; height: 280px; border-radius: 6px; background: var(--paper); }
+  .arith-eq { font-family: var(--mono); font-size: 1rem; padding: 1rem 1.2rem; color: var(--ink); background: var(--paper-2); border-radius: 8px; margin-top: .9rem; line-height: 1.7; }
+  .arith-eq .word { padding: .15rem .5rem; border-radius: 5px; font-weight: 600; }
+  .arith-eq .w-king { background: rgba(45,91,122,.15); color: var(--structure); }
+  .arith-eq .w-man { background: rgba(142,133,118,.2); color: var(--ink-soft); }
+  .arith-eq .w-woman { background: rgba(217,142,115,.25); color: var(--style); }
+  .arith-eq .w-queen { background: rgba(164,123,46,.2); color: var(--synth); }
+  .arith-eq .op { color: var(--ink-faint); font-size: 1.1rem; margin: 0 .3rem; }
+  .arith-buttons { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: .9rem; }
+  .arith-buttons .btn { padding: .45rem .9rem; border-radius: 999px; font-family: var(--mono); font-size: .76rem; border: 1px solid var(--line); background: #fff; color: var(--ink-soft); cursor: pointer; transition: all .15s; }
+  .arith-buttons .btn:hover { border-color: var(--structure-lo); }
+  .arith-buttons .btn.on { background: var(--structure); color: #fff; border-color: var(--structure); }
+  .arith-verdict { padding: 1rem 1.2rem; border-top: 1px solid var(--line-soft); background: var(--paper); font-size: .9rem; color: var(--ink-soft); line-height: 1.55; min-height: 4rem; }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 09 — 합성성, 분산 표상의 두 번째 이득</span>
+      <h1>분산 표상 2 — <span class="t-synth">합성성</span>과 의미 산수</h1>
+      <p class="lede">$\text{king} - \text{man} + \text{woman} \approx \text{queen}$. 단어가 “의미의 산수”에 따라 더해지고 빼지는 이 현상은 단순한 트릭이 아니라 분산 표상의 합성성(compositionality)이 만들어 낸 자연스러운 결과다.</p>
+    </header>
+
+    <div class="prose">
+      <p>8절에서 분산 표상의 첫 번째 이득(지수적 자원 효율)을 봤다. 9절은 두 번째 이득 — <strong>합성성</strong>(compositionality)을 본다. 합성성이란 “전체의 의미가 부분의 의미들의 조합으로 결정된다”는 성질이다. 자연어에서 “빨간 사과”의 의미가 “빨간”의 의미와 “사과”의 의미의 조합인 것처럼, 좋은 표상에서는 복합 개념의 표상이 단순 개념의 표상의 산술 조합으로 만들어진다.</p>
+      <p>분산 표상이 합성성을 자연스럽게 가진다는 사실은 2013년 word2vec(Mikolov et al.)의 발표로 처음 극적으로 시연됐다. 이 한 줄 — “$\text{king} - \text{man} + \text{woman} \approx \text{queen}$” — 은 자연어 처리 역사상 가장 자주 인용되는 결과 중 하나이고, 분산 표상의 합성적 성질을 가장 직관적으로 보여 주는 시범이다.</p>
+
+      <h2>의미 산수가 작동하는 메커니즘</h2>
+      <p>이 산수가 어떻게 가능한지 풀어 보자. word2vec은 “문맥에서 자주 함께 나오는 단어들이 가까운 벡터를 갖도록” 학습한다. 그 결과로 학습된 단어 임베딩 공간은 어떤 차원이 “성별”에 대응하고, 어떤 차원이 “왕족 여부”에 대응한다 — 명시적으로 라벨이 부여된 것이 아니라, 그렇게 학습되는 것이 데이터 분포에 가장 잘 맞기 때문이다.</p>
+      <p>그러면 다음 등식이 성립한다. king의 임베딩은 대략 “왕족 +1, 남성 +1, 기타 …”이고, man의 임베딩은 “왕족 0, 남성 +1, 기타 …”이다. king - man은 “왕족 +1, 남성 0, 기타 …”의 “왕족스러움 방향 벡터”가 된다. 거기에 woman(“왕족 0, 여성 +1, 기타 …”)을 더하면 “왕족 +1, 여성 +1, 기타 …” = queen이 자연스럽게 나온다.</p>
+
+      <div class="math-block">$$ \vec{\text{king}} - \vec{\text{man}} + \vec{\text{woman}} \approx \vec{\text{queen}} $$</div>
+      <p class="math-note">$\vec{\,}$ 기호는 “벡터”를 의미. 각 단어는 임베딩 공간 안의 한 점. 산술은 벡터끼리의 덧셈·뺄셈.</p>
+
+      <p>중요한 점은 이 산술이 “왕족 차원”과 “성별 차원”이 임베딩 공간 안에서 거의 직교(orthogonal) 방향으로 분리되어 있을 때만 성립한다는 것이다. 두 차원이 강하게 얽혀 있으면 같은 산수는 무너진다. 합성성은 자동으로 따라오는 것이 아니라, “데이터의 진짜 의미 축이 표상의 좌표축으로 풀려 있다”는 강한 조건의 결과다.</p>
+
+      <h2>합성성과 일반화 — 본 적 없는 조합 다루기</h2>
+      <p>합성성이 중요한 이유는 “본 적 없는 조합”을 다룰 수 있게 해 주기 때문이다. 예를 들어 학습 데이터에 “보라색 코끼리”라는 표현이 한 번도 나오지 않았다고 하자. one-hot 표상에서는 이 표현이 새 카테고리이므로 모델은 아무 말도 할 수 없다. 그러나 분산 표상에서는 “보라색”과 “코끼리”의 임베딩이 각각 학습되어 있으므로, 둘을 합치는 것은 산술 한 번이면 된다.</p>
+      <p>이미지·음성·자연어·코드 모두에 같은 원리가 적용된다. GPT 같은 거대 언어 모델이 학습 데이터에서 본 적 없는 단어 조합·문장 패턴까지 다룰 수 있는 근본 이유가 합성성이다. 모델이 학습한 것은 무한한 조합의 카테고리가 아니라, 그 조합을 만들어 내는 유한한 의미 차원들이다.</p>
+
+      <div class="analogy">
+        <b>레고 블록.</b> 레고는 합성성의 완벽한 비유다. 50종류의 블록만 있어도 그 조합으로 수만 가지 구조물을 만들 수 있다. 사람은 “50종류의 블록”을 외우면 되지, “수만 가지 구조물”을 하나씩 외울 필요가 없다. 본 적 없는 새 구조물도 같은 블록의 조합으로 즉시 만들 수 있다. 분산 표상의 각 차원이 한 종류의 블록이고, 한 입력의 임베딩 벡터가 “이 블록을 얼마나 썼는지의 조합”이다.
+      </div>
+
+      <h2>합성성의 한계와 시연 위에 가려진 진실</h2>
+      <p>책과 후속 연구가 똑같이 강조하는 사항이 있다 — “king - man + woman = queen”은 임베딩의 “이상적 모습”이지, 모든 임베딩이 이렇게 깔끔한 의미 축을 가지는 것은 아니다. 실제 word2vec 결과에서도 이 등식이 정확히 성립하는 단어쌍은 일부에 국한된다. 다른 의미 관계(예: 동사 시제, 복수형, 비교급)는 더 깔끔하게 산술적이고, 어떤 관계(예: 추상 명사, 비유적 의미)는 거의 산술이 통하지 않는다.</p>
+      <p>합성성이 부분적으로만 성립한다는 사실은 “표상이 진짜 의미 축으로 풀려 있는지”의 척도가 된다. 11절에서 다룰 “인과 요소 풀기(disentanglement)”의 평가 지표 중 하나가 정확히 이것이다. 합성 산술이 잘 통하는 표상일수록 인과 요소가 잘 풀려 있다고 본다. 분산 표상의 두 가지 이득 — 지수적 자원 효율(8절)과 합성성(9절) — 은 결국 같은 동전의 양면이고, 둘 다 “진짜 의미 차원이 좌표축으로 풀려 있음”에 의존한다.</p>
+
+      <div class="widget">
+        <div class="widget-frame">
+          <div class="widget-label"><span class="lab-no">위젯 09</span><span>의미 산수 임베딩 — 벡터를 더하고 빼면 의미가 따라온다</span></div>
+          <div class="arith-stage">
+            <div class="arith-canvas-wrap">
+              <canvas id="arith-c" width="640" height="280"></canvas>
+            </div>
+            <div class="arith-eq" id="arith-eq">
+              <span class="word w-king">king</span><span class="op">−</span><span class="word w-man">man</span><span class="op">+</span><span class="word w-woman">woman</span><span class="op">≈</span><span class="word w-queen">queen</span>
+            </div>
+            <div class="arith-buttons">
+              <button class="btn on" data-eq="0">king − man + woman</button>
+              <button class="btn" data-eq="1">Paris − France + Italy</button>
+              <button class="btn" data-eq="2">walking − walk + swim</button>
+              <button class="btn" data-eq="3">good − bad + slow</button>
+            </div>
+          </div>
+          <div class="arith-verdict" id="arith-v">
+            <b>king − man + woman ≈ queen.</b> 단어 임베딩 공간에서 “왕족” 축과 “성별” 축이 거의 직교로 풀려 있다는 증거. king에서 “남성” 방향을 빼고 “여성” 방향을 더하면 자연스럽게 queen에 가까운 점이 나온다.
+          </div>
+        </div>
+        <p class="widget-cap">버튼을 눌러 다른 의미 관계를 확인하자. 국가-수도(Paris/France · Rome/Italy), 동사 시제(walk/walking · swim/swimming), 형용사 대비(good/bad · fast/slow). 모든 관계가 같은 임베딩 공간에서 다른 “방향 벡터”로 코딩된다.</p>
+      </div>
+
+      <h2>위 “word2vec 너머” — 합성성의 일반화</h2>
+      <p>word2vec 이후 합성성 시연은 더 풍부한 형태로 확장됐다. 이미지 임베딩(Conv 마지막 층)에서는 “미소 + 안경 + 남자 - 미소 = 안경 쓴 남자”가 비슷한 방식으로 작동하는 사례가 보고됐다. CLIP의 시각-언어 합동 임베딩에서는 “강아지 사진 + ‘하늘에 떠 있는’ 텍스트 방향 = 강아지가 하늘에 떠 있는 이미지의 합리적 임베딩”이 가능하다. 같은 합성성 원리가 도메인을 가로질러 작동한다는 점이 책의 핵심 주장과 맞닿아 있다.</p>
+      <p>이 모든 시연 뒤에는 한 가지 공통된 가정이 있다 — “의미 차원이 좌표축으로 풀려 있다.” 이것이 풀리지 않으면 합성 산술은 무너진다. 그래서 책의 후반부(11절)는 “어떻게 하면 모델이 자동으로 풀린 표상을 학습하게 만들 수 있는가”라는 큰 문제로 넘어간다.</p>
+
+      <h2>핵심 어휘 정리</h2>
+      <table class="symbols">
+        <tr><td>합성성 (compositionality)</td><td>전체의 의미가 부분 의미들의 조합으로 결정되는 성질.</td></tr>
+        <tr><td>의미 산수 (semantic arithmetic)</td><td>임베딩 벡터의 덧셈·뺄셈이 의미 관계를 보존하는 현상. king−man+woman≈queen.</td></tr>
+        <tr><td>임베딩 공간 (embedding space)</td><td>단어·이미지를 점으로 매핑한 저차원 분산 표상 공간.</td></tr>
+        <tr><td>방향 벡터 (direction vector)</td><td>두 단어 사이의 차이 벡터. “성별 방향”, “시제 방향” 등.</td></tr>
+        <tr><td>직교 분리 (orthogonal separation)</td><td>서로 다른 의미 축이 표상 공간에서 거의 직교 방향에 놓여 있는 상태.</td></tr>
+      </table>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'좋은 표상이란', f:'01.html' },
+    { no:'02', t:'그리디 층별 사전훈련', f:'02.html' },
+    { no:'03', t:'비지도 사전훈련', f:'03.html' },
+    { no:'04', t:'지도 사전훈련', f:'04.html' },
+    { no:'05', t:'전이학습 1 — 도메인이 돕는 원리', f:'05.html' },
+    { no:'06', t:'전이학습 2 — 미세조정 실전', f:'06.html' },
+    { no:'07', t:'도메인 적응', f:'07.html' },
+    { no:'08', t:'분산 표상 1 — 지수적 이득', f:'08.html' },
+    { no:'09', t:'분산 표상 2 — 합성성·의미 산수', f:'09.html' },
+    { no:'10', t:'깊이의 지수적 표현력', f:'10.html' },
+    { no:'11', t:'인과 요소', f:'11.html' },
+    { no:'12', t:'반지도 학습', f:'12.html' },
+    { no:'13', t:'사전으로서의 정칙화', f:'13.html' },
+    { no:'14', t:'시험 대비', f:'14.html' },
+  ];
+  const CURRENT = '09';
+  (function buildNav() {
+    document.querySelector('.topbar').innerHTML =
+      `<a class="home" href="index.html">← Chapter 15 — 표상 학습</a>` +
+      `<span class="ch-mini">SUB ${CURRENT} / 14</span>`;
+    document.querySelector('.ch-nav ol').innerHTML = SUBS.map(s =>
+      `<li><a href="${s.f}" ${s.no === CURRENT ? 'class="current"' : ''}>${s.t}</a></li>`).join('');
+    const i = SUBS.findIndex(s => s.no === CURRENT);
+    const prev = i > 0 ? SUBS[i-1] : { f:'index.html', t:'챕터 표지', no:'' };
+    const next = i < SUBS.length-1 ? SUBS[i+1] : { f:'index.html', t:'챕터 표지', no:'' };
+    document.querySelector('.ch-foot').innerHTML =
+      `<a href="${prev.f}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+      `<a href="${next.f}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+    const bar = document.querySelector('.scroll-progress');
+    const onScroll = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    document.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+  })();
+
+  (function arithWidget() {
+    const css = getComputedStyle(document.documentElement);
+    const STRUCT = css.getPropertyValue('--structure').trim();
+    const STYLE = css.getPropertyValue('--style').trim();
+    const SYNTH = css.getPropertyValue('--synth').trim();
+    const FAINT = css.getPropertyValue('--ink-faint').trim();
+    const INK = css.getPropertyValue('--ink').trim();
+    const SOFT = css.getPropertyValue('--ink-soft').trim();
+
+    const equations = [
+      {
+        a: { name: 'king', x: 480, y: 70 },
+        b: { name: 'man', x: 480, y: 200 },
+        c: { name: 'woman', x: 180, y: 200 },
+        target: { name: 'queen', x: 180, y: 70 },
+        verdict: '<b>king − man + woman ≈ queen.</b> 임베딩 공간에서 “왕족” 축과 “성별” 축이 거의 직교로 풀려 있다는 증거. king에서 “남성” 방향을 빼고 “여성” 방향을 더하면 자연스럽게 queen에 가까운 점이 나온다.',
+        eq: `<span class="word w-king">king</span><span class="op">−</span><span class="word w-man">man</span><span class="op">+</span><span class="word w-woman">woman</span><span class="op">≈</span><span class="word w-queen">queen</span>`,
+      },
+      {
+        a: { name: 'Paris', x: 480, y: 70 },
+        b: { name: 'France', x: 480, y: 200 },
+        c: { name: 'Italy', x: 180, y: 200 },
+        target: { name: 'Rome', x: 180, y: 70 },
+        verdict: '<b>Paris − France + Italy ≈ Rome.</b> “수도” 차원과 “국가” 차원이 임베딩 공간에서 분리되어 있어, 한 국가의 수도를 다른 국가의 수도로 “옮기는” 산술이 통한다.',
+        eq: `<span class="word w-king">Paris</span><span class="op">−</span><span class="word w-man">France</span><span class="op">+</span><span class="word w-woman">Italy</span><span class="op">≈</span><span class="word w-queen">Rome</span>`,
+      },
+      {
+        a: { name: 'walking', x: 480, y: 70 },
+        b: { name: 'walk', x: 480, y: 200 },
+        c: { name: 'swim', x: 180, y: 200 },
+        target: { name: 'swimming', x: 180, y: 70 },
+        verdict: '<b>walking − walk + swim ≈ swimming.</b> 동사 활용형의 “-ing 방향”이 모든 동사에 같은 벡터로 적용된다. 합성성이 문법 형태소 수준에서도 작동.',
+        eq: `<span class="word w-king">walking</span><span class="op">−</span><span class="word w-man">walk</span><span class="op">+</span><span class="word w-woman">swim</span><span class="op">≈</span><span class="word w-queen">swimming</span>`,
+      },
+      {
+        a: { name: 'good', x: 480, y: 70 },
+        b: { name: 'bad', x: 480, y: 200 },
+        c: { name: 'slow', x: 180, y: 200 },
+        target: { name: 'fast', x: 180, y: 70 },
+        verdict: '<b>good − bad + slow ≈ fast.</b> “긍정/부정” 축이 풀려 있어, 같은 방향 벡터가 형용사 대비쌍 사이에서도 통한다. 산술이 통하지 않는 형용사쌍도 많다는 점은 합성성의 한계.',
+        eq: `<span class="word w-king">good</span><span class="op">−</span><span class="word w-man">bad</span><span class="op">+</span><span class="word w-woman">slow</span><span class="op">≈</span><span class="word w-queen">fast</span>`,
+      },
+    ];
+
+    const canvas = document.getElementById('arith-c');
+    const ctx = canvas.getContext('2d');
+    const eqEl = document.getElementById('arith-eq');
+    const verdictEl = document.getElementById('arith-v');
+    let current = 0;
+
+    function drawArrow(x1, y1, x2, y2, color, dashed) {
+      ctx.strokeStyle = color; ctx.lineWidth = 1.6;
+      if (dashed) ctx.setLineDash([4, 3]); else ctx.setLineDash([]);
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+      ctx.setLineDash([]);
+      // arrowhead
+      const ang = Math.atan2(y2 - y1, x2 - x1);
+      ctx.beginPath();
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - 8 * Math.cos(ang - 0.4), y2 - 8 * Math.sin(ang - 0.4));
+      ctx.lineTo(x2 - 8 * Math.cos(ang + 0.4), y2 - 8 * Math.sin(ang + 0.4));
+      ctx.closePath();
+      ctx.fillStyle = color; ctx.fill();
+    }
+
+    function drawDot(x, y, name, color) {
+      ctx.fillStyle = color;
+      ctx.beginPath(); ctx.arc(x, y, 6, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = INK; ctx.font = '13px monospace';
+      ctx.fillText(name, x + 12, y + 4);
+    }
+
+    function render(idx) {
+      const W = canvas.width = canvas.clientWidth * 2;
+      const H = canvas.height = 560;
+      ctx.scale(2, 2);
+      const e = equations[idx];
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W / 2, H / 2);
+      // axes faint
+      ctx.strokeStyle = FAINT; ctx.lineWidth = 0.5; ctx.setLineDash([2, 4]);
+      ctx.beginPath(); ctx.moveTo(0, 135); ctx.lineTo(W / 2, 135); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(330, 0); ctx.lineTo(330, H / 2); ctx.stroke();
+      ctx.setLineDash([]);
+      // axis labels
+      ctx.fillStyle = FAINT; ctx.font = '10px monospace';
+      ctx.fillText('축 1 (예: 성별 / 국가)', 12, 16);
+      ctx.fillText('축 2 (예: 왕족 / 수도)', W / 2 - 130, H / 2 - 8);
+
+      // arrow b -> a (subtract a-b direction)
+      drawArrow(e.b.x, e.b.y, e.a.x, e.a.y, STRUCT, false);
+      // arrow c -> target (same direction)
+      drawArrow(e.c.x, e.c.y, e.target.x, e.target.y, SYNTH, true);
+      // labels for direction vectors
+      ctx.fillStyle = SOFT; ctx.font = 'italic 11px monospace';
+      ctx.fillText('방향 = ' + e.a.name + ' − ' + e.b.name, e.a.x - 20, (e.a.y + e.b.y) / 2 - 10);
+      ctx.fillText('같은 방향', (e.c.x + e.target.x) / 2 - 35, (e.c.y + e.target.y) / 2 - 8);
+
+      drawDot(e.a.x, e.a.y, e.a.name, STRUCT);
+      drawDot(e.b.x, e.b.y, e.b.name, FAINT);
+      drawDot(e.c.x, e.c.y, e.c.name, STYLE);
+      drawDot(e.target.x, e.target.y, e.target.name, SYNTH);
+
+      eqEl.innerHTML = e.eq;
+      verdictEl.innerHTML = e.verdict;
+    }
+
+    render(0);
+    document.querySelectorAll('.arith-buttons .btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.arith-buttons .btn').forEach(b => b.classList.remove('on'));
+        btn.classList.add('on');
+        current = parseInt(btn.dataset.eq, 10);
+        render(current);
+      });
+    });
+    window.addEventListener('resize', () => render(current));
+  })();
+
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
+        throwOnError: false,
+      });
+    }
+  });
+</script>
+</body>
+</html>

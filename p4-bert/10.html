@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>10 · 미세조정 2 — 토큰 단위 (NER, 품사 태깅)</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="assets/bert.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Chapter 10 · 미세조정 2 — 토큰 단위</span>
+      <h1>한 자리가 아니라<br><span class="t-bidir">모든 자리</span>에 라벨을 매기는 일</h1>
+      <p class="lede">분류는 한 문장에 한 라벨이 붙는 작업이었다. 그러나 자연어 처리의 또 다른 큰 분류 — 토큰 단위 (token-level) 작업 — 은 다르다. 한 문장의 모든 단어마다 따로 라벨이 필요하다. 개체명 인식 (named entity recognition, NER) 과 품사 태깅 (part-of-speech tagging) 이 대표적이다. 이 장은 BERT 가 이런 토큰 단위 작업을 어떻게 다루는지, 그리고 WordPiece 토큰화가 만들어 내는 부수적 문제를 어떻게 해결하는지 본다.</p>
+    </header>
+
+    <div class="prose">
+      <h2>1. 토큰 단위 작업이라는 것</h2>
+      <p>먼저 입력과 출력의 모양을 다시 본다. 분류에서는 입력이 한 문장, 출력이 한 라벨이었다. 토큰 단위 작업에서는 입력이 한 문장, 출력이 토큰 수만큼의 라벨 벡터다. 즉 한 입력에 라벨이 여러 개 붙는다.</p>
+
+      <div class="def-box bidir-side">
+        <div class="deft">대표 작업 두 가지</div>
+        <p><b>NER (개체명 인식)</b> — 문장 안의 사람·장소·기관 등 고유명을 찾아 그 종류를 표시한다. 입력 "Steve Jobs founded Apple in California ." 의 출력은 [B-PER, I-PER, O, B-ORG, O, B-LOC, O] 같은 토큰별 라벨 벡터.<br><br><b>POS 태깅 (품사 태깅)</b> — 문장 안의 모든 단어에 명사·동사·형용사 등의 품사를 매긴다. 입력 "The cat sleeps ." 의 출력은 [DT, NN, VBZ, .] 같은 토큰별 품사 벡터.</p>
+      </div>
+
+      <p>두 작업 모두 라벨 종류 (태그 집합) 가 작업마다 다르다. NER 의 흔한 영어 데이터셋인 CoNLL-2003 은 4 종 (사람·장소·기관·기타) 에 BIO 접두사가 붙어 9 종, POS 태깅의 표준 영어 태그 집합인 Penn Treebank 는 45 종이다.</p>
+
+      <h2>2. 인코더 출력의 모든 자리를 쓴다</h2>
+      <p>분류에서는 [CLS] 자리 한 벡터만 떼어 썼다. 토큰 단위 작업에서는 인코더 마지막 층의 모든 자리 출력 행렬 $H_L \in \mathbb{R}^{T \times d}$ 를 그대로 쓴다. 그 위에 분류기 하나를 얹는데, 그 분류기는 자리마다 따로 작동한다. 즉 각 자리의 $d$ 차원 벡터를 받아 그 자리의 라벨 분포를 출력하는 같은 가중치의 선형층 한 층이다.</p>
+
+      <div class="math-block">$$ \text{logits}_t \;=\; H_L[t] \, W^\top + b, \quad t = 1, 2, \ldots, T $$</div>
+      <p class="math-note">$H_L[t]$ 는 인코더 마지막 층의 $t$ 번째 토큰 벡터. $W \in \mathbb{R}^{K \times d}$ 와 $b \in \mathbb{R}^K$ 는 모든 자리에서 같은 가중치 — 즉 self-attention 처럼 위치별로 별도의 가중치를 두는 게 아니라, 한 분류기를 모든 자리에 똑같이 적용한다.</p>
+
+      <p>이는 분류 미세조정과 거의 같은 절차의 자연스러운 확장이다. 분류에서는 한 자리 ([CLS]) 에서 K 클래스 분류를, 토큰 단위 작업에서는 모든 자리에서 K 클래스 분류를 한다. 학습되는 새 파라미터의 양은 분류와 거의 동일 — 같은 모양의 $W, b$ 한 쌍.</p>
+
+      <h2>3. 손실 — 모든 자리의 평균</h2>
+      <p>손실 함수도 단순하다. 각 자리에서 교차 엔트로피를 계산하고, 입력 토큰들에 대해 평균낸다.</p>
+      <div class="math-block">$$ \mathcal{L}_{\text{tok}} \;=\; \frac{1}{T} \sum_{t=1}^{T} \bigl(-\log P(y_t^{\text{true}} \mid x)\bigr) $$</div>
+      <p class="math-note">$y_t^{\text{true}}$ 는 $t$ 번째 토큰의 정답 라벨. 평균은 한 문장 안의 토큰 수 $T$ 에 대한 평균이고, 배치 평균은 그 위에서 또 한 번. 실제 구현에서는 패딩 자리는 마스킹해 빼고, 평균의 분모도 실제 토큰 수만 쓴다.</p>
+
+      <p>한 가지 주목할 점은 MLM 손실과 모양이 매우 비슷하다는 사실이다. MLM 도 모든 자리에서 어휘 분포를 만들고 손실을 계산했다 (다만 가린 자리에서만). 토큰 단위 미세조정은 그 절차를 한 번 더 빌려, 어휘 대신 K 클래스 라벨로 분류한다. 사전훈련의 절차와 미세조정의 절차가 거의 같은 모양이라는 점은 BERT 설계의 우아함이다.</p>
+
+      <h2>4. 한 가지 미묘한 문제 — WordPiece 와 단어 경계</h2>
+      <p>그러나 한 가지 미묘한 문제가 있다. NER 의 라벨은 단어 (word) 단위로 매겨져 있다. 그런데 BERT 의 입력은 WordPiece 토큰화로 단어를 더 잘게 쪼개 놓은 상태다. 예를 들어 단어 "Washington" 은 WordPiece 에서 그대로 하나의 토큰일 수 있지만, "DC-based" 같은 단어는 "DC", "-", "based" 의 세 토큰으로 쪼개진다. 또 "playing" 은 "play", "##ing" 의 두 토큰으로 (## 은 단어 안의 이어지는 조각이라는 표시).</p>
+
+      <div class="analogy">
+        한 문장의 단어 5 개에 각각 라벨이 매겨져 있는데, BERT 가 그 문장을 12 토큰으로 잘게 쪼개 놓은 상황이다. "이 12 개 토큰 위에 라벨 분포를 학습시키려면 5 개 단어의 라벨을 어떻게 12 개로 펼쳐야 하는가?" 가 우리가 풀어야 할 문제다.
+      </div>
+
+      <p>BERT 논문은 매우 단순한 규칙으로 답한다. <strong>한 단어의 라벨을 그 단어의 첫 번째 WordPiece 토큰에만 매기고, 두 번째 이후의 토큰은 학습과 평가에서 모두 무시한다.</strong> 즉 "playing" 의 라벨이 VBG 였다면 "play" 토큰은 VBG, "##ing" 토큰은 무시 (라벨 X 또는 마스크) 한다.</p>
+
+      <p>왜 이렇게 단순한 규칙으로 충분한가? 양방향 어텐션 덕분에 한 단어의 첫 번째 토큰은 그 단어의 모든 조각과 주변 문맥을 모두 볼 수 있다. 즉 첫 번째 토큰 한 자리에 라벨을 매기면 그 자리에서 단어 전체의 의미를 끌어모은 표현이 형성된다. 학습 후 추론 시에도 같은 규칙을 적용해, 한 단어 한 라벨로 깔끔하게 매핑된다.</p>
+
+      <h2>5. BIO 태깅 — 다중 토큰 개체명을 표현하는 표준</h2>
+      <p>NER 에는 또 하나의 미묘함이 있다. 한 개체명이 여러 단어로 이루어질 수 있다. 예를 들어 "New York City" 는 한 개의 장소 (LOC) 이지만 단어가 셋이다. 라벨을 단순히 [LOC, LOC, LOC] 로 매기면 "New York" (두 단어 LOC) 와 "New York City" (세 단어 LOC) 를 구별할 수 없다.</p>
+
+      <p>이 문제를 풀기 위한 표준이 BIO 태깅 (B = Begin, I = Inside, O = Outside) 이다. 한 개체의 첫 번째 단어에는 B- 접두사 (Beginning), 그 다음 단어들에는 I- 접두사 (Inside), 개체가 아닌 단어들에는 O (Outside) 를 매긴다. 예를 들어 "Steve Jobs founded Apple in New York City ." 는 다음과 같이 라벨링된다.</p>
+
+      <div class="math-block">$$ \text{Steve} \;\to\; \text{B-PER}, \quad \text{Jobs} \;\to\; \text{I-PER}, \quad \text{founded} \;\to\; \text{O}, $$ $$ \text{Apple} \;\to\; \text{B-ORG}, \quad \text{in} \;\to\; \text{O}, \quad \text{New} \;\to\; \text{B-LOC}, $$ $$ \text{York} \;\to\; \text{I-LOC}, \quad \text{City} \;\to\; \text{I-LOC}, \quad . \;\to\; \text{O} $$</div>
+      <p class="math-note">개체별 종류 (PER, ORG, LOC, MISC) 4 종에 각각 B-/I- 두 접두사가 붙어 8 종, 거기에 O 한 종을 더해 총 9 종의 태그 집합이 된다. 분류기 출력 차원 $K = 9$.</p>
+
+      <p>BIO 태깅은 BERT 가 도입한 것이 아니다. NER 분야의 오래된 표준이며, BERT 는 이 표준을 그대로 받아들여 사용한다. BIO 라벨로 학습된 분류기의 출력을 사후 처리하면 다중 단어 개체명도 정확히 추출된다.</p>
+
+      <h2>6. NER 의 BERT 성과</h2>
+      <p>BERT 는 CoNLL-2003 NER 에서 F1 점수 92.4 (BASE) / 92.8 (LARGE) 를 기록했다. 종전 SOTA 였던 CVT (Cross-View Training) 의 92.6 과 거의 동률이지만, CVT 가 NER 에 특화된 복잡한 구조였던 데 비해 BERT 는 단순히 사전훈련된 인코더 위에 한 층의 선형 분류기만 얹은 결과다. 이 단순성과 SOTA 의 결합이 사전훈련의 위력을 가장 잘 보여 준 결과 중 하나였다.</p>
+
+      <p>이후 BERT 미세조정 가이드에서는 NER 에 CRF (Conditional Random Field) 한 층을 더 얹어 라벨 간 의존성을 모델링하는 변형이 자주 쓰였다. 예를 들어 B-PER 다음에 I-LOC 가 오는 것은 문법적으로 잘못된 라벨 시퀀스다. CRF 는 이런 라벨 시퀀스의 전이 확률을 함께 학습해 일관된 라벨 시퀀스를 만들어 낸다. BERT 자체는 라벨 간 독립을 가정하므로 이런 일관성 제약을 직접 모델링하지 않지만, CRF 한 층 추가로 약간의 추가 성능을 얻을 수 있다.</p>
+
+      <h2>7. 한 줄 정리 와 다음</h2>
+      <div class="def-box synth-side">
+        <div class="deft">한 줄 정리</div>
+        <p>토큰 단위 작업은 인코더 마지막 층의 모든 자리 벡터에 같은 한 층 분류기를 얹어, 모든 자리에서 라벨을 매긴다. WordPiece 가 단어를 쪼갠 경우 한 단어의 첫 번째 토큰에만 라벨을 매기고 나머지는 무시한다. NER 같은 다중 단어 개체명은 BIO 태깅이라는 표준으로 표현한다.</p>
+      </div>
+
+      <p>다음 장은 가장 복잡한 종류의 미세조정 — 두 문장이 한 입력에 함께 들어가는 작업 — 으로 넘어간다. 자연어 추론 (NLI), 패러프레이즈 판단, 그리고 가장 흥미로운 질의응답 (SQuAD) 까지. 두 문장 사이의 관계를 분류하거나, 한 문장 안에서 정답 구간을 찾아 표시하는 일이다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script src="assets/bert.js"></script>
+<script>
+  window.addEventListener('load', () => {
+    BERT.buildNav('10');
+  });
+</script>
+</body>
+</html>
+</content>
+</invoke>

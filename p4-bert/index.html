@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BERT — 양방향 사전훈련의 인터랙티브 해설</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="assets/bert.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .masthead { position: relative; max-width: var(--wide); margin: 0 auto; padding: 1.5rem 1.4rem 0; }
+  .hero-wrap { position: relative; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: linear-gradient(180deg,#fff,var(--paper-2)); box-shadow: var(--shadow-plate); }
+  #hero { display: block; width: 100%; }
+  .hero-cap { position: absolute; left: 1.2rem; bottom: 1rem; font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; color: var(--ink-faint); pointer-events: none; }
+  .hero-cap b { color: var(--bidir); } .hero-cap em { color: var(--mask); font-style: normal; }
+  .title-block { max-width: var(--wide); margin: 2.4rem auto 0; padding-inline: 1.4rem; }
+  .title-block .kicker { display: block; margin-bottom: 1rem; }
+  .title-block h1 { font-size: clamp(2.4rem, 6.5vw, 4.6rem); margin: 0; }
+  .title-block h1 em { color: var(--mask); font-style: italic; }
+  .paper-meta { display: flex; flex-wrap: wrap; gap: .5rem 1.6rem; margin-top: 1.4rem; font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); letter-spacing: .02em; }
+  .paper-meta span b { color: var(--ink); font-weight: 500; }
+
+  .plates { max-width: var(--wide); margin: 1rem auto; padding: 2rem 1.4rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); gap: 1rem; }
+  .plate { position: relative; display: flex; flex-direction: column; text-decoration: none; color: inherit; background: #fff; border: 1px solid var(--line); border-radius: 13px; padding: 1.3rem 1.3rem 1.4rem; transition: transform .2s var(--ease), border-color .2s, box-shadow .2s; overflow: hidden; }
+  .plate:hover { transform: translateY(-4px); border-color: var(--bidir-lo); box-shadow: var(--shadow-plate); }
+  .plate .pno { font-family: var(--mono); font-size: .74rem; letter-spacing: .14em; color: var(--ink-faint); }
+  .plate h3 { font-family: var(--serif); font-size: 1.28rem; margin: .5rem 0 .5rem; line-height: 1.25; }
+  .plate p { font-size: .9rem; color: var(--ink-soft); line-height: 1.55; margin: 0; }
+  .plate .spectrum { display: flex; height: 4px; border-radius: 2px; overflow: hidden; margin-bottom: 1rem; }
+  .plate .spectrum i { display: block; height: 100%; }
+  .plate .go { margin-top: 1rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; color: var(--bidir); opacity: 0; transform: translateX(-4px); transition: .2s var(--ease); }
+  .plate:hover .go { opacity: 1; transform: translateX(0); }
+
+  .section-intro { max-width: var(--measure); margin: 1rem auto 0; padding-inline: 1.4rem; }
+  .section-intro h2 { margin-top: 1rem; }
+  .twopole { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; max-width: var(--measure); margin: 1.6rem auto; padding-inline: 1.4rem; }
+  .pole { padding: 1.1rem 1.2rem; border-radius: 11px; }
+  .pole.s1 { background: var(--bidir-bg); } .pole.s2 { background: var(--mask-bg); }
+  .pole h4 { margin: 0 0 .4rem; font-family: var(--serif); font-size: 1.1rem; }
+  .pole.s1 h4 { color: var(--bidir); } .pole.s2 h4 { color: var(--mask); }
+  .pole p { margin: 0; font-size: .9rem; color: var(--ink-soft); line-height: 1.5; }
+  @media (max-width: 560px){ .twopole{ grid-template-columns: 1fr; } }
+
+  .path { max-width: var(--wide); margin: 2rem auto; padding: 1.6rem 1.4rem; }
+  .path-flow { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; font-family: var(--mono); font-size: .8rem; }
+  .path-flow a { display: inline-flex; align-items: center; gap: .4rem; text-decoration: none; color: var(--ink-soft); padding: .4rem .7rem; border: 1px solid var(--line); border-radius: 20px; transition: .15s; }
+  .path-flow a:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .path-flow a b { color: var(--mask); } .path-flow a:hover b { color: var(--mask-lo); }
+  .path-flow .arr { color: var(--ink-faint); }
+
+  footer.colophon { max-width: var(--measure); margin: 3rem auto 4rem; padding: 2rem 1.4rem 0; border-top: 1px solid var(--line); font-size: .85rem; color: var(--ink-soft); }
+  footer.colophon a { color: var(--bidir); }
+  footer.colophon .src { font-family: var(--mono); font-size: .76rem; line-height: 1.8; }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="hero-wrap">
+    <canvas id="hero"></canvas>
+    <div class="hero-cap"><b>양방향 — 좌우 모두에서 문맥 수집</b> ↔ <em>마스킹 — 일부 단어를 가려 추측 강제</em> · 마우스를 올려보세요</div>
+  </div>
+</header>
+
+<div class="title-block">
+  <span class="kicker">BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding · Devlin, Chang, Lee, Toutanova · 2019</span>
+  <h1>한쪽 방향이 아니라<br><em>양쪽 방향</em>으로 읽는 언어 모델</h1>
+  <div class="paper-meta">
+    <span><b>딥러닝 개론</b> P4 논문 해설</span>
+    <span>정리 <b>김정욱</b></span>
+    <span>arXiv <b>1810.04805</b></span>
+    <span>읽는 시간 <b>약 60분</b></span>
+  </div>
+</div>
+
+<section class="section-intro">
+  <h2>한 문장으로</h2>
+  <p>이 논문은 <strong>“하나의 거대한 트랜스포머 인코더(Transformer Encoder)를, 양쪽 문맥을 동시에 보면서, 빈칸 채우기와 다음 문장 맞히기라는 두 가지 가짜 시험으로 미리 훈련시켜 놓으면, 그 모델 한 덩어리만 살짝 손봐도 11개의 자연어 처리 과제에서 종전 최고 기록을 깰 수 있다”</strong>는 사실을 보여 준 연구다.</p>
+  <p>처음 읽을 때 가장 중요한 점은, 이 논문이 <em>“새로운 트랜스포머 구조”</em>를 제안하는 논문이 <strong>아니라는</strong> 것이다. 구조는 P3에서 본 트랜스포머의 인코더(Transformer Encoder) 그대로다. 새로운 것은 <span class="t-bidir">읽는 방식</span>과 <span class="t-mask">훈련 시키는 방식</span>이다. 즉 “모델을 어떻게 만들 것인가”가 아니라 “모델을 어떻게 학습시킬 것인가”에 대한 논문이다.</p>
+</section>
+
+<div class="twopole">
+  <div class="pole s1"><h4>양방향성 (Bidirectional)</h4><p>모든 단어가 자신의 왼쪽과 오른쪽 문맥을 동시에 본다. 깊은 층일수록 문맥이 더 풍부하게 섞인다. 이 사이트에서 <b>차가운 청록</b>으로 표시된다.</p></div>
+  <div class="pole s2"><h4>마스킹 (Masking)</h4><p>일부 단어를 [MASK]로 가린 뒤 원래 단어를 맞히게 한다. 이 자가지도(self-supervision) 신호가 양방향성을 가능하게 만든다. 이 사이트에서 <b>따뜻한 자홍</b>으로 표시된다.</p></div>
+</div>
+
+<section class="plates" id="plates"></section>
+
+<section class="path">
+  <span class="kicker">권장 읽기 순서</span>
+  <div class="path-flow" id="pathflow"></div>
+</section>
+
+<footer class="colophon">
+  <p>이 해설은 Devlin 외(2019)의 BERT 원문을 바텀업으로 다시 쓴 것이다. 단방향 언어 모델의 한계에서 출발해, 마스킹·다음 문장 예측·미세조정까지 단계별로 쌓아 올린다. 모든 수식은 “왜 그 형태인가”를 함께 설명한다.</p>
+  <p class="src">
+    원문 · <a href="https://arxiv.org/abs/1810.04805">arXiv:1810.04805</a><br>
+    Deep Learning Book Chapter 15 (representation learning) 참고<br>
+    선행 지식 · <a href="../p3-transformer/index.html">P3 Transformer 해설</a> (있는 경우)
+  </p>
+</footer>
+
+<script>
+  const CHAPTERS = [
+    { no:'01', t:'BERT 이전의 자연어 처리 — 단방향성의 천장', d:'좌→우만 보는 언어 모델이 왜 천장을 만났는가. ELMo의 두 방향 모델 이어 붙이기가 왜 진짜 양방향이 아닌지.', sp:['ink-soft'] },
+    { no:'02', t:'양방향 사전훈련의 발상 — 왜 한쪽으로는 부족한가', d:'문장 빈칸 채우기 비유. 양쪽을 보는 것이 왜 단순히 정보 두 배가 아니라 질적 도약인지.', sp:['bidir'] },
+    { no:'03', t:'BERT의 구조 — Transformer Encoder만 쌓는다', d:'P3 트랜스포머 복습. 디코더 없이 인코더만 12층(BASE) 또는 24층(LARGE) 쌓은 모델. 파라미터·헤드 수까지.', sp:['bidir','bidir-lo'] },
+    { no:'04', t:'입력 표현 — 토큰·세그먼트·위치 세 임베딩의 합', d:'WordPiece 토큰화부터 시작. 단어 임베딩 + 문장 구분 임베딩 + 위치 임베딩을 더해 한 벡터를 만든다.', sp:['bidir','synth'] },
+    { no:'05', t:'특수 토큰 — [CLS]·[SEP]·[MASK]가 하는 일', d:'[CLS]는 문장 전체 요약, [SEP]는 두 문장 경계, [MASK]는 가린 자리. 세 토큰의 정확한 역할.', sp:['mask','synth'] },
+    { no:'06', t:'사전훈련 1 — 마스크 언어 모델(MLM)', d:'전체 토큰의 15%를 무작위 선택, 그중 80%는 [MASK], 10%는 무작위 단어, 10%는 원래 단어. 손실은 가린 자리만.', sp:['mask'] },
+    { no:'07', t:'사전훈련 2 — 다음 문장 예측(NSP)', d:'두 문장이 실제로 이어지는가? 50%는 진짜 다음, 50%는 무관한 문장. 한계와 후속 논문(RoBERTa)의 비판.', sp:['mask','ink-soft'] },
+    { no:'08', t:'사전훈련 데이터 — BookCorpus와 영어 위키백과', d:'33억 단어. 왜 책과 백과사전인가. 길고 연결된 텍스트의 중요성.', sp:['synth'] },
+    { no:'09', t:'미세조정 1 — 문장 분류 (SST-2, CoLA)', d:'[CLS] 자리의 최종 벡터에 분류기 한 층만 얹는다. 감성 분석·문법 판단의 전형적 구조.', sp:['bidir','mask'] },
+    { no:'10', t:'미세조정 2 — 토큰 단위 분류 (NER, 품사 태깅)', d:'모든 토큰의 최종 벡터에 분류기를 붙여 토큰마다 라벨을 매긴다. BIO 태깅 방식.', sp:['bidir'] },
+    { no:'11', t:'미세조정 3 — 문장 쌍 작업 (SQuAD, NLI)', d:'두 문장을 [SEP]로 잇고, SQuAD는 시작·끝 위치 두 벡터를 학습. NLI는 함의·중립·모순 3분류.', sp:['mask','bidir'] },
+    { no:'12', t:'GLUE 벤치마크 — BERT가 깬 기록의 의미', d:'9개 NLU 작업 묶음. 평균 80.5점으로 종전 최고를 7점 이상 끌어올렸다. 왜 이 숫자가 충격이었는지.', sp:['synth','mask'] },
+    { no:'13', t:'BERT vs GPT vs T5 — 인코더·디코더·시퀀스2시퀀스', d:'같은 트랜스포머 부품으로 만든 세 흐름. 어디에 쓰는가, 왜 갈라졌는가.', sp:['bidir','mask','synth'] },
+    { no:'14', t:'시험 대비 — 핵심 정의·수식·예상 질문 20개+', d:'한 줄 정의, 손실 함수, 흔한 함정. 손글씨로 정리할 수 있도록 압축된 마지막 장.', sp:['ink-soft'] },
+  ];
+  const colMap = {
+    bidir:'var(--bidir)', 'bidir-lo':'var(--bidir-lo)',
+    mask:'var(--mask)', 'mask-lo':'var(--mask-lo)',
+    synth:'var(--synth)', 'ink-soft':'var(--ink-soft)'
+  };
+  const platesEl = document.getElementById('plates');
+  const flowEl = document.getElementById('pathflow');
+  CHAPTERS.forEach((c, idx) => {
+    const sp = c.sp.length === 1 ? [c.sp[0], c.sp[0]] : c.sp;
+    const a = document.createElement('a');
+    a.className = 'plate'; a.href = c.no + '.html';
+    a.innerHTML = `
+      <div class="spectrum">${sp.map(s=>`<i style="flex:1;background:${colMap[s]}"></i>`).join('')}</div>
+      <span class="pno">CHAPTER ${c.no}</span>
+      <h3>${c.t}</h3>
+      <p>${c.d}</p>
+      <span class="go">읽기 →</span>`;
+    platesEl.appendChild(a);
+
+    const f = document.createElement('a'); f.href = c.no + '.html';
+    const short = c.t.split('—')[0].trim().slice(0, 14);
+    f.innerHTML = `<b>${c.no}</b> ${short}…`;
+    flowEl.appendChild(f);
+    if (idx < CHAPTERS.length - 1) { const s = document.createElement('span'); s.className='arr'; s.textContent='→'; flowEl.appendChild(s); }
+  });
+
+  window.addEventListener('load', () => {
+    if (window.BERT && document.getElementById('hero')) {
+      BERT.hero(document.getElementById('hero'), { height: Math.min(window.innerWidth*0.42, 420) });
+    }
+  });
+</script>
+<script src="assets/bert.js"></script>
+</body>
+</html>

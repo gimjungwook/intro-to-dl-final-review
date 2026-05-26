@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>08 · 고유분해 1 — 회전이 보존하는 방향</title>
+<link rel="stylesheet" href="./assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 08 · 변환을 거쳐도 방향이 유지되는 축</span>
+      <h1>고유분해 1 —<br><span class="t-style">보존 방향</span></h1>
+      <p class="lede">행렬을 곱해도 방향이 바뀌지 않는 특별한 벡터가 있다. 그 벡터가 행렬의 “본질적 축”을 알려 준다.</p>
+    </header>
+
+    <div class="prose">
+      <p>지금까지 행렬을 “공간을 비트는 함수”로 보았다. 그러나 어떤 행렬을 곱해도 “꿈쩍 않는” 특별한 방향이 있다. 이 sub의 한 줄은 다음이다. <strong>행렬 $A$의 고유벡터(eigenvector)란, $A$를 곱해도 방향이 변하지 않고 단지 길이만 늘어나거나 줄어드는 특별한 벡터다. 그리고 그 “늘어남의 비율”이 고유값(eigenvalue)이다.</strong> 이 한 쌍이 행렬의 본질을 가장 압축적으로 보여 준다.</p>
+
+      <h2>정의 — 행렬을 곱해도 같은 방향</h2>
+      <p>0이 아닌 벡터 $\mathbf{v}$가 행렬 $A$의 고유벡터라는 것은, 다음 식이 어떤 스칼라 $\lambda$에 대해 성립하는 것이다.</p>
+
+      <div class="math-block">$$ A\mathbf{v} = \lambda \mathbf{v} $$</div>
+      <p class="math-note">A를 v에 작용시키면, v가 λ배가 될 뿐 방향은 그대로. λ가 고유값, v가 고유벡터.</p>
+
+      <p>이 식을 한 번 풀어 보자. 좌변 $A\mathbf{v}$는 “행렬 $A$가 만든 일반적인 변환의 결과 벡터”다. 우변 $\lambda \mathbf{v}$는 “원래 벡터 $\mathbf{v}$를 단지 $\lambda$배 한 결과”다. 두 결과가 같다는 것은, $A$가 $\mathbf{v}$에 대해서는 “회전이나 비틀기 없이, 그저 길이를 $\lambda$배로 늘이거나 줄이는 일”만 한다는 뜻이다.</p>
+
+      <p>왜 이 형태가 중요한가? 일반적으로 행렬 곱은 입력 벡터를 다른 방향으로 옮긴다. 그러나 고유벡터 방향에서만은, 행렬이 “회전 없이 그저 스케일만 적용”한다. 즉 <strong>고유벡터는 그 행렬이 회전·전단·뒤틀기를 가하지 못하는 “자연스러운 축”</strong>이다.</p>
+
+      <div class="analogy">
+        <b>물레</b>를 떠올려 보자. 물레 위에 진흙이 올라가 있고 물레가 돌면, 진흙 위의 한 점은 원을 그리며 움직인다. 그런데 물레의 “회전축 위에 있는 점”은 움직이지 않는다. 그저 그 자리에 있다(또는 위/아래로만 움직이는데, 그건 다른 변환). 회전축이 그 회전의 “고유 방향”이다. 행렬에도 이와 같은 “회전축에 해당하는 방향”이 있고, 그것이 고유벡터다.
+      </div>
+
+      <h2>방정식의 모양 — 어떻게 찾을까</h2>
+      <p>$A\mathbf{v} = \lambda \mathbf{v}$를 변형하면 다음과 같다.</p>
+
+      <div class="math-block">$$ (A - \lambda I)\mathbf{v} = \mathbf{0} $$</div>
+      <p class="math-note">λI는 대각이 λ인 대각행렬. (A − λI)가 v를 0으로 보냄 → v는 (A − λI)의 영공간에 속함.</p>
+
+      <p>이 식이 의미하는 바는 “$\mathbf{v}$는 $(A - \lambda I)$의 영공간에 속한다”다. <a href="07.html">sub 07</a>에서 본 영공간의 정의를 떠올리면, 비영 벡터가 영공간에 들어 있다는 것은 $(A - \lambda I)$가 “정보의 한 차원을 0으로 만든다”는 뜻이고, 그러므로 그 행렬이 랭크 결손이라는 뜻이다. 즉 $\det(A - \lambda I) = 0$이어야 한다.</p>
+
+      <div class="math-block">$$ \det(A - \lambda I) = 0 $$</div>
+      <p class="math-note">특성 다항식(characteristic polynomial)을 0으로 만드는 λ. n차 다항식 → 고유값 최대 n개.</p>
+
+      <p>이 방정식을 “특성 방정식(characteristic equation)”이라고 부른다. 좌변은 $\lambda$에 대한 $n$차 다항식이고, 그 다항식의 근이 행렬의 고유값들이다. 그래서 $n \times n$ 행렬은 최대 $n$개의 고유값을 가진다(중복 포함).</p>
+
+      <div class="example">
+        <b>2×2 행렬</b> $A = \begin{pmatrix} 2 & 0 \\ 0 & 3 \end{pmatrix}$. 이 행렬은 대각이므로 고유값이 바로 보인다 — $\lambda_1 = 2$, $\lambda_2 = 3$. 그리고 고유벡터는 두 축 $\mathbf{e}_1 = (1, 0), \mathbf{e}_2 = (0, 1)$. 풀어 보면 $A\mathbf{e}_1 = (2, 0) = 2 \mathbf{e}_1$, $A\mathbf{e}_2 = (0, 3) = 3 \mathbf{e}_2$. 대각행렬은 자기 자신이 “고유 좌표계”에 적힌 모습이다.
+      </div>
+
+      <h2>고유벡터의 기하학</h2>
+      <p>2차원에서 고유벡터를 시각화하면 직관이 명확해진다. 일반적인 벡터에 $A$를 곱하면 그 벡터는 다른 방향으로 움직인다. 그러나 고유벡터 방향에서는 “화살표가 늘어나거나 줄어들 뿐” 같은 직선 위에 머문다. 아래 위젯에서 직접 확인해 보자.</p>
+
+      <div class="widget">
+        <div class="widget-frame">
+          <div class="widget-label"><span class="lab-no">위젯 04</span><span>고유벡터 찾기 — 평행이 되는 방향을 찾자</span></div>
+          <div id="ev"></div>
+        </div>
+        <p class="widget-cap">캔버스의 한 점을 클릭(또는 드래그)하면 그 방향의 벡터 v(파란 점선)와 A·v(빨강)를 그린다. 두 화살표가 평행이 되는 방향이 고유벡터. 황토색 점선이 정답 고유 방향(있다면)이다. 행렬을 바꿔 가며 고유벡터가 “있을 때”와 “복소수라서 없을 때”를 비교해 보자.</p>
+      </div>
+
+      <h2>고유값이 의미하는 것 — 늘림/줄임/뒤집기</h2>
+      <p>고유값 $\lambda$의 부호와 크기가 그 방향의 변환을 정확히 알려 준다.</p>
+
+      <ul>
+        <li><strong>$\lambda > 1$</strong>: 그 방향으로 늘어남. 예: $\lambda = 2$면 2배 길어짐.</li>
+        <li><strong>$0 < \lambda < 1$</strong>: 그 방향으로 줄어듦. 예: $\lambda = 0.5$면 절반으로 줄어듦.</li>
+        <li><strong>$\lambda = 1$</strong>: 그 방향은 “꿈쩍 않음”. 그대로 유지.</li>
+        <li><strong>$\lambda = 0$</strong>: 그 방향이 0으로 찌부러짐. 영공간에 속함.</li>
+        <li><strong>$\lambda < 0$</strong>: 방향이 뒤집힌 채 $|\lambda|$배. 즉 반사 + 스케일.</li>
+      </ul>
+
+      <p>예를 들어 두 고유값이 $\lambda_1 = 3, \lambda_2 = 0.5$인 2×2 행렬은, 한 방향으로는 3배 늘이고 직각인 다른 방향으로는 절반으로 줄인다. 단위 원이 “이 두 방향을 축으로 한 타원”으로 바뀐다. 단위 원의 모든 점이 어떻게 움직이는지가 고유 정보만으로 거의 다 결정된다.</p>
+
+      <div class="analogy">
+        고유값을 <b>건물의 “설계 하중 방향”</b>이라고 상상해 보자. 건물의 골조는 어느 방향으로 압력을 받아도 어느 정도 견디지만, 가장 강한 축과 가장 약한 축이 있다(고유 방향). 그 축으로 들어오는 힘은 골조의 응력을 가장 적게 또는 가장 많이 일으킨다. 행렬의 고유값은 이런 “주축에서의 응력 비율”과 같다. 가장 큰 고유값 방향이 “가장 크게 늘어나는 방향”이다.
+      </div>
+
+      <h2>고유벡터의 정규화 — 단위벡터로 통일</h2>
+      <p>$\mathbf{v}$가 고유벡터라면, 그 스칼라 배 $c\mathbf{v}$도 고유벡터다($A(c\mathbf{v}) = c A\mathbf{v} = c\lambda \mathbf{v} = \lambda(c\mathbf{v})$). 즉 고유벡터는 “방향”만 의미가 있고 길이는 자유다. 관례적으로 길이를 1로 맞춰 “단위 고유벡터”를 사용한다.</p>
+
+      <div class="math-block">$$ \|\mathbf{v}\|_2 = 1 $$</div>
+      <p class="math-note">관례: 고유벡터는 단위벡터로 정규화. 부호는 임의로 정함.</p>
+
+      <p>부호(+/−)도 자유다. $\mathbf{v}$가 고유벡터면 $-\mathbf{v}$도 고유벡터이기 때문이다. 그래서 “고유벡터의 부호가 책마다 다르다”라는 사소한 혼란이 있다. 본질적인 것은 “직선의 방향”뿐이다.</p>
+
+      <h2>고유분해 — 행렬을 자기 좌표계로 옮기기</h2>
+      <p>$n \times n$ 행렬 $A$가 $n$개의 선형 독립 고유벡터를 가진다면(이 조건이 항상 성립하진 않는다, 다음 sub의 대칭행렬은 항상 성립), 다음과 같이 분해할 수 있다.</p>
+
+      <div class="math-block">$$ A = V \Lambda V^{-1} $$</div>
+      <p class="math-note">V = 고유벡터들을 열로 모은 행렬. Λ = 고유값들을 대각에 둔 대각행렬.</p>
+
+      <p>이 식이 “고유분해(eigendecomposition)”다. 풀어 보면, $V^{-1}$이 “원래 좌표계 → 고유 좌표계”로 옮기는 작업, $\Lambda$가 “고유 좌표계에서 각 축을 단순히 스케일”하는 작업, $V$가 “고유 좌표계 → 원래 좌표계”로 되돌리는 작업이다. 즉 <strong>$A$의 작용은 “고유 좌표계로 가서, 거기서 대각 행렬처럼 스케일하고, 원래 좌표계로 돌아오는” 세 단계로 분해</strong>된다.</p>
+
+      <div class="analogy">
+        <b>스위스 시계의 분해도</b>를 떠올려 보자. 시계 전체가 어떻게 돌아가는지는 한눈에 안 보인다. 그러나 부품을 분해하면 “톱니바퀴 A는 톱니바퀴 B를 3:1 비율로 돌리고, B는 C를 2:1로 돌린다…” 같이 단순한 비율들의 곱으로 표현된다. 고유분해는 행렬이라는 “복잡한 시계”를 “각 톱니바퀴(고유벡터)와 그 비율(고유값)”로 분해해 보여 준다. 분해된 모양에서는 각 부품이 독립적으로 단순하게 작동한다.
+      </div>
+
+      <h2>$A^k$ 계산이 무료가 되는 마법</h2>
+      <p>고유분해의 가장 인상적인 효용은 “행렬의 거듭제곱(power)이 거저 계산된다”는 점이다.</p>
+
+      <div class="math-block">$$ A^k = V \Lambda^k V^{-1}, \quad \Lambda^k = \text{diag}(\lambda_1^k, \lambda_2^k, \ldots, \lambda_n^k) $$</div>
+      <p class="math-note">A의 k제곱 = V × (Λ의 k제곱) × V⁻¹. Λ는 대각이라 거듭제곱이 원소 거듭제곱.</p>
+
+      <p>일반적인 행렬을 $k$번 곱하는 일은 매우 비싸다($O(n^3 k)$). 그러나 고유분해를 한 번 해 두면, $\Lambda^k$가 단지 “각 대각 원소를 $k$제곱”하는 일이므로 $O(n)$이다. 그래서 $A^{100}$을 계산하는 일이 $A^1$만큼 빠르다.</p>
+
+      <p>이 사실이 마르코프 체인(Markov chain), 안정성 분석(stability analysis), RNN의 장기 의존성 등에서 결정적이다. 특히 RNN에서 가중치 행렬을 $T$번 곱한 결과가 “계속 학습되도록” 하려면, 모든 고유값의 절댓값이 1에 가까워야 한다. 어떤 $|\lambda| > 1$이면 그 방향으로 정보가 폭발하고($\lambda^T$가 너무 커짐), 어떤 $|\lambda| < 1$이면 그 방향으로 정보가 소멸한다. 이것이 “기울기 폭발/소멸 문제(vanishing/exploding gradient)”의 선형대수적 본질이다.</p>
+
+      <h2>예시 — 단순한 2×2의 고유분해</h2>
+      <p>구체적인 예로 익숙해지자. 행렬 $A = \begin{pmatrix} 2 & 1 \\ 0 & 3 \end{pmatrix}$의 고유값을 찾아 보자.</p>
+
+      <div class="math-block">$$ \det\begin{pmatrix} 2-\lambda & 1 \\ 0 & 3-\lambda \end{pmatrix} = (2-\lambda)(3-\lambda) - 0 = 0 $$</div>
+
+      <p>$\lambda_1 = 2, \lambda_2 = 3$. 그러면 각 고유값에 대한 고유벡터는 $(A - \lambda I)\mathbf{v} = 0$을 풀어 찾는다. $\lambda_1 = 2$에서는 $\mathbf{v}_1 = (1, 0)$, $\lambda_2 = 3$에서는 $\mathbf{v}_2 = (1, 1)/\sqrt{2}$이 나온다. 이 두 벡터는 서로 직교하지 않는다(점 곱이 0이 아님). 이 점이 다음 sub의 핵심 — “대칭이 아닌 일반 행렬의 고유벡터는 일반적으로 직교하지 않는다” — 으로 이어진다.</p>
+
+      <div class="example">
+        <b>일반 행렬의 한계</b>. 비대칭 일반 행렬의 고유분해 $A = V \Lambda V^{-1}$에서 $V^{-1}$이 등장한다는 점이 좀 거추장스럽다. $V$의 역행렬이 잘 정의되어야 하고 수치적으로도 불안정할 수 있다. 그러나 대칭 행렬의 경우 다음 sub에서 보겠지만, $V$가 직교행렬이 되어 $V^{-1} = V^\top$이라는 매우 깔끔한 형태로 분해된다. 그래서 “대칭은 좋다”라는 직관이 자리잡는다.
+      </div>
+
+      <h2>이 sub의 한 줄 요약</h2>
+      <p>“고유벡터 = 변환을 거쳐도 방향이 유지되는 축. 고유값 = 그 축의 스케일 비율.” 이 한 쌍이 행렬의 본질을 거의 다 알려 준다. <a href="09.html">다음 sub</a>에서는 대칭 행렬의 특별한 성질 — 모든 고유벡터가 직교, 모든 고유값이 실수 — 을 본격적으로 다루고, 그 직접 응용으로 PCA(주성분 분석, principal component analysis)의 뿌리를 만진다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script src="./assets/widgets.js"></script>
+<script>
+  window.addEventListener('load', () => {
+    NST.buildNav('08');
+    NST.onVisible(document.getElementById('ev'), () => NST.eigenFinder(document.getElementById('ev')));
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>09 · 최대우도 추정 (MLE) — 모든 손실의 어머니</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Section 09 · 데이터가 가장 그럴듯해지는 매개변수</span>
+      <h1>최대우도 추정 <span class="t-style">(MLE)</span> — 모든 손실의 어머니</h1>
+      <p class="lede">손실 함수를 임의로 고르는 대신 확률 모델에서 유도하는 한 가지 원리가 최대우도 추정이다. 데이터가 가장 그럴듯하게 보이도록 매개변수를 정한다. MSE, MAE, 교차 엔트로피가 모두 여기서 도출된다.</p>
+    </header>
+
+    <div class="prose">
+      <p>앞 장에서 우리는 손실 함수를 정의하고 그 평균이 경험적 위험이라고 했다. 그러나 손실 함수를 어디서 가져왔는지는 설명하지 않았다. "회귀에는 MSE를 쓰고 분류에는 교차 엔트로피를 쓴다"는 관행은 어디서 온 것일까. 임의의 공학적 결정일까, 아니면 더 깊은 원리에서 나온 결과일까. 답은 후자이며, 그 원리가 최대우도 추정(maximum likelihood estimation, MLE)이다.</p>
+
+      <p>MLE의 출발 질문은 단순하다. <strong>"우리가 관측한 이 데이터가 가장 그럴듯하게 보이려면 매개변수가 어떤 값이어야 하는가."</strong> 여기서 "그럴듯하다"는 형식적으로 정의된 양인 우도(likelihood)다. 그리고 이 질문을 푸는 일이 곧 손실 함수의 선택과 같다는 사실이 이 장의 가장 중요한 메시지다.</p>
+
+      <h2>우도와 확률의 차이 — 같은 식, 다른 시점</h2>
+      <p>먼저 두 가지 헷갈리기 쉬운 용어를 정확히 가른다. 확률(probability)과 우도(likelihood)는 같은 함수 $p(x \mid \theta)$를 두 가지 다른 시점에서 본 것이다. 매개변수 $\theta$를 알고 있을 때 $p(x \mid \theta)$는 데이터 $x$의 확률을 알려준다. 이 시점에서는 $\theta$가 고정이고 $x$가 변수다. 반대로 데이터 $x$를 관측한 뒤 $p(x \mid \theta)$를 매개변수 $\theta$의 함수로 보면, 이는 "이 $\theta$ 값이 관측 데이터를 얼마나 그럴듯하게 만드는가"를 알려주는 우도가 된다. 이 시점에서는 $x$가 고정이고 $\theta$가 변수다.</p>
+
+      <p>같은 식을 두 가지 시점에서 보는 것이지만 의미는 완전히 다르다. 확률은 $\int p(x \mid \theta) dx = 1$이지만 우도는 $\int p(x \mid \theta) d\theta$가 1이 아닐 수 있다. 우도는 확률 분포가 아니라, "데이터에 대한 매개변수의 적합도 점수"다. 이 점수가 가장 큰 $\theta$를 골라 추정값으로 삼는 것이 MLE다.</p>
+
+      <h2>MLE의 정의식</h2>
+      <p>데이터 $\mathcal{D} = \{x_1, x_2, \ldots, x_N\}$이 매개변수 $\theta$를 가진 분포에서 독립적으로 뽑혔다고 가정하자. 데이터 전체의 우도는 각 점의 우도의 곱이다.</p>
+
+      <div class="math-block">$$ L(\theta) = p(\mathcal{D} \mid \theta) = \prod_{i=1}^{N} p(x_i \mid \theta) $$</div>
+      <p class="math-note">독립 가정(i.i.d.) 덕분에 결합 확률이 곱으로 분해된다. 이 분해가 없으면 MLE는 닫힌 식이 안 나온다.</p>
+
+      <p>MLE는 이 우도를 가장 크게 만드는 $\theta$를 정답으로 삼는다.</p>
+
+      <div class="math-block">$$ \theta_{\text{MLE}} = \arg\max_\theta \; L(\theta) = \arg\max_\theta \; \prod_{i=1}^{N} p(x_i \mid \theta) $$</div>
+
+      <p>곱은 다루기 어려우므로 로그를 취해 합으로 바꾼다. 로그는 단조증가 함수라 $\arg\max$를 보존한다.</p>
+
+      <div class="math-block">$$ \theta_{\text{MLE}} = \arg\max_\theta \; \sum_{i=1}^{N} \log p(x_i \mid \theta) = \arg\min_\theta \; \Bigl[ -\sum_{i=1}^{N} \log p(x_i \mid \theta) \Bigr] $$</div>
+      <p class="math-note">마지막 식의 음의 로그우도(negative log-likelihood, NLL)가 곧 우리가 줄여야 할 양이다. 부호를 뒤집어 최대화를 최소화로 옮긴 것이 머신러닝의 표준 표기다.</p>
+
+      <h2>왜 곱이 아닌 로그합으로 푸는가</h2>
+      <p>곱을 합으로 바꾸는 일은 단순한 표기 정리가 아니라 수치적으로 결정적이다. $N$개의 확률을 곱하면 (각 확률이 0.5만 되어도) $N=100$이면 $0.5^{100} \approx 10^{-30}$가 되어 부동소수점 표현의 underflow가 발생한다. 컴퓨터가 이 곱을 0으로 처리하면 어떤 $\theta$가 더 그럴듯한지 비교가 불가능해진다. 반면 로그를 취하면 곱이 합으로 바뀌고, 각 $\log p(x_i \mid \theta)$는 보통 -10에서 0 사이의 값이라 합쳐도 발산하지 않는다. MLE를 컴퓨터에서 풀 때 로그우도를 쓰는 것은 선택의 문제가 아니라 필수다.</p>
+
+      <p>또 한 가지 이점은 미분의 단순함이다. $\frac{d}{d\theta} \prod_i p(x_i \mid \theta)$는 곱 미분 규칙을 반복 적용해야 하지만, $\frac{d}{d\theta} \sum_i \log p(x_i \mid \theta) = \sum_i \frac{d}{d\theta} \log p(x_i \mid \theta)$로 깔끔하게 떨어진다. 경사하강의 그라디언트 계산이 한 점당 독립적이라는 사실이 미니배치 학습(stochastic gradient descent의 미니배치 평균)을 가능하게 한다.</p>
+
+      <h2>가장 작은 예 — 동전 던지기의 MLE</h2>
+      <p>동전을 $N$번 던져 앞면이 $h$번, 뒷면이 $t = N - h$번 나왔다. 앞면이 나올 확률 $\theta$를 어떻게 추정해야 할까. 우도는 베르누이 시행의 곱이다.</p>
+
+      <div class="math-block">$$ L(\theta) = \theta^h (1 - \theta)^t $$</div>
+
+      <p>로그우도는 $\ell(\theta) = h \log \theta + t \log(1 - \theta)$. $\theta$에 대해 미분해서 0으로 놓는다.</p>
+
+      <div class="math-block">$$ \frac{d\ell}{d\theta} = \frac{h}{\theta} - \frac{t}{1 - \theta} = 0 \;\;\Longrightarrow\;\; \theta_{\text{MLE}} = \frac{h}{h + t} = \frac{h}{N} $$</div>
+      <p class="math-note">$N$번 던져 앞면이 $h$번 나왔다면 MLE 추정값은 단순히 앞면 비율 $h/N$이다. 직관과 정확히 일치한다 — 가장 그럴듯한 매개변수는 데이터에서 본 빈도다.</p>
+
+      <p>이 결과는 너무 당연해 보이지만 중요한 의미를 가진다. 직관적으로 떠올린 "비율 추정"이 MLE라는 일반 원리에서 도출되는 한 사례다. 데이터가 적을 때 — 예를 들어 $N = 3$, $h = 3$ — MLE는 $\theta = 1$로 추정한다. 동전이 무조건 앞면이 나올 확률이 1이라는 추정이다. 이 결과는 데이터에 대한 가장 그럴듯한 값이지만 현실적으로 의심스럽다(동전이 정상이라면 $\theta = 0.5$ 근처일 가능성이 크다). 이 한계를 보완하는 것이 11장의 베이지안 추정이다.</p>
+
+      <h2>회귀 — 가우시안 잡음 가정의 MLE는 MSE</h2>
+      <p>이제 회귀로 옮겨 가자. 입력 $x_i$가 주어졌을 때 정답 $y_i$가 모델 출력 $f_\theta(x_i)$ 주변에 가우시안 잡음을 가지고 흩어져 있다고 가정한다.</p>
+
+      <div class="math-block">$$ y_i \;\sim\; \mathcal{N}\bigl(f_\theta(x_i),\; \sigma^2\bigr) $$</div>
+
+      <p>이 가정 아래 한 점의 우도는 가우시안 밀도다.</p>
+
+      <div class="math-block">$$ p(y_i \mid x_i, \theta) = \frac{1}{\sqrt{2\pi\sigma^2}} \exp\!\Bigl[ -\frac{(y_i - f_\theta(x_i))^2}{2\sigma^2} \Bigr] $$</div>
+
+      <p>로그를 취하면 깔끔해진다.</p>
+
+      <div class="math-block">$$ \log p(y_i \mid x_i, \theta) = -\frac{1}{2}\log(2\pi\sigma^2) - \frac{(y_i - f_\theta(x_i))^2}{2\sigma^2} $$</div>
+
+      <p>전체 음의 로그우도(NLL)를 $\theta$에 대해 최소화한다. $\theta$와 무관한 첫 항은 상수로 빠지고, 나머지 항을 정리하면 다음과 같다.</p>
+
+      <div class="math-block">$$ \theta_{\text{MLE}} = \arg\min_\theta \; \frac{1}{2\sigma^2} \sum_{i=1}^{N} \bigl(y_i - f_\theta(x_i)\bigr)^2 + \text{상수} $$</div>
+      <p class="math-note">$\frac{1}{2\sigma^2}$은 양의 상수이므로 $\arg\min$의 위치를 바꾸지 않는다. 결국 가우시안 가정의 MLE는 MSE의 최소화와 정확히 같다.</p>
+
+      <p>이 결과가 가르치는 메시지는 크다. <strong>MSE는 임의의 손실이 아니라 "잡음이 가우시안이라는 가정"의 직접적인 결과다.</strong> MSE를 쓴다는 것은 "잡음이 가우시안이고 분산이 일정하다"는 가정을 한다는 뜻이다. 만약 잡음이 라플라스 분포 같은 두꺼운 꼬리(heavy tail)를 가진다면, MSE의 MLE 정당성은 무너지고 MAE가 그 자리를 차지한다(라플라스 분포의 NLL이 정확히 MAE 형태다).</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 09</span><span>MLE = NLL 시연 — 가우시안 중심을 움직여 본다</span></div>
+        <div id="mle"></div>
+      </div>
+      <p class="widget-cap">슬라이더로 가우시안의 중심 $\mu$를 옮겨 보자. 각 데이터 점에서 가우시안이 부여하는 확률(주황 막대)이 표시되고, 그 합인 로그우도와 음의 로그우도가 우상단에 나온다. $\mu$가 데이터 평균에 일치할 때 우도가 최대, NLL이 최소가 된다. 두 곡선의 정점은 항상 같은 위치에서 만난다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>분류 — 베르누이/카테고리 가정의 MLE는 교차 엔트로피</h2>
+      <p>이진 분류에서 정답 $y_i \in \{0, 1\}$이고 모델이 $\hat{p}_i = p(y = 1 \mid x_i; \theta)$를 출력한다고 하자. 한 점의 우도는 베르누이 분포다.</p>
+
+      <div class="math-block">$$ p(y_i \mid x_i, \theta) = \hat{p}_i^{y_i} (1 - \hat{p}_i)^{1 - y_i} $$</div>
+      <p class="math-note">$y_i = 1$이면 $\hat{p}_i$, $y_i = 0$이면 $1 - \hat{p}_i$가 된다. 두 경우를 한 식으로 적은 표현.</p>
+
+      <p>NLL을 적으면 다음과 같다.</p>
+
+      <div class="math-block">$$ -\log p(y_i \mid x_i, \theta) = -y_i \log \hat{p}_i - (1 - y_i) \log(1 - \hat{p}_i) $$</div>
+
+      <p>이 식이 정확히 이진 교차 엔트로피(binary cross entropy)다. 다중 클래스로 확장하면, 정답이 one-hot 벡터 $y_i$이고 모델이 확률 벡터 $\hat{p}_i$를 출력할 때 NLL은 $-\sum_k y_{i,k} \log \hat{p}_{i,k}$이며 이것이 카테고리 분포(categorical distribution)의 NLL인 일반 교차 엔트로피다. 즉 분류의 표준 손실인 교차 엔트로피도 임의의 선택이 아니라 베르누이/카테고리 분포 가정의 MLE의 NLL이다.</p>
+
+      <h2>MLE의 정직한 한계</h2>
+      <p>MLE는 강력하지만 두 가지 한계가 있다. 첫째, MLE는 점추정(point estimate)이다. "이 $\theta$ 값이 가장 그럴듯하다"고 답하지만, "$\theta$가 얼마나 확실한가"는 답하지 못한다. 데이터가 매우 적을 때 MLE는 우연한 표본 변동의 끝값을 그대로 정답으로 삼아 버린다(위의 동전 던지기 $N=3$, $h=3$의 $\theta_{\text{MLE}} = 1$이 그 예다). 이 한계가 11장의 베이지안 추정에서 해소된다.</p>
+
+      <p>둘째, MLE는 모델 가정에 매우 민감하다. 잡음이 가우시안이라고 가정했는데 실제로는 라플라스이거나 두꺼운 꼬리를 가진다면, MLE의 결과는 이상치에 끌려간 잘못된 추정이 된다. 이 한계는 모델 가정을 더 강건하게(robust) 만들거나, 두꺼운 꼬리 분포를 직접 모델링하는 것으로 해소한다. 시험에서는 "MSE = 가우시안 MLE", "MAE = 라플라스 MLE", "교차 엔트로피 = 베르누이/카테고리 MLE"라는 세 대응이 가장 자주 출제된다.</p>
+
+      <div class="analogy">
+        MLE를 <b>탐정 수사</b>에 비유해 보자. 현장에서 발견된 증거(데이터)가 주어졌을 때, 탐정은 "어떤 시나리오(매개변수)가 이 증거를 가장 그럴듯하게 만드는가"를 묻는다. 시나리오 A에서 증거가 일어날 확률이 $10^{-3}$이고 시나리오 B에서는 $10^{-1}$이라면, 탐정은 B 쪽이 더 그럴듯하다고 판단한다. 다만 탐정은 시나리오에 대한 사전 지식(어떤 시나리오가 더 흔한가)을 고려하지 않는다. 이 한계가 베이지안 시점에서 해소된다 — "증거뿐 아니라 사전 정보를 함께 본다"는 변화다.
+      </div>
+
+      <h2>일관성 — 데이터가 많아지면 MLE는 진짜 값으로 수렴한다</h2>
+      <p>MLE에는 한 가지 강력한 이론적 성질이 있다. 데이터 크기 $N$이 무한으로 갈 때, 모델 가정이 옳다면 $\theta_{\text{MLE}}$는 진짜 $\theta^*$로 확률수렴한다. 이를 일관성(consistency)이라 한다. 또 점근적으로(asymptotically) MLE의 분포는 정규 분포에 수렴하며, 그 분산은 피셔 정보(Fisher information)의 역수다. 이는 점추정 중에서 점근적으로 가장 효율적임을 뜻한다.</p>
+
+      <p>실용적으로는 두 가지 함의가 있다. 첫째, 데이터가 충분히 많으면 MLE는 거의 항상 좋은 추정이다(가정이 옳다는 전제 하에). 둘째, 데이터가 적을 때 MLE의 한계는 베이지안의 사전 정보로 보완해야 한다. 이 보완이 12장과 13장에서 정칙화로 자연스럽게 이어진다.</p>
+
+      <p>다음 장에서는 MSE와 가우시안 MLE의 대응을 더 깊이 — 그리고 분류의 교차 엔트로피가 MLE와 정확히 같은 식이라는 사실을 한 번 더 — 확인한다. 같은 수식을 두 시점(손실 함수 / MLE)에서 보면서, 두 시점이 같은 알고리즘을 다른 언어로 설명할 뿐임을 분명히 한다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  window.addEventListener('load', () => {
+    NST.buildNav('09');
+    const t = document.getElementById('mle');
+    NST.onVisible(t, () => NST.mleNll(t));
+  });
+</script>
+<script src="../assets/widgets.js"></script>
+<script src="widgets-ch05.js"></script>
+</body>
+</html>

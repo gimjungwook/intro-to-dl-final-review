@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>11 — 변분 AE(VAE) 맛보기 — Ch.14</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .vae-stage { padding: 1.4rem 1.2rem 1rem; display: grid; grid-template-columns: 1fr; gap: .8rem; }
+  .vae-stage canvas { display: block; width: 100%; max-width: 720px; aspect-ratio: 16/10; border-radius: 10px; border: 1px solid var(--line); background: #fff; margin: 0 auto; }
+  .verdict { padding: .9rem 1.2rem; border-top: 1px solid var(--line-soft); background: var(--paper); font-size: .9rem; color: var(--ink-soft); line-height: 1.55; }
+  .verdict b.ok { color: var(--structure); } .verdict b.bad { color: var(--style); } .verdict b.mid { color: var(--synth); }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 11 — 잠재 코드를 한 점이 아니라 분포로</span>
+      <h1>변분 자기부호화기(<span class="t-synth">VAE</span>) 맛보기 — 자기부호화기를 생성 모델로</h1>
+      <p class="lede">잠재 코드를 한 점이 아니라 분포로 일반화하고, 잠재 분포에 KL 페널티를 걸면 자기부호화기는 단순한 표상 학습기에서 샘플링 가능한 생성 모델(generative model)로 격상된다. ELBO, 재매개화 트릭, KL 정칙화의 직관을 한 자리에.</p>
+    </header>
+
+    <div class="prose">
+      <p>지금까지의 모든 자기부호화기는 결정론적이었다. 같은 입력 $x$를 넣으면 항상 같은 잠재 코드 $h$가 나오고, 같은 $h$를 넣으면 항상 같은 복원 $r$이 나왔다. <strong>변분 자기부호화기(variational autoencoder, VAE)</strong>는 이 결정론을 두 가지 점에서 깨뜨린다. 첫째, 인코더가 한 점 $h$를 출력하는 대신 잠재 변수의 <em>분포</em>를 출력한다. 둘째, 잠재 분포가 사용자가 미리 지정한 사전분포(prior)에 가깝게 머물도록 강제하는 페널티를 추가한다.</p>
+
+      <p>이 두 변화가 사소해 보이지만 결과는 큰 차이를 만든다. 학습이 끝난 VAE는 사전분포에서 $h$를 한 번 뽑아 디코더에 넣기만 하면 새로운 데이터 표본을 생성할 수 있다. 자기부호화기가 더 이상 입력을 복원하는 기계가 아니라 "이 데이터셋이 그릴 법한 새로운 입력"을 만드는 화가가 된다.</p>
+
+      <h2>먼저 한 줄 풀이 — 사전분포, 사후분포, 변분이란</h2>
+      <p>VAE를 이해하려면 세 단어가 필요하다.</p>
+
+      <p><strong>사전분포(prior).</strong> 어떤 데이터를 보기 전에 잠재 변수에 대해 우리가 가진 가정. VAE에서는 보통 표준 가우시안 $p(h) = \mathcal{N}(0, I)$로 둔다. 즉 "잠재 코드가 0 근처의 표준 정규에서 뽑힌 것일 가능성이 가장 크다"라는 가정이다.</p>
+
+      <p><strong>사후분포(posterior).</strong> 어떤 데이터 $x$를 본 다음, 그 데이터에 어울리는 잠재 코드의 분포 $p(h \mid x)$. 이상적으로는 베이즈 규칙으로 $p(h \mid x) = p(x \mid h) p(h) / p(x)$이지만, $p(x)$가 닫힌 형태로 계산하기 어렵다. 그래서 직접 풀 수 없다.</p>
+
+      <p><strong>변분 근사(variational approximation).</strong> 위의 사후분포를 직접 풀 수 없다면 인코더 신경망 $q_\phi(h \mid x)$로 그 분포를 근사하자는 전략. "변분(variational)"이라는 단어는 "분포를 다른 분포로 근사하는 최적화"라는 통계학의 한 분야 이름에서 왔다. VAE에서는 $q_\phi(h \mid x)$를 가우시안으로 두고, 인코더 신경망이 그 가우시안의 평균 $\mu(x)$와 표준편차 $\sigma(x)$를 출력하도록 학습한다.</p>
+
+      <div class="analogy">
+        <b>의사의 추측.</b> 환자(데이터 $x$)를 보지 않은 상태에서 의사는 "이 동네 사람이라면 보통 이 정도 건강 상태(사전분포)"라고만 알 수 있다. 환자를 만난 다음에는 "이 사람의 진짜 건강 상태는 무엇인가(사후분포)"를 알아야 하는데, 모든 검사를 다 할 수는 없다. 그래서 의사는 "내가 알아볼 수 있는 검사 몇 가지로 분포 형태를 추정"한다(변분 근사). VAE의 인코더가 정확히 이 역할이다.
+      </div>
+
+      <h2>VAE의 학습 목표 — ELBO</h2>
+      <p>VAE는 데이터의 로그 가능도(log-likelihood) $\log p(x)$를 직접 최대화하고 싶지만, 이 양은 계산할 수 없다. 대신 그것의 하한인 <strong>증거 하한(Evidence Lower BOund, ELBO)</strong>을 최대화한다.</p>
+
+      <p>$$\log p(x) \;\geq\; \mathcal{L}(\phi, \theta; x) = \mathbb{E}_{q_\phi(h \mid x)} [\log p_\theta(x \mid h)] \;-\; \text{KL}\Big(q_\phi(h \mid x) \,\big\|\, p(h)\Big)$$</p>
+
+      <p>식의 모든 기호를 천천히 풀자. $\phi$는 인코더 신경망의 가중치, $\theta$는 디코더 신경망의 가중치다. $q_\phi(h \mid x)$는 인코더가 출력하는 잠재 분포의 가우시안이다. $p_\theta(x \mid h)$는 디코더가 정의하는 데이터 분포다. $\mathbb{E}_{q_\phi(h \mid x)}[\cdot]$는 잠재 분포에서 $h$를 뽑아서 평균을 낸다는 뜻이다.</p>
+
+      <p>ELBO의 두 항은 각각 다음과 같이 읽는다.</p>
+
+      <ul>
+        <li><strong>$\mathbb{E}_{q_\phi(h \mid x)}[\log p_\theta(x \mid h)]$ — 재구성 항.</strong> "잠재 코드를 인코더 분포에서 뽑은 다음, 디코더가 그 코드로부터 원래 입력 $x$를 잘 만들어 내는가." 일반 자기부호화기의 재구성 손실과 같은 역할이다. 가우시안 디코더 가정 하에 이 항은 MSE 손실에 해당한다.</li>
+        <li><strong>$\text{KL}(q_\phi(h \mid x) \,\|\, p(h))$ — 정칙화 항.</strong> "인코더가 출력하는 잠재 분포가 사전분포(표준 가우시안)에서 너무 멀리 떨어지지 않게 하라." KL은 Kullback-Leibler divergence로, 두 분포가 얼마나 다른지를 잰다. 이 항은 잠재 공간이 표준 가우시안과 비슷한 모양을 유지하도록 강제한다.</li>
+      </ul>
+
+      <p>이 두 항의 줄다리기가 핵심이다. 재구성 항만 있으면 모델은 입력마다 잠재 분포를 매우 좁은 한 점에 모아서 결정론적 자기부호화기처럼 행동하려 한다(샘플링을 무력화). KL 항만 있으면 모든 잠재 분포가 정확히 표준 가우시안과 같아져서 입력에 대한 정보가 사라진다. 둘이 함께 작동할 때 잠재 공간은 "표준 가우시안의 모양을 유지하면서도 입력별로 다른 위치에 분포가 놓이는" 절충 상태에 머문다.</p>
+
+      <div class="analogy">
+        <b>도시의 우편번호 시스템.</b> 재구성 항만 있으면 각 건물(입력)에 고유한 무한 정밀도의 GPS 좌표(잠재 코드)를 준다 — 정확하지만 우편함을 다 외워야 한다. KL 항만 있으면 모든 건물에 같은 우편번호를 준다 — 외우기 쉽지만 어디로 배달해야 할지 모른다. VAE는 동네 단위의 우편번호 + 그 안에서 약간의 변동을 허용하는 절충안을 학습한다. 새 우편번호 하나를 뽑아 무작위로 보내도 "그 동네에 있을 법한 가상의 새 주소"가 나온다.
+      </div>
+
+      <h2>재매개화 트릭 — 미분 가능한 샘플링</h2>
+      <p>VAE의 학습에서 큰 기술적 장애가 하나 있다. 재구성 항이 잠재 분포 $q_\phi(h \mid x)$에서 $h$를 뽑는 샘플링을 포함하는데, 무작위 샘플링은 미분할 수 없으므로 인코더 가중치 $\phi$에 그래디언트를 흘려보낼 수 없다.</p>
+
+      <p>이 장애를 푸는 한 줄짜리 트릭이 <strong>재매개화(reparameterization trick)</strong>다. 가우시안 샘플링을 다음과 같이 다시 적는다.</p>
+
+      <p>$$h = \mu_\phi(x) + \sigma_\phi(x) \odot \epsilon, \quad \epsilon \sim \mathcal{N}(0, I)$$</p>
+
+      <p>식의 의미를 풀자. $\mu_\phi(x)$와 $\sigma_\phi(x)$는 인코더가 출력하는 잠재 분포의 평균과 표준편차다. $\epsilon$은 인코더와 무관한 표준 가우시안 노이즈다. $\odot$는 원소별 곱이다. 이렇게 적으면 $h$는 $\mu$, $\sigma$의 결정론적 함수이고 무작위성은 외부의 $\epsilon$에만 들어 있다. 그래서 $\phi$에 대한 그래디언트가 정상적으로 계산된다.</p>
+
+      <p>이 트릭은 너무도 단순해 보이지만 VAE를 실용적으로 만든 결정타다. 재매개화 없이는 VAE의 학습이 매우 불안정하거나 아예 불가능했다. 2014년 Kingma의 논문에서 처음 등장한 이 한 줄이 변분 추론을 신경망 학습의 표준 도구로 끌어올렸다.</p>
+
+      <h2>14장의 흐름에서 VAE의 자리</h2>
+      <p>VAE는 14장의 마지막 자연스러운 한 걸음이다. 14장은 결정론적 인코더와 디코더로 시작해서 잠재 차원, 노이즈, 자코비안, 활성도 페널티 같은 다양한 정칙화를 본다. 그런 다음 책은 "인코더와 디코더를 결정론적 함수에서 조건부 분포 $p_{\text{encoder}}(h \mid x)$와 $p_{\text{decoder}}(x \mid h)$로 일반화하자"고 한 걸음 더 나간다. 이 일반화 위에서 잠재에 사전분포를 두고 KL 페널티를 더하면 VAE가 된다.</p>
+
+      <p>2026년 시점에서 VAE의 의의는 두 가지다. 첫째, 자기부호화기 가족의 가장 깔끔한 생성 모델 일반화로, 잠재 공간 보간(latent space interpolation), 조건부 생성(conditional generation), 표상 학습의 표준 도구로 여전히 산업에서 쓰인다. 둘째, 자기부호화기와 확산 모델(diffusion model) 사이의 다리다. 확산 모델은 본질적으로 "노이즈 스케줄을 따라 여러 단계의 잠재를 가진 계층형 VAE"로 볼 수 있다.</p>
+
+      <p>아래 위젯에서 VAE의 잠재 공간이 어떻게 학습되는지를 보고, 그 공간 위에서 점 하나를 옮기면 디코더 출력이 어떻게 매끄럽게 변하는지를 확인한다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 11</span><span>VAE 잠재 공간 — 사전분포 위의 보간</span></div>
+        <div class="vae-stage">
+          <canvas id="vae-canvas"></canvas>
+        </div>
+        <div class="widget-controls">
+          <div class="slider" style="flex:1; min-width:240px;">
+            <label>잠재 좌표 1 <b id="vae-z1v">z₁ = 0.00</b></label>
+            <input type="range" id="vae-z1" min="-2" max="2" step="0.05" value="0">
+          </div>
+          <div class="slider" style="flex:1; min-width:240px;">
+            <label>잠재 좌표 2 <b id="vae-z2v">z₂ = 0.00</b></label>
+            <input type="range" id="vae-z2" min="-2" max="2" step="0.05" value="0">
+          </div>
+        </div>
+        <div class="verdict" id="vae-verdict"></div>
+      </div>
+      <p class="widget-cap">왼쪽 평면은 표준 가우시안 사전분포의 잠재 공간이다. 두 슬라이더로 그 평면 위 한 점을 가리키면 오른쪽에서 디코더가 만드는 출력이 매끄럽게 변한다. KL 페널티가 잠재 공간을 표준 가우시안 모양으로 유지하므로, 모든 점이 의미 있는 출력을 만들고 점 사이의 이동이 자연스럽다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>한 줄 요약</h2>
+      <p>시험 답안의 한 줄. <strong>"VAE는 잠재 변수에 사전분포 $p(h) = \mathcal{N}(0, I)$를 두고 인코더가 변분 사후분포 $q_\phi(h \mid x) = \mathcal{N}(\mu_\phi(x), \sigma_\phi(x)^2 I)$를 출력하는 자기부호화기다. 학습 목표는 데이터 로그 가능도의 하한 ELBO이며, 그 형태는 재구성 항 $\mathbb{E}_{q}[\log p_\theta(x \mid h)]$에서 KL 페널티 $\text{KL}(q_\phi \,\|\, p)$를 뺀 것이다. 샘플링을 미분 가능하게 만드는 재매개화 트릭 $h = \mu + \sigma \odot \epsilon$이 학습을 가능하게 한다."</strong></p>
+
+      <h2>다음 절 미리보기 — 한 장 요약과 빈출 질문</h2>
+      <p>마지막 <a href="12.html">Sub 12: 시험 대비</a>에서 14장 전체를 한 페이지의 요약 카드와 빈출 다섯 질문으로 정리한다. 항등 함수의 함정에서 출발해 미완전, 과완전, DAE, CAE, 스파스, VAE까지 모든 변종이 같은 그림으로 묶이는지를 확인한다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'자기부호화기란 무엇인가', f:'01.html' },
+    { no:'02', t:'인코더 · 디코더 · 재구성 손실', f:'02.html' },
+    { no:'03', t:'미완전 자기부호화기', f:'03.html' },
+    { no:'04', t:'과완전 AE의 위험', f:'04.html' },
+    { no:'05', t:'잡음 제거 AE — 매니폴드', f:'05.html' },
+    { no:'06', t:'잡음 제거 AE — 점수 매칭', f:'06.html' },
+    { no:'07', t:'수축적 AE — 자코비안', f:'07.html' },
+    { no:'08', t:'AE와 매니폴드 학습', f:'08.html' },
+    { no:'09', t:'AE vs PCA', f:'09.html' },
+    { no:'10', t:'스파스 AE', f:'10.html' },
+    { no:'11', t:'변분 AE 맛보기', f:'11.html' },
+    { no:'12', t:'시험 대비 체크리스트', f:'12.html' },
+  ];
+  const CURRENT = '11';
+  (function buildNav() {
+    document.querySelector('.topbar').innerHTML =
+      `<a class="home" href="index.html">← Chapter 14 — 자기부호화기</a>` +
+      `<span class="ch-mini">SUB ${CURRENT} / 12</span>`;
+    document.querySelector('.ch-nav ol').innerHTML = SUBS.map(s =>
+      `<li><a href="${s.f}" ${s.no === CURRENT ? 'class="current"' : ''}>${s.t}</a></li>`).join('');
+    const i = SUBS.findIndex(s => s.no === CURRENT);
+    const prev = i > 0 ? SUBS[i-1] : { f:'index.html', t:'챕터 표지', no:'' };
+    const next = i < SUBS.length-1 ? SUBS[i+1] : { f:'index.html', t:'챕터 표지', no:'' };
+    document.querySelector('.ch-foot').innerHTML =
+      `<a href="${prev.f}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+      `<a href="${next.f}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+    const bar = document.querySelector('.scroll-progress');
+    const onScroll = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    document.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+  })();
+
+  (function vaeWidget() {
+    const canvas = document.getElementById('vae-canvas');
+    const z1s = document.getElementById('vae-z1');
+    const z2s = document.getElementById('vae-z2');
+    const z1v = document.getElementById('vae-z1v');
+    const z2v = document.getElementById('vae-z2v');
+    const verdict = document.getElementById('vae-verdict');
+    const css = getComputedStyle(document.documentElement);
+    const STRUCT = css.getPropertyValue('--structure').trim();
+    const STYLE = css.getPropertyValue('--style').trim();
+    const SYNTH = css.getPropertyValue('--synth').trim();
+    const FAINT = css.getPropertyValue('--ink-faint').trim();
+
+    function decode(z1, z2) {
+      const grid = [];
+      const N = 16;
+      for (let i = 0; i < N; i++) {
+        const y = i / (N-1) * 2 - 1;
+        const row = [];
+        for (let j = 0; j < N; j++) {
+          const x = j / (N-1) * 2 - 1;
+          const a = Math.exp(-((x - 0.4*z1)*(x - 0.4*z1) + (y - 0.4*z2)*(y - 0.4*z2)) / 0.4);
+          const b = Math.exp(-((x + 0.3*z2)*(x + 0.3*z2) + (y - 0.3*z1)*(y - 0.3*z1)) / 0.7);
+          row.push(Math.max(0, Math.min(1, 0.7 * a + 0.4 * b)));
+        }
+        grid.push(row);
+      }
+      return grid;
+    }
+
+    function draw(z1, z2) {
+      const ctx = canvas.getContext('2d');
+      const W = canvas.width = canvas.clientWidth, H = canvas.height = Math.round(W * 10/16);
+      ctx.fillStyle = '#fff'; ctx.fillRect(0,0,W,H);
+
+      const leftW = W * 0.45;
+      ctx.fillStyle = '#FAF7F0';
+      ctx.fillRect(0, 0, leftW, H);
+
+      function lpx(x) { return 20 + (x + 2.2) / 4.4 * (leftW - 40); }
+      function lpy(y) { return H - 20 - (y + 2.2) / 4.4 * (H - 40); }
+
+      for (let level = 0; level <= 4; level++) {
+        const r = (level + 1) * 0.4;
+        ctx.strokeStyle = `rgba(45, 91, 122, ${0.18 - level * 0.025})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        const cx = lpx(0), cy = lpy(0);
+        ctx.ellipse(cx, cy, r * (leftW - 40) / 4.4, r * (H - 40) / 4.4, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      ctx.strokeStyle = 'rgba(38,34,28,0.18)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(lpx(-2.2), lpy(0)); ctx.lineTo(lpx(2.2), lpy(0)); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(lpx(0), lpy(-2.2)); ctx.lineTo(lpx(0), lpy(2.2)); ctx.stroke();
+      ctx.fillStyle = FAINT; ctx.font = '11px "Spline Sans Mono", monospace';
+      ctx.fillText('z₁', lpx(2.0), lpy(0) - 4);
+      ctx.fillText('z₂', lpx(0) + 5, lpy(2.0) + 11);
+      ctx.fillText('p(z) = N(0, I)', 20, 18);
+
+      ctx.fillStyle = SYNTH;
+      ctx.beginPath(); ctx.arc(lpx(z1), lpy(z2), 8, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(lpx(z1), lpy(z2), 3, 0, Math.PI*2); ctx.fill();
+
+      const rightX = leftW + 10, rightW = W - leftW - 20;
+      const grid = decode(z1, z2);
+      const N = grid.length;
+      const sz = Math.min(rightW - 20, H - 40);
+      const x0 = rightX + (rightW - sz) / 2;
+      const y0 = (H - sz) / 2;
+      const cell = sz / N;
+      for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
+        const v = grid[i][j];
+        const c = Math.round(255 - v * 220);
+        ctx.fillStyle = `rgb(${c},${c},${c})`;
+        ctx.fillRect(x0 + j*cell, y0 + i*cell, cell, cell);
+      }
+      ctx.strokeStyle = STYLE; ctx.lineWidth = 2;
+      ctx.strokeRect(x0 - 1, y0 - 1, sz + 2, sz + 2);
+      ctx.fillStyle = FAINT; ctx.font = '11px "Spline Sans Mono", monospace';
+      ctx.fillText('디코더 출력 g(z)', rightX + 10, 18);
+    }
+
+    function update() {
+      const z1 = parseFloat(z1s.value), z2 = parseFloat(z2s.value);
+      z1v.textContent = `z₁ = ${z1.toFixed(2)}`;
+      z2v.textContent = `z₂ = ${z2.toFixed(2)}`;
+      draw(z1, z2);
+      const dist = Math.sqrt(z1*z1 + z2*z2);
+      const inProb = dist < 1.0 ? '높음' : dist < 2.0 ? '중간' : '낮음';
+      verdict.innerHTML = `잠재 좌표 <b>(${z1.toFixed(2)}, ${z2.toFixed(2)})</b>에서 디코더가 출력을 생성. ` +
+        `사전분포 가능도 <b class="mid">${inProb}</b>. 원점에 가까울수록 사전분포에서 자주 뽑힐 점이고, 멀어질수록 드물게 등장한다. ` +
+        `KL 페널티가 잠재 공간을 표준 가우시안 모양으로 유지하므로 점 사이의 이동이 부드럽다.`;
+    }
+    z1s.addEventListener('input', update);
+    z2s.addEventListener('input', update);
+    window.addEventListener('resize', update);
+    update();
+  })();
+
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
+        throwOnError: false,
+      });
+    }
+  });
+</script>
+</body>
+</html>

@@ -3,392 +3,295 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ch.8 · 02 — 학습의 진짜 장애물</title>
+<title>02 · 학습의 진짜 장애물 — 지역 최솟값이 아니라 안장점·평탄·절벽이다</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
-  /* 3D 표면 위젯 */
-  .surf-stage { display: grid; grid-template-columns: 1fr; gap: .8rem; padding: 1.2rem 1rem 1rem; }
-  #surf3d { display: block; width: 100%; height: 380px; cursor: grab; }
-  #surf3d:active { cursor: grabbing; }
-  .surf-pick { display: flex; gap: .4rem; flex-wrap: wrap; justify-content: center; padding: .6rem 1rem; border-top: 1px solid var(--line-soft); background: var(--paper); }
-  .surf-pick .btn.ghost.on { background: var(--style); color: #fff; border-color: var(--style); }
-  .surf-cap { max-width: var(--measure); margin: .4rem auto 0; padding: .6rem 1.4rem 1rem; font-size: .88rem; color: var(--ink-soft); text-align: center; }
-  .surf-cap b { color: var(--ink); }
-
-  /* 동전 던지기 비유 표 */
-  .coin-table { max-width: var(--measure); margin: 1.6rem auto; padding-inline: 1.4rem; }
-  .coin-table table { width: 100%; border-collapse: collapse; font-size: .93rem; }
-  .coin-table th, .coin-table td { padding: .55rem .8rem; text-align: left; border-bottom: 1px solid var(--line-soft); }
-  .coin-table th { font-family: var(--mono); font-size: .7rem; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-faint); font-weight: 500; }
-  .coin-table td.dim { font-family: var(--mono); color: var(--structure); }
-  .coin-table td.prob { font-family: var(--mono); color: var(--style); }
-
-  /* 절벽 위젯 */
-  .cliff-svg { display: block; width: 100%; max-width: 640px; margin: 0 auto; height: 280px; }
-  .cliff-ctrl { display: flex; gap: 1rem; justify-content: center; padding: .6rem 1rem 1rem; flex-wrap: wrap; }
+  .land-stage { padding: 1rem 1.1rem; }
+  #landCanvas { width: 100%; height: 360px; display: block; border-radius: 8px; background: #fff; border: 1px solid var(--line); }
+  .toggles { display: flex; flex-wrap: wrap; gap: .5rem; padding: .8rem 1.1rem 0; }
+  .readout-2 { display: flex; flex-wrap: wrap; gap: 1.2rem; padding: 0.6rem 1.1rem 1rem; font-family: var(--mono); font-size: .78rem; color: var(--ink-soft); }
+  .readout-2 span b { color: var(--ink); font-weight: 600; }
 </style>
 </head>
 <body>
-<div class="scroll-progress"></div>
 <div class="topbar">
-  <a class="home" href="index.html">← Chapter 08 표지</a>
-  <span class="ch-mini">SUB 02 / 08 · Optimization</span>
+  <a class="home" href="index.html">← Ch.08 최적화</a>
+  <span class="ch-mini">SUB 02 / 17</span>
 </div>
 
 <div class="ch-layout">
-  <aside class="ch-nav"><nav><ol id="nav"></ol></nav></aside>
+  <aside class="ch-nav"><nav><ol id="navlist"></ol></nav></aside>
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Sub-chapter 02 · 손실 지형의 진짜 모습</span>
-      <h1>지역 최솟값은 적이 아니다.<br><span class="t-style">안장점</span>과 <span class="t-style">절벽</span>이 적이다</h1>
-      <p class="lede">많은 입문자가 “지역 최솟값에 빠지면 학습 실패”라고 배운다. 그러나 고차원에서 진짜 적은 따로 있다. 어디로 떨어져도 한쪽은 올라가는 안장점, 갑자기 모든 노력을 무효로 만드는 절벽, 그리고 기울기가 거의 사라진 평탄한 고원이다.</p>
+      <span class="kicker">Sub 02 · 무엇이 학습을 멈추게 하는가</span>
+      <h1>지역 최솟값은 누명을 썼다,<br>진짜 적은 <span class="t-style">안장점</span>이다</h1>
+      <p class="lede">고차원에서 모든 방향이 동시에 오르막인 점은 매우 드물다. 훨씬 흔한 건 일부 방향만 오르막이고 일부는 내리막인 — 평평하게 속이는 — 안장점이다.</p>
     </header>
 
     <div class="prose">
-      <p>신경망의 비용함수 표면은 절대 볼록(convex)하지 않다. 즉 “한 개의 그릇 모양”이 아니다. 입체적으로 떠올리면 봉우리와 골짜기가 끝없이 이어진 산악 지형에 가깝다. 그런데 그 지형의 “나쁜 점”들이 모두 같은 종류는 아니다. 책은 신경망 학습이 마주치는 장애물을 다음 다섯 가지로 나눈다.</p>
 
-      <ul>
-        <li><strong>나쁜 조건수(ill-conditioning)</strong> — 방향마다 곡률이 너무 다를 때.</li>
-        <li><strong>지역 최솟값(local minimum)</strong> — 주변보다 낮지만 전역은 아닌 골짜기.</li>
-        <li><strong>안장점(saddle point)</strong> — 어떤 방향은 오르막, 어떤 방향은 내리막인 평형점.</li>
-        <li><strong>절벽(cliff)</strong>과 <strong>기울기 폭발(exploding gradient)</strong> — 갑작스러운 급경사.</li>
-        <li><strong>소실 기울기(vanishing gradient)</strong>와 <strong>긴 평탄 영역(plateau)</strong> — 신호가 거의 없는 평지.</li>
-      </ul>
+      <p>딥러닝 입문서가 거의 모두 그리는 그림이 있다. U자 모양의 손실 곡선 위로 공이 굴러 내려가는데, 도중에 작은 골짜기에 빠져 꼼짝 못한다 — 그것이 지역 최솟값(local minimum)이고, 그래서 학습이 어렵다는 그림이다. 이 그림은 직관을 잡는 데는 유용하지만 한 가지 결정적인 부분에서 사실과 다르다. <strong>실제 딥러닝의 손실 지형(loss landscape)에서 지역 최솟값은 우리가 두려워해야 할 주적이 아니다.</strong></p>
 
-      <h2>지역 최솟값은 왜 “생각보다 적”이 아닌가</h2>
+      <p>이 문장이 처음에는 받아들이기 어렵다. 비볼록(nonconvex) 함수에 지역 최솟값이 많을 텐데, 그게 왜 문제가 아닌가? 답은 두 가지로 갈라진다. 첫째, 신경망의 비용함수가 가진 지역 최솟값 대부분은 가중치 공간의 대칭성(symmetry)에서 오는 것이라 실질적으로 동등하다. 둘째, 정말로 우리를 멈추게 하는 것은 따로 있다 — 안장점(saddle point), 평탄한 고원(plateau), 절벽(cliff), 그리고 소실 및 폭발 기울기다.</p>
 
-      <p>지역 최솟값(local minimum)이 무서워 보이는 이유는 “여기 빠지면 영원히 못 나간다”는 직관 때문이다. 그러나 신경망에서 지역 최솟값이 가진 함정은 생각보다 약하다. 두 가지 이유가 있다.</p>
+      <h2>가중치 공간 대칭성 — 지역 최솟값이 사실은 같은 점이라는 사실</h2>
 
-      <p>첫째, 신경망의 지역 최솟값 대부분은 <strong>가중치 공간 대칭성(weight space symmetry)</strong>에서 나온다. 한 은닉층에 같은 활성화 함수를 가진 유닛 $i$와 $j$가 있다고 하자. 두 유닛의 가중치를 통째로 교환해도 네트워크의 출력 함수는 변하지 않는다. 따라서 $n$개의 유닛을 가진 층은 $n!$개의 동등한 지역 최솟값을 만든다. 이 최솟값들은 모두 같은 비용을 갖는 — “이름만 다른 같은 점들”이므로 실제 학습에는 문제가 되지 않는다.</p>
+      <p>한 은닉층에 $n$개의 뉴런이 있다고 하자. 이 뉴런들의 가중치를 서로 교환해도 — 즉 1번 뉴런의 가중치를 2번 자리에 옮기고, 2번을 1번 자리에 옮겨도 — 네트워크가 계산하는 함수는 똑같다. 출력층은 어차피 모든 뉴런에서 신호를 받아 합치므로, 어느 뉴런이 어느 자리에 있든 상관없다.</p>
 
-      <p>둘째, 최근 연구에 따르면 충분히 큰 네트워크에서는 거의 모든 지역 최솟값이 전역 최솟값에 가까운 낮은 비용을 가진다. 즉 “전역 최솟값을 못 찾으면 실패”라는 강박을 가질 필요가 없다. 충분히 낮은 비용에 도달하면 그것이 일반화에 충분히 좋은 점일 가능성이 높다.</p>
+      <p>이 사실은 한 가지 직접적인 함의를 갖는다. 가중치 공간에서 우리가 "다른 지역 최솟값"이라고 부르는 점들 중 상당수는, 사실은 단지 같은 함수에 대응하는 다른 좌표일 뿐이다. $n$개 뉴런을 가진 층에서 가능한 순열의 수는 $n!$이므로, 단 하나의 함수 최솟값이 가중치 공간에서는 $n!$개의 점으로 보인다. 이런 "복제된" 지역 최솟값들은 모두 같은 비용을 가지므로, 어느 곳에 도달하든 학습은 성공이다.</p>
 
-      <h2>안장점이 진짜 흔하다 — 동전 던지기 비유</h2>
-
-      <p>차원이 높아지면 진짜 위협은 안장점(saddle point)이다. 안장점은 기울기가 0이지만 지역 최솟값이 아닌 점이다. 즉 어떤 방향으로는 오르막, 어떤 방향으로는 내리막이다. 헤시안의 고유값을 보면 양수와 음수가 섞여 있다.</p>
-
-      <p>왜 고차원에서 안장점이 압도적으로 많을까? 이렇게 생각하자. 어떤 임계점(critical point)이 지역 최솟값이 되려면 모든 $n$개 방향에서 곡률이 양수여야 한다. 각 방향이 양수일 확률을 $p$라고 보면, 모든 방향이 양수일 확률은 $p^{n}$이다. $n$이 커지면 이 확률은 지수적으로 0에 수렴한다.</p>
+      <p>최근 연구들은 한 걸음 더 나아간다. 충분히 큰 신경망에서는 실제로 다른 함수를 만드는 지역 최솟값들조차 대부분 비용이 거의 같다. 즉 손실 지형 위의 골짜기 바닥들은 거의 비슷한 깊이로 깔려 있다. 그래서 어느 골짜기에 떨어지든 일반화 성능은 비슷하다. <em>전역 최솟값(global minimum)에 정확히 도달할 필요는 없다.</em> 충분히 낮은 골짜기에 들어가면 그것으로 충분하다.</p>
 
       <div class="analogy">
-        <b>동전 $n$번을 던져 모두 앞면이 나올 확률을 생각해 보자.</b> $n=2$면 $1/4$, $n=10$이면 $1/1024$, $n=100$이면 사실상 0이다. 신경망 파라미터 수는 수만에서 수억이다. 임계점 하나에서 그 모든 방향이 “오르막”이려면, 그 수억 번의 동전이 모두 같은 면이어야 한다. 그 일이 일어날 가능성은 거의 없다. 그래서 신경망에서 만나는 거의 모든 임계점은 어느 방향에서는 내리막이 섞인 <b>안장점</b>이 된다.
+        대학교 캠퍼스에서 가장 낮은 식당을 찾는다고 하자. 정확한 최저점은 한 곳일 수 있지만, 그 근처 반경 100m 안에 비슷한 높이의 다른 식당이 여러 개 있다. 어느 곳을 가도 점심을 먹을 수 있다. <b>딥러닝의 지역 최솟값은 이 "비슷한 깊이의 식당들"에 가깝다.</b> 한 곳에 도달하면 다른 곳을 더 찾을 이유가 거의 없다.
       </div>
 
-      <p>좋은 소식은 경사하강법이 안장점에서 “끌려가지 않는다”는 점이다. 기울기는 0이라 정확히 안장점에 가만히 있으면 멈추지만, 미니배치의 확률적 잡음이 작은 섭동(perturbation)을 만들어 안장점에서 빠져나오게 한다. 반대로 <strong>뉴턴 방법(Newton's method)은 안장점에 끌려가는 약점이 있다</strong>. 뉴턴 방법은 “기울기가 0인 점”을 직접 찾는 알고리즘이라, 안장점도 “여기가 정답”이라고 잘못 판단한다. 이것이 1차 방법이 딥러닝 실전을 지배하는 한 가지 이유다.</p>
+      <h2>안장점 — 고차원에서 진짜 흔한 장애물</h2>
+
+      <p>그렇다면 무엇이 진짜 학습을 멈추게 하는가? 답은 안장점이다. 안장점에서는 헤시안(Hessian) 행렬의 고유값(eigenvalue) 중 일부는 양수(어떤 방향에서는 오르막), 일부는 음수(다른 방향에서는 내리막)다. 기울기 $\nabla J$는 0이지만, 두 방향이 섞여 있어 "최솟값도 아니고 최댓값도 아닌" 평형점이 만들어진다.</p>
+
+      <p>안장점이 고차원에서 왜 그렇게 흔한지를 보려면 동전 던지기 비유가 가장 깔끔하다. 무작위 임계점(critical point)에서 헤시안의 한 고유값이 양수일 확률이 $1/2$, 음수일 확률이 $1/2$라 하자(거칠게 본 모형). 차원이 $n$인 공간에서 모든 고유값이 동시에 양수일 확률은 $(1/2)^n$이다. 즉 진짜 지역 최솟값은 차원이 커질수록 지수적으로 드물어진다.</p>
+
+      <div class="math-block">$$ P(\text{지역 최솟값}) \approx (1/2)^n \quad,\quad P(\text{안장점}) \approx 1 - 2\cdot(1/2)^n $$</div>
+      <p class="math-note">차원 n이 커질수록, 무작위 임계점은 거의 확실하게 안장점이다. n=10이면 지역 최솟값일 확률은 약 0.1%, 나머지는 거의 모두 안장점.</p>
+
+      <p>현대 신경망의 파라미터 수가 수백만에서 수억 개임을 떠올리면, 임계점의 거의 모두가 안장점이라는 결론이 나온다. 그래서 책은 "지역 최솟값을 두려워하던 옛 직관은 저차원에서 만들어진 것이고, 고차원의 손실 지형은 본질적으로 다른 모양"이라고 정리한다.</p>
+
+      <p>다행스러운 사실 하나는, 경사하강법은 안장점을 잘 빠져나오는 경향이 있다는 것이다. 안장점에서 기울기는 0이지만, 그 근방에서는 내리막 방향이 존재하므로 작은 노이즈나 모멘텀이 결국 그 방향으로 밀어 준다. 반면 뉴턴 방법(Newton's method)은 "기울기가 0인 점"을 직접 찾아가는 성질 때문에 안장점에 빨려 들어가는 위험이 있다. 이것이 딥러닝에서 순수한 뉴턴 방법이 잘 쓰이지 않는 한 이유다.</p>
+
+      <h2>평탄 고원 — 기울기가 너무 작아서 움직이지 못하는 영역</h2>
+
+      <p>안장점만큼이나 까다로운 것이 평탄 고원(plateau)이다. 이름 그대로, 손실 지형 위에 거의 평평한 넓은 영역이 펼쳐져 있는 곳이다. 기울기는 0이 아니지만 매우 작아, 학습 한 스텝당 거의 움직이지 못한다. 시간만 보면 학습이 멈춘 것처럼 보이지만, 사실은 매우 천천히 움직이고 있을 뿐이다.</p>
+
+      <p>평탄 고원은 비선형 활성화의 포화(saturation)와 관련이 깊다. 시그모이드(sigmoid)나 하이퍼볼릭 탄젠트(tanh) 같은 활성화는 입력이 너무 크거나 너무 작으면 기울기가 거의 0이 된다. 한 층에서 이런 포화가 일어나면, 역전파로 흘러나오는 기울기도 함께 줄어든다. 결과적으로 그 층에 연결된 모든 가중치가 거의 움직이지 못한다.</p>
+
+      <p>이 문제는 ReLU 계열 활성화(ReLU, LeakyReLU, GELU 등)가 등장하면서 상당 부분 완화되었다. ReLU는 양수 영역에서 기울기가 항상 1이라 포화가 없다. 하지만 음수 영역에서는 정확히 0이라 "죽은 ReLU(dead ReLU)" 문제가 생긴다. 즉 평탄 고원은 형태가 바뀌었을 뿐 사라지지 않았다.</p>
+
+      <h2>절벽과 폭발 기울기 — 갑자기 닥치는 큰 수</h2>
+
+      <p>또 한 가지 학습을 망가뜨리는 지형이 절벽(cliff)이다. 손실 함수가 비교적 평탄하게 펼쳐져 있다가, 특정 영역에서 매우 급격하게 떨어지거나 솟아오르는 모양이다. 깊은 네트워크에서 가중치 행렬이 여러 번 곱해질 때, 이런 비선형성이 누적되면서 절벽이 생긴다. 특히 순환 신경망(recurrent neural network, RNN)에서 두드러진다.</p>
+
+      <p>절벽 근처에서 평범한 경사하강법 스텝을 밟으면 무슨 일이 일어나는가? 기울기가 절벽의 수직 방향으로 매우 크게 나타나므로, 한 번의 업데이트가 너무 큰 거리를 만들어 파라미터가 절벽 너머로 튕겨 나간다. 그 결과 이전까지 쌓은 학습 성과를 한순간에 잃어버리고, 운이 나쁘면 발산까지 한다.</p>
+
+      <p>이 문제의 해결책이 13번 절에서 다룰 기울기 클리핑(gradient clipping)이다. 핵심 아이디어는 단순하다 — 기울기의 크기가 임계값을 넘으면 방향은 그대로 두고 크기만 잘라 낸다. 절벽에서 핸들은 유지하고 브레이크만 밟는 것과 같다.</p>
+
+      <h2>소실 및 폭발 기울기 — 깊이가 만드는 곱셈의 함정</h2>
+
+      <p>마지막 장애물은 깊이에서 직접 오는 문제다. 깊은 네트워크에서 역전파(backpropagation)는 출력층의 손실 기울기를 입력 쪽으로 전파한다. 이때 층마다 가중치 행렬 $W^{(\ell)}$과 활성화 함수의 미분이 곱해진다. $L$개 층을 거치면 대략 $W^{(L)} W^{(L-1)} \cdots W^{(1)}$ 같은 곱이 등장한다.</p>
+
+      <p>이 곱의 효과를 가장 깔끔하게 보려면 같은 행렬 $W$가 반복적으로 곱해진다고 단순화해 보자. $W$의 가장 큰 고유값(절댓값)을 $\lambda$라 하면, $W^t$의 동작은 대략 $\lambda^t$에 비례한다. $|\lambda| < 1$이면 $t$가 커질수록 $\lambda^t \to 0$ — <strong>소실 기울기(vanishing gradient)</strong>다. $|\lambda| > 1$이면 $\lambda^t \to \infty$ — <strong>폭발 기울기(exploding gradient)</strong>다.</p>
+
+      <div class="math-block">$$ \|\nabla_{\theta^{(1)}} J\| \approx \prod_{\ell=2}^{L} \|W^{(\ell)}\|\cdot\|\sigma'\| $$</div>
+      <p class="math-note">초기 층의 기울기 크기는 위 모든 층의 가중치 노름과 활성화 미분의 곱에 비례한다. 1보다 작은 수의 곱은 빠르게 0으로, 1보다 큰 수의 곱은 빠르게 무한대로.</p>
+
+      <p>이 문제는 특히 RNN에서 잔혹하다. RNN은 같은 가중치 행렬을 시간 단계마다 반복 적용하므로, 시퀀스 길이 $T$가 100이면 $W^{100}$이 등장한다. 피드포워드 네트워크는 층마다 다른 가중치를 쓰므로 이 문제를 어느 정도 분산시킬 수 있다. 그래도 깊은 피드포워드에서 적절한 초기화(initialization)와 정규화(batch norm 등)가 필수인 이유가 이것이다.</p>
+
+      <h2>위젯 — 안장점과 지역 최솟값을 손으로 비교</h2>
+
+      <p>아래 위젯은 두 가지 손실 지형 — 안장점이 있는 $z = 0.6(x^2 - y^2)$와 지역 최솟값이 있는 $z = (x^2 + y^2) - 0.6\cos(4\sqrt{x^2+y^2})$ — 을 3D로 보여 준다. 빨간 공이 경사하강법으로 굴러 내려가는 궤적이다. 두 지형에서 공이 어떻게 다르게 움직이는지 직접 보라.</p>
     </div>
 
     <div class="widget">
       <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 02</span><span>3D 손실 표면 — 지역 최솟값 vs 안장점 vs 평탄</span></div>
-        <div class="surf-stage">
-          <canvas id="surf3d"></canvas>
+        <div class="widget-label"><span class="lab-no">위젯 02</span><span>안장점 vs 지역 최솟값 — 3D 손실 지형</span></div>
+        <div class="land-stage">
+          <canvas id="landCanvas"></canvas>
         </div>
-        <div class="surf-pick">
-          <button class="btn ghost on" data-surf="bowl">볼록 그릇</button>
-          <button class="btn ghost" data-surf="local">지역 최솟값 두 개</button>
-          <button class="btn ghost" data-surf="saddle">안장점</button>
-          <button class="btn ghost" data-surf="plateau">평탄한 고원</button>
+        <div class="toggles">
+          <button class="btn ghost on" id="btnSaddle">안장점 표면</button>
+          <button class="btn ghost" id="btnMinima">지역 최솟값 표면</button>
+          <button class="btn ghost" id="btnRestart">초기점 재추첨</button>
         </div>
-        <p class="surf-cap" id="surfCap"><b>볼록 그릇</b> — 모든 방향이 위로 휘어 있다. 이런 함수에서는 어디서 출발해도 한 점으로 수렴한다. 신경망 손실은 이렇게 생기지 않았다.</p>
+        <div class="readout-2">
+          <span>현재 손실 = <b id="readZ">0.00</b></span>
+          <span>기울기 노름 = <b id="readG">0.00</b></span>
+          <span>스텝 수 = <b id="readT">0</b></span>
+        </div>
       </div>
-      <p class="widget-cap">마우스로 드래그해 시점을 돌리면 표면의 형태가 어떻게 다른지 직접 볼 수 있다. <b>안장점</b>에서 빨간 점이 가만히 있을 때, 한쪽 방향(파랑 축)은 올라가고 다른 방향(주황 축)은 내려가는 것에 주목하자 — 기울기는 0이지만 “여기가 최솟값”은 결코 아니다.</p>
+      <p class="widget-cap">안장점 표면: 공은 안장점 근처에서 한참 머물다 결국 음의 곡률 방향으로 빠져 나간다. 지역 최솟값 표면: 공은 가장 가까운 작은 골짜기에 갇혀 진짜 더 낮은 골짜기에 도달하지 못한다. 8장 알고리즘의 노이즈와 모멘텀이 두 함정을 어떻게 다르게 다루는지 다음 절들에서 본다.</p>
     </div>
 
     <div class="prose">
-      <h2>지수적으로 줄어드는 “모두 같은 방향” 확률</h2>
-      <p>표로 직관을 굳혀 두자. $n$차원 공간에서 임계점이 지역 최솟값일 확률을 $p^{n}$으로 단순화하면 (현실의 헤시안 분포는 더 복잡하지만 직관에는 충분하다), 차원이 늘어날수록 지역 최솟값은 사실상 사라진다.</p>
+
+      <h2>오해 정리 — "지역 최솟값에 빠지면 끝장"이라는 미신</h2>
+
+      <p>학부 머신러닝 교재에서 비볼록 최적화를 다룰 때, "그래서 지역 최솟값에 빠지지 않는 게 어렵다"는 표현이 거의 의례적으로 나온다. 이 표현은 저차원의 직관에서는 맞다. 2차원 함수에서 골짜기 두 개가 있으면, 한 번 들어간 골짜기에서 다른 골짜기로 옮겨 가기 어렵다.</p>
+
+      <p>그러나 수백만 차원의 손실 지형에서는 그림이 다르다. 어떤 한 방향에서 보면 골짜기 바닥처럼 보여도, 다른 방향에서 보면 산허리에 불과한 경우가 절대 다수다. 그래서 "안장점일 확률 vs 진짜 지역 최솟값일 확률"의 비율이 차원에 따라 지수적으로 안장점 쪽으로 기운다.</p>
+
+      <p>그러면 무엇을 두려워해야 하는가? 두 가지로 정리할 수 있다. <strong>첫째, 기울기가 작은 영역(평탄 고원, 포화)에서 학습 속도가 무너지는 것.</strong> 이건 옵티마이저 자체의 적응적 학습률(7-9번 절의 AdaGrad·RMSProp·Adam)이 다룬다. <strong>둘째, 기울기가 갑자기 매우 커지는 영역(절벽, 폭발 기울기)에서 한 스텝에 모든 게 망가지는 것.</strong> 이건 기울기 클리핑(13번 절)이 다룬다.</p>
+
+      <p>그리고 그 사이 어딘가에 안장점이 있다. 안장점은 기울기가 0이라 위험해 보이지만, 작은 노이즈나 모멘텀만 있어도 빠져 나간다. 그래서 실전에서는 — 책이 길게 강조하듯 — 안장점이 학습의 결정적 장벽이 되지는 않는다.</p>
+
+      <h2>다음 절로 — 그래서 우리는 노이즈를 일부러 넣는다</h2>
+
+      <p>이 장의 모든 알고리즘은 위에서 본 장애물 중 하나 이상을 다룬다. 가장 먼저 다룰 것은 가장 기본 — 미니배치 SGD다. SGD가 "기울기를 전체 데이터로 정확하게 구하지 않고 일부 표본으로만 추정한다"는 것이 어떻게 안장점 탈출과 일반화 개선이라는 두 마리 토끼를 동시에 잡는지를 다음 절에서 본다.</p>
     </div>
 
-    <div class="coin-table">
-      <table>
-        <thead><tr><th>차원 $n$</th><th>모든 방향이 양수일 확률 ($p=0.5$)</th><th>해석</th></tr></thead>
-        <tbody>
-          <tr><td class="dim">2</td><td class="prob">$0.25$</td><td>2차원 등고선 — 가끔은 지역 최솟값</td></tr>
-          <tr><td class="dim">10</td><td class="prob">$\approx 10^{-3}$</td><td>드물게 나온다</td></tr>
-          <tr><td class="dim">100</td><td class="prob">$\approx 10^{-30}$</td><td>사실상 모든 임계점이 안장점</td></tr>
-          <tr><td class="dim">$10^6$ (실제 신경망)</td><td class="prob">$\to 0$</td><td>지역 최솟값은 잊어도 좋다</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="prose">
-      <h2>절벽 — 모든 노력을 한 번에 날리는 급경사</h2>
-
-      <p>매우 깊은 네트워크나 순환 신경망(recurrent neural network, RNN)에서는 손실 표면에 절벽 같은 구조가 생긴다. 가중치 행렬이 여러 번 곱해진 결과 어느 영역에서 출력이 갑자기 폭발하면, 그 부근의 기울기도 폭발한다. 평소처럼 학습률 $\varepsilon$만큼 기울기 방향으로 가면 파라미터가 절벽 너머로 튕겨 나가고, 지금까지의 학습이 무효화된다.</p>
-
-      <p>해결책은 <strong>기울기 클리핑(gradient clipping)</strong>이다. 기울기 노름이 임계값 $c$를 넘으면, 방향은 유지하되 크기만 잘라낸다.</p>
-
-      <div class="math-block">$$ \hat g \;=\; \begin{cases} g & \text{if } \|g\| \le c \\ \dfrac{c\,g}{\|g\|} & \text{if } \|g\| > c \end{cases} $$</div>
-      <p class="math-note">$g$는 원래 기울기, $\hat g$는 클리핑된 기울기. 노름이 $c$ 이상이면 같은 방향의 노름 $c$ 벡터로 교체한다.</p>
-
-      <p>방향을 유지하는 것이 중요하다. 절벽이 막 시작되는 지점에서도 “내려가야 할 방향” 자체는 보통 옳다. 잘못된 것은 그 방향으로 한 번에 너무 멀리 가는 일이다. 그러니 핸들은 그대로 두고 브레이크만 밟는 셈이다.</p>
-    </div>
-
-    <div class="widget">
-      <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 03</span><span>절벽 + 기울기 클리핑 — 노름은 자르고 방향은 유지</span></div>
-        <div style="padding: 1.2rem 1rem 1rem;">
-          <svg class="cliff-svg" id="cliffSvg" viewBox="0 0 640 280"></svg>
-        </div>
-        <div class="cliff-ctrl">
-          <div class="slider"><label>클리핑 임계값 $c$ <b id="cVal">5</b></label>
-            <input type="range" id="cSlider" min="0.5" max="20" step="0.1" value="5">
-          </div>
-          <button class="btn" id="cliffRun">학습 한 번 실행</button>
-        </div>
-        <p class="surf-cap" id="cliffCap"><b>클리핑 임계값을 0에 가깝게 줄여 보자.</b> 절벽에서 만난 거대한 기울기를 잘라 내면, 파라미터가 “계곡 너머로” 튕겨 나가지 않고 절벽 근처에 머문다.</p>
-      </div>
-      <p class="widget-cap">노란 곡선은 손실 표면(절벽 단면), 파란 점은 현재 파라미터. <b>실행</b>을 눌러 보자. 클리핑이 없거나 임계값이 크면 한 스텝으로 멀리 튕겨 나가고, 임계값이 작으면 안전하게 절벽 끝에서 멈춘다.</p>
-    </div>
-
-    <div class="prose">
-      <h2>소실·폭발 기울기 — 깊이 자체가 만드는 문제</h2>
-
-      <p>깊은 네트워크에서는 역전파(backpropagation) 시 같은 가중치 행렬 $W$가 여러 번 곱해진다. 시간 단계 $t$ 뒤의 효과는 $W^{t}$로 나타나는데, $W$의 고유값 $\lambda$에 대해 $\lambda^{t}$가 만들어진다.</p>
-
-      <div class="math-block">$$ |\lambda| < 1 \;\Rightarrow\; \lambda^{t} \to 0 \;\;(\text{소실})\qquad |\lambda| > 1 \;\Rightarrow\; \lambda^{t} \to \infty \;\;(\text{폭발}) $$</div>
-      <p class="math-note">기울기의 크기가 깊이에 따라 지수적으로 변한다. 적절한 초기화와 정규화가 없으면 학습이 불가능하다.</p>
-
-      <p>이 문제는 같은 행렬 $W$를 시간마다 반복 적용하는 RNN에서 특히 심하다. 피드포워드(feedforward) 네트워크는 층마다 다른 가중치를 쓰므로 같은 행렬의 거듭제곱이 만들어지지 않는다. 그래도 매우 깊어지면 활성값과 기울기 분포가 층을 거치며 불안정해진다. 이 분포 안정성을 만드는 도구가 바로 <a href="06.html">6장에서 다룰 초기화</a>와 <a href="07.html">7장에서 다룰 배치 정규화</a>다.</p>
-
-      <h2>다음 장으로</h2>
-      <p>장애물을 알았다. 이제 가장 기본적인 무기 — <strong>미니배치 SGD</strong>를 본다. 다음 장에서는 “왜 전체 기울기 대신 일부분만 보는 것이 효율적인가”를 평균의 표준오차 $\sigma/\sqrt{n}$로 설명하고, 배치 크기 슬라이더로 기울기 분산을 직접 만져 본다.</p>
-    </div>
-
-    <nav class="ch-foot" id="foot"></nav>
+    <nav class="ch-foot" id="chFoot"></nav>
   </main>
 </div>
 
 <script>
-  const SUB = [
-    { no:'01', t:'순수 최적화와 ML 최적화의 차이', f:'01.html' },
-    { no:'02', t:'학습의 진짜 장애물', f:'02.html' },
-    { no:'03', t:'미니배치 SGD — 잡음 받아들이기', f:'03.html' },
-    { no:'04', t:'모멘텀과 네스테로프', f:'04.html' },
-    { no:'05', t:'적응 학습률 — AdaGrad·RMSProp·Adam', f:'05.html' },
-    { no:'06', t:'초기화 — 대칭성과 분산 균형', f:'06.html' },
-    { no:'07', t:'배치 정규화', f:'07.html' },
-    { no:'08', t:'시험 대비 — 계보·디버깅', f:'08.html' },
+  const SUBS = [
+    { no:'01', t:'순수 vs ML 최적화' }, { no:'02', t:'학습의 장애물' }, { no:'03', t:'미니배치 SGD 1' }, { no:'04', t:'미니배치 SGD 2' },
+    { no:'05', t:'학습률의 의미' }, { no:'06', t:'모멘텀 1' }, { no:'07', t:'모멘텀 2 (네스테로프)' }, { no:'08', t:'적응 1 (AdaGrad)' },
+    { no:'09', t:'적응 2 (RMSProp)' }, { no:'10', t:'적응 3 (Adam)' }, { no:'11', t:'초기화 1 (대칭성)' }, { no:'12', t:'초기화 2 (Xavier·He)' },
+    { no:'13', t:'배치 정규화 1' }, { no:'14', t:'배치 정규화 2' }, { no:'15', t:'학습률 스케줄' }, { no:'16', t:'기울기 클리핑' },
+    { no:'17', t:'시험 대비' },
   ];
-  function buildNav(curNo) {
-    const ol = document.getElementById('nav');
-    ol.innerHTML = SUB.map(c => `<li><a href="${c.f}" ${c.no===curNo?'class="current"':''}>${c.t}</a></li>`).join('');
-    const cur = SUB.findIndex(c => c.no === curNo);
-    const prev = cur > 0 ? SUB[cur-1] : { f:'index.html', t:'표지로', no:'' };
-    const next = cur < SUB.length-1 ? SUB[cur+1] : { f:'index.html', t:'표지로', no:'' };
-    document.getElementById('foot').innerHTML =
-      `<a href="${prev.f}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
-      `<a href="${next.f}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
-  }
-  function initProgress() {
-    const bar = document.querySelector('.scroll-progress');
-    const onScroll = () => {
-      const h = document.documentElement;
-      const max = h.scrollHeight - h.clientHeight;
-      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
-    };
-    document.addEventListener('scroll', onScroll, { passive: true }); onScroll();
-  }
+  const CUR = '02';
+  const navlist = document.getElementById('navlist');
+  SUBS.forEach(s => { const li = document.createElement('li'); li.innerHTML = `<a href="${s.no}.html"${s.no===CUR?' class="current"':''}>${s.t}</a>`; navlist.appendChild(li); });
+  const chFoot = document.getElementById('chFoot');
+  const idx = SUBS.findIndex(s => s.no === CUR);
+  const prev = idx > 0 ? SUBS[idx-1] : { no:'index', t:'표지로' };
+  const next = idx < SUBS.length-1 ? SUBS[idx+1] : { no:'index', t:'표지로' };
+  chFoot.innerHTML = `<a href="${prev.no}.html"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` + `<a href="${next.no}.html" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
 
-  // 3D 표면 위젯
-  function surfWidget() {
-    const canvas = document.getElementById('surf3d');
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
+        throwOnError: false,
+      });
+    }
+    // three.js 위젯
     if (!window.THREE) return;
+    const canvas = document.getElementById('landCanvas');
+    const wrap = canvas.parentElement;
+    const css = getComputedStyle(document.documentElement);
+    const C = {
+      structure: css.getPropertyValue('--structure').trim() || '#2D5B7A',
+      style: css.getPropertyValue('--style').trim() || '#C0492E',
+      synth: css.getPropertyValue('--synth').trim() || '#A47B2E',
+      ink: css.getPropertyValue('--ink').trim() || '#26221C',
+    };
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
     renderer.setClearColor(0xffffff, 0);
     const scene = new THREE.Scene();
-    const cam = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
+    const cam = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
 
-    const surfaces = {
-      bowl: (x,y) => 0.4 * (x*x + y*y),
-      local: (x,y) => -1.2*Math.exp(-((x-1.3)**2 + (y+0.7)**2) * 1.2)
-                    - 1.4*Math.exp(-((x+1.4)**2 + (y-0.6)**2) * 1.2)
-                    + 0.08 * (x*x + y*y),
-      saddle: (x,y) => 0.4 * (x*x - y*y),
-      plateau: (x,y) => 0.6 * Math.tanh(0.7 * (x*x + y*y) - 1.5),
-    };
-    const caps = {
-      bowl: '<b>볼록 그릇</b> — 모든 방향이 위로 휘어 있다. 어디서 출발해도 한 점으로 수렴한다. 신경망 손실은 이렇게 생기지 않았다.',
-      local: '<b>지역 최솟값 두 개</b> — 두 골짜기가 있다. 하지만 신경망에서 흔한 지역 최솟값은 대부분 가중치 대칭성에서 나와, 비용이 같은 “같은 점들”이다.',
-      saddle: '<b>안장점</b> — $x$축 방향은 오르막, $y$축 방향은 내리막. 기울기는 0이지만 결코 최솟값이 아니다. 고차원에서 압도적으로 흔하다.',
-      plateau: '<b>평탄한 고원</b> — 중심에 거의 평평한 영역. 기울기가 너무 작아 학습이 멈춘 듯 느려진다. 모멘텀이나 적응 학습률이 도움이 된다.',
-    };
+    let mode = 'saddle';
+    let surface, wire, ball;
+    let pos = { x: 0.6, y: 0.6 };
+    let step = 0;
+    const lr = 0.04;
 
-    let current = 'bowl';
-    let surfMesh = null, wfMesh = null, markerS = null, axisGroup = null;
+    function fSaddle(x, y) { return 0.6 * (x*x - y*y); }
+    function gSaddle(x, y) { return [1.2*x, -1.2*y]; }
+    function fMinima(x, y) {
+      const r2 = x*x + y*y;
+      return 0.45 * r2 - 0.6 * Math.cos(4 * Math.sqrt(r2 + 0.01));
+    }
+    function gMinima(x, y) {
+      // numerical gradient
+      const eps = 1e-3;
+      const fx0 = fMinima(x-eps, y), fx1 = fMinima(x+eps, y);
+      const fy0 = fMinima(x, y-eps), fy1 = fMinima(x, y+eps);
+      return [(fx1-fx0)/(2*eps), (fy1-fy0)/(2*eps)];
+    }
+    function f(x, y) { return mode==='saddle' ? fSaddle(x, y) : fMinima(x, y); }
+    function g(x, y) { return mode==='saddle' ? gSaddle(x, y) : gMinima(x, y); }
 
-    function buildSurface(name) {
-      if (surfMesh) { scene.remove(surfMesh); scene.remove(wfMesh); scene.remove(markerS); scene.remove(axisGroup); }
-      const fn = surfaces[name];
-      const SEG = 60, R = 2.4;
-      const verts = [], cols = [], idx = [];
-      let zMin = Infinity, zMax = -Infinity;
-      const grid = [];
-      for (let i = 0; i <= SEG; i++) {
-        grid[i] = [];
-        for (let j = 0; j <= SEG; j++) {
-          const x = (i/SEG - 0.5) * 2 * R;
-          const y = (j/SEG - 0.5) * 2 * R;
-          const z = fn(x, y);
-          grid[i][j] = z;
-          if (z < zMin) zMin = z;
-          if (z > zMax) zMax = z;
-        }
+    function buildSurface() {
+      if (surface) { scene.remove(surface); scene.remove(wire); }
+      const seg = 70, W = 3.0;
+      const geom = new THREE.PlaneGeometry(W, W, seg, seg);
+      geom.rotateX(-Math.PI/2);
+      const p = geom.attributes.position;
+      for (let i=0;i<p.count;i++) {
+        const x = p.getX(i), z = p.getZ(i);
+        p.setY(i, f(x, z));
       }
-      const range = Math.max(zMax - zMin, 0.001);
-      for (let i = 0; i <= SEG; i++) {
-        for (let j = 0; j <= SEG; j++) {
-          const x = (i/SEG - 0.5) * 2 * R;
-          const y = (j/SEG - 0.5) * 2 * R;
-          const z = grid[i][j];
-          verts.push(x, z * 0.8, y);
-          const t = (z - zMin) / range;
-          const c1 = new THREE.Color(0x2D5B7A);
-          const c2 = new THREE.Color(0xC0492E);
-          c1.lerp(c2, t);
-          cols.push(c1.r, c1.g, c1.b);
-        }
-      }
-      for (let i = 0; i < SEG; i++) for (let j = 0; j < SEG; j++) {
-        const a = i*(SEG+1) + j, b = a+1, c = a+(SEG+1), d = c+1;
-        idx.push(a,c,b, b,c,d);
-      }
-      const geo = new THREE.BufferGeometry();
-      geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
-      geo.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
-      geo.setIndex(idx);
-      geo.computeVertexNormals();
-      surfMesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.32, side: THREE.DoubleSide }));
-      scene.add(surfMesh);
-      wfMesh = new THREE.LineSegments(new THREE.WireframeGeometry(geo), new THREE.LineBasicMaterial({ color: 0x26221C, transparent: true, opacity: 0.15 }));
-      scene.add(wfMesh);
-
-      // 기울기 0인 점 (수치) — 중심 (0,0)
-      const z0 = fn(0, 0);
-      markerS = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 16), new THREE.MeshBasicMaterial({ color: 0xC0492E }));
-      markerS.position.set(0, z0 * 0.8 + 0.05, 0);
-      scene.add(markerS);
-
-      // 축 (안장점에서 두 방향 표시용)
-      axisGroup = new THREE.Group();
-      const xPts = [new THREE.Vector3(-R, z0 * 0.8 + 0.05, 0), new THREE.Vector3(R, z0 * 0.8 + 0.05, 0)];
-      const yPts = [new THREE.Vector3(0, z0 * 0.8 + 0.05, -R), new THREE.Vector3(0, z0 * 0.8 + 0.05, R)];
-      const ax = new THREE.Line(new THREE.BufferGeometry().setFromPoints(xPts), new THREE.LineBasicMaterial({ color: 0x2D5B7A, transparent: true, opacity: 0.6 }));
-      const ay = new THREE.Line(new THREE.BufferGeometry().setFromPoints(yPts), new THREE.LineBasicMaterial({ color: 0xC0492E, transparent: true, opacity: 0.6 }));
-      axisGroup.add(ax); axisGroup.add(ay);
-      scene.add(axisGroup);
+      geom.computeVertexNormals();
+      wire = new THREE.LineSegments(new THREE.WireframeGeometry(geom), new THREE.LineBasicMaterial({ color: 0x26221C, transparent: true, opacity: 0.18 }));
+      scene.add(wire);
+      surface = new THREE.Mesh(geom, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.15 }));
+      scene.add(surface);
     }
 
-    let rotY = 0.4, rotX = 0.6;
-    let drag = false, lx = 0, ly = 0;
-    canvas.addEventListener('pointerdown', e => { drag = true; lx = e.clientX; ly = e.clientY; });
-    canvas.addEventListener('pointerup', () => drag = false);
-    canvas.addEventListener('pointerleave', () => drag = false);
-    canvas.addEventListener('pointermove', e => {
-      if (!drag) return;
-      rotY += (e.clientX - lx) * 0.005;
-      rotX += (e.clientY - ly) * 0.005;
-      rotX = Math.max(0.15, Math.min(1.2, rotX));
-      lx = e.clientX; ly = e.clientY;
+    buildSurface();
+    ball = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 16), new THREE.MeshBasicMaterial({ color: new THREE.Color(C.style) }));
+    scene.add(ball);
+
+    function reset() {
+      pos.x = (Math.random()-0.5) * 2.0;
+      pos.y = (Math.random()-0.5) * 2.0;
+      if (mode === 'saddle') { pos.x = 0.04 + (Math.random()-0.5)*0.06; pos.y = 0.6 + Math.random()*0.4; }
+      step = 0;
+    }
+    reset();
+
+    document.getElementById('btnSaddle').addEventListener('click', () => {
+      mode = 'saddle';
+      document.getElementById('btnSaddle').classList.add('on');
+      document.getElementById('btnMinima').classList.remove('on');
+      buildSurface(); reset();
     });
+    document.getElementById('btnMinima').addEventListener('click', () => {
+      mode = 'minima';
+      document.getElementById('btnMinima').classList.add('on');
+      document.getElementById('btnSaddle').classList.remove('on');
+      buildSurface(); reset();
+    });
+    document.getElementById('btnRestart').addEventListener('click', reset);
+
+    let drag = false, lastX = 0, lastY = 0, angX = 0.4, angY = 0.6;
+    canvas.addEventListener('pointerdown', (e) => { drag = true; lastX = e.clientX; lastY = e.clientY; });
+    window.addEventListener('pointermove', (e) => {
+      if (!drag) return;
+      angY += (e.clientX - lastX) * 0.006;
+      angX += (e.clientY - lastY) * 0.005;
+      angX = Math.max(-0.1, Math.min(0.9, angX));
+      lastX = e.clientX; lastY = e.clientY;
+    });
+    window.addEventListener('pointerup', () => { drag = false; });
 
     function resize() {
-      const w = canvas.parentElement.clientWidth, h = 380;
+      const w = wrap.clientWidth, h = 360;
       renderer.setSize(w, h, false);
       cam.aspect = w/h; cam.updateProjectionMatrix();
     }
     window.addEventListener('resize', resize); resize();
 
+    const readZ = document.getElementById('readZ');
+    const readG = document.getElementById('readG');
+    const readT = document.getElementById('readT');
+
     function loop() {
-      if (!drag) rotY += 0.0025;
-      const r = 6.5;
-      cam.position.x = Math.sin(rotY) * Math.cos(rotX) * r;
-      cam.position.z = Math.cos(rotY) * Math.cos(rotX) * r;
-      cam.position.y = Math.sin(rotX) * r;
-      cam.lookAt(0, 0, 0);
+      // SGD step
+      const [gx, gy] = g(pos.x, pos.y);
+      pos.x -= lr * gx + (Math.random()-0.5) * 0.001;
+      pos.y -= lr * gy + (Math.random()-0.5) * 0.001;
+      pos.x = Math.max(-1.4, Math.min(1.4, pos.x));
+      pos.y = Math.max(-1.4, Math.min(1.4, pos.y));
+      step++;
+      const z = f(pos.x, pos.y);
+      ball.position.set(pos.x, z + 0.05, pos.y);
+
+      readZ.textContent = z.toFixed(3);
+      readG.textContent = Math.sqrt(gx*gx + gy*gy).toFixed(3);
+      readT.textContent = step;
+
+      if (step > 600) reset();
+
+      if (!drag) angY += 0.0025;
+      const r = 3.6;
+      cam.position.x = r * Math.sin(angY) * Math.cos(angX);
+      cam.position.z = r * Math.cos(angY) * Math.cos(angX);
+      cam.position.y = 1.4 + r * Math.sin(angX);
+      cam.lookAt(0, -0.2, 0);
       renderer.render(scene, cam);
       requestAnimationFrame(loop);
     }
-    buildSurface(current);
     loop();
-
-    document.querySelectorAll('.surf-pick .btn').forEach(b => {
-      b.addEventListener('click', () => {
-        document.querySelectorAll('.surf-pick .btn').forEach(x => x.classList.remove('on'));
-        b.classList.add('on');
-        current = b.dataset.surf;
-        buildSurface(current);
-        document.getElementById('surfCap').innerHTML = caps[current];
-      });
-    });
-  }
-
-  // 절벽 위젯
-  function cliffWidget() {
-    const svg = document.getElementById('cliffSvg');
-    const W = 640, H = 280, PAD = 30;
-    function xPx(x) { return PAD + (x + 3) / 6 * (W - 2*PAD); }
-    function yPx(y) { return H - PAD - Math.min(Math.max(y, 0), 5) / 5 * (H - 2*PAD); }
-    // 절벽 함수: 부드러운 평지 + 절벽 + 평지
-    function loss(x) {
-      return 0.5 + 3.5 / (1 + Math.exp(-25 * (x - 0.5)));
-    }
-    function grad(x) {
-      const e = Math.exp(-25 * (x - 0.5));
-      return (3.5 * 25 * e) / Math.pow(1 + e, 2);
-    }
-    let curX = -1.5;
-    function render() {
-      let html = '';
-      // 손실 곡선
-      let pathL = `M ${xPx(-3)},${yPx(loss(-3))}`;
-      for (let i = -3; i <= 3; i += 0.02) pathL += ` L ${xPx(i)},${yPx(loss(i))}`;
-      html += `<path d="${pathL}" stroke="#A47B2E" stroke-width="2.5" fill="none"/>`;
-      // 축
-      html += `<line x1="${PAD}" y1="${H-PAD}" x2="${W-PAD}" y2="${H-PAD}" stroke="#8E8576" stroke-width="1"/>`;
-      html += `<text x="${W-PAD-5}" y="${H-PAD+18}" font-family="Spline Sans Mono, monospace" font-size="10" fill="#5A5247" text-anchor="end">파라미터 θ</text>`;
-      html += `<text x="${PAD+5}" y="${PAD+14}" font-family="Spline Sans Mono, monospace" font-size="10" fill="#5A5247">손실 J(θ)</text>`;
-      // 현재 위치
-      html += `<circle cx="${xPx(curX)}" cy="${yPx(loss(curX))}" r="7" fill="#2D5B7A" stroke="#fff" stroke-width="2"/>`;
-      svg.innerHTML = html;
-    }
-    const slider = document.getElementById('cSlider');
-    const cOut = document.getElementById('cVal');
-    const cap = document.getElementById('cliffCap');
-    slider.addEventListener('input', () => { cOut.textContent = parseFloat(slider.value).toFixed(1); });
-    document.getElementById('cliffRun').addEventListener('click', () => {
-      curX = -1.5;
-      const c = parseFloat(slider.value);
-      const lr = 0.05;
-      let step = 0;
-      const tick = () => {
-        let g = grad(curX);
-        const gNorm = Math.abs(g);
-        let gClip = g;
-        if (gNorm > c) gClip = (c * g) / gNorm;
-        const delta = -lr * gClip;
-        curX += delta;
-        curX = Math.max(-3, Math.min(3, curX));
-        render();
-        step++;
-        if (step < 60) requestAnimationFrame(tick);
-        else cap.innerHTML = `40 스텝 종료. <b>θ = ${curX.toFixed(2)}</b> (절벽 ${curX < 0.4 ? '앞에서 안전하게 멈춤' : (curX > 1.0 ? '너머로 튕겨 나감' : '근처')})`;
-      };
-      tick();
-    });
-    render();
-  }
-
-  window.addEventListener('load', () => {
-    buildNav('02');
-    initProgress();
-    surfWidget();
-    cliffWidget();
   });
 </script>
 </body>

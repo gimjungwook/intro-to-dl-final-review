@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>14 · 배치 정규화 2 — 학습률 키우기와 작은 배치 함정</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="topbar">
+  <a class="home" href="index.html">← Ch.08 최적화</a>
+  <span class="ch-mini">SUB 14 / 17</span>
+</div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol id="navlist"></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 14 · BN이 가진 양면 — 큰 이득, 그리고 작은 함정</span>
+      <h1>학습률을 10배 키울 수 있다,<br>그러나 <span class="t-style">배치 크기 1</span>에서는 무너진다</h1>
+      <p class="lede">BN이 가져온 가장 실용적인 이득은 학습률을 더 크게 잡을 수 있다는 점이다. 그러나 BN은 미니배치 통계에 의존하므로, 배치가 너무 작거나 추론 시에는 다른 대처가 필요하다.</p>
+    </header>
+
+    <div class="prose">
+
+      <p>13번 절에서 BN이 어떻게 내부 공변량 이동을 해결하는지 봤다. 이 절은 BN의 실전적 효과 두 가지를 더 자세히 본다. 첫째, <strong>학습률을 더 크게 잡을 수 있다</strong>는 점. 둘째, <strong>작은 배치와 추론 시 발생하는 함정</strong>들. 두 측면 모두 시험에서 자주 묻는 부분이다.</p>
+
+      <h2>왜 BN이 학습률을 키울 수 있게 하는가</h2>
+
+      <p>BN 없는 깊은 네트워크에서는 학습률을 키우면 한 가지 위험이 생긴다. 한 층의 가중치가 큰 폭으로 업데이트되면 그 출력이 크게 변하고, 다음 층의 입력 분포도 크게 변한다. 다음 층은 이 새 분포에 적응하느라 또 큰 업데이트를 하고, 이 연쇄가 폭발하면 학습이 발산한다.</p>
+
+      <p>BN은 이 연쇄를 끊는다. 한 층의 가중치가 어떻게 변하든, 그 층의 출력은 BN을 거치면서 평균 0, 분산 1로 정규화된다. 그래서 위 층의 입력 분포 변화가 미미하다. 결과적으로 옵티마이저가 더 큰 보폭으로 가중치를 옮겨도 안전하다.</p>
+
+      <p>실증적으로 BN을 켜면 학습률을 5-10배 키울 수 있다. 같은 모델·같은 데이터에서 학습 시간이 그만큼 줄어든다. 그래서 BN이 등장한 2015년 이후 깊은 네트워크 학습은 사실상 BN과 함께 시작됐다.</p>
+
+      <div class="key-point">
+        <p>BN 없이: 학습률 0.01이 깊은 네트워크의 한계. BN 있이: 학습률 0.1까지 안전. 5-10배 가속이 BN의 가장 실용적인 이득이다.</p>
+      </div>
+
+      <h2>BN과 가중치 스케일의 흥미로운 관계</h2>
+
+      <p>BN은 또 한 가지 우아한 성질을 갖는다. <strong>가중치의 절대 스케일에 무관(scale-invariant)하다.</strong> 한 층의 모든 가중치를 $k$배로 키우면, 그 층의 출력도 $k$배가 된다. 그런데 BN이 그 출력을 평균 0, 분산 1로 정규화하므로, $k$배는 무효화된다. 결과적으로 다음 층이 받는 입력은 같다.</p>
+
+      <p>이 성질이 갖는 함의는 크다. 옵티마이저가 가중치의 방향만 신경 쓰면 되고, 절대 크기는 BN이 알아서 처리한다. 그래서 가중치 감쇠(weight decay) 같은 정칙화의 효과가 BN과 결합하면 다소 달라진다. AdamW 같은 변형이 등장한 이유 중 하나가 이것이다.</p>
+
+      <h2>작은 배치의 함정 — BN이 무너지는 지점</h2>
+
+      <p>BN은 미니배치의 평균과 분산으로 정규화한다. 그래서 미니배치가 너무 작으면 통계가 부정확해진다. 극단적으로 배치 크기 1이면 분산이 0이 되어 BN이 의미를 잃는다.</p>
+
+      <p>실전에서 BN은 배치 크기 32 이상에서 잘 작동한다. 16 정도까지는 어느 정도 견딘다. 8 이하부터는 통계가 너무 노이즈가 많아 학습이 불안정해진다. 그래서 메모리 제약으로 작은 배치를 써야 하는 상황(예: 큰 모델, 큰 이미지)에서는 BN이 적합하지 않다.</p>
+
+      <p>이 문제를 해결하는 대안들이 있다.</p>
+
+      <ul>
+        <li><strong>Layer Normalization</strong> (Ba et al., 2016): 미니배치 차원이 아니라 특징 차원에서 정규화. 배치 크기에 무관. 트랜스포머의 표준.</li>
+        <li><strong>Instance Normalization</strong>: 한 샘플 안에서 채널별로 정규화. 스타일 전이(style transfer) 같은 작업에서 표준.</li>
+        <li><strong>Group Normalization</strong> (Wu & He, 2018): 채널을 그룹으로 묶어 정규화. 배치 크기 1에서도 작동. 작은 배치 객체 검출에서 자주 쓰임.</li>
+      </ul>
+
+      <h2>추론 시의 함정 — 어떤 평균·분산을 쓰는가</h2>
+
+      <p>BN의 또 다른 미묘한 문제는 추론(inference) 시 발생한다. 학습 중에는 매 미니배치마다 그 배치의 평균·분산을 쓴다. 그런데 추론 시에는 보통 샘플 하나씩 다루므로 미니배치 평균을 계산할 수 없다.</p>
+
+      <p>해결책은 학습 중에 미니배치 통계의 지수 이동 평균을 누적해 두는 것이다. 이를 "running mean", "running variance"라 부른다.</p>
+
+      <div class="math-block">$$ \mu_{\text{run}} \leftarrow \alpha\, \mu_{\text{run}} + (1-\alpha)\, \mu_B, \quad \sigma_{\text{run}}^2 \leftarrow \alpha\, \sigma_{\text{run}}^2 + (1-\alpha)\, \sigma_B^2 $$</div>
+      <p class="math-note">학습 중 누적하는 평균과 분산. α는 보통 0.9 또는 0.99.</p>
+
+      <p>추론 시에는 이 누적된 $\mu_{\text{run}}, \sigma_{\text{run}}$을 사용한다. 학습 모드(`model.train()`)와 평가 모드(`model.eval()`)에서 다른 동작을 한다는 점이 PyTorch·TensorFlow의 미묘한 함정 중 하나다. 평가 모드를 켜는 걸 잊으면 추론 결과가 매우 이상해질 수 있다.</p>
+
+      <h2>위젯 — 배치 크기 vs BN 안정성</h2>
+
+      <p>아래 위젯은 배치 크기에 따른 BN 통계의 노이즈를 시뮬레이션한다. 배치 32에서는 매 미니배치 평균이 안정적이지만, 배치 4에서는 매번 크게 출렁인다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 14</span><span>배치 크기 vs 미니배치 평균의 노이즈</span></div>
+        <div style="padding: 1.2rem 1.1rem;">
+          <canvas id="bn2Canvas" width="800" height="380" style="width: 100%; height: 380px; display: block; background: #fff; border: 1px solid var(--line); border-radius: 8px;"></canvas>
+        </div>
+        <div class="widget-controls">
+          <div class="slider">
+            <label>미니배치 크기 m <b id="bn2mVal">32</b></label>
+            <input id="bn2mSlide" type="range" min="1" max="128" value="32" step="1">
+          </div>
+          <button class="btn ghost" id="bn2Restart">처음부터</button>
+        </div>
+      </div>
+      <p class="widget-cap">m이 작으면 매 미니배치의 평균이 큰 진폭으로 출렁이고, 그 노이즈가 위 층까지 전파되어 학습이 불안정. m=32+에서는 평균이 안정적. m=4 이하에서는 BN이 사실상 작동하지 않는다.</p>
+    </div>
+
+    <div class="prose">
+
+      <h2>BN과 다른 정규화 기법의 위치 — 한 그림으로</h2>
+
+      <p>BN을 포함한 정규화 기법들은 "어떤 차원에서 평균과 분산을 계산하는가"로 구분된다. 한 미니배치에서 4차원 텐서 $(N, C, H, W)$를 다룬다고 하자. $N$은 배치 크기, $C$는 채널 수, $H \times W$는 공간 차원이다.</p>
+
+      <ul>
+        <li><strong>Batch Norm:</strong> $(N, H, W)$ 차원에서 평균. 각 채널마다 따로. 배치 크기에 의존.</li>
+        <li><strong>Layer Norm:</strong> $(C, H, W)$ 차원에서 평균. 각 샘플마다 따로. 배치 크기 무관.</li>
+        <li><strong>Instance Norm:</strong> $(H, W)$ 차원에서 평균. 각 샘플, 각 채널마다 따로. 스타일 전이에 적합.</li>
+        <li><strong>Group Norm:</strong> 채널을 그룹으로 묶어 그룹별 정규화. BN과 LN의 중간.</li>
+      </ul>
+
+      <p>왜 트랜스포머는 LayerNorm을 쓰는가? 트랜스포머의 배치 안에는 서로 다른 길이의 시퀀스가 있을 수 있다. 배치 단위로 통계를 내면 padding 토큰까지 포함되어 노이즈가 많다. LayerNorm은 각 토큰의 임베딩 차원에서 정규화하므로 시퀀스 길이에 무관하다. 그래서 트랜스포머의 표준이 LayerNorm이고, 거의 모든 현대 NLP 모델이 이를 쓴다.</p>
+
+      <h2>BN의 정칙화 부수 효과</h2>
+
+      <p>BN의 또 한 가지 부수 효과는 약간의 정칙화(regularization) 효과다. 미니배치 통계에 의존하므로, 같은 입력이라도 어느 배치에 들어가느냐에 따라 약간 다른 출력을 낸다. 이는 일종의 노이즈 주입으로 작용해 과적합을 줄인다.</p>
+
+      <p>그래서 BN을 쓰면 드롭아웃(dropout) 같은 다른 정칙화의 필요성이 줄어들 수 있다. 실제로 ResNet v1은 BN만 쓰고 드롭아웃을 쓰지 않는다. BN과 드롭아웃을 함께 쓰면 충돌이 일어날 수 있는데, BN의 미니배치 통계가 드롭아웃의 노이즈 때문에 흔들리기 때문이다. 그래서 2017년의 Disharmony 논문이 BN+드롭아웃 조합의 문제를 분석했다.</p>
+
+      <h2>시험 답안 핵심</h2>
+
+      <p>BN의 실전적 효과가 시험에 나오면 다음 네 가지를 적자. 첫째, <strong>학습률을 5-10배 키울 수 있어 학습 시간 단축</strong>. 둘째, <strong>가중치의 절대 스케일에 무관 — 방향만 학습</strong>. 셋째, <strong>작은 배치(8 이하)에서 통계 노이즈로 무너짐 — LayerNorm 등 대안 필요</strong>. 넷째, <strong>추론 시에는 학습 중 누적한 running mean·variance 사용 (model.eval())</strong>.</p>
+    </div>
+
+    <nav class="ch-foot" id="chFoot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'순수 vs ML 최적화' }, { no:'02', t:'학습의 장애물' }, { no:'03', t:'미니배치 SGD 1' }, { no:'04', t:'미니배치 SGD 2' },
+    { no:'05', t:'학습률의 의미' }, { no:'06', t:'모멘텀 1' }, { no:'07', t:'모멘텀 2 (네스테로프)' }, { no:'08', t:'적응 1 (AdaGrad)' },
+    { no:'09', t:'적응 2 (RMSProp)' }, { no:'10', t:'적응 3 (Adam)' }, { no:'11', t:'초기화 1 (대칭성)' }, { no:'12', t:'초기화 2 (Xavier·He)' },
+    { no:'13', t:'배치 정규화 1' }, { no:'14', t:'배치 정규화 2' }, { no:'15', t:'학습률 스케줄' }, { no:'16', t:'기울기 클리핑' },
+    { no:'17', t:'시험 대비' },
+  ];
+  const CUR = '14';
+  const navlist = document.getElementById('navlist');
+  SUBS.forEach(s => { const li = document.createElement('li'); li.innerHTML = `<a href="${s.no}.html"${s.no===CUR?' class="current"':''}>${s.t}</a>`; navlist.appendChild(li); });
+  const chFoot = document.getElementById('chFoot');
+  const idx = SUBS.findIndex(s => s.no === CUR);
+  const prev = idx > 0 ? SUBS[idx-1] : { no:'index', t:'표지로' };
+  const next = idx < SUBS.length-1 ? SUBS[idx+1] : { no:'index', t:'표지로' };
+  chFoot.innerHTML = `<a href="${prev.no}.html"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` + `<a href="${next.no}.html" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
+        throwOnError: false,
+      });
+    }
+  });
+
+  (function() {
+    const css = getComputedStyle(document.documentElement);
+    const C = {
+      structure: css.getPropertyValue('--structure').trim() || '#2D5B7A',
+      style: css.getPropertyValue('--style').trim() || '#C0492E',
+      faint: css.getPropertyValue('--ink-faint').trim() || '#8E8576',
+      line: '#d8d2c4',
+    };
+    const cvs = document.getElementById('bn2Canvas');
+    const mSlide = document.getElementById('bn2mSlide');
+    const mVal = document.getElementById('bn2mVal');
+    const restartBtn = document.getElementById('bn2Restart');
+
+    let means = [];
+    function reset() { means = []; }
+    restartBtn.addEventListener('click', reset);
+    mSlide.addEventListener('input', reset);
+
+    function rng() { return Math.random()*2 - 1; }
+    function randn() { let s=0; for (let i=0;i<6;i++) s+=Math.random(); return (s-3)/1.225; }
+
+    function tick() {
+      const m = +mSlide.value;
+      // 진짜 평균 = 0, 미니배치 평균 = 0 + N(0, 1/√m)
+      let s = 0;
+      for (let i=0;i<m;i++) s += randn();
+      const mean = s / m;
+      means.push(mean);
+      if (means.length > 100) means.shift();
+    }
+
+    function draw() {
+      const ctx = cvs.getContext('2d');
+      const W = cvs.width, H = cvs.height;
+      ctx.clearRect(0,0,W,H);
+      ctx.strokeStyle = C.line; ctx.strokeRect(0.5,0.5,W-1,H-1);
+      const N = means.length || 1;
+      const X = i => 40 + i/(N-1 || 1) * (W-60);
+      const Y = m => H/2 - m * (H-60) / 2;
+
+      // y=0 선 (진짜 평균)
+      ctx.strokeStyle = C.faint; ctx.lineWidth=1; ctx.globalAlpha=0.6;
+      ctx.beginPath(); ctx.moveTo(40, Y(0)); ctx.lineTo(W-20, Y(0)); ctx.stroke();
+      ctx.globalAlpha=1.0;
+      ctx.fillStyle = C.faint; ctx.font='10px monospace';
+      ctx.fillText('진짜 평균 = 0', W-100, Y(0)-4);
+
+      // 안전 구간 ±1/√m
+      const mNow = +mSlide.value;
+      const band = 1/Math.sqrt(mNow);
+      ctx.fillStyle = '#A47B2E'; ctx.globalAlpha = 0.12;
+      ctx.fillRect(40, Y(band), W-60, Y(-band)-Y(band));
+      ctx.globalAlpha = 1.0;
+      ctx.fillStyle = C.faint; ctx.font='10px monospace';
+      ctx.fillText(`이론 표준오차 ±${band.toFixed(3)}`, 50, Y(band)-4);
+
+      // 미니배치 평균 시계열
+      ctx.strokeStyle = C.style; ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      means.forEach((mn, i) => { if (i===0) ctx.moveTo(X(i), Y(mn)); else ctx.lineTo(X(i), Y(mn)); });
+      ctx.stroke();
+      // 점
+      ctx.fillStyle = C.style;
+      means.forEach((mn, i) => { ctx.beginPath(); ctx.arc(X(i), Y(mn), 2, 0, Math.PI*2); ctx.fill(); });
+
+      ctx.fillStyle = C.faint; ctx.font='12px monospace';
+      ctx.fillText(`미니배치 크기 m = ${mNow}, 1/√m = ${(1/Math.sqrt(mNow)).toFixed(3)}`, 14, 22);
+    }
+
+    function loop() {
+      const m = +mSlide.value;
+      mVal.textContent = m;
+      tick();
+      draw();
+      setTimeout(() => requestAnimationFrame(loop), 80);
+    }
+    loop();
+  })();
+</script>
+</body>
+</html>

@@ -3,37 +3,29 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>04. 베이즈 규칙 — 사전이 사후로</title>
+<title>04. 연쇄법칙 — 결합을 조건부의 곱으로</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
-  /* 베이즈 갱신 위젯 */
-  .bay-stage { padding: 1.4rem 1.1rem; }
-  .bay-stage canvas { display: block; width: 100%; height: 240px; background: #fff; border: 1px solid var(--line-soft); border-radius: 8px; }
-  .bay-meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: .9rem; margin-top: .8rem; }
-  .bay-meta .m { padding: .65rem .8rem; border-radius: 8px; background: var(--paper); border: 1px solid var(--line-soft); }
-  .bay-meta .m h6 { margin: 0 0 .25rem; font-family: var(--mono); font-size: .62rem; letter-spacing: .14em; color: var(--ink-faint); text-transform: uppercase; }
-  .bay-meta .m .val { font-family: var(--mono); font-size: 1.05rem; color: var(--ink); }
-  .bay-meta .m .sub { font-family: var(--mono); font-size: .72rem; color: var(--ink-faint); margin-top: .1rem; }
-  .bay-obs { display: flex; flex-wrap: wrap; gap: .35rem; padding: .7rem 0; min-height: 2.3rem; }
-  .bay-obs .o { display: inline-block; width: 1.4rem; height: 1.4rem; border-radius: 50%; font-family: var(--mono); font-size: .78rem; font-weight: 700; line-height: 1.4rem; text-align: center; color: #fff; }
-  .bay-obs .o.h { background: var(--style); } .bay-obs .o.t { background: var(--structure); }
-  @media (max-width: 720px){ .bay-meta{ grid-template-columns: 1fr; } }
-
-  .med-table { max-width: var(--measure); margin: 1.2rem auto 1.8rem; border-collapse: collapse; width: 100%; font-size: .9rem; }
-  .med-table td, .med-table th { padding: .55rem .8rem; border: 1px solid var(--line-soft); text-align: center; }
-  .med-table th { background: var(--paper-2); font-family: var(--mono); font-size: .76rem; letter-spacing: .04em; color: var(--ink-soft); font-weight: 500; }
-  .med-table td:first-child { font-family: var(--mono); color: var(--structure); }
-  .med-table tr.total td { background: var(--paper-2); font-weight: 600; }
-
-  .four-pieces { display: grid; grid-template-columns: repeat(2, 1fr); gap: .8rem; max-width: var(--measure); margin: 1.4rem auto; padding-inline: 1.4rem; }
-  .four-pieces .p { padding: .9rem 1.1rem; border-radius: 10px; border: 1px solid var(--line); background: #fff; }
-  .four-pieces .p .lab { font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; color: var(--style); text-transform: uppercase; }
-  .four-pieces .p .name { font-family: var(--serif); font-size: 1.05rem; color: var(--ink); margin: .2rem 0 .25rem; }
-  .four-pieces .p .desc { font-size: .82rem; color: var(--ink-soft); line-height: 1.5; }
-  @media (max-width: 560px){ .four-pieces{ grid-template-columns: 1fr; } }
+  .chain-stage { padding: 1.4rem 1.1rem; display: grid; gap: 1rem; }
+  .word-line { display: flex; flex-wrap: wrap; gap: .35rem; padding: .5rem; background: var(--paper); border: 1px solid var(--line-soft); border-radius: 7px; align-items: center; font-family: var(--mono); font-size: .85rem; line-height: 1.5; }
+  .word-line .w { display: inline-block; padding: .22rem .55rem; border-radius: 5px; background: #fff; border: 1px solid var(--line); color: var(--ink); }
+  .word-line .w.next { background: var(--style); color: #fff; border-color: var(--style); }
+  .word-line .w.pending { background: var(--paper-sink); color: var(--ink-faint); border-style: dashed; }
+  .word-line .dot { color: var(--ink-faint); }
+  .next-cand { padding: .8rem; background: var(--paper); border: 1px solid var(--line-soft); border-radius: 7px; }
+  .next-cand h5 { margin: 0 0 .5rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; color: var(--style); font-weight: 500; text-transform: uppercase; }
+  .cand-bar { display: flex; align-items: center; gap: .5rem; margin: .25rem 0; font-family: var(--mono); font-size: .78rem; }
+  .cand-bar .lab { width: 4rem; color: var(--ink); }
+  .cand-bar .bg { flex: 1; height: 10px; background: var(--paper-sink); border-radius: 4px; overflow: hidden; }
+  .cand-bar .fg { display: block; height: 100%; background: var(--structure); }
+  .cand-bar .val { width: 3rem; text-align: right; color: var(--ink-soft); }
+  .product-disp { font-family: var(--mono); font-size: .8rem; padding: .8rem 1rem; background: var(--paper-2); border-radius: 7px; color: var(--ink); }
+  .product-disp .step { display: block; margin: .15rem 0; color: var(--ink-soft); }
+  .product-disp .step b { color: var(--structure); }
+  .product-disp .total { margin-top: .5rem; padding-top: .5rem; border-top: 1px solid var(--line); color: var(--ink); font-weight: 600; }
 </style>
 </head>
 <body>
@@ -45,116 +37,89 @@
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Sub-chapter 04. 믿음이 갱신되는 단 하나의 식</span>
-      <h1>베이즈 규칙 —<br>사전이 <span class="t-style">사후</span>로 바뀌는 방식</h1>
-      <p class="lede">새 관측이 들어왔을 때 우리의 믿음은 어떻게 갱신되는가. 이 한 식이 분류기, 검출기, 생성모델, 강화학습 모두의 뼈대를 만든다.</p>
+      <span class="kicker">Sub-chapter 04. 큰 것을 작은 것으로</span>
+      <h1>연쇄법칙 — <span class="t-structure">결합</span>을<br><span class="t-style">조건부의 곱</span>으로</h1>
+      <p class="lede">변수 두 개의 분해는 한 줄이었다. 변수 셋 넷 다섯, 또는 문장 한 줄의 모든 단어처럼 변수가 줄줄이 늘어나면 어떻게 할까. 답은 같은 분해를 재귀적으로 적용하는 것 — 이 한 식이 언어모델 전체를 떠받친다.</p>
     </header>
 
     <div class="prose">
-      <p>2번 sub-chapter에서 조건부확률을 만났다. <em>"X를 알고 있을 때 Y의 분포는 어떤가"</em>를 묻는 도구였다. 그 정의를 단 한 번 뒤집으면, 우리가 평소 살아가는 방식과 정확히 같은 추론이 식 한 줄로 떨어진다 — <strong>가지고 있던 믿음(사전, prior)을 가진 사람이 새 관측을 만나면, 그 믿음이 어떻게 바뀌는가(사후, posterior)</strong>.</p>
+      <p>3번 페이지에서 우리는 결합 분포를 조건부와 주변의 곱으로 쓰는 한 줄을 봤다.</p>
 
-      <p>이 한 식이 베이즈 규칙(Bayes' rule)이다.</p>
+      <div class="math-block">$$ p(x, y) = p(x | y) \, p(y) $$</div>
+      <p class="math-note">두 변수의 결합 = 한 변수의 주변 × 다른 변수의 조건부.</p>
 
-      <div class="math-block">$$ \underbrace{P(\theta \mid \mathcal{D})}_{\text{사후 posterior}} = \frac{\overbrace{P(\mathcal{D} \mid \theta)}^{\text{우도 likelihood}} \cdot \overbrace{P(\theta)}^{\text{사전 prior}}}{\underbrace{P(\mathcal{D})}_{\text{증거 evidence}}} $$</div>
-      <p class="math-note">θ = 알고 싶은 파라미터 또는 가설. D = 관측한 데이터.</p>
+      <p>이제 변수가 세 개라고 하자. $X$, $Y$, $Z$. 결합 분포 $p(x, y, z)$를 같은 방식으로 풀어쓸 수 있을까. 답은 그렇다 — 위의 두 변수 식을 그대로 한 번 더 쓰면 된다. $p(x, y, z)$를 먼저 "변수 묶음 $(X, Y)$"와 "변수 $Z$"의 결합이라고 본 다음, 위의 식을 적용한다.</p>
 
-      <h2>네 조각이 하는 일</h2>
-      <p>이 식의 네 항이 각자 다른 역할을 한다. 이름과 역할을 분리해서 잡아 두면 시험 문제가 어느 항을 묻고 있는지 빠르게 보인다.</p>
-    </div>
+      <div class="math-block">$$ p(x, y, z) = p(z) \, p(x, y \,|\, z) = p(z) \, p(y \,|\, z) \, p(x \,|\, y, z) $$</div>
+      <p class="math-note">먼저 $Z$의 주변과 "$(X,Y)$가 $Z$에 의존하는 조건부"로 쪼개고, 그 조건부에 한 번 더 같은 분해를 적용. 셋이 한 줄에 들어왔다.</p>
 
-    <div class="four-pieces">
-      <div class="p">
-        <span class="lab">prior</span>
-        <div class="name">$P(\theta)$ — 사전</div>
-        <div class="desc">데이터를 보기 <b>전에</b> 가지고 있던 믿음. 도메인 지식, 과거 경험, 디폴트 가정에서 옴.</div>
+      <p>변수가 네 개, 다섯 개, $n$개로 늘어나도 이 과정을 그대로 반복할 수 있다. 그래서 일반 형태가 나온다 — 이것이 <strong>연쇄법칙(chain rule of probability)</strong>이다.</p>
+
+      <h2>일반 연쇄법칙 — 한 줄로</h2>
+      <div class="math-block">$$ p(x_1, x_2, \ldots, x_n) = \prod_{t=1}^{n} p(x_t \,|\, x_1, x_2, \ldots, x_{t-1}) $$</div>
+      <p class="math-note">$\prod$는 곱셈 기호. $x_{<t}$ = $x_1, \ldots, x_{t-1}$. 결합 분포 = 각 변수의 "이전 변수들 다 알고 있을 때의 조건부"의 곱.</p>
+
+      <p>왜 이 형태인가. 우리가 한 일은 단순하다 — 매번 두 변수 분해 $p(A, B) = p(A) p(B|A)$를 써서 변수를 하나씩 떼어냈다. $n$번 떼면 $n$개의 조건부가 곱으로 묶인다. 이때 "이전 변수들"이라는 표현이 핵심이다. $t$번째 변수의 분포는 1번부터 $t-1$번까지 모든 변수가 정해졌다는 조건 위에서 정의된다. 시간 순서가 있는 분해다.</p>
+
+      <p>다른 형태였다면 어떻게 됐을까. 만약 $p(x_1, x_2, \ldots, x_n) = \prod_t p(x_t)$로 두면 어떻게 될까. 이건 모든 변수가 서로 독립이라는 매우 강한 가정을 한 식이다. 그래서 일반적으로 옳지 않다. 비가 오는 사실이 우산 여부와 무관하지 않듯, 변수들 사이엔 보통 의존성이 있다. 연쇄법칙은 그 의존성을 정직하게 조건부 안에 모아 둔다. 만약 모든 변수가 정말 독립이라면 그때 조건부가 단순화되어 $p(x_t | x_{<t}) = p(x_t)$가 되고, 연쇄법칙이 독립의 곱 형태로 줄어든다. 즉, 독립은 연쇄법칙의 특수한 케이스다.</p>
+
+      <h2>비유 — 한 단어씩 쓰는 작가</h2>
+      <div class="analogy">
+        소설가가 문장을 쓰는 모습을 떠올려 보자. "어두운 _" 다음에 어떤 단어가 올지 정할 때, 작가는 앞에 이미 쓴 "어두운"이라는 단어를 본다. 그다음에 "어두운 골목"이라고 썼다면, 그다음 단어 후보는 "어두운"과 "골목" 두 단어를 모두 본 뒤 정한다. 한 단어를 쓸 때마다 앞에 쓴 모든 단어를 본다. <b>한 문장 전체를 통째로 짓는 게 아니라, 단어 하나를 단어 줄에 조건 걸어 짓는다.</b> 이 패턴이 정확히 연쇄법칙이다.
       </div>
-      <div class="p">
-        <span class="lab">likelihood</span>
-        <div class="name">$P(\mathcal{D} \mid \theta)$ — 우도</div>
-        <div class="desc">"이 θ가 진실이라면 이런 데이터가 나올 가능성이 얼마인가". 모델이 만들어 내는 부분.</div>
-      </div>
-      <div class="p">
-        <span class="lab">posterior</span>
-        <div class="name">$P(\theta \mid \mathcal{D})$ — 사후</div>
-        <div class="desc">데이터를 본 <b>뒤에</b> 갱신된 믿음. 다음 결정의 기반.</div>
-      </div>
-      <div class="p">
-        <span class="lab">evidence</span>
-        <div class="name">$P(\mathcal{D})$ — 증거</div>
-        <div class="desc">정규화 상수. 모든 θ에 대해 우도×사전을 합한 값. 보통 계산이 가장 어려운 부분.</div>
-      </div>
-    </div>
 
-    <div class="prose">
-      <h2>위젯 — 사전이 좁아지는 과정을 직접 본다</h2>
-      <p>가장 고전적인 예시로 동전 던지기를 쓴다. 동전의 앞면이 나올 확률 $\theta$를 모르는 상태에서, 우리는 어떤 <strong>사전 분포</strong>를 가지고 시작한다. 균등(아무 사전 지식 없음), 한쪽으로 치우친 분포(편향된 동전이라는 의심), 가운데에 집중된 분포(공정한 동전이라는 강한 믿음) — 사전을 슬라이더로 바꿔 보자. 그리고 관측(앞, 뒤)을 한 개씩 추가하면, 사후가 어떻게 좁아지는지 보인다.</p>
+      <h2>위젯 — 한 단어씩 짓는 언어모델</h2>
+      <p>아래 위젯은 "Today the weather is" 다음에 올 단어를 한 개씩 결정해 가는 미니 언어모델(language model)이다. 다음 단어 후보 5개의 확률이 매번 막대로 표시된다. "다음 단어 뽑기" 버튼을 누르면 그 확률에 따라 단어 하나가 추가되고, 그 단어가 뒤에 붙은 새로운 문장에 대해 다시 확률이 갱신된다. 문장이 길어질수록 곱셈으로 누적된 결합 확률 $p(w_1, w_2, w_3, \ldots, w_t)$이 아래쪽에 표시된다.</p>
     </div>
 
     <div class="widget">
       <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 04</span><span>베이즈 갱신 — 사전(점선) → 사후(실선)</span></div>
-        <div class="bay-stage">
-          <canvas id="bay" width="800" height="240"></canvas>
-          <div class="bay-meta">
-            <div class="m"><h6>사전 평균</h6><div class="val" id="pMean">0.50</div><div class="sub">Beta(α₀, β₀)에서</div></div>
-            <div class="m"><h6>관측</h6><div class="val" id="nObs">0 회</div><div class="sub" id="obsDetail">앞 0 / 뒤 0</div></div>
-            <div class="m"><h6>사후 평균 $\mathbb{E}[\theta \mid \mathcal{D}]$</h6><div class="val" id="postMean">0.50</div><div class="sub">Beta(α₀+앞, β₀+뒤)</div></div>
+        <div class="widget-label"><span class="lab-no">위젯 04</span><span>연쇄법칙으로 문장 짓기</span></div>
+        <div class="chain-stage">
+          <div class="word-line" id="wordLine"></div>
+          <div class="next-cand">
+            <h5>다음 단어 후보 — p(w_t | w_&lt;t)</h5>
+            <div id="candBars"></div>
           </div>
-          <div class="bay-obs" id="obsRow"></div>
+          <div class="product-disp" id="productDisp"></div>
         </div>
         <div class="widget-controls">
-          <div class="slider">
-            <label>사전 강도 (α₀ + β₀) <b><span id="kVal">2</span></b></label>
-            <input id="kSlider" type="range" min="1" max="40" value="2" class="s-structure">
-          </div>
-          <div class="slider">
-            <label>사전 편향 (α₀ / (α₀+β₀)) <b><span id="bVal">0.50</span></b></label>
-            <input id="bSlider" type="range" min="5" max="95" value="50" class="s-structure">
-          </div>
-          <button class="btn" id="addH">앞 + 1</button>
-          <button class="btn" id="addT">뒤 + 1</button>
-          <button class="btn ghost" id="reset">관측 초기화</button>
+          <button class="btn" id="nextBtn">다음 단어 뽑기 ▶</button>
+          <button class="btn ghost" id="resetBtn">처음으로</button>
+          <span style="font-family: var(--mono); font-size: .72rem; color: var(--ink-faint);">결합 확률 = 모든 조건부의 곱</span>
         </div>
       </div>
-      <p class="widget-cap">사전(점선)은 슬라이더로 조정하고, 관측은 버튼으로 한 번에 한 개씩 추가한다. 사후(실선)가 어떻게 좁아지는지 — 그리고 같은 관측이 와도 <b>사전이 약하면 빨리, 사전이 강하면 천천히</b> 움직이는지 — 직접 확인해 보라. 사전이 강할수록 새 데이터에 보수적인 갱신이 일어난다.</p>
+      <p class="widget-cap">한 단어를 뽑을 때마다 그 단어의 조건부 확률이 곱해진다. 문장이 길수록 결합 확률은 작아진다 — 이게 언어모델이 perplexity를 줄이기 위해 어떻게 학습되는지 직관을 준다.</p>
     </div>
 
     <div class="prose">
-      <h2>구체 예시 — 의료 검사의 함정</h2>
-      <p>베이즈 규칙이 직관과 가장 어긋나는 곳이 의료 검사다. 사례 하나를 끝까지 풀어 두자. 인구의 <strong>1%</strong>가 어떤 질병에 걸려 있다. 검사는 정확도가 매우 높아서, 진짜 환자라면 <strong>99%</strong>의 확률로 양성, 정상이라면 <strong>99%</strong>의 확률로 음성이 나온다. 어떤 사람이 양성 판정을 받았다. 실제로 환자일 확률은 얼마인가.</p>
+      <h2>구체 예시 4개</h2>
+      <p>예시 첫째, 언어모델. GPT 같은 자기회귀(autoregressive) 언어모델의 학습 목표는 정확히 $\sum_t \log p(w_t | w_{<t})$를 최대화하는 것이다. 위의 연쇄법칙 분해를 로그 취해 합으로 바꾼 식이다. 둘째, 시계열 예측. 주식 가격이나 기후 데이터처럼 시간 순서가 있는 데이터에서 연쇄법칙은 "이전 시점 모두 보고 다음 시점 예측"이라는 자연스러운 구조를 준다. 셋째, RNN/LSTM. 순환 신경망(recurrent neural network)은 명시적으로 연쇄법칙 분해를 따라간다 — 매 시점 hidden state가 "이전 모든 변수의 요약"을 담는다. 넷째, 베이즈 네트워크(Bayesian network). 그래프의 각 노드 부모만 조건으로 두는 단순화된 연쇄법칙이다.</p>
 
-      <p>처음 보면 99% 같지만 정답은 다르다. 베이즈 규칙으로 풀면 약 <strong>50%</strong>다. 왜 그런지 표로 풀자. 인구 10,000명을 가정한다.</p>
+      <h2>딥러닝 출제 함정 — 조건부의 순서</h2>
+      <p>연쇄법칙은 조건부의 순서를 바꿔도 같은 결합 분포를 만들어 낸다. 예를 들어 $p(a, b, c)$는 세 가지 순서 중 어떤 것으로도 풀 수 있다.</p>
 
-      <table class="med-table">
-        <thead><tr><th></th><th>실제 환자 (100명, 1%)</th><th>실제 정상 (9,900명, 99%)</th><th>행 합</th></tr></thead>
-        <tbody>
-          <tr><td>양성 판정</td><td>99 (= 100 × 0.99)</td><td>99 (= 9,900 × 0.01)</td><td>198</td></tr>
-          <tr><td>음성 판정</td><td>1 (= 100 × 0.01)</td><td>9,801 (= 9,900 × 0.99)</td><td>9,802</td></tr>
-          <tr class="total"><td>열 합</td><td>100</td><td>9,900</td><td>10,000</td></tr>
-        </tbody>
-      </table>
+      <div class="math-block">$$ p(a,b,c) = p(a) p(b|a) p(c|a,b) = p(c) p(b|c) p(a|b,c) = p(b) p(a|b) p(c|a,b) $$</div>
+      <p class="math-note">$n$개 변수의 결합은 $n!$가지 순서로 분해할 수 있다. 셋이면 6가지 순서.</p>
 
-      <p>양성 판정을 받은 사람은 모두 198명. 그중 실제 환자는 99명. 따라서 양성 판정 + 실제 환자일 확률은 $99 / 198 = 0.5$ — 정확히 절반이다. 검사가 99% 정확해도 사전 유병률이 1%로 매우 낮으면, 거짓 양성(false positive)이 진짜 양성과 거의 같은 수가 나오는 것이다.</p>
+      <p>이건 단순한 수학적 사실이 아니라 모델링에서 자주 등장하는 결정점이다. 인과(causal) 모델링은 "원인 → 결과" 순서를 선택하는 작업이고, 자기회귀 언어모델은 "왼쪽 → 오른쪽" 순서를 선택한 결과다. 같은 분포를 양방향에서 모델링하면 다른 모델이 나온다 — BERT와 GPT의 차이가 정확히 이 분해 방향 차이에서 온다(BERT는 양방향 마스킹, GPT는 왼쪽-오른쪽 인과적 마스킹).</p>
 
-      <div class="analogy">
-        이 결과는 <b>사전이 항상 답에 영향을 준다</b>는 사실의 가장 극적인 예시다. 검사가 아무리 좋아도, 매우 드문 사건을 검출할 때는 양성 결과 하나만으로 단정할 수 없다. 그래서 의료 가이드라인은 보통 <em>"양성이 나오면 더 정밀한 두 번째 검사를 한다"</em>고 권한다. 두 번째 검사는 사후를 새 사전으로 받아 다시 베이즈 규칙을 돌리는 것이다.
-      </div>
+      <p>시험에서 자주 묻는 한 줄. <strong>연쇄법칙은 어떤 순서로도 풀 수 있다.</strong> 객관식에 "연쇄법칙 분해 방향은 고정되어 있다"라는 보기가 보이면 틀린 보기로 분류하면 된다. 단, 일단 순서를 정하면 그 순서를 일관되게 유지해야 한다는 점도 함께 외워두자.</p>
 
-      <p>식으로 다시 적으면 이렇게 된다.</p>
-      <div class="math-block">$$ P(\text{환자} \mid \text{양성}) = \frac{P(\text{양성} \mid \text{환자}) \cdot P(\text{환자})}{P(\text{양성})} = \frac{0.99 \cdot 0.01}{0.99 \cdot 0.01 + 0.01 \cdot 0.99} = 0.5 $$</div>
-      <p class="math-note">분자: 우도×사전 = 0.0099. 분모: 우도×사전 두 항의 합 = 0.0099 + 0.0099 = 0.0198.</p>
+      <h2>마르코프 가정 — 연쇄법칙을 가볍게 만드는 첫 번째 단순화</h2>
+      <p>연쇄법칙의 단점이 하나 있다. 문장이 길수록 조건부의 조건 부분이 점점 길어진다. $t$번째 단어의 조건부 분포는 1부터 $t-1$까지 모든 단어가 들어 있어야 한다. 어휘가 5만 개라면, $t=10$일 때 가능한 조건 조합이 5만^9개나 된다. 이걸 그대로 표로 저장하는 건 불가능하다.</p>
 
-      <h2>딥러닝과의 연결</h2>
-      <p>베이즈 규칙은 단지 시험 문제가 아니다. 딥러닝 학습 자체가 베이즈 규칙의 한 변형으로 읽힌다. 모델 파라미터를 $\theta$, 훈련 데이터를 $\mathcal{D}$라 하면:</p>
+      <p>가장 흔한 단순화가 <strong>마르코프 가정(Markov assumption)</strong>이다. "현재의 분포는 직전 몇 개 변수만 알면 된다"는 가정이다. 1차 마르코프(first-order Markov)라면 $p(x_t | x_{<t}) \approx p(x_t | x_{t-1})$. 즉, 바로 직전 변수 하나만 조건으로 둔다. 2차라면 직전 두 개. 이 가정 아래에서 연쇄법칙은 다음처럼 가벼워진다.</p>
 
-      <ul style="max-width: var(--measure); margin-inline: auto; padding-inline: 2.5rem; font-size: .95rem; color: var(--ink-soft); line-height: 1.7;">
-        <li><strong>최대우도(MLE)</strong>는 사전이 균등이라고 가정하고 $P(\mathcal{D} \mid \theta)$만 최대화하는 것이다.</li>
-        <li><strong>L2 정칙화(weight decay)</strong>는 사전을 평균 0의 가우시안으로 두고 사후를 최대화하는 것(MAP)과 정확히 같다.</li>
-        <li><strong>L1 정칙화(Lasso)</strong>는 사전을 라플라스로 두는 것과 같다.</li>
-        <li><strong>변분추론/VAE</strong>는 사후를 직접 못 구할 때 더 간단한 분포로 근사하는 기술.</li>
-      </ul>
+      <div class="math-block">$$ p(x_1, \ldots, x_n) \approx p(x_1) \prod_{t=2}^{n} p(x_t \,|\, x_{t-1}) $$</div>
+      <p class="math-note">1차 마르코프 가정. 직전 변수 하나만 본다.</p>
 
-      <p>그래서 7장에서 정칙화를 배울 때 "왜 L2가 가우시안과 짝이 되는가"를 다시 만나면, 이 장에서 본 베이즈 규칙이 그 답이다. 다음 장에서는 또 다른 방향, <em>"두 분포가 얼마나 다른가를 어떻게 잴 것인가"</em>로 넘어간다. 그 답이 정보이론이다.</p>
+      <p>마르코프 가정은 강한 단순화지만 많은 경우에 잘 작동한다. 음성 인식의 hidden Markov model(HMM), 옛 n-gram 언어모델, 강화학습의 MDP(Markov decision process)는 모두 이 가정 위에 서 있다. 한편 RNN이나 Transformer는 이런 마르코프 단순화 없이 연쇄법칙을 그대로 모델링한다 — 다만 효율을 위해 hidden state(RNN)나 attention(Transformer)으로 과거 정보를 압축해 들고 다닌다.</p>
+
+      <h2>시험에서 자주 묻는 한 줄</h2>
+      <p>시험 직전 정리. <strong>연쇄법칙 = 결합을 조건부의 곱으로</strong>. 일반 형태 $p(x_{1:n}) = \prod_t p(x_t | x_{<t})$. 분해 순서는 자유롭게 선택 가능. 마르코프 가정은 이 식의 조건 부분을 짧게 자르는 단순화. 객관식에서 "연쇄법칙의 식은 무엇인가"가 보이면 위 일반 형태가 정답이다.</p>
+
+      <p>다음 페이지에서는 연쇄법칙이 단순해지는 가장 극단적 경우 — 모든 변수가 독립이거나, 어떤 변수를 알면 나머지가 독립이 되는 조건부 독립을 다룬다. 네이브 베이즈(naive Bayes)가 그렇게 단순한 식이 되는 이유가 여기서 결정된다.</p>
     </div>
 
     <nav class="ch-foot"></nav>
@@ -164,18 +129,26 @@
 <script>
   const CH = [
     { no:'01', t:'왜 확률이 필요한가', f:'01.html' },
-    { no:'02', t:'확률변수, 분포, 조건부', f:'02.html' },
-    { no:'03', t:'기대값, 분산, 공분산', f:'03.html' },
-    { no:'04', t:'베이즈 규칙', f:'04.html' },
-    { no:'05', t:'정보이론 — 엔트로피/KL/교차 엔트로피', f:'05.html' },
-    { no:'06', t:'흔한 분포 카탈로그', f:'06.html' },
-    { no:'07', t:'시험 대비 체크리스트', f:'07.html' },
+    { no:'02', t:'확률변수와 분포 — PMF vs PDF', f:'02.html' },
+    { no:'03', t:'결합·주변·조건부 분포', f:'03.html' },
+    { no:'04', t:'연쇄법칙 — 결합을 조건부의 곱으로', f:'04.html' },
+    { no:'05', t:'독립과 조건부 독립', f:'05.html' },
+    { no:'06', t:'기대값 — 분포를 한 숫자로', f:'06.html' },
+    { no:'07', t:'분산과 공분산 — 무상관 ≠ 독립', f:'07.html' },
+    { no:'08', t:'흔한 분포 1 — Bernoulli, Categorical', f:'08.html' },
+    { no:'09', t:'흔한 분포 2 — Gaussian', f:'09.html' },
+    { no:'10', t:'흔한 분포 3 — Mixture, Dirac', f:'10.html' },
+    { no:'11', t:'베이즈 규칙 — 사전이 사후로', f:'11.html' },
+    { no:'12', t:'정보이론 1 — 엔트로피', f:'12.html' },
+    { no:'13', t:'정보이론 2 — KL 발산의 비대칭', f:'13.html' },
+    { no:'14', t:'정보이론 3 — 교차 엔트로피 = NLL', f:'14.html' },
+    { no:'15', t:'시험 대비 체크리스트', f:'15.html' },
   ];
   function buildNav(curr) {
     const tb = document.querySelector('.topbar');
     if (tb) tb.innerHTML =
       `<a class="home" href="index.html">← Ch.3 확률과 정보이론</a>` +
-      `<span class="ch-mini">SUB-CHAPTER ${curr} of 07</span>`;
+      `<span class="ch-mini">SUB-CHAPTER ${curr} of 15</span>`;
     const ol = document.querySelector('.ch-nav ol');
     if (ol) ol.innerHTML = CH.map(c =>
       `<li><a href="${c.f}" ${c.no === curr ? 'class="current"' : ''}>${c.t}</a></li>`).join('');
@@ -200,136 +173,98 @@
     }
   }
 
-  /* Beta(α, β) PDF — 정규화는 곡선 모양만 보면 됨. 최대값으로 스케일링. */
-  function logGamma(z) {
-    /* Stirling 근사가 아닌 Lanczos */
-    const g = 7;
-    const c = [0.99999999999980993, 676.5203681218851, -1259.1392167224028,
-               771.32342877765313, -176.61502916214059, 12.507343278686905,
-               -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
-    if (z < 0.5) return Math.log(Math.PI / Math.sin(Math.PI * z)) - logGamma(1 - z);
-    z -= 1;
-    let x = c[0];
-    for (let i = 1; i < g + 2; i++) x += c[i] / (z + i);
-    const t = z + g + 0.5;
-    return 0.5 * Math.log(2 * Math.PI) + (z + 0.5) * Math.log(t) - t + Math.log(x);
+  /* 미니 언어모델 — 미리 정의된 분포 사슬 */
+  const SEED = ['Today','the','weather','is'];
+  const TRANSITIONS = {
+    'is':            [['sunny',0.45],['cloudy',0.20],['rainy',0.18],['cold',0.10],['warm',0.07]],
+    'sunny':         [['and',0.45],['today',0.18],['outside',0.15],['but',0.12],['.',0.10]],
+    'cloudy':        [['with',0.35],['today',0.22],['outside',0.20],['and',0.13],['.',0.10]],
+    'rainy':         [['outside',0.40],['today',0.25],['and',0.18],['with',0.10],['.',0.07]],
+    'cold':          [['outside',0.40],['today',0.20],['and',0.20],['with',0.12],['.',0.08]],
+    'warm':          [['and',0.40],['today',0.22],['outside',0.20],['but',0.10],['.',0.08]],
+    'and':           [['I',0.32],['the',0.20],['it',0.18],['we',0.15],['my',0.15]],
+    'with':          [['some',0.40],['heavy',0.22],['light',0.20],['strong',0.10],['warm',0.08]],
+    'today':         [['.',0.40],['too',0.18],['again',0.18],['indeed',0.14],['for',0.10]],
+    'outside':       [['.',0.50],['so',0.22],['today',0.13],['but',0.10],['indeed',0.05]],
+    'but':           [['I',0.30],['the',0.22],['it',0.20],['we',0.18],['my',0.10]],
+    'I':             [['will',0.35],['went',0.22],['stayed',0.20],['need',0.13],['want',0.10]],
+    'the':           [['day',0.30],['sky',0.25],['rain',0.18],['sun',0.15],['air',0.12]],
+    'it':            [['feels',0.32],['seems',0.25],['will',0.20],['looks',0.13],['was',0.10]],
+    'we':            [['went',0.35],['will',0.25],['need',0.18],['should',0.12],['stayed',0.10]],
+    'my':            [['friends',0.30],['plans',0.25],['family',0.20],['day',0.15],['walk',0.10]],
+    'some':          [['rain',0.40],['snow',0.22],['wind',0.20],['clouds',0.10],['hail',0.08]],
+    'heavy':         [['rain',0.50],['snow',0.25],['wind',0.13],['clouds',0.07],['fog',0.05]],
+    'light':         [['rain',0.45],['snow',0.22],['wind',0.18],['breeze',0.10],['fog',0.05]],
+    'strong':        [['wind',0.55],['rain',0.20],['storms',0.12],['gusts',0.08],['breeze',0.05]],
+    '.':             [['END',1.0]],
+  };
+
+  let chain = SEED.slice();
+  let condProbs = [];
+
+  function currentDist() {
+    const last = chain[chain.length - 1];
+    return TRANSITIONS[last] || [['END',1.0]];
   }
-  function betaPDF(x, a, b) {
-    if (x <= 0 || x >= 1) return 0;
-    const logB = logGamma(a) + logGamma(b) - logGamma(a + b);
-    const logP = (a - 1) * Math.log(x) + (b - 1) * Math.log(1 - x) - logB;
-    return Math.exp(logP);
-  }
-  function maxBetaPDF(a, b, N) {
-    let m = 0;
-    for (let i = 1; i < N; i++) {
-      const x = i / N;
-      const v = betaPDF(x, a, b);
-      if (v > m) m = v;
+
+  function render() {
+    const wl = document.getElementById('wordLine');
+    wl.innerHTML = chain.map((w, i) => {
+      const cls = i < SEED.length ? 'w' : (i === chain.length - 1 ? 'w next' : 'w');
+      return `<span class="${cls}">${w}</span>`;
+    }).join(' ') + ' <span class="w pending">···</span>';
+
+    const dist = currentDist();
+    const ch = document.getElementById('candBars');
+    ch.innerHTML = dist.map(([w,p]) => `
+      <div class="cand-bar">
+        <span class="lab">${w}</span>
+        <span class="bg"><i class="fg" style="width:${(p*100).toFixed(0)}%"></i></span>
+        <span class="val">${p.toFixed(2)}</span>
+      </div>`).join('');
+
+    const pd = document.getElementById('productDisp');
+    if (condProbs.length === 0) {
+      pd.innerHTML = '<span class="step">아직 새 단어를 뽑지 않았습니다. <b>"다음 단어 뽑기"</b>를 눌러 보세요.</span>';
+    } else {
+      const steps = condProbs.map((cp, i) =>
+        `<span class="step">단계 ${i+1}: p(${cp.word} | …${cp.prevTail}) = <b>${cp.p.toFixed(3)}</b></span>`
+      ).join('');
+      const product = condProbs.reduce((a,b)=>a*b.p, 1);
+      pd.innerHTML = steps + `<span class="total">결합 확률 = ${condProbs.map(c=>c.p.toFixed(3)).join(' × ')} = <b>${product.toExponential(3)}</b></span>`;
     }
-    return m;
   }
 
-  const canvas = document.getElementById('bay');
-  const ctx = canvas.getContext('2d');
-  const state = { k: 2, b: 0.5, h: 0, tl: 0 };
-
-  function dpr() { return Math.min(2, window.devicePixelRatio || 1); }
-  function resize() {
-    const w = canvas.clientWidth;
-    const r = dpr();
-    canvas.width = w * r;
-    canvas.height = 240 * r;
-    canvas.style.height = '240px';
-    ctx.setTransform(r, 0, 0, r, 0, 0);
-  }
-  function draw() {
-    resize();
-    const W = canvas.clientWidth, H = 240;
-    ctx.clearRect(0, 0, W, H);
-
-    /* 축 */
-    ctx.strokeStyle = 'rgba(38,34,28,0.18)';
-    ctx.beginPath();
-    ctx.moveTo(36, H - 30); ctx.lineTo(W - 16, H - 30);
-    ctx.moveTo(36, 16); ctx.lineTo(36, H - 30);
-    ctx.stroke();
-
-    ctx.fillStyle = 'var(--ink-faint)';
-    ctx.font = '11px ui-monospace, monospace';
-    ctx.textAlign = 'center';
-    for (let t = 0; t <= 1; t += 0.2) {
-      const x = 36 + t * (W - 36 - 16);
-      ctx.fillText(t.toFixed(1), x, H - 14);
-    }
-    ctx.fillText('θ (앞면 확률)', W / 2, H - 2);
-
-    const a0 = Math.max(0.5, state.k * state.b);
-    const b0 = Math.max(0.5, state.k * (1 - state.b));
-    const a1 = a0 + state.h;
-    const b1 = b0 + state.tl;
-
-    /* 공통 스케일 — 사전, 사후 둘 다 같은 y-스케일 */
-    const N = 200;
-    const yMax = Math.max(maxBetaPDF(a0, b0, N), maxBetaPDF(a1, b1, N)) * 1.05;
-
-    function drawCurve(a, b, color, dashed) {
-      ctx.strokeStyle = color;
-      ctx.lineWidth = dashed ? 1.5 : 2.2;
-      ctx.setLineDash(dashed ? [4, 4] : []);
-      ctx.beginPath();
-      for (let i = 0; i <= N; i++) {
-        const x = i / N;
-        const v = betaPDF(x, a, b);
-        const px = 36 + x * (W - 36 - 16);
-        const py = (H - 30) - (v / yMax) * (H - 30 - 16);
-        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  function sampleNext() {
+    const dist = currentDist();
+    const r = Math.random();
+    let cum = 0;
+    for (const [w, p] of dist) {
+      cum += p;
+      if (r < cum) {
+        if (w === 'END') return null;
+        const prev = chain[chain.length - 1];
+        chain.push(w);
+        condProbs.push({ word: w, prevTail: prev, p: p });
+        return w;
       }
-      ctx.stroke();
-      ctx.setLineDash([]);
     }
-    drawCurve(a0, b0, '#5A5247', true);   /* 사전 점선 */
-    drawCurve(a1, b1, '#C0492E', false);  /* 사후 실선 */
-
-    /* 범례 */
-    ctx.font = '11px ui-monospace, monospace';
-    ctx.textAlign = 'left';
-    ctx.fillStyle = '#5A5247';
-    ctx.fillText('--- 사전 Beta(' + a0.toFixed(1) + ', ' + b0.toFixed(1) + ')', 46, 22);
-    ctx.fillStyle = '#C0492E';
-    ctx.fillText('— 사후 Beta(' + a1.toFixed(1) + ', ' + b1.toFixed(1) + ')', 46, 38);
-
-    /* 메타 */
-    document.getElementById('pMean').textContent = (a0 / (a0 + b0)).toFixed(2);
-    document.getElementById('postMean').textContent = (a1 / (a1 + b1)).toFixed(2);
-    document.getElementById('nObs').textContent = (state.h + state.tl) + ' 회';
-    document.getElementById('obsDetail').textContent = `앞 ${state.h} / 뒤 ${state.tl}`;
-
-    /* 관측 라벨 표시 */
-    const row = document.getElementById('obsRow');
-    row.innerHTML = '';
-    for (let i = 0; i < state.h; i++) {
-      const e = document.createElement('span'); e.className = 'o h'; e.textContent = 'H'; row.appendChild(e);
-    }
-    for (let i = 0; i < state.tl; i++) {
-      const e = document.createElement('span'); e.className = 'o t'; e.textContent = 'T'; row.appendChild(e);
-    }
+    return null;
   }
 
   window.addEventListener('load', () => {
     buildNav('04');
-    const kS = document.getElementById('kSlider');
-    const bS = document.getElementById('bSlider');
-    const kV = document.getElementById('kVal');
-    const bV = document.getElementById('bVal');
-    kS.addEventListener('input', () => { state.k = parseInt(kS.value, 10); kV.textContent = state.k; draw(); });
-    bS.addEventListener('input', () => { state.b = parseInt(bS.value, 10) / 100; bV.textContent = state.b.toFixed(2); draw(); });
-    document.getElementById('addH').addEventListener('click', () => { state.h++; draw(); });
-    document.getElementById('addT').addEventListener('click', () => { state.tl++; draw(); });
-    document.getElementById('reset').addEventListener('click', () => { state.h = 0; state.tl = 0; draw(); });
-    window.addEventListener('resize', draw);
-    draw();
-
+    render();
+    document.getElementById('nextBtn').addEventListener('click', () => {
+      if (chain.length > 14) return;
+      sampleNext();
+      render();
+    });
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      chain = SEED.slice();
+      condProbs = [];
+      render();
+    });
     if (window.renderMathInElement) {
       renderMathInElement(document.body, {
         delimiters: [{left:'$$', right:'$$', display:true}, {left:'$', right:'$', display:false}],

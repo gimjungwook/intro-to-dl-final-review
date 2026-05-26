@@ -92,14 +92,20 @@
 
   <span class="part-label">PART III · 깊은 표상 학습</span>
   <section class="plates" id="part3"></section>
+
+  <span class="part-label">PART IV · 시험 범위 논문 4편 (P1-P4)</span>
+  <section class="plates" id="part4"></section>
 </div>
 
 <footer class="colophon">
-  <p>이 사이트는 Deep Learning Book (Goodfellow, Bengio, Courville, MIT Press 2016) 1-15장을 바탕으로 작성된 기말고사 복습 자료다. 모든 챕터는 P2 신경 스타일 전이 해설(<a href="../../../../5-Archives/딥러닝개론-P2-신경스타일전이/P2-신경스타일전이-해설/index.html">아카이브</a>)의 디자인 시스템을 따른다.</p>
+  <p>이 사이트는 Deep Learning Book (Goodfellow, Bengio, Courville, MIT Press 2016) 1-15장과 시험 범위 논문 4편(FGSM, Neural Style Transfer, Transformer, BERT)을 바탕으로 작성된 기말고사 복습 자료다. 모든 챕터는 P2 신경 스타일 전이 해설 사이트의 디자인 시스템을 따른다.</p>
   <p class="src">
     원서 · <a href="https://www.deeplearningbook.org/">deeplearningbook.org</a><br>
-    선행학습 노트 · <a href="../../05-선행학습/">05-선행학습/</a><br>
-    과제 제출본 · <a href="../../03-과제-제출/">03-과제-제출/</a>
+    논문 P1 · <a href="https://arxiv.org/abs/1412.6572">arXiv:1412.6572</a> Explaining and Harnessing Adversarial Examples<br>
+    논문 P2 · <a href="https://arxiv.org/abs/1508.06576">arXiv:1508.06576</a> A Neural Algorithm of Artistic Style<br>
+    논문 P3 · <a href="https://arxiv.org/abs/1706.03762">arXiv:1706.03762</a> Attention Is All You Need<br>
+    논문 P4 · <a href="https://arxiv.org/abs/1810.04805">arXiv:1810.04805</a> BERT<br>
+    GitHub · <a href="https://github.com/gimjungwook/intro-to-dl-final-review">gimjungwook/intro-to-dl-final-review</a>
   </p>
 </footer>
 
@@ -121,6 +127,12 @@ const CHAPTERS = [
   { no:'14', dir:'ch14-autoencoder',     t:'자기부호화기',                           d:'미완전·과완전 오토인코더. 잡음 제거(DAE). 수축적 오토인코더(CAE). 매니폴드 학습.', sp:['style','synth'], part:3, kw:'DAE · CAE · 매니폴드' },
   { no:'15', dir:'ch15-representation',  t:'표상 학습',                              d:'사전훈련 · 전이학습. 분산 표상. 깊이의 지수적 이득. 인과 요소 기반 반지도학습. 사전(prior).', sp:['structure','style','synth'], part:3, kw:'전이학습 · 분산 표상 · 사전훈련' },
 ];
+const PAPERS = [
+  { no:'P1', dir:'p1-fgsm',           t:'적대적 예제 — FGSM과 선형 가설',          d:'Goodfellow, Shlens, Szegedy (2015). 신경망이 픽셀 한 두 단계의 미세한 노이즈에 왜 그렇게 쉽게 속는가. 선형성 가설, FGSM 공격, 적대적 훈련까지 단계별로.', sp:['style','synth'], kw:'FGSM · 선형 가설 · 적대적 훈련' },
+  { no:'P2', dir:'p2-style-transfer', t:'신경 스타일 전이 — Gram과 콘텐츠/스타일 분리', d:'Gatys, Ecker, Bethge (2015). 사진의 구조는 그대로 두고 그림의 붓질만 입히기. 고정된 VGG, Gram 행렬, 콘텐츠 손실 vs 스타일 손실의 줄다리기.', sp:['structure','style'], kw:'VGG · Gram · 콘텐츠/스타일' },
+  { no:'P3', dir:'p3-transformer',    t:'Attention Is All You Need — Transformer',  d:'Vaswani et al. (2017). RNN 없이 Attention만으로 시퀀스를 처리하는 구조. self-attention, multi-head, positional encoding, encoder/decoder의 모든 부품을 분해.', sp:['structure','synth'], kw:'self-attention · multi-head · positional' },
+  { no:'P4', dir:'p4-bert',           t:'BERT — 양방향 사전훈련의 시대',           d:'Devlin et al. (2019). MLM과 NSP로 양방향 문맥을 학습한 인코더. 사전훈련-미세조정 패러다임, [CLS]·[SEP] 토큰, GLUE 벤치마크의 의미.', sp:['style','structure'], kw:'MLM · NSP · 사전훈련 · 미세조정' },
+];
 const colMap = { structure:'var(--structure)', 'structure-lo':'var(--structure-lo)', style:'var(--style)', 'style-lo':'var(--style-lo)', synth:'var(--synth)', ink:'var(--ink)', 'ink-soft':'var(--ink-soft)' };
 
 ['part1','part2','part3'].forEach((id, idx) => {
@@ -140,6 +152,23 @@ const colMap = { structure:'var(--structure)', 'structure-lo':'var(--structure-l
       <span class="go">읽기 →</span>`;
     host.appendChild(a);
   });
+});
+
+// PART IV — 논문 카드
+const paperHost = document.getElementById('part4');
+PAPERS.forEach(p => {
+  const sp = p.sp.length === 1 ? [p.sp[0], p.sp[0]] : p.sp;
+  const a = document.createElement('a');
+  a.className = 'plate';
+  a.href = p.dir + '/index.html';
+  a.innerHTML = `
+    <div class="spectrum">${sp.map(s=>`<i style="flex:1;background:${colMap[s]}"></i>`).join('')}</div>
+    <span class="pno">PAPER ${p.no}</span>
+    <h3>${p.t}</h3>
+    <p>${p.d}</p>
+    <span class="kw">${p.kw}</span>
+    <span class="go">읽기 →</span>`;
+  paperHost.appendChild(a);
 });
 
 // 표지 히어로 — 표상의 사다리 입자 애니메이션

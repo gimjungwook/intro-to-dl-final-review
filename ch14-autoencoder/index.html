@@ -69,19 +69,20 @@
   <div class="paper-meta">
     <span><b>딥러닝 개론</b> 기말고사 인터랙티브</span>
     <span>제작 <b>김정욱</b></span>
-    <span>분량 <b>약 35분</b></span>
-    <span>위젯 <b>5개</b></span>
+    <span>분량 <b>약 80분</b></span>
+    <span>위젯 <b>6개</b></span>
+    <span>Sub-Chapter <b>12개</b></span>
   </div>
 </div>
 
 <section class="section-intro">
   <h2>한 문장으로</h2>
   <p>이 장은 <strong>"입력을 그대로 복사하라"는 가장 멍청해 보이는 과제가, 어떻게 데이터의 본질적 구조를 학습하는 강력한 표상 학습기로 바뀌는가</strong>를 다룬다. 정답은 <em>"멍청하게 복사할 수 없도록 손발을 묶어 두기"</em>다. 손발을 묶는 방식이 곧 자기부호화기(autoencoder)의 종류를 결정한다.</p>
-  <p>가장 깊은 통찰은 단순하다. 어떤 모델이 데이터를 <strong>완벽하게</strong> 복원할 수 있다면 그것은 곧 항등 함수(identity function)이고, 아무것도 배우지 않은 것이다. 반대로 <strong>전혀</strong> 복원할 수 없다면 모델이 너무 약하다. 좋은 자기부호화기란 이 사이의 <span class="t-synth">긴장 상태</span>에 머무르며 "복원에 정말 필요한 구조만 골라 담는" 모델이다. 그 긴장의 형태가 미완전(undercomplete), 잡음 제거(denoising), 수축적(contractive)으로 갈라진다.</p>
+  <p>가장 깊은 통찰은 단순하다. 어떤 모델이 데이터를 <strong>완벽하게</strong> 복원할 수 있다면 그것은 곧 항등 함수(identity function)이고, 아무것도 배우지 않은 것이다. 반대로 <strong>전혀</strong> 복원할 수 없다면 모델이 너무 약하다. 좋은 자기부호화기란 이 사이의 <span class="t-synth">긴장 상태</span>에 머무르며 "복원에 정말 필요한 구조만 골라 담는" 모델이다. 그 긴장의 형태가 미완전(undercomplete), 잡음 제거(denoising), 수축적(contractive), 스파스(sparse), 변분(variational)으로 갈라진다.</p>
 </section>
 
 <div class="twopole">
-  <div class="pole s1"><h4>인코더 f(x) — 압축</h4><p>입력 x를 잠재 표상 h로 매핑. "어떤 차원이 데이터에 중요한가"를 학습. 병목·페널티·노이즈가 결정.</p></div>
+  <div class="pole s1"><h4>인코더 f(x) — 압축</h4><p>입력 x를 잠재 표상 h로 매핑. "어떤 차원이 데이터에 중요한가"를 학습. 병목(bottleneck), 페널티(penalty), 노이즈(noise)가 결정한다.</p></div>
   <div class="pole s2"><h4>디코더 g(h) — 복원</h4><p>코드 h에서 입력 추정값 r = g(h)를 재구성. 재구성 손실 L(x, g(f(x)))이 인코더를 평가하는 채점자.</p></div>
 </div>
 
@@ -93,22 +94,28 @@
 </section>
 
 <footer class="colophon">
-  <p>이 해설은 Goodfellow, Bengio, Courville의 Deep Learning Book Chapter 14 (Autoencoders)을 바텀업으로 다시 쓴 것이다. 항등 함수의 위험에서 출발해 미완전·잡음 제거·수축적 자기부호화기와 매니폴드 학습의 연결까지 단계적으로 쌓아 올린다. 모든 수식은 "왜 그 형태인가"를 함께 설명한다.</p>
+  <p>이 해설은 Goodfellow, Bengio, Courville의 Deep Learning Book Chapter 14 (Autoencoders)을 바텀업으로 다시 쓴 것이다. 항등 함수의 위험에서 출발해 미완전, 잡음 제거, 수축적, 스파스, 변분 자기부호화기와 매니폴드 학습의 연결까지 단계적으로 쌓아 올린다. 모든 수식은 "왜 그 형태인가"를 함께 설명한다.</p>
   <p class="src">
     원서 · <a href="https://www.deeplearningbook.org/contents/autoencoders.html">deeplearningbook.org/contents/autoencoders.html</a><br>
-    선행학습 노트 · <a href="../../../03-과제-제출/IntroToDL_Week9_22000168.md">Week 9 과제 (Ch.13-14)</a><br>
+    선행학습 노트 · <a href="../../../Vault/2-Areas/Academic/Spring%202026/딥러닝%20개론/03-과제-제출/IntroToDL_Week9_22000168.md">Week 9 과제 (Ch.13-14)</a><br>
     상위 인덱스 · <a href="../index.html">기말고사 인터랙티브 표지</a>
   </p>
 </footer>
 
 <script>
   const CHAPTERS = [
-    { no:'01', t:'자기부호화기의 기본', d:'인코더 f, 디코더 g, 재구성 손실 ||x - g(f(x))||². 왜 "완벽한 복사"가 목표가 아닌가. 항등 함수의 함정.', sp:['structure','style'] },
-    { no:'02', t:'미완전 자기부호화기', d:'잠재 차원을 입력보다 좁게. 병목이 정칙화(regularization)가 되는 이유. 선형 미완전 AE와 PCA의 관계.', sp:['structure'] },
-    { no:'03', t:'잡음 제거 자기부호화기 (DAE)', d:'입력을 손상 → 깨끗한 원본 복원. 노이즈가 가르치는 매니폴드와 점수 매칭(score matching) 해석.', sp:['style','synth'] },
-    { no:'04', t:'수축적 자기부호화기 (CAE)', d:'인코더의 자코비안에 페널티. 매니폴드 접선 방향에만 민감, 무관한 방향에는 둔감. DAE의 해석적 쌍둥이.', sp:['structure-lo','style'] },
-    { no:'05', t:'자기부호화기와 매니폴드 학습', d:'Ch.13 선형 인자 모델의 비선형 일반화. Ch.15 표상 학습으로의 다리. 비선형 차원축소·의미적 해싱(semantic hashing) 응용.', sp:['synth','structure'] },
-    { no:'06', t:'시험 대비 — 한 장 요약과 예상 문제', d:'기말 빈출 카드. 항등 함수의 위험, 미완전 vs 과완전, DAE의 score matching 해석, CAE의 자코비안, AE↔PCA 관계의 한 줄 답안.', sp:['ink-soft','ink'] },
+    { no:'01', t:'자기부호화기란 무엇인가', d:'입력을 입력으로 재구성하는 신경망. 인코더 f, 디코더 g, 재구성 손실의 기본 정의. "왜 굳이 자기 자신을 복원하는가"의 답.', sp:['structure','style'] },
+    { no:'02', t:'인코더 · 디코더 · 재구성 손실', d:'세 부품의 역할. L2 손실의 의미, 교차 엔트로피 손실의 의미. 결정론적 매핑에서 확률적 분포 p_encoder, p_decoder로의 일반화.', sp:['structure'] },
+    { no:'03', t:'미완전 자기부호화기', d:'잠재 차원 h가 입력 x보다 좁다. 병목이 정칙화(regularization)가 되는 이유. 선형 미완전 AE와 PCA가 동일한 부분공간을 학습하는 정리.', sp:['structure','synth'] },
+    { no:'04', t:'과완전 AE의 위험과 항등 함수', d:'h가 x보다 크거나 같을 때 모델이 단순 복사로 빠지는 함정. 충분히 강한 비선형 모델이라면 미완전조차 안전하지 않다는 미묘함.', sp:['style','ink-soft'] },
+    { no:'05', t:'잡음 제거 AE (DAE) — 노이즈가 가르치는 매니폴드', d:'입력을 손상 → 깨끗한 원본 복원. 가우시안, 마스킹, 소금후추 잡음. 모델이 "어디로 다시 끌어당겨야 하는가"를 배우는 벡터장 직관.', sp:['style','synth'] },
+    { no:'06', t:'잡음 제거 AE (DAE) — 점수 매칭 해석', d:'복원 - 입력이 데이터 로그밀도의 그래디언트, 즉 점수 ∇log p(x)를 추정한다는 정리. 생성모형과의 다리.', sp:['synth','style'] },
+    { no:'07', t:'수축적 AE (CAE) — 자코비안 페널티', d:'인코더 자코비안의 제곱 프로베니우스 노름 페널티. 데이터가 변하는 방향에만 민감, 그 외에는 둔감. DAE의 해석적 쌍둥이.', sp:['structure-lo','style'] },
+    { no:'08', t:'AE와 매니폴드 학습', d:'데이터가 사는 곡면(manifold). AE는 그 곡면을 좌표계로 펴는 비선형 차원축소기. Ch.13 선형 인자, Ch.15 표상학습으로의 다리.', sp:['synth','structure'] },
+    { no:'09', t:'AE vs PCA — 비선형의 이득', d:'선형 AE = PCA 부분공간. 비선형 AE는 굽은 매니폴드를 따라 휨. 직선 한 줄로 종이를 자르기 vs 가위로 곡선 자르기 비유.', sp:['structure','ink'] },
+    { no:'10', t:'스파스 AE — 활성도에 페널티', d:'h가 커도 대부분 0이 되도록 강제. Ω(h) = λ||h||_1 페널티의 의미. 라플라스 사전분포의 MAP 해석. 스파스 코딩의 amortized 버전.', sp:['style-lo','synth'] },
+    { no:'11', t:'변분 자기부호화기(VAE) 맛보기', d:'확률적 잠재공간. ELBO, 재매개화(reparameterization), KL 정칙화. AE를 생성모형으로 끌어올리는 한 걸음.', sp:['synth','structure-lo'] },
+    { no:'12', t:'시험 대비 — 한 장 요약과 예상 문제', d:'15-20개 빈출 카드. 항등 함수의 위험, 미완전 vs 과완전, DAE의 score matching 해석, CAE의 자코비안, AE↔PCA 관계, 스파스 페널티의 한 줄 답안.', sp:['ink-soft','ink'] },
   ];
   const colMap = { structure:'var(--structure)', 'structure-lo':'var(--structure-lo)', style:'var(--style)', 'style-lo':'var(--style-lo)', synth:'var(--synth)', ink:'var(--ink)', 'ink-soft':'var(--ink-soft)' };
   const platesEl = document.getElementById('plates');
@@ -152,7 +159,6 @@
     });
     canvas.addEventListener('mouseleave', () => { mouseX = 0.5; });
 
-    // 입력 클러스터: 좌측 격자 형태로 시작
     const N = 160;
     let particles = [];
     function spawn() {
@@ -172,11 +178,9 @@
       ctx.clearRect(0,0,w,h);
       ctx.fillStyle = '#FAF7F0'; ctx.fillRect(0,0,w,h);
 
-      // 병목 폭: mouseX 0→1이면 폭 0.02→0.4 (가운데 통로)
       const bottleneck = 0.04 + mouseX * 0.36;
       const cx = w/2;
 
-      // 좌측 영역(입력) · 가운데(병목) · 우측(복원) 안내 라벨
       ctx.fillStyle = 'rgba(45, 91, 122, 0.06)';
       ctx.fillRect(0, 0, w*0.32, h);
       ctx.fillStyle = 'rgba(164, 123, 46, 0.07)';
@@ -184,27 +188,22 @@
       ctx.fillStyle = 'rgba(192, 73, 46, 0.06)';
       ctx.fillRect(w*0.68, 0, w*0.32, h);
 
-      // 라벨
       ctx.fillStyle = '#8E8576';
       ctx.font = '11px "Spline Sans Mono", monospace';
       ctx.fillText('x  (입력)', 14, 18);
       ctx.fillText('h = f(x)  (잠재)', cx - 50, 18);
       ctx.fillText('r = g(h)  (복원)', w - 130, 18);
 
-      // 각 입자: 좌→가운데로 가는 동안 y를 병목 안으로 압축, 가운데→우로 가면서 다시 흩어짐
       particles.forEach(p => {
         p.phase += 0.0035;
         if (p.phase > 1) { p.phase -= 1; p.y = Math.random(); p.jitter = (Math.random()-0.5)*0.4; }
         const t = p.phase;
-        // x 위치
         const px = t * w;
-        // y 위치: t=0 자유, t=0.5 병목 안, t=1 다시 자유
-        const tightness = 1 - Math.abs(t - 0.5) * 2;  // 0→1→0
+        const tightness = 1 - Math.abs(t - 0.5) * 2;
         const wide = (p.y - 0.5) * h * 0.85;
         const narrow = (p.y - 0.5) * h * bottleneck;
         const py = h/2 + wide * (1 - tightness) + narrow * tightness;
 
-        // 색: 좌측은 structure(쿨), 우측은 style(웜), 가운데는 synth(황토)
         let r, g, b;
         if (t < 0.5) {
           const k = t * 2;
@@ -221,7 +220,6 @@
         ctx.beginPath(); ctx.arc(px, py, 2.1 + tightness*0.8, 0, Math.PI*2); ctx.fill();
       });
 
-      // 병목 가이드 라인
       ctx.strokeStyle = 'rgba(164, 123, 46, 0.45)';
       ctx.lineWidth = 1.2; ctx.setLineDash([4, 4]);
       ctx.strokeRect(w*0.32, h*(0.5 - bottleneck/2), w*0.36, h*bottleneck);

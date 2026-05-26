@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sub 08 · 출력층 1 — 회귀: 선형 + MSE = 가우시안 MLE · Ch.06</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 08 · 출력층-비용 짝짓기의 첫 번째</span>
+      <h1>출력층 1 — 회귀:<br><span class="t-structure">선형</span> + <span class="t-style">MSE</span> = <span class="t-synth">가우시안 MLE</span></h1>
+      <p class="lede">평균제곱오차(MSE)는 임의의 점수표가 아니다. "출력이 가우시안 분포의 평균"이라는 확률 가정에서 최대우도추정으로 유도되는 자연스러운 결과다. 이 유도를 따라가면, 출력층-비용 함수의 다른 짝(이진, 다중)도 같은 원리로 떨어진다는 것을 알게 된다.</p>
+    </header>
+
+    <div class="prose">
+      <p>7절까지는 신경망 안쪽의 부품 — 은닉층의 비선형성을 다뤘다. 이 절부터 3개 절은 신경망이 어떻게 "정답을 내놓는가"를 다룬다. 출력층(output layer)은 두 가지 결정을 한다.</p>
+      <ol>
+        <li><strong>어떤 활성화 함수를 쓸 것인가</strong> (선형, sigmoid, softmax 중 하나).</li>
+        <li><strong>어떤 비용 함수(loss function)와 짝지을 것인가</strong> (MSE, BCE, CE 중 하나).</li>
+      </ol>
+      <p>중요한 점은 이 두 결정이 <strong>임의로 조합 가능한 것이 아니라, 같이 정해져야 한다</strong>는 것이다. 회귀 문제에는 회귀용 짝, 이진 분류에는 이진용 짝, 다중 분류에는 다중용 짝이 있다. 그리고 그 짝들이 모두 같은 한 원리 — <strong>최대우도추정(maximum likelihood estimation, MLE)</strong> — 에서 자연스럽게 유도된다.</p>
+
+      <h2>회귀 문제 — 연속값을 예측하는 일</h2>
+      <p>먼저 회귀(regression) 문제를 정의하자. 입력 $\mathbf{x}$가 주어졌을 때, 출력으로 어떤 연속적인 실수 값 $y \in \mathbb{R}$을 예측하는 일이다. 예를 들어 집의 면적·위치·층수를 입력으로 받아 가격을 예측한다든가, 환자의 의료 데이터를 입력으로 받아 혈압을 예측한다든가 하는 문제들이다.</p>
+
+      <p>이 문제의 출력층은 다음과 같이 단순하다.</p>
+      <div class="math-block">$$ \hat{y} = \mathbf{w}^\top \mathbf{h} + b $$</div>
+      <p class="math-note">은닉층의 마지막 활성 h에 선형 변환만 적용. 활성화 함수 없음(또는 "선형 활성화"라 부름).</p>
+
+      <p>활성화 함수를 굳이 두지 않는 이유는 분명하다. 회귀의 정답 $y$는 $\mathbb{R}$의 어떤 실수도 될 수 있다. 시그모이드로 (0, 1)에 가두거나 ReLU로 음수를 자르면, 정답이 그 범위 밖에 있을 때 모델이 표현할 수 없다. 그래서 출력층은 그저 <strong>가중합 + 편향만</strong> 한다.</p>
+
+      <h2>그러면 비용 함수는? — MSE의 유도</h2>
+      <p>회귀의 표준 비용 함수는 평균제곱오차(mean squared error, MSE)다.</p>
+      <div class="math-block">$$ L_{\text{MSE}} = \frac{1}{N} \sum_{i=1}^{N} (y_i - \hat{y}_i)^2 $$</div>
+      <p class="math-note">N개의 훈련 샘플에 대해, 예측과 정답의 차를 제곱해서 평균낸다.</p>
+
+      <p>이 식은 너무 자연스러워서 "당연히 이걸 쓰는 거 아닌가?"라고 넘어가기 쉽다. 그러나 왜 절댓값 $|y - \hat{y}|$도 아니고 4제곱 $(y - \hat{y})^4$도 아니고 정확히 제곱인지를 한 번은 짚어야 한다. 그 답이 가우시안(Gaussian)에서 나온다.</p>
+
+      <p>회귀의 확률 모형은 다음 가정에서 출발한다. <strong>"모델의 예측 $\hat{y}$가 정답 $y$의 평균이고, 그 주위에 가우시안 잡음이 붙어 있다."</strong></p>
+      <div class="math-block">$$ p(y \mid \mathbf{x}) = \mathcal{N}(y; \hat{y}(\mathbf{x}), \sigma^2) = \frac{1}{\sqrt{2\pi\sigma^2}} \exp\left(-\frac{(y - \hat{y}(\mathbf{x}))^2}{2\sigma^2}\right) $$</div>
+      <p class="math-note">정답 y는 평균 ŷ, 분산 σ²인 정규분포에서 뽑힌다고 가정.</p>
+
+      <h2>최대우도추정 — log를 씌우면 MSE가 나온다</h2>
+      <p>이제 최대우도추정을 수행한다. 훈련 데이터 $\{(\mathbf{x}_i, y_i)\}_{i=1}^N$의 우도(likelihood)는 모든 샘플의 확률의 곱이다.</p>
+      <div class="math-block">$$ L(\theta) = \prod_{i=1}^{N} p(y_i \mid \mathbf{x}_i; \theta) $$</div>
+      <p class="math-note">θ는 모델 파라미터(가중치 전체). 곱이 그대로면 수치적으로 다루기 어려우니 log를 씌운다.</p>
+
+      <p>로그를 씌우면 곱이 합이 된다.</p>
+      <div class="math-block">$$ \log L(\theta) = \sum_{i=1}^{N} \log p(y_i \mid \mathbf{x}_i; \theta) = \sum_{i=1}^{N} \left[ -\frac{(y_i - \hat{y}_i)^2}{2\sigma^2} - \frac{1}{2}\log(2\pi\sigma^2) \right] $$</div>
+      <p class="math-note">가우시안의 log는 -(차)²/(2σ²) + 상수 형태. 두 번째 항은 θ에 의존하지 않으므로 최적화에서 무시 가능.</p>
+
+      <p>최대우도는 $\log L(\theta)$를 최대화하는 일이다. 부호를 바꾸면 최소화 문제가 되고, $\theta$에 의존하지 않는 상수와 $1/(2\sigma^2)$ 같은 양의 상수를 빼면, 우리가 얻는 것은 다음 식이다.</p>
+      <div class="math-block">$$ -\log L(\theta) \propto \sum_{i=1}^{N} (y_i - \hat{y}_i)^2 $$</div>
+      <p class="math-note">최대우도 = 음의 로그우도 최소화 = MSE 최소화. 정확히 같은 문제.</p>
+
+      <p><strong>이게 핵심이다.</strong> MSE는 "직관적으로 좋아 보여서" 쓰는 점수표가 아니다. "정답이 가우시안 분포에서 나온다"는 확률 가정 아래서, 최대우도추정이 자동으로 유도한 비용 함수다. 그래서 MSE를 쓴다는 것은 <strong>암묵적으로 "정답에는 가우시안 잡음이 붙어 있다"고 가정한다</strong>는 뜻이다.</p>
+
+      <div class="analogy">
+        <b>다트판 비유로 보자.</b> 다트 선수가 어떤 목표 지점을 향해 다트를 던질 때, 실제로 꽂히는 위치는 목표 주위에 가우시안 분포로 흩어진다고 가정해 보자. 우리가 그 선수의 "조준 능력"을 평가하려면, 던진 다트가 목표에서 떨어진 거리의 제곱을 평균내는 것이 자연스럽다. 왜냐하면 가우시안의 log가 정확히 그 형태이기 때문이다. 직선 거리(절댓값)는 가우시안이 아니라 라플라스 분포(Laplace distribution)에 해당한다. 4제곱은 더 끝이 무거운(heavy-tailed) 분포에 해당한다. 우리가 어떤 점수표를 쓰는지는 사실 우리가 잡음을 어떻게 가정하는지를 드러낸다.
+      </div>
+
+      <h2>왜 절댓값이 아니라 제곱인가 — 잡음 분포에 따른 비용 함수</h2>
+      <p>이 비유를 좀 더 끝까지 밀어 보자. 잡음 분포가 다르면 유도되는 비용 함수도 다르다.</p>
+
+      <table class="symbols">
+        <tr><td>잡음 가정</td><td>유도되는 비용 함수</td></tr>
+        <tr><td>가우시안 N(0, σ²)</td><td>MSE: (y - ŷ)²</td></tr>
+        <tr><td>라플라스 Laplace(0, b)</td><td>MAE: |y - ŷ|</td></tr>
+        <tr><td>Huber 분포 (혼합)</td><td>Huber loss (작은 오차는 제곱, 큰 오차는 절댓값)</td></tr>
+        <tr><td>Student-t</td><td>로그-우도가 outlier에 강인 (robust regression)</td></tr>
+      </table>
+
+      <p>실용적으로 가우시안 가정이 가장 자주 맞아 떨어지는 이유는 중심극한정리(central limit theorem) 때문이다. 많은 작은 무작위 요인이 합쳐진 결과는 가우시안에 가까워지는 경향이 있다. 그래서 MSE가 회귀의 기본값이 된다. 그러나 outlier가 많은 데이터에서는 가우시안 가정이 깨지기 쉬워, MAE 또는 Huber loss를 쓰는 것이 더 안정적일 수 있다.</p>
+
+      <h2>이분산(heteroscedastic) 모델 — σ도 함께 예측하기</h2>
+      <p>지금까지의 가정은 잡음 분산 $\sigma^2$이 모든 입력에서 같다는 것이었다(homoscedastic). 그러나 실제로는 입력에 따라 잡음 크기가 다른 경우가 많다. 예를 들어 작은 집의 가격은 비교적 예측하기 쉽고, 매우 큰 집의 가격은 변동이 크다. 이런 경우 신경망의 출력층을 두 가지를 동시에 내도록 설계할 수 있다.</p>
+      <div class="math-block">$$ \hat{y}(\mathbf{x}) = \mu(\mathbf{x}), \quad \hat{\sigma}^2(\mathbf{x}) = \text{softplus}(s(\mathbf{x})) $$</div>
+      <p class="math-note">출력으로 평균 μ와 분산 σ²을 모두 예측. σ²은 양수여야 하므로 softplus 또는 exp로 강제.</p>
+
+      <p>이 모델에서 비용 함수는 그저 가우시안 log-likelihood를 펼친 것이다.</p>
+      <div class="math-block">$$ L = \frac{1}{N} \sum_{i=1}^{N} \left[ \frac{(y_i - \mu_i)^2}{2\sigma_i^2} + \frac{1}{2}\log(2\pi\sigma_i^2) \right] $$</div>
+      <p class="math-note">이제 σ도 학습 대상. 큰 σ를 예측하면 그 자리의 (y-μ)² 항이 작아지지만 동시에 log(σ²) 항이 커진다. 균형이 잡힌다.</p>
+
+      <p>이 형태는 "이 입력은 예측이 어렵다"는 신호를 모델이 스스로 표시할 수 있게 한다. 의료, 자율주행 등 불확실성 표시가 중요한 응용에서 점점 표준이 되어 가고 있다.</p>
+
+      <h2>지금 잡아 둘 그림</h2>
+      <ol>
+        <li><strong>회귀의 출력층 = 선형 (활성화 함수 없음).</strong> 정답이 임의의 실수일 수 있으니 가두지 않는다.</li>
+        <li><strong>MSE = 가우시안 가정 + 최대우도.</strong> 임의의 점수표가 아니라 확률 모형에서 자동 유도된 비용.</li>
+        <li><strong>잡음 분포가 다르면 비용 함수도 다르다.</strong> 라플라스 → MAE, Huber 등.</li>
+        <li><strong>이분산 모델은 분산도 함께 예측해서 불확실성을 표현한다.</strong> 현대적 응용에서 점점 표준화.</li>
+      </ol>
+      <p>다음 절에서는 출력이 0 또는 1인 이진 분류로 넘어간다. 여기서는 sigmoid + binary cross-entropy(BCE)가 한 짝이고, 그 짝은 베르누이 분포의 최대우도에서 떨어진다는 것을 본다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script src="widgets.js"></script>
+<script>
+  window.addEventListener('load', () => {
+    CH6.buildNav('08');
+  });
+</script>
+</body>
+</html>

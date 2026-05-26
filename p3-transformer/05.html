@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>05 · Q·K·V — 수식 정의</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Chapter 05 · 비유에서 수식으로</span>
+      <h1>Q·K·V 2 —<br>같은 입력에서 <span class="t-structure">세 벡터를</span> 어떻게 뽑나</h1>
+      <p class="lede">앞 장에서 Query, Key, Value의 역할을 도서관 비유로 잡았다. 이 장은 그 셋이 실제로 어떻게 만들어지는지를 — 어떤 행렬과 어떤 곱셈으로 — 한 단계씩 풀어 본다.</p>
+    </header>
+
+    <div class="prose">
+      <p>출발점은 한 가지 사실이다. 입력 토큰 시퀀스 — 예컨대 "The cat sat on the mat"이라는 6개의 단어 — 는 임베딩(embedding, 단어를 숫자 벡터로 바꾼 표현) 과정을 거쳐, 길이 $N$의 행렬 $X$로 들어온다.</p>
+
+      <div class="math-block">$$ X \in \mathbb{R}^{N \times d_{\text{model}}} $$</div>
+      <p class="math-note">$N$ = 시퀀스의 토큰 수. $d_{\text{model}}$ = 한 토큰을 표현하는 벡터의 길이(논문에서 $d_{\text{model}} = 512$). $X$의 한 행 $x_i$가 $i$번째 토큰의 벡터.</p>
+
+      <p>가령 길이 6의 시퀀스라면 $X$는 $6 \times 512$짜리 표다. 각 행은 한 단어의 정보가 담긴 512차원 벡터이고, 그 벡터의 값은 임베딩 층(embedding layer)이 학습 과정에서 정해 둔 숫자들이다. 이 $X$ 한 덩어리가 Transformer 한 블록의 입력이고, 우리는 이 $X$에서 Q, K, V 세 행렬을 만들어 내야 한다.</p>
+
+      <h2>세 개의 선형 변환</h2>
+      <p>Transformer의 답은 매우 단순하다. <strong>$X$에 서로 다른 세 개의 가중치 행렬을 곱한다.</strong></p>
+
+      <div class="math-block">$$ Q \;=\; X \, W_Q, \quad K \;=\; X \, W_K, \quad V \;=\; X \, W_V $$</div>
+      <p class="math-note">$W_Q, W_K, W_V$ = 각각 $\mathbb{R}^{d_{\text{model}} \times d_k}$ 형태의 학습되는 가중치 행렬. $d_k$ = Query와 Key의 차원(논문에서 $d_k = 64$). Value의 차원은 따로 $d_v$지만 보통 $d_v = d_k$로 둔다.</p>
+
+      <p>이 한 줄에 Transformer 한 블록의 절반쯤이 들어 있다. 풀어 설명하면 이렇다.</p>
+
+      <p><strong>1.</strong> $W_Q$는 "한 토큰 벡터를 받아서 그 토큰의 Query 표현으로 변환하는" 함수다. 학습 가능한 행렬이므로, 모델이 학습하면서 "어떤 식으로 질의를 만들 때 가장 유익한 답이 오는가"를 알아낸다.</p>
+
+      <p><strong>2.</strong> $W_K$는 "한 토큰 벡터를 받아서 그 토큰의 Key(표지) 표현으로 변환하는" 함수다. 모델이 "어떤 식으로 자기를 광고할 때 다른 토큰이 자기를 잘 찾아내는가"를 학습한다.</p>
+
+      <p><strong>3.</strong> $W_V$는 "한 토큰 벡터를 받아서 그 토큰의 Value(본문) 표현으로 변환하는" 함수다. 모델이 "발견되었을 때 어떤 정보를 내놓는 것이 가장 도움이 되는가"를 학습한다.</p>
+
+      <div class="analogy">
+        <b>세 가지 자기소개 ─</b> 사람이 모임에 가면 상황에 따라 자기소개가 달라진다. 친목 자리에서는 취미를, 면접에서는 경력을, 동창회에서는 학번을. 같은 사람이지만 세 가지 다른 압축본을 가진다. $W_Q, W_K, W_V$는 한 토큰 벡터를 받아 그 세 가지 자기소개 — Query용, Key용, Value용 — 를 각각 만들어 주는 변환기다.
+      </div>
+
+      <h2>차원의 변화 — 왜 $d_k$로 줄이나</h2>
+      <p>$d_{\text{model}} = 512$였는데 $d_k = 64$다. 즉 한 토큰의 벡터는 Q·K·V로 변환될 때 더 작은 차원으로 축소된다. 왜 굳이 작게 만들까. 두 가지 이유다.</p>
+
+      <p><strong>(1) 계산량 감소.</strong> 다음 장에서 보겠지만 attention의 점수표 $QK^\top$의 크기는 $N \times N$이고, 그 안의 한 원소를 계산하려면 $d_k$번의 곱셈이 필요하다. $d_k$가 작을수록 빠르다.</p>
+
+      <p><strong>(2) Multi-Head 분기.</strong> Transformer는 한 번에 한 종류의 attention만 계산하지 않고, $h$개의 헤드로 분기해서 동시에 여러 종류의 관계를 학습한다(9장 참조). 헤드가 8개라면 각 헤드가 $d_{\text{model}} / 8 = 64$차원만 받게 된다. 이 합쳐서 다시 $d_{\text{model}}$이 되도록 설계한 것이 표준이다.</p>
+
+      <h2>한 토큰 단위로 풀어 쓰면</h2>
+      <p>위의 행렬 곱셈을 한 토큰의 입장에서 다시 적어 보자.</p>
+
+      <div class="math-block">$$ q_i \;=\; x_i W_Q, \quad k_i \;=\; x_i W_K, \quad v_i \;=\; x_i W_V $$</div>
+      <p class="math-note">$x_i$ = $i$번째 토큰의 임베딩 벡터(길이 $d_{\text{model}}$). $q_i, k_i, v_i$ = 그 토큰의 Query, Key, Value 벡터(각각 길이 $d_k$).</p>
+
+      <p>여기서 한 가지 중요한 사실 — <strong>$W_Q, W_K, W_V$는 모든 토큰이 공유한다</strong>. 즉 같은 행렬이 모든 토큰에 똑같이 적용된다. 그래서 $W_Q$ 하나만 학습하면, 그 결과 $W_Q$는 "한 토큰이 Query를 만들 때의 보편적 규칙"을 담는다. 만약 토큰마다 다른 행렬을 쓴다면 파라미터 수가 폭증하고, 보지 못한 단어가 들어왔을 때 어떻게 처리할지가 막막해진다. 공유 가중치는 "한 번 배우면 모든 토큰에 일관되게 적용"이라는 일반화 이점을 준다.</p>
+
+      <h2>예시 — 한 줄의 행렬 곱이 실제로 어떻게 계산되는가</h2>
+      <p>아주 작은 장난감 예제를 보자. $d_{\text{model}} = 4, d_k = 2$. 토큰 한 개의 임베딩 $x = (1, 0, 1, 0)$. $W_Q$가 다음과 같다고 가정한다.</p>
+
+      <div class="math-block">$$ W_Q = \begin{pmatrix} 1 & 0 \\ 0 & 1 \\ 1 & 0 \\ 0 & 1 \end{pmatrix} $$</div>
+      <p class="math-note">$W_Q$ = $4 \times 2$ 가중치 행렬. 학습되는 값이지만 여기서는 예시로 고정.</p>
+
+      <p>그러면 $q = x W_Q = (1\cdot1 + 0\cdot0 + 1\cdot1 + 0\cdot0,\; 1\cdot0 + 0\cdot1 + 1\cdot0 + 0\cdot1) = (2, 0)$. 즉 4차원 입력이 2차원 Query 벡터로 변환된다. 같은 방식으로 $W_K, W_V$를 곱하면 $k, v$ 벡터가 나온다. 실제 학습된 $W_Q$는 더 복잡한 패턴을 담지만, 곱셈의 메커니즘은 정확히 이 그림이다.</p>
+
+      <h2>이 장에서 기억할 두 줄</h2>
+      <p>$Q, K, V$는 모두 입력 $X$에 서로 다른 학습 가능한 행렬 $W_Q, W_K, W_V$를 곱해서 만든다. 같은 입력이지만, 세 가지 다른 변환을 거쳐 세 가지 다른 역할의 벡터가 된다. 이 세 행렬이 모델이 학습하는 본체이고, 다음 장의 attention 수식은 이 셋을 어떻게 조합하는지 다룬다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  window.addEventListener('load', () => {
+    TFR.buildNav('05');
+  });
+</script>
+<script src="assets/widgets.js"></script>
+</body>
+</html>

@@ -3,11 +3,23 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>09 / 07 / 대표 아키텍처 계보</title>
+<title>Ch.09 · 07 CNN 3대 속성 3 — 변환 등가성</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .eq-stage { display: grid; grid-template-columns: 1fr; gap: .8rem; padding: 1.4rem 1.4rem 1rem; }
+  .eq-row { display: grid; grid-template-columns: auto 1fr auto 1fr; gap: .8rem; align-items: center; background: var(--paper); border: 1px solid var(--line); border-radius: 9px; padding: .8rem; }
+  .eq-row .lab { font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); white-space: nowrap; }
+  .eq-row canvas { width: 100%; height: 60px; display: block; background: #fff; border-radius: 6px; border: 1px solid var(--line-soft); }
+  .eq-controls { display: flex; flex-wrap: wrap; gap: 1.2rem; padding: .8rem 1.2rem 1rem; border-top: 1px solid var(--line-soft); background: var(--paper); font-size: .88rem; align-items: center; }
+  .eq-controls label { display: flex; flex-direction: column; gap: .2rem; min-width: 180px; flex: 1; }
+  .eq-controls label span { color: var(--ink-soft); font-family: var(--mono); font-size: .78rem; }
+  .eq-controls label span b { color: var(--ink); font-weight: 600; }
+  .eq-controls input[type=range] { width: 100%; accent-color: var(--style); }
+  @media (max-width: 720px) { .eq-row { grid-template-columns: 1fr; } }
+</style>
 </head>
 <body>
 <div class="scroll-progress"></div>
@@ -18,109 +30,111 @@
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Sub-chapter 07 / 1998 → 2015</span>
-      <h1>대표 아키텍처 계보 —<br><span class="t-style">LeNet → AlexNet → VGG → ResNet</span></h1>
-      <p class="lede">17년 사이 CNN의 깊이는 5층에서 152층으로 약 30배 깊어졌다. 매 단계마다 이전 모델의 어떤 병목을 어떻게 풀었는지를 따라가면, CNN 설계 철학의 진화가 한 줄로 읽힌다.</p>
+      <span class="kicker">Ch.09 · Sub 07 · CNN 3대 속성 (3/3)</span>
+      <h1><span class="t-style">변환 등가성</span><br>입력 이동은 출력 이동</h1>
+      <p class="lede">고양이가 이미지 왼쪽에 있든 오른쪽에 있든 합성곱은 같은 특징을 잡아낸다. 하지만 "잡아내는 위치"는 따라 이동한다. 등가(equivariant)와 불변(invariant)의 차이를 시험에서 자주 묻는다. 정확한 한 줄로 잡아 두자.</p>
     </header>
 
     <div class="prose">
-      <p>지금까지 다섯 sub-chapter에 걸쳐 CNN의 부품 — 합성곱, 풀링, 사전(prior), 출력 크기 계산 — 을 모두 정리했다. 이제 그 부품들이 실제로 어떻게 조립되어 “이미지 분류 정확도”라는 단일 지표를 17년에 걸쳐 끌어올렸는지를 본다. 네 모델(LeNet → AlexNet → VGG → ResNet)이 차례로 직전 모델의 한 가지 결정적 병목을 풀어 가며 깊이의 한계를 한 단계씩 넘어선다.</p>
+      <p>합성곱의 세 번째 얼굴은 <strong>변환 등가성(equivariance to translation)</strong>이다. "이동에 대해 등가다"라는 한 줄은 의외로 정확한 수학적 의미를 가진다. 이 의미를 분명히 잡아 두면, 시험에서 자주 묻는 "등가성과 불변성의 차이"를 한 줄에 답할 수 있다.</p>
 
-      <p>아래 위젯에서 각 모델 카드 위에 마우스를 올리면, 그 모델의 핵심 혁신과 “해결한 병목”이 함께 떠오른다. 이 사이트 전체에서 가장 “시험 직전에 한 번 더 보기 좋은” 그림이다.</p>
+      <h2>등가성의 정의 — 식 한 줄</h2>
+
+      <p>함수 $f$와 변환 $T$가 있을 때, 다음 등식이 성립하면 $f$는 $T$에 대해 등가(equivariant)다.</p>
+
+      <div class="math-block">$$ f(T(x)) = T(f(x)) $$</div>
+      <p class="math-note">왼쪽: 입력에 변환을 먼저 가하고 함수에 통과. 오른쪽: 함수에 통과한 결과에 변환을 가함. 두 결과가 정확히 같다는 의미.</p>
+
+      <p>합성곱 $f$와 평행이동(translation) 변환 $T$의 경우, 이 식은 한 줄로 풀면 "입력을 $k$칸 이동하고 합성곱 통과한 결과 = 합성곱 통과한 결과를 $k$칸 이동한 것"이다. 더 짧게는 "이동과 합성곱이 가환(commutative)"이다. 평행이동을 먼저 해도, 나중에 해도 같은 결과가 나온다는 말이다.</p>
+
+      <h2>합성곱이 등가인 이유 — 공유에서 따라온다</h2>
+
+      <p>합성곱이 등가인 이유는 6번에서 본 파라미터 공유에서 곧장 따라온다. 같은 커널을 모든 위치에 적용하므로, 입력이 한 칸 이동하면 같은 커널이 한 칸 이동한 위치에서 같은 가중합을 만든다. 결과적으로 출력도 한 칸 이동한다.</p>
+
+      <p>식으로 확인해 보자. 입력 $x$의 합성곱 출력을 $s$라 하면 $s(i) = \sum_a x(i+a) w(a)$이다. 이제 입력을 한 칸 이동시켜 $x'(i) = x(i+1)$이라 하자. 합성곱 출력 $s'$는</p>
+
+      <div class="math-block">$$ s'(i) = \sum_a x'(i+a) w(a) = \sum_a x(i+1+a) w(a) = s(i+1) $$</div>
+      <p class="math-note">x' 정의를 풀어 넣으면, 같은 합 식이 i 대신 i+1에서 평가된 결과와 같다. 즉 s' = "s를 한 칸 이동시킨 것".</p>
+
+      <p>완전연결 층은 이 성질이 없다. 위치마다 가중치가 다르므로, 같은 입력 패턴을 옆으로 옮기면 다른 가중치들과 만나 전혀 다른 출력이 나온다. 그래서 완전연결로 "고양이 위치가 바뀌어도 같은 답"을 배우려면, 모든 가능한 위치에 있는 고양이를 데이터로 다 봐야 한다. 합성곱은 한 위치에서만 봐도 다른 위치에서 자동으로 같은 일을 한다.</p>
+
+      <div class="analogy">
+        등가성은 <b>거울에 적힌 글자</b>와 비슷하다. 거울을 옆으로 밀면, 거울에 비친 글자도 정확히 같은 거리만큼 옆으로 밀린다. 사라지지도, 뒤집히지도 않는다 — 옆으로 따라간다. 합성곱이 입력을 따라 출력을 옆으로 미는 것도 이런 식이다. 한편 불변성은 <b>주민등록증</b>이다. 들고 다니는 위치가 바뀌어도, 적힌 정보(이름, 주소)는 변하지 않는다. 풀링(8번)이 추구하는 것이 이 불변성이다.
+      </div>
+
+      <h2>등가성과 불변성의 결정적 차이</h2>
+
+      <p>시험에서 가장 자주 등장하는 함정이 이 둘의 혼동이다. 한 표로 정리해 두자.</p>
+
+      <table>
+        <thead><tr><th>속성</th><th>입력 이동 시 출력</th><th>예</th><th>좋은 점</th></tr></thead>
+        <tbody>
+          <tr><td>등가(equivariant)</td><td>같은 양만큼 이동</td><td>합성곱 층</td><td>위치 정보 보존</td></tr>
+          <tr><td>불변(invariant)</td><td>변하지 않음</td><td>풀링 후 분류</td><td>위치에 둔감한 판정</td></tr>
+        </tbody>
+      </table>
+
+      <p>두 성질은 서로 보완적이다. 합성곱 층이 등가라는 사실은 "특징이 어디에 있는지"를 유지해 준다. 풀링이 (약한) 불변을 부여하면 "그 특징이 거기 있다는 사실"만 남고 정확한 위치는 약해진다. CNN은 합성곱(등가)을 여러 층 쌓고, 풀링(불변)을 중간중간 끼워 넣어, 깊은 층으로 갈수록 점점 위치에는 둔감하고 의미에는 민감해진다.</p>
+
+      <p>분류(classification)는 결국 "이미지에 고양이가 있는가"를 묻는다. 위치는 중요하지 않다. 그래서 분류기는 깊은 층의 강한 불변성을 좋아한다. 반면 객체 검출(detection)이나 분할(segmentation)은 "고양이가 어디에 있는가"를 묻는다. 그래서 검출 모델은 풀링을 적게 두거나, 위치를 별도로 회귀하는 가지를 둔다(예: YOLO, Faster R-CNN).</p>
+
+      <h2>등가성의 한계 — 회전·크기에는 등가가 아니다</h2>
+
+      <p>합성곱이 이동에 대해 등가라는 것은 "이동에 대해서만"이라는 한정이다. 다른 변환에는 등가가 아니다.</p>
+
+      <p><strong>회전(rotation):</strong> 이미지를 90도 돌리면, 같은 커널이 보던 패턴이 90도 돌아간 모양으로 보인다. 같은 출력이 나오지 않는다. CNN은 회전에 대해 등가도 불변도 아니다. 그래서 학습할 때 회전된 이미지를 데이터 증강(data augmentation)으로 일부러 보여 줘야 회전된 입력에도 강해진다.</p>
+
+      <p><strong>크기 변화(scale):</strong> 이미지를 2배 키우면, 같은 커널이 같은 패턴의 더 작은 부분만 본다. 출력이 달라진다. 그래서 검출 모델은 흔히 "다중 스케일 입력"을 동시에 처리한다(FPN, SSD 등).</p>
+
+      <p>이 한계가 중요한 이유는, "CNN이 모든 기하 변환에 강하다"는 잘못된 기대를 막기 위해서다. CNN의 강점은 이동에 한정된다. 다른 변환은 학습으로 데이터로 가르쳐야 한다. 책에서도 이 점을 분명히 한다: "합성곱은 이동에 대해서는 자연스럽게 등가지만, 회전이나 크기 변화에는 그렇지 않다."</p>
+
+      <h2>등가성과 데이터 증강의 관계</h2>
+
+      <p>왜 우리가 데이터 증강에서 회전과 확대는 자주 하면서, 평행이동은 덜 하는지 — 이 질문도 등가성에서 답이 나온다. 합성곱이 이동에 대해 이미 등가이므로, 데이터로 이동 예시를 더 보여 줄 필요가 거의 없다(가장자리 효과를 제외하면). 한 위치에서만 보여 줘도 다른 위치에서 같은 일이 자동으로 일어난다.</p>
+
+      <p>반면 회전과 확대는 합성곱이 자동으로 처리하지 못한다. 그래서 학습 시 데이터 증강으로 보여 주면 학습된 가중치가 그 변환에도 어느 정도 강해진다. 이것은 "구조적 사전이 없을 때는 데이터로 보충한다"는 일반적 원칙의 좋은 예다.</p>
+
+      <p>아래 위젯에서 1D 입력에 임펄스(impulse)를 만들고 슬라이더로 그 위치를 옮겨 본다. 임펄스가 옆으로 옮겨질 때 합성곱 출력이 정확히 같은 양만큼 옆으로 따라가는지를 본다. 그리고 풀링 후 결과는 어떻게 다른지도 함께 본다.</p>
     </div>
 
     <div class="widget">
       <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 07</span><span>CNN 아키텍처 진화 — hover로 핵심 혁신 보기</span></div>
-        <div id="arch"></div>
+        <div class="widget-label"><span class="lab-no">위젯 07</span><span>등가 vs 불변 — 입력을 옮기면 출력이 어떻게</span></div>
+        <div class="eq-stage">
+          <div class="eq-row">
+            <span class="lab">입력 x</span>
+            <canvas id="cIn" width="800" height="60"></canvas>
+            <span class="lab">합성곱 출력 s</span>
+            <canvas id="cConv" width="800" height="60"></canvas>
+          </div>
+          <div class="eq-row">
+            <span class="lab">2-pool 결과</span>
+            <canvas id="cPool" width="800" height="60"></canvas>
+            <span class="lab">출력 이동량</span>
+            <canvas id="cShift" width="800" height="60"></canvas>
+          </div>
+        </div>
+        <div class="eq-controls">
+          <label><span>임펄스 위치 <b id="lblPos">10</b></span><input type="range" id="ctlPos" min="0" max="29" step="1" value="10"></label>
+          <label><span>커널 종류 <b id="lblKt">에지</b></span><input type="range" id="ctlKt" min="0" max="2" step="1" value="0"></label>
+        </div>
       </div>
-      <p class="widget-cap">왼쪽부터 LeNet(1998) → AlexNet(2012) → VGGNet(2014) → ResNet(2015). 막대 높이 = 각 모델의 깊이(층 수, 로그 스케일). 카드 위에 마우스를 올리면 그 모델의 핵심 혁신과 “이전 모델의 어떤 병목을 풀었는가”가 함께 떠오른다.</p>
+      <p class="widget-cap">위 왼쪽: 입력 1D 신호의 한 점에 임펄스가 있다. 위 오른쪽: 합성곱 통과 결과. 슬라이더로 임펄스 위치를 옮기면 합성곱 출력의 패턴도 정확히 같은 양만큼 옆으로 따라간다(등가). 아래 왼쪽: 2-pool(max) 결과. 임펄스가 작은 거리만큼 움직여도 풀링 결과는 거의 변하지 않는다(근사 불변). 아래 오른쪽: 입력 이동량과 합성곱 출력 이동량을 비교. 두 값이 완벽히 일치하면 등가다.</p>
     </div>
 
     <div class="prose">
-      <h2>1. LeNet-5 (LeCun, 1998) — CNN의 원형</h2>
+      <h2>변환 등가성 한 줄 정리</h2>
+      <ul class="checklist">
+        <li>등가의 정의: $f(T(x)) = T(f(x))$. 변환과 함수가 순서 바꿔도 같다.</li>
+        <li>합성곱은 평행이동에 대해 등가다(파라미터 공유의 결과).</li>
+        <li>등가 ≠ 불변. 등가는 "출력이 따라 움직임", 불변은 "출력이 변하지 않음".</li>
+        <li>합성곱(등가) + 풀링(근사 불변) = 깊은 층은 위치에 둔감, 의미에 민감.</li>
+        <li>분류는 불변을 원함. 검출·분할은 등가가 더 유용함.</li>
+        <li>합성곱은 회전·크기에는 등가가 아니다. 학습할 때 데이터 증강으로 보충해야 한다.</li>
+        <li>그래서 데이터 증강에서 평행이동은 덜 중요하고, 회전·확대·반전이 많이 쓰인다.</li>
+      </ul>
 
-      <p>LeNet-5는 sub-chapter 05에서 본 그 LeNet의 5번째 판본이다. 손글씨 우편번호 인식(MNIST)에 실제 배치된 8층 모델로, 이후 모든 CNN의 기본 골격 — “합성곱 → 풀링 → 합성곱 → 풀링 → 완전연결” — 을 확립했다.</p>
-
-      <div class="symbols"><tbody>
-        <tr><td>구조</td><td>Conv(5×5) → AvgPool → Conv(5×5) → AvgPool → FC → FC → Output</td></tr>
-        <tr><td>활성화</td><td>시그모이드(sigmoid) 또는 tanh</td></tr>
-        <tr><td>깊이</td><td>약 5층 (합성곱 2 + 완전연결 3)</td></tr>
-        <tr><td>핵심 기여</td><td>합성곱과 풀링의 교대 배치 패턴 확립. 미국 우편국에 실배치된 첫 상업용 딥러닝 시스템 중 하나.</td></tr>
-      </tbody></div>
-
-      <p>LeNet의 “병목”은 곧 깊이였다. 시그모이드 활성화는 깊은 층으로 갈수록 기울기가 0에 가까워지는 <strong>기울기 소실(vanishing gradient)</strong> 문제를 일으켰고, 당시 계산 자원으로는 큰 데이터셋을 다룰 수 없었다. 그래서 LeNet 이후 약 14년간 CNN은 학계의 “흥미로운 모델” 수준에 머물렀다.</p>
-
-      <h2>2. AlexNet (Krizhevsky et al., 2012) — 딥러닝 혁명의 도화선</h2>
-
-      <p>2012년 ImageNet Large Scale Visual Recognition Challenge(ILSVRC)에서 AlexNet은 기존 2등(수작업 특징 기반)보다 약 10%p 낮은 오차율을 기록했다. 컴퓨터 비전 학계가 충격을 받았고, 그 다음 해부터 ILSVRC 우승 모델은 거의 모두 CNN으로 바뀌었다. 이 한 해가 “딥러닝 혁명”의 시작점으로 기록된다.</p>
-
-      <div class="symbols"><tbody>
-        <tr><td>구조</td><td>Conv(11×11) → MaxPool → Conv(5×5) → MaxPool → Conv(3×3) × 3 → MaxPool → FC × 3</td></tr>
-        <tr><td>활성화</td><td><strong>ReLU</strong> (시그모이드 대체)</td></tr>
-        <tr><td>깊이</td><td>8층 (합성곱 5 + 완전연결 3)</td></tr>
-        <tr><td>핵심 기여</td><td>ReLU / 드롭아웃 / GPU 병렬학습 / 데이터 증강 4가지 도입.</td></tr>
-      </tbody></div>
-
-      <p>AlexNet이 푼 병목은 두 가지다. <strong>(1) 기울기 소실</strong>: ReLU는 양수 영역에서 기울기 1을 그대로 흘려서 시그모이드의 소실 문제를 크게 완화했다. <strong>(2) 과적합 + 계산 부족</strong>: 드롭아웃이 완전연결 층의 과적합을 억제했고, GTX 580 GPU 두 대를 병렬로 사용해 당시로는 거대한 모델을 학습 가능하게 만들었다. 이미지를 자르고 뒤집어 학습 데이터를 인위적으로 늘리는 데이터 증강도 ImageNet의 “데이터 부족”을 일부 보완했다.</p>
-
-      <div class="analogy">
-        AlexNet은 <b>“같은 레시피(CNN)인데 오븐(GPU)과 재료(ImageNet)와 양념(ReLU, 드롭아웃)을 다 갖춘 첫 요리”</b>다. 레시피는 1989년 LeNet에 이미 있었다. 1980년대에는 오븐도 재료도 양념도 부족해 같은 레시피로는 요리가 완성되지 못했다.
-      </div>
-
-      <h2>3. VGGNet (Simonyan &amp; Zisserman, 2014) — 작은 커널의 힘</h2>
-
-      <p>VGGNet은 “더 크게 만들지 말고, 더 균일하게 깊이 쌓자”는 단순한 아이디어로 ILSVRC 2014에서 2등을 했다. 핵심 질문은 다음 한 줄이다 — <em>“큰 커널(5×5, 7×7) 하나보다 작은 커널(3×3) 여러 개가 더 낫지 않을까?”</em></p>
-
-      <div class="symbols"><tbody>
-        <tr><td>구조</td><td>3×3 합성곱만 반복, 2×2 최대 풀링으로 다운샘플링</td></tr>
-        <tr><td>깊이</td><td>16층(VGG-16) 또는 19층(VGG-19)</td></tr>
-        <tr><td>핵심 기여</td><td>3×3 커널 반복의 효율성 입증. “같은 블록 반복”이라는 균일한 설계 철학.</td></tr>
-      </tbody></div>
-
-      <p>이 질문에 대한 답은 “그렇다”였고, 그 이유는 두 가지다.</p>
-
-      <div class="symbols"><tbody>
-        <tr><td>같은 수용 영역, 더 적은 파라미터</td><td>3×3 두 층 = 5×5 한 층과 같은 수용 영역. 파라미터: $2 \times 9 = 18$ vs $25$. 3×3 세 층 = 7×7과 같은 수용 영역. 파라미터: $3 \times 9 = 27$ vs $49$.</td></tr>
-        <tr><td>비선형성이 더 많음</td><td>3×3 두 층 사이에 ReLU가 한 번 더 들어간다. 같은 시야를 보면서 더 풍부한 비선형 함수를 표현할 수 있다.</td></tr>
-      </tbody></div>
-
-      <p>VGGNet이 푼 병목은 “큰 커널은 비효율적이다”라는 점이다. AlexNet은 첫 층에 11×11이라는 큰 커널을 썼는데, 이는 가중치가 많고(121개) 비선형성이 한 번뿐이다. VGG는 그것을 3×3 커널 여러 층으로 분해해 같은 시야를 더 적은 파라미터, 더 많은 비선형성으로 봤다. 이 “3×3의 철학”은 이후 거의 모든 CNN의 표준이 된다.</p>
-
-      <h2>4. ResNet (He et al., 2015) — 잔차 연결로 깊이의 한계를 깬다</h2>
-
-      <p>VGG 이후 자연스러운 질문은 “더 깊이 쌓으면 더 좋아지지 않을까”였다. 그런데 실험 결과는 정반대였다. 단순히 층을 더 쌓으면 어느 시점부터 <em>훈련 오차조차</em> 오히려 높아졌다. 과적합이라면 훈련 오차는 내려가야 하니, 이건 과적합이 아니다. 이는 최적화 자체가 어려워지는 <strong>열화 문제(degradation problem)</strong>로 진단됐다.</p>
-
-      <p>ResNet의 해법은 놀랍도록 단순했다. 각 블록이 입력에서 출력으로 가는 직접 매핑 $H(x)$를 배우는 대신, 입력과 출력의 <strong>차이(잔차)</strong>만 배우게 한다.</p>
-
-      <div class="math-block">$$ H(x) \;=\; F(x) + x, \qquad F(x) \;=\; H(x) - x $$</div>
-      <p class="math-note">F(x)가 학습되는 합성곱 블록의 출력, x는 입력. 둘이 더해진 H(x)가 최종 출력.</p>
-
-      <p>입력 $x$는 <strong>지름길(shortcut / skip connection)</strong>로 그대로 전달되어 합성곱 블록의 출력 $F(x)$에 더해진다. 이 한 줄의 변화가 왜 결정적인가?</p>
-
-      <div class="symbols"><tbody>
-        <tr><td>항등 매핑 학습의 용이성</td><td>만약 “이 추가 층은 아무것도 하지 않는 것이 최선”인 상황이라면, $F(x) = 0$만 학습하면 된다. 가중치를 0에 가깝게 만드는 것은, 처음부터 복잡한 항등 매핑 $H(x) = x$를 직접 학습하는 것보다 훨씬 쉽다.</td></tr>
-        <tr><td>기울기의 지름길</td><td>역전파에서 기울기가 덧셈 연산을 통해 깊은 층에서 얕은 층으로 직접 흐를 수 있는 통로가 만들어진다. 기울기 소실이 구조적으로 완화된다.</td></tr>
-      </tbody></div>
-
-      <div class="analogy">
-        ResNet의 잔차 학습은 <b>“기존 답안에 무엇을 더할지”</b>만 배우게 하는 방식이다. 기존 답안이 이미 거의 맞다면, 더할 것은 0(또는 0에 가까운 작은 보정)이다. 이는 학생이 <b>“처음부터 완벽한 답안을 쓰는 것”</b>보다 훨씬 쉽다. 또한 시험관(역전파)이 학생에게 점수를 알려 줄 때, 답안 본체뿐 아니라 “기존 답안에서 더한 부분”에 대한 피드백도 직접 갈 수 있어 학생이 더 빨리 배운다.
-      </div>
-
-      <p>ResNet은 ILSVRC 2015에서 152층(!)으로 우승했고, 오차율 3.57%로 인간 수준(약 5%)을 넘어섰다. 이후 거의 모든 심층 아키텍처(Transformer, EfficientNet, U-Net 등)에 잔차 연결이 표준으로 채택됐다. ResNet이 푼 병목은 한 줄로 요약된다 — <em>“깊이를 단순히 늘리면 학습이 망가진다”</em>를 잔차 연결이라는 한 가지 구조적 장치로 해결했다.</p>
-
-      <h2>네 모델의 한눈 비교</h2>
-
-      <div class="symbols"><tbody>
-        <tr><td>LeNet-5 (1998)</td><td>약 5층 / Conv-Pool 패턴 / 손글씨 인식</td></tr>
-        <tr><td>AlexNet (2012)</td><td>8층 / ReLU + 드롭아웃 + GPU / 대규모 분류의 시작</td></tr>
-        <tr><td>VGGNet (2014)</td><td>16-19층 / 3×3 커널 반복 / 균일한 설계</td></tr>
-        <tr><td>ResNet (2015)</td><td>152+층 / 잔차 연결 / 초심층 학습</td></tr>
-      </tbody></div>
-
-      <p>각 모델이 이전 모델의 한 가지 결정적 병목을 풀었다. AlexNet은 기울기 소실과 데이터/계산 부족을, VGG는 큰 커널의 비효율을, ResNet은 심층 네트워크의 열화 문제를. 이 흐름은 “CNN을 만든다”라는 추상적 과제가 실제로는 한 번에 풀리는 문제가 아니라, 매 단계 직전 단계의 분명한 한계를 들춰내고 그것에 맞춰 한 가지 도구를 추가하는 과정이었음을 보여 준다.</p>
-
-      <p>다음 sub-chapter 08은 마지막으로, 시험 직전에 한 번 더 훑을 카드를 정리한다. 등가성과 불변성, 합성곱과 교차상관, CNN의 사전이 안 맞는 데이터 — 9장에서 가장 잘 헷갈리고 자주 출제되는 구분들을 짧게 모은다.</p>
+      <p>다음 8번에서는 합성곱의 등가성과 짝을 이루는 <strong>풀링(pooling)</strong>을 본다. 풀링은 등가성을 약한 형태의 불변성으로 바꾸는 장치이고, 그 약한 불변성이 분류에 결정적이다.</p>
     </div>
 
     <nav class="ch-foot"></nav>
@@ -128,123 +142,136 @@
 </div>
 
 <script>
-  const SUBS = [
-    { no: '01', t: '왜 완전연결은 안 되는가' },
-    { no: '02', t: '합성곱의 정의' },
-    { no: '03', t: 'CNN의 3대 핵심 속성' },
-    { no: '04', t: '풀링 — 평행이동 불변성' },
-    { no: '05', t: '신경과학적 기원' },
-    { no: '06', t: '출력 크기, 스트라이드, 패딩' },
-    { no: '07', t: '대표 아키텍처 계보' },
-    { no: '08', t: '시험 대비' },
+  const CHAPTERS = [
+    { no:'01', t:'완전연결의 파라미터 폭발' },
+    { no:'02', t:'합성곱이란 무엇인가' },
+    { no:'03', t:'1D 합성곱 — 시간 신호' },
+    { no:'04', t:'2D 합성곱 — 이미지 커널' },
+    { no:'05', t:'희소 상호작용' },
+    { no:'06', t:'파라미터 공유' },
+    { no:'07', t:'변환 등가성' },
+    { no:'08', t:'풀링 — max vs avg' },
+    { no:'09', t:'신경과학적 기원' },
+    { no:'10', t:'출력 크기 공식' },
+    { no:'11', t:'수용 영역' },
+    { no:'12', t:'아키텍처 1 — LeNet, AlexNet' },
+    { no:'13', t:'아키텍처 2 — VGG, Inception' },
+    { no:'14', t:'아키텍처 3 — ResNet' },
+    { no:'15', t:'시험 대비 — 30+ 질문' },
   ];
-  function buildNav(cur) {
-    const tb = document.querySelector('.topbar');
-    if (tb) tb.innerHTML =
-      '<a class="home" href="index.html">← Chapter 09 / 합성곱 신경망</a>' +
-      '<span class="ch-mini">SUB ' + cur + ' / 08</span>';
-    const ol = document.querySelector('.ch-nav ol');
-    if (ol) ol.innerHTML = SUBS.map(c =>
-      '<li><a href="' + c.no + '.html"' + (c.no === cur ? ' class="current"' : '') + '>' + c.t + '</a></li>').join('');
-    const foot = document.querySelector('.ch-foot');
-    if (foot) {
-      const i = SUBS.findIndex(c => c.no === cur);
-      const prev = i > 0 ? SUBS[i - 1] : { no: '', t: '표지로', _href: 'index.html' };
-      const next = i < SUBS.length - 1 ? SUBS[i + 1] : { no: '', t: '표지로', _href: 'index.html' };
-      const hp = prev._href || (prev.no + '.html');
-      const hn = next._href || (next.no + '.html');
-      foot.innerHTML =
-        '<a href="' + hp + '"><div class="dir">← 이전</div><div class="ti">' + prev.t + '</div></a>' +
-        '<a href="' + hn + '" class="next"><div class="dir">다음 →</div><div class="ti">' + next.t + '</div></a>';
-    }
-  }
-  function initScroll() {
-    const bar = document.querySelector('.scroll-progress');
-    if (!bar) return;
-    const on = () => {
-      const h = document.documentElement;
-      const max = h.scrollHeight - h.clientHeight;
-      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
-    };
-    document.addEventListener('scroll', on, { passive: true }); on();
-  }
+  const CUR = '07';
+  document.querySelector('.topbar').innerHTML = '<a class="home" href="index.html">← Ch.09 CNN 표지</a><span class="ch-mini">SUB ' + CUR + ' / 15</span>';
+  document.querySelector('.ch-nav ol').innerHTML = CHAPTERS.map(c => '<li><a href="' + c.no + '.html"' + (c.no===CUR?' class="current"':'') + '>' + c.t + '</a></li>').join('');
+  const idx = CHAPTERS.findIndex(c=>c.no===CUR);
+  const prev = idx>0 ? CHAPTERS[idx-1] : { no:'', t:'표지로', _:'index.html' };
+  const next = idx<CHAPTERS.length-1 ? CHAPTERS[idx+1] : { no:'', t:'표지로', _:'index.html' };
+  document.querySelector('.ch-foot').innerHTML =
+    '<a href="' + (prev._||prev.no+'.html') + '"><div class="dir">← 이전</div><div class="ti">' + prev.t + '</div></a>' +
+    '<a href="' + (next._||next.no+'.html') + '" class="next"><div class="dir">다음 →</div><div class="ti">' + next.t + '</div></a>';
 
-  // ─── 위젯 07: 아키텍처 계보 카드 ─────────────────────
-  function archWidget(host) {
-    const css = getComputedStyle(document.documentElement);
-    const COL = {
-      structure: css.getPropertyValue('--structure').trim() || '#2D5B7A',
-      style: css.getPropertyValue('--style').trim() || '#C0492E',
-      synth: css.getPropertyValue('--synth').trim() || '#A47B2E',
-      ink: css.getPropertyValue('--ink-soft').trim() || '#5A5247',
-      faint: css.getPropertyValue('--ink-faint').trim() || '#8E8576',
-    };
-    const ARCHS = [
-      { name: 'LeNet-5', year: 1998, depth: 5, color: COL.synth,
-        feat: '합성곱-풀링 패턴 확립',
-        solved: '딥러닝의 첫 상업적 성공 (손글씨 인식)',
-        detail: 'Conv5×5 → AvgPool → Conv5×5 → AvgPool → FC×3<br>활성화: sigmoid / tanh' },
-      { name: 'AlexNet', year: 2012, depth: 8, color: COL.structure,
-        feat: 'ReLU / 드롭아웃 / GPU / 데이터 증강',
-        solved: '기울기 소실 + 과적합 + 계산 부족 한꺼번에 해소',
-        detail: 'Conv11×11 → 5×5 → 3×3×3 → FC×3<br>ImageNet 우승, 오차율 -10%p' },
-      { name: 'VGGNet', year: 2014, depth: 19, color: COL.style,
-        feat: '3×3 커널만 반복 + 균일한 설계',
-        solved: '큰 커널(11×11, 5×5)의 비효율 → 작은 커널 다층',
-        detail: '3×3 conv + 2×2 max-pool 블록 반복<br>같은 수용 영역에 더 적은 파라미터, 더 많은 ReLU' },
-      { name: 'ResNet', year: 2015, depth: 152, color: COL.style,
-        feat: '잔차 연결 (skip connection)',
-        solved: '심층 네트워크의 열화 문제 → 초심층 학습 가능',
-        detail: 'H(x) = F(x) + x<br>152층으로 ILSVRC 우승, 오차율 3.57% (인간 ≈ 5%)' },
-    ];
-
-    let hoverIdx = -1;
-
-    function render() {
-      const cards = ARCHS.map((a, i) => {
-        const isHi = hoverIdx === i;
-        const h = Math.max(40, Math.log2(a.depth) / Math.log2(152) * 160);
-        return '<div data-i="' + i + '" class="archCard" style="flex:1;min-width:140px;cursor:pointer;text-align:center;padding:.9rem .6rem;border:1px solid ' + (isHi ? a.color : 'var(--line)') + ';border-radius:10px;background:' + (isHi ? 'rgba(45,91,122,0.04)' : '#fff') + ';transition:.2s var(--ease);">' +
-          '<div style="font-family:var(--mono);font-size:.7rem;color:' + COL.faint + ';letter-spacing:.1em;">' + a.year + '</div>' +
-          '<div style="font-family:var(--serif);font-size:1.15rem;color:' + a.color + ';margin:.3rem 0;font-weight:600;">' + a.name + '</div>' +
-          '<div style="display:flex;flex-direction:column-reverse;align-items:center;height:170px;justify-content:flex-start;margin:.6rem 0;">' +
-          '  <div style="width:60%;background:' + a.color + ';height:' + h + 'px;border-radius:3px 3px 0 0;transition:.25s var(--ease);"></div>' +
-          '</div>' +
-          '<div style="font-family:var(--mono);font-size:.78rem;color:' + a.color + ';font-weight:600;">' + a.depth + ' 층</div>' +
-          '</div>';
-      }).join('<div style="display:flex;align-items:center;font-family:var(--mono);font-size:1.1rem;color:' + COL.faint + ';padding:0 .3rem;">→</div>');
-
-      let detail = '';
-      if (hoverIdx >= 0) {
-        const a = ARCHS[hoverIdx];
-        detail = '<div style="margin-top:1.2rem;padding:1rem 1.2rem;background:var(--paper-2);border-left:3px solid ' + a.color + ';border-radius:0 6px 6px 0;font-size:.85rem;line-height:1.6;">' +
-          '<div style="font-family:var(--serif);font-size:1.05rem;color:' + a.color + ';font-weight:600;margin-bottom:.4rem;">' + a.name + ' (' + a.year + ')</div>' +
-          '<div style="color:' + COL.ink + ';"><b>핵심 혁신</b>: ' + a.feat + '</div>' +
-          '<div style="color:' + COL.ink + ';margin-top:.3rem;"><b>해결한 병목</b>: ' + a.solved + '</div>' +
-          '<div style="color:' + COL.faint + ';margin-top:.5rem;font-family:var(--mono);font-size:.74rem;">' + a.detail + '</div>' +
-          '</div>';
-      } else {
-        detail = '<div style="margin-top:1.2rem;padding:.7rem 1rem;background:var(--paper-2);border-radius:6px;font-family:var(--mono);font-size:.72rem;color:' + COL.faint + ';text-align:center;">카드 위에 마우스를 올리면 핵심 혁신과 해결한 병목이 표시됩니다</div>';
-      }
-
-      host.querySelector('#archBoard').innerHTML =
-        '<div style="display:flex;align-items:flex-end;gap:.4rem;justify-content:center;flex-wrap:wrap;">' + cards + '</div>' +
-        detail;
-
-      host.querySelectorAll('.archCard').forEach(c => {
-        c.addEventListener('mouseenter', () => { hoverIdx = +c.dataset.i; render(); });
-        c.addEventListener('mouseleave', () => { hoverIdx = -1; render(); });
-      });
-    }
-    host.innerHTML = '<div style="padding:1.4rem 1rem 1.2rem;background:#fff;"><div id="archBoard"></div></div>';
-    render();
-  }
+  const bar = document.querySelector('.scroll-progress');
+  document.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max > 0 ? (h.scrollTop/max)*100 : 0) + '%';
+  }, { passive: true });
 
   window.addEventListener('load', () => {
-    buildNav('07'); initScroll();
-    const a = document.getElementById('arch');
-    if (a) archWidget(a);
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, { delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}], throwOnError: false });
+    }
   });
+
+  // 위젯
+  const N = 30;
+  const kernels = {
+    0: { name: '에지', w: [-1, 0, 1] },
+    1: { name: '평균', w: [1/3, 1/3, 1/3] },
+    2: { name: '샤프', w: [-1, 3, -1] }
+  };
+  const cIn = document.getElementById('cIn').getContext('2d');
+  const cConv = document.getElementById('cConv').getContext('2d');
+  const cPool = document.getElementById('cPool').getContext('2d');
+  const cShift = document.getElementById('cShift').getContext('2d');
+  const ctlPos = document.getElementById('ctlPos');
+  const ctlKt = document.getElementById('ctlKt');
+  const lblPos = document.getElementById('lblPos');
+  const lblKt = document.getElementById('lblKt');
+
+  let prevConvIdx = -1;
+
+  function drawBars(ctx, vals, hilite, color, baseColor) {
+    const W = ctx.canvas.width, H = ctx.canvas.height;
+    ctx.clearRect(0,0,W,H);
+    const n = vals.length;
+    const bw = W / n;
+    const maxAbs = Math.max(...vals.map(Math.abs), 1);
+    ctx.fillStyle = '#26221C';
+    const mid = H/2;
+    ctx.strokeStyle = '#d8d2c4'; ctx.lineWidth = 0.6;
+    ctx.beginPath(); ctx.moveTo(0, mid); ctx.lineTo(W, mid); ctx.stroke();
+    for (let i = 0; i < n; i++) {
+      const v = vals[i];
+      const h = Math.abs(v) / maxAbs * (H/2 - 2);
+      const x = i * bw + 1;
+      const y = v >= 0 ? mid - h : mid;
+      ctx.fillStyle = (i === hilite) ? color : baseColor;
+      ctx.fillRect(x, y, bw - 2, h);
+    }
+  }
+
+  function conv1d(x, w) {
+    const half = Math.floor(w.length / 2);
+    const out = new Array(x.length).fill(0);
+    for (let i = 0; i < x.length; i++) {
+      let s = 0;
+      for (let m = 0; m < w.length; m++) {
+        const xi = i + m - half;
+        if (xi >= 0 && xi < x.length) s += x[xi] * w[m];
+      }
+      out[i] = s;
+    }
+    return out;
+  }
+
+  function maxpool(x, size) {
+    const out = [];
+    for (let i = 0; i < x.length - size + 1; i += size) {
+      let m = -Infinity;
+      for (let j = 0; j < size; j++) m = Math.max(m, x[i+j]);
+      out.push(m);
+    }
+    return out;
+  }
+
+  function draw() {
+    const pos = +ctlPos.value;
+    const kt = +ctlKt.value;
+    lblPos.textContent = pos;
+    lblKt.textContent = kernels[kt].name;
+
+    const x = new Array(N).fill(0);
+    x[pos] = 1;
+    const conv = conv1d(x, kernels[kt].w);
+    const pool = maxpool(conv.map(Math.abs), 2);
+    let maxConvIdx = 0; let maxConvVal = -Infinity;
+    conv.forEach((v, i) => { if (Math.abs(v) > maxConvVal) { maxConvVal = Math.abs(v); maxConvIdx = i; } });
+
+    drawBars(cIn, x, pos, '#C0492E', '#d8d2c4');
+    drawBars(cConv, conv, maxConvIdx, '#C0492E', '#7BA7B9');
+    const poolFull = new Array(N).fill(0);
+    pool.forEach((v, i) => { poolFull[i*2] = v; });
+    drawBars(cPool, poolFull, Math.floor(maxConvIdx/2)*2, '#C0492E', '#9C6FA8');
+
+    const shift = new Array(N).fill(0);
+    shift[pos] = 0.5;
+    shift[maxConvIdx] = -0.5;
+    drawBars(cShift, shift, -1, '#C0492E', '#2D5B7A');
+  }
+
+  ctlPos.addEventListener('input', draw);
+  ctlKt.addEventListener('input', draw);
+  draw();
 </script>
 </body>
 </html>

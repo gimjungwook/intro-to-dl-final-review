@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>09 · Multi-Head — 왜 여러 헤드</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Chapter 09 · 한 번의 시선으로는 부족하다</span>
+      <h1>Multi-Head Attention 1 —<br><span class="t-style">왜</span> 헤드(head)가 여럿 필요한가</h1>
+      <p class="lede">앞 장까지 우리는 Scaled Dot-Product Self-Attention 하나를 끝까지 따라왔다. 그런데 실제 Transformer는 이 attention을 한 번이 아니라 보통 8번, 12번, 또는 그 이상 동시에 한다. 이를 Multi-Head Attention(다중 헤드 어텐션)이라 부른다. 이 장은 “왜 한 번으로는 안 되고 굳이 여러 번 병렬로 하는가”를 비유와 수식 두 갈래로 답한다.</p>
+    </header>
+
+    <div class="prose">
+      <h2>출발 — 단일 attention의 표현력 한계</h2>
+      <p>지금까지 본 self-attention의 출력은 한 줄이다. $\text{Attention}(Q, K, V) = \text{softmax}(QK^\top / \sqrt{d_k}) V$. 이 한 줄짜리 계산은 시퀀스의 각 토큰마다 “하나의 softmax 분포”를 만든다. 즉 단어 "cat"이 query가 되었을 때, 다른 모든 단어에 대해 정확히 하나의 가중치 벡터가 나오고, 그 가중치로 value들을 가중합한 단 하나의 새 벡터가 출력이다.</p>
+
+      <p>문제는 여기서 시작된다. 자연어 문장 안에는 토큰 사이의 관계가 한 종류만 있는 게 아니다. 한 문장 "The hungry cat that I saw yesterday sat on the mat"을 보자. 단어 "cat"은 동시에 여러 종류의 관계를 갖는다 — <strong>주어-동사 관계</strong>("cat — sat"), <strong>수식 관계</strong>("hungry — cat"), <strong>관계절 관계</strong>("cat — that — I — saw"), <strong>의미적 동위 관계</strong>("cat — mat"). 사람이 이 문장을 이해할 때는 이 모든 관계를 머릿속에서 거의 동시에 처리한다. 그런데 단일 attention은 softmax 분포 하나만 만들 수 있다. 한 분포 안에서 "sat"에도 큰 가중치를 주고, "hungry"에도 큰 가중치를 주고, "that"에도 큰 가중치를 주면, 결과적으로 가중치가 분산되어 어느 한 관계도 선명하게 잡지 못한다. 마치 카메라 한 대로 클로즈업·와이드샷·접사를 한 장에 다 담으려는 시도와 같다.</p>
+
+      <div class="analogy">
+        <b>주방의 미장플라스 비유.</b> 셰프 한 명이 양파를 썰면서 동시에 마늘을 다지고 동시에 토마토 껍질을 벗기려 한다고 상상해 보자. 손이 두 개니까 양파·마늘 정도는 어찌어찌 하겠지만, 세 가지를 동시에 하려면 결국 어느 하나도 제대로 못 한다. 해결책은 단순하다 — 보조 셰프를 여러 명 두고 각자 한 가지 작업에 집중시킨 뒤, 결과를 모아 한 접시에 담는다. Multi-head는 이 “각 관계마다 전용 보조”를 신경망 안에 만든 장치다.
+      </div>
+
+      <h2>발상의 전환 — 차원을 쪼개서 여러 attention을 병렬로</h2>
+      <p>핵심 아이디어는 의외로 단순하다. <strong>입력 벡터의 차원 $d_{model}$을 통째로 한 번의 attention에 다 쓰지 말고, $h$개의 작은 조각으로 쪼개서 각각 독립된 attention을 수행하자.</strong> 원 논문(Vaswani et al., 2017)에서는 $d_{model} = 512$를 $h = 8$개의 헤드로 나눠 각 헤드의 차원 $d_k = d_v = 64$를 쓴다. $8 \times 64 = 512$이므로 전체 파라미터 수는 단일 헤드($d_k = 512$인 한 번의 attention)와 같다. 즉 “더 비싼 모델”을 만든 게 아니라 “같은 비용으로 더 잘게 나눠 본” 것이다.</p>
+
+      <p>이 분할이 왜 표현력을 늘려 주는가? 단일 attention에서 한 softmax 분포가 가질 수 있는 “관계의 모양”은 본질적으로 하나다. 하지만 $h$개의 헤드를 두면 각 헤드가 서로 다른 가중치 행렬 $W_i^Q, W_i^K, W_i^V$를 학습한다. 학습 과정에서 헤드들은 자연스럽게 “역할 분담”을 한다. 한 헤드는 문장 안에서 인접 단어를 보는 데 특화되고, 다른 헤드는 멀리 떨어진 주어-동사를 잡고, 또 다른 헤드는 명사구를 묶는다. 이는 학습이 끝난 실제 BERT, GPT 등의 모델에서 attention 시각화로 반복 확인된 사실이다.</p>
+
+      <div class="math-block">$$ \text{head}_i = \text{Attention}(QW_i^Q, KW_i^K, VW_i^V), \quad i = 1, \ldots, h $$</div>
+      <p class="math-note">각 헤드는 입력 $Q, K, V$ 각각에 자기만의 가중치 행렬 $W_i^Q, W_i^K, W_i^V$를 곱한 뒤 attention을 수행. $W_i^Q \in \mathbb{R}^{d_{model} \times d_k}$ 형태로 $d_{model}$ 차원을 $d_k$ 차원으로 압축하는 역할.</p>
+
+      <h2>왜 “병렬”인가 — GPU 친화 구조</h2>
+      <p>“헤드 8개”라고 하면 직관적으로 “8배 느린 거 아니냐”는 의심이 든다. 그러나 실제로는 거의 같은 속도다. 이유는 두 가지.</p>
+
+      <p>첫째, 각 헤드는 서로 독립적이다. head_1을 끝내고 head_2를 시작하는 게 아니라, 8개 헤드의 모든 행렬 곱을 한꺼번에 GPU에 던지면 GPU가 동시에 처리한다. 실제 구현에서는 8개 헤드의 가중치 행렬을 하나의 큰 텐서로 묶고, 텐서 곱셈 한 번으로 처리한다 — 즉 “8번의 행렬곱”이 아니라 “한 번의 큰 행렬곱”이다.</p>
+
+      <p>둘째, 각 헤드의 차원이 작아진다. $d_{model} = 512$를 단일로 쓰면 query·key 사이의 dot-product가 $512$차원 벡터 두 개의 내적이다. 헤드 8개로 쪼개면 각 헤드는 $64$차원짜리 내적만 한다. 큰 행렬을 한 번 하는 것과 작은 행렬을 여러 번 하는 것의 연산량은 같지만, GPU는 후자를 더 잘 병렬화한다. 결과적으로 multi-head는 “표현력은 더 풍부, 계산은 비슷, 메모리도 비슷”이라는 매우 효율적인 구조다.</p>
+
+      <h2>각 헤드는 정말 다른 관계를 학습하는가</h2>
+      <p>이론상 그렇게 “설계”했다는 것과 실제 학습 결과가 일치하는 것은 다른 문제다. 실증적으로는 어떨까?</p>
+
+      <p>BERT, GPT, T5 등 대형 Transformer 모델의 attention 가중치를 시각화하면 헤드별 “특화”가 분명히 드러난다. 일부 헤드는 <strong>구문론적(syntactic)</strong> 패턴을 잡는다 — 즉 주어와 동사, 형용사와 명사, 동사와 목적어처럼 문법 관계가 있는 토큰끼리 강한 가중치를 준다. 다른 헤드는 <strong>의미론적(semantic)</strong> 패턴을 잡는다 — "doctor"와 "hospital", "cat"과 "mouse"처럼 의미적으로 연관된 단어끼리 묶는다. 또 다른 헤드는 <strong>위치적(positional)</strong> 패턴을 잡는다 — 항상 직전 토큰만 보거나, 항상 첫 토큰을 보는 식의 단순한 위치 규칙을 학습한다.</p>
+
+      <p>주목할 점은 이 역할 분담이 사람이 미리 지정한 게 아니라 학습이 자연스럽게 발견한 결과라는 것이다. 학습 손실(language modeling, machine translation 등)을 최소화하다 보면, 모든 헤드가 똑같은 관계를 보는 것보다 서로 다른 관계를 보는 게 더 손실이 낮기 때문에, gradient descent가 그렇게 헤드들을 “다양화”시킨다. 마치 회사에서 모든 직원이 같은 일을 하면 비효율인 것처럼, 모델 안에서도 헤드들이 자연스럽게 전문성을 나눠 갖는다.</p>
+
+      <div class="widget">
+        <div class="widget-frame">
+          <div class="widget-label"><span class="lab-no">위젯 09</span><span>Multi-Head 분기 — 4개 헤드가 서로 다른 관계를 본다</span></div>
+          <div id="mh"></div>
+        </div>
+        <p class="widget-cap">같은 문장 "The cat sat on mat"에 대해 4개 헤드가 학습할 수 있는 관계 패턴 예시. 헤드 1은 인접 토큰, 2는 주어-동사, 3은 명사구, 4는 첫 토큰을 본다. 실제 학습된 모델의 attention 시각화에서 자주 관찰되는 유형들이다.</p>
+      </div>
+
+      <h2>한 헤드의 차원은 왜 작아도 괜찮은가</h2>
+      <p>여기서 자연스러운 의문이 생긴다. 단일 attention에서 $d_k = 512$였던 것을 multi-head로 쪼개면 $d_k = 64$가 된다. 차원이 1/8로 줄었는데 표현력이 떨어지지 않을까? 이론적으로는 떨어질 수도 있지만, 실험적으로는 오히려 늘었다. 이유는 두 가지다.</p>
+
+      <p>첫째, 한 헤드 안에서의 표현은 “한 종류의 관계”만 잡으면 충분하다. 한 종류의 관계를 표현하는 데는 64차원도 충분히 풍부하다. 반면 단일 attention에서 512차원이 통째로 한 분포를 만드는 데 쓰이면, 그 분포는 어쩔 수 없이 여러 관계의 평균이 되어 흐릿해진다. 64차원짜리 8개가 따로 작동하는 게 512차원짜리 1개가 모든 걸 평균 내는 것보다 결과적으로 더 표현력이 높다.</p>
+
+      <p>둘째, $W_i^Q, W_i^K, W_i^V$ 가중치 행렬 자체가 “이 헤드가 입력의 어떤 부분에 집중할지”를 학습한다. 즉 $d_{model} = 512$차원 중에서 헤드 1은 “구문 관련 차원”을 추출하고, 헤드 2는 “의미 관련 차원”을 추출하는 식의 사영(projection)이 자동으로 일어난다. 이런 “각 헤드가 입력을 자기만의 관점으로 사영해서 보는” 구조가 multi-head의 진짜 표현력의 원천이다.</p>
+
+      <h2>요약 — 이 장에서 기억할 핵심</h2>
+      <p><strong>(1) 한 종류 관계만 잡는 단일 attention은 다층적 자연어를 표현하기에 부족하다.</strong> 한 softmax 분포로는 동시에 여러 관계를 선명하게 담을 수 없다. <strong>(2) 차원 $d_{model}$을 $h$개로 쪼개 각각 독립 attention을 수행하면 같은 비용으로 여러 관계를 병렬로 학습할 수 있다.</strong> 원 논문은 $h = 8$, 각 헤드 $d_k = 64$. <strong>(3) 학습 결과 헤드들은 자연스럽게 구문·의미·위치 등 서로 다른 관계로 역할이 분화된다.</strong> 이는 시각화로 반복 확인된 사실. 다음 장에서는 “여러 헤드의 출력을 어떻게 다시 하나로 모으는가”를 살핀다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  window.addEventListener('load', () => {
+    TFR.buildNav('09');
+    const m = document.getElementById('mh');
+    TFR.onVisible(m, () => TFR.multiHead(m));
+  });
+</script>
+<script src="assets/widgets.js"></script>
+</body>
+</html>

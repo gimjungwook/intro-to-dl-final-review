@@ -3,38 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>06. 흔한 분포 카탈로그</title>
+<title>06. 기대값 — 분포를 한 숫자로</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
-  /* 분포 카드 */
-  .dist-card { max-width: var(--measure); margin: 1.8rem auto; padding: 1.3rem 1.4rem 1.5rem; background: linear-gradient(180deg,#fff,var(--paper-2)); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow-plate); }
-  .dist-card .hd { display: flex; align-items: baseline; gap: .8rem; margin-bottom: .4rem; flex-wrap: wrap; }
-  .dist-card .hd h3 { margin: 0; font-family: var(--serif); font-size: 1.35rem; }
-  .dist-card .hd .en { font-family: var(--mono); font-size: .76rem; color: var(--ink-faint); letter-spacing: .04em; }
-  .dist-card .lede { font-style: italic; color: var(--ink-soft); margin: .3rem 0 .8rem; }
-  .dist-card .row { display: grid; grid-template-columns: 8rem 1fr; gap: .3rem 1rem; margin-top: .5rem; font-size: .92rem; }
-  .dist-card .row .k { font-family: var(--mono); font-size: .78rem; color: var(--ink-faint); padding-top: .15rem; }
-  .dist-card .row .v { color: var(--ink); line-height: 1.5; }
-  .dist-card .row .v code { font-family: var(--mono); background: var(--paper-sink); padding: .05em .35em; border-radius: 3px; font-size: .9em; }
-  .dist-card .dl-link { display: block; margin-top: .9rem; font-family: var(--mono); font-size: .76rem; color: var(--structure); padding: .5rem .8rem; background: var(--structure-bg); border-radius: 6px; border-left: 2px solid var(--structure); }
-  .dist-card.b { border-left: 4px solid var(--structure); }
-  .dist-card.c { border-left: 4px solid var(--structure-lo); }
-  .dist-card.g { border-left: 4px solid var(--style); }
-  .dist-card.m { border-left: 4px solid var(--synth); }
-  .dist-card.d { border-left: 4px solid var(--ink-soft); }
-
-  /* 분포 미니 시각화 (캔버스) */
-  .dist-vis { display: block; width: 100%; max-width: 360px; height: 100px; margin: .8rem auto .2rem; background: var(--paper); border-radius: 6px; border: 1px solid var(--line-soft); }
-
-  /* 최종 매핑 표 */
-  .mapping-table { max-width: var(--measure); margin: 1.4rem auto 1.8rem; border-collapse: collapse; width: 100%; font-size: .9rem; }
-  .mapping-table td, .mapping-table th { padding: .65rem .8rem; border: 1px solid var(--line-soft); }
-  .mapping-table th { background: var(--paper-2); font-family: var(--mono); font-size: .74rem; letter-spacing: .04em; color: var(--ink-soft); font-weight: 500; text-align: left; }
-  .mapping-table td:first-child { font-family: var(--mono); color: var(--style); font-size: .85rem; white-space: nowrap; }
-  .mapping-table td b.struct { color: var(--structure); }
+  .exp-stage { padding: 1.4rem 1.1rem; display: grid; gap: 1rem; }
+  .skew-canvas { width: 100%; height: 220px; display: block; background: #fff; border: 1px solid var(--line-soft); border-radius: 7px; }
+  .mark-tab { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: .5rem; font-family: var(--mono); font-size: .8rem; }
+  .mark-tab .item { padding: .6rem .8rem; background: var(--paper-2); border-radius: 7px; }
+  .mark-tab .item .lab { display: block; font-size: .68rem; letter-spacing: .12em; color: var(--ink-faint); text-transform: uppercase; margin-bottom: .2rem; }
+  .mark-tab .item.mean .lab { color: var(--structure); } .mark-tab .item.mean .val { color: var(--structure); }
+  .mark-tab .item.median .lab { color: var(--synth); } .mark-tab .item.median .val { color: var(--synth); }
+  .mark-tab .item.mode .lab { color: var(--style); } .mark-tab .item.mode .val { color: var(--style); }
+  .mark-tab .val { font-size: 1.2rem; font-weight: 600; }
 </style>
 </head>
 <body>
@@ -46,109 +29,91 @@
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Sub-chapter 06. 시험에 나오는 분포 다섯</span>
-      <h1>딥러닝 출력층이 만드는<br>다섯 가지 <span class="t-style">분포</span></h1>
-      <p class="lede">Bernoulli / Categorical / Gaussian / 혼합 / Dirac. 분류기, 회귀, 생성모델의 모든 출력층이 이 다섯 가운데 하나의 파라미터를 내놓는다. 그 매핑을 한 표로 정리해 둔다.</p>
+      <span class="kicker">Sub-chapter 06. 분포 압축의 첫 번째 도구</span>
+      <h1>기대값 —<br>분포를 <span class="t-structure">한 숫자</span>로</h1>
+      <p class="lede">분포 전체는 정보가 많지만 들고 다니기 어렵다. 한 점으로 압축할 수 있다면 어디가 가장 정직한 자리일까. 답은 가중 평균 — 각 가능한 값에 그 값의 확률을 곱해 더한 것이다. 이 한 점이 분포의 무게중심이다.</p>
     </header>
 
     <div class="prose">
-      <p>여기까지 우리는 분포의 문법, 갱신, 정보이론적 측정까지 봤다. 이제 실전에서 가장 자주 등장하는 다섯 분포를 한 자리에 모아 두자. 각 카드의 구조는 같다 — <em>지원하는 값, 파라미터, PDF/PMF, 기대값과 분산, 딥러닝에서 어디에 등장하는가</em>.</p>
+      <p>분포 전체는 매우 풍부한 정보를 들고 있다. 어떤 값이 얼마나 자주 나오는지 — 모든 가능한 값에 대한 확률이 다 있다. 그러나 우리는 종종 분포 전체가 아니라 그 분포의 "성격"을 요약한 한두 숫자만 필요로 한다. 이 한 점으로 분포를 압축할 때 가장 자연스럽고 가장 자주 쓰이는 양이 <strong>기대값(expectation)</strong>이다.</p>
+
+      <p>기대값의 직관은 간단하다 — <em>분포에서 한 번 뽑으면 평균적으로 어떤 값이 나오는가</em>다. 한 번 뽑은 결과는 우연히 결정되지만, 무한히 많이 뽑아 평균을 내면 어떤 값으로 수렴할지를 묻는 양이다. 이산 확률변수 $X$의 기대값은 다음 식으로 정의된다.</p>
+
+      <div class="math-block">$$ \mathbb{E}[X] = \sum_{x} x \cdot p(x) $$</div>
+      <p class="math-note">$\mathbb{E}[X]$는 $X$의 기대값. 각 가능한 값 $x$에 그 값이 나올 확률 $p(x)$를 곱해 다 더함. "값 × 가중치"의 합 = 가중 평균.</p>
+
+      <p>왜 이 형태인가. "값이 무엇이 나올지 평균"을 묻는다면 가능한 값들의 단순 평균을 떠올리기 쉽다. 그러나 분포가 균등하지 않을 때는 단순 평균이 분포를 정직하게 반영하지 못한다. 예를 들어 어떤 분포가 1을 90% 확률로, 100을 10% 확률로 만들어 낸다고 하자. 단순 평균이라면 (1 + 100)/2 = 50.5이지만, 실제로 한 번 뽑으면 거의 항상 1 근처가 나온다. 그래서 평균은 1에 가깝게 나와야 한다. 각 값에 그 값의 확률을 가중치로 두고 곱해 더하면 정확히 $1 \cdot 0.9 + 100 \cdot 0.1 = 0.9 + 10 = 10.9$가 나온다 — 50.5보다 1에 훨씬 가깝다. 이 가중 평균이 분포를 정직하게 반영하는 한 점이다.</p>
+
+      <p>다른 형태였다면 어떨까. 만약 곱하지 않고 $\sum_x x + p(x)$로 정의했다면 단위가 안 맞는다 — 값과 확률은 다른 차원의 양이라 합칠 수 없다. $\prod_x x \cdot p(x)$로 정의했다면 한 항이 0이면 전체가 0이 된다. 가중 평균 형태($\sum$에 가중치 곱)만이 단위가 맞고 직관에도 들어맞는다.</p>
+
+      <h2>연속 분포의 기대값 — 합 대신 적분</h2>
+      <p>연속 분포의 기대값도 같은 발상이다. 값에 밀도를 곱해 적분하는 것뿐이다.</p>
+
+      <div class="math-block">$$ \mathbb{E}[X] = \int_{-\infty}^{\infty} x \cdot p(x) \, dx $$</div>
+      <p class="math-note">합산 $\sum$ 대신 적분 $\int$. 같은 가중 평균의 연속 버전.</p>
+
+      <p>이게 PDF의 무게중심(center of mass) 그림이다. 한 무게 분포가 한 점으로 압축된다면, 그 점은 무게중심에 놓이는 게 자연스럽다.</p>
+
+      <h2>비유 — 무게중심</h2>
+      <div class="analogy">
+        막대 한 개를 떠올리자. 막대의 어떤 지점에 무게가 다르게 분포되어 있다. 어디를 받치면 막대가 균형을 잡을까. 그 균형점이 곧 기대값이다. 무게가 한쪽으로 쏠려 있으면 균형점도 그쪽으로 옮겨 간다. 분포가 한쪽으로 쏠려 있으면 기대값도 그쪽으로 옮겨 간다 — 분포의 무게중심이 기대값이라는 직관이 정확히 이 한 그림이다.
+      </div>
+
+      <h2>비대칭 분포에서 평균, 중앙값, 최빈값이 어긋나는 이유</h2>
+      <p>분포를 한 점으로 압축하는 방법은 사실 여러 가지가 있다. 가장 흔한 세 가지는 다음이다.</p>
+
+      <ul>
+        <li><strong>평균(mean) = 기대값</strong>. 가중 평균. 분포의 무게중심.</li>
+        <li><strong>중앙값(median)</strong>. 분포를 면적이 정확히 반반으로 나누는 점. PDF에서 왼쪽 면적이 0.5인 자리.</li>
+        <li><strong>최빈값(mode)</strong>. 분포의 봉우리 — PDF 값이 가장 큰 점, 또는 PMF에서 확률이 가장 큰 후보.</li>
+      </ul>
+
+      <p>대칭 분포(symmetric distribution)에서는 이 세 값이 일치한다 — 가우시안 분포가 대표적이다. 그러나 비대칭 분포(skewed distribution)에서는 세 값이 갈라진다. 이게 자주 시험에 나오는 함정이다.</p>
+
+      <p>구체 예시로 양의 왜도(positive skew)를 가진 분포를 보자. 소득 분포가 대표적이다. 대부분 사람은 평균보다 낮은 소득을 갖고, 소수의 고소득자가 평균을 위로 끌어올린다. 이런 분포에서는 <strong>최빈값 < 중앙값 < 평균</strong> 순서가 된다. 평균이 가장 오른쪽이다. 왜냐하면 오른쪽 꼬리의 큰 값 몇 개가 평균을 강하게 끌어당기기 때문이다 — 무게중심이 봉우리보다 오른쪽으로 이동한다. 음의 왜도(negative skew)에서는 순서가 반대다.</p>
+
+      <h2>위젯 — 비대칭 분포에서 세 값이 어긋난다</h2>
+      <p>아래 위젯은 비대칭 정도를 슬라이더로 조절할 수 있는 분포다. 왜도가 커질수록 평균(파랑), 중앙값(주황), 최빈값(빨강)이 갈라지는 모습이 보인다.</p>
     </div>
 
-    <div class="dist-card b">
-      <div class="hd"><h3>① 베르누이 분포</h3><span class="en">Bernoulli</span></div>
-      <p class="lede">두 결과 중 하나 — 가장 단순한 분포.</p>
-      <div class="row"><span class="k">지원하는 값</span><span class="v"><code>x ∈ {0, 1}</code> (실패, 성공, 음성, 양성, 아니오, 예)</span></div>
-      <div class="row"><span class="k">파라미터</span><span class="v"><code>φ ∈ [0, 1]</code> = P(X=1) 한 개</span></div>
-      <div class="row"><span class="k">PMF</span><span class="v">$P(X=x) = \phi^x (1-\phi)^{1-x}$</span></div>
-      <div class="row"><span class="k">기대값, 분산</span><span class="v">$\mathbb{E}[X] = \phi, \quad \mathrm{Var}(X) = \phi(1-\phi)$</span></div>
-      <canvas class="dist-vis" id="visBer"></canvas>
-      <span class="dl-link">딥러닝에서 — <b class="struct">이진 분류</b>의 마지막 층 <code>σ(z) = 1/(1+e⁻ᶻ)</code>(sigmoid)의 출력이 정확히 베르누이의 파라미터 φ. 손실은 <em>이진 교차 엔트로피</em>(= 베르누이의 음의 로그우도).</span>
-    </div>
-
-    <div class="dist-card c">
-      <div class="hd"><h3>② 범주분포</h3><span class="en">Categorical (Multinoulli)</span></div>
-      <p class="lede">K개 결과 중 하나 — 베르누이의 다클래스 확장.</p>
-      <div class="row"><span class="k">지원하는 값</span><span class="v"><code>x ∈ {1, 2, ..., K}</code> 원핫 인코딩 또는 인덱스</span></div>
-      <div class="row"><span class="k">파라미터</span><span class="v">$\boldsymbol{\phi} \in [0, 1]^{K-1}$, $\sum_k \phi_k = 1$ (마지막 항이 자동 결정되므로 K-1개)</span></div>
-      <div class="row"><span class="k">PMF</span><span class="v">$P(X=k) = \phi_k$</span></div>
-      <div class="row"><span class="k">기대값</span><span class="v">원핫 표기에서 $\mathbb{E}[X] = \boldsymbol{\phi}$</span></div>
-      <canvas class="dist-vis" id="visCat"></canvas>
-      <span class="dl-link">딥러닝에서 — <b class="struct">다클래스 분류</b>의 마지막 층 <code>softmax(z)ₖ = exp(zₖ) / Σ exp(zⱼ)</code>가 정확히 범주분포의 파라미터 벡터. 손실은 <em>(다클래스) 교차 엔트로피</em> = 정답 클래스의 음의 로그.</span>
-    </div>
-
-    <div class="dist-card g">
-      <div class="hd"><h3>③ 가우시안 분포</h3><span class="en">Gaussian (Normal)</span></div>
-      <p class="lede">연속 실수의 종 모양 — 자연, 공학에서 가장 흔한 분포.</p>
-      <div class="row"><span class="k">지원하는 값</span><span class="v"><code>x ∈ ℝ</code> (전 실수)</span></div>
-      <div class="row"><span class="k">파라미터</span><span class="v">평균 $\mu \in \mathbb{R}$, 분산 $\sigma^2 > 0$ 두 개</span></div>
-      <div class="row"><span class="k">PDF</span><span class="v">$p(x) = \dfrac{1}{\sqrt{2\pi\sigma^2}} \exp\!\left(-\dfrac{(x-\mu)^2}{2\sigma^2}\right)$</span></div>
-      <div class="row"><span class="k">기대값, 분산</span><span class="v">$\mathbb{E}[X] = \mu, \quad \mathrm{Var}(X) = \sigma^2$</span></div>
-      <div class="row"><span class="k">왜 자주 쓰이나</span><span class="v">중심극한정리 — 독립인 여러 잡음을 합치면 분포가 (모양에 상관없이) 가우시안으로 수렴. 분산이 같다면 <em>최대 엔트로피 분포</em>(가장 "겸손한" 가정)이기도 함.</span></div>
-      <canvas class="dist-vis" id="visGauss"></canvas>
-      <span class="dl-link">딥러닝에서 — <b class="struct">실수 회귀</b>의 출력층이 <em>(μ, σ²)</em>를 직접 내놓는 모델(예: GMM 출력)의 손실이 가우시안의 음의 로그우도. 단순 회귀의 평균 제곱 오차(MSE) 손실도, σ를 상수로 고정한 가우시안 NLL의 다른 이름이다. VAE의 prior도 표준 정규.</span>
-    </div>
-
-    <div class="dist-card g">
-      <div class="hd"><h3>③′ 다변량 가우시안</h3><span class="en">Multivariate Gaussian</span></div>
-      <p class="lede">실수 벡터의 종 모양 — 공분산 행렬이 모양을 결정.</p>
-      <div class="row"><span class="k">지원하는 값</span><span class="v"><code>𝐱 ∈ ℝⁿ</code></span></div>
-      <div class="row"><span class="k">파라미터</span><span class="v">평균 벡터 $\boldsymbol{\mu} \in \mathbb{R}^n$, 공분산 행렬 $\boldsymbol{\Sigma} \in \mathbb{R}^{n \times n}$ (대칭 양정부호)</span></div>
-      <div class="row"><span class="k">PDF</span><span class="v">$p(\mathbf{x}) = \dfrac{1}{\sqrt{(2\pi)^n \det\boldsymbol{\Sigma}}} \exp\!\left(-\tfrac{1}{2}(\mathbf{x}-\boldsymbol{\mu})^\top \boldsymbol{\Sigma}^{-1} (\mathbf{x}-\boldsymbol{\mu})\right)$</span></div>
-      <div class="row"><span class="k">기하학적 의미</span><span class="v">밀도 등고선이 타원체. 그 축의 방향과 길이가 공분산 행렬의 고유분해(2장 SVD 연결).</span></div>
-    </div>
-
-    <div class="dist-card m">
-      <div class="hd"><h3>④ 혼합 분포</h3><span class="en">Mixture (Gaussian Mixture Model, GMM)</span></div>
-      <p class="lede">여러 단순 분포의 가중합 — 한 봉우리로 안 되는 데이터에.</p>
-      <div class="row"><span class="k">PDF</span><span class="v">$p(x) = \sum_{k=1}^{K} \alpha_k \cdot p_k(x), \quad \sum_k \alpha_k = 1$</span></div>
-      <div class="row"><span class="k">파라미터</span><span class="v">컴포넌트 가중치 $\alpha_k$ + 각 컴포넌트의 자체 파라미터(예: 가우시안이면 $\mu_k, \sigma_k^2$)</span></div>
-      <div class="row"><span class="k">왜 필요한가</span><span class="v">실제 데이터는 한 봉우리(unimodal)가 아닌 경우가 많음. 예: 키 분포는 남녀 두 가우시안의 혼합.</span></div>
-      <canvas class="dist-vis" id="visMix"></canvas>
-      <span class="dl-link">딥러닝에서 — <b class="struct">Mixture Density Network(MDN)</b>이 K개 가우시안의 (가중치, 평균, 분산)을 모두 출력. 또 변분추론에서 잠재변수를 가진 모델은 모두 혼합 모델의 한 형태로 읽힌다. 13장 잠재 요인 모델의 출발점.</span>
-    </div>
-
-    <div class="dist-card d">
-      <div class="hd"><h3>⑤ Dirac 델타</h3><span class="en">Dirac delta function</span></div>
-      <p class="lede">"확률이 한 점에 모두 모인" 극단적 분포.</p>
-      <div class="row"><span class="k">PDF</span><span class="v">$p(x) = \delta(x - \mu)$ — $x = \mu$에서만 무한대, 다른 곳은 0. 적분은 1.</span></div>
-      <div class="row"><span class="k">의미</span><span class="v">완벽히 결정된 값. 분산 0의 가우시안의 극한.</span></div>
-      <div class="row"><span class="k">왜 배우는가</span><span class="v">"이산 분포를 연속 분포 위에서 적기"의 도구. 경험분포 $\hat{p}_\text{data}(x) = \tfrac{1}{m}\sum_i \delta(x - x^{(i)})$ 처럼, 데이터 포인트 자체를 분포로 표현할 때.</span></div>
-      <span class="dl-link">딥러닝에서 — 정답 라벨이 원핫일 때, 이를 연속 분포 위의 Dirac으로 보면 교차 엔트로피가 곧 음의 로그우도가 되는 이유가 매끄럽게 정리됨. 14장 자기부호화기에서 디코더가 Dirac을 출력한다고 가정하면 평균 제곱 오차 손실이 자연스럽게 도출됨.</span>
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 06</span><span>평균 · 중앙값 · 최빈값의 어긋남</span></div>
+        <div class="exp-stage">
+          <canvas id="skewC" class="skew-canvas" width="700" height="220"></canvas>
+          <div class="mark-tab">
+            <div class="item mean"><span class="lab">평균 (기대값)</span><span class="val" id="meanV">0.00</span></div>
+            <div class="item median"><span class="lab">중앙값</span><span class="val" id="medV">0.00</span></div>
+            <div class="item mode"><span class="lab">최빈값</span><span class="val" id="modeV">0.00</span></div>
+          </div>
+        </div>
+        <div class="widget-controls">
+          <div class="slider">
+            <label>왜도 (skewness) <b><span id="skV">0.00</span></b></label>
+            <input id="skSlider" type="range" min="-30" max="100" value="0" class="s-structure">
+          </div>
+          <span style="font-family: var(--mono); font-size: .72rem; color: var(--ink-faint);">왜도 > 0 = 오른쪽 꼬리 / < 0 = 왼쪽 꼬리</span>
+        </div>
+      </div>
+      <p class="widget-cap">대칭(왜도=0)에서는 세 값이 정확히 한 점에 모인다. 왜도가 양으로 가면 평균이 오른쪽으로 빠지고 — 분포의 무게중심이 오른쪽 꼬리로 끌려간다는 직관이 그대로 보인다.</p>
     </div>
 
     <div class="prose">
-      <h2>한 표로 — 딥러닝 출력층 ↔ 분포 매핑</h2>
-      <p>시험 단골 질문이다. <em>"이진 분류기에서 시그모이드는 어느 분포의 파라미터인가"</em>, <em>"평균 제곱 오차 손실은 어느 분포 가정에서 자연스러운가"</em>. 답은 모두 이 표에 있다.</p>
+      <h2>기대값의 선형성 — 가장 자주 쓰는 성질</h2>
+      <p>기대값에는 매우 유용한 성질이 하나 있다. 두 확률변수 $X$, $Y$가 있을 때, 다음이 <strong>독립 여부에 관계없이</strong> 항상 성립한다.</p>
 
-      <table class="mapping-table">
-        <thead><tr><th>출력층</th><th>해석</th><th>대응 분포</th><th>손실</th></tr></thead>
-        <tbody>
-          <tr><td>sigmoid</td><td><b class="struct">P(Y=1 | x)</b></td><td>Bernoulli</td><td>이진 교차 엔트로피 = -log p_true</td></tr>
-          <tr><td>softmax</td><td><b class="struct">P(Y=k | x)</b> 벡터</td><td>Categorical</td><td>다클래스 교차 엔트로피 = -log p_정답</td></tr>
-          <tr><td>linear (1차원)</td><td><b class="struct">𝔼[Y|x]</b> = μ</td><td>Gaussian(μ, σ²=상수)</td><td>평균 제곱 오차 MSE = (y-μ)²</td></tr>
-          <tr><td>linear (벡터)</td><td><b class="struct">𝔼[𝐘|x]</b> = 𝛍</td><td>Multivariate Gaussian</td><td>각 차원 MSE의 합</td></tr>
-          <tr><td>(μ, σ²) 둘 다 출력</td><td><b class="struct">조건부 분산까지 학습</b></td><td>Gaussian(μ, σ²)</td><td>가우시안 음의 로그우도 (NLL)</td></tr>
-          <tr><td>(αₖ, μₖ, σₖ²) 벡터</td><td><b class="struct">다봉우리 회귀</b></td><td>Mixture of Gaussians</td><td>혼합 가우시안 NLL</td></tr>
-        </tbody>
-      </table>
+      <div class="math-block">$$ \mathbb{E}[aX + bY] = a\,\mathbb{E}[X] + b\,\mathbb{E}[Y] $$</div>
+      <p class="math-note">$a$, $b$는 상수. 기대값은 선형이다. 두 변수가 서로 종속이든 독립이든 무관.</p>
 
-      <p>이 표가 시험 직전에 한 줄로 외울 수 있는 가장 진한 요약이다. 7장에서 ReLU/sigmoid/softmax의 미분 성질이 등장할 때, 9장에서 분류 손실의 그래디언트가 등장할 때, 14장 자기부호화기에서 복원 손실이 등장할 때 — 모두 이 표의 한 행을 다시 만나는 셈이다.</p>
+      <p>이게 왜 강력한가. 분포의 다른 양들은 보통 독립을 가정해야 분해된다. 그러나 기대값은 그런 가정이 필요 없다. 예를 들어 100개의 확률변수 합의 기대값을 알고 싶다면, 각각의 기대값을 계산해서 그냥 더하면 된다 — 변수들이 서로 의존적이어도 상관없다. 이 성질이 머신러닝 손실 계산에서 매우 자주 쓰인다. 미니배치의 평균 손실의 기대값은 한 샘플 손실의 기대값과 같다(샘플들이 어떻게 상관됐든) — 이 관찰이 SGD(stochastic gradient descent)의 이론적 근거 중 하나다.</p>
 
-      <h2>마지막 한 가지 — Sigmoid와 Softplus의 짝</h2>
-      <p>왜 sigmoid가 베르누이의 파라미터가 되는지를 손실 식 한 줄로 보면 깔끔하다. <strong>로지스틱 함수</strong>는</p>
+      <h2>딥러닝에서 기대값이 나타나는 자리</h2>
+      <p>예시 첫째, 손실 함수. 머신러닝 손실은 보통 데이터 분포에 대한 기대값이다. $\mathcal{L} = \mathbb{E}_{(x,y) \sim p_{\text{data}}}[\ell(f(x), y)]$. 데이터셋이 무한대라고 가정한 이상적 목표다. 실제로는 미니배치로 추정한다. 둘째, 정책 그래디언트(policy gradient). 강화학습에서 보상의 기대값을 최대화한다 — $J(\theta) = \mathbb{E}_\pi[\sum_t r_t]$. 셋째, VAE의 ELBO. Evidence Lower BOund는 잠재변수의 기대값으로 적힌다. 넷째, 정규화 기법. dropout, batch normalization 모두 학습 시 도입되는 잡음의 기대값으로 해석할 수 있다.</p>
 
-      <div class="math-block">$$ \sigma(z) = \frac{1}{1 + e^{-z}}, \qquad 1 - \sigma(z) = \sigma(-z) $$</div>
-      <p class="math-note">출력이 항상 (0, 1) 안에 있어 확률 해석이 자연스러움.</p>
+      <h2>시험에서 자주 묻는 한 줄</h2>
+      <p>시험 직전 정리. <strong>기대값 = 가중 평균 = 분포의 무게중심. 선형성 $\mathbb{E}[aX+bY] = a\mathbb{E}[X]+b\mathbb{E}[Y]$는 독립 여부 무관.</strong> 객관식에서 "기대값의 선형성에는 독립이 필요하다"라는 보기가 보이면 틀린 보기로 분류하면 된다. 또 "대칭 분포에서 평균과 중앙값은 일치한다"는 옳은 보기다.</p>
 
-      <p>이걸 베르누이 PMF에 끼우면 음의 로그우도는 다음과 같이 깔끔하게 정리된다.</p>
-
-      <div class="math-block">$$ -\log P(y \mid z) = -\log \sigma((2y - 1)z) = \zeta\!\left((1 - 2y)z\right) $$</div>
-      <p class="math-note">ζ(x) = log(1 + exp(x)) = softplus. 부드러운 ReLU.</p>
-
-      <p>이 형태가 중요한 이유는 <strong>softplus가 수치적으로 안정</strong>하기 때문이다. $-\log\sigma(z)$를 그대로 계산하면 $z$가 큰 음수일 때 오버플로, 언더플로 위험이 있는데, $\zeta(-z)$로 다시 쓰면 안전하다. 4번 sub-chapter(수치 계산)에서 이 동일성이 다시 등장한다. <em>같은 수식의 여러 얼굴을 알아보는 능력</em>이 사실 시험 점수를 결정한다.</p>
-
-      <p>다음 페이지는 시험 직전 한 번 훑을 체크리스트다. 정의, 공식, 헷갈리기 쉬운 짝, 그리고 한 줄 답을 모아 두었다.</p>
+      <p>다음 페이지에서는 분포의 "퍼짐"을 재는 분산(variance)과, 두 변수가 함께 움직이는 경향을 재는 공분산(covariance)을 본다. 그리고 공분산이 0이라고 해서 독립이 아닌, 가장 유명한 반례를 직접 산점도로 그린다.</p>
     </div>
 
     <nav class="ch-foot"></nav>
@@ -158,18 +123,26 @@
 <script>
   const CH = [
     { no:'01', t:'왜 확률이 필요한가', f:'01.html' },
-    { no:'02', t:'확률변수, 분포, 조건부', f:'02.html' },
-    { no:'03', t:'기대값, 분산, 공분산', f:'03.html' },
-    { no:'04', t:'베이즈 규칙', f:'04.html' },
-    { no:'05', t:'정보이론 — 엔트로피/KL/교차 엔트로피', f:'05.html' },
-    { no:'06', t:'흔한 분포 카탈로그', f:'06.html' },
-    { no:'07', t:'시험 대비 체크리스트', f:'07.html' },
+    { no:'02', t:'확률변수와 분포 — PMF vs PDF', f:'02.html' },
+    { no:'03', t:'결합·주변·조건부 분포', f:'03.html' },
+    { no:'04', t:'연쇄법칙 — 결합을 조건부의 곱으로', f:'04.html' },
+    { no:'05', t:'독립과 조건부 독립', f:'05.html' },
+    { no:'06', t:'기대값 — 분포를 한 숫자로', f:'06.html' },
+    { no:'07', t:'분산과 공분산 — 무상관 ≠ 독립', f:'07.html' },
+    { no:'08', t:'흔한 분포 1 — Bernoulli, Categorical', f:'08.html' },
+    { no:'09', t:'흔한 분포 2 — Gaussian', f:'09.html' },
+    { no:'10', t:'흔한 분포 3 — Mixture, Dirac', f:'10.html' },
+    { no:'11', t:'베이즈 규칙 — 사전이 사후로', f:'11.html' },
+    { no:'12', t:'정보이론 1 — 엔트로피', f:'12.html' },
+    { no:'13', t:'정보이론 2 — KL 발산의 비대칭', f:'13.html' },
+    { no:'14', t:'정보이론 3 — 교차 엔트로피 = NLL', f:'14.html' },
+    { no:'15', t:'시험 대비 체크리스트', f:'15.html' },
   ];
   function buildNav(curr) {
     const tb = document.querySelector('.topbar');
     if (tb) tb.innerHTML =
       `<a class="home" href="index.html">← Ch.3 확률과 정보이론</a>` +
-      `<span class="ch-mini">SUB-CHAPTER ${curr} of 07</span>`;
+      `<span class="ch-mini">SUB-CHAPTER ${curr} of 15</span>`;
     const ol = document.querySelector('.ch-nav ol');
     if (ol) ol.innerHTML = CH.map(c =>
       `<li><a href="${c.f}" ${c.no === curr ? 'class="current"' : ''}>${c.t}</a></li>`).join('');
@@ -194,77 +167,107 @@
     }
   }
 
-  /* 미니 분포 시각화 */
-  function drawBars(canvas, probs, labels, color) {
-    const ctx = canvas.getContext('2d');
-    const dpr2 = Math.min(2, window.devicePixelRatio || 1);
-    const w = canvas.clientWidth || 360, h = 100;
-    canvas.width = w * dpr2; canvas.height = h * dpr2;
-    canvas.style.height = h + 'px';
-    ctx.setTransform(dpr2, 0, 0, dpr2, 0, 0);
-    ctx.clearRect(0, 0, w, h);
-    const n = probs.length;
-    const bw = (w - 20) / n - 6;
-    probs.forEach((p, i) => {
-      const x = 10 + i * (bw + 6);
-      const bh = p * 70;
-      ctx.fillStyle = color;
-      ctx.fillRect(x, h - 20 - bh, bw, bh);
-      ctx.fillStyle = '#5A5247';
-      ctx.font = '10px ui-monospace, monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText(labels[i], x + bw / 2, h - 6);
-      ctx.fillText(p.toFixed(2), x + bw / 2, h - 22 - bh - 2);
-    });
-  }
-  function drawCurve(canvas, fn, color, fillAlpha) {
-    const ctx = canvas.getContext('2d');
-    const dpr2 = Math.min(2, window.devicePixelRatio || 1);
-    const w = canvas.clientWidth || 360, h = 100;
-    canvas.width = w * dpr2; canvas.height = h * dpr2;
-    canvas.style.height = h + 'px';
-    ctx.setTransform(dpr2, 0, 0, dpr2, 0, 0);
-    ctx.clearRect(0, 0, w, h);
-    const N = 200;
-    let yMax = 0;
-    const xs = [];
-    for (let i = 0; i <= N; i++) {
-      const x = -4 + 8 * i / N;
-      const y = fn(x);
-      xs.push({ x, y });
-      if (y > yMax) yMax = y;
+  /* 비대칭 분포 — 감마(gamma)와 비슷한 모양으로 왜도 조절 */
+  function drawSkew(skew) {
+    const c = document.getElementById('skewC');
+    const ctx = c.getContext('2d');
+    const W = c.width, H = c.height;
+    ctx.clearRect(0,0,W,H);
+    ctx.strokeStyle = 'rgba(38,34,28,0.18)';
+    ctx.beginPath(); ctx.moveTo(20,H-20); ctx.lineTo(W-10,H-20); ctx.stroke();
+
+    const xMin = -3, xMax = 5;
+    /* skew-normal 같은 형태: phi(x) * (1 + erf(skew * x / sqrt(2))) */
+    function pdf(x) {
+      const phi = Math.exp(-0.5 * x * x) / Math.sqrt(2 * Math.PI);
+      const z = skew * x / Math.sqrt(2);
+      const erf = z >= 0
+        ? (1 - 1 / Math.pow(1 + 0.278393*z + 0.230389*z*z + 0.000972*z*z*z + 0.078108*z*z*z*z, 4))
+        : -(1 - 1 / Math.pow(1 + 0.278393*(-z) + 0.230389*z*z + 0.000972*(-z)*z*z + 0.078108*z*z*z*z, 4));
+      return 2 * phi * 0.5 * (1 + erf);
     }
-    yMax *= 1.05;
+    const SAMP = 480;
+    let maxY = 0;
+    const ys = new Array(SAMP);
+    const xs = new Array(SAMP);
+    for (let i = 0; i < SAMP; i++) {
+      const x = xMin + (xMax - xMin) * i / (SAMP - 1);
+      const y = pdf(x);
+      xs[i] = x; ys[i] = y;
+      if (y > maxY) maxY = y;
+    }
+    const yScale = (H - 36) / (maxY * 1.1);
+
+    /* fill */
+    ctx.fillStyle = 'rgba(45,91,122,0.10)';
     ctx.beginPath();
-    ctx.moveTo(10, h - 10);
-    xs.forEach((p, i) => {
-      const px = 10 + (p.x + 4) / 8 * (w - 20);
-      const py = h - 10 - p.y / yMax * 70;
+    ctx.moveTo(20, H-20);
+    for (let i = 0; i < SAMP; i++) {
+      const px = 20 + (W - 30) * i / (SAMP - 1);
+      const py = (H - 20) - ys[i] * yScale;
       ctx.lineTo(px, py);
-    });
-    ctx.lineTo(w - 10, h - 10);
+    }
+    ctx.lineTo(W - 10, H - 20);
     ctx.closePath();
-    ctx.fillStyle = color + Math.round(fillAlpha * 255).toString(16).padStart(2, '0');
     ctx.fill();
+
+    /* line */
+    ctx.strokeStyle = '#26221C';
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
-    xs.forEach((p, i) => {
-      const px = 10 + (p.x + 4) / 8 * (w - 20);
-      const py = h - 10 - p.y / yMax * 70;
+    for (let i = 0; i < SAMP; i++) {
+      const px = 20 + (W - 30) * i / (SAMP - 1);
+      const py = (H - 20) - ys[i] * yScale;
       if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
-    });
-    ctx.strokeStyle = color; ctx.lineWidth = 2;
+    }
     ctx.stroke();
-  }
-  function gaussPDF(x, mu, sig) {
-    return Math.exp(-0.5 * ((x - mu) / sig) ** 2) / (sig * Math.sqrt(2 * Math.PI));
+
+    /* compute mean, median, mode (numerical) */
+    const dx = (xMax - xMin) / (SAMP - 1);
+    let total = 0;
+    for (let i = 0; i < SAMP; i++) total += ys[i] * dx;
+    /* normalize, in case */
+    const yn = ys.map(y => y / total);
+    let mean = 0; for (let i = 0; i < SAMP; i++) mean += xs[i] * yn[i] * dx;
+    let cum = 0, median = 0;
+    for (let i = 0; i < SAMP; i++) {
+      cum += yn[i] * dx;
+      if (cum >= 0.5) { median = xs[i]; break; }
+    }
+    let modeI = 0;
+    for (let i = 1; i < SAMP; i++) if (yn[i] > yn[modeI]) modeI = i;
+    const mode = xs[modeI];
+
+    function mark(x, color, label) {
+      const px = 20 + (x - xMin) / (xMax - xMin) * (W - 30);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.setLineDash([5,3]);
+      ctx.beginPath(); ctx.moveTo(px, 12); ctx.lineTo(px, H - 20); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = color;
+      ctx.font = 'bold 11px "Spline Sans Mono", monospace';
+      ctx.fillText(label, px + 4, 24);
+    }
+    mark(mode, '#C0492E', 'mode');
+    mark(median, '#A47B2E', 'median');
+    mark(mean, '#2D5B7A', 'mean');
+
+    document.getElementById('meanV').textContent = mean.toFixed(2);
+    document.getElementById('medV').textContent = median.toFixed(2);
+    document.getElementById('modeV').textContent = mode.toFixed(2);
   }
 
   window.addEventListener('load', () => {
     buildNav('06');
-    drawBars(document.getElementById('visBer'), [0.3, 0.7], ['0', '1'], '#2D5B7A');
-    drawBars(document.getElementById('visCat'), [0.10, 0.18, 0.45, 0.20, 0.07], ['1','2','3','4','5'], '#6E97AF');
-    drawCurve(document.getElementById('visGauss'), x => gaussPDF(x, 0, 1), '#C0492E', 0.25);
-    drawCurve(document.getElementById('visMix'), x => 0.55 * gaussPDF(x, -1.2, 0.6) + 0.45 * gaussPDF(x, 1.4, 0.8), '#A47B2E', 0.25);
+    const ss = document.getElementById('skSlider');
+    function go() {
+      const s = parseInt(ss.value,10)/10;
+      document.getElementById('skV').textContent = s.toFixed(2);
+      drawSkew(s);
+    }
+    ss.addEventListener('input', go);
+    go();
     if (window.renderMathInElement) {
       renderMathInElement(document.body, {
         delimiters: [{left:'$$', right:'$$', display:true}, {left:'$', right:'$', display:false}],

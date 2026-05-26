@@ -3,34 +3,24 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Sub 04 · 출력 단위와 비용의 짝 · Ch.06</title>
+<title>Sub 04 · 만능 근사 정리 — 가능성과 효율 · Ch.06</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
-  .out-stage { display: grid; grid-template-columns: 200px 1fr; gap: 1.2rem; padding: 1.2rem 1.2rem .8rem; align-items: start; }
-  .out-cards { display: flex; flex-direction: column; gap: .55rem; }
-  .out-card { background: #fff; border: 1px solid var(--line); border-radius: 9px; padding: .8rem .9rem; text-align: left; cursor: pointer; transition: border-color .15s, transform .15s; font-family: var(--sans); }
-  .out-card:hover { border-color: var(--structure-lo); transform: translateY(-1px); }
-  .out-card.on { background: var(--structure-bg); border-color: var(--structure); }
-  .out-card .oc-t { font-family: var(--serif); font-size: 1.05rem; color: var(--ink); margin-bottom: .2rem; }
-  .out-card .oc-d { font-family: var(--mono); font-size: .72rem; color: var(--ink-soft); line-height: 1.5; }
-  .out-card .oc-d b { color: var(--structure); }
-  .out-card.on .oc-d b { color: var(--style); }
-  .out-panel { display: flex; flex-direction: column; gap: .8rem; }
-  .out-cv { display: block; border-radius: 8px; border: 1px solid var(--line); max-width: 100%; background: var(--paper); }
-  .out-explain { padding: .9rem 1.1rem; background: var(--paper-2); border-radius: 9px; font-size: .9rem; line-height: 1.55; }
-  .oe-row { display: flex; justify-content: space-between; padding: .25rem 0; border-bottom: 1px solid var(--line-soft); font-family: var(--mono); font-size: .82rem; color: var(--ink-faint); }
-  .oe-row b { color: var(--ink); }
-  .oe-eq { padding: .7rem 0 .3rem; }
-  .oe-mle { font-family: var(--mono); font-size: .78rem; color: var(--synth); margin-top: .2rem; }
-  .oe-desc { margin: .7rem 0 0; color: var(--ink-soft); }
-  @media (max-width: 780px) { .out-stage { grid-template-columns: 1fr; } }
-
-  .pair-table { max-width: var(--measure); margin: 1.6rem auto; border-collapse: collapse; font-size: .9rem; }
-  .pair-table th, .pair-table td { padding: .6rem .8rem; border: 1px solid var(--line-soft); text-align: left; vertical-align: top; }
-  .pair-table th { background: var(--paper-2); color: var(--ink); font-weight: 600; font-family: var(--serif); }
+  .uat-stage { display: grid; grid-template-columns: auto 1fr; gap: 1.2rem; padding: 1.4rem 1.2rem 0.8rem; align-items: start; }
+  .uat-cv { display: block; border-radius: 8px; border: 1px solid var(--line); max-width: 100%; background: var(--paper); }
+  .uat-side { min-width: 220px; }
+  .uat-ctr { display: flex; flex-direction: column; gap: .9rem; padding: .9rem 1rem; background: var(--paper-2); border-radius: 9px; margin-bottom: .8rem; }
+  .uat-ctr .slider label { font-family: var(--mono); font-size: .72rem; letter-spacing: .04em; color: var(--ink-soft); display: flex; justify-content: space-between; }
+  .uat-ctr .slider label b { color: var(--ink); }
+  .uat-ctr input[type=range], .uat-ctr select { width: 100%; }
+  .uat-mode { display: flex; gap: .4rem; margin-bottom: 1rem; }
+  .uat-mode button { flex: 1; padding: .35rem .5rem; font-family: var(--mono); font-size: .72rem; background: #fff; border: 1px solid var(--line); border-radius: 6px; cursor: pointer; }
+  .uat-mode button.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .uat-status { font-size: .9rem; padding: .6rem .8rem; background: #fff; border: 1px solid var(--line); border-radius: 7px; margin-bottom: .8rem; line-height: 1.4; }
+  @media (max-width: 780px) { .uat-stage { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
@@ -42,108 +32,73 @@
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Sub 04 · 답변 형식이 비용 함수를 결정한다</span>
-      <h1>출력 단위와 비용의 짝 —<br><span class="t-synth">함께 설계</span>해야 하는 이유</h1>
-      <p class="lede">회귀에는 MSE, 이진에는 BCE, 다중에는 CE. 이 짝은 우연이 아니라 MLE에서 자연스럽게 떨어지는 결과다.</p>
+      <span class="kicker">Sub 04 · 가능성과 효율은 다르다</span>
+      <h1>만능 근사 정리 —<br><span class="t-structure">가능성</span>과 <span class="t-style">효율</span>의 차이</h1>
+      <p class="lede">"은닉층 하나면 어떤 함수든 근사할 수 있다"는 정리가 있다. 하지만 이 정리가 의미하는 바는 흔히 오해된다. "가능성"이 곧 "쓸 만함"은 아니다. 이 절은 그 차이를 깊게 들여다본다.</p>
     </header>
 
     <div class="prose">
-      <p>지금까지 입력에서 출력까지 어떻게 흘러가는지를 봤다. 그런데 “출력층이 어떻게 생겨야 하는가”와 “손실 함수가 어떻게 생겨야 하는가”는 별개 문제가 아니다. 둘은 <strong>함께 설계되어야 한다</strong>. 그 이유를 이 절이 풀어 준다.</p>
+      <p>1989년 Cybenko와 1991년 Hornik이 각각 독립적으로 증명한 정리가 있다. 이른바 <strong>만능 근사 정리(universal approximation theorem, UAT)</strong>다. 진술은 놀랍게 단순하다. <em>"비선형 활성화 함수(예: sigmoid)를 가진 은닉층이 단 하나라도, 그 안의 뉴런 수만 충분히 많으면, 임의의 연속 함수를 임의의 정확도로 근사할 수 있다."</em></p>
 
-      <h2>잘못된 짝의 함정 — sigmoid + MSE의 비극</h2>
-      <p>예시로 시작하자. 이진 분류 문제에서 출력층에 sigmoid를 쓰고 손실 함수에 MSE를 쓴다면 어떻게 될까? 손실은 $L = \frac{1}{2}(t - \sigma(z))^2$이 된다. 출력 $z$에 대한 기울기는</p>
-      <div class="math-block">$$ \frac{\partial L}{\partial z} = (\sigma(z) - t) \cdot \sigma'(z) = (\sigma(z) - t) \cdot \sigma(z)(1-\sigma(z)) $$</div>
-      <p>여기 들어간 $\sigma'(z) = \sigma(z)(1-\sigma(z))$가 문제다. 모델이 매우 자신 있게 틀린 답을 내면 (예: 정답 $t=1$인데 $\sigma(z) = 0.001$), 이 미분의 두 번째 항이 0에 가까워진다. <strong>크게 틀렸는데 수정 신호가 작아진다.</strong> 학습이 멈춘다.</p>
+      <p>이 진술은 강력하다. 마치 "신경망은 무엇이든 표현할 수 있다"고 들린다. 그렇다면 왜 굳이 깊이를 키우는가? 깊이가 의미가 없다는 뜻일까? 아니다. <strong>UAT가 보장하는 것은 가능성(existence)이지, 실용성(practicality)이 아니다.</strong> 이 절의 핵심 메시지는 그 한 줄이다.</p>
 
-      <p>이번엔 같은 sigmoid 출력에 BCE(Binary Cross-Entropy) 손실을 쓰면 어떨까? 손실은 $L = -[t \log \sigma(z) + (1-t)\log(1-\sigma(z))]$이고, 기울기는 놀랍게 단순해진다.</p>
-      <div class="math-block">$$ \frac{\partial L}{\partial z} = \sigma(z) - t $$</div>
-      <p class="math-note">미분이 “예측 − 정답”으로 깔끔하게 떨어진다. 크게 틀리면 수정 신호도 그만큼 크다.</p>
+      <h2>정리의 정확한 진술 — 무엇을 보장하고 무엇을 보장하지 않는가</h2>
+      <p>좀 더 정확한 형태로 적어 보자. $\mathbb{R}^n$의 컴팩트 부분집합 $K$ 위에 정의된 임의의 연속 함수 $f: K \to \mathbb{R}$에 대해, 어떤 비선형 시그모이드(sigmoidal) 활성화 함수 $\sigma$를 쓰면 다음과 같은 한 층짜리 네트워크가 존재한다.</p>
+      <div class="math-block">$$ \hat{f}(\mathbf{x}) = \sum_{i=1}^{N} \alpha_i \, \sigma(\mathbf{w}_i^\top \mathbf{x} + b_i) $$</div>
+      <p class="math-note">N은 은닉 뉴런 수. α_i, w_i, b_i는 파라미터. 임의의 ε에 대해 |f(x) - f̂(x)| &lt; ε이 되도록 N과 파라미터를 고를 수 있다.</p>
 
-      <p>크게 틀렸을 때 수정 신호가 큰 것이 우리가 원하는 학습 동역학이다. 이 단순함과 안정성이 “sigmoid + BCE” 짝이 표준이 된 이유다. 같은 sigmoid를 쓰더라도 손실 함수를 잘못 고르면 학습이 망가진다.</p>
+      <p>이 진술의 보장은 분명하다. <strong>존재</strong>한다. 즉 그런 네트워크가 수학적으로 있다. 그러나 이 진술이 보장하지 않는 것도 분명하다.</p>
+      <ol>
+        <li><strong>$N$이 얼마나 커야 하는지는 보장하지 않는다.</strong> 일반적으로 정확도 $\varepsilon$이 작아질수록 $N$은 폭발적으로 커질 수 있다. 차원의 저주(curse of dimensionality)가 작동한다.</li>
+        <li><strong>그 파라미터를 찾는 방법은 보장하지 않는다.</strong> 정리는 존재만 말한다. SGD 같은 최적화로 실제 학습해서 그 파라미터에 도달할 수 있을지는 다른 문제다.</li>
+        <li><strong>일반화(generalization)는 보장하지 않는다.</strong> 정리는 훈련 데이터를 잘 맞추는 함수의 존재만 말한다. 보지 않은 데이터에서도 잘 작동할지는 별개 문제.</li>
+      </ol>
 
-      <h2>MLE라는 한 원리에서 떨어지는 짝</h2>
-      <p>이 짝짓기를 “경험적 발견”으로만 외울 필요는 없다. <strong>모든 짝은 최대우도추정(Maximum Likelihood Estimation, MLE)이라는 하나의 원리에서 자연스럽게 떨어진다.</strong> 이 점이 6장의 가장 우아한 아이디어 중 하나다.</p>
-
-      <p>MLE의 출발점은 이렇다 — 모델은 단순히 정답을 맞히려는 게 아니라, <strong>데이터의 조건부 확률 분포 $p(y|x;\theta)$를 추정</strong>한다고 본다. 그러면 “좋은 모델”은 관측된 데이터에 가장 큰 우도(likelihood)를 부여하는 모델이다. 로그를 씌우고 부호를 뒤집으면 — 이것이 곧 손실 함수다.</p>
-
-      <div class="math-block">$$ L(\theta) = -\sum_{i} \log p(y_i | x_i; \theta) $$</div>
-      <p class="math-note">로그 우도의 음수. 학습 = 이 손실을 최소화 = 우도를 최대화.</p>
-
-      <p>모델이 어떤 확률 분포를 가정하느냐에 따라 이 손실의 구체적 모양이 결정된다.</p>
-
-      <h2>세 가지 표준 짝 — 위젯에서 바꿔 보기</h2>
-      <p>아래 위젯에서 세 가지 과업을 클릭하며 손실 곡선과 기울기 곡선의 모양 변화를 본다.</p>
+      <h2>위젯에서 직접 — 은닉 뉴런 수를 늘려가며</h2>
+      <p>아래 위젯에서 sin, 톱니, 계단 같은 목표 함수를 골라 보고, 은닉 뉴런 수 슬라이더로 신경망을 직접 적합(fit)시켜 보자. 뉴런이 많을수록 더 정밀하게 따라간다. 그러나 톱니나 계단처럼 거친 함수에서는 같은 정확도를 얻기 위해 sin보다 훨씬 많은 뉴런이 필요하다는 점에 주목하라.</p>
     </div>
 
     <div class="widget">
       <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 04</span><span>출력 단위와 비용의 짝 — 회귀·이진·다중</span></div>
-        <div id="out"></div>
+        <div class="widget-label"><span class="lab-no">위젯 04</span><span>만능 근사 — 1-N-1 MLP의 함수 근사 능력</span></div>
+        <div id="uat"></div>
       </div>
-      <p class="widget-cap">실선은 손실 L, 점선은 기울기 절댓값. 회귀(선형+MSE)는 정답에서 멀어질수록 손실이 2차로 커진다. 이진(시그모이드+BCE)은 정답에서 멀어지면 손실이 log 형태로 발산하고, 기울기는 단조 — 멀수록 더 강한 수정 신호. 다중(softmax+CE)도 같은 패턴.</p>
+      <p class="widget-cap">은닉 뉴런 수 N을 조정하며 곡선이 얼마나 잘 따라가는지 본다. sin은 적은 뉴런으로도 부드럽게 잡히지만, 계단·톱니는 많은 뉴런이 필요하다. "가능"하지만 "효율"은 함수의 모양에 따라 천차만별이다.</p>
     </div>
 
     <div class="prose">
-      <h2>각 짝을 MLE로 유도해 보기</h2>
+      <h2>가장 자주 빠지는 오해 — "깊이는 무의미하다"</h2>
+      <p>UAT를 처음 만난 학생이 자주 빠지는 결론이 있다. <em>"은닉층 1개면 충분하다면, 굳이 10층, 100층을 쌓을 이유가 없겠네."</em> 이 결론은 두 가지 면에서 틀렸다.</p>
 
-      <h3>(1) 선형 + MSE — 정규분포 가정에서 자연스럽게 나오는 짝</h3>
-      <p>출력이 연속값이고, 정답 $y$가 모델 예측 $\hat y$ 주위에 정규분포로 흩어져 있다고 가정하자.</p>
-      <div class="math-block">$$ p(y | x; \theta) = \mathcal{N}(y; \hat y(x; \theta), \sigma^2) $$</div>
-      <p>로그 우도를 적고 상수를 떼면</p>
-      <div class="math-block">$$ -\log p(y|x;\theta) = \frac{1}{2\sigma^2}(y - \hat y)^2 + \text{const} $$</div>
-      <p>즉 음의 로그 우도가 곧 MSE다. <strong>정규분포 가정 → MSE 손실</strong>이라는 짝짓기가 여기서 나온다. 출력층이 그냥 선형(아무 활성화 없음)인 이유도 명확하다 — 예측이 어떤 실수든 가능해야 하기 때문이다.</p>
+      <p>첫째, "충분"의 정의가 다르다. UAT가 말하는 "충분히 많은 뉴런"은 실제로 천문학적인 수가 될 수 있다. 예를 들어 이미지 분류에서 1억 픽셀 입력을 한 층 1024 뉴런으로 처리하려면, 그 한 층만으로도 약 1억×1024 = 약 천억 개의 가중치가 필요하다. 학습 데이터, 메모리, 계산 시간 모두 비현실적이다. 같은 작업을 깊이 50의 CNN으로는 수천만 개 파라미터로 한다. 표현 효율 차이가 1000배 이상이다.</p>
 
-      <h3>(2) 시그모이드 + BCE — 베르누이 가정</h3>
-      <p>출력이 0 또는 1인 이진 라벨이라면, 정답이 베르누이 분포(Bernoulli distribution)를 따른다고 가정한다.</p>
-      <div class="math-block">$$ p(y | x; \theta) = \hat y^{\,y} (1 - \hat y)^{1-y}, \quad \hat y = \sigma(z) $$</div>
-      <p>로그를 씌우면 정확히 BCE가 나온다.</p>
-      <div class="math-block">$$ -\log p(y|x;\theta) = -[y \log \hat y + (1-y) \log(1 - \hat y)] $$</div>
-      <p>출력층에 시그모이드를 쓰는 이유는 — 베르누이 분포의 파라미터 $\hat y$가 “양성일 확률”이고, 이 값은 반드시 $(0, 1)$ 사이여야 하기 때문이다. 시그모이드가 정확히 그 일을 한다.</p>
-
-      <h3>(3) 소프트맥스 + CE — 카테고리 분포 가정</h3>
-      <p>출력이 $K$개 클래스 중 하나라면, 정답은 카테고리 분포(categorical distribution)를 따른다.</p>
-      <div class="math-block">$$ p(y = k | x; \theta) = \hat y_k = \frac{\exp(z_k)}{\sum_{j} \exp(z_j)} $$</div>
-      <p>이것이 소프트맥스다. 정답을 one-hot 벡터 $\mathbf{t}$로 표현하면</p>
-      <div class="math-block">$$ -\log p(y|x;\theta) = -\sum_{k} t_k \log \hat y_k $$</div>
-      <p>이것이 다중 클래스 교차 엔트로피(categorical cross-entropy)다. 소프트맥스의 분모 $\sum_j \exp(z_j)$ 덕분에 출력이 항상 합이 1인 확률 분포가 된다.</p>
-
-      <h2>왜 짝짓기를 “함께 설계”라고 표현하는가</h2>
-      <p>위에서 본 것처럼, 각 출력층(linear / sigmoid / softmax)은 <strong>특정 확률 분포를 가정한 결과</strong>다. 그리고 그 분포의 음의 로그 우도가 곧 손실 함수다. 그래서 출력층과 손실 함수는 “알아서 잘 어울리는 짝”이 아니라 — <strong>같은 확률 가정의 두 얼굴</strong>이다.</p>
+      <p>둘째, UAT의 폭은 일반적으로 깊이에 대해 지수적으로 줄어든다. Montufar et al. 2014, Telgarsky 2015 같은 후속 정리들은 "같은 함수를 표현하려면 얕은 모델은 깊은 모델보다 지수배의 뉴런이 필요할 수 있다"는 것을 증명했다. 즉 깊이는 단순한 장식이 아니라 <strong>표현 효율의 원천</strong>이다.</p>
 
       <div class="analogy">
-        <b>식기와 음식의 짝</b>을 떠올려 보자. 수프 그릇과 수프 스푼은 따로 만들지 않는다. “수프를 떠먹는다”라는 한 가지 의도에서 둘 다 함께 설계된다. 출력층과 손실 함수도 같다. “출력이 어떤 종류의 양인가”(연속값/이진/다중)라는 한 가지 결정이 둘을 동시에 결정한다.
+        <b>종이접기 비유로 다시 보자.</b> 어떤 모양을 종이로 만들고 싶을 때, 종이를 접지 않고 가위질만으로 만들 수도 있다. 그러나 가위질만 하면 수천 번의 정밀한 컷이 필요한 모양도, 종이를 접은 후 한두 번의 가위질로 만들 수 있다. 깊이는 신경망에 "접는 능력"을 주는 일이다. 얕은 너른 모델은 가위질 1만 번이고, 깊은 모델은 접은 후 가위질 100번이다. 둘 다 가능하지만, 후자가 훨씬 경제적이다.
       </div>
 
-      <h2>짝짓기 한눈 정리표</h2>
-      <table class="pair-table">
-        <tr><th>과업</th><th>출력층</th><th>가정 분포</th><th>손실 (음의 로그 우도)</th><th>출력 $z$에 대한 기울기</th></tr>
-        <tr><td>회귀</td><td>Linear ($\hat y = z$)</td><td>정규(가우시안)</td><td>MSE = $\tfrac12(y - \hat y)^2$</td><td>$\hat y - y$</td></tr>
-        <tr><td>이진 분류</td><td>Sigmoid ($\hat y = \sigma(z)$)</td><td>베르누이</td><td>BCE</td><td>$\sigma(z) - y$</td></tr>
-        <tr><td>다중 분류 (1-of-K)</td><td>Softmax</td><td>카테고리</td><td>CE = $-\sum_k t_k \log \hat y_k$</td><td>$\hat y_k - t_k$</td></tr>
-      </table>
+      <h2>깊이의 두 번째 이점 — 표현의 재사용</h2>
+      <p>깊이가 강한 또 하나의 이유는 <strong>표현의 재사용(feature reuse)</strong>이다. CNN의 깊은 층이 사람 얼굴을 탐지한다고 해 보자. 그 "얼굴" 표현은 동시에 "얼굴이 들어 있는 사진을 분류하는" 작업, "얼굴 표정 분석", "얼굴 인식" 등 여러 작업에서 같은 표현으로 쓰일 수 있다. 즉 깊이는 모듈화(modularity)를 가능하게 한다.</p>
 
-      <p>가장 오른쪽 열을 보라. 세 경우 모두 출력 $z$에 대한 기울기가 <strong>“예측 − 정답”</strong>이라는 같은 형태로 떨어진다. 이것이 우연이 아니다. MLE라는 같은 원리에서 떨어졌기 때문에 같은 형태를 가진다. 그리고 이 형태가 “크게 틀리면 수정 신호도 크다”라는 좋은 학습 동역학을 보장한다.</p>
+      <p>얕은 네트워크는 표현을 한 번에 펼쳐놓기 때문에, 한 표현이 다른 표현의 부품으로 재사용되기 어렵다. 깊은 네트워크는 앞 층의 출력이 다음 층의 입력이 되기 때문에, 자연스럽게 "부품 → 조립 → 더 큰 부품 → 더 큰 조립"의 계층 구조가 생긴다. 이것은 프로그래밍에서 함수를 정의하고 그 함수를 다시 부르는 일과 비슷하다. 함수가 없는 한 줄짜리 거대한 코드는 가능은 하지만 불가능한 만큼 비효율적이다.</p>
 
-      <h2>교차 엔트로피가 단순히 “벌점을 크게 주는 함수”가 아닌 이유</h2>
-      <p>교차 엔트로피가 중요한 이유는 흔히 “오답에 큰 벌점을 준다”로 설명된다. 하지만 그건 결과일 뿐이다. 더 정확히 말하면 — <strong>확률 출력층과 결합되었을 때 기울기 구조가 학습에 유리해진다</strong>는 점이 핵심이다.</p>
+      <h2>그렇다면 너비는 왜 중요한가</h2>
+      <p>깊이가 표현 효율의 원천이라면 너비는 왜 필요한가? 너비는 <strong>같은 층 안에서 다양한 패턴을 동시에 검출하는</strong> 일을 한다. 한 층의 뉴런이 10개라면, 10가지 다른 특징을 한꺼번에 추출할 수 있다. 그 10가지가 풍부할수록 다음 층이 조합할 재료가 많아진다.</p>
 
-      <p>위에서 본 sigmoid + MSE의 비극을 떠올려 보라. 시그모이드 미분이 끼어들어 “크게 틀리면 수정 신호가 작아지는” 비극이 일어났다. BCE는 sigmoid 미분을 정확히 상쇄해서, 기울기가 깔끔한 “예측 − 정답” 형태로 떨어진다. 같은 일이 softmax + CE에서도 일어난다. 이런 <strong>대수적 상쇄</strong>가 짝짓기의 진짜 미학이다.</p>
+      <p>실용적으로는 적당한 너비와 적당한 깊이의 균형이 좋다. 너비만 키우면 파라미터가 너무 많아져 과적합(overfitting)되기 쉽고, 깊이만 키우면 기울기 소실(vanishing gradient, 15절) 같은 학습 어려움이 생긴다. 현대 CNN, Transformer는 모두 이 균형을 다양한 방식으로 찾은 결과다.</p>
 
-      <h2>소프트맥스가 “정답 하나만 뽑는 기계”가 아닌 이유</h2>
-      <p>마지막으로, 소프트맥스가 분류 문제에서 강력한 또 하나의 이유를 짚자. 소프트맥스는 정답 클래스 하나만 강하게 만드는 게 아니라, <strong>모든 클래스에 대한 상대적 점수를 확률 분포로 바꾼다</strong>. 이것이 학습 신호를 풍부하게 한다.</p>
+      <h2>UAT의 또 다른 한계 — 학습 가능성과 별개다</h2>
+      <p>존재성과 학습 가능성(trainability)은 다른 문제다. UAT는 "그런 가중치가 있다"고 말하지, "SGD로 그 가중치를 찾을 수 있다"고 말하지 않는다. 실제로 한 층 안에 매우 많은 뉴런을 두고 SGD로 학습시키면, 손실 곡면(loss landscape)이 너무 복잡해서 좋은 지점에 도달하기 어려울 수 있다. 깊은 모델은 8장에서 다루는 다양한 최적화 기법(adaptive learning rate, normalization, residual connection) 덕분에 학습이 더 안정적이다.</p>
 
-      <p>예를 들어 개를 “고양이로 헷갈리는 경우”와 “비행기로 헷갈리는 경우”는 모델 내부에서 수정되어야 할 표현이 전혀 다르다. 소프트맥스 분포는 그 “어떤 오답으로 혼동했는가”까지 그대로 손실에 반영한다. 그래서 소프트맥스 분포는 예측 결과이면서 동시에 <strong>학습 방향을 더 세밀하게 제공하는 신호</strong>다.</p>
-
-      <h2>이 절이 잡아 준 그림</h2>
-      <ul>
-        <li><strong>출력층과 손실은 함께 설계된다.</strong> 잘못 짝지으면 학습이 망가진다.</li>
-        <li><strong>모든 짝은 MLE에서 자연스럽게 나온다.</strong> 정규 → MSE, 베르누이 → BCE, 카테고리 → CE.</li>
-        <li><strong>좋은 짝의 미분은 “예측 − 정답”의 형태로 단순화된다.</strong> 시그모이드/softmax의 미분이 상쇄된다.</li>
-        <li><strong>교차 엔트로피의 강점 = 큰 오답에 큰 수정 신호.</strong> sigmoid + MSE의 비극을 막아 준다.</li>
-        <li><strong>소프트맥스 분포는 학습 신호 그 자체.</strong> 오답의 종류까지 손실에 반영된다.</li>
-      </ul>
-
-      <p>다음 절은 “이 손실을 어떻게 각 가중치로 전달하는가” — 즉 역전파의 미적분이다. 식 6.44에서 6.55까지가 그 답이다.</p>
+      <h2>지금 잡아 둘 그림</h2>
+      <ol>
+        <li><strong>UAT는 존재성을 증명한다.</strong> 임의의 연속 함수는 한 층짜리 신경망으로 근사 가능하다.</li>
+        <li><strong>UAT는 효율을 보장하지 않는다.</strong> "충분히 많은 뉴런"이 실제로는 천문학적일 수 있다.</li>
+        <li><strong>깊이는 표현 효율의 원천이다.</strong> 같은 함수를 표현하기 위한 파라미터 수가 깊이에 따라 지수적으로 줄어들 수 있다.</li>
+        <li><strong>UAT는 학습 가능성과 일반화를 보장하지 않는다.</strong> 정리와 실용은 다르다.</li>
+      </ol>
+      <p>다음 절부터는 깊은 학습의 또 하나의 핵심 부품 — 활성화 함수(sigmoid, tanh, ReLU, GELU 등)를 차례로 본다. 활성화 함수의 선택이 왜 깊은 학습의 성패를 갈랐는지, 그리고 ReLU가 어떻게 표준이 되었는지를 추적한다.</p>
     </div>
 
     <nav class="ch-foot"></nav>
@@ -154,8 +109,8 @@
 <script>
   window.addEventListener('load', () => {
     CH6.buildNav('04');
-    const o = document.getElementById('out');
-    CH6.onVisible(o, () => CH6.outputs(o));
+    const u = document.getElementById('uat');
+    CH6.onVisible(u, () => CH6.universal(u));
   });
 </script>
 </body>

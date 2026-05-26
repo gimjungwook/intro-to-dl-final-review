@@ -3,25 +3,27 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>06 · 인과 요소·반지도 — Ch.15</title>
+<title>06 — 전이학습 2 — Ch.15</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
-  /* 반지도학습 효과 위젯 */
-  .ss-stage { padding: 1.4rem 1.2rem 1rem; }
-  .ss-chart { display: block; width: 100%; max-width: 540px; aspect-ratio: 16/10; margin: 0 auto; background: #fff; border-radius: 10px; border: 1px solid var(--line); }
-  .ss-verdict { padding: .9rem 1.2rem; border-top: 1px solid var(--line-soft); background: var(--paper); font-size: .9rem; color: var(--ink-soft); line-height: 1.55; }
-  .ss-verdict b.ok { color: var(--structure); } .ss-verdict b.warn { color: var(--style); }
-
-  /* prior 카드 */
-  .prior-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: .8rem; max-width: var(--measure); margin: 1.6rem auto; padding-inline: 1.4rem; }
-  .prior-card { padding: 1rem 1.1rem; border: 1px solid var(--line); border-radius: 10px; background: #fff; transition: border-color .2s, transform .15s; }
-  .prior-card:hover { border-color: var(--structure-lo); transform: translateY(-2px); box-shadow: var(--shadow-plate); }
-  .prior-card h4 { margin: 0 0 .5rem; font-family: var(--serif); font-size: 1.02rem; color: var(--structure); }
-  .prior-card p { margin: 0; font-size: .85rem; color: var(--ink-soft); line-height: 1.55; }
-  .prior-card .tag { display: inline-block; font-family: var(--mono); font-size: .66rem; letter-spacing: .04em; color: var(--ink-faint); margin-bottom: .35rem; }
+  .ft-stage { padding: 1.4rem 1.2rem 1rem; }
+  .ft-net { display: flex; align-items: flex-end; justify-content: center; gap: .6rem; padding: 1.2rem 0 .6rem; flex-wrap: wrap; }
+  .ft-layer { display: flex; flex-direction: column; align-items: center; gap: .25rem; cursor: pointer; transition: transform .2s var(--ease); }
+  .ft-layer:hover { transform: translateY(-3px); }
+  .ft-layer .lbox { width: 72px; padding: .55rem 0; border-radius: 8px; border: 1px solid var(--line); background: #fff; font-family: var(--mono); font-size: .68rem; text-align: center; color: var(--ink-soft); transition: background .2s, border-color .2s, color .2s; }
+  .ft-layer .ltag { font-family: var(--mono); font-size: .56rem; color: var(--ink-faint); letter-spacing: .1em; }
+  .ft-layer.frozen .lbox { background: rgba(45,91,122,0.08); border-color: var(--structure-lo); color: var(--structure); }
+  .ft-layer.frozen .lbox::after { content: ' ❄'; }
+  .ft-layer.unfrozen .lbox { background: var(--style); border-color: var(--style); color: #fff; }
+  .ft-layer.unfrozen .lbox::after { content: ' 🔥'; }
+  .ft-verdict { padding: 1rem 1.2rem; border-top: 1px solid var(--line-soft); background: var(--paper); font-size: .9rem; color: var(--ink-soft); line-height: 1.55; min-height: 5rem; }
+  .ft-verdict b.tip { color: var(--structure); } .ft-verdict b.warn { color: var(--style); }
+  .ft-meter { display: flex; gap: 1.4rem; margin-top: .8rem; align-items: center; font-family: var(--mono); font-size: .82rem; }
+  .ft-meter .bar { flex: 1; height: 10px; background: var(--paper-sink); border-radius: 5px; overflow: hidden; }
+  .ft-meter .bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--structure), var(--structure-lo)); transition: width .35s var(--ease); }
 </style>
 </head>
 <body>
@@ -33,107 +35,82 @@
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Sub 06 · 라벨 없는 데이터의 가치</span>
-      <h1>인과 요소·반지도학습·<span class="t-synth">사전(prior)</span></h1>
-      <p class="lede">라벨 없는 데이터의 분포 정보가 어떻게 분류 정확도를 끌어올리는가. 답은 단 한 줄 — 같은 인과 요인이 입력 분포와 라벨을 동시에 설명할 때 작동한다. 이 한 줄이 15장의 모든 정칙화·사전훈련·전이학습을 하나로 묶는다.</p>
+      <span class="kicker">Sub 06 — 동결할까, 풀까</span>
+      <h1>전이학습 2 — 미세조정의 <span class="t-style">실전</span></h1>
+      <p class="lede">사전훈련된 모델을 새 과제에 옮길 때 가장 먼저 정해야 하는 결정. 어느 층을 동결(freeze)할까, 어느 층을 풀(unfreeze)까. 이 결정은 세 변수(데이터 양·도메인 거리·층 깊이)의 함수다.</p>
     </header>
 
     <div class="prose">
-      <p>여기까지 우리는 표상이 어떤 모양이어야 좋은가(1번), 어떻게 만드는가(2번), 다른 데로 옮길 수 있는가(3번), 왜 강력한가(4·5번)를 차례로 봤다. 마지막 절은 가장 미묘하지만 가장 통합적인 주제 — <strong>라벨이 없는 데이터가 어떻게 라벨이 필요한 과제를 돕는가</strong> — 이다.</p>
+      <p>전이학습의 정신은 단순하지만, 실전 절차는 까다롭다. 사전훈련된 합성곱망(또는 트랜스포머)을 새 과제에 옮기는 방법은 한 가지가 아니다. 책과 실무에서 사용되는 주요 전략은 다음 세 가지로 정리된다.</p>
+      <p><strong>(1) 선형 프로브(linear probe).</strong> 모든 층을 동결하고, 마지막에 새 분류 헤드 한 층만 학습한다. 기존 표상을 “외부 평가용 좌표”로만 본다. 데이터가 매우 적거나, 사전훈련 표상의 품질을 측정하고 싶을 때 쓴다.</p>
+      <p><strong>(2) 부분 미세조정(partial fine-tuning).</strong> 상위 몇 층(분류 헤드와 마지막 한두 개 블록)만 풀고, 하위 층은 동결한다. 가장 흔히 쓰이는 절충안. 저수준 표상은 보존하고, 고수준 표상만 새 도메인에 적응시킨다.</p>
+      <p><strong>(3) 전체 미세조정(full fine-tuning).</strong> 모든 층을 풀고, 본 과제 라벨로 모든 가중치를 다시 학습한다. 단, 학습률을 매우 작게 잡아 사전훈련의 출발점을 “기억”하도록 한다. 본 과제 데이터가 많고, 도메인이 다소 다를 때 사용.</p>
 
-      <p>구체적 시나리오를 떠올려 보자. 사용자의 사진 1000장 중 100장만 "이게 우리 집 고양이"라고 라벨이 붙어 있고, 나머지 900장은 라벨이 없다. 라벨 없는 900장을 그냥 버리는 것이 옳을까? 책은 단호하게 말한다 — <strong>"버리지 마라. 단, 특정 조건에서만 작동한다."</strong> 그 조건을 정확히 이해하는 것이 이 절의 핵심이다.</p>
-
-      <h2>반지도학습이 작동하는 핵심 가정</h2>
-      <p>책의 가장 압축된 주장이다. 반지도학습은 입력 분포 $p(x)$를 형성하는 인과 요인과 라벨 $y$를 결정하는 인과 요인이 <strong>공유될 때</strong> 작동한다. 수식으로 적으면:</p>
-
-      <div class="math-block">$$ x = g(z), \quad y = h(z_S) \quad \text{where } z_S \subset z $$</div>
-      <p class="math-note">관측 $x$는 잠재 요인 $z$들로부터 생성되고, 라벨 $y$는 그 요인의 부분집합 $z_S$로 결정된다. $z$를 잘 복원하는 것은 $z_S$를 부분적으로 복원하는 것과 같다.</p>
-
-      <p>이 조건이 충족되면 라벨 없는 데이터의 분포를 학습하는 것이 자동으로 라벨 예측에 도움이 된다. 왜? $p(x)$를 잘 설명하려면 $z$의 구조를 알아야 하고, $z$를 알면 그 부분집합인 $z_S$도 알게 되고, $z_S$를 알면 $y$가 거의 결정되기 때문이다.</p>
+      <h2>결정의 세 변수</h2>
+      <p>세 전략 중 무엇을 고를지는 세 변수의 조합으로 결정된다.</p>
+      <p><strong>(1) 본 과제 라벨 데이터 양.</strong> 라벨이 100장 이하라면 선형 프로브가 안전하다. 그 정도 데이터로 전체를 풀면 사전훈련된 좋은 가중치가 무작위 방향으로 흩어진다(catastrophic forgetting). 1,000-10,000장이면 부분 미세조정, 100,000장 이상이면 전체 미세조정도 안전하다.</p>
+      <p><strong>(2) 도메인 거리.</strong> 사전훈련 도메인(예: 자연 이미지)과 본 과제 도메인(예: 의료 X-ray)이 얼마나 다른가. 도메인이 가까우면 적은 변경으로 충분하다 — 선형 프로브 또는 마지막 한 블록만 풀기. 도메인이 멀면 더 많은 층을 풀어야 한다.</p>
+      <p><strong>(3) 층 깊이.</strong> 합성곱망의 저층(L1-L2)은 “모서리·텍스처” 같은 일반적 시각 통계를 코딩한다. 고층(L4-L5)은 “객체 카테고리” 같은 도메인 특수 표상을 코딩한다. 도메인이 가까울수록 풀어야 할 층은 위쪽에만 있다.</p>
 
       <div class="analogy">
-        <b>한 가족 사진첩을 처음 보는 친구.</b> 처음 보는 가족의 사진첩 1000장이 주어진다. 그중 100장에는 "이게 엄마", "이게 아빠"라는 라벨이 붙어 있다. 라벨 없는 900장은 그냥 버려야 할까? 아니다. 그 900장을 차근차근 넘기다 보면 가족 구성원의 얼굴, 자주 가는 장소, 옷의 스타일, 표정 패턴 같은 <b>가족의 시각적 인과 요인</b>을 머리가 알아서 추출한다. 라벨이 붙은 100장만으로는 결코 잡지 못할 미묘한 차이를 900장이 함께 알려 준다. 단, 사진첩 안의 변동(인물·표정·시간)이 라벨(누구인지)을 결정하는 변동과 정렬되어야 작동한다. 풍경 사진만 잔뜩 있는 사진첩이라면 가족 식별에 도움이 안 된다.
+        <b>고급 양복을 새로 산 사람에게 맞추는 일.</b> 잘 만들어진 기성복(사전훈련된 망)이 있다고 하자. 키와 어깨너비가 거의 맞는다면 소맷단만 조금 줄이면 된다(상위 한 층만 미세조정). 체형이 꽤 다르다면 어깨·허리·소매를 모두 손봐야 한다(부분 미세조정). 체형이 완전히 다르다면 차라리 천만 활용하고 처음부터 재단(전체 미세조정, 낮은 학습률). 단 한 가지 — 처음부터 무작위 천으로 짓는 것(스크래치 학습)보다는 사전훈련 천이 거의 항상 낫다.
       </div>
 
-      <h2>왜 가끔은 해가 되는가</h2>
-      <p>책의 가장 정직한 부분이 여기다. 반지도학습은 만능이 아니다. 라벨 없는 데이터의 분포가 라벨과 무관한 변동을 많이 가지고 있으면, 그 변동을 학습하는 데 모델 용량이 낭비된다.</p>
+      <h2>학습률 설정 — 사전훈련의 “기억”을 지키는 법</h2>
+      <p>미세조정의 실전에서 가장 중요한 단일 하이퍼파라미터는 학습률(learning rate)이다. 사전훈련된 가중치는 “좋은 출발점”이고, 학습률이 너무 크면 한 번의 큰 걸음으로 그 출발점을 잃어버린다. 그래서 미세조정의 학습률은 스크래치 학습 학습률보다 10-100배 작게 잡는 것이 표준이다.</p>
+      <p>한 가지 더 정교한 기법은 “층별 학습률 차등(layer-wise learning rate decay)”이다. 하위 층은 매우 작은 학습률, 상위 층은 비교적 큰 학습률을 준다. 하위 층은 거의 안 움직이고, 상위 층만 본격적으로 학습한다는 직관을 학습률 자체에 새겨 둔 셈이다. 트랜스포머 사전훈련 모델의 미세조정에서 흔히 쓰인다.</p>
 
-      <p>예를 들어 의료 영상에서 라벨은 "암 유무"인데, 라벨 없는 영상에 환자의 자세·기계 종류·촬영 시간이라는 변동이 가득하다고 하자. 반지도학습은 "자세 인코더", "기계 종류 인코더"를 열심히 만들지만, 그것들은 암 유무 예측에 전혀 도움이 안 된다. 오히려 정작 중요한 미세한 종양 패턴을 잡을 용량을 빼앗는다. 이것이 "naive pretraining can degrade accuracy"라는 책의 경고다.</p>
-
-      <p>실무적 처방: <strong>사전훈련/반지도학습 목표는 다운스트림이 진짜로 의지할 인과 요인과 정렬되도록 설계해야 한다.</strong> 무작정 입력 복원을 시키지 말고, 다운스트림에 의미 있는 자기지도 신호(같은 이미지의 두 뷰는 가깝게, 같은 문장의 단어를 마스킹하고 예측, ...)를 골라야 한다.</p>
-
-      <h2>아래 위젯 — 라벨 없는 데이터가 정확도에 미치는 영향</h2>
-      <p>두 가지 가설을 시뮬레이션한다. (1) 인과 요인이 정렬된 경우: 라벨 없는 데이터가 많을수록 정확도가 올라간다. (2) 인과 요인이 정렬되지 않은 경우: 라벨 없는 데이터가 오히려 정확도를 떨어뜨린다.</p>
-    </div>
-
-    <div class="widget">
-      <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 07</span><span>반지도학습 효과 — 인과 요인 정렬도에 따른 정확도</span></div>
-        <div class="ss-stage">
-          <canvas id="sschart" class="ss-chart" width="540" height="340"></canvas>
-        </div>
-        <div class="widget-controls">
-          <div class="slider" style="flex:1; min-width:260px;">
-            <label>인과 요인 정렬도 (입력 분포 ↔ 라벨) <b id="ssAval">α = 0.70</b></label>
-            <input type="range" id="ssA" min="0" max="1" step="0.02" value="0.7">
+      <div class="widget">
+        <div class="widget-frame">
+          <div class="widget-label"><span class="lab-no">위젯 06</span><span>freeze vs unfreeze — 층을 클릭해 토글</span></div>
+          <div class="ft-stage">
+            <div class="ft-net" id="ft-net"></div>
+            <div class="ft-meter">
+              <span>학습 파라미터 비율</span>
+              <div class="bar"><i id="ft-bar"></i></div>
+              <span id="ft-pct">0%</span>
+            </div>
           </div>
-          <div class="slider" style="flex:1; min-width:200px;">
-            <label>라벨 데이터 수 <b id="ssLval">L = 100</b></label>
-            <input type="range" id="ssL" min="20" max="2000" step="20" value="100">
+          <div class="widget-controls">
+            <div class="toggle-row">
+              <button class="btn ghost" id="ft-preset-probe">선형 프로브 (헤드만)</button>
+              <button class="btn ghost" id="ft-preset-partial">부분 미세조정 (상위 2개)</button>
+              <button class="btn ghost" id="ft-preset-full">전체 미세조정 (모두)</button>
+            </div>
           </div>
+          <div class="ft-verdict" id="ft-verdict">각 층을 클릭해 동결(❄)/해제(🔥) 상태를 바꾸거나, 위 프리셋 버튼으로 전략을 선택하세요.</div>
         </div>
-        <div class="ss-verdict" id="ssverdict"></div>
+        <p class="widget-cap">실전에서 “정답”은 없다. 본 과제 데이터가 100장이면 선형 프로브, 5,000장이면 부분 미세조정, 100,000장이면 전체 미세조정이 흔히 추천된다. 도메인 거리도 함께 본다 — 도메인이 멀수록 더 많은 층을 푼다.</p>
       </div>
-      <p class="widget-cap">x축은 라벨 없는 데이터의 양, y축은 정확도. 인과 요인이 잘 정렬되면 라벨 없는 데이터가 많을수록 정확도가 올라간다. 정렬도가 낮으면 오히려 잡음이 되어 정확도가 떨어진다. 라벨 데이터가 적을수록 양 효과 모두 더 강하게 나타난다.</p>
-    </div>
 
-    <div class="prose">
-      <h2>표상의 사전(prior) 동물원 — 모든 정칙화는 같은 가족이다</h2>
-      <p>15장의 마지막 통찰이 여기다. 책은 7장에서 본 모든 정칙화 기법, 14장에서 본 모든 오토인코더 변종, 그리고 이 장에서 본 반지도학습과 전이학습이 사실은 모두 <strong>"표상에 어떤 사전(prior)을 거는가"</strong>의 변형이라는 통합적 시각을 제시한다. 각각이 어떤 가정을 데이터에 거는지 다음 카드들에서 본다.</p>
-    </div>
+      <h2>P1 응용 — 적대 예제와 미세조정 (Week 10 질문 연결)</h2>
+      <p>Week 10 과제에서 받은 질문 “미세조정 시 하위 층을 unfreeze하면 도움이 될까, 해가 될까”는 두 변수의 균형 문제다. 하위 층을 풀면 본 과제의 저수준 통계에 더 맞춰진다. 그러나 본 과제 라벨이 적으면 그 균형이 무너진다 — 저수준 가중치가 무작위 방향으로 흩어져 사전훈련의 일반성을 잃는다. 책의 권장은 “데이터가 충분하지 않으면 동결, 충분하면 매우 작은 학습률로 풀기”다.</p>
+      <p>Week 11 P1(적대 예제, Goodfellow 2015)과도 연결된다. P1은 “신경망이 매니폴드 외부에서 선형 외삽을 하다가 적대 예제에 무너진다”고 말한다. 미세조정 관점에서 보면, 본 과제 데이터가 적을 때 하위 층까지 풀면 매니폴드 외부의 동작이 더 제멋대로가 된다. 적대적 미세조정 — FGSM으로 만든 예제를 함께 학습 — 이 이 외삽을 길들이는 추가 정칙화로 기능한다. 표상 학습이 적대성·강건성과 같은 동전의 양면이라는 사실은 11장 응용에서 다시 등장한다.</p>
 
-    <div class="prior-grid">
-      <div class="prior-card">
-        <span class="tag">PRIOR 1</span>
-        <h4>매끄러움 (Smoothness)</h4>
-        <p>"가까운 입력은 가까운 라벨을 가진다." 데이터 증강·노이즈 주입·드롭아웃·라벨 평활화가 모두 이 가정을 강제한다. 가장 약하지만 가장 널리 통하는 사전.</p>
-      </div>
-      <div class="prior-card">
-        <span class="tag">PRIOR 2</span>
-        <h4>매니폴드 (Manifold)</h4>
-        <p>"데이터는 입력 공간의 얇은 면 위에 있다." 잡음 제거 오토인코더(DAE), 수축적 오토인코더(CAE)가 이 면의 접평면을 학습한다. 14장의 골자.</p>
-      </div>
-      <div class="prior-card">
-        <span class="tag">PRIOR 3</span>
-        <h4>인과 요인의 분리 (Disentanglement)</h4>
-        <p>"표상의 각 차원은 독립적이고 의미 있는 요인이다." β-VAE, InfoGAN, 제로샷 학습이 이 가정에 의존. 가장 야심차지만 가장 어려운 사전.</p>
-      </div>
-      <div class="prior-card">
-        <span class="tag">PRIOR 4</span>
-        <h4>희소성 (Sparsity)</h4>
-        <p>"한 입력에 대해 활성화되는 뉴런은 소수다." 희소 코딩, L1 정칙화, ReLU의 자연스러운 0이 모두 같은 가정. 적은 자원으로 표현하는 압력.</p>
-      </div>
-      <div class="prior-card">
-        <span class="tag">PRIOR 5</span>
-        <h4>시간적 일관성 (Slowness)</h4>
-        <p>"진짜 의미 있는 특징은 천천히 변한다." Slow Feature Analysis(SFA), 비디오 자기지도 학습. 객체 정체성은 1초에 바뀌지 않지만 픽셀은 매 프레임 바뀐다.</p>
-      </div>
-      <div class="prior-card">
-        <span class="tag">PRIOR 6</span>
-        <h4>계층적 인과 (Hierarchical)</h4>
-        <p>"세상은 낮은 추상에서 높은 추상으로 합성된다." 깊은 망의 모든 정렬, 그리고 5번 절의 합성성이 이 가정에 의존. 깊이 자체가 사전이다.</p>
-      </div>
-    </div>
+      <h2>전이학습 실전 체크리스트</h2>
+      <table class="symbols">
+        <tr><td>본 과제 라벨이 적다 (< 1,000장)</td><td>선형 프로브 또는 헤드+마지막 블록만. 학습률 1e-4 이하.</td></tr>
+        <tr><td>중간 (1,000-100,000장)</td><td>부분 미세조정. 상위 1/3 정도. 학습률 1e-4 ~ 1e-5.</td></tr>
+        <tr><td>충분 (> 100,000장)</td><td>전체 미세조정 가능. 학습률 1e-5. 또는 층별 학습률 차등.</td></tr>
+        <tr><td>도메인이 매우 멀다</td><td>전체 미세조정 + 충분한 라벨 필요. 음의 전이 위험 점검.</td></tr>
+        <tr><td>도메인이 매우 가깝다</td><td>선형 프로브로 충분한 경우 많음. 추가 학습 비용 절감.</td></tr>
+      </table>
 
-    <div class="prose">
-      <p>책의 결론은 이렇다. <strong>"어떤 사전도 보편적으로 옳지 않다. 각 사전은 세상에 대한 어떤 가설이고, 옳은 조합을 고르는 것이 표상학습의 실제 기술이다."</strong> 이 한 줄이 15장의, 그리고 책 전체의 한 줄 요약이라 해도 과언이 아니다.</p>
+      <h2>현장에서 자주 부딪히는 함정 — 세 가지</h2>
+      <p>실전에서 미세조정이 “이론대로” 가지 않는 경우는 거의 항상 다음 세 가지 함정 중 하나다.</p>
+      <p><strong>(1) 배치 정규화의 통계가 사전훈련 분포에 잠겨 있다.</strong> ResNet 류 모델은 BatchNorm 층마다 평균·분산의 이동 통계(running mean/var)를 가지고 있다. 본 과제 도메인이 사전훈련 도메인과 다르면 이 통계가 새 입력에 맞지 않아 정확도가 떨어진다. 해결책은 두 가지 — (a) BatchNorm 층을 학습 모드로 두고 본 과제 데이터로 통계를 재추정하거나, (b) BatchNorm을 LayerNorm 또는 GroupNorm으로 교체한 모델을 미세조정하는 것이다. 시험에서 “미세조정 정확도가 사전훈련보다 낮아진 이유”의 단골 답이다.</p>
+      <p><strong>(2) 학습률 워밍업(warmup) 부재.</strong> 미세조정 첫 100-1,000 스텝 동안 학습률을 0에서 목표값까지 천천히 끌어올리지 않으면, 첫 번째 큰 걸음이 사전훈련 가중치를 흩뜨린다. 워밍업은 단순한 트릭이 아니라 사전훈련 “기억”을 보존하는 필수 절차다.</p>
+      <p><strong>(3) 분류 헤드의 무작위 초기화가 가중치 전체를 흔든다.</strong> 헤드만 새로 붙이면 헤드의 초기 기울기가 매우 크고, 이 기울기가 역전파되어 사전훈련 하위 층의 가중치까지 흔들어 버린다. 처방은 “헤드만 먼저 몇 에포크 학습한 뒤 전체를 풀어 미세조정하는 두 단계 절차(linear-probe-then-fine-tune)”. 최근 연구(Kumar et al., 2022)에서 이 단순한 두 단계가 일반 미세조정보다 도메인 외(out-of-distribution) 일반화에서 더 강하다는 것이 보고됐다.</p>
 
-      <h2>왜 이것이 책의 마지막 큰 메시지인가</h2>
-      <p>1장에서 책은 "딥러닝은 표상학습이다"라고 선언했다. 15장까지의 모든 기술 — 활성화 함수, 정칙화, 최적화, CNN, RNN, 오토인코더, 사전훈련 — 은 결국 좋은 표상을 만들기 위한 도구들이었다. 15장은 그 도구들이 모두 "표상에 어떤 사전을 거는가"라는 한 가지 메타 질문으로 환원된다는 것을 보인다. 1장의 약속이 여기서 회수된다.</p>
-
-      <p>실무에서 새 문제를 만났을 때 떠올려야 할 한 줄 질문: <strong>"이 데이터의 어떤 사전이 가장 잘 맞을까?"</strong> 답이 매끄러움이면 데이터 증강, 매니폴드면 오토인코더, 인과 분리면 자기지도 표상학습, 계층적이면 깊은 망. 도구의 선택은 모두 이 한 질문의 답이다.</p>
-
-      <p>마지막 절에서는 이 모든 통찰이 우리가 Week 11에서 본 두 논문(P1 적대적 예시, P2 신경 스타일 전이)에서 어떻게 살아 움직이는지, 그리고 시험에서 어떤 형태로 출제될 가능성이 큰지를 정리한다.</p>
+      <h2>핵심 어휘 정리</h2>
+      <table class="symbols">
+        <tr><td>미세조정 (fine-tuning)</td><td>사전훈련 가중치에서 출발해 본 과제 라벨로 다시 학습.</td></tr>
+        <tr><td>선형 프로브</td><td>모든 층 동결, 헤드만 학습. 표상 품질 평가용.</td></tr>
+        <tr><td>치명적 망각 (catastrophic forgetting)</td><td>새 과제 학습이 사전훈련 표상을 무작위로 흩어 버리는 현상.</td></tr>
+        <tr><td>층별 학습률 차등</td><td>하위 층은 작게, 상위 층은 크게. 사전훈련의 기억 보존.</td></tr>
+        <tr><td>학습률 워밍업 (warmup)</td><td>학습 초반 학습률을 0에서 목표값까지 천천히 끌어올리는 절차.</td></tr>
+        <tr><td>LP-FT (Linear-Probe-then-Fine-Tune)</td><td>헤드만 먼저 학습 후 전체 미세조정. 도메인 외 일반화에 강함.</td></tr>
+      </table>
     </div>
 
     <nav class="ch-foot"></nav>
@@ -143,18 +120,25 @@
 <script>
   const SUBS = [
     { no:'01', t:'좋은 표상이란', f:'01.html' },
-    { no:'02', t:'사전훈련과 미세조정', f:'02.html' },
-    { no:'03', t:'전이학습·도메인 적응', f:'03.html' },
-    { no:'04', t:'분산 표상의 힘', f:'04.html' },
-    { no:'05', t:'깊이의 지수적 표현력', f:'05.html' },
-    { no:'06', t:'인과 요소와 반지도', f:'06.html' },
-    { no:'07', t:'시험 대비', f:'07.html' },
+    { no:'02', t:'그리디 층별 사전훈련', f:'02.html' },
+    { no:'03', t:'비지도 사전훈련', f:'03.html' },
+    { no:'04', t:'지도 사전훈련', f:'04.html' },
+    { no:'05', t:'전이학습 1 — 도메인이 돕는 원리', f:'05.html' },
+    { no:'06', t:'전이학습 2 — 미세조정 실전', f:'06.html' },
+    { no:'07', t:'도메인 적응', f:'07.html' },
+    { no:'08', t:'분산 표상 1 — 지수적 이득', f:'08.html' },
+    { no:'09', t:'분산 표상 2 — 합성성·의미 산수', f:'09.html' },
+    { no:'10', t:'깊이의 지수적 표현력', f:'10.html' },
+    { no:'11', t:'인과 요소', f:'11.html' },
+    { no:'12', t:'반지도 학습', f:'12.html' },
+    { no:'13', t:'사전으로서의 정칙화', f:'13.html' },
+    { no:'14', t:'시험 대비', f:'14.html' },
   ];
   const CURRENT = '06';
   (function buildNav() {
     document.querySelector('.topbar').innerHTML =
-      `<a class="home" href="index.html">← Chapter 15 · 표상 학습</a>` +
-      `<span class="ch-mini">SUB ${CURRENT} / 07</span>`;
+      `<a class="home" href="index.html">← Chapter 15 — 표상 학습</a>` +
+      `<span class="ch-mini">SUB ${CURRENT} / 14</span>`;
     document.querySelector('.ch-nav ol').innerHTML = SUBS.map(s =>
       `<li><a href="${s.f}" ${s.no === CURRENT ? 'class="current"' : ''}>${s.t}</a></li>`).join('');
     const i = SUBS.findIndex(s => s.no === CURRENT);
@@ -172,109 +156,77 @@
     document.addEventListener('scroll', onScroll, { passive: true }); onScroll();
   })();
 
-  // ===== 위젯: 반지도학습 효과 곡선 =====
-  (function ssWidget() {
-    const c = document.getElementById('sschart');
-    const css = getComputedStyle(document.documentElement);
-    const STRUCT = css.getPropertyValue('--structure').trim();
-    const STYLE = css.getPropertyValue('--style').trim();
-    const SYNTH = css.getPropertyValue('--synth').trim();
-    const FAINT = css.getPropertyValue('--ink-faint').trim();
-    const SOFT = css.getPropertyValue('--ink-soft').trim();
-    const aSlider = document.getElementById('ssA');
-    const lSlider = document.getElementById('ssL');
-    const aval = document.getElementById('ssAval');
-    const lval = document.getElementById('ssLval');
-    const verdict = document.getElementById('ssverdict');
+  // freeze/unfreeze 위젯
+  (function ftWidget() {
+    const layers = [
+      { name: '입력', tag: 'L0', weight: 0 },
+      { name: 'Conv1', tag: 'L1', weight: 8 },
+      { name: 'Conv2', tag: 'L2', weight: 18 },
+      { name: 'Conv3', tag: 'L3', weight: 26 },
+      { name: 'Conv4', tag: 'L4', weight: 30 },
+      { name: '헤드', tag: 'L5', weight: 18 },
+    ];
+    const netEl = document.getElementById('ft-net');
+    const verdEl = document.getElementById('ft-verdict');
+    const barEl = document.getElementById('ft-bar');
+    const pctEl = document.getElementById('ft-pct');
+    const states = new Array(layers.length).fill('frozen');
+    states[5] = 'unfrozen'; // 헤드만 기본 풀림
 
-    function draw() {
-      const a = parseFloat(aSlider.value);  // 정렬도
-      const L = parseInt(lSlider.value);     // 라벨 수
-      const W = c.width, H = c.height;
-      const ctx = c.getContext('2d');
-      ctx.clearRect(0,0,W,H);
-      ctx.fillStyle = '#fff'; ctx.fillRect(0,0,W,H);
-
-      const ml = 56, mr = 14, mt = 16, mb = 36;
-      const cw = W - ml - mr, ch = H - mt - mb;
-      ctx.strokeStyle = FAINT; ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(ml, mt); ctx.lineTo(ml, mt+ch); ctx.lineTo(ml+cw, mt+ch); ctx.stroke();
-      ctx.strokeStyle = 'rgba(38,34,28,0.07)';
-      for (let i = 1; i <= 4; i++) {
-        const y = mt + ch * (i/5);
-        ctx.beginPath(); ctx.moveTo(ml, y); ctx.lineTo(ml+cw, y); ctx.stroke();
+    layers.forEach((l, i) => {
+      const div = document.createElement('div');
+      div.className = 'ft-layer ' + (i === 0 ? '' : states[i]);
+      div.dataset.idx = i;
+      div.innerHTML = `<div class="lbox">${l.name}</div><div class="ltag">${l.tag}</div>`;
+      if (i > 0) {
+        div.addEventListener('click', () => {
+          states[i] = states[i] === 'frozen' ? 'unfrozen' : 'frozen';
+          render();
+        });
       }
-      ctx.fillStyle = SOFT; ctx.font = '11px "Spline Sans Mono", monospace';
-      for (let i = 0; i <= 5; i++) {
-        const v = 100 - i*20;
-        const y = mt + ch * (i/5);
-        ctx.fillText(v + '%', 10, y+4);
+      netEl.appendChild(div);
+    });
+
+    function render() {
+      const els = netEl.querySelectorAll('.ft-layer');
+      els.forEach((el, i) => {
+        el.classList.remove('frozen', 'unfrozen');
+        if (i > 0) el.classList.add(states[i]);
+      });
+      let unfrozenWeight = 0; let totalWeight = 0;
+      layers.forEach((l, i) => { totalWeight += l.weight; if (states[i] === 'unfrozen') unfrozenWeight += l.weight; });
+      const pct = Math.round(100 * unfrozenWeight / totalWeight);
+      barEl.style.width = pct + '%';
+      pctEl.textContent = pct + '%';
+      // verdict
+      const headOnly = states[5] === 'unfrozen' && states.slice(1, 5).every(s => s === 'frozen');
+      const allOn = states.slice(1).every(s => s === 'unfrozen');
+      const partialTop = states[5] === 'unfrozen' && states[4] === 'unfrozen' && states.slice(1, 4).every(s => s === 'frozen');
+      const partialMid = states.slice(3, 6).every(s => s === 'unfrozen') && states.slice(1, 3).every(s => s === 'frozen');
+      let v;
+      if (headOnly) v = `<b class="tip">선형 프로브.</b> 모든 층을 동결, 헤드만 학습. <b>데이터 매우 적을 때(< 1,000장) 안전</b>. 사전훈련 표상을 그대로 평가하는 효과도 있다. 단점 — 표상이 새 도메인에 적응하지 못함.`;
+      else if (allOn) v = `<b class="warn">전체 미세조정.</b> 모든 층을 풀어 본 과제 라벨로 다시 학습. 데이터가 충분(> 100,000장)할 때만 안전. 학습률은 1e-5 이하로 작게. 데이터 적으면 치명적 망각 위험.`;
+      else if (partialTop) v = `<b class="tip">부분 미세조정 (상위 블록).</b> 헤드와 마지막 합성곱 블록만 풀고 하위 층 동결. 가장 자주 쓰이는 절충안. 도메인이 가깝거나 데이터가 중간(1,000-100,000장)일 때 추천.`;
+      else if (partialMid) v = `<b>중간 깊이 미세조정.</b> 가운데 층까지 풀었다. 도메인이 다소 멀거나, 부분 미세조정이 충분하지 않을 때. 학습률 1e-5 이하, 층별 학습률 차등 고려.`;
+      else {
+        const unfrozenCount = states.filter(s => s === 'unfrozen').length;
+        v = `현재 <b>${unfrozenCount}개 층</b>이 풀려 있다. 일반 규칙 — 풀린 층이 많을수록 본 과제 라벨이 많이 필요하다. 학습률은 풀린 비율이 클수록 더 작게.`;
       }
-      ctx.fillText('라벨 없는 데이터 수 U →', ml + cw/2 - 60, H-8);
-      ctx.save(); ctx.translate(16, mt + ch/2 + 30); ctx.rotate(-Math.PI/2);
-      ctx.fillText('타깃 정확도', 0, 0); ctx.restore();
-
-      // x: U = 0..20000, 로그스케일
-      function xPx(U) { return ml + cw * Math.log10(Math.max(10, U)) / Math.log10(20000); }
-      // 기준선 (라벨만): 작을수록 낮음
-      const baseAcc = 0.45 + Math.log10(L) * 0.10;  // 0.45 ~ 0.78
-      // 반지도 효과: (a - 0.5)에 의해 +/-, U에 비례
-      // a > 0.5: 도움. a < 0.5: 해.
-      // 라벨 부족할수록 양 효과 모두 강해짐 (1/log(L))
-      function semiAcc(U) {
-        const labelScale = 1 / Math.log10(L * 2 + 10);  // L 작을수록 큼
-        const uScale = Math.log10(U + 10) - 1;  // 0..3.3
-        const delta = (a - 0.5) * 2 * uScale * labelScale * 0.25;
-        return Math.max(0.05, Math.min(0.98, baseAcc + delta));
-      }
-
-      // 곡선
-      ctx.strokeStyle = STRUCT; ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      let firstX = xPx(20);
-      let firstY = mt + ch * (1 - semiAcc(20));
-      ctx.moveTo(firstX, firstY);
-      for (let U = 100; U <= 20000; U *= 1.1) {
-        const x = xPx(U);
-        const y = mt + ch * (1 - semiAcc(U));
-        ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-
-      // 기준선 (라벨만)
-      ctx.strokeStyle = STYLE; ctx.lineWidth = 1.8; ctx.setLineDash([5,4]);
-      ctx.beginPath();
-      const baseY = mt + ch * (1 - baseAcc);
-      ctx.moveTo(ml, baseY); ctx.lineTo(ml+cw, baseY);
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      ctx.fillStyle = STYLE; ctx.font = '11px "Spline Sans Mono", monospace';
-      ctx.fillText('라벨만 사용', ml+cw-90, baseY-6);
-      ctx.fillStyle = STRUCT;
-      ctx.fillText('라벨 + 비라벨', ml+cw-100, mt + ch*(1 - semiAcc(20000)) - 6);
-
-      aval.textContent = 'α = ' + a.toFixed(2);
-      lval.textContent = 'L = ' + L;
-
-      const u20k = semiAcc(20000);
-      const lift = u20k - baseAcc;
-      let msg = '';
-      if (a > 0.7 && lift > 0.05) {
-        msg = `<b class="ok">반지도학습이 강하게 작동한다.</b> 라벨 없는 데이터 1만+ 사용 시 정확도 +${(lift*100).toFixed(0)}%p. 인과 요인이 잘 정렬됨.`;
-      } else if (a > 0.5 && lift > 0.01) {
-        msg = `<b class="ok">완만한 이득.</b> 정렬도가 충분히 높아 라벨 없는 데이터가 점진적 도움. 라벨이 적을수록 효과 큼.`;
-      } else if (a > 0.4) {
-        msg = `정렬도가 애매한 구간. 라벨 없는 데이터의 이득이 거의 없음. 자기지도 목표 설계를 다시 검토.`;
-      } else {
-        msg = `<b class="warn">Negative transfer.</b> 입력 분포의 인과 요인이 라벨과 무관함. 라벨 없는 데이터를 쓸수록 정확도 하락 — 자기지도 목표가 잘못 설계됨.`;
-      }
-      verdict.innerHTML = msg;
+      verdEl.innerHTML = v;
     }
-    aSlider.addEventListener('input', draw);
-    lSlider.addEventListener('input', draw);
-    draw();
+
+    document.getElementById('ft-preset-probe').addEventListener('click', () => {
+      for (let i = 1; i < 6; i++) states[i] = 'frozen';
+      states[5] = 'unfrozen'; render();
+    });
+    document.getElementById('ft-preset-partial').addEventListener('click', () => {
+      for (let i = 1; i < 6; i++) states[i] = 'frozen';
+      states[4] = 'unfrozen'; states[5] = 'unfrozen'; render();
+    });
+    document.getElementById('ft-preset-full').addEventListener('click', () => {
+      for (let i = 1; i < 6; i++) states[i] = 'unfrozen'; render();
+    });
+    render();
   })();
 
   window.addEventListener('load', () => {

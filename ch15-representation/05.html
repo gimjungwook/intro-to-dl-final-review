@@ -3,39 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>05 · 깊이의 지수적 표현력 — Ch.15</title>
+<title>05 — 전이학습 1 — Ch.15</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
-  /* 깊이 비교 위젯 */
-  .dp-stage { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1.4rem 1.2rem 1rem; align-items: stretch; }
-  .dp-side { border: 1px solid var(--line); border-radius: 9px; padding: 1rem 1rem .8rem; background: #fff; display: flex; flex-direction: column; }
-  .dp-side.shallow { border-left: 3px solid var(--style); }
-  .dp-side.deep { border-left: 3px solid var(--structure); }
-  .dp-side h4 { margin: 0 0 .6rem; font-family: var(--serif); font-size: 1rem; }
-  .dp-side.shallow h4 { color: var(--style); } .dp-side.deep h4 { color: var(--structure); }
-  .dp-net { display: flex; flex-direction: column; gap: .3rem; min-height: 160px; align-items: center; padding: .7rem 0; flex: 1; justify-content: center; }
-  .dp-layer { display: flex; gap: .25rem; justify-content: center; flex-wrap: wrap; }
-  .dp-neuron { width: 14px; height: 14px; border-radius: 50%; background: var(--paper-2); border: 1px solid var(--line); transition: all .25s var(--ease); }
-  .dp-side.shallow .dp-neuron { background: var(--style-lo); border-color: var(--style); }
-  .dp-side.deep .dp-neuron { background: var(--structure-lo); border-color: var(--structure); }
-  .dp-stats { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; padding-top: .8rem; border-top: 1px solid var(--line-soft); font-family: var(--mono); font-size: .76rem; }
-  .dp-stats .stat { display: flex; flex-direction: column; align-items: center; }
-  .dp-stats .stat .v { font-family: var(--serif); font-size: 1.15rem; color: var(--ink); font-weight: 600; }
-  .dp-stats .stat .l { color: var(--ink-faint); font-size: .68rem; text-align: center; }
-  .dp-verdict { padding: .9rem 1.2rem; border-top: 1px solid var(--line-soft); background: var(--paper); font-size: .9rem; color: var(--ink-soft); line-height: 1.55; }
-  .dp-verdict b { color: var(--structure); } .dp-verdict b.warn { color: var(--style); }
-  @media (max-width: 640px) { .dp-stage { grid-template-columns: 1fr; } }
-
-  /* 합성성 가시화 */
-  .compose-stage { padding: 1.4rem 1.2rem 1rem; }
-  .compose-flow { display: flex; align-items: center; justify-content: center; gap: .8rem; flex-wrap: wrap; max-width: 600px; margin: 0 auto; }
-  .compose-layer { text-align: center; padding: .7rem .8rem; border-radius: 8px; background: var(--paper-2); border: 1px solid var(--line); min-width: 5.5rem; }
-  .compose-layer .lt { font-family: var(--mono); font-size: .68rem; color: var(--ink-faint); margin-bottom: .35rem; letter-spacing: .04em; }
-  .compose-layer .ld { font-family: var(--serif); font-size: .9rem; color: var(--ink); line-height: 1.3; }
-  .compose-arrow { font-family: var(--mono); font-size: 1.1rem; color: var(--ink-faint); }
+  .tl-stage { padding: 1.4rem 1.2rem 1rem; }
+  .tl-chart { width: 100%; height: 220px; border: 1px solid var(--line-soft); border-radius: 8px; background: #fff; }
+  .tl-read { padding: .9rem 1.2rem; border-top: 1px solid var(--line-soft); background: var(--paper); font-size: .9rem; color: var(--ink-soft); line-height: 1.5; min-height: 4rem; }
+  .tl-read b.gain { color: var(--structure); } .tl-read b.lose { color: var(--style); }
 </style>
 </head>
 <body>
@@ -47,116 +24,69 @@
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Sub 05 · 깊이는 단순히 더 깊은 것이 아니다</span>
-      <h1>깊이의 지수적 표현력 — <span class="t-structure">합성성</span>의 이점</h1>
-      <p class="lede">2개의 층으로 표현되는 함수를 1개의 층으로 흉내내려면 폭이 지수적으로 더 넓어야 한다. 이 정리가 "왜 그냥 폭을 늘리지 않고 굳이 깊이를 쌓는가"에 대한 가장 깊은 답이다.</p>
+      <span class="kicker">Sub 05 — 도메인이 도메인을 돕는 원리</span>
+      <h1>전이학습 1 — 다른 도메인이 어떻게 <span class="t-structure">돕는가</span></h1>
+      <p class="lede">전이학습이 작동하려면 두 과제가 “무엇인가”를 공유해야 한다. 공유하는 것이 많을수록 전이는 강하고, 공유가 없으면 음의 전이가 일어난다. 그 “무엇”의 정체는 “공통 생성 요인”이다.</p>
     </header>
 
     <div class="prose">
-      <p>4번 절에서 본 분산 표상이 "한 층 안에서 비트들의 조합"으로 지수적 영역을 만드는 이야기였다면, 5번 절은 "여러 층 사이에서 표상들의 합성"으로 또 한 번 지수적 이득이 나오는 이야기다. 두 이득은 서로 다른 원리로 작동하며, 깊은 망은 두 가지를 곱해 진짜 폭발적인 표현력을 얻는다.</p>
+      <p>전이학습(transfer learning)이라는 말은 익숙해 보이지만, 정의는 의외로 까다롭다. 책의 정의는 다음과 같다 — <strong>한 분포(또는 과제)에서 학습한 모델이나 표상을 다른 분포(또는 과제)에 옮겨 쓰는 학습 절차</strong>. 이 정의에서 가장 중요한 단어는 “다른 분포”다. 만약 두 분포가 완전히 같으면 전이라는 말은 무의미하고, 두 분포가 완전히 다르면 전이 자체가 불가능하다. 전이학습은 “다르지만 무언가를 공유한다”는 미묘한 중간 지대에서만 의미가 있다.</p>
 
-      <p>책의 첫 도발적 주장이다. <strong>"같은 함수족을 표현할 때, 얕은 망이 필요로 하는 유닛 수는 깊은 망의 유닛 수에 대해 지수적이다."</strong> 이는 보편 근사 정리(universal approximation theorem)와 모순처럼 들린다. 보편 근사 정리에 따르면 2층 신경망이면 임의의 연속함수를 임의 정밀도로 근사할 수 있지 않은가? 그렇다, 그러나 정리는 그러기 위해 <em>얼마나 많은 뉴런이 필요한지</em>는 말해 주지 않는다. 이 절의 정리들은 바로 그 수치를 채워 넣는다.</p>
+      <h2>두 과제가 공유하는 것 — 공통 생성 요인</h2>
+      <p>책이 제시하는 핵심 개념은 “공통 생성 요인(shared underlying factor)”이다. 모든 데이터는 어떤 숨은 요인의 함수다. 자연 이미지에서는 “모서리·텍스처·반복 패턴·색 분포·기하학적 위계” 같은 저수준 요인부터 “객체·재질·조명·각도” 같은 고수준 요인까지 다양하다. 두 과제가 공유하는 요인의 양이 곧 전이의 강도다.</p>
+      <p>가장 흔히 인용되는 예가 “자연 이미지 사이의 전이”다. ImageNet으로 학습된 표상은 의료 영상(X-ray, CT), 위성 이미지, 식물 분류, 동물 종 식별 모두로 잘 옮겨진다. 이유는 단순하다 — 이 모든 도메인이 “자연 이미지의 저수준 통계”(엣지·텍스처·색 그라데이션)를 공유한다. 차이는 고수준 카테고리뿐이고, 그 부분은 마지막 분류 헤드만 갈아끼우면 된다.</p>
+      <p>반대로 “자연 이미지 → 무작위 잡음 분류”나 “자연 이미지 → 1차원 시계열 신호”로의 전이는 매우 약하다. 두 분포가 공유하는 저수준 통계가 거의 없기 때문이다. 사전훈련된 가중치가 새 과제에 도움이 되기는커녕, 무작위 초기화보다 못한 경우도 있다. 이것이 “음의 전이(negative transfer)”다.</p>
+
+      <h2>전이의 강도를 결정하는 세 변수</h2>
+      <p>책은 전이의 강도가 세 가지 변수의 함수라고 본다.</p>
+      <p><strong>(1) 공유 요인의 비율.</strong> 두 과제가 공유하는 생성 요인이 많을수록 강하다. 사진 → 그림(예: 스타일 변환)은 텍스처 요인은 다르지만 객체 정체성 요인은 공유한다. 그래서 분류 헤드는 흔히 그대로 두고 정규화 통계만 바꾸어 전이할 수 있다.</p>
+      <p><strong>(2) 본 과제의 데이터 양.</strong> 본 과제 라벨이 많을수록 사전훈련의 효과는 약해진다. 본 과제 데이터로 충분히 학습할 수 있다면 사전훈련이 큰 이점을 주지 않는다. 반면 본 과제 데이터가 100장뿐이라면, 사전훈련된 가중치가 출발점을 “자연 데이터를 설명하는 영역”으로 잡아 주는 효과가 결정적이다.</p>
+      <p><strong>(3) 사전훈련의 일반성.</strong> 사전훈련 데이터가 일반적일수록(다양한 카테고리·분포·도메인) 전이 가능 범위가 넓다. 거대 파운데이션 모델이 강한 이유가 이 변수에 있다. 인터넷 수십억 이미지·수조 토큰으로 학습된 표상은 거의 모든 다운스트림 과제와 비-부분 공유 요인을 갖는다.</p>
+
+      <div class="widget">
+        <div class="widget-frame">
+          <div class="widget-label"><span class="lab-no">위젯 05</span><span>도메인 거리에 따른 전이 효과 — 곡선 그리기</span></div>
+          <div class="tl-stage">
+            <canvas class="tl-chart" id="tl-chart" width="640" height="220"></canvas>
+          </div>
+          <div class="widget-controls">
+            <div class="slider" style="flex:1; min-width:280px;">
+              <label>도메인 거리 <b id="tl-d">d = 0.2 (가까움)</b></label>
+              <input type="range" id="tl-r" min="0" max="100" step="1" value="20">
+            </div>
+            <div class="legend">
+              <span><i style="background:var(--structure)"></i> 사전훈련 + 미세조정</span>
+              <span><i style="background:var(--ink-faint)"></i> 처음부터 학습 (라벨만)</span>
+            </div>
+          </div>
+          <div class="tl-read" id="tl-read"></div>
+        </div>
+        <p class="widget-cap">슬라이더를 움직이면 도메인 거리($d$)에 따라 두 곡선이 어떻게 갈리는지 볼 수 있다. 거리 0 — 같은 과제, 처음부터 학습 vs 사전훈련 차이 거의 없음(데이터가 많으면). 거리 가까움 — 사전훈련 강하게 이김. 거리 멀어짐 — 차이 줄어들다가 마침내 사전훈련이 손해(음의 전이)가 된다.</p>
+      </div>
+
+      <h2>전이학습의 변형들 — 같은 발상의 가족</h2>
+      <p>전이학습은 한 가지 절차가 아니라 발상의 가족 이름이다. 책에서 소개하는 변형은 다음과 같다.</p>
+      <p><strong>멀티태스크 학습(multi-task learning).</strong> 두 개 이상의 과제를 동시에 학습한다. 공유된 가운데 층이 “공통 표상”을 만들고, 각 과제별 헤드가 자기 라벨을 예측한다. 전이학습이 “한 과제 → 다른 과제”라면, 멀티태스크는 “여러 과제를 한 표상 위에서 풀게 한다”는 점이 다르다. 효과는 비슷하다 — 한 과제만으로는 모호한 표상 방향이 다른 과제의 신호로 보완된다.</p>
+      <p><strong>영-쇼트 학습(zero-shot learning).</strong> 본 적 없는 카테고리를 분류한다. 가능하려면 카테고리 자체가 “표상 공간 안의 점”으로 임베딩되어 있어야 한다. 예를 들어 “얼룩말”이라는 카테고리를 본 적 없어도, “말 + 줄무늬”라는 두 요인의 임베딩 조합으로 위치를 짐작할 수 있다. 영-쇼트는 분산 표상(8절)과 합성성(9절)이 가장 직접적으로 빛나는 응용이다.</p>
+      <p><strong>원-쇼트 학습(one-shot learning).</strong> 카테고리당 한 장의 예시만으로 분류한다. 표상 공간 안에서 “가장 가까운 예시”에 라벨을 따른다. 표상이 좋으면 한 장만으로도 가능하다.</p>
 
       <div class="analogy">
-        <b>레시피 책 vs 요리 단계의 합성.</b> "비빔밥 만들기"를 두 가지 방식으로 적을 수 있다. 한 가지는 모든 가능한 비빔밥 조합(밥+나물+고추장+...의 모든 조합)을 사전에 미리 적어 두는 것. 100가지 나물이 있고 각각 들어갈지 말지가 독립적이라면 2^100가지 비빔밥을 표로 만들어야 한다. 다른 한 가지는 "밥 짓기 → 나물 데치기 → 양념 만들기 → 섞기" 4단계로 적는 것. 각 단계는 단순하지만 단계의 합성으로 같은 2^100가지를 모두 만들어낼 수 있다. 후자가 깊이의 방식이다. 얕은 표는 한 줄에 모든 것을 늘어놓고, 깊은 단계는 합성으로 압축한다.
+        <b>대학 전공 사이의 전이.</b> 수학을 전공한 사람이 통계학을 시작하면 매우 빠르게 배운다. 미적분·선형대수·증명 작성 같은 공통 요인이 거의 모두 공유되기 때문이다. 그러나 수학 전공자가 발레를 배우기 시작하면 처음부터다. 공유 요인이 거의 없다. 미술 전공자가 그래픽 디자인을 배우는 것은 그 중간 — 색·구도 요인은 공유되지만 디지털 도구 요인은 새로 배워야 한다. 전이의 강도는 이렇게 “두 과제가 공유하는 요인의 비율”로 직관적으로 짐작할 수 있다.
       </div>
 
-      <h2>정리: ReLU 망의 선형 영역 수</h2>
-      <p>이 직관을 구체적 정리로 만들어 보자. ReLU 활성화의 신경망이 만드는 함수는 조각별 선형 함수(piecewise-linear function)다. 그 "조각의 수"가 함수가 얼마나 복잡한 결정 경계를 표현할 수 있는지의 정확한 측정이다. Montufar et al.(2014)의 정리는 이렇게 말한다.</p>
+      <h2>전이학습의 가장 강한 형태 — 파운데이션 모델</h2>
+      <p>2020년 이후 가장 두드러진 전이학습의 형태는 “파운데이션 모델(foundation model)”이다. 인터넷 규모의 라벨 없는(또는 약지도) 데이터로 거대 모델을 한 번 사전훈련하고, 그 모델을 거의 모든 다운스트림 과제에 옮긴다. GPT 계열은 텍스트, CLIP은 이미지-텍스트, DINO/MAE는 이미지 표상의 대표 예다. 이 모델들은 “전이 가능 범위가 매우 넓다” — 본 적 없는 도메인에서도 약간의 미세조정 또는 프롬프트만으로 좋은 성능을 낸다.</p>
+      <p>이 현상의 표상 학습 관점 해석은 단순하다 — 사전훈련의 규모가 충분히 크면, 표상이 매우 많은 생성 요인을 동시에 코딩하므로, 거의 모든 다운스트림 과제와 공유 요인을 갖게 된다는 것이다. 즉, 모델이 커지고 데이터가 다양해질수록 “전이의 보편성”이 증가한다.</p>
 
-      <div class="math-block">$$ \text{Linear regions of depth-}L\text{ ReLU net} \;\geq\; \left(\frac{n}{d}\right)^{(L-1)d} \cdot \binom{n}{d} $$</div>
-      <p class="math-note">$n$은 각 층의 너비, $d$는 입력 차원, $L$은 깊이. 깊이 $L$이 지수의 위치에 올라간다. 같은 총 파라미터 수에서 깊이를 늘리면 영역 수가 지수적으로 증가한다.</p>
-
-      <p>수식이 압도적이지만 핵심은 단순하다 — <strong>같은 총 뉴런 수를 깊게 쌓으면 표현할 수 있는 영역의 수가 깊이에 대해 지수적으로 늘어난다</strong>. 한 층을 통과할 때마다 이전 층의 모든 결정 경계가 새 층의 결정 경계와 곱해지면서, 영역의 수가 곱셈으로 늘어나기 때문이다. 곱셈을 $L$번 반복하면 지수가 된다.</p>
-
-      <h2>합성성 — 깊이가 의미하는 것</h2>
-      <p>왜 합성이 그렇게 강력한가. 핵심은 <strong>"낮은 층이 추출한 특징을 높은 층이 재사용한다"</strong>는 점이다. 한 번 학습한 모서리 검출기는 모든 객체 인식에 재사용된다. 한 번 학습한 부위 검출기는 다양한 동물 분류에 재사용된다. 이 재사용성이 곧 곱셈적 표현력의 원천이다.</p>
-
-      <div class="compose-stage">
-        <div class="compose-flow">
-          <div class="compose-layer">
-            <div class="lt">LAYER 1</div>
-            <div class="ld">픽셀</div>
-          </div>
-          <div class="compose-arrow">→</div>
-          <div class="compose-layer">
-            <div class="lt">LAYER 2</div>
-            <div class="ld">모서리·색</div>
-          </div>
-          <div class="compose-arrow">→</div>
-          <div class="compose-layer">
-            <div class="lt">LAYER 3</div>
-            <div class="ld">텍스처·패턴</div>
-          </div>
-          <div class="compose-arrow">→</div>
-          <div class="compose-layer">
-            <div class="lt">LAYER 4</div>
-            <div class="ld">부위</div>
-          </div>
-          <div class="compose-arrow">→</div>
-          <div class="compose-layer">
-            <div class="lt">LAYER 5</div>
-            <div class="ld">객체</div>
-          </div>
-        </div>
-      </div>
-
-      <p>이 사다리에서 핵심은 <em>같은 모서리 검출기가 5개 부위, 200개 객체에 모두 쓰인다</em>는 것이다. 각 층의 출력은 다음 층의 입력으로 재사용되므로, 한 번 학습한 특징은 그 위에 올라갈 모든 표상에 곱셈으로 기여한다. 얕은 망에서는 이 재사용성이 없다 — 모든 분류를 위해 픽셀로부터 직접 결정 경계를 그어야 한다. 그래서 같은 일을 하려면 지수적으로 더 많은 자원이 든다.</p>
-
-      <h2>아래 위젯 — 같은 함수, 두 망의 크기</h2>
-      <p>아래에서 깊이를 늘려가며 두 가지를 본다. (1) 같은 함수를 표현하는 데 필요한 얕은 망의 너비가 어떻게 폭발적으로 늘어나는지, (2) 깊은 망은 너비를 거의 늘리지 않아도 같은 표현력에 도달하는지.</p>
-    </div>
-
-    <div class="widget">
-      <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 06</span><span>같은 표현력, 두 망의 크기 — 깊이가 곧 자원이다</span></div>
-        <div class="dp-stage">
-          <div class="dp-side shallow">
-            <h4>얕은 망 — 1 hidden layer</h4>
-            <div class="dp-net" id="dpShallow"></div>
-            <div class="dp-stats">
-              <div class="stat"><div class="v" id="dpShW">8</div><div class="l">너비 (필요)</div></div>
-              <div class="stat"><div class="v" id="dpShP">9</div><div class="l">파라미터</div></div>
-            </div>
-          </div>
-          <div class="dp-side deep">
-            <h4>깊은 망 — L hidden layers</h4>
-            <div class="dp-net" id="dpDeep"></div>
-            <div class="dp-stats">
-              <div class="stat"><div class="v" id="dpDpW">3×3</div><div class="l">너비 × 깊이</div></div>
-              <div class="stat"><div class="v" id="dpDpP">12</div><div class="l">파라미터</div></div>
-            </div>
-          </div>
-        </div>
-        <div class="widget-controls">
-          <div class="slider" style="flex:1; min-width:260px;">
-            <label>깊은 망의 깊이 L <b id="dpLval">L = 3</b></label>
-            <input type="range" id="dpL" min="2" max="8" step="1" value="3">
-          </div>
-        </div>
-        <div class="dp-verdict" id="dpverdict"></div>
-      </div>
-      <p class="widget-cap">깊이를 1 늘리면 같은 표현력을 위한 얕은 망의 너비는 곱셈으로 늘어난다. 깊은 망은 추가 파라미터 비용이 선형이지만 표현력은 지수적으로 늘어난다. 이것이 "왜 그냥 폭을 늘리지 않고 깊이를 쌓는가"의 정확한 답이다.</p>
-    </div>
-
-    <div class="prose">
-      <h2>경고 — 깊이가 만능은 아니다</h2>
-      <p>표현력과 학습 가능성은 다른 이야기다. 깊이가 지수적 표현력을 준다는 사실이 곧 "깊을수록 좋다"를 의미하지 않는다. 깊은 망은 다음 어려움을 동반한다.</p>
-
-      <ul>
-        <li><strong>기울기 소실/폭발:</strong> 역전파에서 기울기가 깊은 층까지 살아 닿지 못한다. ReLU·정규화·잔차 연결로 완화하지만 완전 해결은 아니다.</li>
-        <li><strong>최적화 지형의 복잡함:</strong> 안장점과 평탄한 영역이 많아진다(8장 참고).</li>
-        <li><strong>데이터의 한계:</strong> 표현력이 늘어난 만큼 과적합 위험도 늘어난다.</li>
-      </ul>
-
-      <p>책의 메시지는 균형이다. "깊이는 강력한 도구이지만 공짜는 아니다. 깊이의 지수적 이득은 8장에서 본 최적화 도구, 7장에서 본 정칙화 도구, 11장의 실용적 방법론과 함께 사용되어야 실현된다." 즉 15장의 모든 통찰은 앞 장의 도구들이 받쳐 줄 때만 살아 움직인다.</p>
-
-      <h2>분산 표상 + 깊이 = 진짜 폭발</h2>
-      <p>두 지수적 이득을 곱해 보자. $n$개의 뉴런이 분산 표상으로 한 층에서 만드는 영역은 $2^n$. 같은 너비의 층 $L$개를 쌓으면 그 영역의 수는 정리에 따라 거의 $2^{nL}$ 수준이 된다. 즉 두 개의 지수가 곱해진다. 이것이 깊은 망의 진짜 표현 자원이다.</p>
-
-      <p>왜 이 자원이 실제로 좋은 일반화로 이어지는가는 또 다른 이야기다 — 표현할 수 있다는 것과 학습할 수 있다는 것은 다르다. 그러나 표현 자원 자체가 부족하면 어떤 학습 알고리즘도 풀 수 없다. 깊이의 지수적 이득은 "최소한 가능성은 열려 있다"는 보장을 준다.</p>
-
-      <p>다음 절에서는 마지막 큰 주제 — <strong>인과 요소와 반지도학습</strong>으로 들어간다. 라벨이 없는 데이터가 어떻게 분류 정확도를 끌어올리는지, 그리고 그 모든 정칙화 기법들이 사실은 같은 한 가지 — "표상에 어떤 사전(prior)을 거는가" — 의 변형이라는 것을 본다.</p>
+      <h2>핵심 어휘 정리</h2>
+      <table class="symbols">
+        <tr><td>전이학습 (transfer learning)</td><td>한 분포·과제에서 학습한 모델/표상을 다른 분포·과제로 옮기는 학습.</td></tr>
+        <tr><td>공통 생성 요인</td><td>두 과제가 공유하는 숨은 데이터 생성 요인. 전이 강도의 기반.</td></tr>
+        <tr><td>음의 전이 (negative transfer)</td><td>사전훈련이 오히려 본 과제 정확도를 떨어뜨리는 현상.</td></tr>
+        <tr><td>멀티태스크 학습</td><td>여러 과제를 공유 표상 위에서 동시에 학습.</td></tr>
+        <tr><td>영/원-쇼트 학습</td><td>본 적 없는 또는 한 번 본 카테고리를 분류. 표상이 좋아야 가능.</td></tr>
+        <tr><td>파운데이션 모델</td><td>거대한 데이터로 사전훈련된 일반 표상 모델. 다양한 과제로 전이.</td></tr>
+      </table>
     </div>
 
     <nav class="ch-foot"></nav>
@@ -166,18 +96,25 @@
 <script>
   const SUBS = [
     { no:'01', t:'좋은 표상이란', f:'01.html' },
-    { no:'02', t:'사전훈련과 미세조정', f:'02.html' },
-    { no:'03', t:'전이학습·도메인 적응', f:'03.html' },
-    { no:'04', t:'분산 표상의 힘', f:'04.html' },
-    { no:'05', t:'깊이의 지수적 표현력', f:'05.html' },
-    { no:'06', t:'인과 요소와 반지도', f:'06.html' },
-    { no:'07', t:'시험 대비', f:'07.html' },
+    { no:'02', t:'그리디 층별 사전훈련', f:'02.html' },
+    { no:'03', t:'비지도 사전훈련', f:'03.html' },
+    { no:'04', t:'지도 사전훈련', f:'04.html' },
+    { no:'05', t:'전이학습 1 — 도메인이 돕는 원리', f:'05.html' },
+    { no:'06', t:'전이학습 2 — 미세조정 실전', f:'06.html' },
+    { no:'07', t:'도메인 적응', f:'07.html' },
+    { no:'08', t:'분산 표상 1 — 지수적 이득', f:'08.html' },
+    { no:'09', t:'분산 표상 2 — 합성성·의미 산수', f:'09.html' },
+    { no:'10', t:'깊이의 지수적 표현력', f:'10.html' },
+    { no:'11', t:'인과 요소', f:'11.html' },
+    { no:'12', t:'반지도 학습', f:'12.html' },
+    { no:'13', t:'사전으로서의 정칙화', f:'13.html' },
+    { no:'14', t:'시험 대비', f:'14.html' },
   ];
   const CURRENT = '05';
   (function buildNav() {
     document.querySelector('.topbar').innerHTML =
-      `<a class="home" href="index.html">← Chapter 15 · 표상 학습</a>` +
-      `<span class="ch-mini">SUB ${CURRENT} / 07</span>`;
+      `<a class="home" href="index.html">← Chapter 15 — 표상 학습</a>` +
+      `<span class="ch-mini">SUB ${CURRENT} / 14</span>`;
     document.querySelector('.ch-nav ol').innerHTML = SUBS.map(s =>
       `<li><a href="${s.f}" ${s.no === CURRENT ? 'class="current"' : ''}>${s.t}</a></li>`).join('');
     const i = SUBS.findIndex(s => s.no === CURRENT);
@@ -195,59 +132,79 @@
     document.addEventListener('scroll', onScroll, { passive: true }); onScroll();
   })();
 
-  // ===== 위젯: 깊이 비교 =====
-  (function dpWidget() {
-    const slider = document.getElementById('dpL');
-    const lval = document.getElementById('dpLval');
-    const shN = document.getElementById('dpShallow');
-    const dpN = document.getElementById('dpDeep');
-
-    function render() {
-      const L = parseInt(slider.value);
-      // 깊은 망: L층 × 너비 3
-      const W = 3;
-      // 같은 표현력에 필요한 얕은 망의 너비 ≈ W^L (이론적 하한, 시각화는 적당히 축소)
-      const shallowW = Math.min(60, Math.pow(W, L));
-
-      // 깊은 망 그리기
-      dpN.innerHTML = '';
-      for (let i = 0; i < L; i++) {
-        const row = document.createElement('div');
-        row.className = 'dp-layer';
-        for (let j = 0; j < W; j++) {
-          const dot = document.createElement('div');
-          dot.className = 'dp-neuron';
-          row.appendChild(dot);
-        }
-        dpN.appendChild(row);
+  // 전이학습 곡선 위젯
+  (function tlWidget() {
+    const css = getComputedStyle(document.documentElement);
+    const STRUCT = css.getPropertyValue('--structure').trim();
+    const FAINT = css.getPropertyValue('--ink-faint').trim();
+    const STYLE = css.getPropertyValue('--style').trim();
+    const INK = css.getPropertyValue('--ink').trim();
+    const c = document.getElementById('tl-chart'); const ctx = c.getContext('2d');
+    const slider = document.getElementById('tl-r');
+    const dlab = document.getElementById('tl-d');
+    const read = document.getElementById('tl-read');
+    const W = c.width, H = c.height;
+    function draw() {
+      const d = parseInt(slider.value) / 100;
+      ctx.fillStyle = '#fff'; ctx.fillRect(0,0,W,H);
+      // 축
+      ctx.strokeStyle = FAINT; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(40, 20); ctx.lineTo(40, H-30); ctx.lineTo(W-15, H-30); ctx.stroke();
+      ctx.fillStyle = FAINT; ctx.font = '11px monospace';
+      ctx.fillText('정확도 →', 8, 18);
+      ctx.fillText('본 과제 훈련 데이터 양 →', W-180, H-10);
+      ctx.fillText('100%', 8, H-28);
+      ctx.fillText('0%', 22, H-32+50);
+      // 곡선 매개변수
+      // scratch (라벨만): logistic-like 곡선, 최종 정확도 = 1 - 0.1
+      // pretrain: 초기 점프 + 빠른 수렴, 최종 정확도는 d에 따라
+      //   d 가까움: pretrain 곡선이 위에
+      //   d 멈: pretrain 거의 같거나 약간 아래
+      // 곡선 그리기
+      const N = 100;
+      function scratch(t) { return 0.1 + 0.8 * (1 - Math.exp(-3 * t)); }
+      function pretrain(t) {
+        const start = 0.4 - 0.35 * d;   // 사전훈련 출발점은 d가 작을 때 높음
+        const ceiling = 0.92 - 0.15 * d; // d가 클수록 천장 낮음
+        return start + (ceiling - start) * (1 - Math.exp(-5 * t));
       }
-
-      // 얕은 망 그리기 (한 줄)
-      shN.innerHTML = '';
-      const row = document.createElement('div');
-      row.className = 'dp-layer';
-      const displayCount = Math.min(shallowW, 80);
-      for (let j = 0; j < displayCount; j++) {
-        const dot = document.createElement('div');
-        dot.className = 'dp-neuron';
-        dot.style.width = displayCount > 20 ? '8px' : '14px';
-        dot.style.height = displayCount > 20 ? '8px' : '14px';
-        row.appendChild(dot);
+      // scratch line
+      ctx.strokeStyle = FAINT; ctx.lineWidth = 2; ctx.setLineDash([4,4]);
+      ctx.beginPath();
+      for (let i = 0; i <= N; i++) {
+        const t = i / N;
+        const x = 40 + t * (W - 55);
+        const y = (H-30) - scratch(t) * (H - 60);
+        if (i === 0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
       }
-      shN.appendChild(row);
-
-      lval.textContent = 'L = ' + L;
-      document.getElementById('dpShW').textContent = shallowW + (shallowW >= 60 ? '+' : '');
-      document.getElementById('dpShP').textContent = shallowW + (shallowW >= 60 ? '+' : '');
-      document.getElementById('dpDpW').textContent = W + '×' + L;
-      document.getElementById('dpDpP').textContent = W * L + (L-1) * W;
-
-      const v = document.getElementById('dpverdict');
-      const ratio = shallowW / (W * L);
-      v.innerHTML = `깊이 L = ${L}에서 같은 표현력을 얕은 망으로 흉내내려면 너비 ≈ <b>${shallowW}${shallowW >= 60 ? '+' : ''}</b>개의 뉴런이 필요하다. 깊은 망은 ${W*L}개로 충분하다. 비율 약 <b>${ratio.toFixed(1)}배</b>${L >= 5 ? ' — 깊이가 지수의 위치에 있다.' : '.'}`;
+      ctx.stroke(); ctx.setLineDash([]);
+      // pretrain line
+      ctx.strokeStyle = STRUCT; ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      for (let i = 0; i <= N; i++) {
+        const t = i / N;
+        const x = 40 + t * (W - 55);
+        const y = (H-30) - pretrain(t) * (H - 60);
+        if (i === 0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+      // 거리 라벨
+      let dstr = 'd = ' + d.toFixed(2) + ' ';
+      if (d < 0.2) dstr += '(매우 가까움)';
+      else if (d < 0.5) dstr += '(가까움)';
+      else if (d < 0.8) dstr += '(멈)';
+      else dstr += '(매우 멈)';
+      dlab.textContent = dstr;
+      // 해설
+      let msg;
+      if (d < 0.2) msg = `매우 가까운 도메인: 사전훈련 곡선이 처음부터 <b class="gain">크게 위</b>에 있다. 본 과제 데이터가 적어도 정확도가 빠르게 높아진다. ImageNet → 자연 이미지 분류가 이 영역에 있다.`;
+      else if (d < 0.5) msg = `가까운 도메인: 사전훈련이 <b class="gain">초기에는 강하게 이긴다</b>. 데이터가 많아질수록 둘이 가까워지지만, 데이터가 적을 때의 격차가 결정적이다. 의료 영상이 이 위치.`;
+      else if (d < 0.8) msg = `먼 도메인: 사전훈련 이득이 <b>줄어든다</b>. 출발 정확도는 높지만 천장도 함께 낮아진다. 본 과제 데이터가 충분하다면 두 곡선이 거의 만난다.`;
+      else msg = `매우 먼 도메인: <b class="lose">음의 전이가 발생한다</b>. 사전훈련된 가중치가 본 과제와 무관한 정보를 보존하고 있어, 처음부터 학습하는 것이 더 낫다.`;
+      read.innerHTML = msg;
     }
-    slider.addEventListener('input', render);
-    render();
+    slider.addEventListener('input', draw);
+    draw();
   })();
 
   window.addEventListener('load', () => {

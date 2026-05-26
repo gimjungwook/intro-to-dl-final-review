@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>01 · 이미지란 무엇인가</title>
+<link rel="stylesheet" href="assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Chapter 01 · 픽셀에서 출발한다</span>
+      <h1>이미지란 무엇이고,<br>왜 <span class="t-synth">픽셀</span>로는 부족한가</h1>
+      <p class="lede">컴퓨터에게 그림은 그림이 아니라 숫자다. 이 장은 그 숫자 더미에서 출발해, 왜 픽셀만으로는 “내용”과 “스타일”을 갈라낼 수 없는지 보인다.</p>
+    </header>
+
+    <div class="prose">
+      <p>먼저 가장 밑바닥에서 시작하자. 컴퓨터에게 이미지는 <strong>“그림”이 아니라 숫자 배열</strong>이다. 흑백 이미지는 보통 높이(height)와 너비(width)를 가진 2차원 행렬이고, 컬러 이미지는 빨강(R), 초록(G), 파랑(B) 세 채널이 있으므로 3차원 텐서(tensor)로 본다.</p>
+      <p>예를 들어 가로세로 224픽셀짜리 컬러 이미지는 다음과 같은 형태를 가진다.</p>
+
+      <div class="math-block">$$ x \in \mathbb{R}^{224 \times 224 \times 3} $$</div>
+      <p class="math-note">x는 이미지 전체. 224×224는 픽셀의 공간 위치, 3은 RGB 색상 채널.</p>
+
+      <p>여기서 $x$는 이미지 한 장 전체를 가리킨다. $224 \times 224$는 픽셀이 놓인 공간 위치이고, 마지막의 $3$은 색상 채널이다. 결국 한 픽셀은 <em>“이 위치에서 빨강이 얼마나 강한가, 초록이 얼마나 강한가, 파랑이 얼마나 강한가”</em>라는 세 개의 숫자로 표현된다. 아래 위젯에서 픽셀 하나에 마우스를 올려 그 세 숫자를 직접 확인하고, “RGB 채널로 분해” 버튼으로 한 장의 이미지가 사실은 세 장의 숫자판이 겹쳐진 것임을 볼 수 있다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 01</span><span>한 픽셀 = 세 숫자 · 한 이미지 = 숫자 텐서</span></div>
+        <div id="px"></div>
+      </div>
+      <p class="widget-cap">픽셀에 마우스를 올리면 그 자리의 (R, G, B) 값이 보인다. 채널을 분해하면 빨강·초록·파랑 각각이 하나의 회색조 숫자판이고, 셋이 겹쳐져 컬러가 된다는 것이 드러난다.</p>
+    </div>
+
+    <div class="prose">
+      <p>문제는 이 단계에서 <strong>콘텐츠(content)와 스타일(style)이 아직 분리되어 있지 않다</strong>는 점이다. 어느 숫자가 “건물의 구조”이고 어느 숫자가 “반 고흐식 붓질”인지는 픽셀 값만 봐서는 알 수 없다.</p>
+
+      <div class="analogy">
+        책 한 권을 <b>글자 단위로만</b> 들여다본다고 해보자. ‘ㄱ’, ‘ㅏ’, ‘ㅁ’ 같은 낱글자만 봐서는 어느 부분이 줄거리(내용)이고 어느 부분이 작가의 문체(스타일)인지 곧바로 갈라낼 수 없다. 픽셀도 마찬가지다. 의미는 낱낱의 글자가 아니라 그것들이 <b>모여서 이루는 패턴</b>에 있다.
+      </div>
+
+      <p>그래서 이 논문의 첫 번째 문제의식은 분명하다. <strong>“픽셀보다 더 의미 있는 표현 공간이 필요하다.”</strong> 그 표현 공간을 거저 제공해 주는 장치가 바로 사전 학습된 합성곱 신경망, 즉 <span class="t-structure">CNN</span>이다.</p>
+
+      <h2>핵심 비유: VGG는 화가가 아니라 채점자다</h2>
+      <p>본격적인 수식에 들어가기 전에, 논문 전체를 관통하는 그림 하나를 머릿속에 박아 두자. 이 논문은 <em>새로운 화가 모델을 학습시키는</em> 연구가 아니다. 이미 객체 인식을 위해 학습된 VGG-19라는 신경망(어떤 구조인지는 <a href="02.html">2장</a>에서 자세히 본다)을 <strong>고정</strong>해 놓고, 그것을 <span class="t-synth">채점자</span>처럼 쓴다.</p>
+
+      <div class="analogy">
+        <b>VGG는 그림을 그리는 손이 아니라 채점자다.</b> 생성 이미지는 아직 완성되지 않은 캔버스다. 채점자는 두 가지를 끊임없이 점수로 매긴다 — “이 캔버스가 콘텐츠 사진과 <b>구조</b>가 비슷한가?” 그리고 “이 캔버스가 스타일 그림과 <b>질감</b>이 비슷한가?” 알고리즘은 그 점수를 보고 캔버스의 픽셀을 조금씩 고쳐 나간다. 바뀌는 것은 채점자(네트워크)가 아니라 캔버스(픽셀)다.
+      </div>
+
+      <p>이 한 장의 그림을 기억하면 뒤의 모든 수식이 “채점 기준을 수식으로 적은 것”으로 읽힌다. 콘텐츠 점수와 스타일 점수가 어떻게 정의되는지, 그리고 그 점수를 낮추도록 픽셀을 어떻게 움직이는지가 이 해설의 나머지 전부다.</p>
+      <p>다음 장에서는 채점자의 눈, 즉 CNN이 이미지를 <strong>층마다 어떻게 다르게 보는지</strong>부터 들여다본다. 거기에서 “구조”와 “질감”을 갈라낼 실마리가 나온다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  window.addEventListener('load', () => {
+    NST.buildNav('01');
+    const p = document.getElementById('px');
+    NST.onVisible(p, () => NST.pixelTensor(p));
+  });
+</script>
+<script src="assets/widgets.js"></script>
+</body>
+</html>

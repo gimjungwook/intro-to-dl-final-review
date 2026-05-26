@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>15 · 학습과 추론</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Chapter 15 · 학습 시점과 추론 시점은 서로 다른 풍경이다</span>
+      <h1>학습과 추론 — <span class="t-style">Teacher Forcing</span>과 <span class="t-structure">자기회귀</span> 디코딩</h1>
+      <p class="lede">앞 장에서 만든 Encoder·Decoder 구조는 “모델 그 자체”다. 그런데 이 모델을 실제로 동작시키려면 한 가지가 더 필요하다 — 학습 단계와 추론 단계의 “움직임”이다. 두 단계가 어떻게 다른지, 그리고 그 차이가 어떤 실질적 결과(exposure bias, beam search, KV cache 등)를 만드는지를 이 장에서 본다.</p>
+    </header>
+
+    <div class="prose">
+      <h2>학습 — 한꺼번에, 병렬로</h2>
+      <p>Transformer가 RNN을 대체한 이유 중 가장 큰 한 가지가 학습 시 병렬화다. 학습 시점에는 입력 시퀀스(예: 영어 문장)와 정답 출력 시퀀스(예: 프랑스어 번역)가 모두 주어진다. 이때 디코더는 “정답 출력 전체”를 한 번에 입력으로 받아, “각 위치에서 다음 토큰”을 한꺼번에 예측한다.</p>
+
+      <p>예를 들어 정답이 "Je suis un étudiant"라면, 디코더 입력은 다음과 같이 구성된다.</p>
+
+      <div class="math-block">$$ \text{decoder input} = [\langle s \rangle, \text{Je}, \text{suis}, \text{un}, \text{étudiant}] $$</div>
+      <div class="math-block">$$ \text{decoder target} = [\text{Je}, \text{suis}, \text{un}, \text{étudiant}, \langle /s \rangle] $$</div>
+      <p class="math-note">$\langle s \rangle$ = 시작 토큰(BOS, Beginning of Sequence). $\langle /s \rangle$ = 종료 토큰(EOS). 입력은 정답을 한 칸 오른쪽으로 밀고 앞에 BOS를 붙인 것. 타겟은 정답을 한 칸 왼쪽으로 밀고 뒤에 EOS를 붙인 것. 결과적으로 “위치 $i$의 입력을 보고 위치 $i$의 타겟을 예측”하는 형태가 된다.</p>
+
+      <h2>Teacher Forcing — 정답을 직접 입력으로</h2>
+      <p>위 구조를 “Teacher Forcing”이라 한다. 왜? “선생님이 정답을 손에 쥐어 주는” 모양새이기 때문이다. 위치 $i$를 예측할 때 디코더 입력으로 받는 것은 “모델이 이전 위치들에서 실제로 예측한 토큰”이 아니라 “정답 토큰”이다.</p>
+
+      <p>이 방식의 장점은 명확하다. <strong>모든 위치의 예측이 서로 독립적으로 병렬 계산 가능해진다.</strong> 위치 1의 출력을 만들기 위해 위치 0의 모델 출력을 기다릴 필요가 없다. 왜냐하면 위치 1의 입력은 “정답 첫 토큰”으로 이미 주어져 있기 때문이다. GPU가 한 번에 모든 위치의 예측을 계산하고, 한 번에 모든 위치의 손실(loss)을 계산해 backprop한다.</p>
+
+      <p>학습 손실은 위치별 cross-entropy의 평균이다.</p>
+
+      <div class="math-block">$$ \mathcal{L} = -\frac{1}{N_{\text{out}}} \sum_{i=1}^{N_{\text{out}}} \log P(\text{target}_i \mid \text{input}_1, \ldots, \text{input}_i, \text{encoder out}) $$</div>
+      <p class="math-note">각 위치에서 “정답 토큰의 확률에 음의 로그”를 취해 평균. 모든 위치의 손실이 동시에 계산되고, gradient도 한 번의 backward로 모두 흐른다.</p>
+
+      <h2>Teacher Forcing의 어두운 면 — Exposure Bias</h2>
+      <p>그러나 Teacher Forcing에는 잘 알려진 문제가 있다 — exposure bias(노출 편향). 학습 시 디코더는 “정답 토큰 시퀀스”라는 깨끗한 입력만 본다. 위치 $i$의 입력은 항상 정답 시퀀스의 첫 $i$개 토큰이다. 모델은 “정확한 과거를 봤을 때 다음을 예측하는 법”만 배운다.</p>
+
+      <p>하지만 추론 시점에서는 그런 깨끗한 정답이 없다. 모델이 위치 1에서 자신이 예측한 토큰을 위치 2의 입력으로 써야 한다. 만약 위치 1에서 잘못 예측했다면, 위치 2의 입력은 모델이 학습 중에 한 번도 본 적이 없는 “잘못된 과거”다. 그 잘못 위에서 또 잘못된 예측을 하면, 오차가 시퀀스 따라 누적되어 결과가 점점 무너진다. 이를 “학습 분포와 추론 분포의 mismatch”라 부른다.</p>
+
+      <p>현실의 대형 모델(GPT, BERT, T5 등)에서도 이 문제는 부분적으로 남아 있다. 완화 방법으로 scheduled sampling(학습 중 일부 위치에서 모델 자체 예측을 입력으로 쓰는 방식), MixUp, 그리고 최근에는 강화학습 기반의 RLHF가 쓰인다. 하지만 가장 큰 완화는 “단순히 모델과 데이터를 크게 키우기” — 충분히 큰 모델은 다양한 잘못된 과거도 충분히 학습하게 된다.</p>
+
+      <h2>추론 — 한 토큰씩, 직렬로</h2>
+      <p>추론 시점에서는 학습과 풍경이 완전히 다르다. 정답이 없으므로 디코더는 한 토큰씩 만들어 가야 한다. 절차는 다음과 같다.</p>
+
+      <p><strong>스텝 1.</strong> 인코더에 입력 시퀀스를 통과시켜 표현 $E_1, \ldots, E_{N_{\text{in}}}$을 얻는다. 이 표현은 추론 동안 변하지 않는다.<br>
+      <strong>스텝 2.</strong> 디코더 입력을 $[\langle s \rangle]$로 시작한다. 길이 1인 시퀀스를 디코더에 통과시켜 위치 1에서 다음 토큰 확률 분포를 얻는다. 가장 확률 높은 토큰 또는 샘플링으로 첫 출력 토큰 $\hat{y}_1$을 결정.<br>
+      <strong>스텝 3.</strong> 디코더 입력을 $[\langle s \rangle, \hat{y}_1]$로 확장하고 다시 통과시켜 위치 2에서 $\hat{y}_2$를 결정.<br>
+      <strong>스텝 4.</strong> 이 과정을 반복. $\hat{y}_i = \langle /s \rangle$가 나오거나 최대 길이에 도달하면 종료.</p>
+
+      <p>이를 자기회귀(autoregressive) 생성이라 한다. “자기가 만든 출력을 다시 자기의 입력으로 쓴다”는 뜻에서 “자기회귀”다. RNN처럼 시퀀스를 따라 순차적으로 진행하므로 학습 시 병렬화의 이점이 추론에서는 사라진다 — 추론은 토큰 수만큼의 step이 필요하다.</p>
+
+      <h2>KV Cache — 추론 가속의 핵심</h2>
+      <p>위 자기회귀 추론을 그대로 구현하면 비효율이 분명히 드러난다. 위치 $i$의 출력을 만들 때, 디코더는 위치 1부터 $i$까지의 입력 전체를 매번 다시 처리한다. 위치 1의 self-attention K, V는 매 스텝마다 다시 계산된다 — 같은 값을 반복 계산하는 셈.</p>
+
+      <p>해결책은 KV Cache(키-값 캐시)다. 각 위치에서 한 번 계산된 K, V 벡터를 메모리에 저장해 두고, 다음 위치의 attention 계산에서 재사용한다. 새 토큰이 추가될 때마다 그 토큰의 K, V만 새로 계산해서 캐시에 덧붙이고, 이전 토큰들의 K, V는 그대로 둔다.</p>
+
+      <p>이 캐싱 덕분에 자기회귀 생성의 “위치당 비용”이 일정하게 유지된다(naive 구현이라면 위치 $i$의 비용이 $O(i^2)$로 늘어났을 것). KV cache는 GPT, Llama 등 모든 자기회귀 LLM의 추론 코드에 필수 부품이다. 단점은 메모리 사용이 시퀀스 길이에 비례해 늘어난다는 것 — 그래서 long context 모델에서는 KV cache가 GPU 메모리의 큰 부분을 차지한다.</p>
+
+      <div class="widget">
+        <div class="widget-frame">
+          <div class="widget-label"><span class="lab-no">위젯 15</span><span>번역 예시 — Cross-Attention 가중치</span></div>
+          <div id="tx"></div>
+        </div>
+        <p class="widget-cap">"I am a student" → "Je suis un étudiant" 번역에서 디코더가 인코더의 어디를 참조하는지 cross-attention 가중치를 선의 굵기로 표현. 어순이 다른 언어 쌍이라도 의미 단위가 정확히 매칭된다.</p>
+      </div>
+
+      <h2>토큰 선택 전략 — Greedy, Beam Search, Sampling</h2>
+      <p>디코더 출력 분포에서 다음 토큰을 어떻게 고를지에 따라 결과가 크게 달라진다. 주요 전략 세 가지.</p>
+
+      <p><strong>Greedy decoding</strong> — 매 스텝에서 확률이 가장 높은 토큰 하나를 고른다. 가장 단순하고 빠르지만, 한 번 잘못 고르면 회복이 안 된다. 또 “최대 확률 시퀀스”와 “시퀀스 각 위치의 최대 확률”은 다른 개념이므로, greedy가 진짜 좋은 시퀀스를 찾는다는 보장이 없다.</p>
+
+      <p><strong>Beam Search</strong> — “여러 후보 시퀀스”를 동시에 유지한다. beam size $k$만큼의 후보를 매 스텝마다 “현재 시퀀스 + 다음 토큰 후보 $V$개”의 모든 조합 중 상위 $k$개로 유지. 마지막에 가장 점수 높은 시퀀스 출력. 번역·요약 등 “정답이 비교적 정해진” 과제에서 자주 쓰인다. 단점은 계산 비용이 $k$배가 된다는 것.</p>
+
+      <p><strong>Sampling (다양한 변형)</strong> — 분포에서 직접 토큰을 샘플링한다. 그대로 샘플링하면 너무 무작위라, 보통 “temperature” $T$로 분포를 부드럽게 또는 날카롭게 조절($T < 1$ = 더 결정론적, $T > 1$ = 더 무작위)하거나, “top-k”(상위 $k$개만 후보), “top-p”(누적 확률이 $p$에 도달할 때까지의 후보만) 같은 절단 샘플링을 쓴다. 창의적 글쓰기, 대화 생성처럼 “하나의 정답이 없는” 과제에 적합.</p>
+
+      <h2>마스킹의 미묘한 디테일 — 추론 시에도 필요한가</h2>
+      <p>학습 시 마스킹은 “미래를 못 보게 막는” 역할이었다. 추론 시점에서는 한 번에 한 토큰만 추가하므로 “미래 자체가 없다.” 그렇다면 추론에서는 mask가 불필요한가?</p>
+
+      <p>형식적으로는 불필요하지만, 구현상 학습과 추론을 같은 코드로 처리하려면 mask는 유지된다. KV cache 방식에서는 새 토큰이 추가될 때마다 그 토큰의 query가 “이전 모든 토큰의 K, V”를 본다. 미래가 없으니 mask가 효과적으로 trivial하지만, 코드는 같다.</p>
+
+      <p>또 한 가지 미묘한 마스킹이 있다. <strong>Padding mask</strong>다. 배치 안의 시퀀스 길이가 다를 때 짧은 시퀀스에 padding 토큰을 채워 같은 길이로 맞춘다. Attention이 이 padding을 “진짜 토큰”으로 잘못 보면 안 되므로, padding 위치의 attention 점수를 $-\infty$로 mask한다. Causal mask와 padding mask는 보통 element-wise OR로 결합되어 함께 적용된다.</p>
+
+      <h2>학습률 스케줄 — Warmup이 중요한 이유</h2>
+      <p>Transformer를 학습할 때 거의 모든 구현이 “학습률 warmup”을 쓴다. 학습 초반에는 학습률을 매우 작게 시작해서 점진적으로 늘리고, 어느 시점 이후부터는 다시 줄인다.</p>
+
+      <div class="math-block">$$ \text{lr}(t) = d_{model}^{-0.5} \cdot \min\!\left( t^{-0.5}, \; t \cdot \text{warmup}^{-1.5} \right) $$</div>
+      <p class="math-note">원 논문의 학습률 스케줄. $t$ = step 번호, $\text{warmup}$ = warmup step 수(기본 4000). 학습률이 warmup까지는 선형 증가, 그 이후 $1/\sqrt{t}$로 감소. 이 스케줄이 Transformer 학습 안정성에 큰 영향을 준다.</p>
+
+      <p>왜 warmup이 필요한가? 학습 초기에는 모델 가중치가 랜덤이라 layer 출력의 스케일이 매우 불안정하다. 큰 학습률로 시작하면 첫 몇 step에서 발산할 수 있다. 작은 학습률로 warmup 후, 가중치가 안정된 후에야 본격 학습 — 이 패턴이 Post-LN Transformer에서 특히 중요하다. Pre-LN을 쓰면 warmup 필요성이 줄어들지만 여전히 도움된다.</p>
+
+      <h2>요약 — 이 장의 핵심 4가지</h2>
+      <p><strong>(1) 학습은 teacher forcing으로 병렬, 추론은 자기회귀로 직렬.</strong> 학습 시 모든 위치의 손실이 한 번에 계산되지만, 추론 시 토큰 수만큼 step이 필요. <strong>(2) Teacher Forcing은 exposure bias를 만든다.</strong> 모델은 “깨끗한 과거”만 보고 학습했으니 추론 시 자신의 오류 위에서 잘 작동 안 할 수 있다. <strong>(3) KV Cache가 자기회귀 추론을 실용 가능하게 한다.</strong> 이전 위치들의 K, V를 캐시해 위치당 비용을 일정하게 유지. <strong>(4) 토큰 선택 전략(greedy/beam/sampling)과 학습률 warmup 같은 실용 디테일이 모델 성능에 큰 영향.</strong> 다음 장은 시험 대비 핵심 정리.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  window.addEventListener('load', () => {
+    TFR.buildNav('15');
+    const t = document.getElementById('tx');
+    TFR.onVisible(t, () => TFR.translationAttn(t));
+  });
+</script>
+<script src="assets/widgets.js"></script>
+</body>
+</html>

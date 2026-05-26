@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>07 · 다음 문장 예측 (NSP)</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="assets/bert.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Chapter 07 · 사전훈련 2 — 다음 문장 예측</span>
+      <h1>두 번째 가짜 시험,<br><span class="t-mask">다음 문장 예측</span>의 진실</h1>
+      <p class="lede">BERT 의 사전훈련에는 마스크 언어 모델(MLM) 외에 또 하나의 손실이 있다. 두 문장이 실제로 이어지는 한 쌍인지 아닌지를 맞히는 다음 문장 예측(Next Sentence Prediction, NSP) 이다. 이 장은 NSP 의 정의·동기·한계, 그리고 후속 논문 RoBERTa 가 "사실 필요 없었다" 고 결론낸 사연까지 함께 본다.</p>
+    </header>
+
+    <div class="prose">
+      <h2>1. NSP 한 줄 정의</h2>
+      <p>먼저 한 문장으로 못 박는다.</p>
+      <div class="def-box mask-side">
+        <div class="deft">정의</div>
+        <p>한 입력에 두 문장 A 와 B 를 [SEP] 로 이어 넣는다. 50% 의 확률로 B 는 A 의 실제 다음 문장(라벨 IsNext), 50% 의 확률로 B 는 말뭉치에서 무작위로 뽑은 무관한 문장(라벨 NotNext) 이다. [CLS] 자리의 마지막 층 벡터에 작은 이진 분류기를 얹어 두 라벨 중 하나로 분류한다.</p>
+      </div>
+
+      <p>이 정의의 모든 단어가 중요하다. 한 입력 안에 두 문장이 함께 들어간다는 점, 절반은 진짜로 이어지고 절반은 무관하다는 점, 그리고 분류 결과를 [CLS] 자리 하나에서만 읽는다는 점. 이 세 가지를 차례로 풀어 본다.</p>
+
+      <h2>2. 왜 두 문장 사이의 관계를 학습시키려 했는가</h2>
+      <p>MLM 하나만으로는 BERT 가 무엇을 못 배울까? MLM 의 손실은 "가린 자리의 단어를 좌우 문맥에서 추론" 한다. 좌우 문맥이라고 해도 대부분은 같은 문장 안의 인접한 단어들이다. 즉 MLM 으로 학습된 표현은 단어 수준과 한 문장 안의 짧은 구절 수준의 의미를 잘 잡는다. 그러나 실전의 많은 자연어 처리 과제는 두 문장 사이의 의미적 관계를 다룬다 — 질의응답(question answering)에서는 질문과 단락이, 자연어 추론(natural language inference)에서는 전제와 가설이, 패러프레이즈(paraphrase) 감지에서는 두 표현이 서로 같은지를 본다.</p>
+
+      <p>BERT 저자들은 이런 두 문장 작업에 모델을 곧바로 미세조정하기 전에, 사전훈련 단계에서 미리 두 문장 사이의 연관성 감각을 키워 두면 좋을 것이라 생각했다. 그래서 일부러 두 문장을 한 입력에 묶고, 그 둘이 "실제로 이어지는 한 쌍인가" 라는 매우 단순한 시험을 모델에게 풀게 했다. 단순하지만 두 문장 사이를 가로지르는 표현 학습을 강제할 수 있는 가짜 시험이다.</p>
+
+      <div class="analogy">
+        독서 시험을 떠올려 보자. 첫 번째 시험은 "한 단락에서 가린 단어를 채우라" (MLM). 두 번째 시험은 "두 단락을 보여 주고 진짜 이어지는 단락인지, 다른 책에서 뽑은 무관한 단락인지 골라라" (NSP). 첫 시험은 한 단락 안의 미시적 의미를 키우고, 두 번째 시험은 두 단락 사이의 거시적 흐름과 주제 일관성을 키운다. 두 시험을 같이 풀게 하면, 학생은 문장 안과 문장 사이를 모두 의식하게 된다 — 이게 BERT 가 노린 그림이었다.
+      </div>
+
+      <h2>3. 손실 함수 정의</h2>
+      <p>NSP 의 손실 함수는 단순하다. 이진 분류이므로 BERT 자체의 [CLS] 출력 벡터 $C \in \mathbb{R}^H$ 위에 작은 선형층 한 층을 얹어 두 점수를 만들고, softmax 로 확률을 구한 뒤, 정답 라벨과의 교차 엔트로피를 계산한다.</p>
+      <div class="math-block">$$ \mathcal{L}_{\text{NSP}} = - \log P\bigl(\text{IsNext} \,\big|\, x_{[\text{CLS}]}\bigr) $$</div>
+      <p class="math-note">$x_{[\text{CLS}]}$ 은 [CLS] 자리에서 인코더가 만들어 낸 $H$ 차원 벡터 (BASE 에서 $H = 768$). 위 식의 IsNext 는 실제 라벨이 IsNext 일 때의 표기이며, 라벨이 NotNext 인 배치에서는 그에 맞는 확률을 쓴다. 즉 이진 분류 교차 엔트로피의 한 라벨에 대한 표현이다.</p>
+
+      <p>BERT 의 전체 사전훈련 손실은 MLM 과 NSP 의 단순 합이다.</p>
+      <div class="math-block">$$ \mathcal{L} = \mathcal{L}_{\text{MLM}} + \mathcal{L}_{\text{NSP}} $$</div>
+      <p class="math-note">두 손실 모두 같은 배치, 같은 입력 시퀀스에서 동시에 계산된다. 가중치 없이 단순히 더한다.</p>
+
+      <p>한 가지 미묘한 점이 있다. NSP 손실은 한 배치당 한 개의 항목만 만든다. 한 시퀀스에 [CLS] 가 하나뿐이기 때문이다. 반면 MLM 손실은 한 배치당 약 $0.15 \cdot T$ 개의 항목을 만든다 (T 는 시퀀스 길이). 둘을 그냥 더하면 항목 수의 비율 때문에 자연히 MLM 손실이 훨씬 더 큰 무게를 가진다. 즉 NSP 는 "추가 신호" 정도의 역할을 하고, 학습의 주축은 여전히 MLM 이다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 05</span><span>NSP 데모 — 두 문장 쌍을 바꿔 보자</span></div>
+        <div id="nsp"></div>
+      </div>
+      <p class="widget-cap">"다음 예시" 로 진짜 이어지는 쌍과 무관한 쌍을 번갈아 본다. "문장 B 바꿔치기" 를 누르면 다른 짝의 두 번째 문장으로 강제로 교체된다 — 이는 사전훈련 시 50% 확률로 일어나는 NotNext 샘플 생성과 같은 과정이다. BERT 의 [CLS] 자리 분류기는 두 경우를 약 97%~98% 정확도로 구별한다 (논문 보고).</p>
+    </div>
+
+    <div class="prose">
+      <h2>4. NSP 가 [CLS] 토큰에 부여한 의미</h2>
+      <p>한 가지 부수 효과가 있다. NSP 손실은 [CLS] 자리에서만 계산되기 때문에, 모델은 사전훈련 동안 [CLS] 자리의 최종 벡터에 "이 입력이 어떤 두 문장의 쌍인가" 라는 거시적 요약 정보를 모은다. 양방향 어텐션 덕분에 [CLS] 위치는 입력의 모든 토큰을 본다. 입력에서 자기 자신은 빈 자리이므로, [CLS] 의 최종 벡터는 "다른 모든 토큰에서 끌어모은 정보의 집계" 가 된다.</p>
+
+      <p>이 부수 효과는 미세조정 단계에서 매우 유용하다. 문장 분류 같은 단일 문장 작업에서도 미세조정 단계에 [CLS] 자리의 최종 벡터를 그대로 쓰면 된다. 사전훈련 단계에서 이미 [CLS] 자리가 "문장 전체의 의미를 요약하는 자리" 로 학습되어 있기 때문이다. NSP 가 없었다면 [CLS] 자리는 사전훈련 동안 아무런 명시적 손실도 받지 않은 상태로 머물러, 미세조정 시작 시점에는 무작위에 가까운 표현만 들고 있었을 것이다.</p>
+
+      <h2>5. 한계 1 — 너무 쉬운 시험</h2>
+      <p>이제 비판으로 들어가자. NSP 의 가장 큰 약점은 "시험이 너무 쉽다" 는 것이다. 무관한 문장 B 는 말뭉치에서 무작위로 뽑힌다. 그런데 자연어 텍스트는 주제 일관성이 매우 강하다. 같은 책의 인접한 두 문장은 같은 인물·장소·사건·시제·문체를 공유하지만, 책 두 권에서 뽑은 두 문장은 단어 수준에서부터 어휘 분포가 다르다.</p>
+
+      <p>즉 BERT 가 NSP 를 풀기 위해 "두 문장이 의미적으로 자연스럽게 이어지는가" 라는 깊은 추론을 할 필요가 없다. 단순히 "두 문장의 화제(topic) 가 같은가" 만 봐도 대부분을 맞힐 수 있다. 화제 일치는 단어 빈도 통계만으로도 잡힌다. NSP 는 사실 "주제 분류" 비슷한 일을 학습하는 셈이다.</p>
+
+      <div class="analogy">
+        시험 문제가 다음과 같다고 상상해 보자. "다음 두 문장이 같은 책에서 나온 문장인가? (1) 셜록 홈즈는 베이커가 221B 번지에 살았다. (2) 양자 컴퓨터는 큐비트로 정보를 다룬다." 사람은 이 둘이 같은 책에서 나오지 않았다는 것을 한 단어 — 셜록 vs 양자 — 만 봐도 안다. 정답을 맞히기 위한 깊은 추론은 필요 없다. NSP 의 50% 무관 샘플도 본질적으로 이런 식이다.
+      </div>
+
+      <h2>6. 한계 2 — RoBERTa 의 강한 비판</h2>
+      <p>2019년 7월 페이스북 AI 가 발표한 RoBERTa (Robustly Optimized BERT Pretraining Approach) 는 BERT 의 사전훈련 절차를 다양한 각도에서 다시 실험했다. 그 결과 가운데 가장 충격적이었던 발견 중 하나가 바로 "NSP 손실을 빼는 편이 오히려 더 좋다" 는 것이었다.</p>
+
+      <p>RoBERTa 저자들은 BERT 와 정확히 같은 모델 구조에서 NSP 손실만 제거하고 사전훈련을 다시 했다. 그러자 GLUE, SQuAD, RACE 등 거의 모든 평가에서 성능이 떨어지지 않고 오히려 동일하거나 약간 더 올라갔다. 이는 두 가지 이유로 해석되었다. 첫째, NSP 자체가 학습하는 신호의 질이 낮아 표현 학습에 큰 기여를 하지 않는다. 둘째, NSP 를 위해 두 짧은 문장만 한 입력에 묶어 넣는 절차가 오히려 한 입력의 길이를 짧게 만들어, MLM 이 활용할 수 있는 문맥의 양을 줄였다. RoBERTa 는 두 짧은 문장 대신 한 입력에 가능한 한 긴 연속 텍스트를 넣어 MLM 의 신호를 더 많이 뽑았다.</p>
+
+      <p>즉 NSP 는 "있어서 손해" 까지는 아니지만 "있어서 분명히 이득인 손실" 도 아니었다는 것이 후속 검증의 결론이다. 시험에는 종종 "BERT 의 사전훈련 손실은 무엇인가" 라는 질문이 나오므로 MLM + NSP 라고 정확히 답해야 한다. 그러나 함께 묻는 다음 질문 — "NSP 가 정말 필요한가" — 에 대해서는 RoBERTa 의 결과를 들어 "후속 연구에서 그 기여가 작거나 무시할 수준으로 평가받았다" 고 답할 수 있어야 한다.</p>
+
+      <h2>7. ALBERT 의 대안 — SOP 손실</h2>
+      <p>구글이 2020년 발표한 ALBERT (A Lite BERT) 는 한 걸음 더 나아가, NSP 를 더 똑똑한 시험으로 교체했다. 문장 순서 예측(Sentence Order Prediction, SOP) 이라는 새 손실이다. SOP 의 두 문장은 둘 다 같은 문서의 진짜로 이어지는 두 인접 문장이다. 차이는 단지 50% 는 원래 순서대로 (A → B), 50% 는 순서를 뒤집은 (B → A) 형태로 모델에게 보여 준다는 것이다.</p>
+
+      <p>이렇게 하면 화제 일치만으로는 답할 수 없다. 두 문장은 어차피 같은 문서에서 왔으므로 주제는 같다. 모델은 진짜로 "이 두 문장이 어떤 흐름으로 이어지는가" 라는 담화 구조(discourse structure) 를 봐야 한다. SOP 는 NSP 보다 일관되게 성능을 끌어올렸다고 보고된다. 이 또한 NSP 의 약점이 "너무 쉬워서" 였다는 진단을 뒷받침한다.</p>
+
+      <h2>8. 시험 답안용 한 줄 정리</h2>
+      <div class="def-box synth-side">
+        <div class="deft">한 줄 정리</div>
+        <p>NSP 는 두 문장이 진짜로 이어지는가를 [CLS] 자리에서 이진 분류하는 손실로, BERT 가 두 문장 작업에 강하게 만든 한 축이다. 다만 후속 연구(RoBERTa) 에서 그 기여가 미미하다는 비판을 받았고, ALBERT 의 SOP 처럼 더 어려운 형태로 교체되는 흐름으로 이어졌다.</p>
+      </div>
+
+      <h2>9. 다음 — 사전훈련 데이터</h2>
+      <p>지금까지 두 가지 손실 함수를 봤다. 이제 그 손실로 무엇을 사전훈련시켰는가, 즉 어떤 데이터를 썼는가를 본다. BERT 의 데이터 선택은 평범해 보이지만 사실 매우 중요한 결정이었다 — 트위터 같은 짧은 문장 모음이 아니라 책과 백과사전이라는 긴 연속 텍스트를 골랐다는 점이다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script src="assets/bert.js"></script>
+<script>
+  window.addEventListener('load', () => {
+    BERT.buildNav('07');
+    const n = document.getElementById('nsp');
+    BERT.onVisible(n, () => BERT.nspDemo(n));
+  });
+</script>
+</body>
+</html>
+</content>
+</invoke>

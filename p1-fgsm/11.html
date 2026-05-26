@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>11 · 후속 공격들 — PGD, C&W</title>
+<link rel="stylesheet" href="assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Chapter 11 · FGSM의 자손들</span>
+      <h1>PGD와 C&amp;W —<br><span class="t-style">FGSM 한 걸음의 한계를 넘다</span></h1>
+      <p class="lede">FGSM은 한 줄짜리 출발점이고, 그 위에 더 정교한 공격이 쌓였다. 이 장은 가장 자주 인용되는 두 후속 공격 — PGD(Projected Gradient Descent)와 C&amp;W(Carlini &amp; Wagner) — 를 간단히 소개한다. 시험 범위 너머지만, FGSM의 한계가 어디 있고 후속이 그것을 어떻게 극복하는지 알면 FGSM의 위치가 분명해진다.</p>
+    </header>
+
+    <div class="prose">
+      <h2>FGSM의 두 가지 한계</h2>
+      <p>먼저 FGSM이 무엇을 못 하는지부터 분명히 짚자. FGSM은 두 가지 한계가 있다.</p>
+
+      <div class="prose">
+        <p><strong>한계 1 — 1차 근사가 깨질 때.</strong> 7장에서 봤듯이 FGSM은 손실 함수를 입력 점 주변에서 선형으로 근사하고, 그 선형 근사 위에서 ∞-노름 제약의 닫힌 해를 쓴다. ε이 충분히 작으면 1차 근사가 잘 맞아서 한 걸음으로 좋은 적대적 입력을 얻는다. 그러나 ε이 크거나 ReLU의 활성 영역이 ε 안에서 여러 번 바뀌면 1차 근사가 깨진다. 한 걸음 결과는 손실이 살짝 늘 뿐, 라벨이 안 뒤집힐 수 있다.</p>
+        <p><strong>한계 2 — 적대적 훈련 모델에 약함.</strong> 모델이 FGSM에 견고하도록 적대적 훈련을 받으면, 같은 FGSM 공격은 효과가 약해진다. 그러나 이 견고성이 "진짜 견고성"인지 "FGSM에만 견고한 가짜 견고성"인지는 더 강한 공격으로 검증해야 한다. FGSM 자체로는 자기 자신의 한계를 평가하지 못한다.</p>
+      </div>
+
+      <p>이 두 한계를 극복하는 가장 유명한 두 후속 공격이 PGD와 C&amp;W다. 각각의 아이디어를 본다.</p>
+
+      <h2>PGD — Projected Gradient Descent</h2>
+      <p>PGD는 가장 직관적인 FGSM 확장이다. "한 걸음이 부족하면 여러 걸음 가자." 즉 FGSM을 K번 반복한다. 다만 매 걸음마다 적대적 입력이 ε 반경 ∞-노름 공 밖으로 나가지 않게 다시 안으로 투영(project)한다. 식으로 쓰면 다음과 같다.</p>
+
+      <div class="math-block">$$ \tilde{x}^{(k+1)} \;=\; \Pi_{B_\epsilon(x)}\!\Bigl(\tilde{x}^{(k)} + \alpha \cdot \text{sign}\!\bigl(\nabla_x L(\theta, \tilde{x}^{(k)}, y)\bigr)\Bigr) $$</div>
+      <p class="math-note">α는 한 걸음의 보폭 (보통 ε/4 정도). K는 걸음 수 (보통 7-40). Π_{B_ε(x)}는 ε 반경 ∞-노름 공 안으로의 투영, 즉 각 픽셀이 [xᵢ−ε, xᵢ+ε] 범위 밖이면 안으로 클립.</p>
+
+      <p>PGD의 핵심 차이점은 매 걸음 새로운 기울기를 계산한다는 점이다. FGSM은 시작점 x에서 한 번만 ∇<sub>x</sub> L을 계산하지만, PGD는 매 걸음마다 현재 적대적 입력 x̃^(k)에서 다시 기울기를 계산한다. ReLU의 활성 영역이 한 걸음마다 바뀌어도 PGD는 새 활성 영역에 맞는 기울기를 쓴다. 즉 PGD는 비선형 손실 표면을 곡선 따라 내려간다.</p>
+
+      <p>또 PGD는 보통 랜덤 시작점을 쓴다. 즉 x̃^(0) = x + 무작위 노이즈(ε 안에서). 이 랜덤 시작이 손실 표면의 평탄한 영역(saddle point 등)에서 벗어나도록 돕는다. 결과적으로 PGD는 FGSM보다 훨씬 강한 공격이고, 적대적 훈련의 표준 평가 도구가 되었다.</p>
+
+      <h2>PGD vs FGSM — 숫자 비교</h2>
+      <p>Madry et al. (2018)의 실험 결과로 비교하면 차이가 분명하다. CIFAR-10 ResNet 모델에서 ε = 8/255(= 0.031)에 대해</p>
+
+      <div class="prose">
+        <p><strong>FGSM 공격:</strong> 일반 ResNet의 적대적 정확도 약 13%. 적대적 훈련된 ResNet의 적대적 정확도 약 95%. 일반 모델은 무너지지만 훈련된 모델은 매우 견고해 보인다.</p>
+        <p><strong>PGD 공격 (7 스텝):</strong> 일반 ResNet 약 6%, 적대적 훈련된 ResNet 약 50%. 같은 모델이 FGSM에는 95% 견고하지만 PGD에는 50%만 견고하다.</p>
+        <p><strong>PGD 공격 (40 스텝):</strong> 적대적 훈련된 ResNet 약 47%. PGD 7스텝과 큰 차이는 없지만 일관되게 더 낮다.</p>
+      </div>
+
+      <p>이 숫자가 보여주는 것은, FGSM 견고성이 PGD 견고성으로 자동 보장되지 않는다는 점이다. FGSM 공격에만 견고하도록 학습된 모델은 PGD에 무너질 수 있다. 그러므로 진정한 견고성을 측정하려면 PGD를 써야 한다.</p>
+
+      <h2>위젯으로 직접 보기 — 공격 강도 비교</h2>
+      <p>아래 위젯은 같은 ε 예산에서 FGSM과 PGD가 만드는 손실 변화를 비교한다. PGD 스텝 수를 1, 5, 10, 20으로 키워가며 손실이 어떻게 더 커지는지, 그리고 일정 스텝 이후 더 이상 안 커지는 포화점이 어디인지를 본다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 11</span><span>FGSM 1-step vs PGD K-step — 같은 ε에서 손실 증가량 비교</span></div>
+        <div id="cmp"></div>
+      </div>
+      <p class="widget-cap">x축은 PGD 스텝 수, y축은 손실 증가량. 1 스텝은 FGSM이다. 스텝 수를 늘리면 손실이 더 커지지만 어느 지점에서 포화한다. 이 포화점이 ε 반경 안에서의 진짜 최대 손실에 가까운 추정값이다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>C&amp;W — Carlini &amp; Wagner</h2>
+      <p>C&amp;W 공격은 다른 발상이다. PGD가 "ε이 주어졌을 때 최대한 공격" 문제를 푼다면, C&amp;W는 정반대다. "적대적 입력이 되는 최소 ε을 찾는" 문제를 푼다. 즉 ε을 매개변수가 아니라 최적화 대상으로 본다. 식으로 쓰면 다음과 같다.</p>
+
+      <div class="math-block">$$ \min_{\delta} \;\|\delta\|_p \;+\; c \cdot f(x + \delta) $$</div>
+      <p class="math-note">‖δ‖_p는 섭동 크기 (보통 p = 2). f(·)는 잘못 분류되도록 유도하는 "비용 함수". c는 두 항의 균형 매개변수. 즉 가능한 한 작은 ε으로 잘못 분류하는 적대적 입력을 찾는다.</p>
+
+      <p>C&amp;W의 매력은 적대적 입력이 정확히 어디서 라벨이 뒤집히는 경계 위에 정확히 있게 만든다는 점이다. PGD는 ε 안에서 가장 손실이 큰 점을 찾지만, C&amp;W는 ε 자체를 최소화한다. 결과적으로 C&amp;W는 더 작은 ε으로 라벨을 뒤집을 수 있어 더 정교한 공격이다. 단점은 더 무거운 최적화가 필요하다는 점 — 보통 수천 번의 기울기 단계를 쓴다. FGSM이 한 걸음, PGD가 수십 걸음이라면 C&amp;W는 수천 걸음이다.</p>
+
+      <h2>세 공격의 위치</h2>
+
+      <table style="width:100%;max-width:var(--measure);margin:1.4rem auto;border-collapse:collapse;font-size:.92rem;">
+        <thead><tr style="background:var(--paper-2);">
+          <th style="padding:.6rem .8rem;text-align:left;border-bottom:1px solid var(--line);">공격</th>
+          <th style="padding:.6rem .8rem;text-align:center;border-bottom:1px solid var(--line);">걸음 수</th>
+          <th style="padding:.6rem .8rem;text-align:center;border-bottom:1px solid var(--line);">목표</th>
+          <th style="padding:.6rem .8rem;text-align:center;border-bottom:1px solid var(--line);">강도</th>
+        </tr></thead>
+        <tbody>
+          <tr><td style="padding:.5rem .8rem;border-bottom:1px solid var(--line-soft);">FGSM</td><td style="padding:.5rem .8rem;border-bottom:1px solid var(--line-soft);text-align:center;">1</td><td style="padding:.5rem .8rem;border-bottom:1px solid var(--line-soft);text-align:center;">ε 안에서 한 걸음</td><td style="padding:.5rem .8rem;border-bottom:1px solid var(--line-soft);text-align:center;">기본 (빠름)</td></tr>
+          <tr><td style="padding:.5rem .8rem;border-bottom:1px solid var(--line-soft);">PGD</td><td style="padding:.5rem .8rem;border-bottom:1px solid var(--line-soft);text-align:center;">7-40</td><td style="padding:.5rem .8rem;border-bottom:1px solid var(--line-soft);text-align:center;">ε 안에서 최대 손실</td><td style="padding:.5rem .8rem;border-bottom:1px solid var(--line-soft);text-align:center;">강함 (중간 속도)</td></tr>
+          <tr><td style="padding:.5rem .8rem;">C&amp;W</td><td style="padding:.5rem .8rem;text-align:center;">수천</td><td style="padding:.5rem .8rem;text-align:center;">최소 ε 찾기</td><td style="padding:.5rem .8rem;text-align:center;">가장 강함 (느림)</td></tr>
+        </tbody>
+      </table>
+
+      <p>세 공격의 위치를 정리하면 다음과 같다. FGSM은 가장 빠르고 가장 단순하다. 한 줄짜리 공식으로 끝난다. 적대적 훈련 같은 다른 도구에 부품으로 들어가기에 적합하다. PGD는 적대적 견고성 평가의 표준이다. "이 모델이 정말 견고한가"를 묻고 싶을 때 쓰는 도구다. C&amp;W는 가장 정교한 공격으로, 보안 연구자가 "최악의 적대적 입력은 무엇인가"를 알고 싶을 때 쓴다.</p>
+
+      <h2>왜 FGSM이 여전히 중요한가</h2>
+      <p>위 비교만 보면 FGSM이 가장 약한 공격처럼 보인다. 그렇다면 왜 우리는 FGSM을 시험에서 다루나? 세 가지 이유가 있다.</p>
+
+      <div class="prose">
+        <p><strong>이유 1 — 이론적 기반.</strong> FGSM은 선형 가설로부터 직접 따라 나오는 자연스러운 공격이다. 그 한 줄 공식 ε · sign(∇<sub>x</sub> L)이 어떻게 ∞-노름 제약의 닫힌 해인지, 왜 그것이 가장 빠른 비자명한 공격인지를 이해해야 PGD와 C&amp;W도 이해할 수 있다. PGD는 FGSM의 K번 반복, C&amp;W는 ε을 변수로 만든 일반화. 둘 다 FGSM 위에 쌓여 있다.</p>
+        <p><strong>이유 2 — 적대적 훈련의 빌딩 블록.</strong> 9장에서 본 FGSM 기반 적대적 훈련은 PGD 기반 적대적 훈련보다 약하지만, 계산 비용이 1/K로 훨씬 낮다. ImageNet 같은 큰 데이터에서 PGD 기반 적대적 훈련은 비싸지만 FGSM 기반은 실용적이다. 시간 예산이 작을 때의 표준 도구.</p>
+        <p><strong>이유 3 — 시험 범위.</strong> 시험 범위는 Goodfellow et al. (2015) 한 논문이다. PGD는 Madry et al. (2018), C&amp;W는 Carlini &amp; Wagner (2017). 시험에서는 FGSM과 적대적 훈련만 직접 묻고, PGD와 C&amp;W는 맥락에서 짧게 묻는다. "FGSM 후 등장한 공격이 있나" 같은 질문에 PGD가 더 강한 후속 공격이라고 답하면 된다.</p>
+      </div>
+
+      <h2>비유로 정리</h2>
+      <div class="analogy">
+        체스에서 가장 단순한 공격은 "내가 둘 차례에 잡을 수 있는 가장 큰 말을 잡는다"는 욕심쟁이 한 수다. 빠르고 가끔 잘 통하지만, 두 수 앞을 못 본다. 더 강한 공격은 "내가 두 수 앞까지 본 뒤 가장 좋은 시퀀스를 둔다"이다. 더 강하지만 두 수만큼의 시간을 쓴다. 가장 강한 공격은 "내가 끝까지 본 뒤 최적 전략을 둔다." 절대 안 진다. <b>FGSM은 한 수, PGD는 K수, C&amp;W는 끝까지.</b> 모두 같은 원칙 — "기울기를 보고 가장 좋은 방향을 고른다" — 위에 있다.
+      </div>
+
+      <h2>요약과 다음 장</h2>
+      <p>이 장에서 우리는 FGSM의 두 한계와 그것을 극복하는 두 후속 공격을 봤다. PGD는 FGSM을 K번 반복하고 ε 공으로 투영해 더 강한 공격을 만든다. C&amp;W는 ε 자체를 최소화하는 별개의 최적화로 가장 정교한 공격을 만든다. 그러나 두 공격 모두 FGSM의 기본 원칙 — "1차 기울기 정보를 활용해 가장 손실을 키우는 방향으로 간다" — 위에 서 있다. FGSM이 출발점이고 PGD·C&amp;W가 그 진화형이다.</p>
+
+      <p>다음 장(<a href="12.html">CHAPTER 12</a>)에서는 시험 대비를 위한 체크리스트를 정리한다. 정의·핵심 수식·자주 묻는 질문·시험 함정을 모은 한 장이다. 시험 1시간 전에 다시 한 번 훑을 수 있는 형태다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  window.addEventListener('load', () => {
+    NST.buildNav('11');
+    const w = document.getElementById('cmp');
+    NST.onVisible(w, () => NST.attackCompare(w));
+  });
+</script>
+<script src="assets/widgets.js"></script>
+</body>
+</html>

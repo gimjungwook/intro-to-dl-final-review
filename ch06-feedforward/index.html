@@ -12,7 +12,7 @@
 <style>
   .ch-cover { max-width: var(--wide); margin: 0 auto; padding: 1.5rem 1.4rem 0; }
   .cover-wrap { position: relative; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: linear-gradient(180deg,#fff,var(--paper-2)); box-shadow: var(--shadow-plate); }
-  #cover { display: block; width: 100%; height: 320px; }
+  #cover { display: block; width: 100%; height: 360px; }
   .cover-cap { position: absolute; left: 1.2rem; bottom: 1rem; font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; color: var(--ink-faint); pointer-events: none; }
   .cover-cap b { color: var(--structure); } .cover-cap em { color: var(--style); font-style: normal; }
 
@@ -32,24 +32,16 @@
   .pole p { margin: 0; font-size: .9rem; color: var(--ink-soft); line-height: 1.5; }
   @media (max-width: 560px){ .twopole{ grid-template-columns: 1fr; } }
 
-  .plates { max-width: var(--wide); margin: 1.4rem auto; padding: 1rem 1.4rem 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(270px,1fr)); gap: 1rem; }
-  .plate { position: relative; display: flex; flex-direction: column; text-decoration: none; color: inherit; background: #fff; border: 1px solid var(--line); border-radius: 13px; padding: 1.3rem 1.3rem 1.4rem; transition: transform .2s var(--ease), border-color .2s, box-shadow .2s; overflow: hidden; }
-  .plate:hover { transform: translateY(-4px); border-color: var(--structure-lo); box-shadow: var(--shadow-plate); }
-  .plate .pno { font-family: var(--mono); font-size: .72rem; letter-spacing: .14em; color: var(--ink-faint); }
-  .plate h3 { font-family: var(--serif); font-size: 1.25rem; margin: .45rem 0 .5rem; line-height: 1.2; }
-  .plate p { font-size: .88rem; color: var(--ink-soft); line-height: 1.5; margin: 0; }
-  .plate .spectrum { display: flex; height: 4px; border-radius: 2px; overflow: hidden; margin-bottom: 1rem; }
-  .plate .spectrum i { display: block; height: 100%; }
-  .plate .go { margin-top: 1rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; color: var(--structure); opacity: 0; transform: translateX(-4px); transition: .2s var(--ease); }
-  .plate:hover .go { opacity: 1; transform: translateX(0); }
-  .plate .kw { margin-top: .8rem; font-family: var(--mono); font-size: .68rem; color: var(--ink-faint); letter-spacing: .04em; }
-
-  .path { max-width: var(--wide); margin: 1.6rem auto 0; padding: 0 1.4rem 1.6rem; }
-  .path-flow { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; font-family: var(--mono); font-size: .8rem; }
-  .path-flow a { display: inline-flex; align-items: center; gap: .4rem; text-decoration: none; color: var(--ink-soft); padding: .4rem .7rem; border: 1px solid var(--line); border-radius: 20px; transition: .15s; }
-  .path-flow a:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
-  .path-flow a b { color: var(--style); }
-  .path-flow .arr { color: var(--ink-faint); }
+  .toc-mega { max-width: var(--wide); margin: 2rem auto 1rem; padding: 0 1.4rem; }
+  .toc-mega h2 { margin-bottom: .6rem; }
+  .toc-mega .lede { font-family: var(--serif); font-style: italic; color: var(--ink-soft); font-size: 1.05rem; line-height: 1.6; max-width: var(--measure); margin-bottom: 1.4rem; }
+  .toc-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); gap: .7rem; }
+  .toc-item { display: block; text-decoration: none; color: inherit; padding: .9rem 1rem; background: #fff; border: 1px solid var(--line); border-radius: 11px; transition: transform .15s var(--ease), border-color .15s, box-shadow .15s; }
+  .toc-item:hover { transform: translateY(-2px); border-color: var(--structure-lo); box-shadow: var(--shadow-plate); }
+  .toc-item .tn { font-family: var(--mono); font-size: .72rem; color: var(--style); letter-spacing: .1em; }
+  .toc-item h4 { margin: .25rem 0 .3rem; font-family: var(--serif); font-size: 1.04rem; line-height: 1.25; color: var(--ink); }
+  .toc-item p { margin: 0; font-size: .82rem; color: var(--ink-soft); line-height: 1.5; }
+  .toc-item .stripe { display: block; height: 3px; width: 30px; border-radius: 2px; margin-bottom: .55rem; background: linear-gradient(90deg, var(--c1), var(--c2)); }
 
   .priority { max-width: var(--measure); margin: 2rem auto; padding: 1.2rem 1.4rem; border: 1px solid var(--line); border-radius: 12px; background: var(--paper-2); }
   .priority h4 { margin: 0 0 .6rem; font-family: var(--serif); font-size: 1.08rem; color: var(--structure); }
@@ -88,35 +80,35 @@
     <span><b>딥러닝 개론</b> 기말고사 1순위</span>
     <span>제작 <b>김정욱</b></span>
     <span>시험 <b>2026-06-04 (목)</b></span>
-    <span>구성 <b>7 sub-chapter</b></span>
+    <span>구성 <b>16 sub-chapter</b></span>
   </div>
 </div>
 
 <section class="intro">
   <h2>이 장이 답하는 한 가지 질문</h2>
-  <p>“선형 모형으로는 풀 수 없는 문제를, 어떻게 직선 변환들의 합성만으로 풀 수 있는가?” 6장의 답은 두 단어다 — <strong>비선형 활성화</strong>와 <strong>깊이</strong>. 이 둘을 얹는 순간 신경망은 함수의 모양 자체를 데이터로부터 빚어낸다.</p>
-  <p>이 장은 <em>새로운 외계 기술</em>이 아니라, 5장까지 쌓아 온 머신러닝 위에 <strong>비선형성과 표상 학습</strong>을 얹는 자연스러운 다음 걸음이다. 그 다음 걸음을 가능하게 한 두 발판이 <span class="t-structure">계산 그래프</span>와 <span class="t-style">역전파</span>다.</p>
+  <p>선형 모형(linear model)은 풀지 못하는 문제를, 어떻게 <strong>직선 변환들의 합성</strong>만으로 풀 수 있을까. 신경망(neural network)이라는 단어를 들으면 사람들은 보통 뇌(brain)를 떠올리지만, 6장은 그 단어를 일단 옆에 밀어 둔다. 대신 이 장은 신경망을 <em>“복잡한 함수를 흉내 내는 기계”</em>로 정의하고, 그 기계가 어떻게 작동하는지를 부품 단위로 분해한다.</p>
+  <p>이 장이 1순위인 이유는 단순하다. 6장의 모든 부품 — <span class="t-structure">다층 퍼셉트론(multilayer perceptron, MLP)</span>, <span class="t-style">활성화 함수(activation function)</span>, <span class="t-synth">출력층-비용 짝(output-loss pair)</span>, 계산 그래프(computational graph), 역전파(backpropagation) — 이 7장 정칙화부터 15장 표상 학습까지의 모든 챕터에서 매번 다시 호출되기 때문이다. 6장을 손으로 미분할 수 있을 만큼 익히면, 뒤 챕터들은 모두 6장의 변주가 된다.</p>
 </section>
 
 <div class="twopole">
-  <div class="pole s1"><h4>순전파 (forward)</h4><p>입력이 한 방향으로 흘러 예측이 된다. <b>피드포워드</b>라는 이름이 여기서 나온다. 루프는 없다.</p></div>
-  <div class="pole s2"><h4>역전파 (backward)</h4><p>예측의 오차가 거꾸로 흘러 각 가중치의 책임량을 계산한다. 학습은 이 책임량을 따라 한 걸음씩 내려간다.</p></div>
+  <div class="pole s1"><h4>순전파 (forward pass)</h4><p>입력이 한 방향으로 흘러 예측이 된다. <b>피드포워드(feed-forward)</b>라는 이름이 여기서 나온다. 루프는 없다.</p></div>
+  <div class="pole s2"><h4>역전파 (backward pass)</h4><p>예측의 오차가 거꾸로 흘러 각 가중치의 책임량(responsibility)을 계산한다. 학습은 이 책임량을 따라 한 걸음씩 내려간다.</p></div>
 </div>
 
-<section class="path">
-  <span class="kicker" style="display:block;margin:0 0 1rem;">읽기 순서</span>
-  <div class="path-flow" id="pathflow"></div>
+<section class="toc-mega">
+  <h2>16개 sub-chapter — 깊은 해설판</h2>
+  <p class="lede">한 페이지에 모든 sub-chapter를 깊게 풀어 썼다. 각 절은 도입부터 비유, 예시, 수식, 수식의 줄별 풀이까지 한 호흡으로 이어진다. 한 번 처음부터 끝까지 읽으면 6장의 모든 부품이 머리에 자리 잡도록 설계했다.</p>
+  <div class="toc-list" id="toc-list"></div>
 </section>
 
-<section class="plates" id="plates"></section>
-
 <section class="priority">
-  <h4>시험 출제 우선순위 (D-9)</h4>
+  <h4>시험 출제 우선순위 (D-9, 6월 4일)</h4>
   <ul>
-    <li><b>1순위</b> · 역전파의 미적분 (식 6.44-6.55, 체인룰 + 계산 그래프). 손으로 직접 미분 시연 가능해야 함.</li>
-    <li><b>2순위</b> · 출력 단위와 비용 함수의 짝 (회귀-MSE, 이진-BCE, 다중-CE). MLE 유도 흐름 포함.</li>
-    <li><b>3순위</b> · 활성화 함수 비교 (sigmoid, tanh, ReLU와 변종). ReLU가 이긴 이유 = 양수 구간 기울기 보존.</li>
-    <li><b>4순위</b> · XOR / 만능 근사 / 깊이 vs 너비 — 직관 문제로 등장 가능.</li>
+    <li><b>1순위</b> · 역전파의 미적분 — 식 6.44부터 6.55까지. 손으로 미분하는 시연을 요구할 가능성 매우 높음.</li>
+    <li><b>2순위</b> · 출력 단위와 비용 함수의 짝 — 회귀-MSE, 이진-BCE, 다중-CE. 최대우도(maximum likelihood)로부터의 유도 흐름.</li>
+    <li><b>3순위</b> · 활성화 함수 비교 — sigmoid, tanh, ReLU, 그리고 ReLU의 현대적 변형들. “ReLU가 이긴 이유”.</li>
+    <li><b>4순위</b> · XOR와 만능 근사 정리 — 직관 문제로 등장 가능. 깊이 vs 너비의 의미.</li>
+    <li><b>5순위</b> · 기울기 소실(vanishing gradient) — 깊은 sigmoid 망의 한계. 8장 최적화의 전조.</li>
   </ul>
 </section>
 
@@ -124,43 +116,44 @@
   <p>이 챕터 사이트는 Deep Learning Book Chapter 6 (Goodfellow, Bengio, Courville 2016)을 바탕으로 작성된 기말고사 복습 자료다. P2 신경 스타일 전이 해설의 디자인 시스템을 따른다.</p>
   <p class="src">
     원서 6장 · <a href="https://www.deeplearningbook.org/contents/mlp.html">deeplearningbook.org/contents/mlp.html</a><br>
-    선행학습 노트 · <a href="../../../05-선행학습/Deep-Learning-Book-06-Deep-Feedforward-Networks-상세해설.md">06 상세해설</a><br>
-    수식 6.44-6.57 해설 · <a href="../../../05-선행학습/Deep-Learning-Book-06-수식-6.44-6.57-해설.md">backprop 수식 풀이</a>
+    선행학습 노트 · <a href="../../../Vault/2-Areas/Academic/Spring%202026/딥러닝%20개론/05-선행학습/Deep-Learning-Book-06-Deep-Feedforward-Networks-상세해설.md">06 상세해설</a><br>
+    수식 6.44-6.57 해설 · <a href="../../../Vault/2-Areas/Academic/Spring%202026/딥러닝%20개론/05-선행학습/Deep-Learning-Book-06-수식-6.44-6.57-해설.md">backprop 수식 풀이</a>
   </p>
 </footer>
 
 <script>
 const SUBS = [
-  { no:'01', t:'XOR — 선형 분리 불가능의 벽',          d:'네 점을 직선 하나로 가를 수 없다는 사실이 왜 딥러닝 전체의 출발점이 되는가. 표현 공간 변환의 첫 번째 시연.', sp:['ink-soft','structure-lo'], kw:'선형 분리 · 표현 공간 · 최초 동기' },
-  { no:'02', t:'다층 퍼셉트론(MLP) — 깊이가 가능하게 하는 것', d:'은닉층이 입력을 새 좌표계로 보낸다. 행렬 곱과 비선형성의 교차가 만드는 함수 합성의 기하학.', sp:['structure-lo','structure'], kw:'은닉층 · 행렬 곱 · 합성 함수' },
-  { no:'03', t:'활성화 함수 — ReLU가 이긴 이유',       d:'sigmoid, tanh, ReLU, Leaky/PReLU, ELU, GELU. 포화·기울기 소실·계산 비용·죽은 ReLU 트레이드오프.', sp:['structure','synth'], kw:'ReLU · sigmoid · 기울기 소실 · 활성화' },
-  { no:'04', t:'출력 단위와 비용의 짝 — 회귀·이진·다중', d:'MLE에서 자연스럽게 떨어지는 짝. 선형+MSE, 시그모이드+BCE, softmax+CE. 왜 “함께 설계해야” 하는가.', sp:['synth','style'], kw:'MLE · MSE · 교차 엔트로피 · softmax' },
-  { no:'05', t:'역전파의 미적분 — 체인룰·계산 그래프', d:'식 6.44에서 6.55까지. 왜 뒤에서 앞으로 미분하는가. 중복 계산을 피하는 동적계획법으로서의 backprop.', sp:['style','synth'], kw:'역전파 · 체인룰 · 자코비안 · DP' },
-  { no:'06', t:'만능 근사 정리와 깊이 vs 너비',         d:'단층 충분히 넓으면 무엇이든 근사한다 — 그러나 “가능성”과 “효율”은 다르다. 깊이가 지수적 이득을 주는 이유.', sp:['structure','style'], kw:'Universal Approximation · 깊이' },
-  { no:'07', t:'시험 대비 — 한 페이지 정리와 자가 점검', d:'챕터 핵심 요약, 자주 헷갈리는 지점, 자가 점검 질문 6개, 손으로 푸는 미니 backprop 1문제.', sp:['ink','ink-soft'], kw:'요약 · 자가 점검 · 손계산 backprop' },
+  { no:'01', t:'왜 다층이 필요한가 — XOR의 벽',            d:'네 점을 직선 하나로 가를 수 없다는 작은 사실이, 왜 딥러닝 전체의 출발점이 되는가.',                          c1:'--ink-soft',     c2:'--structure-lo' },
+  { no:'02', t:'단일 뉴런 — 선형 변환 + 비선형 활성',       d:'아핀(affine) 변환과 비선형 꺾임의 결합. 신경망의 가장 작은 부품.',                                            c1:'--structure-lo', c2:'--structure' },
+  { no:'03', t:'다층 퍼셉트론(MLP) — 깊이의 기하학',         d:'은닉층이 입력을 새 좌표계로 보낸다. 행렬 곱과 비선형성의 교차가 만드는 함수 합성.',                            c1:'--structure',    c2:'--structure-lo' },
+  { no:'04', t:'만능 근사 정리 — 가능성과 효율의 차이',       d:'은닉 1층이면 어떤 함수든 근사한다. 하지만 “가능”과 “쓸 만함”은 같지 않다. 깊이가 주는 지수적 이득.',           c1:'--structure',    c2:'--synth' },
+  { no:'05', t:'활성화 1 — sigmoid·tanh, 왜 죽었는가',       d:'한때 표준이던 두 함수가 깊은 망에서 무너진 이유. 포화(saturation)와 기울기 소실(vanishing gradient).',          c1:'--synth',        c2:'--style-lo' },
+  { no:'06', t:'활성화 2 — ReLU의 등장과 죽은 ReLU',         d:'단순한 꺾임이 깊은 망을 가능하게 했다. 그러나 음수에서 뉴런이 영원히 죽는 부작용도 함께.',                     c1:'--style-lo',     c2:'--style' },
+  { no:'07', t:'활성화 3 — Leaky·ELU·GELU·Swish',            d:'ReLU의 단점을 메우려는 현대적 변형들. 어디서 무엇이 좋은가, 그리고 왜 GELU가 Transformer의 표준이 되었나.',  c1:'--style',        c2:'--synth' },
+  { no:'08', t:'출력층-비용 1 — 회귀: 선형 + MSE',            d:'평균제곱오차(mean squared error, MSE)는 임의의 점수표가 아니다. 가우시안(Gaussian)의 최대우도 추정에서 나온다.', c1:'--structure-lo', c2:'--structure' },
+  { no:'09', t:'출력층-비용 2 — 이진 분류: sigmoid + BCE',    d:'베르누이(Bernoulli) 분포의 최대우도. 시그모이드와 이진 교차 엔트로피(BCE)가 한 짝이 되는 수학적 이유.',         c1:'--structure',    c2:'--synth' },
+  { no:'10', t:'출력층-비용 3 — 다중 분류: softmax + CE',     d:'범주(categorical) 분포의 최대우도. softmax-CE가 미분에서 어떻게 q-p 형태로 깔끔히 떨어지는가.',                 c1:'--synth',        c2:'--style' },
+  { no:'11', t:'계산 그래프 — 흐름으로서의 신경망',           d:'식을 그래프로 그리면 미분이 알고리즘이 된다. 노드는 연산, 엣지는 데이터 의존성.',                              c1:'--structure',    c2:'--synth' },
+  { no:'12', t:'역전파 1 — 체인룰의 직관',                    d:'스칼라 합성 함수에서 시작. 영향(影響)이 곱셈으로 누적되는 이유. 식 6.44 풀이.',                                c1:'--structure',    c2:'--style' },
+  { no:'13', t:'역전파 2 — 식 6.45-6.55 한 줄씩',             d:'벡터·텐서 연쇄법칙. 자코비안(Jacobian)과 벡터의 곱. 재귀 구조와 동적계획법(DP)으로서의 역전파.',               c1:'--style',        c2:'--style-lo' },
+  { no:'14', t:'역전파 3 — 손계산 예시 (2-2-1 MLP)',          d:'아주 작은 망에서 순전파 한 번, 역전파 한 번을 손으로 끝까지 따라간다. 시험에서 가장 자주 나오는 형태.',         c1:'--style',        c2:'--synth' },
+  { no:'15', t:'기울기 소실의 첫 등장 — 8장으로 가는 다리',    d:'sigmoid 6층 망에서 가장 앞 층의 기울기는 왜 0이 되는가. 곱셈의 폭발/소실, ReLU·BN·skip이 왜 필요해지는가.',     c1:'--style',        c2:'--ink' },
+  { no:'16', t:'시험 대비 — 25개 자가 점검 + 손계산 1문항',    d:'6장 핵심을 한 페이지로 압축. 자주 헷갈리는 지점, 시험에서 나올 만한 형태 25개와 모범 답.',                       c1:'--ink',          c2:'--ink-soft' },
 ];
-const colMap = { structure:'var(--structure)', 'structure-lo':'var(--structure-lo)', style:'var(--style)', 'style-lo':'var(--style-lo)', synth:'var(--synth)', ink:'var(--ink)', 'ink-soft':'var(--ink-soft)' };
 
-const platesEl = document.getElementById('plates');
-const flowEl = document.getElementById('pathflow');
-SUBS.forEach((c, idx) => {
-  const sp = c.sp.length === 1 ? [c.sp[0], c.sp[0]] : c.sp;
+const tocEl = document.getElementById('toc-list');
+SUBS.forEach(s => {
   const a = document.createElement('a');
-  a.className = 'plate'; a.href = c.no + '.html';
+  a.className = 'toc-item';
+  a.href = s.no + '.html';
+  a.style.setProperty('--c1', `var(${s.c1})`);
+  a.style.setProperty('--c2', `var(${s.c2})`);
   a.innerHTML = `
-    <div class="spectrum">${sp.map(s=>`<i style="flex:1;background:${colMap[s]}"></i>`).join('')}</div>
-    <span class="pno">SUB ${c.no}</span>
-    <h3>${c.t}</h3>
-    <p>${c.d}</p>
-    <span class="kw">${c.kw}</span>
-    <span class="go">읽기 →</span>`;
-  platesEl.appendChild(a);
-
-  const f = document.createElement('a'); f.href = c.no + '.html';
-  const shortT = c.t.split('—')[0].trim().slice(0, 14);
-  f.innerHTML = `<b>${c.no}</b> ${shortT}…`;
-  flowEl.appendChild(f);
-  if (idx < SUBS.length - 1) { const s = document.createElement('span'); s.className='arr'; s.textContent='→'; flowEl.appendChild(s); }
+    <span class="stripe"></span>
+    <span class="tn">SUB ${s.no}</span>
+    <h4>${s.t}</h4>
+    <p>${s.d}</p>`;
+  tocEl.appendChild(a);
 });
 
 // 표지 캔버스 — XOR 표현 공간 변환 입자 애니메이션
@@ -168,7 +161,7 @@ window.addEventListener('load', () => {
   const canvas = document.getElementById('cover');
   if (!canvas || !window.THREE) return;
   const wrap = canvas.parentElement;
-  const w = wrap.clientWidth, h = 320;
+  const w = wrap.clientWidth, h = 360;
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(50, w/h, 0.1, 100);
   camera.position.set(0, 0, 14);
@@ -181,14 +174,13 @@ window.addEventListener('load', () => {
   const geo = new THREE.BufferGeometry();
   const pos = new Float32Array(N * 3);
   const col = new Float32Array(N * 3);
-  const taA = new Float32Array(N * 3); // 원래 입력 공간: XOR 분리 불가
-  const taB = new Float32Array(N * 3); // 은닉 표상: 분리 가능
-  // 네 군집 — XOR
+  const taA = new Float32Array(N * 3);
+  const taB = new Float32Array(N * 3);
   const centers = [
-    { x:-3.2, y:-1.8, cls: 0 }, // (0,0) -> 0
-    { x: 3.2, y:-1.8, cls: 1 }, // (1,0) -> 1
-    { x:-3.2, y: 1.8, cls: 1 }, // (0,1) -> 1
-    { x: 3.2, y: 1.8, cls: 0 }, // (1,1) -> 0
+    { x:-3.2, y:-1.8, cls: 0 },
+    { x: 3.2, y:-1.8, cls: 1 },
+    { x:-3.2, y: 1.8, cls: 1 },
+    { x: 3.2, y: 1.8, cls: 0 },
   ];
   for (let i = 0; i < N; i++) {
     const c = centers[i % 4];
@@ -197,15 +189,11 @@ window.addEventListener('load', () => {
     taA[i*3]   = c.x + Math.cos(th) * r;
     taA[i*3+1] = c.y + Math.sin(th) * r;
     taA[i*3+2] = 0;
-    // 은닉 표상: 클래스 0은 위, 클래스 1은 아래로 펴짐 → 평면으로 분리 가능
     const dx = (c.x > 0 ? 1 : -1);
-    const dy = (c.y > 0 ? 1 : -1);
     taB[i*3]   = (c.x + dx * 0.4) * 0.7;
     taB[i*3+1] = (c.cls === 0 ? 1.6 : -1.6) + Math.sin(th)*r*0.5;
     taB[i*3+2] = (c.cls === 0 ? 0.6 : -0.6) + Math.cos(th)*r*0.5;
-
     pos[i*3] = taA[i*3]; pos[i*3+1] = taA[i*3+1]; pos[i*3+2] = 0;
-    // 색: 클래스 0 = 쿨, 클래스 1 = 웜
     if (c.cls === 0) { col[i*3] = 0.18; col[i*3+1] = 0.36; col[i*3+2] = 0.48; }
     else             { col[i*3] = 0.75; col[i*3+1] = 0.29; col[i*3+2] = 0.18; }
   }

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>01 · RNN의 한계</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Chapter 01 · 왜 새 구조가 필요했나</span>
+      <h1>RNN의 한계 —<br><span class="t-structure">순환 신경망</span>이 무너진 두 지점</h1>
+      <p class="lede">Transformer가 등장하기 직전, 자연어를 처리하는 표준 도구는 RNN(순환 신경망, Recurrent Neural Network) 계열이었다. 이 장은 “왜 충분히 잘하던 RNN을 굳이 버리고 새 구조를 만들었는가”에 답한다. 답은 두 단어 — 직렬과 망각이다.</p>
+    </header>
+
+    <div class="prose">
+      <p>먼저 RNN이 무엇을 하는 모델인지부터 짚고 가자. RNN은 토큰(token, 단어 또는 그 조각)이 시간 순으로 하나씩 들어오는 시퀀스(sequence, 순서 있는 묶음)를 처리하기 위해 만들어진 신경망이다. 핵심 아이디어는 한 줄로 적을 수 있다 — <em>“이번 입력 + 지금까지 기억”을 합쳐서 새 기억을 만든다.</em> 수식으로는 다음과 같다.</p>
+
+      <div class="math-block">$$ h_t = f(W_h \, h_{t-1} + W_x \, x_t + b) $$</div>
+      <p class="math-note">$h_t$ = 시간 $t$에서의 은닉 상태(hidden state, 모델의 기억). $x_t$ = $t$번째 입력 토큰의 벡터. $W_h, W_x, b$ = 학습되는 가중치와 편향. $f$ = 비선형 활성함수(보통 tanh).</p>
+
+      <p>풀어 말하면 이렇다. $t$번째 단어를 본 직후의 기억 $h_t$는, <strong>“바로 직전의 기억 $h_{t-1}$”에 새 가중치 $W_h$를 곱하고, “이번 입력 $x_t$”에 다른 가중치 $W_x$를 곱한 다음, 둘을 더하고 활성함수에 통과시킨 것</strong>이다. $W_h, W_x$는 모든 시간 단계에서 같은 값을 공유한다(파라미터 공유). 시간이 흐르면 같은 가중치 한 쌍을 시퀀스 길이만큼 반복 적용하게 된다.</p>
+
+      <div class="analogy">
+        <b>RNN은 책을 한 줄씩 읽어 가며 메모장을 갱신하는 사람이다.</b> 한 줄을 읽을 때마다 메모장을 지우개로 절반쯤 지우고 새 내용을 덧붙인다. 페이지 끝에 도달하면 그 메모장의 마지막 상태가 “이 책의 요약”이다. 한 줄을 읽기 전에는 다음 줄을 미리 볼 수 없고, 메모장은 한 사람만 쓰고 있어서 동시에 두 줄을 같이 정리할 수도 없다.
+      </div>
+
+      <p>이 그림은 직관적이고 강력해 보인다. 실제로 RNN(과 그 변종 LSTM, GRU)은 2010년대 중반까지 기계 번역, 음성 인식, 텍스트 요약 등의 최첨단을 이끌었다. 그러나 시퀀스가 길어지고 데이터가 커지자, 두 가지 구조적 한계가 점점 커졌다. 첫째는 <strong>병렬화 불가</strong>이고, 둘째는 <strong>장거리 의존성(long-range dependency) 약화</strong>다. 차례로 본다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 01</span><span>RNN vs Transformer — 처리 방식 비교</span></div>
+        <div id="vs"></div>
+      </div>
+      <p class="widget-cap">위쪽은 RNN의 순차 처리, 아래쪽은 Transformer의 병렬 처리. 시퀀스 길이가 $N$이라면 RNN은 $N$ step이 필요하지만 Transformer는 1 step에 모든 토큰이 모든 토큰을 본다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>한계 1 — 병렬화가 불가능하다</h2>
+      <p>현대 딥러닝 학습은 GPU(Graphics Processing Unit) 위에서 일어난다. GPU의 강점은 단 하나, <strong>같은 연산을 매우 많이 동시에 한다는 것</strong>이다. 수만 개의 곱셈을 한꺼번에 처리할 수 있다. 그런데 RNN의 수식을 다시 보자. $h_t$를 계산하려면 반드시 $h_{t-1}$이 먼저 있어야 한다. $h_{t-1}$이 계산되기 전에는 $h_t$를 시작할 수조차 없다. 다음 단계가 이전 단계의 출력을 입력으로 받기 때문이다.</p>
+
+      <p>그 결과, 길이 $N$의 시퀀스를 처리하려면 “순차적으로 $N$번” 연산을 해야 한다. GPU가 아무리 큰 행렬을 한 번에 곱할 수 있어도, $h_1, h_2, \ldots, h_N$은 시간축으로 줄을 서서 차례를 기다린다. 학습 데이터가 수십억 개의 문장이라면 이 직렬 의존은 곧바로 학습 시간 폭발로 이어진다.</p>
+
+      <div class="math-block">$$ \text{학습 시간} \;\propto\; (\text{시퀀스 길이 } N) \times (\text{문장 수}) $$</div>
+      <p class="math-note">RNN은 시퀀스 길이가 처리 시간에 직접 곱해진다 — 길이가 두 배가 되면 시간도 두 배.</p>
+
+      <p>반면 Transformer는 모든 토큰을 동시에 본다. 길이 $N$이든 $N/10$이든 한 번에 처리한다. 같은 GPU 시간 안에 RNN보다 훨씬 더 많은 데이터를 학습할 수 있다. 이것은 그저 “더 빠르다”의 문제가 아니다. <em>같은 시간에 100배 많은 데이터를 본 모델이 결국 더 똑똑해진다</em>는 의미다. 트랜스포머의 폭발적 성능 향상은 알고리즘 자체의 우수성뿐 아니라, <strong>“병렬화가 가능해진 덕분에 비로소 인간이 만든 모든 텍스트를 다 보여줄 수 있게 되었다”</strong>는 인프라적 변화에서 온다.</p>
+
+      <h2>한계 2 — 장거리 의존성 약화</h2>
+      <p>두 번째 한계는 좀 더 미묘하다. 다음 문장을 보자.</p>
+
+      <div class="analogy">
+        <b>"The cat, which had been hiding under the sofa in the corner of the living room for the past three hours, was hungry."</b> 영어 문법상 동사 "was"의 주어는 "The cat"이다. 둘 사이에는 16개의 단어가 끼어 있다. 사람은 무리 없이 "cat — was"의 연결을 잡지만, RNN은 16번의 step을 거치며 메모장을 갱신하는 동안 "cat"이라는 정보를 절반쯤 지워 버린다.
+      </div>
+
+      <p>RNN의 수식을 다시 펴 보자. $h_t = f(W_h h_{t-1} + W_x x_t)$. 즉 $h_5$ 안에는 $h_4$가 들어 있고, $h_4$ 안에는 $h_3$이 들어 있다. 그러므로 $h_5$ 안의 $h_1$ 정보는 $W_h$가 네 번 연속 곱해진 형태로 들어간다. $W_h$의 고유값(eigenvalue, 행렬의 “스케일 인자”)이 1보다 작으면 거듭 곱할수록 0으로 수렴한다(<span class="t-style">vanishing gradient</span>, 그래디언트 소실). 반대로 1보다 크면 거듭 곱할수록 발산한다(<span class="t-style">exploding gradient</span>, 그래디언트 폭발).</p>
+
+      <div class="math-block">$$ \frac{\partial h_T}{\partial h_1} \;=\; \prod_{t=2}^{T} \frac{\partial h_t}{\partial h_{t-1}} \;\approx\; W_h^{\,T-1} \cdot (\text{활성함수 미분}) $$</div>
+      <p class="math-note">시퀀스 끝에서 시작 쪽으로 흐르는 그래디언트는 같은 행렬을 $T-1$번 거듭 곱한 형태가 된다. 거듭 곱은 0이나 무한대로 가기 쉽다.</p>
+
+      <p>LSTM(Long Short-Term Memory)과 GRU(Gated Recurrent Unit) 같은 변종은 “필요한 정보는 통과시키고, 필요 없는 정보는 잊는” 게이트(gate)를 도입해 이 문제를 완화한다. 실전에서는 효과가 있지만, <strong>정보가 단방향으로 흐른다는 본질은 그대로</strong>다. 끝 단어에서 첫 단어를 보려면 여전히 모든 중간 단계를 거쳐야 한다. 마치 메신저에서 첫 줄을 다시 보려고 무수히 스크롤을 올려야 하는 것과 같다.</p>
+
+      <h2>해결의 단서 — 모든 토큰이 모든 토큰을 직접 보면 안 될까</h2>
+      <p>이 두 한계를 동시에 해결하는 발상은 의외로 단순하다. 만약 <em>한 토큰이 시퀀스의 다른 모든 토큰을 직접 — 중간 단계 없이 — 들여다볼 수 있다면</em>? 그렇게 된다면 (1) 더 이상 순서대로 한 토큰씩 처리할 이유가 없으니 병렬화가 가능하고, (2) 16칸 떨어진 단어도 한 번의 연산으로 도달하니 장거리 의존이 사라진다.</p>
+
+      <p>이때 필요한 메커니즘은 “모든 토큰 쌍 사이의 연관도를 계산하는 장치”다. 그 장치가 바로 <span class="t-synth">Attention</span>이다. 다음 장에서는 Attention이 어떤 직관에서 출발하는지, 수식 이전에 그림과 비유로 잡는다.</p>
+
+      <h2>요약 — 이 장에서 기억해야 할 세 가지</h2>
+      <p><strong>(1)</strong> RNN은 한 토큰씩 순차로 처리하기 때문에 GPU의 병렬 능력을 활용하지 못한다. <strong>(2)</strong> 같은 가중치 행렬이 시퀀스 길이만큼 거듭 곱해지므로 장거리 정보가 0이나 무한대로 휘발된다. <strong>(3)</strong> 두 문제 모두 “모든 토큰이 모든 토큰을 직접 보는” 메커니즘이 있다면 한 번에 풀린다. Transformer는 그 메커니즘 — Attention — 을 끝까지 밀어붙인 결과다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  window.addEventListener('load', () => {
+    TFR.buildNav('01');
+    const v = document.getElementById('vs');
+    TFR.onVisible(v, () => TFR.rnnVsTransformer(v));
+  });
+</script>
+<script src="assets/widgets.js"></script>
+</body>
+</html>

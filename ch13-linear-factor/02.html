@@ -3,278 +3,322 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>02 · 요소 분석과 확률적 PCA — 가우시안 잠재공간</title>
+<title>13 / 02 / 생성 모델 vs 판별 모델</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
-  .pca-stage { display: grid; grid-template-columns: 1fr; padding: 1.4rem 1.1rem .6rem; }
-  .pca-stage canvas { display: block; width: 100%; height: 360px; border-radius: 9px; border: 1px solid var(--line); background: #fff; }
-  .pca-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 1.4rem; padding: 1rem 1.1rem; align-items: center; }
-  @media (max-width: 600px) { .pca-controls { grid-template-columns: 1fr; } }
-  .pca-meta { font-family: var(--mono); font-size: .8rem; color: var(--ink-soft); display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; }
-  .pca-meta .lbl { display: block; font-size: .68rem; color: var(--ink-faint); letter-spacing: .12em; text-transform: uppercase; }
-  .pca-meta b { color: var(--structure); font-weight: 600; font-size: .95rem; }
-  .pca-bar { height: 6px; background: var(--paper-sink); border-radius: 3px; overflow: hidden; margin-top: .3rem; }
-  .pca-bar i { display: block; height: 100%; background: var(--style); transition: width .25s var(--ease); }
+  .gd-stage { padding: 1.4rem 1.1rem 1rem; display: flex; gap: 1.2rem; justify-content: center; flex-wrap: wrap; }
+  .gd-col { display: flex; flex-direction: column; gap: .5rem; min-width: 280px; }
+  .gd-col h5 { margin: 0; font-family: var(--mono); font-size: .72rem; letter-spacing: .14em; color: var(--ink-faint); text-transform: uppercase; }
+  .gd-col h5 b { color: var(--ink); }
+  .gd-col canvas { display: block; border-radius: 8px; border: 1px solid var(--line); background: #fff; }
+  .gd-cap { font-size: .82rem; color: var(--ink-soft); line-height: 1.5; margin: 0; }
+  .gd-toggle { padding: .8rem 1rem; border-top: 1px solid var(--line-soft); display: flex; gap: .5rem; justify-content: center; flex-wrap: wrap; background: var(--paper); }
+  .gd-toggle button { padding: .45rem .9rem; font-family: var(--mono); font-size: .74rem; letter-spacing: .08em; border: 1px solid var(--line); background: #fff; color: var(--ink); border-radius: 6px; cursor: pointer; }
+  .gd-toggle button.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
 </style>
 </head>
 <body>
 <div class="scroll-progress"></div>
-<div class="topbar">
-  <a class="home" href="index.html">← Chapter 13 · 선형 요소 모델</a>
-  <span class="ch-mini">SUB-CHAPTER 02 / 06</span>
-</div>
+<div class="topbar"></div>
 
 <div class="ch-layout">
-  <aside class="ch-nav"><nav><ol>
-    <li><a href="01.html">잠재 변수 모델</a></li>
-    <li><a href="02.html" class="current">요소 분석과 확률적 PCA</a></li>
-    <li><a href="03.html">ICA — 비가우시안 독립</a></li>
-    <li><a href="04.html">희소 코딩</a></li>
-    <li><a href="05.html">평평한 매니폴드</a></li>
-    <li><a href="06.html">시험 대비 요약</a></li>
-  </ol></nav></aside>
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Sub-Chapter 02 · 가우시안 가족</span>
-      <h1>모든 것이 <span class="t-structure">가우시안</span>일 때,<br>모든 것이 단순해진다</h1>
-      <p class="lede">잠재 변수도 정규분포, 잡음도 정규분포. 이 두 가정만 깔면 추론도 학습도 적분 없이 행렬 연산만으로 풀린다. PCA가 왜 이 가족의 극한인지도 자연스럽게 보인다.</p>
+      <span class="kicker">Sub-chapter 02 / 갈림길</span>
+      <h1>책의 후반부가 갈라지는 지점 —<br>판별에서 <span class="t-style">생성</span>으로</h1>
+      <p class="lede">1-12장의 분류기는 "이 사진이 고양이일 확률은?"이라는 한 가지 물음에만 답했다. 13장부터 모델은 한 단계 더 야심 찬 일을 한다 — "고양이 사진 자체를 처음부터 만들어 낼 수 있는가?" 이 한 줄의 차이가 책의 후반부 전부를 가른다.</p>
     </header>
 
     <div class="prose">
-      <p>선형 요소 모델 가족 중에서 분석적으로 가장 깔끔한 분파는 <strong>요소 분석(factor analysis, FA)</strong>과 <strong>확률적 주성분 분석(probabilistic PCA, PPCA)</strong>이다. 둘은 같은 틀에서 잡음 가정만 다르다.</p>
+      <p>1장부터 12장까지 우리가 본 모든 신경망은 한 가족에 속한다. <strong>판별 모델(discriminative model)</strong>이라는 가족이다. 이름이 어려워 보이지만 풀어 쓰면 단순하다. 입력 $x$가 들어왔을 때 라벨 $y$가 무엇인지를 골라내는(discriminate, 분간하다) 모델이라는 뜻이다. 합성곱 신경망(CNN)이 이미지를 받아 1000개 카테고리 중 하나를 고르는 일, 순환 신경망(RNN)이 단어 시퀀스를 받아 다음 단어를 예측하는 일, 둘 다 같은 형태다. 수식으로 적으면 우리가 학습한 것은 조건부 확률 $p(y \mid x)$ 하나다.</p>
 
-      <h2>FA — 잠재는 단위 가우시안, 잡음은 차원별</h2>
-
-      <p>FA의 가정은 두 줄이다.</p>
-
-      <div class="math-block">$$ h \sim \mathcal{N}(0, I) $$</div>
-      <p class="math-note">잠재 변수는 평균 0, 공분산 단위행렬 I. 각 차원이 독립이고 같은 분산 1.</p>
-
-      <div class="math-block">$$ x \mid h \sim \mathcal{N}(W h + b, \, \Psi), \quad \Psi = \mathrm{diag}(\psi_1^2, \dots, \psi_D^2) $$</div>
-      <p class="math-note">관측은 Wh+b를 평균으로, 대각 공분산 Ψ를 가진 가우시안. 차원마다 자기만의 잡음 분산 ψ_d^2를 가진다.</p>
-
-      <p>여기서 결정적인 단어는 <strong>대각(diagonal)</strong>이다. FA는 "관측 차원들 사이의 모든 상관은 공통 요소 $h$가 만들고, 각 차원에 남는 잔여 변동은 서로 독립"이라고 본다. 그래서 차원마다 다른 잔여 분산 $\psi_d^2$를 허용한다.</p>
+      <p>13장이 새로 가르치는 것은 다른 가족이다. <strong>생성 모델(generative model)</strong>. 이름 그대로, 데이터를 분류하는 게 아니라 데이터를 만들어 내는 모델이다. 이 모델이 학습하는 것은 $p(y|x)$가 아니라 $p(x)$ 자체, 즉 "이 데이터 분포 전체가 어떻게 생겼는가"의 확률 밀도다. 라벨이 있는 경우라면 $p(x, y)$ 또는 $p(x \mid y)$를 학습한다. 어느 쪽이든 입력 $x$의 분포 자체를 안다는 뜻이고, 그 결과 새로운 가짜 $x$를 만들어 낼 수 있다.</p>
 
       <div class="analogy">
-        <b>왜 차원별로 다른 잡음을 두는가?</b> 환자 측정에서 혈압과 체온을 같이 본다고 하자. 혈압은 측정 장비가 정밀해서 잔여 노이즈가 작고, 체온은 환자가 막 들어왔는지 안정 상태인지에 따라 흔들림이 크다. 둘을 같은 잡음 분산으로 묶어 버리면 모델이 둘 중 하나에는 너무 관대해지거나 너무 엄격해진다. FA는 차원마다 잡음의 폭을 따로 정해서 이 불균형을 흡수한다.
+        판별 모델은 <b>위조지폐 감별사</b>다. 지폐 한 장을 받아 보고 "진짜다, 가짜다"를 판단한다. 그 일을 잘 하려면 진짜 지폐의 특징을 어느 정도 알아야 하지만, 자기 손으로 새 지폐를 그릴 줄은 모른다. 생성 모델은 <b>지폐를 그리는 사람</b>이다. 진짜 지폐가 갖춰야 할 모든 패턴을 머릿속에 담고 있어서 새 지폐를 처음부터 그려낼 수 있다. 그릴 수 있는 사람은 감별도 잘 한다(자기가 만든 것과 비교하면 되니까). 거꾸로는 성립하지 않는다 — 감별만 할 줄 아는 사람이 그릴 수는 없다.
       </div>
 
-      <h2>PPCA — 등방 잡음, 그리고 PCA로의 극한</h2>
+      <h2>왜 $p(x)$를 배우는 것이 본질적으로 더 어려운가</h2>
 
-      <p>PPCA는 FA의 잡음을 한 번 더 단순화한다. 모든 차원이 <strong>같은</strong> 잡음 분산을 공유한다.</p>
+      <p>$p(y|x)$만 배우면 되는 판별 학습이 왜 더 쉬운가. 한 줄로 답할 수 있다. <em>"$x$가 어떤 모양이든 신경 쓰지 않아도 되기 때문"</em>이다. 분류기는 $x$의 분포 자체에는 관심이 없다. 들어오는 $x$들이 모두 같은 분포에서 나왔다고 가정하고, 그 분포에서 라벨로 가는 매핑만 알면 된다. 학습 데이터에 있는 $x$만 잘 분류하면 평가에서 이긴다.</p>
 
-      <div class="math-block">$$ x \mid h \sim \mathcal{N}(W h + b, \, \sigma^2 I) $$</div>
-      <p class="math-note">Ψ가 σ²I로 좁아진다. 등방(isotropic) 잡음 — 모든 방향이 같은 크기.</p>
+      <p>$p(x)$를 배운다는 것은 다른 차원의 일이다. 사진 한 장은 보통 224×224×3 = 약 15만 개의 픽셀 숫자다. 가능한 모든 사진의 공간은 상상하기 힘들 만큼 크다. 그 거대한 공간에서 <strong>"실제로 의미 있는 사진"이 어디에 몰려 있는지</strong>를 알아내는 게 $p(x)$를 배우는 일이다. 새 픽셀 텐서가 들어왔을 때 "이건 풍경 사진처럼 보이는 진짜 같은 패턴이다"와 "이건 그냥 무작위 잡음이다"를 구분할 수 있어야 한다. 그 정도로 $p(x)$를 잡으려면 모델이 데이터의 구조를 깊이 이해해야 한다.</p>
 
-      <p>이 한 줄의 단순화 덕분에 결과 $W$가 데이터 공분산의 <strong>주성분 방향과 정확히 정렬</strong>된다. 그리고 $\sigma^2 \to 0$의 극한에서 우리는 익숙한 <strong>고전 PCA</strong>로 귀착된다.</p>
+      <p>13장이 다루는 선형 요소 모델은 가장 단순한 형태로 $p(x)$를 모델링한다. 어떻게? "관측 $x$는 몇 개의 잠재 $h$가 선형으로 섞이고 잡음이 더해진 결과"라는 단순한 생성 이야기 하나로. 이 이야기 위에서 $p(x)$가 자동으로 정의된다 — 모든 가능한 $h$에 대해 $p(x \mid h)$를 평균낸 적분 $p(x) = \int p(x \mid h) p(h) \, dh$가 곧 $p(x)$다. 가우시안 가정 아래에서는 이 적분이 해석적으로 계산되어 $p(x)$가 다시 가우시안이 된다. 선형 요소 모델이 단순한 이유, 그리고 한계가 있는 이유가 다 여기서 나온다.</p>
 
-      <div class="math-block">$$ \lim_{\sigma^2 \to 0} \text{PPCA} = \text{classical PCA} $$</div>
-      <p class="math-note">잡음이 사라지면 잠재 평면이 데이터 점들의 분산을 최대한 보존하는 방향(주성분)으로 정확히 자리잡는다.</p>
+      <h2>두 가족이 할 수 있는 일이 어떻게 다른가</h2>
 
-      <div class="analogy">
-        <b>고전 PCA는 무엇이었나?</b> 데이터 점들을 어떤 축에 사영(project)했을 때 그 사영의 분산이 가장 큰 방향을 찾는 것이었다. 분산이 클수록 데이터의 "정보"가 그 축에 많이 담긴다고 본 것이다. PPCA는 같은 결과를 확률 모델로 다시 적은 것이다. "관측은 평면 + 등방 잡음"이라는 모델에서 잡음을 0으로 보내면, 평면이 데이터의 분산이 가장 큰 방향을 가리키게 된다. <b>왜?</b> 잡음이 작을수록 모델은 모든 데이터 점을 평면에 더 가까이 끌어와야 우도가 커지고, 그러려면 평면이 점들의 변동이 가장 큰 방향을 따라가야 평균 거리가 최소가 되기 때문이다.
-      </div>
-    </div>
+      <p>같은 데이터를 받아도 판별 모델과 생성 모델은 할 수 있는 일이 다르다. 이 차이를 구체적으로 보면 왜 책이 굳이 13장부터 생성 모델을 가르치는지가 보인다. 다음 표는 같은 데이터셋(예: MNIST 손글씨 숫자 6만 장)을 받아 두 가족이 각각 무엇을 할 수 있는지를 정리한 것이다.</p>
 
-    <div class="widget">
-      <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 02</span><span>PCA 2D 투영 — 주성분 방향을 직접 돌려 보기</span></div>
-        <div class="pca-stage">
-          <canvas id="pca"></canvas>
-        </div>
-        <div class="pca-controls">
-          <div class="slider">
-            <label>주성분 각도 θ <b id="pca-theta">0°</b></label>
-            <input id="pca-th" type="range" min="0" max="180" value="0" step="1" class="s-style">
+      <table class="compare-tbl">
+        <thead><tr><th></th><th>판별 모델 $p(y \mid x)$</th><th>생성 모델 $p(x)$ 또는 $p(x, y)$</th></tr></thead>
+        <tbody>
+          <tr><td>분류</td><td>주요 목적. 입력 받아 라벨 출력</td><td>가능. $p(y \mid x) \propto p(x \mid y) p(y)$로 베이즈 적용</td></tr>
+          <tr><td>새 데이터 생성</td><td>불가. 라벨에서 입력으로 가는 경로 없음</td><td>가능. $p(h)$에서 $h$ 뽑고 $x = Wh + b + \epsilon$</td></tr>
+          <tr><td>이상치 탐지</td><td>어려움. 분포 정보 없음</td><td>자연. $p(x)$가 낮은 $x$가 이상치</td></tr>
+          <tr><td>결측치 보완</td><td>거의 불가. 보지 못한 입력 처리 모름</td><td>가능. $p(x_{missing} \mid x_{visible})$로 조건부 추론</td></tr>
+          <tr><td>표상 학습</td><td>최종 분류기에 유용한 표상만 학습</td><td>데이터 구조를 가장 잘 설명하는 표상 학습</td></tr>
+          <tr><td>준지도 학습</td><td>라벨 없는 데이터를 거의 활용 못함</td><td>$p(x)$로 라벨 없는 데이터 적극 활용</td></tr>
+        </tbody>
+      </table>
+
+      <p>이 표가 보여 주는 것은 한 가지 큰 그림이다. 판별 모델은 <em>"정해진 한 작업에서 가장 잘 하는 도구"</em>이고, 생성 모델은 <em>"데이터 자체를 이해하려는 시도"</em>다. 생성 모델이 더 야심 차고, 그 야심을 채우려면 더 많은 데이터와 더 정교한 모델이 필요하다. 그래서 1-12장이 끝나야 비로소 13장이 시작되는 것이다 — 1-12장에서 만든 부품들 위에서야 비로소 생성 모델을 진지하게 다룰 수 있기 때문이다.</p>
+
+      <div class="widget">
+        <div class="widget-frame">
+          <div class="widget-label"><span class="lab-no">위젯 02</span><span>같은 두 클래스 데이터 · 두 모델의 시선이 어떻게 다른가</span></div>
+          <div class="gd-stage">
+            <div class="gd-col">
+              <h5>판별 모델 — <b>경계선</b>만 찾음</h5>
+              <canvas id="gdDisc" width="320" height="280"></canvas>
+              <p class="gd-cap">두 클래스를 가르는 곡선 하나만 그린다. 빨강 영역과 파랑 영역 어디든 들어오는 점이라면 어느 쪽인지 즉시 답한다. 빨강 점이 어떻게 생겼는지는 모른다.</p>
+            </div>
+            <div class="gd-col">
+              <h5>생성 모델 — <b>분포 전체</b>를 모델링</h5>
+              <canvas id="gdGen" width="320" height="280"></canvas>
+              <p class="gd-cap">각 클래스의 분포(타원)를 학습한다. 빨강이 어떤 모양인지, 파랑이 어떤 모양인지 둘 다 안다. 새 빨강 점을 만들 수도 있고, 분포에서 멀리 떨어진 점을 이상치로 잡아낼 수도 있다.</p>
+            </div>
           </div>
-          <div class="pca-meta">
-            <span><span class="lbl">설명된 분산 비율</span><b id="pca-evr">0.0%</b><div class="pca-bar"><i id="pca-bar"></i></div></span>
-            <span><span class="lbl">최적 (PCA)</span><b id="pca-opt">θ* ≈ 28°</b></span>
+          <div class="gd-toggle">
+            <button id="gdRefresh" class="on">새 데이터로 다시 학습</button>
+            <button id="gdOutlier">이상치 한 점 추가</button>
           </div>
         </div>
+        <p class="widget-cap">같은 데이터를 받아도 판별 모델은 "경계만 정확히" 그리고, 생성 모델은 "각 클래스가 어디에 몰려 있는지" 전체를 그린다. 이상치 한 점을 추가하면 판별 모델은 여전히 그 점을 한쪽 클래스로 자신 있게 분류하지만, 생성 모델은 "두 분포 어디에도 속하지 않는다"고 정직하게 답한다.</p>
       </div>
-      <p class="widget-cap">데이터(파란 점)는 어떤 방향으로 크게 늘어져 있다. 슬라이더로 사영 축의 각도 θ를 돌리면, 그 축에 사영했을 때의 분산 비율이 실시간으로 갱신된다. 분산이 최대가 되는 각도가 바로 1주성분 방향이며, 이것이 PCA가 찾는 것이다. 각도를 직접 옮겨가며 "왜 그 방향이 최선인가"를 손으로 확인할 수 있다.</p>
+
+      <h2>잠재 변수가 왜 생성 모델의 핵심 장치인가</h2>
+
+      <p>생성 모델이라고 해서 반드시 잠재 변수를 써야 하는 것은 아니다. 자기회귀 모델(autoregressive model)은 잠재 변수 없이 $p(x_1, x_2, \ldots, x_d) = p(x_1) p(x_2 \mid x_1) \cdots p(x_d \mid x_{1:d-1})$로 분해해서 픽셀 하나씩 차례로 예측한다. 그런데 책이 13장에서 굳이 잠재 변수 모델로 생성 모델 이야기를 시작한 데는 이유가 있다.</p>
+
+      <p>이유는 <strong>"표상(representation)"</strong>이라는 단어로 요약된다. 잠재 변수 $h$는 단지 데이터를 만드는 도구가 아니다. 데이터를 더 짧고 더 의미 있게 요약한 <em>표상</em>이다. 224×224×3 = 15만 차원의 픽셀 텐서를 가지고 있다고 해 보자. 사람 얼굴 사진이라면 그 15만 숫자 뒤에 정말로 흔드는 다이얼은 몇 개 안 된다 — 성별, 나이, 표정, 조명 방향, 머리카락 색깔 등. 잘 학습된 잠재 변수 모델은 $h$가 바로 그런 의미 있는 다이얼이 되도록 한다. 그러면 $h$는 분류, 클러스터링, 검색, 시각화 등 거의 모든 다음 작업에서 픽셀 텐서보다 훨씬 유용한 입력이 된다.</p>
+
+      <p>이게 13장이 책의 후반부 첫 장인 이유다. 후반부 전체(13장 선형 요소 → 14장 오토인코더 → 15장 표상학습 → 16-20장 확률 모델, GAN, VAE 등)가 결국 다음 한 가지 질문에 답하려 한다. <em>"좋은 표상은 어떻게 학습하는가, 그리고 그 표상으로 어떤 일이 가능한가."</em> 13장은 그 질문에 답하는 가장 단순한 도구를 먼저 제시한다 — 선형으로, 가우시안 가정으로, 잠재 변수 한 줌으로.</p>
+
+      <h2>분류기로도 쓸 수 있는데 왜 굳이 다른 모델인가</h2>
+
+      <p>실용 관점에서 자연스럽게 떠오르는 질문이 있다. "생성 모델로 베이즈 정리를 거치면 분류기로도 쓸 수 있다는데, 그러면 판별 모델보다 좋지 않은가?" 답은 둘 다 맞는데, 어느 쪽이 이기는지는 <strong>데이터 양과 모델의 가정이 맞는지</strong>에 달려 있다.</p>
+
+      <p>이 비교의 고전적인 결과는 Ng와 Jordan(2002)이 정리했다. 그들이 보인 것은 두 가지다. 첫째, 데이터가 매우 적을 때는 생성 모델이 더 강하다. 모델이 데이터 구조에 강한 가정을 깔기 때문에 적은 데이터에서도 그 가정이 도움을 준다. 둘째, 데이터가 충분히 많아지면 판별 모델이 결국 더 낮은 오류로 수렴한다. 가정 없이 직접 $p(y \mid x)$를 학습하기 때문에 데이터가 많을수록 유연하게 적응한다. 다만 이건 모델의 생성 가정이 맞을 때 이야기이고, 가정이 틀리면 생성 모델은 적은 데이터에서도 잘못된 방향으로 빠진다.</p>
+
+      <div class="pitfall">
+        <p>생성 모델과 판별 모델은 우열의 문제가 아니다. <em>다른 일을 하는 다른 도구</em>다. 분류 정확도만 보면 판별 모델이 보통 이기지만, 새 데이터 생성, 이상치 탐지, 결측치 보완, 표상 학습 같은 작업에서는 생성 모델만이 답을 준다. 13장 이후를 읽을 때는 "분류 정확도가 얼마인가?"가 아니라 "이 모델이 데이터를 어떻게 이해했는가?"를 보아야 한다.</p>
+      </div>
+
+      <h2>이 장의 위치 — 가장 단순한 생성 모델부터</h2>
+
+      <p>13장이 다루는 선형 요소 모델은 생성 모델 가족 안에서도 가장 단순한 자리에 있다. 분포는 가우시안, 잠재에서 관측으로 가는 사상은 선형. 이 두 단순화 덕분에 모든 것이 손으로 계산되고, 모든 것이 기하적으로 직관 가능하다. 그래서 책이 생성 모델을 처음 가르치는 자리에 이 가족을 놓았다. 14장 오토인코더는 이 가족의 선형성을 비선형으로 풀고, 15장 표상학습은 학습된 잠재가 왜 좋은 표상인가를 정리하고, 16장 이후는 분포를 가우시안 너머로 확장한다. 그러니까 13장의 모든 모델은 후반부의 출발 베이스라인이다.</p>
+
+      <p>다음 절부터는 이 가족 안에서 갈라지는 모델들을 하나씩 본다. 첫째로 보는 것은 요소 분석(Factor Analysis)이다 — 잠재가 가우시안이고 잡음이 차원마다 다른 가우시안인, "가장 표현력 있는 가우시안 가족"이다.</p>
     </div>
 
-    <div class="prose">
-      <h2>왜 사후 분포가 닫힌 형태로 풀리는가</h2>
-
-      <p>FA와 PPCA의 가장 큰 매력은 추론 — 즉 $p(h \mid x)$ — 이 다시 가우시안으로 떨어진다는 점이다. 그래서 적분도, 경사하강도, 어떤 반복 알고리즘도 필요 없다. 평균과 공분산을 한 번에 적을 수 있다.</p>
-
-      <div class="math-block">$$ p(h \mid x) = \mathcal{N}\!\left( \mu_{h \mid x}, \, \Sigma_{h \mid x} \right) $$</div>
-      <p class="math-note">사후도 가우시안. 그 평균과 공분산은 W, Ψ(또는 σ²I), x로부터 닫힌 식으로 결정된다.</p>
-
-      <p>왜 이 식이 그 형태인가? 핵심은 <strong>가우시안의 곱은 다시 가우시안</strong>이라는 사실이다. 사전 $p(h) = \mathcal{N}(0, I)$와 우도 $p(x \mid h) = \mathcal{N}(Wh + b, \Psi)$가 둘 다 가우시안이므로, 베이즈 규칙으로 곱한 사후 $p(h \mid x) \propto p(x \mid h) \, p(h)$ 역시 가우시안이다. 두 가우시안의 지수부에 들어 있는 이차식들을 $h$에 대해 모아 완성 제곱(complete the square)을 하면, 그 결과가 정확히 사후 평균과 사후 공분산이 된다. 적분이 필요 없는 이유가 여기 있다.</p>
-
-      <p>이것이 FA·PPCA의 <strong>강점</strong>이자 동시에 <strong>한계</strong>다. 강점은 명백하다 — 학습은 EM이나 닫힌 해, 추론은 단 한 줄의 행렬 곱셈으로 끝난다. 한계도 명백하다 — 가우시안은 평균 둘레로 부드럽게 퍼진 모양뿐이라, 데이터가 "거의 항상 0이고 가끔 큰 값"을 가지거나 "서로 통계적으로 독립인 비가우시안 신호의 혼합" 같은 구조를 가질 때는 표현이 안 된다. 다음 두 장 — ICA와 희소 코딩 — 은 정확히 이 한계를 깨려고 등장한다.</p>
-
-      <h2>EM 알고리즘 한 줄 직관</h2>
-
-      <p>실제로 데이터로부터 $W, \Psi$를 찾는 표준 절차는 <strong>EM(Expectation-Maximization) 알고리즘</strong>이다. 두 단계가 번갈아 돈다.</p>
-
-      <ul>
-        <li><strong>E-step.</strong> 현재 $W, \Psi$를 고정하고, 각 관측 $x^{(i)}$에 대해 사후 평균 $\mathbb{E}[h \mid x^{(i)}]$를 계산한다.</li>
-        <li><strong>M-step.</strong> 사후 평균을 마치 진짜 $h^{(i)}$인 양 사용해서 $W, \Psi$를 다시 최대우도 추정한다.</li>
-      </ul>
-
-      <p>두 단계가 번갈아 우도를 단조 증가시킨다는 것이 EM의 핵심 보장이다. 가우시안이 가져다 주는 단순함이 EM의 두 단계 모두를 닫힌 형태로 만든다.</p>
-
-      <p>다음 장에서는 잠재 변수에서 <strong>가우시안 가정을 벗는</strong> 순간 무엇이 일어나는지 본다. 그 첫 번째 사례가 칵테일 파티 문제에서 사람 목소리를 갈라내는 ICA다.</p>
-    </div>
-
-    <nav class="ch-foot">
-      <a href="01.html"><div class="dir">← 이전</div><div class="ti">잠재 변수 모델</div></a>
-      <a href="03.html" class="next"><div class="dir">다음 →</div><div class="ti">ICA — 비가우시안 독립</div></a>
-    </nav>
+    <nav class="ch-foot"></nav>
   </main>
 </div>
 
 <script>
-  window.addEventListener('load', () => {
+  const SUBS = [
+    { no:'01', t:'잠재 변수의 직관' },
+    { no:'02', t:'생성 vs 판별 모델' },
+    { no:'03', t:'요소 분석 (FA)' },
+    { no:'04', t:'확률적 PCA' },
+    { no:'05', t:'전통 PCA' },
+    { no:'06', t:'PCA의 한계' },
+    { no:'07', t:'ICA — 칵테일 파티' },
+    { no:'08', t:'희소 코딩 1' },
+    { no:'09', t:'희소 코딩 2 — ISTA' },
+    { no:'10', t:'슬로우 피처 분석' },
+    { no:'11', t:'매니폴드의 첫 등장' },
+    { no:'12', t:'시험 대비' },
+  ];
+  function buildNav(cur) {
+    const tb = document.querySelector('.topbar');
+    if (tb) tb.innerHTML =
+      '<a class="home" href="index.html">← Chapter 13 / 선형 요소 모델</a>' +
+      '<span class="ch-mini">SUB ' + cur + ' / 12</span>';
+    const ol = document.querySelector('.ch-nav ol');
+    if (ol) ol.innerHTML = SUBS.map(c =>
+      '<li><a href="' + c.no + '.html"' + (c.no === cur ? ' class="current"' : '') + '>' + c.t + '</a></li>').join('');
+    const foot = document.querySelector('.ch-foot');
+    if (foot) {
+      const i = SUBS.findIndex(c => c.no === cur);
+      const prev = i > 0 ? SUBS[i - 1] : { no: '', t: '표지로', _href: 'index.html' };
+      const next = i < SUBS.length - 1 ? SUBS[i + 1] : { no: '', t: '표지로', _href: 'index.html' };
+      const hp = prev._href || (prev.no + '.html');
+      const hn = next._href || (next.no + '.html');
+      foot.innerHTML =
+        '<a href="' + hp + '"><div class="dir">← 이전</div><div class="ti">' + prev.t + '</div></a>' +
+        '<a href="' + hn + '" class="next"><div class="dir">다음 →</div><div class="ti">' + next.t + '</div></a>';
+    }
+  }
+  function initScroll() {
     const bar = document.querySelector('.scroll-progress');
-    const onScroll = () => {
+    if (!bar) return;
+    const on = () => {
       const h = document.documentElement;
       const max = h.scrollHeight - h.clientHeight;
       bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
     };
-    document.addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
-
+    document.addEventListener('scroll', on, { passive: true }); on();
+  }
+  function initKatex() {
     if (window.renderMathInElement) {
       renderMathInElement(document.body, {
-        delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }],
+        delimiters: [
+          { left: '$$', right: '$$', display: true },
+          { left: '$', right: '$', display: false },
+        ],
         throwOnError: false,
       });
     }
+  }
+  function widget02() {
+    const css = getComputedStyle(document.documentElement);
+    const C = {
+      style: css.getPropertyValue('--style').trim() || '#C0492E',
+      structure: css.getPropertyValue('--structure').trim() || '#2D5B7A',
+      synth: css.getPropertyValue('--synth').trim() || '#A47B2E',
+      ink: css.getPropertyValue('--ink').trim() || '#26221C',
+      faint: css.getPropertyValue('--ink-faint').trim() || '#8E8576',
+      paper2: css.getPropertyValue('--paper-2').trim() || '#F3EEE3',
+    };
+    const discC = document.getElementById('gdDisc');
+    const genC = document.getElementById('gdGen');
+    const refresh = document.getElementById('gdRefresh');
+    const outlier = document.getElementById('gdOutlier');
+    if (!discC || !genC) return;
 
-    // ============================ PCA 2D 위젯 ============================
-    const canvas = document.getElementById('pca');
-    const ctx = canvas.getContext('2d');
-    function resize() {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      const w = canvas.clientWidth, h = 360;
-      canvas.width = w * dpr; canvas.height = h * dpr;
-      ctx.setTransform(dpr,0,0,dpr,0,0);
+    let clsA = [], clsB = [], extra = [];
+    function gauss() { let u=0,v=0; while(u===0)u=Math.random(); while(v===0)v=Math.random(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+    function genData() {
+      clsA = []; clsB = []; extra = [];
+      // 클래스 A: 좌상단 중심
+      for (let i = 0; i < 60; i++) {
+        clsA.push({ x: -1.2 + gauss() * 0.5, y: 1.0 + gauss() * 0.6 });
+      }
+      // 클래스 B: 우하단 중심, 약간 다른 분산
+      for (let i = 0; i < 60; i++) {
+        clsB.push({ x: 1.2 + gauss() * 0.7, y: -0.8 + gauss() * 0.5 });
+      }
     }
-    resize();
-    window.addEventListener('resize', resize);
-
-    // 2D 데이터 — 가우시안 + 회전된 큰 분산 방향
-    const N = 220;
-    const trueAng = 28 * Math.PI / 180;
-    const cosA = Math.cos(trueAng), sinA = Math.sin(trueAng);
-    const data = [];
-    function randn() {
-      let u = 0, v = 0;
-      while (u === 0) u = Math.random();
-      while (v === 0) v = Math.random();
-      return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
-    }
-    for (let i = 0; i < N; i++) {
-      const a = randn() * 1.8;    // 큰 분산 방향
-      const b = randn() * 0.42;   // 작은 분산 방향
-      const x = a * cosA - b * sinA;
-      const y = a * sinA + b * cosA;
-      data.push({ x, y });
-    }
-    // 중심 0
-    const mx = data.reduce((s, p) => s + p.x, 0) / N;
-    const my = data.reduce((s, p) => s + p.y, 0) / N;
-    data.forEach(p => { p.x -= mx; p.y -= my; });
-
-    // 데이터 총분산
-    const totalVar = data.reduce((s, p) => s + p.x*p.x + p.y*p.y, 0) / N;
-
-    function projVar(theta) {
-      const c = Math.cos(theta), s = Math.sin(theta);
-      let v = 0;
-      data.forEach(p => { const t = p.x*c + p.y*s; v += t*t; });
-      return v / N;
+    function addOutlier() {
+      // 둘 다에서 멀리 떨어진 점
+      extra.push({ x: -1.6 + Math.random() * 0.3, y: -1.5 + Math.random() * 0.3 });
     }
 
-    // 최적 각도 표시
-    let bestTh = 0, bestV = -1;
-    for (let d = 0; d <= 180; d++) {
-      const v = projVar(d * Math.PI / 180);
-      if (v > bestV) { bestV = v; bestTh = d; }
-    }
-    document.getElementById('pca-opt').textContent = `θ* ≈ ${bestTh}°`;
+    function tx(c, x) { return c.width/2 + x * (c.width/2 - 20) * 0.5; }
+    function ty(c, y) { return c.height/2 - y * (c.height/2 - 20) * 0.5; }
 
-    const sl = document.getElementById('pca-th');
-    const lblTh = document.getElementById('pca-theta');
-    const lblEvr = document.getElementById('pca-evr');
-    const barEl = document.getElementById('pca-bar');
-
-    function draw() {
-      const w = canvas.clientWidth, h = 360;
-      ctx.clearRect(0,0,w,h);
-      ctx.fillStyle = '#FAF7F0'; ctx.fillRect(0,0,w,h);
-
-      const cx = w/2, cy = h/2;
-      const scale = Math.min(w, h) * 0.16;
-
-      // 축
-      ctx.strokeStyle = 'rgba(38,34,28,.10)';
-      ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(w, cy); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, h); ctx.stroke();
-
-      // 데이터 점
-      data.forEach(p => {
-        ctx.fillStyle = 'rgba(45, 91, 122, 0.55)';
-        ctx.beginPath(); ctx.arc(cx + p.x * scale, cy - p.y * scale, 2.5, 0, Math.PI*2); ctx.fill();
-      });
-
-      const th = +sl.value;
-      const theta = th * Math.PI / 180;
-      const c = Math.cos(theta), s = Math.sin(theta);
-
-      // 사영 선들 (각 점 → 축)
-      ctx.strokeStyle = 'rgba(192, 73, 46, 0.18)';
-      ctx.lineWidth = 0.6;
-      data.forEach(p => {
-        const t = p.x * c + p.y * s; // 축 위 좌표
-        const fx = t * c, fy = t * s;
-        ctx.beginPath();
-        ctx.moveTo(cx + p.x * scale, cy - p.y * scale);
-        ctx.lineTo(cx + fx * scale, cy - fy * scale);
-        ctx.stroke();
-      });
-
-      // 사영된 점들 (축 위)
-      data.forEach(p => {
-        const t = p.x * c + p.y * s;
-        const fx = t * c, fy = t * s;
-        ctx.fillStyle = 'rgba(192, 73, 46, 0.78)';
-        ctx.beginPath(); ctx.arc(cx + fx * scale, cy - fy * scale, 2, 0, Math.PI*2); ctx.fill();
-      });
-
-      // 주성분 축 (선)
-      const L = Math.min(w, h) * 0.42;
-      ctx.strokeStyle = '#C0492E';
-      ctx.lineWidth = 2;
+    // 판별: 두 평균의 수직 이등분선 (Fisher LDA에 가깝게)
+    function drawDisc() {
+      const ctx = discC.getContext('2d');
+      const w = discC.width, h = discC.height;
+      ctx.clearRect(0, 0, w, h);
+      // 격자
+      ctx.strokeStyle = C.paper2; ctx.lineWidth = 1;
+      for (let i = -2; i <= 2; i++) {
+        ctx.beginPath(); ctx.moveTo(tx(discC, i), 0); ctx.lineTo(tx(discC, i), h); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, ty(discC, i)); ctx.lineTo(w, ty(discC, i)); ctx.stroke();
+      }
+      // 결정 경계 영역 색 칠하기
+      const mA = { x: -1.2, y: 1.0 };
+      const mB = { x: 1.2, y: -0.8 };
+      const mid = { x: (mA.x+mB.x)/2, y: (mA.y+mB.y)/2 };
+      const dir = { x: mB.x-mA.x, y: mB.y-mA.y };
+      const img = ctx.createImageData(w, h);
+      for (let py = 0; py < h; py++) {
+        for (let px = 0; px < w; px++) {
+          const x = (px - w/2) / ((w/2 - 20)*0.5);
+          const y = -(py - h/2) / ((h/2 - 20)*0.5);
+          const sgn = (x - mid.x) * dir.x + (y - mid.y) * dir.y;
+          const i = (py*w + px) * 4;
+          if (sgn < 0) {
+            img.data[i] = 45; img.data[i+1] = 91; img.data[i+2] = 122; img.data[i+3] = 28;
+          } else {
+            img.data[i] = 192; img.data[i+1] = 73; img.data[i+2] = 46; img.data[i+3] = 28;
+          }
+        }
+      }
+      ctx.putImageData(img, 0, 0);
+      // 경계선
+      ctx.strokeStyle = C.ink; ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(cx - c * L, cy + s * L);
-      ctx.lineTo(cx + c * L, cy - s * L);
+      // 경계는 mid를 지나고 dir에 수직인 직선
+      const perp = { x: -dir.y, y: dir.x };
+      const t1 = -3, t2 = 3;
+      ctx.moveTo(tx(discC, mid.x + perp.x * t1), ty(discC, mid.y + perp.y * t1));
+      ctx.lineTo(tx(discC, mid.x + perp.x * t2), ty(discC, mid.y + perp.y * t2));
       ctx.stroke();
-
-      // 라벨
-      const evr = projVar(theta) / totalVar;
-      lblTh.textContent = th + '°';
-      lblEvr.textContent = (evr * 100).toFixed(1) + '%';
-      barEl.style.width = (evr * 100) + '%';
-
-      ctx.fillStyle = '#8E8576';
-      ctx.font = '11px "Spline Sans Mono", monospace';
-      ctx.fillText('데이터 (파랑) → 축에 사영 (주황)', 14, h - 14);
+      // 점
+      ctx.fillStyle = C.structure;
+      for (const p of clsA) { ctx.beginPath(); ctx.arc(tx(discC, p.x), ty(discC, p.y), 3, 0, Math.PI*2); ctx.fill(); }
+      ctx.fillStyle = C.style;
+      for (const p of clsB) { ctx.beginPath(); ctx.arc(tx(discC, p.x), ty(discC, p.y), 3, 0, Math.PI*2); ctx.fill(); }
+      // 이상치는 어느 한쪽으로 강하게 분류됨 (파란 영역에 있다면)
+      for (const p of extra) {
+        const sgn = (p.x - mid.x) * dir.x + (p.y - mid.y) * dir.y;
+        ctx.fillStyle = sgn < 0 ? C.structure : C.style;
+        ctx.beginPath(); ctx.arc(tx(discC, p.x), ty(discC, p.y), 7, 0, Math.PI*2); ctx.fill();
+        ctx.strokeStyle = C.ink; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(tx(discC, p.x), ty(discC, p.y), 7, 0, Math.PI*2); ctx.stroke();
+        ctx.fillStyle = C.ink; ctx.font = '10px monospace';
+        ctx.fillText('"확실히 파랑"', tx(discC, p.x)+10, ty(discC, p.y)-2);
+      }
     }
-    sl.addEventListener('input', draw);
-    draw();
-  });
+
+    // 생성: 두 클래스 각각의 분포(타원)
+    function ellipse(ctx, mu, sig, color, fill) {
+      ctx.save();
+      ctx.translate(tx(genC, mu.x), ty(genC, mu.y));
+      ctx.strokeStyle = color; ctx.lineWidth = 1.5;
+      ctx.fillStyle = color + '22';
+      for (let k = 1; k <= 2; k++) {
+        ctx.beginPath();
+        ctx.ellipse(0, 0, sig.x * k * 30, sig.y * k * 30, 0, 0, Math.PI*2);
+        if (fill && k === 1) ctx.fill();
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+    function drawGen() {
+      const ctx = genC.getContext('2d');
+      const w = genC.width, h = genC.height;
+      ctx.clearRect(0, 0, w, h);
+      ctx.strokeStyle = C.paper2; ctx.lineWidth = 1;
+      for (let i = -2; i <= 2; i++) {
+        ctx.beginPath(); ctx.moveTo(tx(genC, i), 0); ctx.lineTo(tx(genC, i), h); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, ty(genC, i)); ctx.lineTo(w, ty(genC, i)); ctx.stroke();
+      }
+      // 두 분포 그리기
+      ellipse(ctx, { x: -1.2, y: 1.0 }, { x: 0.5, y: 0.6 }, C.structure, true);
+      ellipse(ctx, { x: 1.2, y: -0.8 }, { x: 0.7, y: 0.5 }, C.style, true);
+      // 점
+      ctx.fillStyle = C.structure;
+      for (const p of clsA) { ctx.beginPath(); ctx.arc(tx(genC, p.x), ty(genC, p.y), 3, 0, Math.PI*2); ctx.fill(); }
+      ctx.fillStyle = C.style;
+      for (const p of clsB) { ctx.beginPath(); ctx.arc(tx(genC, p.x), ty(genC, p.y), 3, 0, Math.PI*2); ctx.fill(); }
+      // 이상치
+      for (const p of extra) {
+        ctx.fillStyle = C.synth;
+        ctx.beginPath(); ctx.arc(tx(genC, p.x), ty(genC, p.y), 7, 0, Math.PI*2); ctx.fill();
+        ctx.strokeStyle = C.ink; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(tx(genC, p.x), ty(genC, p.y), 7, 0, Math.PI*2); ctx.stroke();
+        ctx.fillStyle = C.ink; ctx.font = '10px monospace';
+        ctx.fillText('이상치!', tx(genC, p.x)+10, ty(genC, p.y)-2);
+      }
+    }
+
+    function redraw() { drawDisc(); drawGen(); }
+    refresh.addEventListener('click', () => { genData(); redraw(); });
+    outlier.addEventListener('click', () => { addOutlier(); redraw(); });
+    genData(); redraw();
+  }
+  window.addEventListener('load', () => { buildNav('02'); initScroll(); initKatex(); widget02(); });
 </script>
 </body>
 </html>

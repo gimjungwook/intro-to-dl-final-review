@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>10 — 깊이의 지수적 표현력 — Ch.15</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .dw-stage { padding: 1.4rem 1.2rem 1rem; }
+  .dw-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .dw-panel { border: 1px solid var(--line); border-radius: 10px; padding: 1rem; background: #fff; }
+  .dw-panel h4 { margin: 0 0 .5rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .12em; color: var(--ink-faint); }
+  .dw-panel canvas { display: block; width: 100%; height: 220px; border-radius: 6px; background: var(--paper); }
+  .dw-panel .stat { margin-top: .6rem; font-family: var(--mono); font-size: .82rem; color: var(--ink-soft); line-height: 1.5; }
+  .dw-panel .stat b { color: var(--ink); }
+  .dw-slider { display: flex; align-items: center; gap: 1rem; padding: 1rem 1.2rem; border-top: 1px solid var(--line-soft); background: var(--paper); }
+  .dw-slider label { font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); min-width: 6.5rem; }
+  .dw-slider input[type=range] { flex: 1; accent-color: var(--structure); }
+  .dw-slider .val { font-family: var(--mono); font-size: .9rem; color: var(--structure); min-width: 2.5rem; text-align: right; }
+  .dw-verdict { padding: 1rem 1.2rem; border-top: 1px solid var(--line-soft); background: var(--paper); font-size: .9rem; color: var(--ink-soft); line-height: 1.55; }
+  @media (max-width: 640px) { .dw-row { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 10 — 깊이 = 더 깊은 게 아니라 “다른” 것</span>
+      <h1>깊이의 <span class="t-synth">지수적</span> 표현력</h1>
+      <p class="lede">같은 함수를 얕은 망으로 표현하려면 너비가 지수적으로 커진다. 깊이는 단순히 “층이 많은 것”이 아니라 질적으로 다른 표현력을 가진 자원이다. 책의 깊이 vs 너비 정리를 풀어 본다.</p>
+    </header>
+
+    <div class="prose">
+      <p>“왜 딥러닝은 ‘딥(deep, 깊은)’이어야 하는가?”라는 질문은 15장 후반부의 핵심 중 하나다. 흔한 오해는 “층이 많으면 파라미터가 많아져서 더 복잡한 함수를 표현할 수 있다”이지만, 책의 답은 더 미묘하다. 같은 수의 파라미터로도 깊은 망이 얕은 망보다 지수적으로 더 풍부한 함수를 표현할 수 있다. 깊이는 “더 많은 자원”이 아니라 “다른 종류의 자원”이다.</p>
+      <p>이 점은 신경망의 “보편 근사 정리(universal approximation theorem)”와 함께 봐야 정확히 이해된다. 보편 근사 정리는 “충분히 넓은 한 층짜리 신경망은 어떤 연속 함수든 임의 정확도로 근사할 수 있다”고 말한다. 그러면 왜 굳이 깊이가 필요한가? 답은 “충분히 넓다”의 ‘충분히’가 얼마나 큰지에 달렸다. 어떤 함수에 대해서는 얕은 망이 그 함수를 표현하려면 지수적으로 많은 단위가 필요한 반면, 깊은 망은 다항(polynomial) 수준의 단위로 같은 함수를 표현할 수 있다.</p>
+
+      <h2>깊이의 정량적 이득 — 책의 두 가지 정리</h2>
+      <p>책은 깊이의 이득을 두 가지 정리로 정리한다.</p>
+      <p><strong>(1) Montufar et al. (2014) — 영역 수의 지수적 증가.</strong> ReLU 활성을 가진 깊이 $L$, 너비 $n$의 신경망은 입력 공간을 최대 $O\!\left(\binom{n}{d}^{L-1} n^d\right)$ 개의 선형 영역(linear region)으로 나눌 수 있다. 여기서 $d$는 입력 차원. 핵심은 이 식이 $L$에 대해 “지수적”으로 증가한다는 점이다. 같은 파라미터 예산을 “깊이”에 투자하면 “너비”에 투자할 때보다 훨씬 더 많은 영역을 만들 수 있다.</p>
+
+      <div class="math-block">$$ R_{\text{deep}}(L, n) = O\!\left(\binom{n}{d}^{L-1} n^d\right) \quad \text{vs} \quad R_{\text{wide}}(N) = O(N^d) $$</div>
+      <p class="math-note">$R$ = 표현 가능한 선형 영역 수. 깊이 $L$이 늘면 지수, 너비 $N$이 늘면 다항. 같은 파라미터 수 기준 깊은 망이 압도적으로 많은 영역.</p>
+
+      <p><strong>(2) Bengio (2009) — 합성된 함수의 지수적 압축.</strong> 깊이가 $k$인 회로(circuit)로 표현 가능한 어떤 함수족이 있고, 같은 함수를 깊이 $k-1$ 회로로 표현하려면 너비가 지수적으로 커진다는 부울 회로 이론의 고전 결과. 신경망은 부울 회로의 연속 일반화이므로 같은 직관이 적용된다. 한 줄로: <strong>함수 합성(composition)은 깊이로만 효율적으로 표현된다.</strong></p>
+
+      <h2>왜 “합성”이 깊이의 이득의 정체인가</h2>
+      <p>이 결과들의 공통 메커니즘은 함수 합성이다. 깊은 망의 한 층 $f^{(l)}$의 출력이 다음 층 $f^{(l+1)}$의 입력이 되고, 전체 망은 $f = f^{(L)} \circ f^{(L-1)} \circ \cdots \circ f^{(1)}$이다. 각 층이 단순한 변환(예: ReLU 한 번)이라도, 그것들을 합성하면 합성의 횟수가 지수적으로 많은 패턴을 만들어 낸다.</p>
+      <p>이 점을 가장 직관적으로 보여 주는 예가 “XOR 회로”다. 두 비트의 XOR은 단일 층 퍼셉트론(perceptron)으로는 표현할 수 없고, 두 층은 필요하다. 그러면 $n$비트의 “패리티(parity, 1의 개수가 짝수인지 홀수인지)”는? 한 층으로 표현하려면 너비 $O(2^n)$이 필요하다(모든 입력 조합을 따로 다뤄야 함). 두 층이면 $O(n)$, 깊이 $O(\log n)$이면 너비 $O(1)$로 가능하다. 같은 함수, 자원의 지수적 차이.</p>
+
+      <div class="analogy">
+        <b>요리 레시피의 단계.</b> “토마토 파스타를 만드세요”라는 한 줄 지시(얕은 망 한 층)는 듣는 사람이 모든 세부를 한꺼번에 떠올려야 한다. 그러나 “물을 끓이고 → 파스타를 넣고 → 동시에 소스를 만들고 → 합치라”는 4단계 지시(깊은 망)는 각 단계가 단순하다. 더 중요한 것은 단계들이 합성되어 처음에는 “끓는 물”이라는 중간 표상이 만들어지고, 다음 단계가 그 위에서 작동한다는 점이다. 한 줄 지시로 만들 수 있는 요리는 단순한 것뿐이고, 다단계 지시는 같은 어휘로도 훨씬 복잡한 요리를 만들 수 있다.
+      </div>
+
+      <h2>실증적 증거 — 같은 파라미터, 다른 성능</h2>
+      <p>이론적 결과는 실증으로도 강하게 뒷받침된다. ResNet 논문(He et al., 2015)이 보인 결과 — 같은 파라미터 수의 망에서 깊이가 18, 34, 50, 101, 152로 늘 때 ImageNet top-5 에러가 단조 감소. 너비를 같은 비율로 늘렸을 때는 같은 정도의 개선이 나오지 않는다. 깊이를 늘리는 것이 “더 풍부한 함수를 효율적으로 표현하는” 가장 강력한 단일 자원 투자다.</p>
+      <p>물론 깊이가 무조건 좋은 것은 아니다. 너무 깊으면 기울기 소실·폭발, 학습 안정성 문제, 메모리·계산 비용이 따라온다. ResNet의 핵심 기여(잔차 연결)는 “깊이의 이득을 실제로 학습 가능하게” 만드는 안정성 장치였다. 이론(깊이의 표현력)과 실제(학습 가능성)는 다른 문제이고, 둘 다 해결되어야 깊이가 진짜 자원이 된다.</p>
+
+      <div class="widget">
+        <div class="widget-frame">
+          <div class="widget-label"><span class="lab-no">위젯 10</span><span>깊이 vs 너비 — 같은 파라미터, 다른 표현력</span></div>
+          <div class="dw-stage">
+            <div class="dw-row">
+              <div class="dw-panel">
+                <h4>얕은 망 (1층, 매우 넓음)</h4>
+                <canvas id="dw-shallow" width="320" height="220"></canvas>
+                <div class="stat">파라미터: <b id="dw-s-p">128</b> · 표현 가능한 선형 영역: <b id="dw-s-r">128</b></div>
+              </div>
+              <div class="dw-panel">
+                <h4>깊은 망 (다층, 좁음)</h4>
+                <canvas id="dw-deep" width="320" height="220"></canvas>
+                <div class="stat">파라미터: <b id="dw-d-p">128</b> · 표현 가능한 선형 영역: <b id="dw-d-r">~16,384</b></div>
+              </div>
+            </div>
+          </div>
+          <div class="dw-slider">
+            <label>깊이 L</label>
+            <input type="range" id="depth-slider" min="2" max="8" value="4">
+            <span class="val" id="depth-val">4</span>
+          </div>
+          <div class="dw-verdict" id="dw-v">
+            깊이를 늘리면 같은 파라미터로 “접힌 함수”의 수가 지수적으로 늘어난다. 얕은 망은 너비에 비례해 영역이 늘지만, 깊은 망은 깊이에 비례해 지수적으로 늘어남.
+          </div>
+        </div>
+        <p class="widget-cap">왼쪽은 한 층짜리 망의 출력 함수(직선 조각들). 오른쪽은 같은 파라미터 수의 다층 망 출력(접힘 패턴 지수적 증가). 슬라이더로 깊이를 조정하면 오른쪽 패턴의 복잡도가 지수적으로 늘어나는 것을 확인할 수 있다.</p>
+      </div>
+
+      <h2>깊이의 한계와 현대적 시각</h2>
+      <p>2010년대 후반 트랜스포머(Transformer)의 등장으로 “깊이만이 답이 아니라 ‘어텐션을 통한 폭넓은 입력 통합’이 또 다른 표현력의 축”이라는 시각도 자리잡았다. BERT의 12-24층, GPT-3의 96층, GPT-4의 추정 수십-수백 층 모두 깊이를 활용하지만, 한 층 안의 어텐션 메커니즘도 정보 통합의 핵심 자원이다.</p>
+      <p>그럼에도 책의 정리 — “깊이는 합성을 통한 지수적 표현력 이득을 준다” — 는 모든 현대 아키텍처의 출발점으로 남아 있다. 표상 학습의 시각에서 보면, 깊은 망의 각 층은 “이전 층의 분산 표상을 더 추상적인 분산 표상으로 합성하는 함수”다. 깊이의 이득은 분산 표상의 합성성과 같은 동전의 양면이다.</p>
+
+      <h2>핵심 어휘 정리</h2>
+      <table class="symbols">
+        <tr><td>보편 근사 정리 (universal approximation)</td><td>충분히 넓은 한 층 망이 어떤 연속 함수든 근사 가능. 깊이가 필요한 이유는 아님.</td></tr>
+        <tr><td>표현력 (expressive power)</td><td>주어진 자원(파라미터)으로 표현 가능한 함수족의 크기.</td></tr>
+        <tr><td>선형 영역 (linear region)</td><td>ReLU 망이 입력 공간을 나눈 조각. 영역 수가 함수의 복잡도 지표.</td></tr>
+        <tr><td>함수 합성 (composition)</td><td>한 함수의 출력이 다음 함수의 입력. 깊이의 이득의 핵심 메커니즘.</td></tr>
+        <tr><td>패리티 함수 (parity)</td><td>$n$비트 입력의 1의 개수가 짝수/홀수인지. 얕은 망에 지수, 깊은 망에 다항.</td></tr>
+      </table>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'좋은 표상이란', f:'01.html' },
+    { no:'02', t:'그리디 층별 사전훈련', f:'02.html' },
+    { no:'03', t:'비지도 사전훈련', f:'03.html' },
+    { no:'04', t:'지도 사전훈련', f:'04.html' },
+    { no:'05', t:'전이학습 1 — 도메인이 돕는 원리', f:'05.html' },
+    { no:'06', t:'전이학습 2 — 미세조정 실전', f:'06.html' },
+    { no:'07', t:'도메인 적응', f:'07.html' },
+    { no:'08', t:'분산 표상 1 — 지수적 이득', f:'08.html' },
+    { no:'09', t:'분산 표상 2 — 합성성·의미 산수', f:'09.html' },
+    { no:'10', t:'깊이의 지수적 표현력', f:'10.html' },
+    { no:'11', t:'인과 요소', f:'11.html' },
+    { no:'12', t:'반지도 학습', f:'12.html' },
+    { no:'13', t:'사전으로서의 정칙화', f:'13.html' },
+    { no:'14', t:'시험 대비', f:'14.html' },
+  ];
+  const CURRENT = '10';
+  (function buildNav() {
+    document.querySelector('.topbar').innerHTML =
+      `<a class="home" href="index.html">← Chapter 15 — 표상 학습</a>` +
+      `<span class="ch-mini">SUB ${CURRENT} / 14</span>`;
+    document.querySelector('.ch-nav ol').innerHTML = SUBS.map(s =>
+      `<li><a href="${s.f}" ${s.no === CURRENT ? 'class="current"' : ''}>${s.t}</a></li>`).join('');
+    const i = SUBS.findIndex(s => s.no === CURRENT);
+    const prev = i > 0 ? SUBS[i-1] : { f:'index.html', t:'챕터 표지', no:'' };
+    const next = i < SUBS.length-1 ? SUBS[i+1] : { f:'index.html', t:'챕터 표지', no:'' };
+    document.querySelector('.ch-foot').innerHTML =
+      `<a href="${prev.f}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+      `<a href="${next.f}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+    const bar = document.querySelector('.scroll-progress');
+    const onScroll = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    document.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+  })();
+
+  (function dwWidget() {
+    const css = getComputedStyle(document.documentElement);
+    const STRUCT = css.getPropertyValue('--structure').trim();
+    const STYLE = css.getPropertyValue('--style').trim();
+    const FAINT = css.getPropertyValue('--ink-faint').trim();
+
+    const sCanvas = document.getElementById('dw-shallow');
+    const dCanvas = document.getElementById('dw-deep');
+    const slider = document.getElementById('depth-slider');
+    const dVal = document.getElementById('depth-val');
+    const sP = document.getElementById('dw-s-p');
+    const sR = document.getElementById('dw-s-r');
+    const dP = document.getElementById('dw-d-p');
+    const dR = document.getElementById('dw-d-r');
+    const verdict = document.getElementById('dw-v');
+
+    function drawShallow(units) {
+      const ctx = sCanvas.getContext('2d');
+      const W = sCanvas.width, H = sCanvas.height;
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
+      // 그래프: 1층 ReLU 망 출력 = 유닛 수만큼의 직선 조각
+      ctx.strokeStyle = STRUCT; ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      const segs = units;
+      let prevY = H * 0.5 + (Math.random() - 0.5) * 30;
+      ctx.moveTo(10, prevY);
+      for (let i = 1; i <= segs; i++) {
+        const x = 10 + (W - 20) * i / segs;
+        prevY += (Math.random() - 0.5) * 35;
+        prevY = Math.max(20, Math.min(H - 20, prevY));
+        ctx.lineTo(x, prevY);
+      }
+      ctx.stroke();
+      // breakpoints
+      ctx.fillStyle = STRUCT;
+      for (let i = 0; i <= segs; i++) {
+        const x = 10 + (W - 20) * i / segs;
+        ctx.beginPath(); ctx.arc(x, H * 0.5, 1.5, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.fillStyle = FAINT; ctx.font = '10px monospace';
+      ctx.fillText('직선 조각 ' + segs + '개', 10, H - 6);
+    }
+
+    function drawDeep(L, units) {
+      const ctx = dCanvas.getContext('2d');
+      const W = dCanvas.width, H = dCanvas.height;
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
+      // 깊은 망의 출력 = 접힌 패턴 (sin × cos × …)
+      ctx.strokeStyle = STYLE; ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      const segs = Math.min(Math.pow(2, L) * units, 800);
+      for (let i = 0; i <= 400; i++) {
+        const x = 10 + (W - 20) * i / 400;
+        const t = i / 400 * Math.PI * 2 * Math.pow(2, L - 1);
+        let y = H * 0.5;
+        y += Math.sin(t) * 25;
+        y += Math.sin(t * 1.7 + 0.5) * 15 * (L / 5);
+        y += Math.cos(t * 3.2 + 1.1) * 10 * (L / 4);
+        y = Math.max(20, Math.min(H - 20, y));
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      ctx.fillStyle = FAINT; ctx.font = '10px monospace';
+      ctx.fillText('접힘(영역) ~ ' + segs.toLocaleString() + '개', 10, H - 6);
+    }
+
+    function update() {
+      const L = parseInt(slider.value, 10);
+      dVal.textContent = L;
+      const paramsBudget = 128;
+      // 얕은 망: 단층, 모든 파라미터를 너비에 투자 → segs = params
+      const shallowUnits = paramsBudget;
+      // 깊은 망: L층, 각 층 너비 = sqrt(P / L); 영역 = (n/d)^(L-1) * n^d (d=1 단순화)
+      const deepWidth = Math.max(2, Math.floor(Math.sqrt(paramsBudget / L)));
+      const deepRegions = Math.floor(Math.pow(deepWidth, L));
+      drawShallow(shallowUnits);
+      drawDeep(L, deepWidth);
+      sP.textContent = paramsBudget;
+      sR.textContent = shallowUnits.toString();
+      dP.textContent = paramsBudget;
+      dR.textContent = '~' + deepRegions.toLocaleString();
+      const ratio = Math.round(deepRegions / shallowUnits);
+      verdict.innerHTML = `<b>깊이 L = ${L}.</b> 같은 ${paramsBudget} 파라미터로, 얕은 망은 ${shallowUnits}개의 선형 영역만 표현 가능. 깊은 망은 ~${deepRegions.toLocaleString()}개 — 약 <b>${ratio.toLocaleString()}배</b>. 깊이가 늘수록 격차가 지수적으로 벌어진다.`;
+    }
+
+    slider.addEventListener('input', update);
+    update();
+  })();
+
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
+        throwOnError: false,
+      });
+    }
+  });
+</script>
+</body>
+</html>

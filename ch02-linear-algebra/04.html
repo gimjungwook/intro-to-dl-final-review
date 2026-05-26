@@ -3,28 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ch.02 · 04 특수 행렬과 직교성</title>
-<link rel="stylesheet" href="../assets/site.css">
+<title>04 · 행렬 곱 — 선형 변환</title>
+<link rel="stylesheet" href="./assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
-<style>
-  .ortho-stage { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1.4rem 1.4rem 1rem; }
-  .ortho-stage canvas { display: block; width: 100%; max-width: 360px; height: 320px; background: #fff; border-radius: 8px; border: 1px solid var(--line); margin: 0 auto; }
-  .ortho-stage h4 { margin: .4rem 0 .8rem; font-family: var(--serif); font-size: 1rem; color: var(--ink); text-align: center; }
-  .ortho-stage h4.bad { color: var(--style); }
-  .ortho-stage h4.good { color: var(--structure); }
-  .ortho-info { padding: 1rem 1.2rem; background: var(--paper-2); border-radius: 8px; font-size: .9rem; line-height: 1.6; color: var(--ink-soft); }
-  .ortho-info b { color: var(--ink); }
-  .ortho-ctl { display: flex; justify-content: center; padding: .8rem 1.2rem; }
-  @media (max-width: 720px) { .ortho-stage { grid-template-columns: 1fr; } }
-  .matrix-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: .8rem; max-width: var(--measure); margin: 1.4rem auto; padding-inline: 1.4rem; }
-  .matrix-card { padding: 1.1rem 1.2rem; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
-  .matrix-card h5 { margin: 0 0 .5rem; font-family: var(--serif); font-size: 1.02rem; color: var(--structure); }
-  .matrix-card p { margin: 0; font-size: .87rem; color: var(--ink-soft); line-height: 1.55; }
-  .matrix-card pre { font-family: var(--mono); font-size: .82rem; background: var(--paper-2); padding: .5rem .7rem; border-radius: 5px; color: var(--ink); margin: .5rem 0; overflow-x: auto; }
-  @media (max-width: 600px) { .matrix-grid { grid-template-columns: 1fr; } }
-</style>
 </head>
 <body>
 <div class="scroll-progress"></div>
@@ -35,237 +18,142 @@
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Ch.02 · Sub 04 · 좋은 행렬의 모양</span>
-      <h1>특수 행렬과 <span class="t-structure">직교성</span>,<br>학습이 무너지지 않는 이유</h1>
-      <p class="lede">대각·대칭·직교 행렬은 단순한 분류가 아니다. 어떤 모양의 행렬이 곱셈을 안정적으로 만들고, 신경망의 표현을 보존하며, 분해(decomposition)를 가능하게 하는지에 대한 처방이다.</p>
+      <span class="kicker">Sub 04 · 공간을 비트는 도구</span>
+      <h1>행렬 곱 —<br><span class="t-style">선형 변환</span></h1>
+      <p class="lede">행렬은 “숫자 표”가 아니라 “공간을 비트는 함수”다. 회전·스케일·전단을 합성한 한 가지 도구로 본다.</p>
     </header>
 
     <div class="prose">
-      <p>이 sub-chapter는 외울 것이 가장 많아 보이지만, 사실은 단 하나의 질문에 답한다. <strong>“어떤 행렬은 다루기 쉬운가?”</strong> 일반 행렬은 어렵다. 곱셈은 $O(n^3)$, 역행렬도 $O(n^3)$, 계산 도중 수치 오차가 누적되면 결과가 완전히 빗나갈 수 있다. 하지만 특수한 구조를 가진 행렬은 훨씬 빠르고 안정적이다.</p>
+      <p>이전 sub에서 점 곱이 “두 벡터의 닮음 점수”라는 점을 익혔다. 이번 sub의 한 줄은 다음과 같다. <strong>행렬 곱이란, 한 번에 여러 점 곱을 묶어 적은 표다. 그리고 그 표는 “공간을 비트는 함수”로 읽을 수 있다.</strong> 신경망의 한 층 $W\mathbf{x}$가 정확히 이 일을 한다.</p>
 
-      <h2>대각 행렬(Diagonal Matrix) — 가장 단순한 변환</h2>
-      <p>대각선 외에 모두 0인 행렬이다.</p>
-      <div class="math-block">$$ \mathrm{diag}(\mathbf{v}) = \begin{pmatrix} v_1 & 0 & 0 \\ 0 & v_2 & 0 \\ 0 & 0 & v_3 \end{pmatrix} $$</div>
-      <p class="math-note">대각선에 v의 성분, 나머지는 0.</p>
+      <h2>정의 — 점 곱 묶음으로서의 행렬 곱</h2>
+      <p>행렬 $A \in \mathbb{R}^{m \times n}$과 벡터 $\mathbf{x} \in \mathbb{R}^n$이 있을 때, 행렬-벡터 곱은 다음과 같이 정의된다.</p>
 
-      <p>이 행렬을 벡터에 곱하면 단순히 각 성분을 $v_i$배 한다. 즉, <strong>대각 행렬은 “축마다 다른 스케일”을 매기는 변환</strong>이다. 회전도 전단도 일어나지 않는다. 그래서 곱셈, 역행렬, 행렬식이 모두 $O(n)$으로 계산된다. 역행렬은 그냥 각 성분의 역수다.</p>
+      <div class="math-block">$$ (A\mathbf{x})_i = \sum_{j=1}^{n} A_{ij}\, x_j $$</div>
+      <p class="math-note">결과 벡터의 i번째 원소 = A의 i번째 행과 x의 점 곱.</p>
 
-      <div class="math-block">$$ \mathrm{diag}(\mathbf{v})^{-1} = \mathrm{diag}\!\left(\tfrac{1}{v_1}, \tfrac{1}{v_2}, \dots, \tfrac{1}{v_n}\right) $$</div>
-      <p class="math-note">단, 모든 v_i가 0이 아닐 때만.</p>
+      <p>풀어 적으면 결과 벡터의 $i$번째 자리는 “$A$의 $i$번째 행(을 벡터로 본 것)과 입력 벡터 $\mathbf{x}$의 점 곱”이다. 즉 $A$의 행이 $m$개라면 점 곱이 $m$번 일어나고, 결과는 $m$차원 벡터가 된다. 한 마디로 <strong>행렬 곱은 점 곱을 행 수만큼 한꺼번에 적은 표</strong>다.</p>
 
-      <p>왜 중요한가? 뒤에 나올 <em>고유분해(eigendecomposition)와 SVD</em>는 본질적으로 “복잡한 행렬을 대각 행렬과 회전 행렬의 곱으로 분해”하는 작업이다. 즉, 대각 행렬은 분해의 <strong>“가장 단순한 핵심”</strong>이다.</p>
+      <p>행렬-행렬 곱도 같은 발상이다. $A \in \mathbb{R}^{m \times k}$, $B \in \mathbb{R}^{k \times n}$이면 곱 $C = AB \in \mathbb{R}^{m \times n}$이고, $C$의 $(i, j)$ 원소는 “$A$의 $i$번째 행과 $B$의 $j$번째 열의 점 곱”이다.</p>
 
-      <h2>단위 행렬(Identity Matrix) — 아무것도 안 하는 행렬</h2>
-      <div class="math-block">$$ \mathbf{I} = \mathrm{diag}(1, 1, \dots, 1) $$</div>
-      <p>대각 행렬의 가장 특별한 경우다. 어떤 벡터든 그대로 둔다. <strong>$\mathbf{I}\mathbf{x} = \mathbf{x}$, $\mathbf{A}\mathbf{I} = \mathbf{A}$</strong>. 역행렬의 정의 ($\mathbf{A}\mathbf{A}^{-1} = \mathbf{I}$)에서 기준이 되는 행렬이다.</p>
+      <div class="math-block">$$ C_{ij} = \sum_{\ell=1}^{k} A_{i\ell}\, B_{\ell j} $$</div>
+      <p class="math-note">A의 한 행 × B의 한 열 = C의 한 원소. 안쪽 차원 k가 일치해야 곱이 가능.</p>
 
-      <h2>대칭 행렬(Symmetric Matrix) — 정보의 균형</h2>
-      <p>전치해도 자기 자신과 같은 행렬이다.</p>
-      <div class="math-block">$$ \mathbf{A} = \mathbf{A}^\top \iff A_{i,j} = A_{j,i} $$</div>
-      <p class="math-note">i↔j 위치의 성분이 같다.</p>
+      <h2>두 가지 시점 — 행렬 곱을 보는 두 눈</h2>
+      <p>행렬 곱을 이해하는 두 가지 시점이 있다. 둘 다 익혀 두면 같은 식을 두 방향에서 읽을 수 있다.</p>
 
-      <p>대칭 행렬은 자연에 매우 자주 등장한다. <strong>공분산 행렬(Covariance Matrix)</strong>이 대표적이다 — 변수 $i$와 $j$의 공분산은 $j$와 $i$의 공분산과 같으니 당연히 대칭이다. 또 그래프의 인접 행렬(Adjacency Matrix)이 무방향 그래프면 대칭이다. 신경망에서 헤시안 행렬(Hessian, 2계 미분)도 대칭이다.</p>
+      <h3>① 행 시점 — “여러 감지기를 한꺼번에”</h3>
+      <p>$A$의 각 행을 “하나의 감지기(detector) 가중치 벡터”라고 보면, $A\mathbf{x}$는 $m$개의 감지기에 입력 $\mathbf{x}$를 동시에 통과시키는 일이다. 결과 벡터의 각 자리가 각 감지기의 점수다. 즉 행 시점에서 행렬 곱은 “여러 점 곱을 한 번에 한 표로 정리하기”다.</p>
 
-      <p>대칭 행렬의 결정적인 성질은 <em>모든 고유값이 실수이고, 고유벡터들이 서로 직교한다</em>는 것이다 — 이것이 PCA가 깔끔하게 작동하는 이유다. (Ch.05에서 다시 본다.)</p>
+      <h3>② 열 시점 — “기저 벡터들의 가중합”</h3>
+      <p>같은 곱을 다르게도 적을 수 있다. $A$의 각 열을 $\mathbf{a}_1, \mathbf{a}_2, \ldots, \mathbf{a}_n$이라고 부르면, $A\mathbf{x}$는 다음과 같이 “열들의 가중합”이 된다.</p>
 
-      <h2>직교 행렬(Orthogonal Matrix) — 길이와 각도를 보존</h2>
-      <p>가장 중요한 특수 행렬이다. 정의는 다음과 같다.</p>
-      <div class="math-block">$$ \mathbf{Q}^\top \mathbf{Q} = \mathbf{Q} \mathbf{Q}^\top = \mathbf{I} \iff \mathbf{Q}^{-1} = \mathbf{Q}^\top $$</div>
-      <p class="math-note">전치가 곧 역행렬. 계산이 사실상 공짜.</p>
+      <div class="math-block">$$ A\mathbf{x} = x_1 \mathbf{a}_1 + x_2 \mathbf{a}_2 + \cdots + x_n \mathbf{a}_n $$</div>
+      <p class="math-note">x의 각 원소는 A의 각 열에 곱해지는 가중치(weight).</p>
 
-      <p>이 조건을 풀어 보면, $\mathbf{Q}$의 모든 <strong>열들이 서로 직교하고 길이가 1</strong>이라는 뜻이다 (정규 직교, orthonormal). 그래서 직교 행렬을 곱한다는 것은 <em>좌표계를 회전·반사하는 것</em>일 뿐, 늘이거나 줄이지 않는다.</p>
-
-      <div class="math-block">$$ \|\mathbf{Q}\mathbf{x}\|_2 = \|\mathbf{x}\|_2, \quad (\mathbf{Q}\mathbf{x})^\top (\mathbf{Q}\mathbf{y}) = \mathbf{x}^\top \mathbf{y} $$</div>
-      <p class="math-note">길이 보존, 내적 보존 → 각도 보존.</p>
-
-      <p>왜 이게 학습 안정성에 중요한가? 신경망의 깊은 층을 통과하면서 입력 벡터의 크기가 너무 커지거나 작아지면 <strong>기울기 폭발(exploding gradient)</strong> 또는 <strong>기울기 소실(vanishing gradient)</strong>이 일어난다. 가중치 행렬을 직교(또는 그에 가깝게) 초기화하면 이 현상을 막을 수 있다. 이것이 RNN의 직교 초기화(Orthogonal Initialization), LSTM의 게이트 안정성, Transformer의 회전 위치 임베딩(RoPE)의 기반이다.</p>
-
-      <p>아래 위젯에서 직교 변환과 비직교 변환을 비교해 보자. 같은 단위 원이 직교 변환에서는 원으로 유지되지만, 비직교 변환에서는 타원으로 찌그러진다.</p>
-    </div>
-
-    <div class="widget">
-      <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 04</span><span>직교 변환 vs 비직교 변환</span></div>
-        <div class="ortho-stage">
-          <div>
-            <h4 class="good">직교 행렬 (회전)</h4>
-            <canvas id="orthoGood" width="500" height="440"></canvas>
-          </div>
-          <div>
-            <h4 class="bad">비직교 행렬 (전단+스케일)</h4>
-            <canvas id="orthoBad" width="500" height="440"></canvas>
-          </div>
-        </div>
-        <div class="ortho-info" style="margin: 0 1.2rem 1rem">
-          <p style="margin:0"><b>왼쪽</b>: 회전 행렬 R(θ). 원은 원으로 유지된다. 모든 화살표 길이가 같다.<br>
-          <b>오른쪽</b>: 일반 행렬 A. 원이 타원으로 찌그러진다. 어떤 방향은 늘어나고 어떤 방향은 줄어든다. 이 “늘어남의 비율”의 최댓값/최솟값이 곧 <b>조건수(condition number)</b>이며, 클수록 수치적으로 불안정하다.</p>
-        </div>
-        <div class="ortho-ctl">
-          <button class="btn ghost on" id="animOrtho">애니메이션 재생/멈춤</button>
-        </div>
-      </div>
-      <p class="widget-cap">직교 변환은 원의 모양과 모든 방향의 길이를 보존한다. 그래서 가중치 행렬이 직교에 가까울수록 신호가 깊은 층을 지나가도 크기가 안정적으로 유지된다.</p>
-    </div>
-
-    <div class="prose">
-      <h2>네 가지 특수 행렬 한눈에 보기</h2>
-
-      <div class="matrix-grid">
-        <div class="matrix-card">
-          <h5>대각 (Diagonal)</h5>
-          <pre>[ 3  0  0
-  0  2  0
-  0  0  5 ]</pre>
-          <p>각 축을 독립적으로 스케일. 곱/역/det 모두 O(n). SVD의 가운데 Σ.</p>
-        </div>
-        <div class="matrix-card">
-          <h5>단위 (Identity)</h5>
-          <pre>[ 1  0  0
-  0  1  0
-  0  0  1 ]</pre>
-          <p>아무것도 안 한다. 역행렬 정의의 기준점.</p>
-        </div>
-        <div class="matrix-card">
-          <h5>대칭 (Symmetric)</h5>
-          <pre>[ 1  2  3
-  2  4  5
-  3  5  6 ]</pre>
-          <p>A = Aᵀ. 공분산·헤시안. 고유값 실수, 고유벡터 직교.</p>
-        </div>
-        <div class="matrix-card">
-          <h5>직교 (Orthogonal)</h5>
-          <pre>[ cos θ  -sin θ
-  sin θ   cos θ ]</pre>
-          <p>Q⁻¹ = Qᵀ. 회전·반사. 길이·각도 보존. 신경망 안정성의 열쇠.</p>
-        </div>
-      </div>
-
-      <h2>양의 정부호(Positive Definite) 행렬</h2>
-      <p>대칭 행렬 중에서도 특히 중요한 부분 집합이다. <em>모든 고유값이 양수</em>인 대칭 행렬을 양의 정부호(Positive Definite, PD)라고 한다. 동치 조건은 다음과 같다.</p>
-
-      <div class="math-block">$$ \mathbf{x}^\top \mathbf{A} \mathbf{x} > 0 \quad \forall \mathbf{x} \neq \mathbf{0} $$</div>
-      <p class="math-note">0이 아닌 모든 x에 대해 이차 형식이 양수.</p>
-
-      <p>딥러닝에서 왜 중요한가? 손실 함수의 헤시안(2계 미분 행렬)이 양의 정부호면 그 점은 <strong>국소 최솟값(local minimum)</strong>이다. 양의 정부호가 아니면 안장점(saddle point)이나 최댓값일 수 있다. 즉, 양의 정부호 여부는 “이 점이 정말 학습이 끝난 자리인가”를 판정하는 기준이다. (Ch.4 수치 계산, Ch.8 최적화에서 다시 등장.)</p>
+      <p>이 두 번째 시점이 “행렬 = 선형 변환”의 본질을 드러낸다. 입력 벡터 $\mathbf{x}$의 각 원소가 “A의 어떤 열을 얼마나 섞을지”를 정하는 비율이고, 그 비율로 열들을 더한 결과가 출력이다. 즉 <strong>출력은 항상 $A$의 열들이 만드는 공간(열공간, column space) 안</strong>에 존재한다. 이 사실이 <a href="07.html">sub 07</a>의 “4가지 부분공간” 이야기로 이어진다.</p>
 
       <div class="analogy">
-        직교 행렬은 <b>좋은 안경</b>과 같다. 풍경의 비율을 그대로 유지하면서 보는 각도만 바꾼다. 반면 비직교 행렬은 <b>왜곡 거울</b>과 같다 — 거기에 비친 풍경은 어떤 부분은 늘어나고 어떤 부분은 짜부라진다. 신경망에서 가중치를 직교에 가깝게 유지하려는 노력은 <em>“왜곡 거울이 깊게 쌓이면 풍경이 알아볼 수 없게 된다”</em>는 것을 막기 위한 것이다.
+        <b>믹서기에 과일을 넣어 주스를 만드는</b> 일을 떠올려 보자. $A$의 각 열이 사과, 배, 당근 같은 재료 한 가지다. 벡터 $\mathbf{x}$가 “사과 2개, 배 1개, 당근 0.5개”라고 적힌 레시피다. $A\mathbf{x}$는 그 레시피로 만들어진 한 잔의 주스다. 같은 재료라도 비율이 다르면 다른 주스가 나오고, 재료가 부족하거나 비슷한 것들로 채워졌다면 다양한 주스를 만들 수 없다(다음 sub에서 다룰 “선형 의존”과 “랭크”의 직관).
       </div>
 
-      <h3>핵심 정리 — 이것만은 기억하자</h3>
-      <ul class="checklist">
-        <li>대각 행렬은 축마다 독립 스케일. 분해(SVD, 고유분해)의 핵심 부품.</li>
-        <li>대칭 행렬 A = Aᵀ. 공분산, 헤시안의 자연스러운 모양.</li>
-        <li>직교 행렬 Q⁻¹ = Qᵀ. 길이·각도·내적 보존. 학습 안정성의 열쇠.</li>
-        <li>대칭 행렬의 고유값은 실수, 고유벡터는 서로 직교.</li>
-        <li>양의 정부호 행렬: 모든 고유값 양수. 손실 최솟값 판정.</li>
+      <h2>행렬 = 선형 변환(linear transformation)</h2>
+      <p>행렬 곱을 함수로 보면, 행렬 $A$는 “입력 공간 $\mathbb{R}^n$의 점을 출력 공간 $\mathbb{R}^m$의 점으로 옮기는 함수”다. 그리고 이 함수는 두 가지 좋은 성질을 가진다.</p>
+
+      <ul>
+        <li><strong>덧셈을 보존</strong>: $A(\mathbf{x} + \mathbf{y}) = A\mathbf{x} + A\mathbf{y}$</li>
+        <li><strong>스칼라 곱을 보존</strong>: $A(c\mathbf{x}) = c\,A\mathbf{x}$</li>
       </ul>
+
+      <p>이 두 성질을 갖는 함수를 <strong>선형 함수(linear function)</strong>라고 한다. 그래서 행렬 곱은 “선형 변환”이라고 부른다. 직관적으로 이 성질이 의미하는 바는 다음과 같다.</p>
+
+      <ul>
+        <li>변환 후의 직선은 여전히 직선이다(휘어지지 않는다).</li>
+        <li>변환 후의 원점은 여전히 원점이다(이동하지 않는다).</li>
+        <li>변환 후의 평행선은 여전히 평행이다.</li>
+      </ul>
+
+      <h2>2×2 행렬이 평면에서 하는 일</h2>
+      <p>가장 작은 행렬 $A \in \mathbb{R}^{2 \times 2}$가 평면에서 어떤 변환을 만드는지를 보면, 모든 행렬 곱의 직관이 단번에 잡힌다. 단위 사각형(꼭짓점이 $(0,0), (1,0), (1,1), (0,1)$)이 $A$에 의해 어떤 평행사변형으로 바뀌는가? 그 평행사변형의 두 변은 정확히 $A$의 두 열, 즉 $A\mathbf{e}_1$과 $A\mathbf{e}_2$다. <strong>“행렬은 단위 기저벡터들을 어디로 옮기는지로 완전히 결정된다.”</strong></p>
+
+      <p>아래 위젯에서 회전·스케일·전단 슬라이더를 움직이며, 같은 입력 사각형이 어떻게 다른 평행사변형으로 바뀌는지를 본다. 슬라이더 값이 그대로 $a_{ij}$ 네 숫자로 적히는 모습도 확인할 수 있다.</p>
+
+      <div class="widget">
+        <div class="widget-frame">
+          <div class="widget-label"><span class="lab-no">위젯 01</span><span>2D 행렬 변환 — 회전·스케일·전단</span></div>
+          <div id="mt"></div>
+        </div>
+        <p class="widget-cap">슬라이더로 만들어지는 행렬 A가 단위 사각형(점선)을 평행사변형(채워진)으로 바꾼다. 두 화살표가 $Ae_1$, $Ae_2$ — 행렬 A의 두 열. det A는 변환 후 넓이의 비율, 음수면 방향(왼손/오른손)이 뒤집힘.</p>
+      </div>
+
+      <h2>세 가지 기본 변환을 합성하기</h2>
+      <p>2×2 변환은 세 가지 기본 변환의 합성으로 거의 모두 표현할 수 있다.</p>
+
+      <h3>① 회전(rotation)</h3>
+      <div class="math-block">$$ R_\theta = \begin{pmatrix} \cos\theta & -\sin\theta \\ \sin\theta & \cos\theta \end{pmatrix} $$</div>
+      <p class="math-note">각도 θ만큼 시계 반대 방향으로 회전. 길이는 보존, 방향만 돌림.</p>
+
+      <p>회전 행렬은 길이를 바꾸지 않는다. 즉 두 점 사이 거리가 변환 후에도 그대로다. 회전은 “데이터의 절대적 위치는 바꾸지만 상대적 관계는 보존”하는 변환이다.</p>
+
+      <h3>② 스케일(scale)</h3>
+      <div class="math-block">$$ S = \begin{pmatrix} s_x & 0 \\ 0 & s_y \end{pmatrix} $$</div>
+      <p class="math-note">x 방향으로 sx배, y 방향으로 sy배 늘이거나 줄임. 대각 원소만 0이 아닌 대각 행렬.</p>
+
+      <p>스케일 행렬은 두 축을 서로 다른 비율로 늘이거나 줄인다. $s_x = s_y > 1$이면 균등 확대, $s_x < 0$이면 좌우 반사. 두 비율이 다르면 그림이 찌그러진다. 흥미로운 점은 “스케일 행렬은 자기 자신이 가장 단순한 모양”인데, 다음 sub에서 다룰 <a href="08.html">고유분해</a>가 어떤 행렬이든 “자기 좌표계에서는 스케일 행렬처럼 보이게” 만드는 작업임을 미리 알아 두자.</p>
+
+      <h3>③ 전단(shear)</h3>
+      <div class="math-block">$$ Sh = \begin{pmatrix} 1 & k \\ 0 & 1 \end{pmatrix} $$</div>
+      <p class="math-note">x축은 그대로, y축은 x 방향으로 k만큼 기울임. 사각형을 평행사변형으로.</p>
+
+      <p>전단 행렬은 한 축을 따라 다른 축이 기울어지게 만든다. 글씨를 이탤릭(italic)으로 만드는 변환과 같다. 사각형이 평행사변형으로 바뀌지만 넓이는 그대로다($\det Sh = 1$).</p>
+
+      <div class="example">
+        실제 이미지 처리에서 데이터 증강(data augmentation)에 위 세 변환이 모두 쓰인다. 학습 데이터 한 장의 손글씨 이미지를 ±15도 회전, 가로 0.9–1.1배 스케일, 약간의 전단을 무작위로 섞어 적용하면, 같은 정답을 가진 새 이미지 수십 장이 만들어진다. 모델이 “이렇게 조금 비틀어도 같은 7이다”라는 불변성(invariance)을 배우게 하는 트릭이다.
+      </div>
+
+      <h2>determinant — 변환 후 넓이의 변화</h2>
+      <p>2×2 행렬의 <strong>행렬식(determinant)</strong>은 단 한 숫자로 “이 변환이 단위 사각형의 넓이를 몇 배로 만드는가”를 알려 준다.</p>
+
+      <div class="math-block">$$ \det A = a_{11} a_{22} - a_{12} a_{21} $$</div>
+      <p class="math-note">det A의 절댓값 = 단위 사각형이 변환 후 차지하는 넓이. 부호 = 방향 보존 여부.</p>
+
+      <p>$\det A = 2$면 넓이가 2배로 늘어났다는 뜻이고, $\det A = 0.5$면 절반으로 줄었다. <strong>$\det A < 0$이면 방향이 뒤집혔다</strong>는 뜻이다(왼손/오른손 좌표계가 바뀜, 거울 반사 포함). 그리고 가장 중요한 경우 — <strong>$\det A = 0$이면 변환이 “찌부러진다”</strong>. 단위 사각형이 더 이상 평행사변형이 아니라 선분이나 점이 된다. 즉 정보의 한 차원이 사라진다. 이 경우 행렬은 “역행렬(inverse)”을 가지지 않는다(다시 되돌릴 수 없다). 이 사실이 <a href="07.html">sub 07</a>의 랭크(rank)와 <a href="11.html">sub 11</a>의 의사역행렬(pseudoinverse)로 이어진다.</p>
+
+      <div class="analogy">
+        <b>밀가루 반죽을 미는 일</b>을 떠올려 보자. 두 손으로 사방을 잡고 잡아 늘리면 반죽은 평행사변형이 된다(일반 변환). 한쪽만 누르면 한 방향이 0이 되어 반죽은 길쭉한 선이 된다($\det = 0$, 차원이 줄어든 경우). 한 번 선으로 만든 반죽은 원래 사각형으로 정확히 되돌릴 수 없다. 정보의 한 차원이 영원히 사라진 것이다.
+      </div>
+
+      <h2>행렬 곱의 합성 = 함수 합성</h2>
+      <p>두 행렬을 차례로 곱하는 일은 “두 변환을 차례로 적용하는 일”이다. 그래서 행렬 곱은 “함수 합성(function composition)”에 해당한다. 이 사실에서 두 가지 결과가 따라 나온다.</p>
+
+      <ul>
+        <li><strong>결합법칙은 성립</strong>: $(AB)C = A(BC)$. 셋을 합칠 때 어느 둘부터 합치든 결과는 같다.</li>
+        <li><strong>교환법칙은 일반적으로 성립하지 않음</strong>: $AB \neq BA$. “회전 다음 스케일”과 “스케일 다음 회전”은 다르다.</li>
+      </ul>
+
+      <p>두 번째가 직관에 거슬리지만 실은 매우 자연스럽다. “양말을 신고 신발을 신는다”와 “신발을 신고 양말을 신는다”가 다른 것과 같다. 변환의 순서가 결과를 바꾼다.</p>
+
+      <h2>$(AB)^\top = B^\top A^\top$의 직관</h2>
+      <p>마지막으로 자주 쓰이는 항등식 하나만 짚어 둔다. 두 행렬의 곱을 전치하면 순서가 뒤집힌다.</p>
+
+      <div class="math-block">$$ (AB)^\top = B^\top A^\top $$</div>
+      <p class="math-note">곱을 전치하면 순서를 뒤집어 각각 전치한 다음 곱함.</p>
+
+      <p>이 항등식은 신경망의 역전파(backpropagation) 계산에서 끊임없이 등장한다. 직관은 단순하다. 옷을 입을 때는 “속옷 → 셔츠 → 외투” 순서로 입고, 벗을 때는 “외투 → 셔츠 → 속옷” 순서로 벗는다. 곱이 “순서대로 적용”이라면, 그 역(역행렬 또는 전치)은 “뒤집힌 순서로 적용”이다.</p>
+
+      <p>이제 행렬 곱이 “여러 점 곱의 묶음”이자 “공간의 변환”이라는 두 시선을 모두 가졌다. <a href="05.html">다음 sub</a>에서는 변환된 벡터의 “크기”를 어떻게 잴 것인지 — 노름(norm) — 으로 넘어간다.</p>
     </div>
 
     <nav class="ch-foot"></nav>
   </main>
 </div>
 
+<script src="./assets/widgets.js"></script>
 <script>
-  const CHAPTERS = [
-    { no:'01', t:'스칼라·벡터·행렬·텐서' },
-    { no:'02', t:'행렬 곱과 선형 변환' },
-    { no:'03', t:'노름과 거리' },
-    { no:'04', t:'특수 행렬과 직교성' },
-    { no:'05', t:'고유분해' },
-    { no:'06', t:'SVD — 특이값분해' },
-    { no:'07', t:'시험 대비 — 핵심 정리' },
-  ];
-  const CUR = '04';
-  document.querySelector('.topbar').innerHTML =
-    `<a class="home" href="index.html">← Ch.02 선형대수 표지</a>` +
-    `<span class="ch-mini">SUB ${CUR} / 07</span>`;
-  document.querySelector('.ch-nav ol').innerHTML = CHAPTERS.map(c =>
-    `<li><a href="${c.no}.html" ${c.no===CUR?'class="current"':''}>${c.t}</a></li>`).join('');
-  const idx = CHAPTERS.findIndex(c=>c.no===CUR);
-  const prev = idx>0 ? CHAPTERS[idx-1] : { no:'', t:'표지로', _:'index.html' };
-  const next = idx<CHAPTERS.length-1 ? CHAPTERS[idx+1] : { no:'', t:'표지로', _:'index.html' };
-  document.querySelector('.ch-foot').innerHTML =
-    `<a href="${prev._ || prev.no+'.html'}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
-    `<a href="${next._ || next.no+'.html'}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
-  const bar = document.querySelector('.scroll-progress');
-  document.addEventListener('scroll', () => {
-    const h = document.documentElement;
-    const max = h.scrollHeight - h.clientHeight;
-    bar.style.width = (max > 0 ? (h.scrollTop/max)*100 : 0) + '%';
-  }, { passive: true });
   window.addEventListener('load', () => {
-    if (window.renderMathInElement) {
-      renderMathInElement(document.body, {
-        delimiters: [{ left:'$$', right:'$$', display:true }, { left:'$', right:'$', display:false }],
-        throwOnError: false,
-      });
-    }
+    NST.buildNav('04');
+    NST.onVisible(document.getElementById('mt'), () => NST.matrixTransform(document.getElementById('mt')));
   });
-
-  // ---------- 위젯: 직교 vs 비직교 ----------
-  const goodCanvas = document.getElementById('orthoGood');
-  const badCanvas = document.getElementById('orthoBad');
-  const gctx = goodCanvas.getContext('2d');
-  const bctx = badCanvas.getContext('2d');
-  let theta = 0;
-  let playing = true;
-
-  function drawDisk(ctx, mat, color) {
-    const W = ctx.canvas.width, H = ctx.canvas.height;
-    ctx.clearRect(0,0,W,H);
-    const cx = W/2, cy = H/2;
-    const S = 90;
-    // 격자
-    ctx.strokeStyle = 'rgba(38,34,28,.06)'; ctx.lineWidth = 1;
-    for (let i = -2; i <= 2; i++) {
-      ctx.beginPath(); ctx.moveTo(cx + i*S, 0); ctx.lineTo(cx + i*S, H); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(0, cy + i*S); ctx.lineTo(W, cy + i*S); ctx.stroke();
-    }
-    // 원본 원 (회색 점선)
-    ctx.strokeStyle = 'rgba(38,34,28,.3)'; ctx.lineWidth = 1.3; ctx.setLineDash([4,3]);
-    ctx.beginPath(); ctx.arc(cx, cy, S, 0, Math.PI*2); ctx.stroke();
-    ctx.setLineDash([]);
-    // 변환된 원
-    ctx.fillStyle = color + '22';
-    ctx.strokeStyle = color; ctx.lineWidth = 2.2;
-    ctx.beginPath();
-    const N = 80;
-    for (let k = 0; k <= N; k++) {
-      const a = k / N * Math.PI * 2;
-      const x = Math.cos(a), y = Math.sin(a);
-      const tx = mat[0]*x + mat[1]*y;
-      const ty = mat[2]*x + mat[3]*y;
-      if (k === 0) ctx.moveTo(cx + tx*S, cy - ty*S);
-      else ctx.lineTo(cx + tx*S, cy - ty*S);
-    }
-    ctx.closePath(); ctx.fill(); ctx.stroke();
-    // 6방향 화살표 — 길이 비교
-    for (let i = 0; i < 8; i++) {
-      const a = i / 8 * Math.PI * 2;
-      const x = Math.cos(a), y = Math.sin(a);
-      const tx = mat[0]*x + mat[1]*y;
-      const ty = mat[2]*x + mat[3]*y;
-      const len = Math.hypot(tx, ty);
-      ctx.strokeStyle = color; ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + tx*S, cy - ty*S); ctx.stroke();
-      ctx.fillStyle = color;
-      ctx.beginPath(); ctx.arc(cx + tx*S, cy - ty*S, 3, 0, Math.PI*2); ctx.fill();
-    }
-  }
-
-  function frame() {
-    if (playing) theta += 0.012;
-    const ca = Math.cos(theta), sa = Math.sin(theta);
-    drawDisk(gctx, [ca, -sa, sa, ca], '#2D5B7A');
-    const ph = theta;
-    // 비직교: 회전 + 전단 + 스케일
-    const m = [1 + 0.6*Math.sin(ph), 0.5*Math.cos(ph*0.7), -0.3*Math.sin(ph*1.1), 1 - 0.4*Math.cos(ph*0.5)];
-    drawDisk(bctx, m, '#C0492E');
-    requestAnimationFrame(frame);
-  }
-  document.getElementById('animOrtho').addEventListener('click', () => playing = !playing);
-  frame();
 </script>
 </body>
 </html>

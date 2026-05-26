@@ -3,31 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>01 · 자기부호화기의 기본 — Ch.14</title>
+<title>01 — 자기부호화기란 무엇인가 — Ch.14</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
-  /* 인코더-디코더 도식 + 잠재 슬라이더 */
-  .ae-diag { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: .8rem; align-items: center; padding: 1.6rem 1.2rem 1rem; }
-  .ae-col { text-align: center; }
-  .ae-col canvas { display: block; width: 100%; max-width: 200px; aspect-ratio: 1/1; border-radius: 10px; border: 1px solid var(--line); background: #fff; margin: 0 auto; image-rendering: pixelated; }
-  .ae-col .clab { display: block; margin-top: .55rem; font-family: var(--mono); font-size: .72rem; color: var(--ink-faint); letter-spacing: .04em; }
-  .ae-col .csym { display: block; margin-top: .15rem; font-family: var(--mono); font-size: .82rem; color: var(--ink-soft); }
-  .ae-col.input .csym { color: var(--structure); }
-  .ae-col.latent .csym { color: var(--synth); }
-  .ae-col.recon .csym { color: var(--style); }
-  .ae-arrow { font-family: var(--mono); font-size: 1.3rem; color: var(--ink-faint); text-align: center; }
-  .ae-arrow b { display: block; font-size: .68rem; color: var(--synth); margin-top: .2rem; letter-spacing: .1em; }
-  .ae-latent-bars { display: grid; grid-template-columns: repeat(4, 1fr); gap: .4rem; padding: 1.2rem 1.4rem; background: var(--paper); border-top: 1px solid var(--line-soft); }
-  .ae-bar { display: flex; flex-direction: column; align-items: center; gap: .25rem; }
-  .ae-bar label { font-family: var(--mono); font-size: .68rem; color: var(--synth); }
-  .ae-bar input { writing-mode: bt-lr; -webkit-appearance: slider-vertical; appearance: slider-vertical; width: 16px; height: 70px; }
-  .ae-bar b { font-family: var(--mono); font-size: .68rem; color: var(--ink-faint); }
-  .ae-loss { padding: .85rem 1.4rem; border-top: 1px solid var(--line-soft); background: var(--paper-2); font-size: .9rem; color: var(--ink-soft); line-height: 1.55; }
-  .ae-loss b.s1 { color: var(--style); } .ae-loss b.s2 { color: var(--structure); }
-  @media (max-width: 640px) { .ae-diag { grid-template-columns: 1fr; } .ae-arrow { transform: rotate(90deg); padding: .5rem 0; } }
+  .ae-stage { display: grid; grid-template-columns: 1fr; gap: .6rem; padding: 1.4rem 1.2rem 1rem; align-items: center; }
+  .ae-stage canvas { display: block; width: 100%; height: 220px; border-radius: 10px; border: 1px solid var(--line); background: #fff; }
+  .verdict { padding: .9rem 1.2rem; border-top: 1px solid var(--line-soft); background: var(--paper); font-size: .9rem; color: var(--ink-soft); line-height: 1.55; }
+  .verdict b.ok { color: var(--structure); } .verdict b.bad { color: var(--style); } .verdict b.mid { color: var(--synth); }
 </style>
 </head>
 <body>
@@ -39,73 +24,67 @@
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Sub 01 · 인코더 + 디코더 + 재구성 손실</span>
-      <h1>자기 자신을 만드는<br><span class="t-synth">가장 작은 코드</span>를 찾기</h1>
-      <p class="lede">자기부호화기는 "입력을 그대로 다시 만들어 보라"는 과제로 학습한다. 그런데 이 과제가 너무 잘 풀리면 모델은 아무것도 배우지 못한다. 이 모순이 14장 전체의 출발점이다.</p>
+      <span class="kicker">Sub 01 — 자기 자신을 다시 만든다는 것</span>
+      <h1>자기부호화기란 <span class="t-style">무엇인가</span> — 왜 입력을 입력으로 복원하는가</h1>
+      <p class="lede">"네트워크에게 입력을 그대로 베끼라"는 가장 멍청해 보이는 과제가, 어떻게 데이터의 본질을 잡아내는 강력한 표상 학습기로 변하는가. 이 장의 모든 변종(미완전, 잡음 제거, 수축적, 스파스, 변분)은 이 한 가지 패러독스로부터 갈라져 나온다.</p>
     </header>
 
     <div class="prose">
-      <p>지금까지 우리가 본 신경망(neural network)은 대부분 <strong>판별 모델</strong>이었다. 이미지를 보고 라벨을 맞히거나, 문장을 보고 다음 단어를 예측하거나, 입력 x와 다른 무언가 y를 매핑하는 일이다. 그런데 라벨이 없을 때, 즉 비지도(unsupervised) 상황에서도 신경망이 데이터의 구조를 배울 수 있을까? 자기부호화기(autoencoder, AE)는 이 질문에 대한 가장 단순하고 가장 영향력 있는 답이다.</p>
-      <p>아이디어는 한 줄이다. <strong>"입력을 입력으로 매핑하라."</strong> 즉, x를 받아서 x를 다시 만들어 내는 신경망을 학습시킨다. 이 신경망은 두 부분으로 나뉜다.</p>
+      <p>딥러닝 책에서 자기부호화기(autoencoder)를 처음 만났을 때 들 수 있는 가장 솔직한 의문은 이런 것이다. "어떤 입력 $x$를 받아서 똑같은 $x$를 만들어 내는 신경망을 왜 굳이 학습시키나? 그건 그냥 복사기(copy machine)이지 않은가?" 이 물음은 자연스럽다. 그리고 자기부호화기의 모든 핵심은 바로 이 의문을 깨는 과정에 들어 있다.</p>
 
-      <div class="math-block">$$ h = f(x), \qquad r = g(h) $$</div>
-      <p class="math-note">f는 인코더(encoder), h는 잠재 코드(latent code), g는 디코더(decoder), r은 재구성(reconstruction).</p>
-
-      <p>여기서 <span class="t-structure">$f$</span>는 입력을 잠재 표상으로 압축하는 인코더이고, <span class="t-style">$g$</span>는 그 코드에서 다시 입력을 추정하는 디코더다. 학습 목표는 단순한 재구성 손실이다.</p>
-
-      <div class="math-block">$$ L(x, g(f(x))) = \|x - g(f(x))\|^2 $$</div>
-      <p class="math-note">x와 복원된 r 사이의 제곱 오차. 픽셀 단위의 단순한 거리.</p>
-
-      <p>왜 하필 <strong>제곱 오차</strong>인가? 이미지·연속값 입력에서는 출력 분포를 등방성 가우시안(isotropic Gaussian)으로 가정하는 것이 가장 자연스럽고, 그 가정 아래에서 음의 로그가능도(negative log-likelihood)를 펼치면 상수항을 빼고 정확히 $\|x - r\|^2$이 남기 때문이다. 즉 이 손실은 "제곱이라서 편리해서"가 아니라, "디코더 출력이 정규분포일 때 최대가능도의 정확한 모양"이라서 이 형태다. 이진(binary) 입력이면 베르누이 분포에서 자연스럽게 교차 엔트로피가 나오고, 형태가 달라진다.</p>
-
-      <h2>가장 큰 함정 — 항등 함수</h2>
-      <p>여기서 곧바로 한 가지 의심이 든다. <strong>"입력을 입력으로 매핑하라"</strong>는 과제는 너무 쉽지 않은가? 모델이 그저 $f(x) = x$, $g(h) = h$로 설정해 버리면, 즉 아무것도 안 하는 항등 함수(identity function)가 되어 버리면, 손실은 정확히 0이 된다. 그런데 그러면 모델은 데이터에 대해 <em>아무것도</em> 배우지 못한다. 시험에서 만점을 받는 가장 쉬운 방법이 "답안지를 그대로 베끼는 것"이라면, 그 시험은 학습을 측정하지 못한다.</p>
+      <p>자기부호화기는 두 부품으로 이루어진 신경망이다. 앞쪽 절반인 <span class="t-structure">인코더(encoder)</span>는 입력을 받아 어떤 중간 표상으로 압축한다. 이 중간 표상을 <strong>잠재 코드(latent code)</strong> 또는 잠재 표상이라 부르고, 보통 $h$로 쓴다. 인코더는 함수 $f$이고, $h = f(x)$이다. 뒤쪽 절반인 <span class="t-style">디코더(decoder)</span>는 그 코드를 다시 받아서, 원래 입력을 흉내 낸 복원본(reconstruction) $r$을 만든다. 디코더는 함수 $g$이고, $r = g(h) = g(f(x))$이다. 학습은 이 복원본 $r$이 원래 입력 $x$와 얼마나 가까운지를 측정해서, 그 거리(즉 재구성 손실, reconstruction loss)를 줄이는 방향으로 이루어진다.</p>
 
       <div class="analogy">
-        <b>녹음기와 음악가의 차이.</b> 누가 "방금 들은 멜로디를 다시 연주해 보라"고 했다고 하자. <b>녹음기</b>는 음파를 그대로 저장했다가 재생하면 끝이다. 멜로디의 구조는 전혀 모른다. <b>음악가</b>는 머릿속에 "C장조, 4/4박자, 도-미-솔의 아르페지오"라는 압축된 표현을 만들어 두고, 그것을 보고 다시 연주한다. 둘 다 같은 멜로디를 출력하지만, 음악가만이 다음에 비슷한 멜로디를 변주하거나 분류할 수 있다. <b>자기부호화기가 의미를 가지려면 녹음기가 아니라 음악가가 되어야 한다.</b>
+        <b>음악 학원의 받아쓰기 연습.</b> 선생님이 피아노로 짧은 멜로디를 친다. 학생은 그걸 듣고 머릿속에 어떤 형태로 기억한다 — 음표 다섯 개라는 식의 기호일 수도 있고, "딴딴딴 따라라" 같은 의성어일 수도 있다. 그 다음 학생이 자기 손으로 같은 멜로디를 다시 친다. 선생님이 "원래와 똑같았는가"를 채점한다. 학생이 잘 기억해서 정확히 복원했다면 점수가 높다. 그런데 만약 학생이 녹음기를 가져와 그대로 재생했다면? 받아쓰기 연습의 의미가 없어진다. 학생은 멜로디를 <strong>이해</strong>하지 않았기 때문이다. 자기부호화기 학습이 바로 이 받아쓰기다. 그리고 "녹음기"를 막는 장치가 이 장 전체의 주제다.
       </div>
 
-      <p>그러므로 자기부호화기 설계의 핵심은 단 하나의 질문으로 압축된다. <strong>"어떻게 모델이 항등 함수가 되는 것을 막을 것인가?"</strong> 이 질문에 어떻게 답하느냐가 곧 자기부호화기의 종류를 결정한다. 잠재 차원을 좁히면 <a href="02.html">미완전 자기부호화기(undercomplete AE)</a>, 입력에 노이즈를 섞으면 <a href="03.html">잡음 제거 자기부호화기(DAE)</a>, 코드의 활성에 페널티를 주면 희소 자기부호화기(sparse AE), 인코더의 자코비안에 페널티를 주면 <a href="04.html">수축적 자기부호화기(CAE)</a>가 된다. 모두 같은 질문에 대한 서로 다른 답이다.</p>
+      <h2>가장 단순한 정의 — 그리고 가장 큰 함정</h2>
+      <p>가장 단순한 자기부호화기의 목표는 다음 손실을 최소화하는 것이다. $x$의 차원이 $d$일 때, 보통 평균 제곱 오차(mean squared error)를 쓴다.</p>
+      <p>$$L(x, g(f(x))) = \| x - g(f(x)) \|_2^2 = \sum_{i=1}^{d} (x_i - g(f(x))_i)^2$$</p>
+      <p>이 식이 무엇을 말하는지 한 단어씩 풀어 보자. $\|\cdot\|_2$는 유클리드 거리(Euclidean distance), 즉 두 점 사이의 직선 거리다. 제곱을 붙인 것은 미분이 깔끔하고, 부호에 관계없이 차이의 크기만 측정하기 위해서다. 그래서 이 손실은 <strong>"복원본이 원본에서 평균적으로 얼마나 멀리 떨어져 있는가"</strong>를 측정한다. 학습은 이 거리가 0에 가까워지도록 인코더와 디코더의 가중치를 조정한다.</p>
 
-      <p>아래 위젯에서 자기부호화기의 가장 단순한 동작을 직접 확인해 보자. 왼쪽은 입력 이미지(8×8 손글씨 패턴), 가운데는 잠재 벡터 $h$ (네 개의 슬라이더로 직접 움직일 수 있다), 오른쪽은 디코더가 그 코드를 보고 복원해 낸 이미지다. 슬라이더를 움직이면 잠재 공간(latent space) 위를 걷는 것과 같다.</p>
+      <p>여기서 함정이 시작된다. 만약 인코더와 디코더에 아무 제약을 주지 않으면, 모델이 발견하는 가장 쉬운 답은 <strong>항등 함수(identity function)</strong>이다. 즉 $f(x) = x$, $g(h) = h$라고 둬 버리면 $g(f(x)) = x$이고 손실은 정확히 0이 된다. 이는 학원에서 학생이 녹음기를 가져와 그냥 재생 버튼을 누른 것과 같다. 손실은 완벽하지만, 학생(모델)은 멜로디(데이터)에 대해 아무것도 배우지 않았다.</p>
+
+      <p>이 함정을 직관적으로 확인해 보자. 아래 위젯은 자기부호화기의 잠재 차원 $k$를 조절해 가며, 복원이 얼마나 잘 되는지와 동시에 "모델이 정말 데이터의 구조를 잡았는가"를 보여 준다.</p>
     </div>
 
     <div class="widget">
       <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 01</span><span>잠재 공간 산책 — 입력 → h → 복원</span></div>
-        <div class="ae-diag">
-          <div class="ae-col input">
-            <canvas id="ae-in" width="160" height="160"></canvas>
-            <span class="clab">입력</span>
-            <span class="csym">x ∈ ℝ⁶⁴</span>
+        <div class="widget-label"><span class="lab-no">위젯 01</span><span>잠재 차원 k vs 재구성 손실 — 항등 함수의 함정 시각화</span></div>
+        <div class="ae-stage">
+          <canvas id="kloss-canvas" width="720" height="220"></canvas>
+        </div>
+        <div class="widget-controls">
+          <div class="slider" style="flex:1; min-width:260px;">
+            <label>잠재 차원 <b id="kval">k = 4</b> &nbsp;(입력 차원 d = 8)</label>
+            <input type="range" id="kslider" min="1" max="12" step="1" value="4">
           </div>
-          <div class="ae-arrow">
-            <div>→</div>
-            <b>인코더 f</b>
-            <div style="margin-top: .5rem;">·</div>
-            <div>→</div>
-            <b>디코더 g</b>
-          </div>
-          <div class="ae-col recon">
-            <canvas id="ae-out" width="160" height="160"></canvas>
-            <span class="clab">복원</span>
-            <span class="csym">r = g(h)</span>
+          <div class="legend">
+            <span><i style="background:var(--structure)"></i> 학습 손실</span>
+            <span><i style="background:var(--style)"></i> 랜덤 데이터 손실</span>
+            <span><i style="background:var(--synth)"></i> 항등 함수 영역</span>
           </div>
         </div>
-        <div class="ae-latent-bars" id="ae-bars"></div>
-        <div class="ae-loss" id="ae-loss"></div>
+        <div class="verdict" id="kverdict"></div>
       </div>
-      <p class="widget-cap">잠재 벡터의 각 차원이 의미하는 시각적 변화 — 굵기, 기울기, 곡률, 두께. 슬라이더 하나만 움직여도 복원 이미지 전체가 부드럽게 변형된다. 이것이 잠재 공간이 "데이터의 구조"를 학습했다는 증거다. 픽셀 공간에서 한 픽셀만 바꾸면 그저 점 하나가 켜질 뿐이지만, 잠재 공간에서 한 차원만 움직이면 의미 있는 변형이 일어난다.</p>
+      <p class="widget-cap">$k < d$일 때(미완전 영역)는 복원 손실은 크지만 모델이 진짜 데이터 구조를 배운다. $k \ge d$이면 손실은 0에 가까워지지만 모델은 단순 복사로 빠진다(녹음기 모드). 좋은 자기부호화기는 좌측의 적절한 긴장 지점에 머문다.</p>
     </div>
 
     <div class="prose">
-      <h2>왜 신경망이어야 하는가</h2>
-      <p>13장의 선형 인자 모델(linear factor model)도 비슷한 일을 한다. PCA(주성분 분석)는 데이터를 직선 부분공간으로 투영했다가 다시 펼치는 일종의 "선형 자기부호화기"다. 그런데 자연 데이터의 매니폴드(manifold)는 거의 항상 <em>휘어 있다</em>. 사진 한 장이 살짝 회전한다고 해서 픽셀 공간에서 직선 위를 움직이지 않는다. 직선 부분공간으로는 휘어진 구조를 따라잡을 수 없다.</p>
+      <h2>그렇다면 왜 자기부호화기를 학습시키는가</h2>
+      <p>자기부호화기의 진짜 목적은 복원 그 자체가 아니라, <strong>복원하는 과정에서 만들어지는 잠재 코드 $h$</strong>다. 잘 학습된 자기부호화기의 $h$는 입력 $x$의 "본질만 모아 둔 압축본"이다. 이 $h$를 다른 작업의 입력으로 쓰면, 원래의 $x$를 그대로 쓰는 것보다 분류, 검색, 클러스터링 같은 작업이 더 쉬워진다. 픽셀 70만 개의 고화질 사진을 256개 숫자로 줄였는데, 그 256개가 "이것은 고양이인가 강아지인가, 정면을 보고 있는가 옆을 보고 있는가, 배경이 실내인가 야외인가" 같은 의미 있는 좌표축을 학습한 셈이다.</p>
 
-      <p>그래서 인코더 $f$와 디코더 $g$를 비선형 함수로 만든다. 한 층짜리 비선형이면 충분할 수도 있지만, 보통은 다층 신경망을 쓴다. 다층이 되는 순간 모델은 "여러 단계의 추상화"를 거치며 매니폴드의 굴곡을 따라 코드를 매기는 능력을 얻는다. 이것이 자기부호화기가 PCA의 단순한 일반화가 아니라 <strong>표상 학습(representation learning)의 강력한 도구</strong>로 자리 잡은 이유다.</p>
+      <p>이 관점에서 자기부호화기는 두 가지 일을 동시에 한다. 첫째, 차원을 축소(dimensionality reduction)한다. 둘째, 의미 있는 좌표계(semantic coordinate system)를 학습한다. 이 둘은 사실 같은 일의 두 얼굴이다. 좋은 좌표계는 본질만 남기므로 자연스럽게 차원이 줄고, 차원을 줄이려면 무엇이 본질인지를 판단해야 하므로 자연스럽게 좌표계가 의미를 가진다.</p>
 
-      <h2>다음 장에서</h2>
-      <p>다음 장에서는 항등 함수의 함정을 막는 가장 직관적인 방법, 즉 <a href="02.html">잠재 차원을 입력보다 좁게 만드는 미완전 자기부호화기</a>를 본다. 그리고 그 단순한 제약이 왜 PCA와 같은 부분공간을 학습하게 만드는지, 그리고 비선형으로 확장하면 어떻게 PCA를 뛰어넘는지 단계적으로 쌓아 올린다.</p>
+      <div class="analogy">
+        <b>여행 가방 싸기.</b> 7박 8일 유럽 여행을 가는데 캐리어가 작다. 옷장 전체를 다 가져갈 수는 없으니, "정말 필요한 것만 꼽는다"는 의사결정을 해야 한다. 그 과정에서 무엇이 필수이고 무엇이 사치인지가 드러난다. 항등 함수는 옷장 전체를 그대로 들고 가는 것이다 — 손실은 0이지만 캐리어가 무너진다. 미완전 자기부호화기는 작은 캐리어로 강제로 짐을 줄이게 한 것이고, 그 결과 "여행에 무엇이 본질인가"라는 일반화된 지식이 생긴다.
+      </div>
+
+      <h2>이 장의 전체 구도</h2>
+      <p>이 함정과 해법의 골격이 잡히면 Chapter 14 전체가 한 줄로 정리된다. <strong>모든 변종은 항등 함수 함정을 막는 서로 다른 장치다.</strong></p>
+      <p>미완전 AE는 잠재 차원을 강제로 좁힌다(Sub 03). 과완전 AE는 잠재 차원이 넓어도 다른 장치로 막아야 한다(Sub 04). 잡음 제거 AE는 입력을 일부러 망가뜨려서 모델이 복사 대신 복원을 배우게 한다(Sub 05, 06). 수축적 AE는 인코더의 변화량 자체에 페널티를 걸어 데이터 매니폴드를 따라가게 한다(Sub 07). 스파스 AE는 잠재 활성도가 대부분 0이 되도록 강제해서 의미 있는 채널 분할을 유도한다(Sub 10). 변분 AE는 잠재 공간 자체를 확률분포로 만들어 생성 능력까지 확보한다(Sub 11).</p>
+
+      <p>다음 절에서는 인코더, 디코더, 재구성 손실이라는 세 부품의 의미를 정밀하게 들여다본다. 그 다음 미완전 AE에서 출발해 한 번에 하나씩 함정 방지 장치를 추가해 나간다.</p>
     </div>
 
     <nav class="ch-foot"></nav>
@@ -113,20 +92,25 @@
 </div>
 
 <script>
-  // ===== Ch.14 sub-chapter nav =====
   const SUBS = [
-    { no:'01', t:'자기부호화기의 기본', f:'01.html' },
-    { no:'02', t:'미완전 자기부호화기', f:'02.html' },
-    { no:'03', t:'잡음 제거 AE (DAE)', f:'03.html' },
-    { no:'04', t:'수축적 AE (CAE)', f:'04.html' },
-    { no:'05', t:'AE와 매니폴드 학습', f:'05.html' },
-    { no:'06', t:'시험 대비', f:'06.html' },
+    { no:'01', t:'자기부호화기란 무엇인가', f:'01.html' },
+    { no:'02', t:'인코더 · 디코더 · 재구성 손실', f:'02.html' },
+    { no:'03', t:'미완전 자기부호화기', f:'03.html' },
+    { no:'04', t:'과완전 AE의 위험', f:'04.html' },
+    { no:'05', t:'잡음 제거 AE — 매니폴드', f:'05.html' },
+    { no:'06', t:'잡음 제거 AE — 점수 매칭', f:'06.html' },
+    { no:'07', t:'수축적 AE — 자코비안', f:'07.html' },
+    { no:'08', t:'AE와 매니폴드 학습', f:'08.html' },
+    { no:'09', t:'AE vs PCA', f:'09.html' },
+    { no:'10', t:'스파스 AE', f:'10.html' },
+    { no:'11', t:'변분 AE 맛보기', f:'11.html' },
+    { no:'12', t:'시험 대비 체크리스트', f:'12.html' },
   ];
   const CURRENT = '01';
   (function buildNav() {
     document.querySelector('.topbar').innerHTML =
-      `<a class="home" href="index.html">← Chapter 14 · 자기부호화기</a>` +
-      `<span class="ch-mini">SUB ${CURRENT} / 06</span>`;
+      `<a class="home" href="index.html">← Chapter 14 — 자기부호화기</a>` +
+      `<span class="ch-mini">SUB ${CURRENT} / 12</span>`;
     document.querySelector('.ch-nav ol').innerHTML = SUBS.map(s =>
       `<li><a href="${s.f}" ${s.no === CURRENT ? 'class="current"' : ''}>${s.t}</a></li>`).join('');
     const i = SUBS.findIndex(s => s.no === CURRENT);
@@ -144,126 +128,94 @@
     document.addEventListener('scroll', onScroll, { passive: true }); onScroll();
   })();
 
-  // ===== 위젯: AE 잠재 공간 산책 =====
-  // 8x8 이진 손글씨 비슷한 입력 패턴 (숫자 '7' 모양 비스무리)
-  // 잠재 4차원 슬라이더에 따라 모양이 변형되는 합성 디코더
-  (function aeWidget() {
-    const inC = document.getElementById('ae-in');
-    const outC = document.getElementById('ae-out');
-    const barsEl = document.getElementById('ae-bars');
-    const lossEl = document.getElementById('ae-loss');
-
+  (function klossWidget() {
+    const canvas = document.getElementById('kloss-canvas');
+    const slider = document.getElementById('kslider');
+    const kval = document.getElementById('kval');
+    const verdict = document.getElementById('kverdict');
     const css = getComputedStyle(document.documentElement);
-    const INK = css.getPropertyValue('--ink').trim();
     const STRUCT = css.getPropertyValue('--structure').trim();
     const STYLE = css.getPropertyValue('--style').trim();
+    const SYNTH = css.getPropertyValue('--synth').trim();
+    const INK = css.getPropertyValue('--ink').trim();
+    const FAINT = css.getPropertyValue('--ink-faint').trim();
+    const D = 8;
 
-    // 8x8 입력 — 숫자 '7' 패턴
-    const W = 8;
-    const inputPattern = [
-      0, 0, 1, 1, 1, 1, 0, 0,
-      0, 0, 0, 0, 0, 1, 1, 0,
-      0, 0, 0, 0, 1, 1, 0, 0,
-      0, 0, 0, 1, 1, 0, 0, 0,
-      0, 0, 1, 1, 0, 0, 0, 0,
-      0, 0, 1, 1, 0, 0, 0, 0,
-      0, 0, 1, 0, 0, 0, 0, 0,
-      0, 0, 1, 0, 0, 0, 0, 0,
-    ];
-    // 잠재 4차원의 의미: h0=굵기, h1=기울기, h2=곡률, h3=수평이동
-    const latent = [0.0, 0.0, 0.0, 0.0];
+    function lossCurve(k) {
+      if (k <= 4) return 1.0 - (k-1)*0.05;
+      if (k < D) return 0.8 - (k - 4) * 0.15;
+      return Math.max(0.001, 0.05 - (k - D) * 0.005);
+    }
+    function randCurve(k) {
+      if (k < D) return 0.95 - (k - 1) * 0.02;
+      return Math.max(0.01, 0.7 - (k - D) * 0.15);
+    }
 
-    function drawGrid(canvas, vals, accent) {
+    function draw(kNow) {
       const ctx = canvas.getContext('2d');
-      const w = canvas.width, h = canvas.height;
-      const cell = w / W;
-      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h);
-      // 격자선
-      ctx.strokeStyle = 'rgba(38,34,28,0.07)'; ctx.lineWidth = 1;
-      for (let i = 0; i <= W; i++) {
-        ctx.beginPath(); ctx.moveTo(i*cell, 0); ctx.lineTo(i*cell, h); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(0, i*cell); ctx.lineTo(w, i*cell); ctx.stroke();
+      const W = canvas.width = canvas.clientWidth;
+      const H = canvas.height = 220;
+      ctx.fillStyle = '#fff'; ctx.fillRect(0,0,W,H);
+      const xAt = k => 40 + (k - 1) / 11 * (W - 60);
+      ctx.fillStyle = 'rgba(164,123,46,0.08)';
+      ctx.fillRect(xAt(D), 10, W - xAt(D) - 10, H - 40);
+      ctx.fillStyle = SYNTH; ctx.font = '10px "Spline Sans Mono", monospace';
+      ctx.fillText('항등 함수 영역 (k ≥ d)', xAt(D) + 6, 22);
+      ctx.strokeStyle = 'rgba(38,34,28,0.18)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(40, 10); ctx.lineTo(40, H-30); ctx.lineTo(W-10, H-30); ctx.stroke();
+      ctx.fillStyle = FAINT; ctx.font = '10px "Spline Sans Mono", monospace';
+      ctx.fillText('재구성 손실', 4, 18);
+      ctx.fillText('잠재 차원 k', W-90, H-12);
+      for (let k = 1; k <= 12; k++) {
+        ctx.fillText(String(k), xAt(k)-3, H-16);
       }
-      // 픽셀 (값이 음수면 화이트, 양수면 잉크)
-      for (let y = 0; y < W; y++) {
-        for (let x = 0; x < W; x++) {
-          const v = vals[y*W + x];
-          if (v > 0.05) {
-            const alpha = Math.min(1, v);
-            // accent 컬러로
-            const c = accent;
-            const rgba = c === STRUCT
-              ? `rgba(45, 91, 122, ${alpha})`
-              : `rgba(192, 73, 46, ${alpha})`;
-            ctx.fillStyle = rgba;
-            ctx.fillRect(x*cell+1, y*cell+1, cell-2, cell-2);
-          }
+
+      function plot(curve, color, lw) {
+        ctx.strokeStyle = color; ctx.lineWidth = lw;
+        ctx.beginPath();
+        for (let k = 1; k <= 12; k++) {
+          const x = xAt(k);
+          const v = curve(k);
+          const y = 15 + (1 - v) * (H - 50);
+          if (k === 1) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+        for (let k = 1; k <= 12; k++) {
+          const x = xAt(k); const v = curve(k);
+          const y = 15 + (1 - v) * (H - 50);
+          ctx.fillStyle = color;
+          ctx.beginPath(); ctx.arc(x, y, k === kNow ? 5 : 3, 0, Math.PI*2); ctx.fill();
         }
       }
-    }
+      plot(lossCurve, STRUCT, 2.2);
+      plot(randCurve, STYLE, 1.6);
 
-    // 디코더: h를 받아 8x8 변형 패턴 출력
-    // 의미: h0(굵기): 패턴 1픽셀 옆을 켬, h1(기울기): 행마다 x오프셋,
-    //       h2(곡률): 행마다 sin 오프셋, h3(수평): 전체 x이동
-    function decode(h) {
-      const out = new Array(W*W).fill(0);
-      for (let y = 0; y < W; y++) {
-        for (let x = 0; x < W; x++) {
-          const xShift = Math.round(h[3] * 2 + h[1] * (y - 3.5) * 0.5 + h[2] * Math.sin(y/W*Math.PI*2) * 1.5);
-          const xs = x - xShift;
-          if (xs < 0 || xs >= W) continue;
-          const v = inputPattern[y*W + xs];
-          if (v > 0) out[y*W + x] = Math.max(out[y*W + x], 1.0);
-          // 굵기 효과
-          if (h[0] > 0 && v > 0) {
-            if (xs + 1 < W) out[y*W + x] = Math.max(out[y*W + x], 0.7 * h[0]);
-            if (x + 1 < W) out[y*W + (x+1)] = Math.max(out[y*W + (x+1)], 0.7 * h[0]);
-          }
-        }
-      }
-      return out;
-    }
-
-    function l2(a, b) {
-      let s = 0;
-      for (let i = 0; i < a.length; i++) s += (a[i] - b[i]) ** 2;
-      return s;
+      const cx = xAt(kNow);
+      ctx.strokeStyle = INK; ctx.setLineDash([4,3]); ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(cx, 10); ctx.lineTo(cx, H-30); ctx.stroke();
+      ctx.setLineDash([]);
     }
 
     function update() {
-      drawGrid(inC, inputPattern, STRUCT);
-      const out = decode(latent);
-      drawGrid(outC, out, STYLE);
-      const err = l2(inputPattern, out);
-      const norm = inputPattern.reduce((s, v) => s + v*v, 0);
-      const rel = err / Math.max(norm, 1e-9);
-      lossEl.innerHTML =
-        `재구성 손실 <b class="s1">‖x − g(h)‖² ≈ ${err.toFixed(2)}</b> ` +
-        `(상대 오차 ${(rel*100).toFixed(0)}%) · ` +
-        `잠재 h = [<b class="s2">${latent.map(v => v.toFixed(2)).join(', ')}</b>] · ` +
-        `슬라이더를 0으로 모으면 정확히 복원되고, 멀어질수록 변형이 누적된다.`;
+      const k = +slider.value;
+      kval.textContent = `k = ${k}`;
+      draw(k);
+      const Ld = lossCurve(k), Lr = randCurve(k);
+      let msg = '';
+      if (k <= 4) {
+        msg = `k=${k}: 미완전 영역. 진짜 데이터 손실 <b class="bad">${Ld.toFixed(2)}</b>. 코드가 너무 좁아 정보가 새지만, 그래서 본질만 남는다. 모델이 진짜 구조를 학습 중.`;
+      } else if (k < D) {
+        msg = `k=${k}: 적정 미완전. 손실 <b class="mid">${Ld.toFixed(2)}</b>로 안정. 랜덤 데이터엔 손실 <b class="bad">${Lr.toFixed(2)}</b>로 차이가 크다 — 모델이 구조에 의존한다는 증거.`;
+      } else {
+        msg = `k=${k} ≥ d=${D}: <b class="bad">항등 함수 위험 영역</b>. 손실은 <b class="ok">${Ld.toFixed(3)}</b>으로 거의 0이지만, 랜덤 데이터도 <b class="ok">${Lr.toFixed(2)}</b>로 잘 복원 — 즉 학습한 것이 없다(녹음기 모드).`;
+      }
+      verdict.innerHTML = msg;
     }
-
-    const labels = ['h₀  (굵기)', 'h₁  (기울기)', 'h₂  (곡률)', 'h₃  (수평이동)'];
-    labels.forEach((lab, i) => {
-      const box = document.createElement('div');
-      box.className = 'ae-bar';
-      const labEl = document.createElement('label'); labEl.textContent = lab;
-      const inp = document.createElement('input');
-      inp.type = 'range'; inp.min = -1; inp.max = 1; inp.step = 0.05; inp.value = 0;
-      const val = document.createElement('b'); val.textContent = '0.00';
-      inp.addEventListener('input', () => {
-        latent[i] = parseFloat(inp.value);
-        val.textContent = latent[i].toFixed(2);
-        update();
-      });
-      box.appendChild(labEl); box.appendChild(inp); box.appendChild(val);
-      barsEl.appendChild(box);
-    });
+    slider.addEventListener('input', update);
+    window.addEventListener('resize', update);
     update();
   })();
 
-  // KaTeX
   window.addEventListener('load', () => {
     if (window.renderMathInElement) {
       renderMathInElement(document.body, {

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sub 15 · 기울기 소실 — 깊은 sigmoid의 한계 · Ch.06</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 15 · 8장으로 가는 다리</span>
+      <h1>기울기 소실 —<br><span class="t-style">깊은 sigmoid</span>의 한계</h1>
+      <p class="lede">14절에서 작은 망의 손계산을 봤다. 그런데 같은 절차를 sigmoid 5층, 10층 망에 적용하면 무엇이 일어나는가? 앞 층의 기울기가 사실상 0이 되는 현상 — 기울기 소실(vanishing gradient)이 그 답이다. 이 절은 그 현상을 정량적으로 본다.</p>
+    </header>
+
+    <div class="prose">
+      <p>지금까지 본 신경망은 모두 2-3층 정도였다. 그러나 실제 응용에서는 10층, 50층, 100층 이상도 흔하다(ResNet-152, GPT-3는 96층). 깊이가 늘어나면 표현력이 늘어나지만, 동시에 학습이 어려워진다. 가장 유명한 어려움이 <strong>기울기 소실(vanishing gradient)</strong>이다. 깊은 망의 앞 층(입력에 가까운 층)의 기울기가 사실상 0이 되어, 그 층의 가중치가 거의 업데이트되지 않는 현상이다. 이 절은 그 현상이 왜 일어나는지, 어떻게 정량적으로 관찰되는지, 그리고 어떻게 해결되는지를 본다.</p>
+
+      <h2>왜 기울기가 곱셈으로 누적되는가</h2>
+      <p>12-13절에서 본 역전파의 한 동작을 다시 떠올리자. 한 층 통과할 때마다, 기울기에는 두 항이 곱해진다.</p>
+      <div class="math-block">$$ \delta_{\text{prev}} = \delta_{\text{next}} \cdot W^\top \cdot g'(z) $$</div>
+      <p class="math-note">δ_next는 뒤 층에서 온 기울기, W는 다음 층의 가중치 행렬, g'(z)는 활성화의 미분.</p>
+
+      <p>$L$개의 층을 거슬러 올라가면 이런 곱이 $L$번 일어난다. 각 곱이 평균적으로 어떤 값인지가 결정적이다.</p>
+      <ul>
+        <li>곱이 평균 1보다 작으면 → 기울기가 지수적으로 0으로 수렴 (vanishing).</li>
+        <li>곱이 평균 1보다 크면 → 기울기가 지수적으로 발산 (exploding).</li>
+        <li>곱이 평균 1에 가까우면 → 기울기가 적당히 유지 (이상적).</li>
+      </ul>
+
+      <h2>sigmoid의 경우 — 0.25 곱하기 0.25 곱하기...</h2>
+      <p>sigmoid의 미분은 $\sigma'(z) = \sigma(z)(1 - \sigma(z))$로, 최댓값이 $z=0$에서 $0.25$다. 즉 어떤 입력에 대해서도 $\sigma'(z) \leq 0.25$다. 그리고 입력 분포가 0에서 멀어지면 이 값은 더 작아진다.</p>
+
+      <p>가중치 $W^\top$는 학습 초기에 가우시안 같은 분포로 작게 초기화된다. 단순화를 위해 $\|W\| \approx 1$이라고 가정하자. 그러면 한 층 통과의 곱은 최대 $1 \cdot 0.25 = 0.25$다. 실제로는 평균 0.1 정도가 보통이다.</p>
+
+      <p>이제 5층, 10층의 효과를 보자.</p>
+      <table class="symbols">
+        <tr><td>층 수 L</td><td>기울기 비율 (0.1^L)</td></tr>
+        <tr><td>1</td><td>0.1 = 10%</td></tr>
+        <tr><td>2</td><td>0.01 = 1%</td></tr>
+        <tr><td>3</td><td>0.001 = 0.1%</td></tr>
+        <tr><td>5</td><td>10^(-5) = 0.001%</td></tr>
+        <tr><td>10</td><td>10^(-10) = 거의 0</td></tr>
+        <tr><td>20</td><td>10^(-20) = 사실상 0</td></tr>
+      </table>
+
+      <p>5층만 거쳐도 앞 층의 기울기는 출력의 0.001%가 된다. 10층이면 사실상 0이다. <strong>학습 신호가 앞 층까지 도달하지 못한다.</strong> 이게 1990-2010년 동안 깊은 sigmoid 망이 학습되지 않았던 정확한 이유다.</p>
+
+      <div class="analogy">
+        <b>전등 100개가 직렬로 연결된 비유.</b> 첫 번째 전등에 신호를 보내고, 각 전등이 90%만 통과시킨다고 하자. 100번째 전등에 도달하는 신호는 $0.9^{100} \approx 0.003\%$다. 사실상 꺼진 것과 같다. sigmoid 100층 망에서 입력 층의 기울기가 정확히 이런 상황이다. 학습이 안 되는 것이 아니라, 학습 신호가 그 층까지 도달하지 못한다.
+      </div>
+
+      <h2>ReLU의 경우 — 1 곱하기 1 곱하기...</h2>
+      <p>ReLU의 미분은 양수 영역에서 정확히 1이다. 한 층 통과의 곱은 $\|W\| \cdot 1 \approx 1$이다. 100층을 거쳐도 곱은 여전히 약 1이다. <strong>기울기가 살아남는다.</strong> 6절에서 본 "ReLU가 깊은 학습을 가능하게 했다"의 정량적 뿌리가 정확히 이거다.</p>
+
+      <p>물론 ReLU도 완벽하지 않다. 음수 영역에서 미분이 0이라 그 뉴런으로 흐르는 신호는 끊긴다(dying ReLU). 그러나 평균적으로 활성화된 뉴런들의 신호는 살아남는다. 5-7절에서 본 ReLU vs sigmoid의 정성적 비교를 정량적으로 뒷받침하는 것이 이 절의 핵심이다.</p>
+
+      <h2>아래 위젯에서 직접 — 층 수에 따른 기울기 변화</h2>
+      <p>위젯에서 sigmoid, tanh, ReLU 각각에 대해 망의 깊이를 1층부터 20층까지 늘려가며 첫 층 기울기의 크기를 본다. sigmoid의 경우 지수적 감쇠가 명확하게 보인다. ReLU는 거의 일정하게 유지된다. 이 곡선이 6장이 7-8장으로 넘어가는 다리다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 15</span><span>깊이에 따른 기울기 소실 — sigmoid vs tanh vs ReLU</span></div>
+        <div id="vg"></div>
+      </div>
+      <p class="widget-cap">깊이가 늘어날수록 sigmoid의 기울기는 지수적으로 0으로 떨어진다. ReLU는 양수 활성을 가진 경로에서 1이 유지되어 신호가 살아남는다. 이 차이가 깊은 학습의 시대를 열었다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>해결책 1 — 활성화 함수 (ReLU 등)</h2>
+      <p>가장 직접적인 해결책이 활성화 함수의 변경이다. ReLU의 양수 영역 미분이 1이라는 사실 하나가 기울기 소실의 핵심을 해결한다. 6장의 5-7절에서 본 ReLU의 위력이 정확히 이 부분이다. 2010년 이후 깊은 학습의 폭발적 성장의 한 축이 ReLU의 보편화였다.</p>
+
+      <p>다만 ReLU만으로 모든 문제가 해결되지는 않는다. 100층 이상이 되면 ReLU 망도 학습이 어려워진다(dying ReLU 누적, 가중치 초기화 민감성 등). 그래서 ResNet 같은 추가 기법이 필요해진다.</p>
+
+      <h2>해결책 2 — 가중치 초기화 (Xavier, He)</h2>
+      <p>가중치를 처음에 어떻게 초기화하느냐가 학습 가능성에 결정적인 영향을 준다. 너무 작으면 기울기 소실, 너무 크면 기울기 폭주가 일어난다. Xavier(2010), He(2015) 초기화는 활성화 함수에 따라 가중치 분산을 적절히 설정해, 한 층 통과의 곱이 평균 1이 되도록 만든다.</p>
+
+      <div class="math-block">$$ \text{Xavier (tanh): } \quad W \sim \mathcal{N}(0, 2/(n_{\text{in}} + n_{\text{out}})) $$</div>
+      <div class="math-block">$$ \text{He (ReLU): } \quad W \sim \mathcal{N}(0, 2/n_{\text{in}}) $$</div>
+      <p class="math-note">활성화 함수의 미분 특성에 맞춰 분산을 조정. 깊은 망의 학습이 훨씬 안정화.</p>
+
+      <h2>해결책 3 — Batch / Layer Normalization</h2>
+      <p>BatchNorm(2015)과 LayerNorm(2016)은 각 층의 출력을 평균 0, 분산 1로 정규화한다. 이는 활성 전 값이 sigmoid의 포화 영역에 빠지지 않게 막아 주고, 한 층 통과의 기울기 곱이 안정적이도록 만든다. 현대 깊은 망에서 거의 표준이다.</p>
+
+      <h2>해결책 4 — Skip Connection (ResNet)</h2>
+      <p>ResNet(2015)의 핵심 아이디어는 한 층의 출력을 다음 층의 입력에 그대로 더하는 것이다.</p>
+      <div class="math-block">$$ \mathbf{h}_{l+1} = \mathbf{h}_l + F(\mathbf{h}_l; W_l) $$</div>
+      <p class="math-note">F는 그 층의 변환. 입력 h_l을 그대로 통과시키는 "지름길(skip)"이 추가된다.</p>
+
+      <p>이 구조의 역전파 미분을 계산하면, 한 층 통과의 기울기 항에 "1 + 무엇" 형태가 등장한다.</p>
+      <div class="math-block">$$ \frac{\partial \mathbf{h}_{l+1}}{\partial \mathbf{h}_l} = I + \frac{\partial F}{\partial \mathbf{h}_l} $$</div>
+      <p class="math-note">단위행렬 I 덕분에 기울기가 곱셈으로 소실되지 않고 덧셈으로 누적된다.</p>
+
+      <p>이 단순한 추가 덕분에 ResNet은 152층, 1000층 이상의 망도 학습 가능하게 만들었다. 2015년 ImageNet 우승의 핵심 기법이고, 그 이후 거의 모든 깊은 망의 표준 구성 요소다.</p>
+
+      <h2>해결책 5 — Gradient Clipping (폭주의 경우)</h2>
+      <p>기울기 폭주(exploding gradient)는 RNN에서 특히 자주 일어난다. 시간 축으로 펼친 RNN이 사실상 매우 깊은 네트워크가 되기 때문이다. 가장 간단한 해결책이 gradient clipping이다. 기울기의 norm이 어떤 임계값을 넘으면 잘라낸다.</p>
+      <div class="math-block">$$ \mathbf{g} \leftarrow \mathbf{g} \cdot \min\left(1, \frac{c}{\|\mathbf{g}\|}\right) $$</div>
+      <p class="math-note">기울기 g의 크기가 c를 넘으면 그 크기로 자른다. 폭주 방지의 간단한 처방.</p>
+
+      <h2>6장에서 8장으로 가는 다리</h2>
+      <p>이 절이 6장의 마지막 기술 항목이고, 8장 최적화로 이어지는 다리다. 6장이 신경망의 구조와 기울기 계산을 다뤘다면, 8장은 그 기울기로 어떻게 학습을 안정적으로 진행할지를 다룬다. 위에서 본 다섯 가지 해결책(활성화 함수, 초기화, 정규화, skip connection, gradient clipping)이 모두 8장의 주요 주제다.</p>
+
+      <p>6장 자체에서는 "왜 깊은 망이 어려운가"의 한 원인 — 기울기 소실을 정량적으로 보는 것까지가 목표다. 다음 절(16)에서는 6장 전체의 핵심을 시험 대비용으로 한 번 압축한다.</p>
+
+      <h2>지금 잡아 둘 그림</h2>
+      <ol>
+        <li><strong>기울기는 곱셈으로 누적된다.</strong> 한 층의 미분이 평균 1보다 작으면 지수적 소실, 크면 지수적 폭주.</li>
+        <li><strong>sigmoid 미분 최댓값 0.25.</strong> 깊이가 늘수록 기울기가 빠르게 0으로 수렴.</li>
+        <li><strong>ReLU 양수 영역 미분 1.</strong> 기울기 소실 해결의 가장 직접적인 해법.</li>
+        <li><strong>초기화·정규화·skip connection이 추가 해결책.</strong> 모두 한 층 통과의 기울기 항을 1 근처에 두려는 시도.</li>
+        <li><strong>이 모든 것이 8장 최적화의 주요 주제.</strong> 6장은 "왜 어려운가", 8장은 "어떻게 해결하는가".</li>
+      </ol>
+      <p>마지막 절(16)은 6장 전체의 핵심을 한 페이지로 압축한다. 시험 직전 1시간에 읽기 좋은 형태로 정리한다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script src="widgets.js"></script>
+<script>
+  window.addEventListener('load', () => {
+    CH6.buildNav('15');
+    const v = document.getElementById('vg');
+    CH6.onVisible(v, () => CH6.vanishing(v));
+  });
+</script>
+</body>
+</html>

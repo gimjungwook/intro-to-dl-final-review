@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Chapter 09 / 합성곱 신경망(CNN)</title>
+<title>Ch.09 합성곱 신경망(CNN) — 이미지의 구조를 네트워크에 새기다</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -11,26 +11,23 @@
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
   .masthead { position: relative; max-width: var(--wide); margin: 0 auto; padding: 1.5rem 1.4rem 0; }
-  .home-link { display: inline-flex; align-items: center; gap: .35rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .12em; color: var(--ink-faint); text-decoration: none; padding: .35rem .6rem; margin-bottom: .9rem; border-radius: 6px; border: 1px solid var(--line-soft); transition: all .15s var(--ease); }
-  .home-link:hover { color: var(--ink); border-color: var(--line); background: var(--paper-2); }
   .hero-wrap { position: relative; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: linear-gradient(180deg,#fff,var(--paper-2)); box-shadow: var(--shadow-plate); }
-  #hero { display: block; width: 100%; }
+  #hero { display: block; width: 100%; height: 360px; }
   .hero-cap { position: absolute; left: 1.2rem; bottom: 1rem; font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; color: var(--ink-faint); pointer-events: none; }
   .hero-cap b { color: var(--structure); } .hero-cap em { color: var(--style); font-style: normal; }
-
   .title-block { max-width: var(--wide); margin: 2.4rem auto 0; padding-inline: 1.4rem; }
   .title-block .kicker { display: block; margin-bottom: 1rem; }
-  .title-block h1 { font-size: clamp(2.6rem, 7vw, 5rem); margin: 0; }
-  .title-block h1 em { color: var(--style); }
+  .title-block h1 { font-size: clamp(2.4rem, 6vw, 4.6rem); margin: 0; line-height: 1.05; }
+  .title-block h1 em { color: var(--style); font-style: normal; }
   .paper-meta { display: flex; flex-wrap: wrap; gap: .5rem 1.6rem; margin-top: 1.4rem; font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); letter-spacing: .02em; }
   .paper-meta span b { color: var(--ink); font-weight: 500; }
 
-  .plates { max-width: var(--wide); margin: 1rem auto; padding: 2rem 1.4rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); gap: 1rem; }
+  .plates { max-width: var(--wide); margin: 1rem auto; padding: 2rem 1.4rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 1rem; }
   .plate { position: relative; display: flex; flex-direction: column; text-decoration: none; color: inherit; background: #fff; border: 1px solid var(--line); border-radius: 13px; padding: 1.3rem 1.3rem 1.4rem; transition: transform .2s var(--ease), border-color .2s, box-shadow .2s; overflow: hidden; }
   .plate:hover { transform: translateY(-4px); border-color: var(--structure-lo); box-shadow: var(--shadow-plate); }
   .plate .pno { font-family: var(--mono); font-size: .74rem; letter-spacing: .14em; color: var(--ink-faint); }
-  .plate h3 { font-family: var(--serif); font-size: 1.32rem; margin: .5rem 0 .5rem; line-height: 1.2; }
-  .plate p { font-size: .9rem; color: var(--ink-soft); line-height: 1.5; margin: 0; }
+  .plate h3 { font-family: var(--serif); font-size: 1.22rem; margin: .5rem 0 .5rem; line-height: 1.22; }
+  .plate p { font-size: .88rem; color: var(--ink-soft); line-height: 1.5; margin: 0; }
   .plate .spectrum { display: flex; height: 4px; border-radius: 2px; overflow: hidden; margin-bottom: 1rem; }
   .plate .spectrum i { display: block; height: 100%; }
   .plate .go { margin-top: 1rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; color: var(--structure); opacity: 0; transform: translateX(-4px); transition: .2s var(--ease); }
@@ -47,11 +44,15 @@
   @media (max-width: 560px){ .twopole{ grid-template-columns: 1fr; } }
 
   .path { max-width: var(--wide); margin: 2rem auto; padding: 1.6rem 1.4rem; }
-  .path-flow { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; font-family: var(--mono); font-size: .8rem; }
+  .path-flow { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; font-family: var(--mono); font-size: .78rem; }
   .path-flow a { display: inline-flex; align-items: center; gap: .4rem; text-decoration: none; color: var(--ink-soft); padding: .4rem .7rem; border: 1px solid var(--line); border-radius: 20px; transition: .15s; }
   .path-flow a:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
   .path-flow a b { color: var(--style); } .path-flow a:hover b { color: var(--style-lo); }
   .path-flow .arr { color: var(--ink-faint); }
+
+  .topback { max-width: var(--wide); margin: 1rem auto -.5rem; padding-inline: 1.4rem; }
+  .topback a { font-family: var(--mono); font-size: .74rem; letter-spacing: .12em; color: var(--ink-soft); text-decoration: none; }
+  .topback a:hover { color: var(--ink); }
 
   footer.colophon { max-width: var(--measure); margin: 3rem auto 4rem; padding: 2rem 1.4rem 0; border-top: 1px solid var(--line); font-size: .85rem; color: var(--ink-soft); }
   footer.colophon a { color: var(--structure); }
@@ -60,29 +61,31 @@
 </head>
 <body>
 
+<div class="topback"><a href="../index.html">← 기말고사 인터랙티브 표지</a></div>
+
 <header class="masthead">
-  <a class="home-link" href="../index.html">← 기말고사 인터랙티브 복습</a>
   <div class="hero-wrap">
     <canvas id="hero"></canvas>
-    <div class="hero-cap"><b>완전연결 — 모든 픽셀과 모든 픽셀</b> ↔ <em>합성곱 — 같은 작은 창을 이미지 위로</em> / 마우스를 올려보세요</div>
+    <div class="hero-cap"><b>완전연결 — 모든 픽셀과 모든 픽셀</b> ↔ <em>합성곱 — 같은 작은 창을 이미지 위로</em> · 마우스를 올려보세요</div>
   </div>
 </header>
 
 <div class="title-block">
-  <span class="kicker">Deep Learning Book / Chapter 09 / Convolutional Networks</span>
+  <span class="kicker">Deep Learning Book · Chapter 9 · Convolutional Networks</span>
   <h1>이미지의 구조를<br><em>네트워크에 새겨</em> 넣다</h1>
   <div class="paper-meta">
-    <span><b>딥러닝 개론</b> 기말고사 인터랙티브 복습</span>
-    <span>저자 <b>Goodfellow, Bengio, Courville (2016)</b></span>
-    <span>읽는 시간 <b>약 60분</b></span>
+    <span><b>딥러닝 개론</b> 기말고사 복습 · Ch.09</span>
+    <span>저본 <b>Goodfellow, Bengio, Courville (2016) Ch.9</b></span>
+    <span>읽는 시간 <b>약 110분</b></span>
+    <span>구성 <b>15 sub-chapter · 10+ 위젯</b></span>
     <span>D-day <b>2026-06-04</b></span>
   </div>
 </div>
 
 <section class="section-intro">
   <h2>한 문장으로</h2>
-  <p>9장은 <strong>“데이터의 구조적 특성을 모델 설계에 직접 새겨 넣으면 무슨 일이 일어나는가”</strong>에 답한다. 그 답이 합성곱 신경망(Convolutional Neural Network, CNN)이다. 이미지의 가까운 픽셀끼리는 멀리 떨어진 픽셀끼리보다 더 관계가 깊고, 어디에 있든 같은 패턴은 같은 패턴이라는 두 가정을 모델 구조 자체에 박아 넣으면, 같은 일을 하는 완전연결 네트워크보다 <span class="t-structure">약 5억분의 1</span> 수준의 파라미터로도 더 잘 한다.</p>
-  <p>처음 읽을 때 가장 중요한 점은, CNN을 <em>“이미지에 잘 맞는 특수한 네트워크”</em>로만 보지 않는 것이다. 9장이 강조하는 진짜 관점은, CNN이 <strong>완전연결 네트워크에 무한히 강한 사전(prior)을 건 모델</strong>이라는 것이다. 7장의 정칙화가 <span class="t-style">약한 사전</span>(가중치를 부드럽게 줄이기)이라면, CNN의 구조적 제약은 <span class="t-structure">강한 사전</span>(허용되지 않는 가중치 배치를 원천 차단)이다. 이 관점을 손에 쥐고 9장을 읽으면, 합성곱, 풀링, 아키텍처 발전사가 모두 “어떤 사전을 어떻게 새기고, 그 사전이 데이터에 맞는가”라는 단일한 줄거리로 묶인다.</p>
+  <p>이 장은 <strong>"데이터의 구조적 특성을 모델 설계에 직접 새겨 넣으면 무슨 일이 일어나는가"</strong>에 답한다. 그 답이 합성곱 신경망(Convolutional Neural Network, CNN)이다. 이미지의 가까운 픽셀끼리는 먼 픽셀끼리보다 더 관계가 깊고, 어디에 있든 같은 패턴은 같은 패턴이라는 두 가정을 모델 구조 자체에 박아 넣으면, 같은 일을 하는 완전연결 네트워크보다 <span class="t-structure">약 5억분의 1</span> 수준의 파라미터로도 더 잘 한다.</p>
+  <p>처음 읽을 때 가장 중요한 점은, CNN을 <em>"이미지에 잘 맞는 특수한 네트워크"</em>로만 보지 않는 것이다. 9장이 강조하는 진짜 관점은, CNN이 <strong>완전연결 네트워크에 무한히 강한 사전(prior)을 건 모델</strong>이라는 것이다. 7장의 정칙화가 <span class="t-style">약한 사전</span>(가중치를 부드럽게 줄이기)이라면, CNN의 구조적 제약은 <span class="t-structure">강한 사전</span>(허용되지 않는 가중치 배치를 원천 차단)이다. 이 관점을 손에 쥐고 9장을 읽으면, 합성곱, 풀링, 아키텍처 발전사가 모두 "어떤 사전을 어떻게 새기고, 그 사전이 데이터에 맞는가"라는 단일한 줄거리로 묶인다.</p>
 </section>
 
 <div class="twopole">
@@ -98,24 +101,31 @@
 </section>
 
 <footer class="colophon">
-  <p>이 해설은 Goodfellow, Bengio, Courville(2016) 9장과 최희열 교수님 6주차 강의 흐름, 그리고 직접 작성한 선행학습, 과제 노트를 묶어 정리한 것이다. 정의만 외우지 않도록 “왜 이 구조가 필요했는가”를 비유와 예시로 풀고, 시험에서 묻기 좋은 구분 지점(등가성과 불변성, 합성곱과 교차상관, 깊이와 열화)을 위젯으로 직접 만져 볼 수 있게 했다.</p>
+  <p>이 해설은 Goodfellow, Bengio, Courville(2016) 9장과 6주차 강의 흐름, 그리고 직접 작성한 선행학습, 과제 노트를 묶어 정리한 것이다. 정의만 외우지 않도록 "왜 이 구조가 필요했는가"를 비유와 예시로 풀고, 시험에서 묻기 좋은 구분 지점(등가성과 불변성, 합성곱과 교차상관, 깊이와 열화)을 위젯으로 직접 만져 볼 수 있게 했다.</p>
   <p class="src">
     원문 / <a href="https://www.deeplearningbook.org/contents/convnets.html">deeplearningbook.org/convnets</a><br>
-    선행학습 정리 / <a href="../../../05-선행학습/Deep-Learning-Book-09-Convolutional-Networks-상세해설.md">Ch.9 상세해설</a> / <a href="../../../Deep-Learning-Book-09-Convolutional-Networks-요약.md">Ch.9 요약</a><br>
-    과제 제출본 / <a href="../../../03-과제-제출/IntroToDL_Week6_22000168_한국어.md">Week 6 한국어판</a>
+    선행학습 상세 / <a href="../../../05-선행학습/Deep-Learning-Book-09-Convolutional-Networks-상세해설.md">Ch.9 상세해설</a> · 요약 / <a href="../../../Deep-Learning-Book-09-Convolutional-Networks-요약.md">Ch.9 요약</a><br>
+    과제 제출 / <a href="../../../03-과제-제출/IntroToDL_Week6_22000168_한국어.md">Week 6 한국어판</a>
   </p>
 </footer>
 
 <script>
   const SUBCHAPTERS = [
-    { no:'01', t:'왜 이미지에 완전연결은 안 되는가 — 파라미터 폭발', d:'256×256 한 장에 약 43억 개 가중치. 같은 일을 3×3 합성곱은 9개로 한다. 5억분의 1의 차이가 어디서 나오는지 직접 슬라이드로 확인.', sp:['structure'] },
-    { no:'02', t:'합성곱의 정의 — 슬라이드, 곱, 합', d:'커널이 이미지를 미끄러지며 가중합을 적는다. 1D 신호부터 2D 이미지, 그리고 RGB 다채널까지. 합성곱과 교차상관의 차이는 왜 신경 쓰지 않아도 되는가.', sp:['structure','style'] },
-    { no:'03', t:'CNN의 3대 핵심 속성 — 희소, 공유, 등가', d:'희소 상호작용(작은 창), 파라미터 공유(같은 자), 변환 등가성(입력 이동 → 출력 이동). 셋이 어떻게 한 가지 사전에서 갈라져 나오는지.', sp:['style','synth'] },
-    { no:'04', t:'풀링 — 작은 평행이동에 둔감해지기', d:'등가성은 “움직임을 따라간다”, 불변성은 “움직임에 둔감해진다”. 최대 풀링과 평균 풀링을 슬라이더로 직접 굴려 본다.', sp:['structure-lo','style-lo'] },
-    { no:'05', t:'신경과학적 기원 — 시각 피질에서 LeNet까지', d:'Hubel-Wiesel의 단순/복잡 세포 발견이 어떻게 합성곱과 풀링으로 옮겨졌는가. 네오코그니트론부터 LeNet까지 30년의 다리.', sp:['synth'] },
-    { no:'06', t:'출력 크기, 스트라이드, 패딩의 공식', d:'⌊(n+2p-k)/s⌋+1. 외우지 않고 그림으로 유도한다. 슬라이더로 같은 이미지에 valid, same, strided 합성곱이 어떻게 다르게 작동하는지 본다.', sp:['structure'] },
-    { no:'07', t:'대표 아키텍처 계보 — LeNet → AlexNet → VGG → ResNet', d:'각 모델이 이전 모델의 어떤 병목을 풀었는가. 3×3 두 번 vs 5×5 한 번. 잔차 연결이 “항등 매핑 학습 용이성” 관점에서 왜 자연스러운가.', sp:['structure','style','synth'] },
-    { no:'08', t:'시험 대비 — 핵심 구분, 예상 질문 체크리스트', d:'등가성 vs 불변성, 합성곱 vs 교차상관, 풀링이 항상 좋지는 않은 이유, CNN의 사전이 안 맞는 데이터 예시. 시험 직전에 한 번 더 훑을 카드.', sp:['ink'] },
+    { no:'01', t:'이미지에 완전연결은 왜 안 되는가 — 파라미터 폭발', d:'256x256 한 장에 약 43억 가중치. 같은 일을 3x3 합성곱은 9개로 한다. 5억분의 1의 차이가 어디서 오는지 직접 슬라이드로 확인.', sp:['structure'] },
+    { no:'02', t:'합성곱이란 무엇인가 — 슬라이드, 곱, 합', d:'커널이 이미지를 미끄러지며 가중합을 적는다. 합성곱과 교차상관의 차이는 왜 신경 쓰지 않아도 되는가. 도장 비유로 단숨에 익힌다.', sp:['structure','style'] },
+    { no:'03', t:'1차원 합성곱 — 시간 신호로 먼저 익히기', d:'주식 가격 같은 시계열에 커널을 미끄러뜨려 본다. 이동 평균과의 차이, 그리고 이 단순한 1D 연산이 2D로 확장되는 길.', sp:['structure'] },
+    { no:'04', t:'2차원 합성곱 — 이미지에서 커널 슬라이드', d:'2D 격자 위로 커널이 어떻게 움직이는가. 에지 검출 커널, 블러 커널, 샤프닝 커널을 직접 토글해 출력 변화를 본다.', sp:['structure','style'] },
+    { no:'05', t:'CNN 3대 속성 1 — 희소 상호작용', d:'완전연결과 합성곱의 연결 그래프를 나란히 그린다. 한 뉴런이 보는 입력 픽셀 수가 어떻게 달라지는지 SVG로 직관화.', sp:['style'] },
+    { no:'06', t:'CNN 3대 속성 2 — 파라미터 공유', d:'같은 색 = 같은 가중치. 위치마다 따로 가중치를 두는 완전연결과, 한 자를 들고 이미지 전체를 재는 합성곱.', sp:['style','synth'] },
+    { no:'07', t:'CNN 3대 속성 3 — 변환 등가성', d:'고양이가 왼쪽에 있든 오른쪽에 있든. 등가성과 불변성은 다르다. 입력을 슬라이더로 옮겨 출력이 어떻게 따라가는지 본다.', sp:['structure','style'] },
+    { no:'08', t:'풀링 — max vs avg, 작은 평행이동 불변성', d:'2x2 영역을 하나의 수로 줄인다. 최대 풀링과 평균 풀링을 토글하고, 입력을 1픽셀 이동시켜 출력이 얼마나 변하는지 확인.', sp:['structure-lo','style-lo'] },
+    { no:'09', t:'신경과학적 기원 — V1의 단순·복잡 세포', d:'Hubel과 Wiesel의 고양이 시각 피질 실험. 단순 세포(에지에 반응)와 복잡 세포(위치에 둔감)가 어떻게 합성곱과 풀링으로 옮겨졌는가.', sp:['synth'] },
+    { no:'10', t:'출력 크기 공식 — (W-K+2P)/S+1의 의미', d:'외우지 않고 그림으로 유도한다. W, K, P, S 네 슬라이더로 같은 식이 어떻게 valid, same, strided 합성곱을 만드는지.', sp:['structure'] },
+    { no:'11', t:'수용 영역 — 깊은 층이 보는 입력 면적', d:'3x3 커널 한 층은 3x3을 본다. 두 층이면 5x5, 세 층이면 7x7. 층 슬라이더로 수용 영역이 어떻게 자라는지 그려 본다.', sp:['style'] },
+    { no:'12', t:'아키텍처 1 — LeNet에서 AlexNet으로 (2012 도약)', d:'손글씨 자동 인식의 LeNet에서, GPU와 ReLU와 드롭아웃으로 무장한 AlexNet이 ImageNet에서 오차율을 10%p 낮춘 도약까지.', sp:['structure'] },
+    { no:'13', t:'아키텍처 2 — VGG와 Inception (작은 커널과 다중 가지)', d:'3x3 두 층 vs 5x5 한 층, 같은 수용장 더 적은 파라미터 더 많은 비선형성. Inception이 여러 커널을 한 층에 병렬로 둔 이유.', sp:['style'] },
+    { no:'14', t:'아키텍처 3 — ResNet (잔차 연결, 152층 시대)', d:'단순히 층을 쌓으면 훈련 오차조차 오히려 커진다. F(x)+x라는 한 줄이 어떻게 항등 매핑 학습을 쉽게 만들어 152층 이상을 가능케 했는가.', sp:['synth'] },
+    { no:'15', t:'시험 대비 — 30+ 핵심 질문 체크리스트', d:'등가성 vs 불변성, 합성곱 vs 교차상관, 풀링이 항상 좋지는 않은 이유, CNN의 사전이 안 맞는 데이터. 시험 직전 마지막 훑기.', sp:['ink'] },
   ];
   const colMap = { structure:'var(--structure)', 'structure-lo':'var(--structure-lo)', style:'var(--style)', 'style-lo':'var(--style-lo)', synth:'var(--synth)', ink:'var(--ink-soft)' };
   const platesEl = document.getElementById('plates');
@@ -133,7 +143,7 @@
     platesEl.appendChild(a);
 
     const f = document.createElement('a'); f.href = c.no + '.html';
-    const shortTitle = c.t.split('—')[0].trim().slice(0, 14);
+    const shortTitle = c.t.split('—')[0].trim().slice(0, 16);
     f.innerHTML = '<b>' + c.no + '</b> ' + shortTitle + '…';
     flowEl.appendChild(f);
     if (idx < SUBCHAPTERS.length - 1) { const s = document.createElement('span'); s.className='arr'; s.textContent='→'; flowEl.appendChild(s); }
@@ -155,11 +165,10 @@
     const cam = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
     cam.position.set(0, 0, 3.0);
 
-    // 12 x 12 격자
     const GRID = 14;
     const N = GRID * GRID;
-    const fc = new Float32Array(N * 3);     // 완전연결: 모든 픽셀이 모든 픽셀과 (밀집 거미줄)
-    const cv = new Float32Array(N * 3);     // 합성곱: 같은 3x3 창이 이동 (모이고 흩어짐)
+    const fc = new Float32Array(N * 3);
+    const cv = new Float32Array(N * 3);
     const rnd = new Float32Array(N);
     const W = 3.0, H = 1.9;
     let p = 0;
@@ -167,7 +176,6 @@
       const cx = (c / (GRID - 1) - 0.5) * W;
       const cy = (r / (GRID - 1) - 0.5) * H;
       fc[p*3] = cx; fc[p*3+1] = cy; fc[p*3+2] = 0;
-      // 합성곱 상태: 4개의 슬라이드 위치로 점들이 모임 (3x3 패치가 4개 위치에 찍힌 듯)
       const cluster = Math.floor((r * 2 / GRID)) * 2 + Math.floor((c * 2 / GRID));
       const cxC = ((cluster % 2) - 0.5) * W * 0.45;
       const cyC = (Math.floor(cluster / 2) - 0.5) * H * 0.45;

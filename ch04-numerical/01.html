@@ -3,30 +3,27 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ch.04 · 01 · 부동소수점의 함정</title>
+<title>Ch.04 · 01 · 왜 수치 계산이 ML의 발목을 잡는가</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
-  /* 페이지별 위젯 스타일 */
-  .sm-stage { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1.4rem 1.1rem 1rem; }
-  @media (max-width: 720px) { .sm-stage { grid-template-columns: 1fr; } }
-  .sm-col { background: #fff; border: 1px solid var(--line-soft); border-radius: 10px; padding: 1rem 1.1rem; }
-  .sm-col h5 { margin: 0 0 .6rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-faint); }
-  .sm-col.naive h5 { color: var(--style); }
-  .sm-col.stable h5 { color: var(--structure); }
-  .sm-row { display: grid; grid-template-columns: 2.5rem 1fr 4rem; gap: .5rem; align-items: center; padding: .25rem 0; font-family: var(--mono); font-size: .82rem; }
-  .sm-row .lbl { color: var(--ink-faint); }
-  .sm-row .bar { height: 8px; background: var(--paper-sink); border-radius: 4px; overflow: hidden; position: relative; }
-  .sm-row .bar i { display: block; height: 100%; background: var(--structure); border-radius: 4px; transition: width .25s var(--ease); }
-  .sm-row.bad i { background: var(--style); }
-  .sm-row .val { text-align: right; color: var(--ink); font-size: .78rem; }
-  .sm-row .val.bad { color: var(--style); font-weight: 600; }
-  .sm-row .val.nan { color: var(--style); font-style: italic; }
-  .sm-warn { margin-top: .7rem; font-family: var(--mono); font-size: .72rem; padding: .5rem .7rem; border-radius: 6px; }
-  .sm-warn.bad { background: var(--style-bg); color: var(--style); }
-  .sm-warn.good { background: var(--structure-bg); color: var(--structure); }
+  .gap-stage { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1.4rem 1.1rem 1rem; }
+  @media (max-width: 720px) { .gap-stage { grid-template-columns: 1fr; } }
+  .gap-col { background: #fff; border: 1px solid var(--line-soft); border-radius: 10px; padding: 1rem 1.1rem; }
+  .gap-col h5 { margin: 0 0 .6rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-faint); }
+  .gap-col.paper h5 { color: var(--structure); }
+  .gap-col.metal h5 { color: var(--style); }
+  .gap-row { display: grid; grid-template-columns: 1fr; gap: .2rem; padding: .35rem 0; font-family: var(--mono); font-size: .82rem; border-bottom: 1px solid var(--line-soft); }
+  .gap-row:last-child { border-bottom: none; }
+  .gap-row .k { color: var(--ink-faint); font-size: .72rem; }
+  .gap-row .v { color: var(--ink); }
+  .gap-row .v.bad { color: var(--style); font-weight: 600; }
+  .gap-row .v.ok { color: var(--structure); font-weight: 600; }
+  .death { max-width: var(--measure); margin: 1.6rem auto; padding: 1.2rem 1.4rem; background: var(--style-bg); border-left: 3px solid var(--style); border-radius: 0 8px 8px 0; font-size: .92rem; color: var(--ink-soft); }
+  .death b { color: var(--style); }
+  .death code { font-family: var(--mono); background: rgba(192,73,46,.12); padding: .05em .35em; border-radius: 3px; }
 </style>
 </head>
 <body>
@@ -38,92 +35,68 @@
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Sub-Chapter 01 · 부동소수점의 함정</span>
-      <h1>왜 <span class="t-synth">softmax</span>는<br>식 그대로 짜면 터지는가</h1>
-      <p class="lede">컴퓨터는 유한한 비트로만 수를 저장한다. 그래서 너무 작은 수는 0으로 깎이고, 너무 큰 수는 무한대로 처리된다. 종이 위에서 같아 보이는 두 수식이 메모리에서는 전혀 다른 결과를 낸다.</p>
+      <span class="kicker">Sub-Chapter 01 · 이론과 컴퓨터의 격차</span>
+      <h1>왜 <span class="t-synth">수치 계산</span>이<br>기계학습의 발목을 잡는가</h1>
+      <p class="lede">종이 위의 수학과 컴퓨터의 산술은 같은 언어처럼 보이지만, 실은 서로 다른 두 세계다. 이 장은 그 두 세계 사이에 놓인 좁은 다리 — 부동소수점(floating point) — 위에서 학습이 어떻게 휘청거리는지에서 시작한다.</p>
     </header>
 
     <div class="prose">
-      <p>딥러닝은 결국 엄청난 양의 숫자를 반복해서 다루는 학문이다. 그런데 종이 위의 실수(Real Number)는 연속적이지만, 컴퓨터는 유한한 비트(bit)로만 수를 저장한다. 보통 사용하는 32비트 부동소수점(float32)은 약 $10^{-38}$부터 $10^{38}$ 사이의 수만 표현할 수 있고, 그 범위 안에서도 정확도는 7자리 남짓이다. 이 한계가 바로 <strong>언더플로(underflow)</strong>와 <strong>오버플로(overflow)</strong>의 원천이다.</p>
+      <p>딥러닝 강의의 4장은 처음 펼치면 어색한 자리에 있다. 앞의 2장과 3장은 선형대수와 확률이라는 <em>이론의 언어</em>를 다루었고, 뒤의 5장과 6장은 학습과 신경망이라는 <em>모델의 본체</em>로 곧장 넘어간다. 그 사이에 끼어 있는 이 장은, 모델의 정의도 아니고 학습 알고리즘의 멋진 식도 아닌 <strong>"그 식이 컴퓨터에서 어떻게 굴러가는가"</strong>라는 다소 비물질적인 주제를 다룬다. 그래서 처음에는 잘 와닿지 않고, 시험 직전이 되어서야 비로소 그 무게가 느껴진다.</p>
 
-      <p>언더플로는 너무 작은 양수를 <strong>0으로 깎아 버리는</strong> 현상이다. 가령 $e^{-1000}$ 같은 값은 수학적으로는 매우 작지만 양수인데, float32에서는 그냥 $0$이 된다. 그리고 그 0을 분모에 쓰면 $\tfrac{1}{0}$이 되어 <span class="t-style">$\infty$</span>이거나 $\tfrac{0}{0}$이 되어 <span class="t-style">NaN</span>이 된다. 한 줄에서 발생한 작은 오차가 그 다음 줄의 계산을 통째로 망가뜨린다.</p>
+      <p>이 장의 출발점은 단순한 관찰이다. 학생이 종이 위에서 적는 수식과, 실제로 컴퓨터가 비트로 실행하는 계산은 같은 답을 주지 않을 때가 있다는 사실이다. 가장 흔한 예가 분류기의 마지막 단계에서 등장하는 softmax 함수다. 수학적으로는 어떤 입력값 $x_i$에 대해서도 $e^{x_i} / \sum_j e^{x_j}$가 잘 정의된 확률 분포다. 그러나 컴퓨터에서 같은 식을 그대로 짜면, 입력의 크기에 따라 결과가 <code>inf</code>(무한대)나 <code>NaN</code>(Not a Number)으로 무너진다. 식은 그대로인데, <span class="t-style">계산은 무너진다</span>. 이 갈라짐이 이 장 전체의 화두다.</p>
 
-      <p>오버플로는 반대 방향이다. 너무 큰 수를 <strong>무한대처럼 처리하는</strong> 현상이다. $e^{1000}$은 float32 범위를 초과하므로 $\infty$가 되고, $\infty - \infty$ 같은 후속 계산은 NaN을 만든다. 이런 오차는 한번 들어가면 손실(Loss)이 NaN이 되고, 역전파(backpropagation)가 멈추고, 모델 전체가 침묵한다.</p>
-
-      <div class="analogy">
-        부동소수점은 <b>아주 좁은 자가 그려진 종이</b>와 같다. 자에 새겨진 눈금은 백만분의 일까지 보이지만, 그 종이의 크기 자체가 작아서 자보다 더 큰 길이나 더 작은 길이는 적을 자리가 없다. 학생이 "이 거리는 0.0000000001미터"라고 적으려 하면 종이가 그냥 "0미터"라고 받아들이는 것이다. 그 0이 다음 식의 분모에 가는 순간 계산은 폭주한다.
-      </div>
-
-      <h2>구체 사례 — softmax</h2>
-      <p>softmax는 분류 확률을 만들 때 거의 모든 신경망의 마지막 단계에서 쓰인다. 정의는 다음과 같다.</p>
-
-      <div class="math-block">$$ \mathrm{softmax}(x)_i = \frac{e^{x_i}}{\sum_{j=1}^{n} e^{x_j}} $$</div>
-      <p class="math-note">x_i는 로짓(logit), 분모는 모든 로짓의 exp를 더한 정규화 상수.</p>
-
-      <p>왜 이 형태인가. 우리는 각 클래스 점수(logit) $x_i$를 양수 확률로 바꾸고, 합이 1이 되도록 정규화하고 싶다. <span class="term">exp</span>는 어떤 실수도 양수로 바꾸어 주고, 분모의 합으로 나누면 자연스럽게 확률이 된다. 게다가 <span class="term">log-softmax</span>가 깔끔한 형태로 풀려 교차 엔트로피(cross-entropy)와 잘 맞물린다. 수학적으로는 더할 나위 없다.</p>
-
-      <p>그런데 컴퓨터에서 이대로 짜면 위험하다. 만약 $x_i$가 매우 크면(예: 1000) $e^{1000}$은 오버플로한다. 모든 $x_i$가 매우 작으면(예: $-1000$) $e^{-1000}$은 전부 언더플로하여 분모가 $0$이 되고, 결과는 $\tfrac{0}{0} = \mathrm{NaN}$이 된다. 즉 식은 같지만 <strong>입력값의 크기에 따라 계산이 무너진다</strong>.</p>
-
-      <h2>해결책 — 입력에서 최댓값 빼기</h2>
-      <p>해법은 의외로 간단하다. 모든 입력에서 입력 전체의 최댓값을 먼저 빼 준다.</p>
-
-      <div class="math-block">$$ \mathrm{softmax}(x)_i = \frac{e^{x_i - m}}{\sum_{j} e^{x_j - m}}, \quad m = \max_j x_j $$</div>
-      <p class="math-note">분자·분모를 모두 e^m으로 나눈 것이므로 수학적으로는 원래 식과 정확히 같다.</p>
-
-      <p>왜 이 형태가 안전한가. 가장 큰 입력 $m$을 빼고 나면 $x_i - m \le 0$이므로, 모든 exp 인자는 $1$ 이하가 된다. 그러면 오버플로는 절대 발생하지 않는다. 그리고 적어도 하나의 항은 $x_i - m = 0$이어서 $e^0 = 1$이므로, 분모도 최소 $1$ 이상이 되어 $\tfrac{0}{0}$ 함정도 사라진다. 같은 수식, 다른 수치 안정성(numerical stability).</p>
+      <p>이 갈라짐이 왜 일어나는지를 짚는 핵심 개념은 <strong>부동소수점(floating point) 표현</strong>이다. 컴퓨터는 무한히 많은 실수를 저장할 수 없다. 우리가 보통 쓰는 32비트 부동소수점(float32)은 약 $10^{-38}$부터 $10^{38}$까지의 양수만 표현할 수 있고, 그 안에서도 한 번에 약 7자리 정도의 유효 숫자만 보존한다. 이 좁은 범위와 좁은 정밀도 두 가지 모두가 학습을 흔든다. 너무 큰 수는 표현 한계를 넘어 <span class="t-style">오버플로(overflow)</span>를 일으켜 무한대로 처리되고, 너무 작은 양수는 <span class="t-style">언더플로(underflow)</span>로 깎여 0이 된다. 그리고 일단 0이 된 값을 분모로 쓰면, 그다음 줄의 계산이 통째로 망가진다.</p>
 
       <div class="analogy">
-        모든 학생의 점수에서 반 1등의 점수를 빼 보자. 1등은 0점, 나머지는 음수가 된다. 그 다음 exp를 취하면, 1등은 $1$, 나머지는 $1$보다 작은 양수다. 전체 합으로 나누는 정규화 결과는 원래 점수에서 시작한 것과 똑같지만, 계산 중간에 천문학적인 수가 등장하지 않는다.
+        부동소수점은 <b>아주 좁은 자가 그려진 종이</b>와 같다. 자에 새겨진 눈금은 백만분의 일까지 세밀해 보이지만, 그 종이의 크기 자체가 작다. 학생이 "이 거리는 0.0000000001미터"라고 적으려 하면 종이가 "0미터"로 받아들이고, "이 거리는 1조 미터"라고 적으려 하면 "무한대"라고 받아들인다. 종이가 답을 정확히 적은 것은 아니지만, 자기가 적을 수 있는 가장 가까운 값으로 반올림해 버린다. 그 반올림이 다음 식에 들어가는 순간 균열은 증폭된다.
       </div>
 
-      <p>아래 위젯에서 입력 5개를 슬라이더로 움직여 보고, naive 구현과 stable 구현이 어느 지점에서 갈라지는지 직접 확인하자. 입력을 크게(오른쪽) 몰면 naive는 $\infty$로 터지고, 작게(왼쪽) 몰면 분모가 0이 되어 NaN으로 무너진다. stable 구현은 그 어느 쪽에서도 흔들리지 않는다.</p>
+      <p>이 좁은 자의 문제는 두 가지 얼굴을 갖는다. 첫 번째 얼굴은 위에서 본 <strong>표현의 한계</strong>다. 어떤 값은 너무 커서 적을 수 없고, 어떤 값은 너무 작아서 적을 수 없다. 두 번째 얼굴은 <strong>증폭의 문제</strong>다. 입력의 미세한 흔들림이 어떤 연산을 거치면서 출력의 큰 흔들림으로 부풀려질 수 있다. 이 두 번째 얼굴은 행렬을 풀거나 최적화 방향을 정할 때 특히 두드러지며, <em>조건수(condition number)</em>라는 한 숫자로 요약된다. 5-6장에서 자세히 다룬다.</p>
+
+      <h2>좁은 자 위에서 학습이 어떻게 죽는가</h2>
+
+      <p>이 격차를 추상으로 두면 와닿지 않는다. 한 번이라도 학습 로그가 <code>NaN</code>을 뱉어 본 사람만이 이 장의 가치를 안다. 신경망 학습은 보통 다음과 같은 패턴으로 돈다. 입력을 받아 순방향(forward)으로 손실을 계산하고, 역방향(backward)으로 기울기를 구하고, 가중치를 업데이트한다. 이 흐름 중 어느 한 줄에서라도 <code>NaN</code>이 튀면, 그 다음 줄의 모든 계산은 같은 <code>NaN</code>으로 전염된다. 가중치는 <code>NaN</code>이 되고, 다음 forward의 출력도 <code>NaN</code>이고, 손실도 <code>NaN</code>이다. 학습은 침묵 속에서 죽는다.</p>
+
+      <div class="death">
+        <b>현실의 죽음 사례 4가지</b><br>
+        ① 분류 모델의 logit이 어떤 한 배치에서 +1000을 찍어 <code>exp(1000)</code>가 <code>inf</code>가 되고, softmax 분모가 <code>inf</code>가 되어 출력이 <code>NaN</code>이 된다. ② 이미지 정규화에서 표준편차로 나누는데 표준편차가 0이 되어 <code>0으로 나누기</code>가 발생한다. ③ KL 발산(KL divergence)을 계산하다 <code>log(0)</code>이 등장한다. ④ Adam 옵티마이저의 2차 모멘트가 너무 작아 <code>sqrt</code> 인자가 0이 되고, 나누기에서 <code>inf</code>가 튄다.
+      </div>
+
+      <p>위 네 사례에는 공통점이 있다. 모두 수학적으로는 "괜찮은" 식이라는 점이다. 종이 위에서 학생이 적을 때는 분모가 0이 되지 않는다고 자연스럽게 가정하고 넘긴다. 그러나 컴퓨터는 그런 인간적인 너그러움이 없다. 분모가 정확히 0이 아니라 $10^{-50}$이면 일단 0으로 깎이고, 그 뒤에 분자 1을 나누면 곧장 무한대가 된다. 즉 <strong>수학의 추상은 0을 점진적으로 다루지만, 부동소수점의 구체는 0을 절벽처럼 다룬다</strong>.</p>
+
+      <p>그렇기 때문에 이 장의 모든 절은 사실상 한 가지 질문에 답한다. <em>"수학적으로 옳은 식 중에서, 컴퓨터에서도 잘 굴러가는 형태는 어느 것인가?"</em> 이 질문에 답하는 두 가지 큰 도구가 있다. 하나는 <span class="t-synth">대수적 재배열(algebraic re-arrangement)</span>이다. 식을 등가로 바꿔서 큰 수를 미리 빼거나 0이 분모로 가지 않도록 한다. 다른 하나는 <span class="t-synth">알고리즘적 안전망(algorithmic safeguard)</span>이다. 학습률을 작게 잡거나, 기울기를 잘라내거나(gradient clipping), 표준편차에 $\epsilon$을 더하는 식의 잔재주다. 이 둘이 4장의 모든 절을 관통한다.</p>
+
+      <h2>위젯 — 같은 식, 다른 답</h2>
+      <p>아래 위젯은 이 장 전체의 출발점이 되는 광경을 한 화면에 압축한다. 왼쪽은 종이 위에 적힌 수식 그대로(naive), 오른쪽은 같은 식을 안전하게 재배열한 형태(stable)다. 어떤 입력에서는 두 결과가 같지만, 입력이 조금만 커지거나 작아지면 왼쪽은 <code>inf</code>나 <code>NaN</code>으로 무너지고 오른쪽은 흔들리지 않는다. <em>왜</em> 그런지는 다음 절에서부터 차근차근 살펴본다.</p>
     </div>
 
     <div class="widget">
       <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 01</span><span>softmax 안정화 — naive vs stable</span></div>
-        <div class="sm-stage">
-          <div class="sm-col naive">
-            <h5>Naive 구현 — exp(x) 그대로</h5>
-            <div id="smNaive"></div>
-            <div class="sm-warn bad" id="smNaiveWarn">정상</div>
+        <div class="widget-label"><span class="lab-no">위젯 01</span><span>종이의 식 vs 컴퓨터의 식 — 격차의 첫 모습</span></div>
+        <div class="gap-stage">
+          <div class="gap-col paper">
+            <h5>종이 위 — 수학 그대로</h5>
+            <div id="paperRows"></div>
           </div>
-          <div class="sm-col stable">
-            <h5>Stable 구현 — exp(x − max)</h5>
-            <div id="smStable"></div>
-            <div class="sm-warn good" id="smStableWarn">정상</div>
+          <div class="gap-col metal">
+            <h5>컴퓨터 — float32 시늉</h5>
+            <div id="metalRows"></div>
           </div>
         </div>
         <div class="widget-controls">
-          <div class="slider"><label>입력 1 (x₁) <b id="lv1">2.0</b></label><input type="range" id="r1" min="-1500" max="1500" value="200" step="10"></div>
-          <div class="slider"><label>입력 2 (x₂) <b id="lv2">1.0</b></label><input type="range" id="r2" min="-1500" max="1500" value="100" step="10"></div>
-          <div class="slider"><label>입력 3 (x₃) <b id="lv3">0.0</b></label><input type="range" id="r3" min="-1500" max="1500" value="0" step="10"></div>
-          <div class="slider"><label>입력 4 (x₄) <b id="lv4">−1.0</b></label><input type="range" id="r4" min="-1500" max="1500" value="-100" step="10"></div>
-          <div class="slider"><label>입력 5 (x₅) <b id="lv5">−2.0</b></label><input type="range" id="r5" min="-1500" max="1500" value="-200" step="10"></div>
-          <button class="btn" id="smBig">전부 큰 값 ↑</button>
-          <button class="btn ghost" id="smSmall">전부 작은 값 ↓</button>
-          <button class="btn ghost" id="smReset">초기값</button>
+          <div class="slider"><label>지수 인자 a <b id="aLab">3.0</b></label><input type="range" id="aSlider" min="0" max="2000" value="30" step="1"></div>
+          <button class="btn" id="aBig">a = 1000 (큰 값)</button>
+          <button class="btn ghost" id="aReset">a = 3</button>
+          <span style="font-size:.78rem; color:var(--ink-faint)">슬라이더로 a를 키워 보고 <code>exp(a)</code>, <code>exp(a)/(1+exp(a))</code>, <code>1/(1+exp(-a))</code>의 결과가 어디서 갈라지는지 본다.</span>
         </div>
       </div>
-      <p class="widget-cap">슬라이더를 모두 오른쪽으로 옮기면(<b>전부 큰 값</b>) naive 쪽이 ∞로 폭주하고, 왼쪽으로 옮기면 분모가 0이 되어 NaN이 된다. stable 쪽은 같은 입력에서도 늘 합이 1인 깨끗한 확률 분포를 낸다. 두 구현의 수식은 완전히 같지만, 부동소수점 위에서의 결과는 다르다.</p>
+      <p class="widget-cap">시그모이드(sigmoid)는 두 가지 등가 형태로 적을 수 있다. <b>exp(a)/(1+exp(a))</b>는 큰 a에서 <code>inf/inf = NaN</code>이 되고, <b>1/(1+exp(-a))</b>는 큰 a에서 <code>1/(1+0) = 1</code>로 안전하게 수렴한다. 같은 함수, 다른 안정성. 이 한 장의 그림이 4장 전체의 화두다.</p>
     </div>
 
     <div class="prose">
-      <h2>logsumexp 트릭 — softmax 너머의 일반 패턴</h2>
-      <p>이 "max 빼기" 발상은 softmax만의 잔재주가 아니다. 더 일반화한 형태가 <strong>logsumexp</strong>다. 신경망 학습에서는 종종 다음 같은 양을 계산해야 한다.</p>
-
-      <div class="math-block">$$ \mathrm{LSE}(x) \;=\; \log \sum_{i=1}^{n} e^{x_i} $$</div>
-      <p class="math-note">교차 엔트로피 손실의 분모 정규화 항, log-softmax 분모 등에서 자주 등장한다.</p>
-
-      <p>왜 이 양이 필요한가. 분류 모델의 음의 로그우도(negative log-likelihood)를 계산하려면 $\log p_y = x_y - \mathrm{LSE}(x)$를 평가해야 한다. 그런데 LSE를 그대로 짜면 같은 오버플로 문제에 부딪힌다. 안정한 형태는 다음과 같다.</p>
-
-      <div class="math-block">$$ \mathrm{LSE}(x) \;=\; m + \log \sum_{i} e^{x_i - m}, \quad m = \max_i x_i $$</div>
-      <p class="math-note">m을 밖으로 꺼내면 안의 exp 인자는 모두 0 이하가 되어 안전. 수학적으로 정확히 등가.</p>
-
-      <p>유도는 간단하다. $\log \sum e^{x_i} = \log \big(e^m \sum e^{x_i - m}\big) = m + \log \sum e^{x_i - m}$. 그러나 이 한 줄을 알고 있는 것과 모르는 것의 차이가 학습을 살리기도 죽이기도 한다. 다행히 PyTorch의 <span class="term">torch.logsumexp</span>, <span class="term">torch.nn.functional.log_softmax</span> 같은 함수는 이미 내부에서 max 빼기를 해 준다. 그래서 우리가 직접 짜는 일은 드물지만, <em>왜 그것이 필요한지</em>를 모르면 새 손실 함수를 직접 작성할 때 똑같은 실수를 반복한다.</p>
-
       <h2>다음으로</h2>
-      <p>지금까지는 "한 값이 너무 크거나 작아서" 무너지는 문제를 봤다. 다음 장에서는 한 단계 미묘한 문제, <strong>입력의 작은 흔들림이 출력의 큰 흔들림으로 증폭되는</strong> 조건수(condition number) 이야기로 넘어간다. 똑같이 수치적 함정이지만, 이번에는 행렬과 최적화의 영역이다.</p>
+      <p>다음 절에서는 이 좁은 자 — 부동소수점이 정확히 어떻게 생겼는지를 본다. 부호 1비트, 지수 8비트, 가수 23비트로 이루어진 IEEE 754 표준의 구조와, float32 / float64 / float16의 차이가 학습에서 무엇을 바꾸는지를 단계별로 풀이한다. 그 다음 3절에서 softmax가 어떻게 터지는지, 4절에서 그것을 막는 logsumexp 트릭이 어떻게 유도되는지를 본다. 5-6절은 두 번째 얼굴인 조건수, 7-9절은 그 위에서 도는 경사하강과 학습률의 이야기, 마지막 10절은 제약 최적화와 KKT 조건이다.</p>
+      <p>요약하자면 이 절의 메시지는 이렇다. <strong>수학적으로 옳은 식은 컴퓨터에서도 옳다고 보장하지 않는다.</strong> 그 둘 사이의 좁은 다리가 이 장의 주인공이고, 모든 절은 그 다리 위를 안전하게 건너기 위한 기술이다.</p>
     </div>
 
     <nav class="ch-foot"></nav>
@@ -131,20 +104,24 @@
 </div>
 
 <script>
-  // ===== 공통 nav 빌드 =====
   const SUBS = [
-    { no:'01', t:'부동소수점의 함정' },
-    { no:'02', t:'잘못된 조건수' },
-    { no:'03', t:'경사 기반 최적화' },
-    { no:'04', t:'헤시안과 2계 방법' },
-    { no:'05', t:'제약 최적화와 KKT' },
-    { no:'06', t:'시험 대비' },
+    { no:'01', t:'왜 수치 계산이 ML의 발목을 잡는가' },
+    { no:'02', t:'부동소수점 — IEEE 754의 좁은 자' },
+    { no:'03', t:'언더플로 / 오버플로 — softmax는 왜 터지는가' },
+    { no:'04', t:'logsumexp 트릭 — 안정화 수식 유도' },
+    { no:'05', t:'조건수 1 — 행렬은 답을 얼마나 흔드는가' },
+    { no:'06', t:'조건수 2 — 최적화의 지그재그' },
+    { no:'07', t:'경사하강법의 본질' },
+    { no:'08', t:'2계 방법 — 헤시안과 뉴턴법' },
+    { no:'09', t:'학습률의 의미' },
+    { no:'10', t:'제약 최적화 — 라그랑주와 KKT' },
+    { no:'11', t:'시험 대비' },
   ];
   function buildNav(current) {
     const tb = document.querySelector('.topbar');
     if (tb) tb.innerHTML =
       `<a class="home" href="index.html">← Ch.04 수치 계산</a>` +
-      `<span class="ch-mini">SUB ${current} / 06</span>`;
+      `<span class="ch-mini">SUB ${current} / 11</span>`;
     const ol = document.querySelector('.ch-nav ol');
     if (ol) ol.innerHTML = SUBS.map(s =>
       `<li><a href="${s.no}.html" ${s.no === current ? 'class="current"' : ''}>${s.t}</a></li>`).join('');
@@ -157,7 +134,6 @@
         `<a href="${prev.no === 'index' ? 'index.html' : prev.no + '.html'}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
         `<a href="${next.no === 'index' ? 'index.html' : next.no + '.html'}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
     }
-    // scroll progress
     const bar = document.querySelector('.scroll-progress');
     if (bar) {
       const onScroll = () => {
@@ -170,102 +146,53 @@
     }
   }
 
-  // ===== 위젯: softmax naive vs stable =====
-  function smRow(label, p, ch, isNaN, isInf) {
-    let valStr, cls = '';
-    if (isNaN) { valStr = 'NaN'; cls = 'nan'; }
-    else if (isInf) { valStr = '∞'; cls = 'bad'; }
-    else valStr = p.toFixed(4);
-    const w = isFinite(p) && !isNaN ? Math.max(0, Math.min(1, p)) * 100 : 0;
-    const rowCls = (isNaN || isInf) ? 'sm-row bad' : 'sm-row';
-    return `<div class="${rowCls}"><span class="lbl">${label}</span><div class="bar"><i style="width:${w}%"></i></div><span class="val ${cls}">${valStr}</span></div>`;
-  }
-
-  function softmaxNaive(xs) {
-    const exps = xs.map(x => Math.exp(x));
-    const sum = exps.reduce((a,b) => a+b, 0);
-    return exps.map(e => e / sum);
-  }
-  function softmaxStable(xs) {
-    const m = Math.max.apply(null, xs);
-    const exps = xs.map(x => Math.exp(x - m));
-    const sum = exps.reduce((a,b) => a+b, 0);
-    return exps.map(e => e / sum);
+  function fmt(x) {
+    if (Number.isNaN(x)) return '<span class="v bad">NaN</span>';
+    if (!isFinite(x)) return '<span class="v bad">' + (x > 0 ? '+∞' : '−∞') + '</span>';
+    if (Math.abs(x) < 1e-6 && x !== 0) return '<span class="v">' + x.toExponential(2) + '</span>';
+    if (Math.abs(x) > 1e6) return '<span class="v">' + x.toExponential(2) + '</span>';
+    return '<span class="v ok">' + x.toFixed(4) + '</span>';
   }
 
   function render() {
-    const ids = ['r1','r2','r3','r4','r5'];
-    const xs = ids.map(id => parseFloat(document.getElementById(id).value) / 100);
-    xs.forEach((v, i) => {
-      const lab = document.getElementById('lv' + (i+1));
-      lab.textContent = (v >= 0 ? '+' : '') + v.toFixed(1);
-    });
+    const a = parseFloat(document.getElementById('aSlider').value) / 10;
+    document.getElementById('aLab').textContent = a.toFixed(1);
 
-    const naive = softmaxNaive(xs);
-    const stable = softmaxStable(xs);
+    // 종이: 추상 — 항상 정확
+    // sigmoid(a) = 1/(1+e^-a)
+    const sigPaper = 1 / (1 + Math.exp(-a));
+    const expPaper = Math.exp(a);
+    const dualPaper = expPaper / (1 + expPaper);
 
-    let nHtml = '', sHtml = '';
-    let nBad = false, sBad = false;
-    for (let i = 0; i < 5; i++) {
-      const nNaN = isNaN(naive[i]);
-      const nInf = !nNaN && !isFinite(naive[i]);
-      if (nNaN || nInf) nBad = true;
-      nHtml += smRow('x' + (i+1), naive[i], i, nNaN, nInf);
+    // 시뮬레이션: float32 한계 흉내 — Math.exp는 754 double이지만 inf 캡으로 충분
+    const expMetal = Math.exp(a);
+    const dualMetal = expMetal / (1 + expMetal); // 큰 a에서 inf/inf → NaN
+    const sigMetal = 1 / (1 + Math.exp(-a));     // 안전
 
-      const sNaN = isNaN(stable[i]);
-      const sInf = !sNaN && !isFinite(stable[i]);
-      if (sNaN || sInf) sBad = true;
-      sHtml += smRow('x' + (i+1), stable[i], i, sNaN, sInf);
-    }
-    document.getElementById('smNaive').innerHTML = nHtml;
-    document.getElementById('smStable').innerHTML = sHtml;
-
-    const naiveSum = naive.reduce((a,b) => a + (isFinite(b) ? b : 0), 0);
-    const stableSum = stable.reduce((a,b) => a + (isFinite(b) ? b : 0), 0);
-
-    const naiveWarn = document.getElementById('smNaiveWarn');
-    if (nBad) {
-      const hasNaN = naive.some(p => isNaN(p));
-      const hasInf = naive.some(p => isFinite(p) === false && !isNaN(p));
-      naiveWarn.className = 'sm-warn bad';
-      if (hasInf && hasNaN) naiveWarn.textContent = '폭주 (∞ + NaN) — 큰 입력에서 exp 오버플로';
-      else if (hasInf) naiveWarn.textContent = '오버플로 — exp(x) → ∞';
-      else if (hasNaN) naiveWarn.textContent = '언더플로 → 0/0 → NaN';
-    } else {
-      naiveWarn.className = 'sm-warn good';
-      naiveWarn.textContent = `합 = ${naiveSum.toFixed(4)} · 정상`;
-    }
-
-    const stableWarn = document.getElementById('smStableWarn');
-    stableWarn.className = 'sm-warn good';
-    stableWarn.textContent = `합 = ${stableSum.toFixed(4)} · 항상 정상`;
+    const p = document.getElementById('paperRows');
+    const m = document.getElementById('metalRows');
+    p.innerHTML = `
+      <div class="gap-row"><span class="k">exp(a)</span>${fmt(expPaper)}</div>
+      <div class="gap-row"><span class="k">exp(a) / (1 + exp(a))</span>${fmt(dualPaper)}</div>
+      <div class="gap-row"><span class="k">1 / (1 + exp(−a))</span>${fmt(sigPaper)}</div>
+    `;
+    m.innerHTML = `
+      <div class="gap-row"><span class="k">exp(a)</span>${fmt(expMetal)}</div>
+      <div class="gap-row"><span class="k">exp(a) / (1 + exp(a))   <em style="color:var(--ink-faint)">naive</em></span>${fmt(dualMetal)}</div>
+      <div class="gap-row"><span class="k">1 / (1 + exp(−a))   <em style="color:var(--ink-faint)">stable</em></span>${fmt(sigMetal)}</div>
+    `;
   }
 
   window.addEventListener('load', () => {
     buildNav('01');
-    ['r1','r2','r3','r4','r5'].forEach(id => {
-      document.getElementById(id).addEventListener('input', render);
+    document.getElementById('aSlider').addEventListener('input', render);
+    document.getElementById('aBig').addEventListener('click', () => {
+      document.getElementById('aSlider').value = 10000; render();
     });
-    document.getElementById('smBig').addEventListener('click', () => {
-      [['r1',1200],['r2',1100],['r3',1000],['r4',900],['r5',800]].forEach(([id,v]) => {
-        document.getElementById(id).value = v;
-      });
-      render();
-    });
-    document.getElementById('smSmall').addEventListener('click', () => {
-      [['r1',-800],['r2',-900],['r3',-1000],['r4',-1100],['r5',-1200]].forEach(([id,v]) => {
-        document.getElementById(id).value = v;
-      });
-      render();
-    });
-    document.getElementById('smReset').addEventListener('click', () => {
-      [['r1',200],['r2',100],['r3',0],['r4',-100],['r5',-200]].forEach(([id,v]) => {
-        document.getElementById(id).value = v;
-      });
-      render();
+    document.getElementById('aReset').addEventListener('click', () => {
+      document.getElementById('aSlider').value = 30; render();
     });
     render();
-    // KaTeX 렌더
     if (window.renderMathInElement) {
       renderMathInElement(document.body, {
         delimiters: [

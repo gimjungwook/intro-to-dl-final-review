@@ -3,11 +3,25 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>09 / 05 / 신경과학적 기원</title>
+<title>Ch.09 · 05 CNN 3대 속성 1 — 희소 상호작용</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .graph-stage { display: grid; grid-template-columns: 1fr 1fr; gap: 1.1rem; padding: 1.4rem 1.4rem 1rem; }
+  .graph-cell { background: var(--paper); border: 1px solid var(--line); border-radius: 9px; padding: .8rem .8rem .6rem; }
+  .graph-cell h5 { margin: 0 0 .4rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .12em; color: var(--ink-faint); text-transform: uppercase; }
+  .graph-cell svg { width: 100%; height: 260px; display: block; background: #fff; border-radius: 6px; }
+  .graph-cell .meta { font-family: var(--mono); font-size: .78rem; color: var(--ink-soft); margin-top: .5rem; line-height: 1.7; }
+  .graph-cell .meta b { color: var(--ink); }
+  .graph-controls { display: flex; flex-wrap: wrap; gap: 1.2rem; padding: .8rem 1.2rem 1rem; border-top: 1px solid var(--line-soft); background: var(--paper); font-size: .88rem; align-items: center; }
+  .graph-controls label { display: flex; flex-direction: column; gap: .2rem; min-width: 180px; flex: 1; }
+  .graph-controls label span { color: var(--ink-soft); font-family: var(--mono); font-size: .78rem; }
+  .graph-controls label span b { color: var(--ink); font-weight: 600; }
+  .graph-controls input[type=range] { width: 100%; accent-color: var(--style); }
+  @media (max-width: 720px) { .graph-stage { grid-template-columns: 1fr; } }
+</style>
 </head>
 <body>
 <div class="scroll-progress"></div>
@@ -18,76 +32,102 @@
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Sub-chapter 05 / 시각 피질에서 LeNet까지</span>
-      <h1>신경과학적 기원 —<br><span class="t-style">고양이 뇌에서 빌려온 설계</span></h1>
-      <p class="lede">CNN은 순수한 수학에서 출발한 구조가 아니다. 1960년대 고양이의 시각 피질에서 발견된 두 종류의 뉴런이, 합성곱과 풀링의 직접적인 영감이 되었다.</p>
+      <span class="kicker">Ch.09 · Sub 05 · CNN 3대 속성 (1/3)</span>
+      <h1><span class="t-style">희소 상호작용</span><br>모든 픽셀이 아닌 일부만</h1>
+      <p class="lede">완전연결 층의 그래프는 입력 모든 점이 출력 모든 점과 선으로 묶여 있다. 합성곱 층의 그래프는 한 출력이 입력의 작은 창에만 닿는다. 이 한 가지 차이가 파라미터, 계산, 일반화를 동시에 바꾼다.</p>
     </header>
 
     <div class="prose">
-      <p>CNN의 합성곱 + 풀링 구조는 “어쩌다 보니 잘 되어서” 정착한 것이 아니다. 그 설계의 뿌리에는 1960년대 신경과학의 결정적인 발견 두 가지가 있다. 이 sub-chapter는 그 발견부터 1980년 일본에서 만들어진 네오코그니트론, 1989년 LeCun의 LeNet으로 이어지는 30년의 다리를 짧게 정리한다. 시험에서 직접 나오지 않더라도, 이 역사를 알면 합성곱과 풀링이 왜 “자연스러운” 선택인지 더 깊이 이해된다.</p>
+      <p>1번에서 4번까지 우리는 합성곱이라는 연산을 정의했다. 이제 9장이 강조하는 세 가지 구조적 속성을 차례로 풀어 본다. 책의 영어 원문 표현으로는 <em>sparse interactions, parameter sharing, equivariance to translation</em>이다. 이 셋은 서로 독립적인 장점이 아니라, 합성곱 한 연산에서 동시에 따라 나오는 세 얼굴이다. 5번에서 7번까지 한 면씩 들여다본다.</p>
 
-      <h2>1. Hubel과 Wiesel의 고양이 실험 (1959–1962)</h2>
+      <p>먼저 <strong>희소 상호작용(sparse interactions)</strong>이다. 다른 책에서는 <em>희소 연결(sparse connectivity)</em>이라고도 부른다. 같은 뜻이다. "한 출력 뉴런이 입력의 모든 원소에 의존하는가, 일부에만 의존하는가"의 차이다.</p>
 
-      <p>1950년대 말, 미국 하버드의 신경생리학자 David Hubel과 Torsten Wiesel은 마취된 고양이의 시각 피질(visual cortex)에 미세전극을 꽂고, 고양이 눈앞의 스크린에 다양한 시각 자극을 보여 주는 실험을 시작했다. 그들의 질문은 단순했다 — “시각 피질의 한 뉴런은 정확히 무엇에 반응하는가?”</p>
+      <h2>완전연결의 연결 구조</h2>
 
-      <p>실험 초기에는 점이나 단순한 빛 자극으로 시작했지만, 어떤 뉴런도 그런 자극에는 잘 반응하지 않았다. 그러던 어느 날, 슬라이드 프로젝터에 끼운 유리판의 가장자리(에지)가 우연히 스크린에 그림자처럼 비쳤을 때, 한 뉴런이 갑자기 강하게 반응했다. 가만히 있으면 약한데, 그 에지를 특정한 방향으로 천천히 옮기면 폭발적으로 반응했다. 그 발견이 시각 신경과학의 새 장을 열었다.</p>
+      <p>완전연결 층의 한 출력 $h_j$는 입력의 모든 원소 $x_1, x_2, \dots, x_n$ 의 가중합이다. 식으로 쓰면 다음과 같다.</p>
 
-      <p>여러 해에 걸친 추가 실험을 통해 두 사람은 시각 피질 1차 영역(V1)에 적어도 두 종류의 뉴런이 있음을 밝혔다. 이 발견으로 1981년 노벨 생리의학상을 받게 된다.</p>
+      <div class="math-block">$$ h_j = f\!\left(\sum_{i=1}^{n} W_{ji}\, x_i + b_j\right) $$</div>
+      <p class="math-note">h_j는 j번째 출력 뉴런. 합 안의 i가 1부터 n까지 모든 입력을 한 번씩 훑는다. W_{ji}는 j번째 출력과 i번째 입력 사이의 전용 가중치. f는 비선형 함수.</p>
 
-      <div class="symbols"><tbody>
-        <tr><td>단순 세포 (Simple Cell)</td><td>특정 위치에서, 특정 방향(orientation)의 에지에 강하게 반응. 위치가 조금만 바뀌어도 반응이 줄어든다. — <em>합성곱 필터와 같은 행동.</em></td></tr>
-        <tr><td>복잡 세포 (Complex Cell)</td><td>같은 방향의 에지에 반응하지만, 정확한 위치에는 둔감. 에지가 작은 범위 안에 있으면 어디에 있어도 반응. — <em>풀링과 같은 행동.</em></td></tr>
-      </tbody></div>
+      <p>이 식을 그래프로 그리면, 입력 $n$개 점과 출력 $m$개 점 사이에 $n \times m$개의 선이 그어진다. 입력이 $n=100$, 출력이 $m=100$이면 선은 만 개다. 입력이 $n=200{,}000$(256x256 컬러)이면 한 출력당 선이 20만 개, 출력 20만 개면 통틀어 400억 개의 선이 그어진다. 1번에서 본 파라미터 폭발은 이 그림에서 나온다.</p>
+
+      <h2>합성곱의 연결 구조 — 작은 창만 본다</h2>
+
+      <p>합성곱 층의 한 출력 $h_{i, j}$는 입력의 <strong>커널 크기만큼의 작은 영역</strong>에만 의존한다. 3x3 커널이라면 한 출력은 입력의 9개 원소에만 닿는다. 식으로는 다음과 같다.</p>
+
+      <div class="math-block">$$ h_{i, j} = f\!\left(\sum_{m=0}^{k-1}\sum_{n=0}^{k-1} K_{m, n}\, x_{i+m,\, j+n} + b\right) $$</div>
+      <p class="math-note">출력 (i, j) 위치는 입력 (i, j)를 왼쪽 위로 하는 k x k 영역의 원소만 본다. 멀리 떨어진 입력 원소는 합 안에 등장하지 않는다. 즉 가중치가 0이 아니라, 연결 자체가 없다.</p>
+
+      <p>그래프로 그리면, 한 출력 점에서 입력 쪽으로 그어지는 선이 $k^2$개뿐이다. 같은 그림을 입력 쪽에서 보면, 한 입력 점에서 출력 쪽으로 그어지는 선도 (가장자리 영향을 빼면) 약 $k^2$개뿐이다. 입력이 20만 개여도 출력당 선은 여전히 9개다. 입력 크기와 무관한 연결 수 — 이것이 희소 상호작용의 한 줄 정의다.</p>
 
       <div class="analogy">
-        단순 세포는 <b>“수직선 모양 자가 정확히 그 자리에 놓였을 때만 ‘딱!’ 하고 울리는 종”</b>이다. 복잡 세포는 <b>“수직선이 이 동네 어디에라도 있으면 ‘딱!’ 하고 울리는 종”</b>이다. 전자는 위치를 보존하고 후자는 위치를 흐린다. 9장이 합성곱과 풀링을 “등가성과 불변성”으로 구분하는 것과 정확히 같은 분업이다.
+        완전연결을 <b>도시 전체에 줄을 매단 거미줄</b>이라고 하면, 합성곱은 <b>각자 한 블록 안만 보는 동네 가게들</b>이다. 거미줄은 어디서든 정보를 받을 수 있지만 보수해야 할 줄이 너무 많고, 한 줄이 끊어져도 어디가 끊어졌는지 알기 어렵다. 동네 가게는 한 블록 안의 손님만 보지만 줄 자체가 적어 관리가 쉽고, 옆 블록 정보가 필요하면 옆 가게에 묻고, 그 옆 가게는 또 옆에 묻는 식으로 점점 멀리까지 닿는다. 11번에서 다룰 <b>수용 영역(receptive field)</b>이 바로 이 "옆 가게에 또 묻기"의 결과다.
       </div>
 
-      <p>단순 세포는 어떻게 그런 “특정 방향 에지 감지기”가 되었을까. Hubel과 Wiesel의 후속 모델은, 단순 세포 하나가 그보다 한 단계 앞 단계(LGN)의 여러 점-반응 세포들의 출력을 일렬로 모은 결과라고 설명했다. 점이 일렬로 모이면 선이 된다. 합성곱이 입력의 작은 영역에서 곱셈-덧셈으로 패턴을 검출하는 것과 거의 같은 직관이다.</p>
+      <h2>파라미터 수, 곱셈 수, 메모리가 동시에 줄어든다</h2>
+
+      <p>희소 상호작용이 어떤 양을 줄이는지 정확히 세 보자. 입력 $n$, 출력 $m$, 커널 크기 $k$($k \ll n$)일 때 한 출력당 연결 수는 완전연결이 $n$, 합성곱이 $k$다. 비율은 $n/k$. 입력이 20만, 커널이 9면 비율은 약 22{,}000배. 이 비율은 그대로 파라미터 수와 곱셈 수의 비율로 옮겨진다.</p>
+
+      <p>이것이 왜 중요한가. 6번에서 다룰 <strong>파라미터 공유(parameter sharing)</strong>를 빼고도 — 즉 위치마다 커널이 다 다르더라도 — 희소 상호작용 하나만으로도 메모리와 계산이 $n/k$배 줄어든다. 책은 이 점을 분명히 한다. 희소 상호작용과 파라미터 공유는 다른 속성이고, 다른 이유로 좋다.</p>
+
+      <p>그런데 둘은 어떻게 다른가. 희소 상호작용은 "한 출력이 보는 입력의 수"를 줄인다. 파라미터 공유는 "같은 가중치를 여러 출력이 함께 쓴다"이다. 합성곱은 이 둘을 동시에 한다. 만약 같은 작은 창을 보되 위치마다 다른 가중치를 쓴다면 — 이걸 책은 <em>locally connected layer</em>라 부른다 — 희소하지만 공유는 아니다. 합성곱은 거기서 한 발 더 나아가 공유까지 추가한 것이다.</p>
+
+      <h2>희소가 정보 손실이 아닌 이유 — 자연 이미지의 통계</h2>
+
+      <p>희소 상호작용은 한 가지 의심을 부른다. 한 출력이 멀리 떨어진 입력을 못 본다면, 정보를 잃는 것 아닌가. 답은 두 갈래다. 첫째, 한 층에서는 손실이지만, 여러 층을 쌓으면 그 손실이 거의 회복된다(11번 수용 영역 참고). 둘째, 자연 이미지의 통계 자체가 "먼 픽셀은 거의 독립"이라는 성질을 만족한다.</p>
+
+      <p>구체적으로, 자연 이미지의 두 픽셀 값 사이 상관(correlation)은 거리가 멀어질수록 빠르게 0에 가까워진다. 일반적으로 거리 $d$의 함수로 약 $\exp(-d/\ell)$처럼 떨어지며, 특성 길이(characteristic length) $\ell$이 보통 픽셀 단위로 한 자릿수다. 즉 100픽셀 떨어진 두 점의 직접 의존성은 사실상 0에 가깝다.</p>
+
+      <p>완전연결은 이 0에 가까운 의존성마저 학습으로 발견하려고 가중치를 쓴다. 노이즈를 학습으로 발견하느라 자원이 낭비되고, 모자란 데이터에서는 그 노이즈를 진짜 패턴으로 잘못 외운다. 이것이 7장에서 본 분산(variance) 증가의 한 모습이다. 합성곱의 희소 상호작용은 "노이즈로 알려진 의존성"을 처음부터 모델 구조에서 배제한다. 비유하면, 시험 시간에 학생이 안 풀어도 되는 문제를 시험지에서 아예 빼 주는 것이다.</p>
+
+      <h2>희소 상호작용이 만든 두 가지 부수 효과</h2>
+
+      <p>희소 상호작용은 파라미터, 계산, 메모리 외에 두 가지 흥미로운 부수 효과를 가진다.</p>
+
+      <p><strong>첫째, 해석이 쉬워진다.</strong> 한 출력 뉴런이 입력의 어디를 보는지가 명확하다. CNN의 <em>활성화 시각화(activation visualization)</em>, <em>Grad-CAM</em> 같은 해석 기법이 가능한 이유는 본질적으로 희소 상호작용 때문이다. 완전연결 층에서는 한 출력이 모든 입력을 보므로 "이 출력은 이 부분을 보고 활성화됐다"라고 말하기 어렵다.</p>
+
+      <p><strong>둘째, 메모리 접근 패턴이 좋아진다.</strong> 인접한 입력 원소만 사용하므로 캐시(cache) 적중률이 높고, GPU에서 병렬화가 쉽다. 완전연결은 한 출력 계산에 입력 메모리 전체를 한 번 훑어야 해서 캐시가 잘 작동하지 않는다. AlexNet 시대 GPU 가속이 본격화된 데도 합성곱의 메모리 친화성이 한몫했다.</p>
+
+      <p>아래 위젯에서 입력 크기와 커널 크기를 슬라이더로 바꾸며 완전연결과 합성곱의 연결 수가 어떻게 갈라지는지 직접 본다. 한 출력에서 입력 쪽으로 그어지는 선의 수가 슬라이더에 따라 어떻게 바뀌는지가 핵심이다.</p>
     </div>
 
     <div class="widget">
       <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 05</span><span>단순 세포 vs 복잡 세포 — 같은 자극, 다른 반응</span></div>
-        <div id="hubel"></div>
+        <div class="widget-label"><span class="lab-no">위젯 05</span><span>완전연결 vs 합성곱 — 연결 그래프</span></div>
+        <div class="graph-stage">
+          <div class="graph-cell">
+            <h5>완전연결 — 한 출력이 입력 전체</h5>
+            <svg id="svgFC" viewBox="0 0 320 260"></svg>
+            <div class="meta" id="metaFC">한 출력의 입력 연결 수: <b>—</b></div>
+          </div>
+          <div class="graph-cell">
+            <h5>합성곱 — 한 출력이 입력 일부</h5>
+            <svg id="svgCV" viewBox="0 0 320 260"></svg>
+            <div class="meta" id="metaCV">한 출력의 입력 연결 수: <b>—</b></div>
+          </div>
+        </div>
+        <div class="graph-controls">
+          <label><span>입력 길이 n <b id="lblN">14</b></span><input type="range" id="ctlN" min="8" max="28" step="1" value="14"></label>
+          <label><span>커널 크기 k <b id="lblK">3</b></span><input type="range" id="ctlK" min="1" max="9" step="2" value="3"></label>
+          <label><span>강조 출력 위치 <b id="lblJ">7</b></span><input type="range" id="ctlJ" min="0" max="13" step="1" value="7"></label>
+        </div>
       </div>
-      <p class="widget-cap">스크린 위 에지의 방향(각도)과 위치를 슬라이더로 옮겨 보라. 단순 세포(파랑)는 자기가 좋아하는 방향(수직)일 때만, 그리고 정확히 자기 자리에 있을 때만 강하게 반응한다. 복잡 세포(주홍)는 같은 방향이라면 위치가 조금 바뀌어도 계속 강하게 반응한다. 이것이 “등가에서 불변으로”의 생물학적 원형이다.</p>
+      <p class="widget-cap">왼쪽은 완전연결, 오른쪽은 합성곱. 강조 출력(주홍 점)에서 입력 쪽으로 내려가는 선의 색이 진한 부분이 그 출력이 의존하는 입력 영역이다. 완전연결은 강조 출력에서 입력 전체로 선이 퍼지지만, 합성곱은 강조 출력에서 입력의 k개 점에만 선이 닿는다. n을 키워도 합성곱은 k개 그대로다.</p>
     </div>
 
     <div class="prose">
-      <h2>2. 네오코그니트론 (Fukushima, 1980)</h2>
-
-      <p>Hubel과 Wiesel의 발견이 “인공 신경망”으로 옮겨진 첫 번째 시도가 1980년 일본 NHK 방송기술연구소의 후쿠시마 쿠니히코(福島 邦彦)가 제안한 <strong>네오코그니트론(Neocognitron)</strong>이다. 후쿠시마는 단순 세포에 대응하는 <span class="t-structure">S-cell 층</span>과 복잡 세포에 대응하는 <span class="t-style">C-cell 층</span>을 번갈아 쌓는 구조를 제안했다.</p>
-
-      <ul>
-        <li><strong>S-cell 층</strong>: 작은 입력 영역에서 특정 패턴(예: 특정 방향의 에지)에 반응. 합성곱과 같다.</li>
-        <li><strong>C-cell 층</strong>: S-cell 출력을 작은 영역에서 요약. 풀링과 같다.</li>
+      <h2>희소 상호작용 한 줄 정리</h2>
+      <ul class="checklist">
+        <li>완전연결 한 출력 = 입력 전체 가중합 → 한 출력당 가중치 $n$개.</li>
+        <li>합성곱 한 출력 = 입력 $k \times k$ 영역 가중합 → 한 출력당 가중치 $k^2$개($k \ll n$).</li>
+        <li>비율 $n/k^2$가 곧 파라미터, 곱셈, 메모리 절감 비율.</li>
+        <li>희소 상호작용은 파라미터 공유와 다른 별개의 속성이다. 둘 다 합성곱에 동시에 있다.</li>
+        <li>자연 이미지에서 먼 픽셀 의존성은 약 0이라, 희소가 정보 손실이 아닌 잡음 차단에 가깝다.</li>
+        <li>부수 효과: 해석이 쉽고(어디를 보는지 명확), 메모리 친화적(캐시 잘 작동).</li>
+        <li>여러 층을 쌓으면 깊은 층의 한 뉴런이 점점 더 넓은 입력 영역을 간접적으로 본다 → 11번 수용 영역.</li>
       </ul>
 
-      <p>네오코그니트론은 손글씨 인식 같은 단순한 과업에서 작동하는 것이 시연됐지만, 당시에는 두 가지 결정적 한계가 있었다. 첫째, 가중치를 자동으로 학습하는 효과적인 방법(역전파)이 아직 정착하지 않았다. 둘째, 계산 자원이 절대적으로 부족했다. 그래서 네오코그니트론은 “이론적으로 옳지만 실용적으로는 일렀던 모델”로 남았다.</p>
-
-      <h2>3. LeNet (LeCun, 1989–1998)</h2>
-
-      <p>네오코그니트론의 아이디어가 “학습 가능한 합성곱 신경망”으로 완성된 것은 1989년 AT&amp;T 벨연구소의 Yann LeCun이 제안한 <strong>LeNet</strong> 시리즈를 통해서다. LeCun은 두 가지 결정적 변화를 가져왔다.</p>
-
-      <ul>
-        <li><strong>역전파로 합성곱 가중치 학습</strong>: 네오코그니트론은 가중치를 수동 또는 비지도 방식으로 정했지만, LeCun은 오류 신호를 합성곱 층까지 역전파해 모든 가중치를 데이터로 학습시켰다.</li>
-        <li><strong>전체를 미분 가능한 한 모델로 통합</strong>: 합성곱, 풀링, 완전연결을 모두 미분 가능한 연산으로 묶어, 표준적인 경사하강으로 끝부터 끝까지 학습되게 했다.</li>
-      </ul>
-
-      <p>1998년 발표된 LeNet-5는 합성곱 2개 + 풀링 2개 + 완전연결 3개의 8층 구조로, 손글씨 우편번호를 자동으로 읽는 시스템에 실제로 배치되어 미국 우편국에서 상업적으로 운용됐다. 이는 <strong>딥러닝이 실험실에서 산업으로 처음 넘어간 사건</strong> 중 하나로 기록된다.</p>
-
-      <div class="analogy">
-        Hubel-Wiesel을 <b>“시각 피질의 청사진”</b>이라고 하면, 네오코그니트론은 그 청사진을 <b>“종이로 접은 모형”</b>이었고, LeNet은 그 모형을 <b>“실제로 작동하는 기계”</b>로 만든 결과다. 30년에 걸친 이 흐름이 2012년 AlexNet에서 폭발적으로 꽃피게 되는데, 이는 sub-chapter 07에서 다룬다.
-      </div>
-
-      <h2>왜 신경과학적 기원이 중요한가</h2>
-
-      <p>이 역사가 시험에 직접 출제될 가능성은 낮지만, 9장 전체의 관점을 잡는 데는 결정적이다. CNN은 “수학자가 가장 일반적인 함수 근사기를 설계하다가 우연히 잘 작동한” 모델이 아니다. CNN은 <strong>생물학적 시각 시스템이 5억 년에 걸쳐 진화시킨 설계 원리를 인공으로 옮긴 모델</strong>이다. 그래서 자연 이미지(생물의 눈이 진화에 적응해 본 데이터)에 잘 맞는다. 같은 이유로, 자연 이미지의 통계와 동떨어진 데이터(표 형식, 그래프)에는 잘 맞지 않을 수 있다.</p>
-
-      <p>이 관점이 9장의 “CNN은 매우 강한 사전을 건 모델”이라는 문장과 직결된다. 그 사전은 추상적인 가정이 아니라, 진화가 시각 시스템에 새겨 놓은 구체적인 통계다. 가까운 픽셀끼리 의미가 모이고, 같은 패턴은 시야 어디에 있든 같은 의미라는 두 가지. CNN은 이 통계를 알고리즘의 구조로 옮겼다.</p>
-
-      <p>다음 sub-chapter는 합성곱이 만들어 내는 출력의 크기를 수식으로 정확히 계산하는 법을 다룬다. 스트라이드와 패딩이 출력 크기에 어떤 영향을 주는지, 직접 슬라이더로 만져 보면서 그 공식이 “외울 필요 없이 그림에서 자연스럽게 나온다”는 점을 확인한다.</p>
+      <p>다음 6번에서는 같은 합성곱의 두 번째 얼굴, <strong>파라미터 공유(parameter sharing)</strong>를 본다. 희소가 "한 출력이 보는 수"를 줄였다면, 공유는 "여러 출력이 같은 가중치를 쓴다"를 한다. 둘이 합쳐지면 비로소 "같은 작은 도장을 들고 이미지 전체를 한 번씩 찍어 본다"는 합성곱의 그림이 완성된다.</p>
     </div>
 
     <nav class="ch-foot"></nav>
@@ -95,133 +135,117 @@
 </div>
 
 <script>
-  const SUBS = [
-    { no: '01', t: '왜 완전연결은 안 되는가' },
-    { no: '02', t: '합성곱의 정의' },
-    { no: '03', t: 'CNN의 3대 핵심 속성' },
-    { no: '04', t: '풀링 — 평행이동 불변성' },
-    { no: '05', t: '신경과학적 기원' },
-    { no: '06', t: '출력 크기, 스트라이드, 패딩' },
-    { no: '07', t: '대표 아키텍처 계보' },
-    { no: '08', t: '시험 대비' },
+  const CHAPTERS = [
+    { no:'01', t:'완전연결의 파라미터 폭발' },
+    { no:'02', t:'합성곱이란 무엇인가' },
+    { no:'03', t:'1D 합성곱 — 시간 신호' },
+    { no:'04', t:'2D 합성곱 — 이미지 커널' },
+    { no:'05', t:'희소 상호작용' },
+    { no:'06', t:'파라미터 공유' },
+    { no:'07', t:'변환 등가성' },
+    { no:'08', t:'풀링 — max vs avg' },
+    { no:'09', t:'신경과학적 기원' },
+    { no:'10', t:'출력 크기 공식' },
+    { no:'11', t:'수용 영역' },
+    { no:'12', t:'아키텍처 1 — LeNet, AlexNet' },
+    { no:'13', t:'아키텍처 2 — VGG, Inception' },
+    { no:'14', t:'아키텍처 3 — ResNet' },
+    { no:'15', t:'시험 대비 — 30+ 질문' },
   ];
-  function buildNav(cur) {
-    const tb = document.querySelector('.topbar');
-    if (tb) tb.innerHTML =
-      '<a class="home" href="index.html">← Chapter 09 / 합성곱 신경망</a>' +
-      '<span class="ch-mini">SUB ' + cur + ' / 08</span>';
-    const ol = document.querySelector('.ch-nav ol');
-    if (ol) ol.innerHTML = SUBS.map(c =>
-      '<li><a href="' + c.no + '.html"' + (c.no === cur ? ' class="current"' : '') + '>' + c.t + '</a></li>').join('');
-    const foot = document.querySelector('.ch-foot');
-    if (foot) {
-      const i = SUBS.findIndex(c => c.no === cur);
-      const prev = i > 0 ? SUBS[i - 1] : { no: '', t: '표지로', _href: 'index.html' };
-      const next = i < SUBS.length - 1 ? SUBS[i + 1] : { no: '', t: '표지로', _href: 'index.html' };
-      const hp = prev._href || (prev.no + '.html');
-      const hn = next._href || (next.no + '.html');
-      foot.innerHTML =
-        '<a href="' + hp + '"><div class="dir">← 이전</div><div class="ti">' + prev.t + '</div></a>' +
-        '<a href="' + hn + '" class="next"><div class="dir">다음 →</div><div class="ti">' + next.t + '</div></a>';
-    }
-  }
-  function initScroll() {
-    const bar = document.querySelector('.scroll-progress');
-    if (!bar) return;
-    const on = () => {
-      const h = document.documentElement;
-      const max = h.scrollHeight - h.clientHeight;
-      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
-    };
-    document.addEventListener('scroll', on, { passive: true }); on();
-  }
+  const CUR = '05';
+  document.querySelector('.topbar').innerHTML = '<a class="home" href="index.html">← Ch.09 CNN 표지</a><span class="ch-mini">SUB ' + CUR + ' / 15</span>';
+  document.querySelector('.ch-nav ol').innerHTML = CHAPTERS.map(c => '<li><a href="' + c.no + '.html"' + (c.no===CUR?' class="current"':'') + '>' + c.t + '</a></li>').join('');
+  const idx = CHAPTERS.findIndex(c=>c.no===CUR);
+  const prev = idx>0 ? CHAPTERS[idx-1] : { no:'', t:'표지로', _:'index.html' };
+  const next = idx<CHAPTERS.length-1 ? CHAPTERS[idx+1] : { no:'', t:'표지로', _:'index.html' };
+  document.querySelector('.ch-foot').innerHTML =
+    '<a href="' + (prev._||prev.no+'.html') + '"><div class="dir">← 이전</div><div class="ti">' + prev.t + '</div></a>' +
+    '<a href="' + (next._||next.no+'.html') + '" class="next"><div class="dir">다음 →</div><div class="ti">' + next.t + '</div></a>';
 
-  // ─── 위젯 05: Hubel-Wiesel 단순/복잡 세포 ─────────────────────
-  function hubelWidget(host) {
-    const css = getComputedStyle(document.documentElement);
-    const COL = {
-      structure: css.getPropertyValue('--structure').trim() || '#2D5B7A',
-      style: css.getPropertyValue('--style').trim() || '#C0492E',
-      ink: css.getPropertyValue('--ink-soft').trim() || '#5A5247',
-      faint: css.getPropertyValue('--ink-faint').trim() || '#8E8576',
-    };
-    let angle = 90;  // 0..180 (90 = 수직)
-    let posX = 0;    // -1..1 (스크린 가로 위치)
-
-    host.innerHTML =
-      '<div style="padding:1.4rem 1rem 1.2rem;background:#fff;">' +
-      '<div id="hubelBoard"></div>' +
-      '<div style="margin-top:1.2rem;padding-top:1rem;border-top:1px solid var(--line-soft);">' +
-      '  <div style="display:flex;align-items:center;gap:.8rem;font-family:var(--mono);font-size:.74rem;margin-bottom:.5rem;">' +
-      '    <span style="color:' + COL.ink + ';flex-shrink:0;width:90px;">에지 방향 (°)</span>' +
-      '    <input type="range" id="hubAngle" min="0" max="180" value="90" style="flex:1;">' +
-      '    <span id="angleLabel" style="color:' + COL.style + ';font-weight:600;flex-shrink:0;width:55px;text-align:right;">90°</span>' +
-      '  </div>' +
-      '  <div style="display:flex;align-items:center;gap:.8rem;font-family:var(--mono);font-size:.74rem;">' +
-      '    <span style="color:' + COL.ink + ';flex-shrink:0;width:90px;">에지 위치 (x)</span>' +
-      '    <input type="range" id="hubPos" min="-100" max="100" value="0" style="flex:1;">' +
-      '    <span id="posLabel" style="color:' + COL.style + ';font-weight:600;flex-shrink:0;width:55px;text-align:right;">0.0</span>' +
-      '  </div>' +
-      '</div>' +
-      '</div>';
-
-    function render() {
-      // 단순 세포: 좋아하는 방향 = 90도(수직), 좋아하는 위치 = 0 → 가우스 반응
-      const simpleResp = Math.exp(-Math.pow((angle - 90) / 18, 2)) * Math.exp(-Math.pow(posX / 0.18, 2));
-      // 복잡 세포: 좋아하는 방향 = 90도, 위치는 [-0.45, 0.45] 범위면 모두 강하게
-      const complexResp = Math.exp(-Math.pow((angle - 90) / 22, 2)) * (Math.abs(posX) < 0.45 ? 1 : Math.exp(-Math.pow((Math.abs(posX) - 0.45) / 0.2, 2)));
-
-      // SVG 스크린
-      const W = 240, H = 160, cx = W/2, cy = H/2;
-      const rad = (angle - 90) * Math.PI / 180;
-      const px = cx + posX * 90;
-      const lineLen = 50;
-      const dx = Math.cos(rad - Math.PI/2) * lineLen;
-      const dy = Math.sin(rad - Math.PI/2) * lineLen;
-      const screen =
-        '<svg width="' + W + '" height="' + H + '" style="background:#1a1714;border:1px solid var(--line);border-radius:6px;">' +
-        '<line x1="' + (px - dx) + '" y1="' + (cy - dy) + '" x2="' + (px + dx) + '" y2="' + (cy + dy) + '" stroke="#fff" stroke-width="4" stroke-linecap="round"/>' +
-        '<text x="6" y="14" font-family="monospace" font-size="9" fill="#8E8576">고양이 스크린</text>' +
-        '</svg>';
-
-      // 두 세포의 반응 막대
-      function bar(resp, label, color) {
-        const h = 80;
-        const fill = Math.max(2, resp * h);
-        return '<div style="text-align:center;">' +
-          '<div style="font-family:var(--mono);font-size:.7rem;color:' + COL.ink + ';margin-bottom:.4rem;">' + label + '</div>' +
-          '<div style="display:flex;flex-direction:column-reverse;align-items:center;height:' + h + 'px;width:50px;background:rgba(0,0,0,.04);border-radius:4px;">' +
-          '<div style="width:80%;background:' + color + ';height:' + fill + 'px;transition:.2s var(--ease);border-radius:3px 3px 0 0;"></div>' +
-          '</div>' +
-          '<div style="font-family:var(--mono);font-size:.74rem;color:' + color + ';margin-top:.3rem;font-weight:600;">' + Math.round(resp * 100) + '%</div>' +
-          '</div>';
-      }
-
-      host.querySelector('#hubelBoard').innerHTML =
-        '<div style="display:flex;flex-wrap:wrap;gap:1.4rem;justify-content:center;align-items:center;">' +
-        screen +
-        '<div style="display:flex;gap:1.4rem;align-items:flex-end;">' +
-        bar(simpleResp, '단순 세포', COL.structure) +
-        bar(complexResp, '복잡 세포', COL.style) +
-        '</div>' +
-        '</div>' +
-        '<div style="font-family:var(--mono);font-size:.7rem;color:' + COL.faint + ';text-align:center;margin-top:.6rem;line-height:1.5;">' +
-        '단순 세포: <b style="color:' + COL.structure + ';">수직 + 정확한 자리</b>에서만 반응<br>' +
-        '복잡 세포: <b style="color:' + COL.style + ';">수직 방향이면 위치 흔들려도</b> 반응' +
-        '</div>';
-      host.querySelector('#angleLabel').textContent = angle + '°';
-      host.querySelector('#posLabel').textContent = (posX).toFixed(2);
-    }
-    document.getElementById('hubAngle').addEventListener('input', (e) => { angle = +e.target.value; render(); });
-    document.getElementById('hubPos').addEventListener('input', (e) => { posX = +e.target.value / 100; render(); });
-    render();
-  }
+  const bar = document.querySelector('.scroll-progress');
+  document.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max > 0 ? (h.scrollTop/max)*100 : 0) + '%';
+  }, { passive: true });
 
   window.addEventListener('load', () => {
-    buildNav('05'); initScroll();
-    const h = document.getElementById('hubel');
-    if (h) hubelWidget(h);
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, { delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}], throwOnError: false });
+    }
   });
+
+  // ---------- 위젯: 희소 vs 완전연결 그래프 ----------
+  const svgFC = document.getElementById('svgFC');
+  const svgCV = document.getElementById('svgCV');
+  const metaFC = document.getElementById('metaFC');
+  const metaCV = document.getElementById('metaCV');
+  const ctlN = document.getElementById('ctlN');
+  const ctlK = document.getElementById('ctlK');
+  const ctlJ = document.getElementById('ctlJ');
+  const lblN = document.getElementById('lblN');
+  const lblK = document.getElementById('lblK');
+  const lblJ = document.getElementById('lblJ');
+
+  function drawGraph(svg, mode) {
+    const n = +ctlN.value;
+    const k = +ctlK.value;
+    let j = +ctlJ.value;
+    if (j >= n) j = n - 1;
+    ctlJ.max = String(n - 1);
+    lblN.textContent = n; lblK.textContent = k; lblJ.textContent = j;
+
+    const W = 320, H = 260;
+    const padX = 22, padTop = 30, padBot = 26;
+    const rowGap = (H - padTop - padBot);
+    const stepX = (W - 2*padX) / Math.max(1, n - 1);
+
+    let out = '';
+    out += '<text x="' + (padX) + '" y="16" font-family="Spline Sans Mono, monospace" font-size="10" fill="#8E8576">입력</text>';
+    out += '<text x="' + (padX) + '" y="' + (H-8) + '" font-family="Spline Sans Mono, monospace" font-size="10" fill="#8E8576">출력</text>';
+
+    for (let oi = 0; oi < n; oi++) {
+      const ox = padX + oi * stepX;
+      const oy = padTop + rowGap;
+      let conn = [];
+      if (mode === 'fc') {
+        for (let ii = 0; ii < n; ii++) conn.push(ii);
+      } else {
+        const half = Math.floor(k/2);
+        for (let d = -half; d <= half; d++) {
+          const ii = oi + d;
+          if (ii >= 0 && ii < n) conn.push(ii);
+        }
+      }
+      conn.forEach(ii => {
+        const ix = padX + ii * stepX;
+        const iy = padTop;
+        const hi = (oi === j);
+        const col = hi ? '#C0492E' : '#d8d2c4';
+        const op = hi ? 0.9 : 0.32;
+        const w = hi ? 1.2 : 0.5;
+        out += '<line x1="' + ix.toFixed(1) + '" y1="' + iy + '" x2="' + ox.toFixed(1) + '" y2="' + oy + '" stroke="' + col + '" stroke-width="' + w + '" stroke-opacity="' + op + '" />';
+      });
+    }
+    for (let i = 0; i < n; i++) {
+      const x = padX + i * stepX;
+      out += '<circle cx="' + x.toFixed(1) + '" cy="' + padTop + '" r="3.5" fill="#2D5B7A" />';
+    }
+    for (let i = 0; i < n; i++) {
+      const x = padX + i * stepX;
+      const hi = (i === j);
+      out += '<circle cx="' + x.toFixed(1) + '" cy="' + (padTop + rowGap) + '" r="' + (hi ? 5 : 3.5) + '" fill="' + (hi ? '#C0492E' : '#2D5B7A') + '" />';
+    }
+    svg.innerHTML = out;
+
+    const conn = mode === 'fc' ? n : Math.min(k, n);
+    const meta = mode === 'fc' ? metaFC : metaCV;
+    meta.innerHTML = '한 출력의 입력 연결 수: <b>' + conn + '</b> · 전체 가중치 수: <b>' + (mode === 'fc' ? (n*n).toLocaleString() : (n*k).toLocaleString()) + '</b>';
+  }
+
+  function drawAll() { drawGraph(svgFC, 'fc'); drawGraph(svgCV, 'cv'); }
+  [ctlN, ctlK, ctlJ].forEach(el => el.addEventListener('input', drawAll));
+  drawAll();
 </script>
 </body>
 </html>

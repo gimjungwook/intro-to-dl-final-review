@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>08 · Self-Attention</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Chapter 08 · 같은 시퀀스에서 셋 모두를</span>
+      <h1>Self-Attention —<br>입력이 <span class="t-synth">자기 자신</span>을 보다</h1>
+      <p class="lede">이 장은 한 가지 작은 — 그러나 결정적인 — 차이를 다룬다. Q, K, V가 모두 같은 시퀀스에서 나온다는 점이다. 그것이 self-attention이고, Transformer 인코더의 절반이다.</p>
+    </header>
+
+    <div class="prose">
+      <p>지금까지 우리는 Q, K, V가 모두 입력 $X$에 서로 다른 가중치 행렬을 곱해 만들어진다고 했다. 이 진술에는 한 가지 숨은 가정이 있다. "Q, K, V 모두 <strong>같은 입력 $X$에서</strong> 나온다"라는 것이다. 이렇게 한 시퀀스 안에서 자기 자신을 attend 하는 방식을 <span class="t-synth">self-attention</span>이라고 부른다.</p>
+
+      <p>이 용어가 처음에는 다소 추상적으로 들린다. "self"가 무엇인가. 그저 같은 시퀀스라는 뜻이다. 한 문장 "The cat sat on the mat"이 들어왔을 때, 이 문장 안의 모든 토큰이 (1) 자기 자신을 Query로 들고 다른 토큰들을 (2) Key로 비교한 다음 (3) 그 다른 토큰들의 Value를 가중 평균해 가져온다. 출력으로 나오는 것은 같은 길이 6의 새 시퀀스이고, 이 새 시퀀스의 각 토큰은 "원래 입력 문장 전체를 알맞게 본 뒤 갱신된 자기 자신"이다.</p>
+
+      <div class="math-block">$$ Z \;=\; \text{Attention}(X W_Q, \; X W_K, \; X W_V) \;=\; \text{softmax}\!\left(\frac{(XW_Q)(XW_K)^\top}{\sqrt{d_k}}\right)(X W_V) $$</div>
+      <p class="math-note">$X$ = 입력 ($N \times d_{\text{model}}$). $W_Q, W_K, W_V$ = 가중치. $Z$ = self-attention 출력 ($N \times d_v$).</p>
+
+      <h2>왜 자기 자신을 보는 것이 강력한가</h2>
+      <p>한 가지 자연스러운 의심이 든다. "한 문장이 자기 자신을 본다? 자기 자신을 보는 것에서 무엇을 얻을 수 있나?". 이 의심을 풀려면 "토큰 한 개의 표현은 그 토큰 단독의 의미가 아니라 문맥(context) 속의 의미"라는 점을 떠올려야 한다.</p>
+
+      <div class="analogy">
+        <b>다의어 비유 ─</b> 한국어 "배"라는 단어를 생각해 보자. 임베딩 층은 처음에 이 단어를 한 벡터로 매핑한다. 그런데 "배가 고프다"의 "배"와 "배가 항구에 도착했다"의 "배"와 "배를 먹었다"의 "배"는 의미가 모두 다르다. 임베딩 벡터 하나로는 이 셋을 구별할 수 없다. self-attention은 이 단어의 표현을 <b>주변 단어들을 보고 갱신</b>한다. "고프다"가 있으면 "배"의 표현은 신체 부위 쪽으로 이동하고, "항구"가 있으면 선박 쪽으로, "먹었다"가 있으면 과일 쪽으로 이동한다. 같은 단어가 문맥에 따라 다른 벡터가 된다.
+      </div>
+
+      <p>이 과정이 바로 <strong>"문맥 기반 표현(contextual representation)"</strong>이다. 한 단어의 의미를 그 자체로 고정하지 않고, 같은 문장의 다른 단어들과의 관계 속에서 동적으로 만든다. 이는 word2vec이나 GloVe 같은 정적 임베딩(static embedding)이 절대 할 수 없는 일이고, BERT·GPT 등 현대 언어 모델의 가장 큰 진보 중 하나다.</p>
+
+      <h2>한 토큰의 입장에서 본 self-attention의 흐름</h2>
+      <p>토큰 $i$의 입장에서 한 번 따라가 보자. 입력 임베딩 $x_i$가 있다. self-attention 블록은 다음과 같이 한다.</p>
+
+      <p><strong>1.</strong> 자기 자신의 Query를 만든다. $q_i = x_i W_Q$. 이는 "내가 지금 어떤 정보를 필요로 하나"라는 질문 벡터.</p>
+
+      <p><strong>2.</strong> 같은 시퀀스의 모든 토큰의 Key를 가져온다. $k_1, k_2, \ldots, k_N$. 자기 자신 $k_i$도 포함된다.</p>
+
+      <p><strong>3.</strong> 자기 Query와 모든 Key의 내적으로 점수 $s_{i1}, s_{i2}, \ldots, s_{iN}$을 계산한다. 그 중 $s_{ii}$도 들어 있다 — 자기 자신과의 매칭 점수.</p>
+
+      <p><strong>4.</strong> 점수를 $\sqrt{d_k}$로 나누고 softmax를 적용해 가중치 $A_{i1}, A_{i2}, \ldots, A_{iN}$을 얻는다. 모든 가중치의 합은 1.</p>
+
+      <p><strong>5.</strong> 같은 시퀀스의 모든 토큰의 Value $v_1, v_2, \ldots, v_N$을 그 가중치로 가중 평균한다. 결과 $z_i = \sum_j A_{ij} v_j$.</p>
+
+      <p>이 $z_i$가 토큰 $i$의 새 표현이다. 입력은 한 단어의 정적 벡터였지만, 출력은 문장 전체를 알맞게 본 후의 문맥적 벡터다.</p>
+
+      <h2>자기 자신과의 매칭은 왜 자동으로 큰가 — 그리고 그래서?</h2>
+      <p>한 가지 자주 묻는 점. $q_i$와 $k_i$는 같은 $x_i$에서 출발해서 만들어지므로, $q_i \cdot k_i$는 자연스럽게 큰 값이 될 가능성이 높다. 그러면 $A_{ii}$가 가장 큰 가중치가 되어, 자기 자신이 가장 큰 비중을 차지하지 않을까?</p>
+
+      <p>답은 "그런 경향이 있지만 항상 그렇지는 않다"다. 두 가지 이유다.</p>
+
+      <p><strong>(1)</strong> $W_Q$와 $W_K$가 서로 다른 행렬이라, $q_i$와 $k_i$는 서로 다른 방향을 가리키도록 학습될 수 있다. 모델이 데이터에서 "자기 자신보다 옆 토큰을 더 봐야 손실이 줄어든다"는 신호를 받으면, $W_Q, W_K$는 그에 맞게 갱신된다.</p>
+
+      <p><strong>(2)</strong> 실제 학습된 attention 패턴을 보면, 헤드마다 다르다. 어떤 헤드는 자기 자신을 강하게 보고, 다른 헤드는 옆 토큰을, 또 다른 헤드는 멀리 떨어진 토큰을 본다. 자기 매칭이 강한 헤드도 있고, 약한 헤드도 있다. 다음 장에서 보는 multi-head는 이런 다양성을 만들어 내는 장치다.</p>
+
+      <h2>입력과 출력의 형태</h2>
+      <p>self-attention 한 블록의 입력은 $N \times d_{\text{model}}$, 출력도 $N \times d_v$(보통 $d_v = d_{\text{model}}$로 맞춤). <strong>토큰의 개수는 그대로</strong>다. 시퀀스가 짧아지거나 길어지지 않는다. 이 점이 매우 중요한데, 그래서 self-attention 블록을 여러 층으로 쌓을 수 있다 — 한 블록의 출력이 다음 블록의 입력이 된다. 토큰 수가 같으니 모양이 호환된다.</p>
+
+      <h2>self-attention vs cross-attention 미리보기</h2>
+      <p>한 가지 미리 짚어 둘 점. 14장에서 자세히 보겠지만, Transformer에는 self-attention 외에도 <strong>cross-attention</strong>이 있다. 차이는 단순하다. self-attention은 Q, K, V가 모두 같은 시퀀스에서 나오고, cross-attention은 Q가 한 시퀀스(예: 디코더의 출력)에서 나오고 K, V는 다른 시퀀스(예: 인코더의 출력)에서 나온다. 도서관 비유로 말하면, self-attention은 같은 책장 안에서 검색이고, cross-attention은 한 사람이 다른 책장(인코더의 결과물)에서 검색하는 것이다. 식의 형태는 똑같다 — 어떤 입력에서 Q를 뽑고 어떤 입력에서 K, V를 뽑는지만 다르다.</p>
+
+      <h2>이 장에서 기억할 한 줄</h2>
+      <p>Self-attention은 "한 시퀀스가 자기 자신을 본다"는 의미다. 같은 입력에서 Q, K, V를 모두 뽑고, 한 토큰의 새 표현은 같은 문장의 모든 토큰의 가중 평균으로 만들어진다. 그 결과 한 단어의 표현이 문맥에 따라 달라지는 "문맥적 임베딩"이 자연스럽게 얻어진다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  window.addEventListener('load', () => {
+    TFR.buildNav('08');
+  });
+</script>
+<script src="assets/widgets.js"></script>
+</body>
+</html>

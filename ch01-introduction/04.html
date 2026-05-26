@@ -3,27 +3,26 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>04 — 역사적 굴곡 — Ch.1</title>
+<title>04 · 깊이 1 — 표상의 사다리 — Chapter 1</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
-  .hist-stage { padding: 1.4rem 1.4rem 1rem; }
-  #hist-svg { width: 100%; height: auto; max-height: 360px; display: block; }
-  .hist-line { fill: none; stroke: var(--structure); stroke-width: 2.5; }
-  .hist-fill { fill: rgba(45,91,122,0.10); }
-  .hist-marker { cursor: pointer; transition: r .15s var(--ease); }
-  .hist-marker:hover, .hist-marker.active { r: 9; }
-  .hist-marker-label { font-family: var(--mono); font-size: 10px; fill: var(--ink-soft); pointer-events: none; text-anchor: middle; }
-  .hist-axis text { font-family: var(--mono); font-size: 10px; fill: var(--ink-faint); }
-  .hist-axis line { stroke: rgba(38,34,28,0.13); stroke-width: 1; }
-  .hist-band { fill: rgba(192,73,46,0.08); }
-  .hist-band-label { font-family: var(--mono); font-size: 9.5px; fill: var(--style); letter-spacing: .08em; text-anchor: middle; }
-  .hist-detail { padding: 1.1rem 1.2rem; background: var(--paper); border-top: 1px solid var(--line-soft); min-height: 140px; }
-  .hist-detail h4 { margin: 0 0 .35rem; font-family: var(--serif); font-size: 1.15rem; color: var(--ink); }
-  .hist-detail .hd-meta { font-family: var(--mono); font-size: .72rem; color: var(--style); letter-spacing: .1em; margin-bottom: .5rem; }
-  .hist-detail p { margin: 0; font-size: .9rem; color: var(--ink-soft); line-height: 1.55; }
+  .ladder { padding: 1.4rem 1rem 1rem; }
+  .ladder-row { display: grid; grid-template-columns: 4.5rem 6.5rem 1fr; gap: 1rem; align-items: center; padding: .7rem .5rem; border-radius: 9px; cursor: pointer; transition: background .15s; }
+  .ladder-row:hover { background: var(--paper-2); }
+  .ladder-row.active { background: var(--structure-bg); box-shadow: inset 3px 0 0 var(--structure); }
+  .ladder-row .lvl { font-family: var(--mono); font-size: .72rem; color: var(--ink-faint); letter-spacing: .12em; }
+  .ladder-row .name { font-family: var(--serif); font-size: 1.05rem; color: var(--ink); }
+  .ladder-row .ex { font-size: .85rem; color: var(--ink-soft); line-height: 1.45; }
+  .ladder-vis { display: flex; gap: .4rem; align-items: end; padding: 1.4rem 1rem; justify-content: center; min-height: 240px; }
+  .ladder-vis .stack { display: flex; flex-direction: column-reverse; gap: .25rem; align-items: center; }
+  .ladder-vis .blk { width: 56px; padding: .45rem 0; text-align: center; font-family: var(--mono); font-size: .68rem; border: 1px solid var(--line); border-radius: 6px; background: #fff; color: var(--ink-soft); transition: all .25s var(--ease); }
+  .ladder-vis .blk.on { background: var(--structure); color: #fff; border-color: var(--structure); transform: scale(1.05); }
+  .ladder-vis .stack span { font-family: var(--mono); font-size: .62rem; color: var(--ink-faint); margin-top: .3rem; }
+  .ladder-desc { max-width: var(--measure); margin: .5rem auto 1rem; padding: .9rem 1.4rem; min-height: 4rem; font-size: .92rem; color: var(--ink-soft); line-height: 1.6; border-top: 1px solid var(--line-soft); }
+  .ladder-desc h5 { margin: 0 0 .3rem; font-family: var(--serif); font-size: 1.02rem; color: var(--structure); }
 </style>
 </head>
 <body>
@@ -35,120 +34,109 @@
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Sub 04 — 같은 아이디어가 세 번 죽었다 살아났다</span>
-      <h1>딥러닝의 <span class="t-style">역사적 굴곡</span> — 사이버네틱스, 연결주의, 깊이의 시대</h1>
-      <p class="lede">신경망 아이디어는 1940년대부터 있었다. 그런데 왜 2010년대가 되어서야 폭발했는가? 두 번의 “겨울(AI winter)”이 무엇이고, 무엇이 그것을 끝냈는지 따라가 보자.</p>
+      <span class="kicker">Sub-Chapter 04 · 깊이가 만드는 것 1</span>
+      <h1>표상의 사다리 — 픽셀에서<br><span class="t-style">개념</span>까지 다섯 단계</h1>
+      <p class="lede">딥러닝의 "깊이"는 단지 층 수가 많다는 자랑이 아니다. 깊이는 표상을 한 단계씩 더 추상적으로 만들어 가는 사다리다. 픽셀에서 모서리로, 모서리에서 부위로, 부위에서 객체로, 객체에서 개념으로. 이 사다리가 보이면 CNN의 모든 그림이 같은 이야기로 읽힌다.</p>
     </header>
 
     <div class="prose">
-      <p>딥러닝 개론에서 가장 자주 빠지는 함정은 “딥러닝은 2012년경 갑자기 등장한 기술”이라는 인상이다. 책 1장의 후반부는 이 인상을 정정한다. 신경망의 핵심 아이디어는 이미 1940년대부터 존재했고, 부침을 거치며 세 번의 큰 물결을 만들었다.</p>
+      <p>앞에서 본 표상학습의 기준 다섯 가지 중 하나가 <em>위계성(hierarchical)</em>이었다. 그 위계성이 실제로 어떻게 생긴 것인지를 이 sub-chapter에서 직접 확인한다. 본격적으로 들어가기 전에 핵심 메시지를 한 줄로 적어 두자. <strong>"같은 이미지를 깊이가 다른 층에서 보면, 완전히 다른 것을 본다."</strong> 첫 층은 픽셀 강도의 변화를 보고, 마지막 층은 "이것이 고양이인지 자동차인지"를 본다. 그 사이에 무엇이 어떻게 변하는지가 1장 후반부의 핵심 그림이다.</p>
 
-      <ol>
-        <li><strong>1940년대 - 1960년대, 사이버네틱스(cybernetics)</strong> — McCulloch-Pitts 뉴런(1943)과 퍼셉트론(perceptron, 1958)을 중심으로 “뇌처럼 작동하는 기계”의 첫 물결.</li>
-        <li><strong>1980년대 - 1990년대 중반, 연결주의(connectionism)</strong> — 역전파(backpropagation, 1986)와 분산표상(distributed representation)으로 부활. 그러나 다시 두 번째 겨울로.</li>
-        <li><strong>2006년 이후, 깊이의 시대(deep learning)</strong> — Hinton의 사전학습 논문(2006)으로 다시 부활. 2012년 AlexNet의 ImageNet 우승이 결정적 전환점.</li>
-      </ol>
+      <p>구체적인 예시로 들어가자. 24×24 픽셀짜리 고양이 사진을 컨볼루션 신경망(CNN, convolutional neural network)에 넣었다고 하자. 모델은 약 8개의 층으로 이루어져 있다. 각 층은 이전 층의 출력을 받아서 가중치 행렬(weight matrix)을 곱하고, ReLU 같은 비선형 활성화 함수(activation function)를 거쳐 새로운 출력을 만든다. 그 새 출력을 사람이 시각화하면 — 즉, 각 뉴런(neuron)이 어떤 입력 패턴에 강하게 반응하는지를 역으로 그려 보면 — 층마다 놀라울 정도로 다른 그림이 나온다.</p>
+
+      <p><strong>첫 번째 층</strong>은 거의 항상 비슷한 모습이다. 가로 모서리, 세로 모서리, 대각 모서리, 그리고 다양한 색상 패치(color blob). 즉, 첫 층의 뉴런 하나는 "이 위치에서 빛이 어두운 쪽에서 밝은 쪽으로 바뀌는가" 같은 매우 국소적이고 단순한 질문에 답한다. 이는 사람의 시각 피질(visual cortex) 1차 영역(V1)에서 발견되는 신경 반응과도 닮아 있다. 다시 말해 첫 층은 "픽셀 그 자체"에서 한 발만 멀어진 표상이다.</p>
+
+      <p><strong>두 번째 층</strong>으로 가면, 첫 층 모서리들의 조합이 보인다. 두 개의 직각 모서리가 만나는 코너, 평행한 선들이 모인 줄무늬, 둥근 곡선의 일부분 같은 무늬(motif)다. 단독 모서리보다는 더 복잡하지만, 아직 "고양이 귀"나 "자동차 바퀴"라고 부를 만한 것은 아니다.</p>
+
+      <p><strong>세 번째와 네 번째 층</strong>으로 가면, 사람이 보고 "아, 이건 무엇 같다"라고 이름 붙일 수 있는 부위(part)가 등장한다. 고양이의 눈, 코, 귀의 끝, 자동차의 바퀴, 사람의 입 같은 것이다. 즉, 모서리의 조합인 무늬가 다시 모여서 부위가 된다.</p>
+
+      <p><strong>다섯 번째 이후의 층</strong>으로 가면, 부위들이 모인 객체(object) 단위의 반응이 나타난다. 어떤 뉴런은 "어디에 있든, 어떤 자세로 있든, 고양이가 있으면 강하게 반응"하고, 다른 뉴런은 자동차에, 또 다른 뉴런은 새에 반응한다. 마지막으로 출력층 직전에는 그 객체 정보가 압축되어 "고양이일 확률 0.97, 개일 확률 0.02, 자동차일 확률 0.001…" 같은 분류 분포로 정리된다. 이 마지막 단계가 곧 "개념"의 단계다.</p>
 
       <div class="analogy">
-        <b>꺼졌다 켜졌다 하는 가로등.</b> 같은 가로등이 세 번 꺼졌다 다시 켜진 셈이다. 꺼진 이유는 매번 달랐다 — 처음에는 단층 퍼셉트론의 표현력 한계(Minsky-Papert 1969), 다음에는 데이터/계산 자원 부족과 SVM 등 대안의 등장이었다. 켜진 이유도 매번 달랐다 — 역전파 알고리즘의 발견, 그다음에는 GPU와 대규모 데이터셋의 결합. <em>아이디어 자체는 죽지 않았다. 환경이 부족했을 뿐이다.</em>
+        <b>건축의 위계.</b> 벽돌 한 장으로는 집이 되지 않는다. 벽돌이 모여 벽이 되고, 벽이 모여 방이 되고, 방이 모여 집이 되고, 집이 모여 동네가 된다. 각 단계마다 다루는 "단위"가 다르다. 건축가는 벽돌의 크기로 도시를 논하지 않고, 집의 평면도로 벽돌 색을 논하지 않는다. 표상의 사다리도 정확히 같다. 픽셀로 고양이 종을 판별하려는 시도와, 객체 표상으로 픽셀 강도를 추측하려는 시도는 모두 "단위가 안 맞는" 문제다.
       </div>
 
-      <h2>아래 타임라인의 점을 클릭하면 그 사건의 의미가 보인다</h2>
-      <p>가로축은 1940년부터 2020년까지의 연도, 세로축은 “신경망에 대한 학계의 관심 수준”을 정성적으로 그린 곡선이다. 두 개의 붉은 띠가 1차/2차 AI 겨울이다. 점에 마우스를 올리면 해당 사건의 인물, 핵심 기여, 그리고 “왜 중요한가”가 아래에 표시된다.</p>
+      <p>아래 위젯에서 각 단계를 클릭하면, 그 층에서 모델이 "보고 있는 것"이 무엇인지가 표시된다. 위쪽 사다리 그림에서는 활성화되는 단계가 강조되고, 아래 설명에서는 그 단계가 잡아내는 패턴의 종류, 그리고 그 단계를 "보지 못하면" 무엇이 어려운지가 함께 나온다.</p>
     </div>
 
     <div class="widget">
       <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 04</span><span>딥러닝 80년 — 인물 점을 클릭하세요</span></div>
-        <div class="hist-stage">
-          <svg id="hist-svg" viewBox="0 0 720 320" xmlns="http://www.w3.org/2000/svg">
-            <!-- AI 겨울 띠 -->
-            <rect class="hist-band" x="180" y="20" width="80" height="240"/>
-            <text class="hist-band-label" x="220" y="38">1ST AI WINTER</text>
-            <text class="hist-band-label" x="220" y="48">(1969–1980)</text>
-            <rect class="hist-band" x="380" y="20" width="100" height="240"/>
-            <text class="hist-band-label" x="430" y="38">2ND AI WINTER</text>
-            <text class="hist-band-label" x="430" y="48">(1990–2006)</text>
-
-            <!-- 곡선 (관심도) -->
-            <path class="hist-fill" d="M 40,200 L 100,140 L 160,160 L 220,230 L 280,210 L 340,170 L 400,225 L 460,235 L 520,170 L 580,80 L 640,40 L 680,30 L 680,260 L 40,260 Z"/>
-            <path class="hist-line" d="M 40,200 L 100,140 L 160,160 L 220,230 L 280,210 L 340,170 L 400,225 L 460,235 L 520,170 L 580,80 L 640,40 L 680,30"/>
-
-            <!-- 축 -->
-            <g class="hist-axis">
-              <line x1="40" y1="260" x2="680" y2="260"/>
-              <text x="40" y="278" text-anchor="middle">1940</text>
-              <text x="120" y="278" text-anchor="middle">1960</text>
-              <text x="220" y="278" text-anchor="middle">1980</text>
-              <text x="320" y="278" text-anchor="middle">1990</text>
-              <text x="440" y="278" text-anchor="middle">2000</text>
-              <text x="560" y="278" text-anchor="middle">2010</text>
-              <text x="660" y="278" text-anchor="middle">2020</text>
-              <text x="22" y="265" text-anchor="middle" transform="rotate(-90 22 150)">관심도</text>
-            </g>
-
-            <!-- 사건 마커 -->
-            <circle class="hist-marker" data-key="mp" cx="60" cy="195" r="6" fill="#2D5B7A"/>
-            <text class="hist-marker-label" x="60" y="183">1943</text>
-
-            <circle class="hist-marker" data-key="perceptron" cx="100" cy="140" r="6" fill="#2D5B7A"/>
-            <text class="hist-marker-label" x="100" y="128">1958</text>
-
-            <circle class="hist-marker" data-key="minsky" cx="160" cy="160" r="6" fill="#C0492E"/>
-            <text class="hist-marker-label" x="160" y="148">1969</text>
-
-            <circle class="hist-marker" data-key="backprop" cx="280" cy="210" r="6" fill="#2D5B7A"/>
-            <text class="hist-marker-label" x="280" y="198">1986</text>
-
-            <circle class="hist-marker" data-key="lenet" cx="340" cy="170" r="6" fill="#2D5B7A"/>
-            <text class="hist-marker-label" x="340" y="158">1989</text>
-
-            <circle class="hist-marker" data-key="svm" cx="400" cy="225" r="6" fill="#C0492E"/>
-            <text class="hist-marker-label" x="400" y="213">1995</text>
-
-            <circle class="hist-marker" data-key="hinton06" cx="520" cy="170" r="6" fill="#2D5B7A"/>
-            <text class="hist-marker-label" x="520" y="158">2006</text>
-
-            <circle class="hist-marker" data-key="alexnet" cx="580" cy="80" r="7" fill="#A47B2E"/>
-            <text class="hist-marker-label" x="580" y="68">2012</text>
-
-            <circle class="hist-marker" data-key="transformer" cx="640" cy="40" r="6" fill="#A47B2E"/>
-            <text class="hist-marker-label" x="640" y="28">2017</text>
-
-            <circle class="hist-marker" data-key="chatgpt" cx="680" cy="30" r="6" fill="#A47B2E"/>
-            <text class="hist-marker-label" x="675" y="18">2022</text>
-          </svg>
-          <div class="hist-detail" id="hist-detail">
-            <p class="hd-meta">사건을 선택하세요</p>
-            <h4>딥러닝의 80년</h4>
-            <p>곡선의 점을 클릭하면 그 시점의 핵심 인물, 기여, 그리고 “왜 그것이 굴곡을 만들었는가”가 표시됩니다.</p>
+        <div class="widget-label"><span class="lab-no">위젯 04</span><span>표상의 사다리 5단계 · 단계를 클릭해 보기</span></div>
+        <div class="ladder-vis">
+          <div class="stack">
+            <div class="blk on" data-step="0">픽셀</div>
+            <div class="blk" data-step="1">모서리</div>
+            <div class="blk" data-step="2">무늬</div>
+            <div class="blk" data-step="3">부위</div>
+            <div class="blk" data-step="4">객체</div>
+            <div class="blk" data-step="5">개념</div>
+            <span>입력 → 출력 (깊이)</span>
           </div>
         </div>
+        <div class="ladder" id="ladder-list">
+          <div class="ladder-row active" data-step="0">
+            <div class="lvl">L0</div>
+            <div class="name">픽셀</div>
+            <div class="ex">RGB 채널의 원본 강도. 컴퓨터가 처음 보는 모습.</div>
+          </div>
+          <div class="ladder-row" data-step="1">
+            <div class="lvl">L1</div>
+            <div class="name">모서리 (edge)</div>
+            <div class="ex">가로 · 세로 · 대각 방향의 밝기 변화. 시각 피질 V1과 유사.</div>
+          </div>
+          <div class="ladder-row" data-step="2">
+            <div class="lvl">L2</div>
+            <div class="name">무늬 (motif)</div>
+            <div class="ex">모서리의 조합으로 만드는 코너, 줄무늬, 둥근 곡선의 일부.</div>
+          </div>
+          <div class="ladder-row" data-step="3">
+            <div class="lvl">L3</div>
+            <div class="name">부위 (part)</div>
+            <div class="ex">눈, 귀, 바퀴처럼 사람이 한눈에 알아볼 수 있는 단위.</div>
+          </div>
+          <div class="ladder-row" data-step="4">
+            <div class="lvl">L4</div>
+            <div class="name">객체 (object)</div>
+            <div class="ex">고양이 · 자동차 · 사람 전체에 위치 · 자세 무관하게 반응.</div>
+          </div>
+          <div class="ladder-row" data-step="5">
+            <div class="lvl">L5</div>
+            <div class="name">개념 (concept)</div>
+            <div class="ex">분류 분포 — "고양이 0.97, 개 0.02…" 형태로 정리된 의미.</div>
+          </div>
+        </div>
+        <div class="ladder-desc" id="ladder-desc">
+          <h5>L0 · 픽셀</h5>
+          <p>RGB 강도 그 자체. 단계를 클릭해 다른 층에서 무엇이 잡히는지 확인해 보세요.</p>
+        </div>
       </div>
-      <p class="widget-cap">2012년 AlexNet은 ImageNet 분류 오류율을 26%에서 16%로 단번에 떨어뜨렸다. 이 한 사건이 학계의 무게중심을 SVM/특징공학에서 딥러닝으로 옮겼다. 같은 ImageNet에서 ResNet(2015)은 사람의 5% 오류율을 처음으로 뚫는다.</p>
+      <p class="widget-cap">실제 CNN의 시각화는 Zeiler & Fergus (2014) "Visualizing and Understanding Convolutional Networks" 같은 논문에서 확인할 수 있다. 핵심 그림은 동일하다 — 깊은 층으로 갈수록 더 큰 단위에 반응한다.</p>
     </div>
 
     <div class="prose">
-      <h2>겨울의 두 가지 원인 — 시험에서 자주 묻는 구분</h2>
+      <h2>왜 이 사다리가 가능한가</h2>
 
-      <table class="symbols">
-        <tr><td><b>1차 겨울</b></td><td>1969년 Minsky &amp; Papert가 단층 퍼셉트론으로는 XOR조차 풀 수 없음을 증명. 신경망의 표현력 자체에 대한 회의가 커짐 → 자금 회수.</td></tr>
-        <tr><td><b>2차 겨울</b></td><td>1990년대 SVM, 부스팅 등 통계학 기반 “더 깔끔한” 방법론이 등장. 게다가 신경망은 데이터/계산 자원이 부족해 학습이 불안정 → 다시 외면.</td></tr>
-      </table>
+      <p>표상이 자연스럽게 이런 사다리로 쌓이는 이유는, <strong>현실 세계의 패턴 자체가 합성적(compositional)</strong>이기 때문이다. 자동차 바퀴는 고무 테두리, 휠 림(wheel rim), 베어링이라는 부속의 조합이다. 휠 림은 다시 금속 곡선들의 조합이다. 금속 곡선은 직선과 곡선이라는 더 단순한 형태의 조합이다. 즉, 우리가 보는 거의 모든 자연스러운 사물은 더 작은 부속의 조합으로 만들어졌다. 그래서 그것을 분석할 때도 "큰 단위 → 작은 단위" 또는 "작은 단위 → 큰 단위"의 사다리가 자연스럽다.</p>
 
-      <p>두 겨울의 공통점은 “아이디어가 틀려서가 아니라 환경이 부족해서”라는 점이다. 1차 때는 다층 퍼셉트론과 역전파라는 환경이, 2차 때는 GPU와 ImageNet급 데이터셋이라는 환경이 부족했다. 환경이 갖춰지자 같은 아이디어가 폭발했다.</p>
+      <p>딥러닝의 가중치 학습은 결국 이 사다리의 각 단계에서 "무엇이 좋은 단위인가"를 데이터로부터 찾는다. 사람이 "고양이 눈은 이렇게 생겼다"고 직접 적어 주지 않아도, 충분히 많은 고양이 사진과 다른 동물 사진을 보여 주면, 중간 층의 한 뉴런이 자연스럽게 "고양이 눈 같은 패턴"에 반응하도록 가중치가 조정된다. 이 점이 자기조직적(self-organizing)인 특성이다.</p>
 
-      <h2>같은 이름, 다른 의미 — 용어의 변천사</h2>
+      <p>그리고 한 가지 중요한 사실. <strong>이 사다리는 사람이 만들어 준 것이 아니다.</strong> 모델 구조에는 "이 층은 모서리만 찾아라", "저 층은 부위만 찾아라" 같은 명시적 지시가 전혀 없다. 그저 충분히 깊은 신경망에 손실 함수(분류 정확도 같은)를 주고 학습시키면, 결과적으로 이런 사다리가 만들어진다. 즉, 표상의 사다리는 데이터와 손실의 자연스러운 결과물이다. 이 사실이 발견된 것이 2012년 AlexNet 이후 비전 분야의 충격이었다.</p>
 
-      <p>책 1장은 같은 분야가 시대마다 다른 이름으로 불려 왔다고 짚는다. 시험에서 “다음 중 같은 흐름에 속하지 않는 것은?” 같은 문항이 나오면 이 표가 도움이 된다.</p>
+      <div class="analogy">
+        <b>아기가 글을 배우는 순서.</b> 아기는 글자부터 배우지 않는다. 처음에는 종이 위의 점과 선만 본다. 그 다음 같은 모양이 반복되는 것을 알아본다(모서리·무늬). 그 다음 글자 하나하나의 형태를 외운다(부위). 그 다음 단어와 문장을 읽는다(객체). 마지막에 그 문장의 뜻을 이해한다(개념). 이 사다리를 거치지 않고 곧장 "이야기의 의미"를 가르치려 해도 작동하지 않는다. CNN도 같은 사다리를 따라간다.
+      </div>
 
-      <table class="symbols">
-        <tr><td><b>사이버네틱스</b></td><td>1940년대 - 1960년대. McCulloch-Pitts 뉴런, 퍼셉트론. “생물 시스템과 기계의 공통 원리”에 무게.</td></tr>
-        <tr><td><b>연결주의</b></td><td>1980년대 - 1990년대 중반. 다층 퍼셉트론, 역전파, 분산표상. 단일 뉴런이 아니라 “연결 패턴”이 지능을 만든다.</td></tr>
-        <tr><td><b>딥러닝</b></td><td>2006년 이후. 표상을 다층으로 학습한다는 “깊이” 자체를 브랜드화. 같은 신경망 아이디어의 세 번째 이름.</td></tr>
-      </table>
+      <h2>이 사다리를 모르고 시작하면 무엇이 어려운가</h2>
 
-      <p>다음 절에서는 “환경이 갖춰지자 폭발했다”의 그 환경, 즉 <strong>데이터, 모델, 계산</strong>의 삼각형을 본다. 왜 1980년대에는 안 되고 2010년대에는 됐는지 — 그 정확한 차이를.</p>
+      <p>딥러닝 입문자가 자주 빠지는 함정이 두 가지 있다. 첫째, <strong>"왜 그렇게 깊어야 하는가"</strong>를 묻지 않고 그냥 깊은 모델을 쓴다. 그러다 보면 학습이 잘 안 될 때 무엇을 어떻게 진단해야 할지 모른다. 사다리의 시각이 있으면, "지금 4번째 층에서 부위가 잘 안 잡히는 것 같다 — 데이터가 부족하거나 비슷한 부위가 학습 셋에 충분히 없는 것 아닐까"처럼 구체적으로 진단할 수 있다.</p>
+
+      <p>둘째, <strong>전이학습(transfer learning)</strong>의 위력을 이해하지 못한다. ImageNet에서 학습한 모델의 첫 몇 층은 "거의 모든 자연 이미지에 공통된 모서리·무늬"를 잡는다. 그래서 의료 영상 분류라는 완전히 다른 과제에서도 그 첫 몇 층을 그대로 가져다 쓰는 것이 매우 효과적이다. 사다리의 아래 단계가 보편적이라는 사실을 이해해야, 왜 사전훈련(pre-training)이 그토록 강력한지가 자연스럽게 보인다.</p>
+
+      <div class="analogy">
+        <b>요리의 단계 학습.</b> 처음 요리를 배우는 사람은 칼질부터 한다. 그 다음 양념 비율을 익히고, 그 다음 한 가지 요리의 전체 과정을 익히고, 그 다음 여러 요리를 조합해 한 끼 식사를 짠다. 각 단계가 다음 단계의 재료다. 칼질 없이 한 끼 식사를 가르치면 무너진다. CNN의 학습 사다리도 같다. 모서리 없이 부위를 가르치면 모델이 부위를 안정적으로 잡을 수 없다.
+      </div>
+
+      <p>다음 sub-chapter에서는 이 사다리가 정확히 "왜" 효율적인지 — 깊이가 만드는 표상력의 지수적(exponential) 증가 — 를 합성성(compositionality)의 시각으로 본다. 같은 함수를 얕은 모델로 표현하려면 왜 지수적으로 많은 자원이 필요한지, 그 직관을 확보하면 "왜 깊은 신경망이 본질적으로 더 효율적인가"라는 질문에 답할 수 있게 된다.</p>
     </div>
 
     <nav class="ch-foot"></nav>
@@ -156,72 +144,74 @@
 </div>
 
 <script>
-  const SUBS = [
-    { no:'01', t:'표상의 문제', f:'01.html' },
-    { no:'02', t:'AI/ML/RL/DL 동심원', f:'02.html' },
-    { no:'03', t:'깊이가 만드는 것', f:'03.html' },
-    { no:'04', t:'역사적 굴곡', f:'04.html' },
-    { no:'05', t:'데이터/모델/계산 삼각형', f:'05.html' },
-    { no:'06', t:'시험 대비 체크리스트', f:'06.html' },
-  ];
-  const CURRENT = '04';
-  (function buildNav() {
-    document.querySelector('.topbar').innerHTML =
-      `<a class="home" href="index.html">← Chapter 01 — 딥러닝이란 무엇인가</a>` +
-      `<span class="ch-mini">SUB ${CURRENT} / 06</span>`;
-    document.querySelector('.ch-nav ol').innerHTML = SUBS.map(s =>
-      `<li><a href="${s.f}" ${s.no === CURRENT ? 'class="current"' : ''}>${s.t}</a></li>`).join('');
-    const i = SUBS.findIndex(s => s.no === CURRENT);
-    const prev = i > 0 ? SUBS[i-1] : { f:'index.html', t:'챕터 표지', no:'' };
-    const next = i < SUBS.length-1 ? SUBS[i+1] : { f:'index.html', t:'챕터 표지', no:'' };
-    document.querySelector('.ch-foot').innerHTML =
-      `<a href="${prev.f}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
-      `<a href="${next.f}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
-    const bar = document.querySelector('.scroll-progress');
-    const onScroll = () => {
-      const h = document.documentElement;
-      const max = h.scrollHeight - h.clientHeight;
-      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
-    };
-    document.addEventListener('scroll', onScroll, { passive: true }); onScroll();
-  })();
+const SUBS = [
+  { no:'01', t:'표상의 문제' },
+  { no:'02', t:'AI · ML · 표상학습 · DL' },
+  { no:'03', t:'표상학습이란 무엇인가' },
+  { no:'04', t:'깊이 1 — 표상의 사다리' },
+  { no:'05', t:'깊이 2 — 합성성' },
+  { no:'06', t:'역사 1 — 사이버네틱스' },
+  { no:'07', t:'역사 2 — 연결주의' },
+  { no:'08', t:'역사 3 — 부활과 폭발' },
+  { no:'09', t:'폭발 1 — 데이터' },
+  { no:'10', t:'폭발 2 — 계산' },
+  { no:'11', t:'폭발 3 — 모델 크기' },
+  { no:'12', t:'응용 — 어디까지' },
+  { no:'13', t:'시험 대비 체크리스트' },
+];
+function buildNav(cur) {
+  const ol = document.querySelector('.ch-nav ol');
+  ol.innerHTML = SUBS.map(s =>
+    `<li><a href="${s.no}.html"${s.no===cur?' class="current"':''}>${s.t}</a></li>`).join('');
+  document.querySelector('.topbar').innerHTML =
+    `<a class="home" href="index.html">← Ch.01 표지</a><span class="ch-mini">SUB ${cur} / 13</span>`;
+  const i = SUBS.findIndex(s => s.no === cur);
+  const prev = i > 0 ? SUBS[i-1] : { no:'', t:'챕터 표지로' };
+  const next = i < SUBS.length-1 ? SUBS[i+1] : { no:'', t:'챕터 표지로' };
+  const ph = prev.no ? prev.no+'.html' : 'index.html';
+  const nh = next.no ? next.no+'.html' : 'index.html';
+  document.querySelector('.ch-foot').innerHTML =
+    `<a href="${ph}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+    `<a href="${nh}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+}
+function progressBar() {
+  const bar = document.querySelector('.scroll-progress');
+  document.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max>0 ? (h.scrollTop/max)*100 : 0) + '%';
+  }, { passive: true });
+}
 
-  // ===== 역사 타임라인 =====
-  (function hist() {
-    const events = {
-      mp: { year: '1943', who: 'McCulloch &amp; Pitts', title: '인공 뉴런의 첫 수학 모델', body: '신경세포의 동작을 “여러 입력의 가중합 → 임계값 → 0/1 출력”으로 단순화. 이 모델은 학습은 못 했지만 “뇌를 수식으로 적을 수 있다”는 가능성을 처음 열었다. 사이버네틱스 1차 물결의 출발점.' },
-      perceptron: { year: '1958', who: 'Frank Rosenblatt', title: '퍼셉트론 — 학습 가능한 첫 신경망', body: 'Mark I Perceptron 머신으로 가중치를 자동 조정. 언론은 “스스로 학습하는 전자 뇌”라며 열광. 하지만 단층 구조였기 때문에 곧 한계가 드러난다.' },
-      minsky: { year: '1969', who: 'Minsky &amp; Papert', title: '“퍼셉트론은 XOR도 못 푼다”', body: '<i>Perceptrons</i> 책에서 단층 퍼셉트론의 표현력 한계를 수학적으로 증명. 다층 구조의 가능성을 부정하진 않았지만 학습 방법이 없었기에, 학계와 자금이 모두 떠난다. <b>1차 AI 겨울</b>의 직접적 도화선.' },
-      backprop: { year: '1986', who: 'Rumelhart, Hinton, Williams', title: '역전파(backpropagation) 정착', body: '다층 퍼셉트론(MLP)을 학습시키는 알고리즘이 정리됨. 사실 아이디어 자체는 더 일찍 있었지만, 이 논문이 학계 표준으로 만들었다. <em>연결주의 2차 물결</em>의 신호탄.' },
-      lenet: { year: '1989', who: 'Yann LeCun', title: 'LeNet — 첫 실용 CNN', body: '우체국 우편번호 자동 인식용 LeNet-5가 등장. 합성곱(convolution)으로 이미지의 공간 구조를 활용. 한 시대를 앞서간 모델이지만, 데이터/계산 부족으로 다른 도메인으로 확장되지는 못함.' },
-      svm: { year: '1995', who: 'Cortes &amp; Vapnik', title: 'SVM의 등장 — 신경망의 2차 겨울 시작', body: 'Support Vector Machine은 수학적으로 깔끔하고 작은 데이터에서도 잘 작동했다. 게다가 신경망은 학습이 불안정했기에, 학계는 다시 신경망을 외면한다. <b>2차 AI 겨울</b>의 시작.' },
-      hinton06: { year: '2006', who: 'Geoffrey Hinton', title: '깊은 신뢰망(DBN) — “Deep Learning”의 부활', body: '층별 사전학습(layer-wise pretraining)으로 깊은 네트워크를 안정적으로 학습하는 방법을 제시. 이 시점부터 “Deep Learning”이라는 용어 자체가 정착하기 시작.' },
-      alexnet: { year: '2012', who: 'Krizhevsky, Sutskever, Hinton', title: 'AlexNet — ImageNet 대회 압승', body: 'GPU 두 장으로 학습한 8층 CNN이 ImageNet 분류 오류율을 26%에서 16%로 단번에 떨어뜨림. <em>이 한 사건이 학계의 무게중심을 통째로 옮긴다.</em> 딥러닝 3차 물결의 결정적 전환점.' },
-      transformer: { year: '2017', who: 'Vaswani et al. (Google)', title: 'Transformer — 언어모델의 표준 구조', body: '“Attention Is All You Need”. RNN을 버리고 attention만으로 시퀀스를 처리. 병렬화가 가능해 대규모 학습에 적합. BERT(2018), GPT(2018-)의 모태가 되며 LLM 시대를 연다.' },
-      chatgpt: { year: '2022', who: 'OpenAI', title: 'ChatGPT — 대중 인식의 변곡점', body: 'GPT-3.5 기반에 인간 피드백 강화학습(RLHF)을 더해 대화 정렬. 출시 5일 만에 백만 사용자. AI 겨울이 다시 올지 여부보다, 사회가 이 속도를 어떻게 따라잡을지가 더 큰 질문이 된다.' },
-    };
-    const markers = document.querySelectorAll('.hist-marker');
-    const detail = document.getElementById('hist-detail');
-    function render(k) {
-      markers.forEach(m => m.classList.toggle('active', m.dataset.key === k));
-      const e = events[k];
-      detail.innerHTML = `<p class="hd-meta">${e.year}, ${e.who}</p><h4>${e.title}</h4><p>${e.body}</p>`;
-    }
-    markers.forEach(m => {
-      m.addEventListener('mouseenter', () => render(m.dataset.key));
-      m.addEventListener('click', () => render(m.dataset.key));
+const LADDER = {
+  0: { h:'L0 · 픽셀', t:'RGB 강도 그 자체. 컴퓨터가 보는 가장 원본의 표상. 같은 고양이라도 조명·자세가 바뀌면 픽셀 값은 완전히 달라진다.' },
+  1: { h:'L1 · 모서리', t:'가로 · 세로 · 대각 방향의 밝기 변화를 잡는 단순한 필터. 한 픽셀이 아니라 작은 영역(예: 3x3)에서 일어나는 변화를 본다. 사람의 시각 피질 V1 영역과 매우 유사.' },
+  2: { h:'L2 · 무늬 (motif)', t:'두세 개의 모서리가 만나는 코너, 줄무늬, 둥근 곡선의 일부. 아직 사람이 이름 붙이기 어렵지만, "재료"의 한 단계 위.' },
+  3: { h:'L3 · 부위 (part)', t:'눈, 코, 귀, 바퀴, 손가락처럼 사람이 이름 붙일 수 있는 단위. 모서리와 무늬가 모인 결과. 이 층의 뉴런 하나는 "고양이 눈처럼 생긴 패턴"에 일관되게 반응한다.' },
+  4: { h:'L4 · 객체', t:'고양이 전체, 자동차 전체에 위치와 자세에 비교적 무관하게 반응. 이 층까지 올라오면 "어디에 있는가"가 사라지고 "무엇인가"만 남는다.' },
+  5: { h:'L5 · 개념 (concept)', t:'분류 분포. "고양이 0.97, 개 0.02, 새 0.005…"처럼 의미가 확률로 정리된다. 가장 추상적이고 가장 짧은 표상.' },
+};
+
+window.addEventListener('load', () => {
+  buildNav('04');
+  progressBar();
+  function activate(step) {
+    document.querySelectorAll('.ladder-vis .blk').forEach(b => {
+      b.classList.toggle('on', parseInt(b.dataset.step) === step);
     });
-    render('alexnet');
-  })();
-
-  window.addEventListener('load', () => {
-    if (window.renderMathInElement) {
-      renderMathInElement(document.body, {
-        delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
-        throwOnError: false,
-      });
-    }
+    document.querySelectorAll('.ladder-row').forEach(r => {
+      r.classList.toggle('active', parseInt(r.dataset.step) === step);
+    });
+    const r = LADDER[step];
+    document.getElementById('ladder-desc').innerHTML = `<h5>${r.h}</h5><p>${r.t}</p>`;
+  }
+  document.querySelectorAll('.ladder-row').forEach(r => {
+    r.addEventListener('click', () => activate(parseInt(r.dataset.step)));
   });
+  document.querySelectorAll('.ladder-vis .blk').forEach(b => {
+    b.addEventListener('click', () => activate(parseInt(b.dataset.step)));
+  });
+});
 </script>
 </body>
 </html>

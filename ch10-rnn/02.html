@@ -3,316 +3,120 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ch.10 · 02 시간 펼치기와 매개변수 공유</title>
+<title>02 · RNN의 기본 아이디어</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
-<style>
-  .scroll-progress { position: fixed; top: 0; left: 0; height: 3px; background: var(--style); width: 0; z-index: 999; transition: width .1s; }
-  .topbar { position: fixed; top: 0; left: 0; right: 0; padding: .55rem 1.2rem; background: rgba(250,247,240,.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line-soft); display: flex; justify-content: space-between; align-items: center; z-index: 100; font-family: var(--mono); font-size: .72rem; }
-  .topbar a.home { color: var(--ink-soft); text-decoration: none; letter-spacing: .1em; }
-  .topbar a.home:hover { color: var(--ink); }
-  .topbar .ch-mini { color: var(--ink-faint); letter-spacing: .14em; }
-  .ch-main { max-width: 44rem; margin: 4.5rem auto 0; padding: 2rem 0 6rem; }
-  .ch-head { max-width: var(--measure); margin: 0 auto 2.4rem; padding-inline: 1.4rem; }
-  .ch-head .kicker { display: block; margin-bottom: 1rem; }
-  .ch-head h1 { font-size: clamp(2rem, 5vw, 3.3rem); margin: 0 0 .8rem; line-height: 1.1; }
-  .ch-head .lede { font-family: var(--serif); font-size: 1.22rem; font-style: italic; color: var(--ink-soft); line-height: 1.5; }
-  .ch-foot { display: flex; justify-content: space-between; gap: 1rem; max-width: var(--measure); margin: 4rem auto 0; padding-inline: 1.4rem; }
-  .ch-foot a { display: block; text-decoration: none; flex: 1; padding: 1rem 1.2rem; border: 1px solid var(--line); border-radius: 10px; transition: border-color .15s, transform .15s; }
-  .ch-foot a:hover { border-color: var(--structure); transform: translateY(-2px); }
-  .ch-foot .dir { font-family: var(--mono); font-size: .7rem; letter-spacing: .14em; color: var(--ink-faint); text-transform: uppercase; }
-  .ch-foot .ti { font-family: var(--serif); font-size: 1.05rem; color: var(--ink); margin-top: .2rem; }
-  .ch-foot .next { text-align: right; }
-  .widget { max-width: var(--wide); margin: 2.4rem auto; padding-inline: 1.4rem; }
-  .widget-frame { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 1.4rem; box-shadow: var(--shadow-plate); }
-  .widget-label { display: flex; align-items: center; gap: .8rem; margin-bottom: 1rem; font-family: var(--mono); font-size: .78rem; color: var(--ink-soft); letter-spacing: .05em; }
-  .widget-label .lab-no { color: var(--style); font-weight: 600; letter-spacing: .14em; }
-  .widget-cap { max-width: var(--measure); margin: .8rem auto 0; font-size: .85rem; color: var(--ink-soft); line-height: 1.6; text-align: center; }
-  .controls { display: flex; align-items: center; gap: 1rem; margin-top: 1rem; flex-wrap: wrap; }
-  .controls label { font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); display: flex; align-items: center; gap: .6rem; }
-  .controls input[type=range] { width: 200px; accent-color: var(--structure); }
-  .controls .val { color: var(--style); font-weight: 600; min-width: 2.4em; text-align: right; }
-  .controls button { font-family: var(--mono); font-size: .76rem; padding: .4rem .9rem; border: 1px solid var(--line); border-radius: 6px; background: #fff; color: var(--ink-soft); cursor: pointer; transition: .15s; }
-  .controls button.active { background: var(--ink); color: var(--paper); border-color: var(--ink); }
-  canvas.viz { display: block; width: 100%; height: 340px; background: var(--paper-2); border-radius: 8px; }
-</style>
 </head>
 <body>
 <div class="scroll-progress"></div>
 <div class="topbar">
   <a class="home" href="index.html">← Ch.10 표지</a>
-  <span class="ch-mini">SUB 02 / 07 · Unfolding in Time</span>
+  <span class="ch-mini">SUB 02 / 14</span>
 </div>
 
-<main class="ch-main">
-  <header class="ch-head">
-    <span class="kicker">Chapter 10 · Sub 02</span>
-    <h1>시간 펼치기와<br><span class="t-structure">매개변수 공유</span></h1>
-    <p class="lede">루프 한 줄을 풀어 깊은 네트워크를 만든다. CNN이 공간을 따라 했던 일을, RNN은 시간을 따라 한다.</p>
-  </header>
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol id="navlist"></ol></nav></aside>
+  <main class="ch-main">
 
-  <div class="prose">
-    <p>RNN의 출발점은 <strong>동적 시스템(Dynamical System)</strong>의 가장 단순한 점화식이다. 시간 $t$에서의 상태 $s^{(t)}$가 직전 상태로부터 결정된다.</p>
+    <header class="ch-head">
+      <span class="kicker">Sub-chapter 02 · 한 줄의 점화식</span>
+      <h1>같은 함수를<br><span class="t-structure">시간축으로 반복한다</span></h1>
+      <p class="lede">앞 장에서 만든 두 약속 — 시간 공유와 상태 누적 — 을 한 줄의 점화식으로 압축한다. 이 한 줄을 머릿속에 박는 것이 이 사이트 전체의 출발점이다.</p>
+    </header>
 
-    <div class="math-block">$$ s^{(t)} = f\!\left(s^{(t-1)};\, \theta\right) $$</div>
-    <p class="math-note">f: 전환 함수. θ: 모든 시간 단계에서 공유되는 매개변수.</p>
+    <div class="prose">
+      <h2>점화식: RNN을 정의하는 한 줄</h2>
+      <p>RNN은 시간 단계 $t$마다 하나의 은닉 상태(hidden state) 벡터 $h^{(t)}$를 가진다. 이 상태가 어떻게 갱신되는지를 다음 한 줄로 정의한다.</p>
 
-    <p>이 식이 <em>순환적</em>이라는 표현은, 자기 자신을 정의하는 데 자기 자신의 과거를 참조한다는 뜻이다. 이대로는 계산 그래프에 루프가 생긴다. 9장까지 우리가 쓴 역전파(Backpropagation)는 비순환 그래프를 가정한다. 그래서 한 발 더 나아간다 — 식을 시간 축을 따라 <strong>펼친다(Unfold)</strong>.</p>
+      <div class="math-block">$$h^{(t)} = f\!\left(h^{(t-1)},\, x^{(t)};\, \theta\right)$$</div>
+      <p class="math-note">현재 은닉 상태 = 이전 은닉 상태와 현재 입력의 함수. 함수 $f$와 매개변수 $\theta$는 모든 시간 단계에서 동일.</p>
 
-    <div class="math-block">$$ s^{(3)} = f\!\left(s^{(2)};\theta\right) = f\!\left(f\!\left(s^{(1)};\theta\right);\theta\right) = f\!\left(f\!\left(f\!\left(s^{(0)};\theta\right);\theta\right);\theta\right) $$</div>
-    <p class="math-note">같은 f가 세 번 합성된다. 매개변수 θ는 모든 호출에서 동일하다.</p>
+      <p>식을 천천히 뜯어 보자. $h^{(t)}$는 시간 $t$의 은닉 상태다. $h^{(t-1)}$은 바로 직전 시간의 은닉 상태, $x^{(t)}$는 시간 $t$에 들어오는 새 입력이다. 함수 $f$는 이 두 입력을 받아 새 상태를 만들어 내는 규칙이고, $\theta$는 그 규칙의 매개변수다. 결정적인 약속 한 가지는, <strong>$f$와 $\theta$가 시간에 의존하지 않는다</strong>는 점이다. 시간 $t=1$에서 쓰는 $f$도, 시간 $t=100$에서 쓰는 $f$도 같다.</p>
 
-    <p>이 합성된 식에는 더 이상 자기 참조가 없다. 왼쪽에서 오른쪽으로 한 방향으로만 흐르는 일반 수식이다. 그러므로 비순환 계산 그래프(DAG)로 그릴 수 있고, 역전파를 자연스럽게 적용할 수 있다. 이 트릭에 붙는 이름이 <strong>시간 펼치기(Unfolding in Time)</strong>이고, 펼쳐진 그래프에서 도는 역전파를 <strong>BPTT(Backpropagation Through Time)</strong>라 부른다. 이는 Sub.03에서 자세히 본다.</p>
-
-    <h2>외부 입력이 들어오는 진짜 RNN</h2>
-    <p>현실의 RNN은 매 시점에 외부 입력 신호 $x^{(t)}$도 함께 받는다. 동적 시스템 식을 한 줄 확장한다.</p>
-
-    <div class="math-block">$$ h^{(t)} = f\!\left(h^{(t-1)},\, x^{(t)};\, \theta\right) $$</div>
-    <p class="math-note">h: 은닉 상태(hidden state). x: 시점 t의 외부 입력.</p>
-
-    <p>가장 흔한 구체적 구현은 다음 두 식이다. 활성화는 보통 $\tanh$를 쓴다.</p>
-
-    <div class="math-block">$$ a^{(t)} = b + W h^{(t-1)} + U x^{(t)}, \qquad h^{(t)} = \tanh\!\left(a^{(t)}\right) $$</div>
-    <p class="math-note">W: 은닉-은닉 가중치. U: 입력-은닉 가중치. b: 편향. 세 매개변수 모두 시간 무관.</p>
-
-    <p>출력이 필요할 때는 한 단계 더 얹는다. 분류라면 소프트맥스(Softmax)로 마무리한다.</p>
-
-    <div class="math-block">$$ o^{(t)} = c + V h^{(t)}, \qquad \hat{y}^{(t)} = \mathrm{softmax}\!\left(o^{(t)}\right) $$</div>
-    <p class="math-note">V: 은닉-출력 가중치. c: 출력 편향.</p>
-
-    <p>이 모든 매개변수 — $W, U, V, b, c$ — 가 <strong>시간에 무관하다</strong>. 같은 한 벌이 시간 1부터 $\tau$까지 반복 사용된다. 이것이 RNN의 모든 약속의 출처다.</p>
-
-    <h2>은닉 상태는 손실 압축 요약이다</h2>
-    <p>$h^{(t)}$가 무엇을 담고 있는지 정확히 짚자. 이것은 단순한 중간 계산값이 아니다. 시간 1부터 $t$까지 들어온 전체 입력 시퀀스 $\{x^{(1)}, \ldots, x^{(t)}\}$의 <strong>손실 압축 요약(Lossy Summary)</strong>이다. 과거의 임의로 긴 정보가 고정 크기 벡터 하나에 눌려 들어간다.</p>
-
-    <p>정보 손실은 피할 수 없다. 무한히 늘어나는 과거를 유한한 차원에 다 담을 수는 없다. 그러나 이 압축이 무작위는 아니다. 훈련 목표가 "다음 단어를 잘 맞춰라"라면, $h^{(t)}$는 다음 단어 예측에 꼭 필요한 문법·의미 맥락을 우선 보존하도록 최적화된다. 훈련 목표가 "감정을 분류해라"라면, $h^{(t)}$는 감정 신호를 우선 보존한다. <strong>같은 RNN 구조라도 과제가 다르면 은닉 상태가 압축하는 정보의 종류가 달라진다</strong>.</p>
-
-    <div class="analogy">
-      <b>독자의 머릿속 요약 메모.</b> 책을 읽을 때 한 문장마다 노트에 모든 단어를 적지는 않는다. 그저 "지금까지의 요점"을 머릿속에서 갱신한다. 다음 문장을 읽으면 그 요약이 또 갱신된다. 같은 책을 시험을 위해 읽는 사람과 영화 각본을 쓰기 위해 읽는 사람은, 같은 문장에서 다른 요약을 만든다. RNN의 은닉 상태도 똑같다.
-    </div>
-  </div>
-
-  <div class="widget">
-    <div class="widget-frame">
-      <div class="widget-label"><span class="lab-no">위젯 02</span><span>회로도 ↔ 펼쳐진 그래프 — 같은 RNN의 두 얼굴</span></div>
-      <canvas id="vizUnroll" class="viz"></canvas>
-      <div class="controls">
-        <label>펼치기 정도 <input type="range" id="unrollSlider" min="0" max="100" step="1" value="50"><span class="val" id="unrollVal">50%</span></label>
-        <label>시퀀스 길이 T <input type="range" id="tLen" min="3" max="10" step="1" value="6"><span class="val" id="tLenVal">6</span></label>
+      <h2>비유: 메모를 갱신하며 책을 읽는 한 사람</h2>
+      <div class="analogy">
+        한 명의 독자가 책을 한 단어씩 읽고 있다. 손에는 작은 메모지가 한 장 있고, 머릿속에는 <b>"새 단어를 한 개 읽으면 메모지를 어떻게 고칠지"</b>를 정해 둔 규칙이 하나 있다. 단어 'I'를 읽으면 메모지에 약간의 흔적을 남기고, 그 다음 단어 'went'를 읽을 때는 <b>"방금까지 적혀 있던 메모"</b>와 <b>"새로 들어온 단어 went"</b>를 보고 다시 메모를 고친다. 이 규칙은 책의 첫 단어든 마지막 단어든 똑같이 쓰인다. 메모를 고치는 규칙이 바로 함수 $f$, 메모지의 내용이 바로 은닉 상태 $h$, 새 단어가 바로 $x$다.
       </div>
+
+      <p>이 비유에서 두 가지를 강조할 수 있다. 첫째, 메모지의 크기는 책의 길이가 1000단어든 100000단어든 항상 같다. 책을 다 읽고도 메모지는 한 장이다. 즉 $h$의 차원은 시퀀스 길이와 무관하다. 이것이 <strong>고정 크기 상태 벡터</strong>의 의미다. 둘째, 메모를 고치는 규칙은 단 하나뿐이다. 책의 처음에 쓰는 규칙과 끝에 쓰는 규칙이 다르다면, 그것은 두 개의 규칙을 학습해야 한다는 뜻이 된다. RNN은 하나의 규칙만 학습한다. 이것이 <strong>시간 매개변수 공유</strong>의 의미다.</p>
+
+      <h2>가장 기본적인 RNN의 구체 형태</h2>
+      <p>$f$의 가장 단순한 형태는 다음과 같다. 가중치 행렬 $W$(은닉→은닉), $U$(입력→은닉), 편향(bias) $b$, 그리고 비선형 활성함수 $\sigma$(예: tanh)를 쓴다.</p>
+
+      <div class="math-block">$$h^{(t)} = \sigma\!\left(W\, h^{(t-1)} + U\, x^{(t)} + b\right)$$</div>
+      <p class="math-note">$W$: 이전 상태를 새 상태로 옮기는 가중치. $U$: 새 입력을 상태로 끌어들이는 가중치. $b$: 편향.</p>
+
+      <p>예측이 필요한 시간 단계에서는 은닉 상태를 출력으로 매핑하는 한 층을 더 둔다. 출력 가중치 $V$와 편향 $c$를 써서 다음을 계산한다.</p>
+
+      <div class="math-block">$$\hat y^{(t)} = \mathrm{softmax}\!\left(V\, h^{(t)} + c\right)$$</div>
+      <p class="math-note">분류 문제라면 softmax, 회귀 문제라면 항등 함수 등을 쓴다.</p>
+
+      <p>이때 학습해야 할 매개변수는 정확히 다섯 개다 — $W,\, U,\, V,\, b,\, c$. 그리고 이 다섯 개가 <strong>시퀀스가 얼마나 길든 그대로 쓰인다</strong>. 길이 50짜리 입력에도 길이 5000짜리 입력에도 같은 다섯 개의 매개변수가 모든 시간 단계에 재사용된다. FC가 시퀀스 길이 100에서 30000차원의 가중치를 요구했던 것과 비교하면, RNN의 매개변수 수가 시퀀스 길이와 완전히 독립이라는 사실이 얼마나 큰 절약인지 보인다.</p>
+
+      <h2>세 가지 출력 패턴</h2>
+      <p>같은 점화식 위에서도 "어디서 출력을 만드는가"에 따라 세 가지 대표적인 사용 패턴이 갈린다. 교재(Goodfellow et al. 10장)는 이를 정형적인 설계 패턴으로 정리한다.</p>
+
+      <table class="symbols">
+        <tr><td>many-to-one</td><td>입력은 시퀀스, 출력은 하나의 벡터. 예: 문장 감성 분류(긍정/부정). 마지막 시간 단계의 $h^{(T)}$만 출력으로 쓴다</td></tr>
+        <tr><td>many-to-many (정렬)</td><td>입력과 출력의 길이가 같고 시간 정렬됨. 예: 품사 태깅, 음성→음소 정렬. 매 시간 단계마다 $\hat y^{(t)}$를 만든다</td></tr>
+        <tr><td>many-to-many (다른 길이)</td><td>입력과 출력의 길이가 다름. 예: 영→한 기계 번역. 인코더-디코더 구조로 분리되며, SUB 13에서 다룬다</td></tr>
+      </table>
+
+      <p>이 세 패턴은 모두 같은 점화식 $h^{(t)} = f(h^{(t-1)}, x^{(t)}; \theta)$ 위에 얹힌다. 점화식 자체가 모델의 정체성이고, 출력을 어디서 어떻게 빼느냐는 응용 단의 결정이다.</p>
+
+      <h2>왜 한 줄짜리 식이 그렇게 강력한가</h2>
+      <p>이 점화식이 표현할 수 있는 함수 공간은 놀랄 만큼 넓다. 교재는 "은닉-은닉 순환(hidden-to-hidden recurrence)을 가진 RNN은 원리적으로 모든 보편 튜링 머신(Universal Turing Machine)이 계산할 수 있는 모든 함수를 모사할 수 있다"고 말한다. 한 줄의 단순한 점화식이, 적절한 함수 $f$와 충분한 시간만 주어진다면, 임의의 계산을 흉내 낼 수 있다는 뜻이다.</p>
+
+      <p>이 강력함의 원천은 다른 모델에는 없는 한 가지 특성에 있다. <strong>시간이 흐를수록 모델의 "유효 깊이"가 커진다.</strong> 길이 100짜리 시퀀스에 RNN을 적용하면, 마지막 은닉 상태 $h^{(100)}$은 $f$를 100번 합성한 결과다. 즉 RNN은 한 번 학습된 작은 함수 $f$를 시간 축을 따라 깊이 100짜리 네트워크처럼 펼쳐 쓴다. 작은 함수를 작게 만든 다음, 시간이라는 무한한 깊이의 도구를 빌려 표현력을 확장하는 셈이다.</p>
+
+      <h2>그러나 강력함에는 대가가 있다</h2>
+      <p>같은 함수를 100번 합성한다는 것은 곧, 그 합성의 도함수를 100번 곱한다는 뜻이기도 하다. 이 곱셈은 자주 폭발하거나 자주 0으로 사라진다. 약속 1(시간 공유)이 만든 우아한 단순함 뒤에는, BPTT의 곱셈 지옥과 기울기 폭발/소실이라는 깊은 시간의 저주가 숨어 있다. 이 저주를 본격적으로 본격적으로 다루는 것이 SUB 05부터 SUB 07까지의 흐름이다.</p>
+
+      <p>그 전에 먼저 해야 할 일은 <strong>이 점화식을 시각적으로 펼쳐 보이는 것</strong>이다. 한 줄로 쓰인 순환 구조를 어떻게 깊은 네트워크로 펴서 그리는가. 다음 장(<a href="03.html">SUB 03</a>)에서 시간 펼치기(unfolding)와 그 위젯을 본다.</p>
+
+      <h2>한 문장 요약</h2>
+      <p>RNN은 <strong>"같은 함수 $f$와 같은 매개변수 $\theta$를 매 시간 단계에 재사용하면서, 이전 상태와 현재 입력으로 다음 상태를 만드는 점화식"</strong>이다. 이 한 줄이 시퀀스 모델의 모든 약속을 압축한다.</p>
     </div>
-    <p class="widget-cap">왼쪽 슬라이더를 0으로 두면 회로도 — 자기 자신으로 돌아가는 루프. 100으로 두면 시간축으로 펼쳐진 깊은 신경망. 같은 RNN을 두 시점에서 본다. 모든 시점이 동일한 $f(\theta)$ 박스를 공유함을 색으로 확인.</p>
-  </div>
 
-  <div class="prose">
-    <h2>매개변수 공유가 만드는 세 가지 이점</h2>
-    <p>같은 매개변수를 시간 전체에 공유하면 세 가지 이점이 동시에 따라온다. 이는 시험에 자주 묻는 핵심 구분이다.</p>
-
-    <p><strong>① 위치 독립 인식.</strong> "I went to Nepal in 2009"의 '2009'와 "In 2009, I went to Nepal"의 '2009'를 같은 규칙으로 처리한다. 위치마다 별도 매개변수를 두는 모델은 각 위치에서 언어 규칙을 따로따로 배워야 한다.</p>
-
-    <p><strong>② 가변 길이 일반화.</strong> 단일 공유 모델 하나만 학습시키면 훈련 세트에 없던 길이의 시퀀스에도 자연스럽게 적용된다. 시점마다 별도 매개변수가 있다면 훈련 중 보지 못한 길이는 원리적으로 다룰 수 없다.</p>
-
-    <p><strong>③ 학습 효율.</strong> 서로 다른 위치와 시퀀스 길이에 걸쳐 통계적 강도(Statistical Strength)가 공유되므로, 훨씬 적은 데이터로도 학습이 가능하다. 데이터 한 점이 여러 위치에서 동시에 매개변수를 갱신한다.</p>
-
-    <h2>CNN의 공간 공유 vs RNN의 시간 공유</h2>
-    <p>이 책의 가장 깔끔한 평행 비교 중 하나는 9장과 10장의 짝이다. <strong>CNN은 공간 위에 매개변수를 공유</strong>한다. 같은 필터가 이미지의 좌측 상단과 우측 하단을 같은 방식으로 본다. <strong>RNN은 시간 위에 매개변수를 공유</strong>한다. 같은 전환 함수가 1초 시점과 100초 시점을 같은 방식으로 다룬다. 이 두 공유 모두 같은 동기 — 위치 독립성과 일반화 — 에서 나왔고, 같은 결과 — 가변 입력 크기 대응 — 를 가져온다.</p>
-
-    <p>다른 점은 흐름의 방향이다. CNN의 공간 공유는 <em>같은 시점</em>에 여러 위치를 병렬로 본다. RNN의 시간 공유는 <em>같은 위치</em>를 여러 시점에 걸쳐 순차로 본다. 이 순차성이 RNN의 모든 강점이자 모든 저주의 출발이다. 다음 절(Sub.03)에서 BPTT를, 그 다음(Sub.04)에서 저주의 정체인 기울기 폭발/소실을 본다.</p>
-
-    <h2>이 절이 시험에서 묻는 것</h2>
-    <p>① 동적 시스템 점화식을 펼쳐 비순환 그래프로 만드는 절차. ② $h^{(t)} = f(h^{(t-1)}, x^{(t)}; \theta)$의 세 인자가 각각 의미하는 것. ③ 은닉 상태가 "손실 압축 요약"이라는 표현의 정확한 뜻. ④ 매개변수 공유가 주는 세 가지 이점. ⑤ CNN의 공간 공유와 RNN의 시간 공유의 평행 관계. 이 다섯이 이 절의 시험 중심이다.</p>
-  </div>
-
-  <nav class="ch-foot">
-    <a href="01.html"><span class="dir">← 이전</span><div class="ti">01 · 왜 FC·CNN은 충분하지 않은가</div></a>
-    <a class="next" href="03.html"><span class="dir">다음 →</span><div class="ti">03 · BPTT</div></a>
-  </nav>
-</main>
+    <nav class="ch-foot" id="chfoot"></nav>
+  </main>
+</div>
 
 <script>
-  window.addEventListener('scroll', () => {
-    const sp = document.querySelector('.scroll-progress');
-    const sc = document.documentElement.scrollTop;
-    const max = document.documentElement.scrollHeight - window.innerHeight;
-    sp.style.width = (max > 0 ? (sc / max * 100) : 0) + '%';
+  const SUBS = [
+    ['01','왜 시퀀스에 FC·CNN은 부족한가'],['02','RNN의 기본 아이디어'],['03','시간 펼치기'],
+    ['04','매개변수 공유'],['05','BPTT 1 — 직관'],['06','BPTT 2 — 손계산'],
+    ['07','기울기 폭발과 소실'],['08','기울기 클리핑'],['09','LSTM 1 — 세 게이트'],
+    ['10','LSTM 2 — cell state'],['11','GRU'],['12','양방향 RNN'],
+    ['13','인코더-디코더'],['14','시험 대비'],
+  ];
+  const CUR = '02';
+  const ol = document.getElementById('navlist');
+  SUBS.forEach(([n,t]) => {
+    const li = document.createElement('li');
+    li.innerHTML = `<a href="${n}.html"${n===CUR?' class="current"':''}>${t}</a>`;
+    ol.appendChild(li);
   });
+  const i = SUBS.findIndex(s=>s[0]===CUR);
+  const prev = i>0 ? SUBS[i-1] : ['','표지로'];
+  const next = i<SUBS.length-1 ? SUBS[i+1] : ['','표지로'];
+  document.getElementById('chfoot').innerHTML =
+    `<a href="${prev[0]?prev[0]+'.html':'index.html'}"><div class="dir">← 이전</div><div class="ti">${prev[1]}</div></a>` +
+    `<a href="${next[0]?next[0]+'.html':'index.html'}" class="next"><div class="dir">다음 →</div><div class="ti">${next[1]}</div></a>`;
+  const bar = document.querySelector('.scroll-progress');
+  document.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max>0 ? (h.scrollTop/max)*100 : 0) + '%';
+  }, { passive: true });
   window.addEventListener('load', () => {
-    if (window.renderMathInElement) {
-      renderMathInElement(document.body, { delimiters: [
-        {left:'$$', right:'$$', display:true},
-        {left:'$', right:'$', display:false}
-      ], throwOnError:false });
-    }
+    if (window.renderMathInElement) renderMathInElement(document.body, {
+      delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }],
+      throwOnError: false,
+    });
   });
-
-  // 회로도 ↔ 펼쳐진 그래프 모핑
-  const cv = document.getElementById('vizUnroll');
-  const ctx = cv.getContext('2d');
-  const unrollSlider = document.getElementById('unrollSlider');
-  const unrollVal = document.getElementById('unrollVal');
-  const tLen = document.getElementById('tLen');
-  const tLenVal = document.getElementById('tLenVal');
-
-  function fit() {
-    const r = cv.getBoundingClientRect();
-    cv.width = r.width * devicePixelRatio;
-    cv.height = r.height * devicePixelRatio;
-    ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
-    draw();
-  }
-
-  function lerp(a, b, t) { return a + (b - a) * t; }
-
-  function draw() {
-    const m = +unrollSlider.value / 100;
-    const T = +tLen.value;
-    unrollVal.textContent = (+unrollSlider.value) + '%';
-    tLenVal.textContent = T;
-    const W = cv.clientWidth, H = cv.clientHeight;
-    ctx.clearRect(0, 0, W, H);
-
-    // 좌측: 회로도 위치 (모두 한 점 주변)
-    const fX = W * 0.5;
-    const fY = H * 0.5;
-    const radius = 35;
-
-    // 시점별 위치 계산
-    const positions = [];
-    for (let t = 0; t < T; t++) {
-      const targetX = lerp(fX, 100 + t * (W - 200) / Math.max(1, T-1), m);
-      const targetY = fY;
-      positions.push([targetX, targetY]);
-    }
-
-    // 시점 간 화살표 (h^(t-1) → h^(t))
-    ctx.strokeStyle = `rgba(45,91,122,${0.3 + m * 0.5})`;
-    ctx.lineWidth = 2;
-    for (let t = 0; t < T - 1; t++) {
-      const [x1, y1] = positions[t];
-      const [x2, y2] = positions[t+1];
-      if (m < 0.1) {
-        // 회로도: 셀프 루프
-        ctx.beginPath();
-        ctx.arc(x1 + radius + 10, y1 - radius - 5, 18, 0, Math.PI * 1.6);
-        ctx.stroke();
-      } else {
-        // 펼친 직선
-        ctx.beginPath();
-        ctx.moveTo(x1 + radius, y1);
-        ctx.lineTo(x2 - radius, y2);
-        // 화살표
-        const ang = Math.atan2(y2 - y1, x2 - x1);
-        ctx.lineTo(x2 - radius - 8 * Math.cos(ang - 0.4), y2 - 8 * Math.sin(ang - 0.4));
-        ctx.moveTo(x2 - radius, y2);
-        ctx.lineTo(x2 - radius - 8 * Math.cos(ang + 0.4), y2 - 8 * Math.sin(ang + 0.4));
-        ctx.stroke();
-      }
-    }
-
-    // f(θ) 박스들 (모두 같은 색 = 매개변수 공유)
-    for (let t = 0; t < T; t++) {
-      const [x, y] = positions[t];
-      // 셀프 루프 (회로도일 때)
-      if (m < 0.5) {
-        ctx.strokeStyle = `rgba(192,73,46,${(0.5 - m) * 2 * 0.8})`;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(x + radius * 0.7, y - radius * 0.4, radius * 0.5, Math.PI * 0.5, Math.PI * 2.2);
-        ctx.stroke();
-        // 화살표 머리
-        const aa = Math.PI * 2.2;
-        const hx = x + radius * 0.7 + radius * 0.5 * Math.cos(aa);
-        const hy = y - radius * 0.4 + radius * 0.5 * Math.sin(aa);
-        ctx.beginPath();
-        ctx.moveTo(hx, hy);
-        ctx.lineTo(hx - 5, hy - 6);
-        ctx.moveTo(hx, hy);
-        ctx.lineTo(hx + 1, hy - 8);
-        ctx.stroke();
-      }
-
-      // 박스
-      ctx.fillStyle = '#2D5B7A';
-      ctx.strokeStyle = '#1a3f5a';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.roundRect(x - radius, y - radius * 0.55, radius * 2, radius * 1.1, 8);
-      ctx.fill();
-      ctx.stroke();
-      // 라벨 — 모두 동일 f(θ)
-      ctx.fillStyle = '#fff';
-      ctx.font = '600 13px Spline Sans Mono, monospace';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('f(θ)', x, y - 2);
-      // 시점 라벨
-      ctx.fillStyle = '#A47B2E';
-      ctx.font = '500 10px Spline Sans Mono, monospace';
-      const showT = m > 0.3;
-      if (showT) ctx.fillText('t=' + (t+1), x, y + radius * 0.85);
-
-      // 입력 x^(t) — 아래쪽
-      if (m > 0.4) {
-        ctx.fillStyle = `rgba(164,123,46,${(m - 0.4) * 1.6})`;
-        ctx.beginPath();
-        ctx.arc(x, y + radius * 1.8, 8, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#fff';
-        ctx.font = '9px Spline Sans Mono, monospace';
-        ctx.fillText('x' + (t+1), x, y + radius * 1.8);
-        // 입력 → 박스 화살표
-        ctx.strokeStyle = `rgba(164,123,46,${(m - 0.4) * 1.6 * 0.7})`;
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.moveTo(x, y + radius * 1.65);
-        ctx.lineTo(x, y + radius * 0.6);
-        ctx.stroke();
-      }
-    }
-
-    // 회로도 라벨
-    if (m < 0.3) {
-      ctx.fillStyle = 'rgba(38,34,28,0.6)';
-      ctx.font = 'italic 13px Fraunces, serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('회로도 — 루프 한 줄', W/2, 30);
-    }
-    // 펼친 라벨
-    if (m > 0.7) {
-      ctx.fillStyle = 'rgba(38,34,28,0.6)';
-      ctx.font = 'italic 13px Fraunces, serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('펼쳐진 그래프 — 시간축을 따라 늘어선 ' + T + '개의 같은 함수', W/2, 30);
-    }
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'alphabetic';
-
-    // 매개변수 공유 강조 문구
-    ctx.fillStyle = 'rgba(192,73,46,0.7)';
-    ctx.font = '500 11px Spline Sans Mono, monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('모든 박스가 같은 색 = 같은 θ = 매개변수 공유', W/2, H - 14);
-    ctx.textAlign = 'left';
-  }
-  unrollSlider.addEventListener('input', draw);
-  tLen.addEventListener('input', draw);
-  window.addEventListener('resize', fit);
-
-  // roundRect polyfill for older browsers (just in case)
-  if (!CanvasRenderingContext2D.prototype.roundRect) {
-    CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
-      this.beginPath();
-      this.moveTo(x + r, y);
-      this.arcTo(x + w, y, x + w, y + h, r);
-      this.arcTo(x + w, y + h, x, y + h, r);
-      this.arcTo(x, y + h, x, y, r);
-      this.arcTo(x, y, x + w, y, r);
-      this.closePath();
-    };
-  }
-  fit();
 </script>
 </body>
 </html>

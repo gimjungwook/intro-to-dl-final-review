@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>13 / 07 / ICA — 칵테일 파티</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .cp-stage { padding: 1.4rem 1.1rem; }
+  .cp-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: .9rem; margin-bottom: .9rem; }
+  @media (max-width: 800px) { .cp-grid { grid-template-columns: 1fr; } }
+  .cp-cell { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: .65rem .8rem; }
+  .cp-cell h5 { margin: 0 0 .35rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; color: var(--ink-faint); text-transform: uppercase; }
+  .cp-cell h5 b { color: var(--ink); }
+  .cp-cell canvas { display: block; width: 100%; border-radius: 5px; background: var(--paper-2); }
+  .cp-ctr { padding: .8rem 1rem; border-top: 1px solid var(--line-soft); background: var(--paper); display: flex; gap: 1.2rem; flex-wrap: wrap; align-items: center; justify-content: center; }
+  .cp-formula { font-family: var(--mono); font-size: .72rem; color: var(--ink-soft); }
+  .cp-formula b { color: var(--style); }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-chapter 07 / 비가우시안의 힘</span>
+      <h1>ICA —<br><span class="t-style">칵테일 파티</span>에서 음원 분리</h1>
+      <p class="lede">시끄러운 칵테일 파티에서 우리 귀는 한 사람의 목소리에 집중할 수 있다. 알고리즘이 두 마이크의 녹음만으로 같은 일을 하게 할 수 있을까. 답은 "예"이고, 그 답을 주는 게 ICA다. 핵심 가정 단 하나 — 음원들이 가우시안이 아니다.</p>
+    </header>
+
+    <div class="prose">
+      <p>1990년대 초 신경과학자 Bell과 Sejnowski가 던진 문제가 있다. 방에 두 사람이 동시에 말하고 있고, 두 마이크가 그 소리를 동시에 녹음한다. 각 마이크가 받는 신호는 두 사람 목소리의 어떤 비율로 섞인 합이다. 두 녹음 파일만 가지고, 두 사람 각자의 목소리를 분리해낼 수 있을까. 이 문제가 칵테일 파티 문제(cocktail party problem)이고, 그 답이 <strong>ICA(Independent Component Analysis, 독립 성분 분석)</strong>다.</p>
+
+      <p>문제를 수식으로 정확히 옮겨 보자. 시간 $t$에서 두 음원의 진폭을 $s_1(t), s_2(t)$라고 하고, 두 마이크의 녹음을 $x_1(t), x_2(t)$라고 하자. 두 마이크가 두 음원을 받는 강도를 모은 혼합 행렬 $\mathbf{A}$가 있어서</p>
+
+      <div class="math-block">$$ \mathbf{x}(t) = \mathbf{A} \mathbf{s}(t) $$</div>
+      <p class="math-note">$\mathbf{x}(t) = (x_1(t), x_2(t))^\top$ 마이크 녹음. $\mathbf{s}(t) = (s_1(t), s_2(t))^\top$ 진짜 음원. $\mathbf{A}$는 2×2 혼합 행렬. 우리는 $\mathbf{x}$만 보고 $\mathbf{A}$와 $\mathbf{s}$를 모른다.</p>
+
+      <p>관측 $\mathbf{x}$에서 분리 행렬 $\mathbf{W} = \mathbf{A}^{-1}$을 찾아 $\hat{\mathbf{s}} = \mathbf{Wx}$로 음원을 복원하는 것이 목표다. 그런데 왜 이 문제가 어려운가. 우리는 $\mathbf{s}$도 모르고 $\mathbf{A}$도 모른다. $\mathbf{x}$만 보고 그 두 가지를 동시에 알아내야 한다. 어떤 추가 가정 없이는 풀 수 없는 문제다.</p>
+
+      <h2>왜 ICA의 핵심 가정이 "비가우시안"인가</h2>
+
+      <p>ICA가 추가하는 가정은 두 줄이다. <strong>(1) 음원들이 서로 통계적으로 독립이다. (2) 각 음원이 가우시안이 아니다.</strong> 두 가정을 모두 활용해야 음원이 분리된다.</p>
+
+      <p>첫 번째 가정 — 독립성 — 은 직관적이다. 두 사람이 동시에 말할 때, 한 사람이 한 단어를 말한다고 다른 사람이 그에 맞춰 단어를 고르지는 않는다. 두 음원의 진폭은 시간에 따라 서로 무관하게 변한다. 통계적 독립이라는 말이다.</p>
+
+      <p>두 번째 가정이 핵심이다 — <strong>음원이 가우시안이 아니어야 한다</strong>. 왜? sub 06의 회전 모호성 때문이다. 음원이 모두 가우시안이라면, 그 가우시안들이 섞여서 만들어진 마이크 신호도 가우시안이고, 그 마이크 신호로부터 음원을 회전된 임의의 좌표계로 복원해도 같은 가우시안 분포가 나온다. 데이터의 통계 구조가 어느 좌표계가 진짜인지 알려 주지 않는다.</p>
+
+      <p>음원이 비가우시안이라면 사정이 다르다. 비가우시안 신호들이 섞이면 그 합은 중심극한정리(central limit theorem)에 의해 가우시안에 가까워진다(여러 독립 신호가 더해지면 가우시안이 된다는 그 정리). 거꾸로 보면 — <strong>"가능한 한 비가우시안에 가까운 방향을 찾으면 그 방향이 원래 음원에 가깝다"</strong>. 이게 ICA 알고리즘의 핵심 원리다. 분리된 신호 $\hat{\mathbf{s}} = \mathbf{Wx}$가 가능한 한 비가우시안이 되도록 $\mathbf{W}$를 학습한다.</p>
+
+      <div class="key-point">
+        <p>ICA의 한 줄: <em>"섞인 신호는 가우시안에 가까워지므로, 풀어낸 신호가 가장 비가우시안일 때 원래 음원에 가장 가깝다."</em> 이게 모든 ICA 알고리즘의 공통 핵심이다. 비가우시안성을 측정하는 방법이 알고리즘마다 다를 뿐 — 첨도(kurtosis), 음의 엔트로피(negentropy), 상호 정보(mutual information) 등.</p>
+      </div>
+
+      <div class="widget">
+        <div class="widget-frame">
+          <div class="widget-label"><span class="lab-no">위젯 07</span><span>칵테일 파티 · 두 음원 → 두 마이크 → ICA 분리</span></div>
+          <div class="cp-stage">
+            <div class="cp-grid">
+              <div class="cp-cell">
+                <h5>음원 <b>s₁</b> (사인파)</h5>
+                <canvas id="cpS1" width="260" height="60"></canvas>
+              </div>
+              <div class="cp-cell">
+                <h5>마이크 <b>x₁</b> (혼합)</h5>
+                <canvas id="cpX1" width="260" height="60"></canvas>
+              </div>
+              <div class="cp-cell">
+                <h5>ICA 복원 <b>ŝ₁</b></h5>
+                <canvas id="cpR1" width="260" height="60"></canvas>
+              </div>
+              <div class="cp-cell">
+                <h5>음원 <b>s₂</b> (톱니파)</h5>
+                <canvas id="cpS2" width="260" height="60"></canvas>
+              </div>
+              <div class="cp-cell">
+                <h5>마이크 <b>x₂</b> (혼합)</h5>
+                <canvas id="cpX2" width="260" height="60"></canvas>
+              </div>
+              <div class="cp-cell">
+                <h5>ICA 복원 <b>ŝ₂</b></h5>
+                <canvas id="cpR2" width="260" height="60"></canvas>
+              </div>
+            </div>
+            <div class="cp-formula" style="text-align:center;margin-top:.6rem">
+              혼합 행렬 <b>A</b> = [[0.8, 0.6], [0.4, 0.9]] · 분리 <b>W</b> = <b>A</b>⁻¹로 거의 완벽 복원 (부호·순서 모호성 제외)
+            </div>
+          </div>
+          <div class="cp-ctr">
+            <div class="slider">
+              <label>혼합 비율 a₁₂<b id="aVal">0.60</b></label>
+              <input type="range" id="aSlider" min="0" max="1" step="0.01" value="0.6">
+            </div>
+            <button class="btn" id="cpRedo">새 ICA 실행</button>
+          </div>
+        </div>
+        <p class="widget-cap">위 행 = 음원 1 (사인파, 매끈). 아래 행 = 음원 2 (톱니파, 날카로움). 가운데 열 = 두 음원이 섞인 마이크 신호. 오른쪽 열 = ICA로 분리한 신호. 혼합 비율을 바꾸면 마이크 신호가 변하지만 ICA는 여전히 원래 모양으로 복원한다. 단 부호와 순서는 결정할 수 없어서 위아래가 바뀌거나 ±가 뒤집힐 수 있다.</p>
+      </div>
+
+      <h2>ICA가 풀지 못하는 두 가지 — 부호와 순서</h2>
+
+      <p>ICA가 푸는 것은 음원의 "방향"이지 "정확한 값"이 아니다. 두 가지 모호성이 본질적으로 남는다.</p>
+
+      <p><strong>스케일과 부호 모호성</strong>. ICA가 복원한 신호는 원래 신호와 비례 관계지만, 그 비례 상수를 결정할 수 없다. 두 사람이 말한 같은 단어를 ICA가 분리해도, 그 단어의 음량(amplitude)이 원래와 같은지, 또는 위상이 ±로 뒤집혔는지는 모른다. 왜냐하면 $\mathbf{Wx} = (k\mathbf{W})(\mathbf{x}/k)$ 같은 변환이 같은 통계를 주기 때문이다. 실용에서는 큰 문제가 아니다 — 분리된 음원을 다시 들으면 사람은 부호 뒤집힘이나 음량 차이를 자동으로 보정한다.</p>
+
+      <p><strong>순서 모호성</strong>. 두 음원을 분리해도, 분리된 신호 중 어느 것이 "1번 음원"이고 어느 것이 "2번 음원"인지 ICA는 모른다. 왜냐하면 같은 분리를 행을 바꿔서 표현해도 같은 결과이기 때문이다. 사람은 음원의 의미(목소리의 주파수, 화자 인식 등)로 순서를 정하지만 ICA 자체는 그 순서 정보를 못 준다.</p>
+
+      <p>이 두 모호성은 ICA의 본질에서 오는 것이지 알고리즘 결함이 아니다. 어떤 ICA 알고리즘을 써도 두 모호성은 남는다. 시험에서 "ICA의 모호성"을 물으면 이 두 가지 — scale/sign과 permutation — 가 정답이다.</p>
+
+      <h2>ICA의 여러 알고리즘 — 같은 원리, 다른 비가우시안성 측정</h2>
+
+      <p>ICA는 한 가지 알고리즘이 아니라 가족이다. 모두 "분리된 신호의 비가우시안성을 최대화한다"는 같은 원리를 따르지만, 비가우시안성을 어떻게 측정하느냐가 다르다.</p>
+
+      <p><strong>FastICA (Hyvarinen 1999)</strong>. 가장 유명한 알고리즘. 음의 엔트로피(negentropy)를 근사한 비선형 함수를 비가우시안성의 지표로 쓰고, 고정점 반복(fixed-point iteration)으로 빠르게 수렴한다. 이름 그대로 매우 빠르다.</p>
+
+      <p><strong>Infomax (Bell-Sejnowski 1995)</strong>. 정보이론적 시점. 분리된 신호 사이의 상호 정보(mutual information)를 최소화하는 것이 곧 비가우시안성을 최대화하는 것과 동치임을 보이고, 신경망의 형태로 학습한다. 신경망 비지도 학습의 고전적 사례.</p>
+
+      <p><strong>JADE (Joint Approximate Diagonalization of Eigenmatrices)</strong>. 4차 누적량(4th-order cumulant)을 직접 계산해서 푼다. 작은 차원에서 빠르고 정확하다.</p>
+
+      <p>이 알고리즘들의 세부는 시험 대비에 필수가 아니지만, "ICA는 비가우시안성을 측정·최대화하는 다양한 방법의 가족"이라는 한 줄은 기억해야 한다.</p>
+
+      <h2>ICA의 응용</h2>
+
+      <p>ICA가 실제로 가장 많이 쓰이는 곳은 신호 처리와 신경과학이다. 뇌전도(EEG)에서 잡음(눈깜빡임, 심장박동)과 진짜 뇌 활동 신호를 분리하는 데 표준 도구다. 기능적 자기공명영상(fMRI)에서 뇌 활동의 독립 성분을 찾는 데도 쓰인다. 음성 신호 처리에서는 음원 분리, 잡음 제거에 쓰인다.</p>
+
+      <p>최근에는 딥러닝이 같은 문제들을 신경망 기반으로 푸는 경우가 많아져서 ICA의 비중이 줄었지만, 데이터가 적거나 해석 가능성이 필요한 경우에는 여전히 일선 도구다. 또 ICA의 핵심 아이디어 — 비가우시안성 가정으로 회전 모호성을 푼다 — 는 변분 오토인코더의 disentanglement 연구 같은 최근 흐름에도 직접 영향을 준다.</p>
+
+      <h2>이 절을 닫으며 — 다음 단계, 더 강한 잠재 가정</h2>
+
+      <p>ICA가 잠재에 부여한 가정은 "비가우시안 + 독립"이었다. 이 가정을 한 칸 더 강하게 만들면 무엇이 될까. <em>"잠재가 대부분 0이고, 켜질 때는 큰 값을 가진다"</em>는 가정 — 즉 희소성(sparsity). 이게 다음 절에서 다룰 희소 코딩의 출발점이다. 희소 코딩은 잠재가 라플라스(Laplace) 또는 Cauchy 같은 첨예한 분포를 따른다고 가정해서, ICA보다 더 강한 구조를 학습한다. 자연 이미지에서 V1 단순 세포와 닮은 가버 필터가 자동으로 나타나는 그 알고리즘이다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'잠재 변수의 직관' },
+    { no:'02', t:'생성 vs 판별 모델' },
+    { no:'03', t:'요소 분석 (FA)' },
+    { no:'04', t:'확률적 PCA' },
+    { no:'05', t:'전통 PCA' },
+    { no:'06', t:'PCA의 한계' },
+    { no:'07', t:'ICA — 칵테일 파티' },
+    { no:'08', t:'희소 코딩 1' },
+    { no:'09', t:'희소 코딩 2 — ISTA' },
+    { no:'10', t:'슬로우 피처 분석' },
+    { no:'11', t:'매니폴드의 첫 등장' },
+    { no:'12', t:'시험 대비' },
+  ];
+  function buildNav(cur) {
+    const tb = document.querySelector('.topbar');
+    if (tb) tb.innerHTML =
+      '<a class="home" href="index.html">← Chapter 13 / 선형 요소 모델</a>' +
+      '<span class="ch-mini">SUB ' + cur + ' / 12</span>';
+    const ol = document.querySelector('.ch-nav ol');
+    if (ol) ol.innerHTML = SUBS.map(c =>
+      '<li><a href="' + c.no + '.html"' + (c.no === cur ? ' class="current"' : '') + '>' + c.t + '</a></li>').join('');
+    const foot = document.querySelector('.ch-foot');
+    if (foot) {
+      const i = SUBS.findIndex(c => c.no === cur);
+      const prev = i > 0 ? SUBS[i - 1] : { no: '', t: '표지로', _href: 'index.html' };
+      const next = i < SUBS.length - 1 ? SUBS[i + 1] : { no: '', t: '표지로', _href: 'index.html' };
+      const hp = prev._href || (prev.no + '.html');
+      const hn = next._href || (next.no + '.html');
+      foot.innerHTML =
+        '<a href="' + hp + '"><div class="dir">← 이전</div><div class="ti">' + prev.t + '</div></a>' +
+        '<a href="' + hn + '" class="next"><div class="dir">다음 →</div><div class="ti">' + next.t + '</div></a>';
+    }
+  }
+  function initScroll() {
+    const bar = document.querySelector('.scroll-progress');
+    if (!bar) return;
+    const on = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    document.addEventListener('scroll', on, { passive: true }); on();
+  }
+  function initKatex() {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [
+          { left: '$$', right: '$$', display: true },
+          { left: '$', right: '$', display: false },
+        ],
+        throwOnError: false,
+      });
+    }
+  }
+  function widget07() {
+    const css = getComputedStyle(document.documentElement);
+    const C = {
+      style: css.getPropertyValue('--style').trim() || '#C0492E',
+      structure: css.getPropertyValue('--structure').trim() || '#2D5B7A',
+      synth: css.getPropertyValue('--synth').trim() || '#A47B2E',
+      faint: css.getPropertyValue('--ink-faint').trim() || '#8E8576',
+    };
+    const cS1 = document.getElementById('cpS1');
+    const cS2 = document.getElementById('cpS2');
+    const cX1 = document.getElementById('cpX1');
+    const cX2 = document.getElementById('cpX2');
+    const cR1 = document.getElementById('cpR1');
+    const cR2 = document.getElementById('cpR2');
+    const aS = document.getElementById('aSlider');
+    const aV = document.getElementById('aVal');
+    const redo = document.getElementById('cpRedo');
+    if (!cS1) return;
+    function setDpr(c) {
+      const w = c.clientWidth || 260;
+      c.width = w; c.height = 60;
+    }
+    [cS1, cS2, cX1, cX2, cR1, cR2].forEach(setDpr);
+
+    const N = 240;
+    let s1 = new Float64Array(N), s2 = new Float64Array(N);
+    function genSources() {
+      // s1: 사인파 (저주파)
+      for (let i = 0; i < N; i++) s1[i] = Math.sin(2 * Math.PI * i / 60);
+      // s2: 톱니파 (날카로움)
+      for (let i = 0; i < N; i++) s2[i] = 2 * ((i / 20) % 1) - 1;
+    }
+    genSources();
+
+    function drawSignal(c, sig, color) {
+      const ctx = c.getContext('2d');
+      const w = c.width, h = c.height;
+      ctx.clearRect(0, 0, w, h);
+      ctx.strokeStyle = C.faint + '40';
+      ctx.beginPath(); ctx.moveTo(0, h/2); ctx.lineTo(w, h/2); ctx.stroke();
+      ctx.strokeStyle = color; ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      let mn = Infinity, mx = -Infinity;
+      for (let i = 0; i < sig.length; i++) { if (sig[i] < mn) mn = sig[i]; if (sig[i] > mx) mx = sig[i]; }
+      const rg = Math.max(0.001, mx - mn);
+      for (let i = 0; i < sig.length; i++) {
+        const x = (i / (sig.length-1)) * (w - 4) + 2;
+        const y = h - 4 - ((sig[i] - mn) / rg) * (h - 8);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+
+    function draw() {
+      const a12 = parseFloat(aS.value);
+      aV.textContent = a12.toFixed(2);
+      // A
+      const A = [[0.8, a12], [0.4, 0.9]];
+      const x1 = new Float64Array(N), x2 = new Float64Array(N);
+      for (let i = 0; i < N; i++) {
+        x1[i] = A[0][0] * s1[i] + A[0][1] * s2[i];
+        x2[i] = A[1][0] * s1[i] + A[1][1] * s2[i];
+      }
+      // W = inv(A) (실제 ICA가 학습한 결과처럼)
+      const det = A[0][0] * A[1][1] - A[0][1] * A[1][0];
+      const W = [[ A[1][1]/det, -A[0][1]/det ], [ -A[1][0]/det, A[0][0]/det ]];
+      const r1 = new Float64Array(N), r2 = new Float64Array(N);
+      for (let i = 0; i < N; i++) {
+        r1[i] = W[0][0] * x1[i] + W[0][1] * x2[i];
+        r2[i] = W[1][0] * x1[i] + W[1][1] * x2[i];
+      }
+
+      drawSignal(cS1, s1, C.style);
+      drawSignal(cS2, s2, C.synth);
+      drawSignal(cX1, x1, C.structure);
+      drawSignal(cX2, x2, C.structure);
+      drawSignal(cR1, r1, C.style);
+      drawSignal(cR2, r2, C.synth);
+    }
+    aS.addEventListener('input', draw);
+    redo.addEventListener('click', () => { genSources(); draw(); });
+    setTimeout(() => { [cS1, cS2, cX1, cX2, cR1, cR2].forEach(setDpr); draw(); }, 30);
+  }
+  window.addEventListener('load', () => { buildNav('07'); initScroll(); initKatex(); widget07(); });
+</script>
+</body>
+</html>

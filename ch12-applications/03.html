@@ -3,328 +3,197 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>12.03 · 자연어 처리 — 임베딩과 어텐션</title>
+<title>12 / 03 / 대규모 비전 분류 2</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
-  /* 임베딩 평면 */
-  .emb-stage { display: grid; grid-template-columns: 1fr 14rem; gap: 1rem; padding: 1.3rem 1.1rem 1rem; }
-  @media (max-width: 760px) { .emb-stage { grid-template-columns: 1fr; } }
-  .emb-canvas-wrap { background: #fff; border: 1px solid var(--line); border-radius: 8px; position: relative; overflow: hidden; height: 360px; }
-  .emb-canvas-wrap canvas { display: block; width: 100%; height: 100%; cursor: crosshair; }
-  .emb-panel { display: flex; flex-direction: column; gap: .8rem; }
-  .emb-eq { padding: .9rem 1rem; background: var(--paper-2); border: 1px solid var(--line-soft); border-radius: 8px; font-family: var(--mono); font-size: .82rem; line-height: 1.7; color: var(--ink); }
-  .emb-eq .op { color: var(--style); font-weight: 600; }
-  .emb-eq .res { color: var(--synth); font-weight: 600; }
-  .emb-eq input { width: 5.5rem; padding: .25rem .4rem; font-family: var(--mono); font-size: .8rem; border: 1px solid var(--line); border-radius: 4px; background: #fff; }
-  .emb-result { padding: .7rem .9rem; background: #fff; border: 1px solid var(--line); border-radius: 8px; font-size: .85rem; line-height: 1.55; min-height: 4rem; }
-  .emb-result b { color: var(--synth); font-family: var(--mono); }
-  .emb-result em { color: var(--ink-faint); font-style: normal; font-family: var(--mono); font-size: .78rem; }
-  .emb-legend { font-family: var(--mono); font-size: .7rem; color: var(--ink-faint); line-height: 1.55; }
-  .emb-legend i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: .35rem; vertical-align: -1px; }
-  .emb-presets { display: flex; flex-wrap: wrap; gap: .3rem; }
-  .emb-presets button { font-family: var(--mono); font-size: .68rem; padding: .3rem .55rem; border: 1px solid var(--line); border-radius: 5px; background: #fff; cursor: pointer; color: var(--ink-soft); transition: .15s; }
-  .emb-presets button:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .aug-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .8rem; padding: 1.3rem 1.2rem 1rem; }
+  .aug-card { background: #fff; border: 1px solid var(--line); border-radius: 9px; padding: .85rem .85rem .9rem; text-align: center; }
+  .aug-card canvas { width: 100%; height: 70px; border-radius: 5px; background: var(--paper-2); display: block; margin-bottom: .45rem; }
+  .aug-card .at { font-family: var(--serif); font-size: .94rem; color: var(--ink); }
+  .aug-card .ad { font-size: .76rem; color: var(--ink-faint); margin-top: .2rem; line-height: 1.4; }
+  @media (max-width: 720px) { .aug-grid { grid-template-columns: repeat(2, 1fr); } }
 </style>
 </head>
 <body>
 <div class="scroll-progress"></div>
-<div class="topbar">
-  <a class="home" href="index.html">← Chapter 12 표지</a>
-  <span class="ch-mini">12.03 · 자연어 처리</span>
-</div>
+<div class="topbar"></div>
 
 <div class="ch-layout">
-  <aside class="ch-nav"><nav><ol id="navlist"></ol></nav></aside>
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Sub-chapter 03 · 단어가 벡터가 되는 순간</span>
-      <h1>자연어 처리 —<br><span class="t-style">임베딩</span>과 어텐션</h1>
-      <p class="lede">언어 모델은 한 가지 결정적 한계와 마주한다 — 어휘가 너무 크다. 수십만 개의 단어가 모두 서로 동등한 거리에 떨어져 있으면 학습 신호가 흩어진다. 임베딩은 이 문제를 “단어를 의미가 가까운 단어와 실제로 가깝게 놓는” 방식으로 해결한다.</p>
+      <span class="kicker">Sub-chapter 03 / 비전 2</span>
+      <h1><span class="t-style">증강과 전이학습</span> —<br>실전에서 점수가 갈리는 자리</h1>
+      <p class="lede">앞 sub에서 펼친 비전 5단 파이프라인의 “1-2단계”에 해당하는 실전 트릭을 깊게 본다. 증강이 왜 그렇게 강력한가, 그리고 ImageNet 사전학습 특징을 어떻게 새 도메인으로 옮기는가.</p>
     </header>
 
     <div class="prose">
-      <p>먼저 NLP가 왜 “단어 임베딩” 없이는 출발조차 못 했는지부터 보자. 가장 단순한 방식은 단어를 <strong>원-핫(one-hot) 벡터</strong>로 적는 것이다. 어휘에 50,000개 단어가 있으면, 각 단어는 50,000차원 벡터에서 자기 자리에만 1이 있고 나머지는 모두 0이다.</p>
+      <p>대규모 비전 분류에서 모델 본체(CNN의 깊이와 구조)가 차지하는 비중은 생각보다 작다. 같은 ResNet-50을 가져다 써도 증강을 충분히 하고, 정규화를 도메인에 맞게 조정하고, 어떤 사전학습 가중치(pretrained weight)에서 출발하는지에 따라 분류 정확도가 몇 퍼센트포인트씩 갈린다. 이 sub는 그 “모델 외부의 결정”들을 풀이한다.</p>
 
-      <div class="math-block">$$ \mathbf{cat} = [0, 0, \ldots, 1, \ldots, 0, 0] \in \{0,1\}^{50000} $$</div>
-      <p class="math-note">고양이(cat)의 자리에만 1이 있는 50,000차원 벡터. 모든 단어는 이런 방식으로 서로 “거리가 같다”.</p>
+      <h2>이미지 증강의 카탈로그</h2>
 
-      <p>이 표현의 치명적 결함은, <strong>cat과 dog의 거리가 cat과 democracy의 거리와 정확히 같다</strong>는 점이다. 두 단어 벡터의 내적은 같은 단어일 때만 1이고 그 외 모두 0이다. 결과적으로 “cat이 들어간 문장에서 배운 것”이 “dog이 들어간 문장”으로 전혀 옮겨가지 않는다. 책은 이를 <strong>차원의 저주</strong>의 자연어판이라 부른다 — 한 단어를 위해 모은 데이터가 비슷한 단어로 전혀 일반화되지 않는다.</p>
-
-      <h2>해결: 의미를 좌표로 옮긴다</h2>
-      <p>해법은 단순하다. 단어를 <strong>훨씬 낮은 차원(보통 100-300차원)의 실수 벡터</strong>로 다시 적되, <em>의미가 가까운 단어는 좌표상으로도 가깝게</em> 놓는다. 이 좌표를 학습으로 자동 결정하는 것이 word2vec, GloVe 같은 임베딩 알고리즘이다. 핵심 아이디어는 <strong>“같은 문맥에 자주 등장하는 단어는 비슷한 의미를 가진다”</strong>는 분포 가설(distributional hypothesis)이다.</p>
-
-      <div class="math-block">$$ \mathbf{cat} \in \mathbb{R}^{300}, \qquad \cos(\mathbf{cat}, \mathbf{dog}) \approx 0.78,\quad \cos(\mathbf{cat}, \mathbf{democracy}) \approx 0.04 $$</div>
-      <p class="math-note">cos = 두 벡터 사이 각도. 1이면 같은 방향, 0이면 직교, -1이면 반대 방향.</p>
-
-      <p>그 결과 거짓말 같은 일이 생긴다 — <strong>벡터 산수가 의미 산수처럼 작동</strong>한다. <code>king - man + woman ≈ queen</code>. <code>Paris - France + Germany ≈ Berlin</code>. 임베딩 공간이 “성별 축”과 “수도-국가 축” 같은 의미 방향을 따라 직선적으로 펼쳐져 있기 때문이다. 아래 위젯에서 직접 확인해 보자.</p>
+      <p>이미지 증강은 본질적으로 “같은 라벨을 유지하는 변환”을 모델에게 등가 관계로 알려 주는 일이다. 자연 이미지에서 이런 변환은 풍부하게 존재한다. 4가지 큰 묶음으로 나누면 다음과 같다.</p>
     </div>
 
     <div class="widget">
       <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 12.03</span><span>임베딩 공간 산수 — A - B + C ≈ ?</span></div>
-        <div class="emb-stage">
-          <div class="emb-canvas-wrap">
-            <canvas id="embCanvas"></canvas>
-          </div>
-          <div class="emb-panel">
-            <div class="emb-eq">
-              <input id="wA" value="king"> <span class="op">−</span> <input id="wB" value="man"> <span class="op">+</span> <input id="wC" value="woman"> <span class="op">=</span> <span class="res" id="wR">queen</span>
-            </div>
-            <div class="emb-result" id="embOut"></div>
-            <div class="emb-presets">
-              <button data-p="king,man,woman">king−man+woman</button>
-              <button data-p="paris,france,germany">paris−france+germany</button>
-              <button data-p="big,small,tall">big−small+tall</button>
-              <button data-p="walking,walk,swim">walking−walk+swim</button>
-            </div>
-            <div class="emb-legend">
-              <div><i style="background:#2D5B7A"></i>왕족·정치 축</div>
-              <div><i style="background:#C0492E"></i>성별 축</div>
-              <div><i style="background:#A47B2E"></i>장소·국가 축</div>
-              <div><i style="background:#6E97AF"></i>동물·일상</div>
-              <div><i style="background:#D98E73"></i>크기·정도</div>
-            </div>
-          </div>
-        </div>
+        <div class="widget-label"><span class="lab-no">표 01</span><span>비전 증강의 4가지 묶음</span></div>
+        <div class="aug-grid" id="augGrid"></div>
       </div>
-      <p class="widget-cap">실제 word2vec(50,000 어휘 × 300차원)을 2차원 PCA로 투영한 모형이다. 화살표 <span style="font-family:var(--mono); color: var(--style)">man → king</span>과 <span style="font-family:var(--mono); color: var(--style)">woman → queen</span>이 거의 평행한 것을 볼 수 있다. “왕에서 남자를 빼고 여자를 더한다”는 산수는 <em>왕족의 자리에서 성별 축으로만 이동</em>한다는 기하학적 뜻이다.</p>
+      <p class="widget-cap">왼쪽부터 기하 변환, 색 변환, 잡음 주입, 큰 변형(컷아웃·믹스업). 책 본문이 다루는 것은 주로 앞 두 묶음이지만, 책 이후의 표준 실무에서는 네 묶음이 모두 쓰인다.</p>
     </div>
 
     <div class="prose">
-      <h2>왜 어텐션이 NLP에서 먼저 등장했는가</h2>
-      <p>임베딩이 단어 단위 표상 문제를 풀었다면, 다음 단계는 <strong>문장 단위의 표상</strong>이다. 신경 기계번역(NMT)에서 자연스러운 출발점은 인코더-디코더 구조다. 인코더 RNN이 원문(예: 영어)을 읽어 마지막 상태에 그 문장의 “요약 벡터”를 만들고, 디코더 RNN이 그 요약을 받아 번역문(예: 한국어)을 한 단어씩 생성한다.</p>
+      <p>첫째, <strong>기하 변환</strong>은 좌우 뒤집기, 무작위 자르기, 약한 회전과 이동, 크기 변화다. 이 변환들이 같은 라벨을 유지하는 이유는 자연 이미지의 라벨이 “물체의 정체”에 달려 있지 “물체가 화면의 어디에 있는지”나 “좌우가 어느 방향인지”에 달려 있지 않기 때문이다. 다만 글자 인식이나 일부 의료 영상처럼 좌우 대칭성이 깨지는 도메인에서는 좌우 뒤집기를 빼야 한다. “좌우 뒤집힌 b는 d가 된다.”</p>
 
-      <div class="math-block">$$ \mathbf{c} = h_T^{\text{enc}}, \qquad p(y_t \mid y_{<t}, \mathbf{c}) = \text{softmax}(W \cdot \text{RNN}(y_{t-1}, h_{t-1}^{\text{dec}}, \mathbf{c})) $$</div>
-      <p class="math-note">c = 인코더 마지막 hidden state(요약 벡터). 디코더의 모든 시점은 같은 c를 본다.</p>
+      <p>둘째, <strong>색 변환</strong>은 밝기, 대비, 채도, 색조의 작은 흔들기다. 같은 고양이가 다른 조명에서 찍혀도 여전히 고양이라는 사실을 모델에 가르치는 일이다. AlexNet 논문은 픽셀의 RGB 값을 학습 데이터 전체의 주성분 분석(principal component analysis, PCA) 방향으로 흔드는 “PCA 색 증강”을 도입했고, 이것이 ImageNet 정확도를 약 1%포인트 끌어올렸다.</p>
 
-      <p>이 구조의 한계가 곧 어텐션의 동기가 된다. <strong>긴 문장을 “하나의 고정된 길이의 요약 벡터 c”에 다 욱여넣어야 한다.</strong> 50단어짜리 문장의 모든 정보를 300차원 벡터 하나에 압축해 두면, 디코더가 30번째 단어를 출력할 때 원문 5번째 단어의 정보를 끄집어내기가 어렵다. 인간 번역가는 그렇게 일하지 않는다. 번역가는 한국어 단어를 쓸 때마다 영어 원문의 <em>해당 부분</em>을 다시 본다.</p>
+      <p>셋째, <strong>잡음 주입</strong>은 가우시안 잡음, 가벼운 흐림, JPEG 압축 잡음을 입력에 더한다. 이 변환이 같은 라벨을 유지한다는 가정은 “인간이 약간 흐릿한 사진에서도 같은 물체를 인식할 수 있다”는 사실에서 온다. 잡음 주입은 동시에 정칙화 효과를 가진다. 잡음을 더한 입력에서도 같은 답을 내려면 모델이 입력의 작은 흔들림에 둔감해야 하고, 이는 7장에서 본 입력 잡음 정칙화와 같은 효과다.</p>
+
+      <p>넷째, <strong>큰 변형</strong>은 책 출간 이후 표준이 된 컷아웃(cutout, 이미지 일부를 사각형으로 가림)과 믹스업(mixup, 두 이미지를 가중평균)이다. 이 변환은 “라벨이 같은 변환”이라기보다 “라벨도 함께 섞이는 변환”이다. 컷아웃은 모델이 한 부분에만 의존하지 못하게 강제하고, 믹스업은 결정 경계를 부드럽게 만들어 적대 예제(adversarial example)와 분포 변화(distribution shift)에 대한 강건성을 높인다.</p>
 
       <div class="analogy">
-        고정 요약 벡터는 <b>긴 회의의 결론만 한 줄로 적어 둔 메모</b>다. 결론 보고서를 쓸 때 그 한 줄로는 부족하다. 어텐션은 <b>회의록 전체를 옆에 펼쳐 두고, 보고서의 각 문장을 쓸 때마다 관련 부분에 하이라이트를 새로 친다</b>. 디코더의 모든 시점이 인코더의 모든 시점을 다시 “볼 수 있는” 권리가 어텐션이다.
+        증강의 4묶음을 외울 때는 <b>“카메라가 흔들렸을 때, 빛이 달라졌을 때, 신호에 잡음이 끼었을 때, 사진 일부가 가려졌을 때”</b>의 네 경우를 떠올리면 된다. 자연 환경에서 사진이 “깨지는” 네 가지 흔한 방식이다. 각 방식마다 라벨은 그대로 유지된다는 사실이 같은 라벨을 공유하는 증강 사본의 정당화다.
       </div>
 
-      <p>수식으로는 다음과 같이 적는다. 디코더가 t시점에 단어를 출력하려 한다고 하자.</p>
+      <h2>대비 정규화 — 책이 별도로 분리해 다루는 이유</h2>
 
-      <div class="math-block">$$ \alpha_{t,s} = \frac{\exp(e_{t,s})}{\sum_{s'} \exp(e_{t,s'})}, \qquad \mathbf{c}_t = \sum_s \alpha_{t,s}\, h_s^{\text{enc}} $$</div>
-      <p class="math-note">e_{t,s} = 디코더 t상태와 인코더 s상태의 “관련도 점수”. α는 그 점수에 softmax를 씌운 가중치(합이 1). c_t는 인코더 모든 상태의 가중 평균.</p>
+      <p>책의 본문은 증강과 정규화를 분리해 다룬다. 두 작업이 모델에 미치는 효과가 다르기 때문이다. 증강은 학습 분포를 “넓힌다”. 정규화는 학습 분포의 한 점 한 점을 “일정한 영역에 모은다”. 두 작업은 함께 쓰일 때 비로소 모델이 안정적으로 학습된다.</p>
 
-      <p>왜 이 형태인가? <strong>“소프트 정렬(soft alignment)”</strong>을 학습으로 잡기 위해서다. 어느 시점이 어느 시점과 짝인지 사람이 정해 주는 대신, 모델이 미분 가능한 가중치 $\alpha_{t,s}$를 통해 스스로 정렬을 만들어 낸다. softmax는 가중치가 합 1이 되도록 강제하고, 결과적으로 $\mathbf{c}_t$는 “이번에 가장 관련 있는 인코더 상태들의 부드러운 평균”이 된다. 이 메커니즘은 미분 가능하므로 일반 역전파로 학습된다.</p>
+      <p>비전에서 가장 흔한 정규화는 채널별 평균/표준편차로 정규화하는 표준 정규화(standardization)다. 그러나 책은 이것 외에 두 가지 비전 특유의 정규화를 짚는다. 첫째, 전역 대비 정규화(global contrast normalization, GCN)는 한 이미지 전체의 평균과 표준편차로 나눈다. 어두운 사진과 밝은 사진을 같은 영역에 모은다.</p>
 
-      <h2>큰 어휘 softmax의 처리 — 왜 비전과 다른가</h2>
-      <p>NLP의 또 한 가지 도메인 고유 문제는 <strong>출력 어휘가 너무 크다</strong>는 점이다. 50,000 클래스 softmax는 비전의 1,000 클래스 ImageNet과는 비교가 안 되는 비용이다. 매 시점마다 분모 $\sum_j \exp(z_j)$를 50,000개 항으로 다 더해야 하니, 학습이 한 자릿수 더 느려진다.</p>
+      <div class="math-block">$$ x'_{i,j} = \frac{x_{i,j} - \bar{x}}{\max(\epsilon, \sqrt{\frac{1}{N}\sum_{p,q}(x_{p,q} - \bar{x})^2 })} $$</div>
+      <p class="math-note">한 이미지의 모든 픽셀에서 평균을 빼고, 그 이미지 자체의 표준편차로 나눈다. ε는 어두운 회색 영역에서 0으로 나누는 사고를 막는 안전 마진.</p>
 
-      <p>책은 세 가지 처방을 든다.</p>
-      <ul>
-        <li><strong>계층적 softmax(hierarchical softmax)</strong> — 50,000개를 이진 트리로 정리한 뒤, 정답까지의 경로 위 결정들만 계산한다. O(N) → O(log N).</li>
-        <li><strong>중요도 샘플링(importance sampling)</strong> — 분모를 무작위로 뽑은 일부 단어의 합으로 추정한다. 무편향 추정량을 만들면 학습에 그대로 쓸 수 있다.</li>
-        <li><strong>잡음 대조 추정(noise-contrastive estimation, NCE)</strong> — 정답 단어와 무작위로 뽑은 “잡음 단어”를 구별하는 이진 분류로 문제를 바꾼다. word2vec의 negative sampling이 이 아이디어의 단순화 버전이다.</li>
-      </ul>
+      <p>둘째, 국소 대비 정규화(local contrast normalization, LCN)는 각 픽셀 주위의 작은 창에서 평균과 표준편차를 빼고 나눈다. 같은 이미지 안에 어두운 부분과 밝은 부분이 함께 있는 경우(역광 사진, 부분 그림자), 둘을 모두 다룰 수 있게 만든다. 이 변환은 망막의 측방 억제(lateral inhibition)와 닮았다는 신경과학적 동기로도 정당화된다.</p>
 
-      <p>세 방법의 공통 분모는 “<strong>분모의 50,000항 전수합을 피한다</strong>”는 것이다. 어휘 크기가 도메인 고유 비용을 만들 때, 그 비용을 깎는 도메인 고유 트릭이 바로 응용 챕터의 “기본 부품을 도메인 모양에 맞게 조립하는” 작업의 정확한 예다.</p>
+      <h2>전이학습 — “남이 만들어 둔 특징을 빌려 쓰는” 응용의 기본기</h2>
 
-      <h2>비전·음성·언어의 공통 골격</h2>
-      <p>여기까지 보면 세 도메인의 공통 골격이 보인다. <strong>입력의 모양에 맞춰 본체(CNN/RNN/Transformer)를 고르고, 출력의 분포(softmax)로 묶고, 음의 로그우도로 학습한다.</strong> 도메인이 다르다는 것은 본질적으로 다른 알고리즘을 쓴다는 뜻이 아니라, 입력 측의 사전 변환(이미지 정규화 vs 스펙트로그램 vs 임베딩)과 출력 측의 어휘 크기·정렬 문제(softmax vs CTC vs attention)가 다르다는 뜻이다. 같은 그물을 다른 도메인에 던지는 다섯 번째 사례가 다음 장의 추천 시스템이다.</p>
+      <p>책이 비전 응용의 가장 강한 실전 무기로 꼽는 것이 전이학습(transfer learning)이다. 새 도메인에서 데이터가 부족한 경우, 처음부터 학습하는 것보다 이미 ImageNet에서 학습된 거대한 CNN의 가중치에서 출발하는 편이 훨씬 빠르고 정확하다. 이유는 다음과 같다.</p>
+
+      <p>ImageNet으로 학습된 CNN의 앞 층(early layer)은 자연 이미지의 보편적 특징(엣지, 색 대비, 작은 텍스처)을 검출한다. 이 특징은 ImageNet의 1,000개 범주에만 유용한 게 아니라, 모든 자연 이미지에 거의 보편적으로 유용하다. 의료 영상, 위성 사진, 산업용 결함 검출 — 어떤 도메인이든 자연 이미지의 위에 얹혀 있다면 이 앞 층의 특징을 거의 그대로 가져다 쓸 수 있다.</p>
+
+      <p>전이학습의 표준 절차는 두 가지다. 하나는 <strong>특징 추출(feature extraction)</strong> 방식으로, ImageNet 가중치를 고정한 채 마지막 분류 층만 새 도메인의 라벨 수에 맞춰 다시 학습한다. 다른 하나는 <strong>미세 조정(fine-tuning)</strong> 방식으로, 사전학습 가중치에서 출발해 모든 층을 작은 학습률로 함께 학습한다. 어떤 방식을 쓰는지는 새 도메인의 데이터 크기와 ImageNet과의 거리에 달려 있다. 데이터가 적고 도메인이 가까우면 특징 추출이 안전하고, 데이터가 충분하면 미세 조정이 더 강하다.</p>
+
+      <div class="symbols"><tbody>
+        <tr><td>특징 추출</td><td>ImageNet 가중치를 동결하고 마지막 분류 층만 학습. 데이터가 부족하거나 새 도메인이 ImageNet과 가까울 때 안전.</td></tr>
+        <tr><td>미세 조정</td><td>모든 층을 작은 학습률로 함께 학습. 데이터가 충분하거나 새 도메인이 ImageNet과 멀 때 더 좋은 결과.</td></tr>
+        <tr><td>학습률 분리</td><td>앞 층(보편 특징)에는 더 작은 학습률, 뒤 층(도메인 특화)에는 더 큰 학습률을 주는 변형. ImageNet과 거리가 먼 도메인에서 표준 트릭.</td></tr>
+        <tr><td>도메인 적응</td><td>같은 라벨 집합을 공유하지만 입력 분포가 다른 경우(예: 합성 이미지 학습 후 실제 이미지 테스트)에 쓰는 별도 트릭. 적대 학습이나 분포 매칭이 흔히 결합된다.</td></tr>
+      </tbody></div>
+
+      <h2>왜 ImageNet의 특징이 그렇게 보편적인가</h2>
+
+      <p>흥미로운 질문은 이것이다. 왜 자연 이미지의 보편 특징이 ImageNet에서 학습한 CNN의 앞 층에 그렇게 잘 잡히는가? 답은 두 가지다. 첫째, ImageNet의 1,000개 범주가 자연 이미지의 매우 넓은 영역을 포괄한다. 동물, 식물, 도구, 차량, 건물, 음식 등. 이 범주들을 동시에 잘 분류하려면 모델은 어떤 단일 범주가 아니라 자연 이미지 일반에 유용한 특징을 학습해야 한다. 둘째, CNN의 구조적 사전(국소성, 이동 등가성, 위계적 합성)이 자연 이미지에 매우 잘 맞기 때문에, 어떤 충분히 큰 자연 이미지 데이터셋으로 학습해도 비슷한 보편 특징에 수렴한다. 책 이후의 연구는 ImageNet 외에 인터넷의 수억 장 이미지로 학습한 자기지도(self-supervised) 모델도 비슷하게 보편적인 특징을 학습한다는 것을 보여 줬다.</p>
+
+      <h2>한 줄 결론</h2>
+
+      <p>비전 응용의 실전 점수는 “네 종류의 증강, 두 종류의 정규화, 전이학습”에서 갈린다. 모델 본체를 새로 설계하는 것보다 이 외부 결정들을 잘 조합하는 편이 거의 항상 더 빠르고 정확한 결과를 낸다. 다음 sub에서는 비전을 떠나 음성 인식으로 옮겨, “시간이 흐르는 신호”를 어떻게 모델 입력의 모양으로 바꾸는지를 본다.</p>
     </div>
 
-    <nav class="ch-foot">
-      <a href="02.html"><span class="dir">← Prev</span><div class="ti">02 · 음성 인식</div></a>
-      <a href="04.html" class="next"><span class="dir">Next →</span><div class="ti">04 · 추천 시스템</div></a>
-    </nav>
+    <nav class="ch-foot"></nav>
   </main>
 </div>
 
 <script>
   const SUBS = [
-    ['01','대규모 비전 분류'],
-    ['02','음성 인식'],
-    ['03','자연어 처리'],
-    ['04','추천 시스템'],
-    ['05','강화학습 응용'],
-    ['06','시험 대비'],
+    { no: '01', t: '응용 챕터의 의미' },
+    { no: '02', t: '대규모 비전 분류 1 — ImageNet' },
+    { no: '03', t: '대규모 비전 분류 2 — 증강·전이학습' },
+    { no: '04', t: '음성 인식 — 파형 → 스펙트로그램' },
+    { no: '05', t: 'NLP 1 — 단어 임베딩' },
+    { no: '06', t: 'NLP 2 — 분포 가설·임베딩 산수' },
+    { no: '07', t: 'NLP 3 — 언어 모델·번역·어텐션' },
+    { no: '08', t: '추천 시스템 — 협업 필터링' },
+    { no: '09', t: '강화학습 — agent-environment 루프' },
+    { no: '10', t: '공통 교훈 — 표상 위의 단순 산수' },
+    { no: '11', t: '시험 대비' },
   ];
-  const here = '03';
-  const navlist = document.getElementById('navlist');
-  SUBS.forEach(([no, t]) => {
-    const li = document.createElement('li');
-    const a = document.createElement('a');
-    a.href = no + '.html';
-    a.textContent = t;
-    if (no === here) a.classList.add('current');
-    li.appendChild(a); navlist.appendChild(li);
-  });
+  function buildNav(cur) {
+    const tb = document.querySelector('.topbar');
+    if (tb) tb.innerHTML =
+      '<a class="home" href="index.html">← Chapter 12 / 응용</a>' +
+      '<span class="ch-mini">SUB ' + cur + ' / 11</span>';
+    const ol = document.querySelector('.ch-nav ol');
+    if (ol) ol.innerHTML = SUBS.map(c =>
+      '<li><a href="' + c.no + '.html"' + (c.no === cur ? ' class="current"' : '') + '>' + c.t + '</a></li>').join('');
+    const foot = document.querySelector('.ch-foot');
+    if (foot) {
+      const i = SUBS.findIndex(c => c.no === cur);
+      const prev = i > 0 ? SUBS[i - 1] : { no: '', t: '표지로', _href: 'index.html' };
+      const next = i < SUBS.length - 1 ? SUBS[i + 1] : { no: '', t: '표지로', _href: 'index.html' };
+      const hp = prev._href || (prev.no + '.html');
+      const hn = next._href || (next.no + '.html');
+      foot.innerHTML =
+        '<a href="' + hp + '"><div class="dir">← 이전</div><div class="ti">' + prev.t + '</div></a>' +
+        '<a href="' + hn + '" class="next"><div class="dir">다음 →</div><div class="ti">' + next.t + '</div></a>';
+    }
+  }
+  function initScroll() {
+    const bar = document.querySelector('.scroll-progress');
+    if (!bar) return;
+    const on = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    document.addEventListener('scroll', on, { passive: true }); on();
+  }
 
-  const prog = document.querySelector('.scroll-progress');
-  window.addEventListener('scroll', () => {
-    const h = document.documentElement;
-    prog.style.width = (h.scrollTop / (h.scrollHeight - h.clientHeight) * 100) + '%';
-  });
+  function augGridWidget(host) {
+    const AUG = [
+      { t: '기하 변환', d: 'flip · crop · rotate · scale', paint: (ctx,w,h)=>{
+          ctx.strokeStyle = '#C0492E'; ctx.lineWidth = 1.5;
+          ctx.strokeRect(w*0.18, h*0.22, w*0.5, h*0.55);
+          ctx.setLineDash([3,3]); ctx.strokeStyle = '#2D5B7A';
+          ctx.strokeRect(w*0.32, h*0.34, w*0.5, h*0.55);
+          ctx.setLineDash([]);
+          ctx.fillStyle = '#5A5247'; ctx.font = '9px monospace';
+          ctx.fillText('crop · flip', 4, h-3);
+      }},
+      { t: '색 변환', d: 'brightness · hue · PCA jitter', paint: (ctx,w,h)=>{
+          const grad = ctx.createLinearGradient(0,0,w,0);
+          grad.addColorStop(0, '#D98E73'); grad.addColorStop(0.5, '#C9A06A'); grad.addColorStop(1, '#6E97AF');
+          ctx.fillStyle = grad; ctx.fillRect(w*0.12, h*0.2, w*0.76, h*0.6);
+      }},
+      { t: '잡음 주입', d: 'Gaussian · blur · JPEG', paint: (ctx,w,h)=>{
+          ctx.fillStyle = '#C9A06A'; ctx.fillRect(w*0.12, h*0.2, w*0.76, h*0.6);
+          for (let i = 0; i < 70; i++) {
+            ctx.fillStyle = `rgba(38,34,28,${Math.random()*0.4})`;
+            ctx.fillRect(w*0.12 + Math.random()*w*0.76, h*0.2 + Math.random()*h*0.6, 2, 2);
+          }
+      }},
+      { t: '큰 변형', d: 'cutout · mixup', paint: (ctx,w,h)=>{
+          ctx.fillStyle = '#C9A06A'; ctx.fillRect(w*0.12, h*0.2, w*0.76, h*0.6);
+          ctx.fillStyle = 'rgba(38,34,28,0.85)';
+          ctx.fillRect(w*0.4, h*0.32, w*0.22, h*0.32);
+      }},
+    ];
+    host.innerHTML = AUG.map(a =>
+      '<div class="aug-card">' +
+      '  <canvas></canvas>' +
+      '  <div class="at">' + a.t + '</div>' +
+      '  <div class="ad">' + a.d + '</div>' +
+      '</div>').join('');
+    host.querySelectorAll('.aug-card').forEach((card, i) => {
+      const cv = card.querySelector('canvas');
+      cv.width = cv.clientWidth; cv.height = 70;
+      const ctx = cv.getContext('2d');
+      AUG[i].paint(ctx, cv.width, cv.height);
+    });
+  }
 
   window.addEventListener('load', () => {
-    if (window.renderMathInElement) {
-      renderMathInElement(document.body, {
-        delimiters: [
-          {left: '$$', right: '$$', display: true},
-          {left: '$', right: '$', display: false},
-        ],
-        throwOnError: false,
-      });
-    }
+    buildNav('03'); initScroll();
+    const g = document.getElementById('augGrid');
+    if (g) augGridWidget(g);
   });
-
-  // ====== 임베딩 공간 위젯 ======
-  // 단어를 2D 좌표 + 색상 그룹으로 손수 배치 (실제 PCA의 결과 비슷하게)
-  const EMB = {
-    // 왕족 + 성별 축
-    king:    { x: -0.4, y:  0.6, c: '#2D5B7A', g: '왕족' },
-    queen:   { x: -0.6, y:  0.2, c: '#2D5B7A', g: '왕족' },
-    man:     { x:  0.5, y:  0.6, c: '#C0492E', g: '성별' },
-    woman:   { x:  0.3, y:  0.2, c: '#C0492E', g: '성별' },
-    boy:     { x:  0.55, y:  0.85, c: '#C0492E', g: '성별' },
-    girl:    { x:  0.35, y:  0.45, c: '#C0492E', g: '성별' },
-    prince:  { x: -0.2, y:  0.85, c: '#2D5B7A', g: '왕족' },
-    princess:{ x: -0.4, y:  0.45, c: '#2D5B7A', g: '왕족' },
-    // 장소·국가
-    paris:   { x:  0.7, y: -0.3, c: '#A47B2E', g: '장소' },
-    france:  { x:  0.9, y: -0.5, c: '#A47B2E', g: '장소' },
-    berlin:  { x:  0.3, y: -0.4, c: '#A47B2E', g: '장소' },
-    germany: { x:  0.5, y: -0.6, c: '#A47B2E', g: '장소' },
-    tokyo:   { x: -0.7, y: -0.3, c: '#A47B2E', g: '장소' },
-    japan:   { x: -0.5, y: -0.5, c: '#A47B2E', g: '장소' },
-    // 동물·일상
-    cat:     { x: -0.2, y: -0.8, c: '#6E97AF', g: '동물' },
-    dog:     { x:  0.0, y: -0.85, c: '#6E97AF', g: '동물' },
-    kitten:  { x: -0.3, y: -0.65, c: '#6E97AF', g: '동물' },
-    puppy:   { x: -0.1, y: -0.7, c: '#6E97AF', g: '동물' },
-    // 크기·정도
-    big:     { x: -0.85, y:  0.0, c: '#D98E73', g: '크기' },
-    small:   { x: -0.85, y: -0.15, c: '#D98E73', g: '크기' },
-    tall:    { x: -0.65, y:  0.05, c: '#D98E73', g: '크기' },
-    short:   { x: -0.65, y: -0.1, c: '#D98E73', g: '크기' },
-    // 동사 활용
-    walk:    { x:  0.6, y:  0.0, c: '#A47B2E', g: '동사' },
-    walking: { x:  0.7, y:  0.15, c: '#A47B2E', g: '동사' },
-    swim:    { x:  0.45, y: -0.05, c: '#A47B2E', g: '동사' },
-    swimming:{ x:  0.55, y:  0.1, c: '#A47B2E', g: '동사' },
-  };
-
-  const cv = document.getElementById('embCanvas');
-  const dpr = Math.min(2, window.devicePixelRatio || 1);
-  function resize() {
-    const w = cv.parentElement.clientWidth, h = cv.parentElement.clientHeight;
-    cv.width = w * dpr; cv.height = h * dpr;
-    cv.getContext('2d').setTransform(dpr,0,0,dpr,0,0);
-  }
-  resize();
-  window.addEventListener('resize', () => { resize(); draw(); });
-
-  const ctx = cv.getContext('2d');
-
-  let arrowA = 'king', arrowB = 'man', arrowC = 'woman', resultW = 'queen';
-
-  function toScreen(p) {
-    const w = cv.clientWidth, h = cv.clientHeight;
-    const margin = 30;
-    const x = margin + ((p.x + 1) / 2) * (w - 2*margin);
-    const y = h - margin - ((p.y + 1) / 2) * (h - 2*margin);
-    return [x, y];
-  }
-
-  function draw() {
-    const w = cv.clientWidth, h = cv.clientHeight;
-    ctx.fillStyle = '#FAF7F0'; ctx.fillRect(0,0,w,h);
-
-    // 격자
-    ctx.strokeStyle = 'rgba(38, 34, 28, 0.05)';
-    ctx.lineWidth = 1;
-    for (let i = 0; i <= 8; i++) {
-      const x = (w * i) / 8;
-      const y = (h * i) / 8;
-      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
-    }
-
-    // 단어 점·라벨
-    Object.entries(EMB).forEach(([word, p]) => {
-      const [x, y] = toScreen(p);
-      ctx.fillStyle = p.c;
-      ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI*2); ctx.fill();
-      ctx.fillStyle = 'rgba(38, 34, 28, 0.7)';
-      ctx.font = '11px "Spline Sans Mono", monospace';
-      ctx.fillText(word, x + 7, y + 3);
-    });
-
-    // 어텐션 화살: arrowA → 결과, arrowB → arrowC (평행)
-    const a = EMB[arrowA], b = EMB[arrowB], c = EMB[arrowC], r = EMB[resultW];
-    if (a && r) drawArrow(a, r, '#C0492E', 'A→R');
-    if (b && c) drawArrow(b, c, '#A47B2E', 'B→C');
-  }
-  function drawArrow(p1, p2, color, _) {
-    const [x1, y1] = toScreen(p1);
-    const [x2, y2] = toScreen(p2);
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
-    const ang = Math.atan2(y2 - y1, x2 - x1);
-    ctx.beginPath();
-    ctx.moveTo(x2, y2);
-    ctx.lineTo(x2 - 8*Math.cos(ang - 0.3), y2 - 8*Math.sin(ang - 0.3));
-    ctx.lineTo(x2 - 8*Math.cos(ang + 0.3), y2 - 8*Math.sin(ang + 0.3));
-    ctx.closePath();
-    ctx.fillStyle = color;
-    ctx.fill();
-  }
-
-  function compute() {
-    const a = document.getElementById('wA').value.trim().toLowerCase();
-    const b = document.getElementById('wB').value.trim().toLowerCase();
-    const c = document.getElementById('wC').value.trim().toLowerCase();
-    arrowA = a; arrowB = b; arrowC = c;
-    const out = document.getElementById('embOut');
-    const resEl = document.getElementById('wR');
-    if (!EMB[a] || !EMB[b] || !EMB[c]) {
-      out.innerHTML = `<em>알 수 없는 단어가 있습니다. 위의 사전 단어만 사용 가능합니다(king, man, woman, paris, france, germany, big, small, tall, walk, walking, swim 등).</em>`;
-      resEl.textContent = '?';
-      resultW = null;
-      draw();
-      return;
-    }
-    // 벡터 산수: a - b + c
-    const target = {
-      x: EMB[a].x - EMB[b].x + EMB[c].x,
-      y: EMB[a].y - EMB[b].y + EMB[c].y,
-    };
-    // 최근접 단어 (단 입력 셋 제외)
-    let best = null, bestD = Infinity;
-    Object.entries(EMB).forEach(([w, p]) => {
-      if (w === a || w === b || w === c) return;
-      const d = (p.x - target.x)**2 + (p.y - target.y)**2;
-      if (d < bestD) { bestD = d; best = w; }
-    });
-    resultW = best;
-    resEl.textContent = best;
-    const dist = Math.sqrt(bestD).toFixed(3);
-    out.innerHTML = `<b>${a}</b> − <b>${b}</b> + <b>${c}</b> ≈ <b>${best}</b><br><em>잔차 거리 ${dist} · 의미 축이 보존되면 작은 잔차로 정답 단어가 나옵니다.</em>`;
-    draw();
-  }
-
-  ['wA','wB','wC'].forEach(id => {
-    document.getElementById(id).addEventListener('input', compute);
-  });
-  document.querySelectorAll('.emb-presets button').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const [a,b,c] = btn.dataset.p.split(',');
-      document.getElementById('wA').value = a;
-      document.getElementById('wB').value = b;
-      document.getElementById('wC').value = c;
-      compute();
-    });
-  });
-
-  compute();
 </script>
 </body>
 </html>
+</content>
+</invoke>

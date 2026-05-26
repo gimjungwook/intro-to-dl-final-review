@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>13 · Encoder 블록</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Chapter 13 · 인코더 블록 한 채를 통째로 보자</span>
+      <h1>Encoder 블록 — <span class="t-synth">Multi-Head</span> + <span class="t-structure">FFN</span> + 잔차 + LayerNorm</h1>
+      <p class="lede">앞 장까지 만든 부품들 — multi-head attention, positional encoding — 을 이제 “한 채의 블록”으로 조립한다. Transformer Encoder는 이 블록을 $N$개(원 논문 base = 6개) 쌓아 만든다. 한 블록의 내부에는 정확히 두 개의 sub-layer(Multi-Head Attention과 Feed-Forward Network)와 네 가지 부속(잔차 연결, LayerNorm 2회, dropout)이 있다. 이 장은 그 한 채의 모든 부품을 해부한다.</p>
+    </header>
+
+    <div class="prose">
+      <h2>전체 그림 — 입력과 출력 모양은 같다</h2>
+      <p>가장 먼저 기억해야 할 사실. <strong>Encoder 블록의 입력과 출력의 모양은 정확히 같다.</strong> 입력 $X \in \mathbb{R}^{N \times d_{model}}$이 들어가면 출력 $X' \in \mathbb{R}^{N \times d_{model}}$이 나온다. 이게 왜 중요한가? 같은 모양이라야 같은 블록을 또 쌓을 수 있기 때문이다. 6개 블록을 쌓는 게 가능한 것도, 12개·24개로 확장하는 게 가능한 것도 모두 이 “입출력 모양 보존” 덕분이다.</p>
+
+      <p>한 블록 안에서 일어나는 전체 흐름을 한 줄로 적으면 다음과 같다.</p>
+
+      <div class="math-block">$$ X \to \text{MHA} \to \text{Add\&Norm} \to \text{FFN} \to \text{Add\&Norm} \to X' $$</div>
+      <p class="math-note">MHA = Multi-Head Self-Attention. FFN = Feed-Forward Network. Add&Norm = 잔차 연결 + LayerNorm. 화살표 4개 = 4개의 변환 단계.</p>
+
+      <h2>Sub-layer 1 — Multi-Head Self-Attention</h2>
+      <p>첫 번째 sub-layer는 우리가 9·10장에서 본 multi-head self-attention이다. 입력 $X$가 그대로 Q, K, V로 사용된다(self-attention이므로). 결과로 같은 모양의 출력이 나온다.</p>
+
+      <div class="math-block">$$ A = \text{MultiHead}(X, X, X) $$</div>
+      <p class="math-note">$A \in \mathbb{R}^{N \times d_{model}}$. 같은 입력을 세 번 넣었지만 각 위치는 $W^Q, W^K, W^V$로 따로 사영되어 다른 역할을 수행한다. Self-attention은 “이 시퀀스 안에서 토큰들이 서로를 본다.”</p>
+
+      <p>이 단계의 직관적 의미는 “각 토큰이 자신의 표현을 갱신하기 위해 시퀀스 안 다른 토큰들의 정보를 참조”다. 예를 들어 "The cat sat on the mat"의 "cat" 토큰은 "The"(관사)·"sat"(동사)·"mat"(또 다른 명사) 등의 정보를 가중합으로 흡수하여 “문맥이 반영된 cat”의 새 표현을 만든다.</p>
+
+      <h2>Sub-layer 1 부속 — Residual Connection</h2>
+      <p>Attention 출력 $A$를 그대로 다음 단계로 넘기지 않고, 입력 $X$를 한 번 더해 준다.</p>
+
+      <div class="math-block">$$ Y_1 = X + A $$</div>
+      <p class="math-note">잔차 연결(residual connection, skip connection). “원래 입력”을 그대로 “변환된 출력”에 더하는 단순한 동작이다. ResNet에서 가져온 아이디어.</p>
+
+      <p>왜 굳이 원래 입력을 더하는가? 이유는 두 가지다. <strong>첫째, gradient 흐름의 안정화.</strong> 깊은 신경망(12, 24, 96층)을 학습할 때 backpropagation 그래디언트가 각 층을 거치며 곱셈으로 누적되어 매우 작아지거나 매우 커진다(vanishing/exploding gradient). 잔차 연결이 있으면 그래디언트가 “더하기 경로”를 통해 곧장 입력까지 흐를 수 있다 — 마치 깊은 층을 우회하는 지름길과 같다. 이 덕분에 96층짜리 GPT-3도 학습이 가능하다.</p>
+
+      <p><strong>둘째, “학습 안 한 상태”가 자동으로 “항등 함수”에 가깝게 시작한다.</strong> 잔차가 없으면 학습 초기에 attention 가중치가 랜덤이므로 출력 $A$가 의미 없는 벡터가 되어 모델이 처음부터 매우 혼란스럽다. 잔차가 있으면 “출력 $\approx$ 입력 + 작은 변화”에서 시작해, 변화 부분만 점진적으로 학습된다. 이게 학습 안정성에 큰 차이를 만든다.</p>
+
+      <h2>Sub-layer 1 부속 — Layer Normalization</h2>
+      <p>잔차 더하기 직후에 LayerNorm을 적용한다.</p>
+
+      <div class="math-block">$$ Z_1 = \text{LayerNorm}(Y_1) = \text{LayerNorm}(X + A) $$</div>
+      <p class="math-note">$Z_1 \in \mathbb{R}^{N \times d_{model}}$. LayerNorm은 각 토큰의 $d_{model}$ 차원 벡터를 평균 0·분산 1로 표준화한 뒤, 학습 가능한 스케일·시프트 파라미터를 곱·더한다.</p>
+
+      <p>LayerNorm의 정확한 수식은 다음과 같다.</p>
+
+      <div class="math-block">$$ \text{LayerNorm}(y) = \gamma \cdot \frac{y - \mu}{\sigma} + \beta, \quad \mu = \frac{1}{d}\sum_i y_i, \quad \sigma = \sqrt{\frac{1}{d}\sum_i (y_i - \mu)^2} $$</div>
+      <p class="math-note">$y \in \mathbb{R}^{d_{model}}$는 한 토큰의 벡터. $\mu, \sigma$는 그 벡터 안에서 계산된 평균·표준편차(다른 토큰이나 배치를 보지 않는다 — 이게 BatchNorm과의 핵심 차이). $\gamma, \beta \in \mathbb{R}^{d_{model}}$는 학습 가능 파라미터.</p>
+
+      <p>왜 LayerNorm인가? 시퀀스 처리에서는 배치 사이에 길이가 다르므로 BatchNorm이 잘 안 통한다. 또한 “한 토큰 벡터 안의 표준화”가 의미적으로 더 자연스럽다 — 한 단어의 모든 표현 차원이 비슷한 스케일을 갖도록 조정하는 것이기 때문. LayerNorm 이후의 값은 모두 평균 0, 분산 1 근처로 안정되어 다음 sub-layer가 안정적으로 학습할 수 있다.</p>
+
+      <div class="widget">
+        <div class="widget-frame">
+          <div class="widget-label"><span class="lab-no">위젯 13</span><span>Encoder 블록 구조도 — 마우스를 올려보세요</span></div>
+          <div id="enc"></div>
+        </div>
+        <p class="widget-cap">각 블록(Input, MHA, Add&Norm, FFN, Add&Norm, Output)에 마우스를 올리면 그 부품의 역할이 표시된다. 점선은 잔차 연결의 경로.</p>
+      </div>
+
+      <h2>Sub-layer 2 — Feed-Forward Network (FFN)</h2>
+      <p>두 번째 sub-layer는 단순한 2층 MLP다. 토큰 위치별로 독립적으로 적용된다.</p>
+
+      <div class="math-block">$$ \text{FFN}(z) = \max(0, z W_1 + b_1) W_2 + b_2 $$</div>
+      <p class="math-note">$z \in \mathbb{R}^{d_{model}}$는 한 토큰의 벡터(LayerNorm 출력의 한 행). $W_1 \in \mathbb{R}^{d_{model} \times d_{ff}}$, $W_2 \in \mathbb{R}^{d_{ff} \times d_{model}}$. 원 논문 base: $d_{ff} = 2048$. $\max(0, \cdot) = \text{ReLU}$.</p>
+
+      <p>이 sub-layer가 왜 있는가? 다음 두 가지 역할 때문이다.</p>
+
+      <p><strong>첫째 — 비선형성 도입.</strong> Attention의 모든 연산(행렬 곱, softmax)을 단독으로 두면 “선형에 가까운” 구조다. 깊이를 쌓아도 결국 “여러 번의 선형 변환을 거친 것”에 가깝다. ReLU 같은 비선형 활성함수를 통과시켜야 진짜 비선형 함수를 표현할 수 있다. FFN의 ReLU가 이 역할을 맡는다.</p>
+
+      <p><strong>둘째 — 토큰별 “기억 저장소”.</strong> FFN의 첫 번째 행렬 $W_1$이 차원을 $d_{model}$에서 $d_{ff} = 2048$로 확장하고, 두 번째 행렬 $W_2$가 다시 $d_{model}$로 압축한다. 이 사이의 2048 차원 공간이 모델이 “세상 지식”을 저장하는 곳이라는 분석이 있다. 최근 연구에서 FFN을 “key-value 메모리”로 해석하는 흐름이 나왔는데, 첫 행렬을 “질의 → 메모리 키”, 두 번째 행렬을 “키 → 응답 값”으로 본다.</p>
+
+      <p>중요한 것은 FFN이 “토큰별로 따로” 적용된다는 점이다. 위치 1의 토큰에 적용되는 $W_1, W_2$는 위치 2의 토큰에 적용되는 것과 완전히 같다(파라미터 공유). 즉 FFN은 “위치 간 정보 교환”이 아니라 “각 위치 내부의 비선형 변환”을 담당한다. 위치 간 정보는 이미 attention에서 충분히 섞였다.</p>
+
+      <h2>Sub-layer 2 부속 — 또 한 번의 Add&Norm</h2>
+      <p>FFN 출력 $F$에 sub-layer 1과 같은 방식으로 잔차와 LayerNorm을 적용한다.</p>
+
+      <div class="math-block">$$ X' = \text{LayerNorm}(Z_1 + \text{FFN}(Z_1)) $$</div>
+      <p class="math-note">이 $X'$가 Encoder 블록의 최종 출력. 모양은 $(N, d_{model})$로 입력과 같다. 다음 블록의 입력이 되거나, 마지막 블록이라면 디코더의 cross-attention에 K, V로 사용된다.</p>
+
+      <h2>왜 “Add&Norm” 순서인가 — Pre-LN vs Post-LN</h2>
+      <p>원 논문은 “Add 먼저, Norm 나중”인 Post-LN 구조다. 하지만 후속 연구에서 “Norm 먼저, Add 나중”인 Pre-LN이 더 학습이 안정적이라는 결과가 보고되었고, 최근 모델(GPT-2 이후)은 대부분 Pre-LN을 쓴다.</p>
+
+      <div class="math-block">$$ \text{Post-LN: } X' = \text{LN}(X + \text{Sublayer}(X)) $$</div>
+      <div class="math-block">$$ \text{Pre-LN: } X' = X + \text{Sublayer}(\text{LN}(X)) $$</div>
+      <p class="math-note">차이는 “LN을 sublayer 전에 하느냐, 잔차 더한 후에 하느냐.” Pre-LN은 잔차 경로가 LN을 거치지 않아 그래디언트가 더 깨끗하게 흐른다. 학습 안정성과 warmup 필요성에 큰 차이가 있다.</p>
+
+      <h2>전체를 한 줄로 적기</h2>
+      <p>Encoder 블록의 모든 단계를 한 줄로 적으면 다음과 같다(Post-LN 기준).</p>
+
+      <div class="math-block">$$ X' = \text{LayerNorm}\!\Big( \text{LayerNorm}(X + \text{MultiHead}(X,X,X)) + \text{FFN}(\text{LayerNorm}(X + \text{MultiHead}(X,X,X))) \Big) $$</div>
+      <p class="math-note">중간 결과를 $Z_1 = \text{LN}(X + \text{MHA}(X))$로 두면 $X' = \text{LN}(Z_1 + \text{FFN}(Z_1))$로 간결해진다.</p>
+
+      <h2>$N$개 블록 쌓기</h2>
+      <p>원 논문 base 모델은 이 Encoder 블록을 $N = 6$개 쌓는다. BERT-base는 12개, BERT-large는 24개, GPT-3는 96개. 모두 “같은 모양의 블록”을 단순히 더 쌓는 것이다. 각 블록의 파라미터($W^Q_i, W^K_i, W^V_i, W^O, W_1, W_2, \gamma, \beta$ 등)는 서로 독립이다.</p>
+
+      <p>흥미로운 점은 “블록을 쌓을수록 표현이 더 추상적”이 된다는 것이다. 첫 블록은 어휘 수준의 패턴(인접 토큰, 형태소 등)을 학습하고, 중간 블록은 구문 수준(주어-동사, 명사구), 깊은 블록은 의미·담론 수준(주제, 감정, 지시 관계)을 학습하는 경향이 관찰된다. 이런 “계층적 추상화”는 CNN이 이미지의 가장자리 → 모양 → 물체로 추상화하는 것과 유사하다.</p>
+
+      <h2>요약 — 이 장에서 기억할 핵심</h2>
+      <p><strong>(1) Encoder 블록 = MHA + FFN + 두 번의 Add&Norm.</strong> 입출력 모양 $(N, d_{model})$ 동일. <strong>(2) MHA는 위치 간 정보 교환, FFN은 위치 내부 비선형 변환.</strong> 두 역할의 분담이 명확하다. <strong>(3) 잔차 연결과 LayerNorm이 깊은 모델 학습을 가능케 한다.</strong> 잔차 = 그래디언트 지름길, LayerNorm = 활성값 스케일 안정화. <strong>(4) 블록을 $N$번 쌓아 “계층적 추상화”를 형성한다.</strong> 다음 장에서는 이 Encoder의 출력을 받아 출력 시퀀스를 생성하는 Decoder를 본다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  window.addEventListener('load', () => {
+    TFR.buildNav('13');
+    const e = document.getElementById('enc');
+    TFR.onVisible(e, () => TFR.encoderBlock(e));
+  });
+</script>
+<script src="assets/widgets.js"></script>
+</body>
+</html>

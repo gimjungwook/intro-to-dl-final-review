@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ch.5 · 기계학습 기초 — 인터랙티브 복습</title>
+<title>Ch.5 기계학습 기초 — 딥러닝 개론 기말 복습</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -12,31 +12,28 @@
 <style>
   .masthead { position: relative; max-width: var(--wide); margin: 0 auto; padding: 1.5rem 1.4rem 0; }
   .hero-wrap { position: relative; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: linear-gradient(180deg,#fff,var(--paper-2)); box-shadow: var(--shadow-plate); }
-  #hero { display: block; width: 100%; height: 360px; }
+  #hero { display: block; width: 100%; }
   .hero-cap { position: absolute; left: 1.2rem; bottom: 1rem; font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; color: var(--ink-faint); pointer-events: none; }
   .hero-cap b { color: var(--structure); } .hero-cap em { color: var(--style); font-style: normal; }
   .title-block { max-width: var(--wide); margin: 2.4rem auto 0; padding-inline: 1.4rem; }
   .title-block .kicker { display: block; margin-bottom: 1rem; }
-  .title-block h1 { font-size: clamp(2.4rem, 6vw, 4.2rem); margin: 0; line-height: 1.05; }
-  .title-block h1 em { color: var(--style); font-style: normal; }
+  .title-block h1 { font-size: clamp(2.6rem, 7vw, 5rem); margin: 0; }
+  .title-block h1 em { color: var(--style); }
   .paper-meta { display: flex; flex-wrap: wrap; gap: .5rem 1.6rem; margin-top: 1.4rem; font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); letter-spacing: .02em; }
   .paper-meta span b { color: var(--ink); font-weight: 500; }
 
-  .toc-section { max-width: var(--measure); margin: 2.6rem auto 1rem; padding-inline: 1.4rem; }
-  .toc-section h2 { margin-top: 0; }
-
-  .plates { max-width: var(--wide); margin: 1rem auto; padding: 1.4rem 1.4rem 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 1rem; }
+  .plates { max-width: var(--wide); margin: 1rem auto; padding: 2rem 1.4rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); gap: 1rem; }
   .plate { position: relative; display: flex; flex-direction: column; text-decoration: none; color: inherit; background: #fff; border: 1px solid var(--line); border-radius: 13px; padding: 1.3rem 1.3rem 1.4rem; transition: transform .2s var(--ease), border-color .2s, box-shadow .2s; overflow: hidden; }
   .plate:hover { transform: translateY(-4px); border-color: var(--structure-lo); box-shadow: var(--shadow-plate); }
   .plate .pno { font-family: var(--mono); font-size: .74rem; letter-spacing: .14em; color: var(--ink-faint); }
-  .plate h3 { font-family: var(--serif); font-size: 1.28rem; margin: .5rem 0 .5rem; line-height: 1.2; }
-  .plate p { font-size: .9rem; color: var(--ink-soft); line-height: 1.5; margin: 0; }
+  .plate h3 { font-family: var(--serif); font-size: 1.22rem; margin: .5rem 0 .5rem; line-height: 1.2; }
+  .plate p { font-size: .88rem; color: var(--ink-soft); line-height: 1.5; margin: 0; }
   .plate .spectrum { display: flex; height: 4px; border-radius: 2px; overflow: hidden; margin-bottom: 1rem; }
   .plate .spectrum i { display: block; height: 100%; }
   .plate .go { margin-top: 1rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; color: var(--structure); opacity: 0; transform: translateX(-4px); transition: .2s var(--ease); }
   .plate:hover .go { opacity: 1; transform: translateX(0); }
-  .plate .kw { margin-top: .8rem; font-family: var(--mono); font-size: .68rem; color: var(--ink-faint); letter-spacing: .04em; }
 
+  .section-intro { max-width: var(--measure); margin: 1rem auto 0; padding-inline: 1.4rem; }
   .twopole { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; max-width: var(--measure); margin: 1.6rem auto; padding-inline: 1.4rem; }
   .pole { padding: 1.1rem 1.2rem; border-radius: 11px; }
   .pole.s1 { background: var(--structure-bg); } .pole.s2 { background: var(--style-bg); }
@@ -45,11 +42,12 @@
   .pole p { margin: 0; font-size: .9rem; color: var(--ink-soft); line-height: 1.5; }
   @media (max-width: 560px){ .twopole{ grid-template-columns: 1fr; } }
 
-  .priority { max-width: var(--measure); margin: 2rem auto; padding: 1.2rem 1.4rem; border: 1px solid var(--line); border-radius: 12px; background: var(--paper-2); }
-  .priority h4 { margin: 0 0 .6rem; font-family: var(--serif); font-size: 1.1rem; color: var(--structure); }
-  .priority ol { margin: 0; padding-left: 1.2rem; }
-  .priority li { margin: .3rem 0; font-size: .92rem; color: var(--ink-soft); }
-  .priority li b { color: var(--ink); }
+  .path { max-width: var(--wide); margin: 2rem auto; padding: 1.6rem 1.4rem; }
+  .path-flow { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; font-family: var(--mono); font-size: .8rem; }
+  .path-flow a { display: inline-flex; align-items: center; gap: .4rem; text-decoration: none; color: var(--ink-soft); padding: .4rem .7rem; border: 1px solid var(--line); border-radius: 20px; transition: .15s; }
+  .path-flow a:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .path-flow a b { color: var(--style); } .path-flow a:hover b { color: var(--style-lo); }
+  .path-flow .arr { color: var(--ink-faint); }
 
   footer.colophon { max-width: var(--measure); margin: 3rem auto 4rem; padding: 2rem 1.4rem 0; border-top: 1px solid var(--line); font-size: .85rem; color: var(--ink-soft); }
   footer.colophon a { color: var(--structure); }
@@ -61,182 +59,92 @@
 <header class="masthead">
   <div class="hero-wrap">
     <canvas id="hero"></canvas>
-    <div class="hero-cap"><b>편향 (bias)</b> ↔ <em>분산 (variance)</em> · 모델 복잡도가 두 양을 거꾸로 움직인다</div>
+    <div class="hero-cap"><b>훈련 — 정돈된 격자</b> ↔ <em>일반화 — 새 데이터의 바람</em> · 마우스를 올려보세요</div>
   </div>
 </header>
 
 <div class="title-block">
   <span class="kicker">Deep Learning Book · Chapter 5 · Machine Learning Basics</span>
-  <h1>훈련 데이터를 외우지 않고,<br><em>새 데이터</em>에서도 맞히는 법</h1>
+  <h1>학습이란 무엇인가,<br><em>일반화는 어떻게 시작되는가</em></h1>
   <div class="paper-meta">
-    <span><b>딥러닝 개론</b> 기말고사 복습</span>
-    <span>제작 <b>김정욱</b></span>
-    <span>시험 <b>2026-06-04 (목)</b></span>
-    <span>이 챕터 <b>7 sub-chapters</b></span>
+    <span><b>딥러닝 개론 기말 복습</b> Chapter 5</span>
+    <span>정리 <b>김정욱</b></span>
+    <span>출처 <b>Goodfellow, Bengio, Courville (2016)</b></span>
+    <span>읽는 시간 <b>약 110분</b></span>
   </div>
 </div>
 
-<section class="toc-section">
+<section class="section-intro">
   <h2>한 문장으로</h2>
-  <p>5장은 <strong>“좋은 모델이란 훈련 오차가 작은 모델이 아니라, 보지 못한 데이터에서 잘 작동하는 모델”</strong>이라는 머신러닝의 핵심 명제를 처음부터 끝까지 풀어 쓴다. 그 명제 하나에서 <span class="t-structure">용량(capacity)·편향-분산 분해·MLE·정칙화·베이지안 추정</span>이 모두 파생된다.</p>
-  <p>처음 읽을 때 가장 중요한 점은, 이 장이 <em>"신경망"</em>이라는 단어를 거의 쓰지 않는다는 것이다. 그러나 6장 이후 모든 신경망 식의 <strong>해석 틀</strong>이 여기서 만들어진다. 손실 함수가 왜 그 형태인지, 정칙화가 왜 일반화를 돕는지, 검증셋이 왜 따로 있어야 하는지 — 전부 5장의 언어다.</p>
+  <p>5장은 <strong>"데이터를 외우는 것과 데이터에서 규칙을 배우는 것은 다르다"</strong>는 한 가지 주장으로 15개의 개념을 묶는다. 신경망(neural network)이 등장하기 전에, 어떤 학습 알고리즘이든 결국 같은 질문을 받게 된다. 무엇을 맞히려 하는가(과업, task, T), 무엇으로 잘했다고 잴 것인가(성능척도, performance measure, P), 어떤 데이터를 보여줄 것인가(경험, experience, E). 이 셋이 결정되면 손실 함수, 최적화, 일반화의 문제까지 차례로 따라온다.</p>
+  <p>이 페이지는 15개 sub-chapter로 그 흐름을 따라간다. 가장 기초인 T·P·E의 정의에서 출발해, 가설 공간(hypothesis space)과 용량(capacity)의 의미를 짚고, 과적합(overfitting)을 편향과 분산이라는 두 가지 시점에서 다시 본다. 그 다음 손실 함수가 어떻게 확률(probability)과 연결되는지 — 최대우도 추정(maximum likelihood estimation, MLE)과 교차 엔트로피(cross entropy)가 같은 식이라는 사실 — 을 보여주고, 베이지안(Bayesian) 관점에서 MAP(maximum a posteriori) 추정과 정칙화(regularization)가 어떻게 한 줄로 이어지는지 잇는다. 마지막에 그라디언트 학습이 5장의 가정에서 깨어지는 두 지점(비볼록 풍경, 안장점)을 짚어 6-8장으로 다리를 놓고, 시험에 그대로 나올 만한 20문항으로 마무리한다.</p>
 </section>
 
 <div class="twopole">
-  <div class="pole s1"><h4>편향 (bias) — 구조적 한계</h4><p>모델이 표현할 수 있는 함수의 범위가 좁아서 생기는 오차. 모델 용량을 키우면 줄어든다. 이 사이트에서 <b>쿨한 파랑</b>으로 표시된다.</p></div>
-  <div class="pole s2"><h4>분산 (variance) — 데이터 의존성</h4><p>훈련 데이터가 조금만 바뀌어도 모델이 크게 달라져서 생기는 오차. 용량을 키우면 늘어난다. 이 사이트에서 <b>웜한 주홍</b>으로 표시된다.</p></div>
+  <div class="pole s1"><h4>훈련 (training)</h4><p>가지고 있는 데이터에 대한 오차를 줄이는 일. 쉽다. 모델 용량만 키우면 0에 가까워진다. 이 사이트에서 <b>쿨한 파랑</b>으로 표시된다.</p></div>
+  <div class="pole s2"><h4>일반화 (generalization)</h4><p>보지 못한 새 데이터에 대한 오차. 진짜 목표. 훈련 오차가 0이어도 일반화 오차는 폭발할 수 있다. 이 사이트에서 <b>웜한 주홍</b>으로 표시된다.</p></div>
 </div>
-
-<section class="priority">
-  <h4>이 챕터 학습 우선순위</h4>
-  <ol>
-    <li><b>Sec.3 편향-분산 분해</b> · <b>Sec.4 MLE</b> — 손실 함수의 정체를 가르는 두 축. 시험 직출제 확률 가장 높음.</li>
-    <li><b>Sec.2 용량·과적합·과소적합</b> — 학습 곡선 해석. 모든 정칙화·튜닝 결정의 기준선.</li>
-    <li><b>Sec.5 MAP·베이지안</b> · <b>Sec.6 정칙화</b> — 사전(prior) = 정칙화 항. Ch.7 정칙화 단원과 직접 연결.</li>
-    <li><b>Sec.1 학습 알고리즘 정의</b> · <b>Sec.7 시험 대비</b> — 정의와 체크리스트.</li>
-  </ol>
-</section>
 
 <section class="plates" id="plates"></section>
 
+<section class="path">
+  <span class="kicker">권장 읽기 순서</span>
+  <div class="path-flow" id="pathflow"></div>
+</section>
+
 <footer class="colophon">
-  <p>이 챕터는 Goodfellow, Bengio, Courville의 Deep Learning Book Chapter 5 (Machine Learning Basics)를 바탕으로 작성된 기말고사 복습 자료다. 모든 sub-chapter는 P2 신경 스타일 전이 해설의 디자인 시스템을 따른다.</p>
+  <p>이 복습 자료는 Goodfellow et al.(2016) <em>Deep Learning</em> Chapter 5와 PRML(Bishop, 2006) 관련 장을 바탕으로 다시 쓴 것이다. 모든 수식은 “왜 그 형태인가”를 같이 설명하고, 위젯은 슬라이더를 직접 움직여 개념이 변하는 방향을 눈으로 확인하도록 만들었다. 시험 직전에는 14장의 Q&amp;A만 다시 훑어도 흐름이 잡힌다.</p>
   <p class="src">
-    원서 5장 · <a href="https://www.deeplearningbook.org/contents/ml.html">deeplearningbook.org/contents/ml.html</a><br>
-    상위 표지 · <a href="../index.html">기말고사 인터랙티브 복습</a><br>
-    선행학습 노트 · <a href="../../05-선행학습/Deep-Learning-Book-05-Machine-Learning-Basics-상세해설.md">Ch.5 상세해설</a>
+    원문 · <a href="https://www.deeplearningbook.org/contents/ml.html">deeplearningbook.org/contents/ml.html</a><br>
+    Bishop PRML · Chapter 1, 3, 4<br>
+    상세해설 노트 · 2-Areas/Academic/Spring 2026/딥러닝 개론/05-선행학습/
   </p>
 </footer>
 
 <script>
-  const SUBS = [
-    { no:'01', t:'학습 알고리즘의 정의 (T·P·E)',  d:'학습이라는 모호한 말을 과제·성능 척도·경험 세 축으로 해부한다. 스팸 분류기 예시로 세 축을 분리해본다.', sp:['ink-soft','ink'], kw:'Task · Performance · Experience' },
-    { no:'02', t:'용량·과적합·과소적합',           d:'학습이 곧 일반화가 아니다. 용량이 너무 작으면 과소, 너무 크면 과적합. 학습 곡선 위젯으로 직접 관찰.', sp:['structure-lo','structure'], kw:'Capacity · Under/Over fit · 학습 곡선' },
-    { no:'03', t:'편향-분산 분해',                 d:'같은 오차를 두 갈래로 가르는 이유. 편향-분산 트레이드오프 위젯으로 d 슬라이더를 움직이며 본다.', sp:['structure','style'], kw:'Bias² · Variance · Noise' },
-    { no:'04', t:'최대우도 추정 (MLE)',            d:'모든 손실의 어머니. L 최대화 = −lnL 최소화 동치. 가우시안 분포 슬라이더로 직접 확인.', sp:['style','synth'], kw:'Likelihood · NLL · 동치' },
-    { no:'05', t:'베이지안 추정과 MAP',            d:'사전(prior)이 정칙화로 화한다. 빈도주의 점추정 vs 베이지안 분포 추정의 차이.', sp:['synth','structure'], kw:'Prior · Posterior · MAP' },
-    { no:'06', t:'정칙화 — 가중치 감쇠',           d:'가중치 감쇠가 왜 가우시안 사전인지. L1 = Laplace, L2 = Gaussian. Ch.7 정칙화의 뿌리.', sp:['structure','style-lo'], kw:'Weight decay · L1/L2 · Prior 해석' },
-    { no:'07', t:'시험 대비 — Q&A · 체크리스트',   d:'기말 출제 가능 7문제 + 핵심 수식 7개 + 일반화/과적합 진단 체크리스트.', sp:['ink'], kw:'시험 · 체크리스트 · 수식' },
+  const CHAPTERS = [
+    { no:'01', t:'학습 알고리즘이란 — T·P·E 삼각형', d:'학습이라는 추상어를 과업·성능척도·경험으로 분해한다. 셋 중 하나라도 빠지면 학습이라는 말이 모호해진다.', sp:['structure'] },
+    { no:'02', t:'학습의 세 갈래 — 지도·비지도·강화', d:'어떤 종류의 경험(E)이 주어지는가에 따라 학습 방식이 갈린다. 분류·군집·정책 학습의 차이.', sp:['structure','style'] },
+    { no:'03', t:'용량과 가설 공간', d:'모델이 표현할 수 있는 함수의 집합. 같은 데이터에 선형·다항·신경망이 그릴 수 있는 곡선이 다르다.', sp:['structure'] },
+    { no:'04', t:'과적합과 과소적합', d:'훈련 오차는 줄었는데 검증 오차가 커지는 현상의 메커니즘. 학습은 일반화의 시작이지 끝이 아니다.', sp:['style'] },
+    { no:'05', t:'편향-분산 분해', d:'같은 오차를 두 갈래로 가르는 이유. 단순할수록 편향이 커지고, 복잡할수록 분산이 커진다.', sp:['structure','style'] },
+    { no:'06', t:'학습 곡선', d:'데이터 크기 N에 따라 훈련/검증 오차가 어떻게 변하는가. 더 모을지, 모델을 키울지 결정하는 도구.', sp:['structure'] },
+    { no:'07', t:'검증·테스트 분할과 교차검증', d:'왜 셋(훈련·검증·테스트)이 필요한가. 교차검증 k의 의미와 leave-one-out.', sp:['style'] },
+    { no:'08', t:'손실 함수와 경험적 위험 (ERM)', d:'성능척도를 학습 가능한 함수로 바꾸는 과정. MSE·MAE·Huber·교차엔트로피의 모양과 의미.', sp:['structure'] },
+    { no:'09', t:'최대우도 추정 (MLE)', d:'데이터가 가장 그럴듯하게 보이도록 매개변수를 정하는 원리. 모든 손실의 어머니.', sp:['style'] },
+    { no:'10', t:'MLE = 교차 엔트로피', d:'두 시점에서 같은 식. 분류 손실이 왜 음의 로그우도(NLL)와 정확히 같은가.', sp:['structure','style'] },
+    { no:'11', t:'베이지안 추정 — 분포로 답하기', d:'점추정과 분포추정의 차이. 베타 사전(prior)이 동전 던지기의 답을 어떻게 바꾸는가.', sp:['synth'] },
+    { no:'12', t:'MAP 추정 — 정칙화로 가는 다리', d:'사후 최빈값. 베이지안과 정칙화를 잇는 다리. Ch.7의 weight decay 예고.', sp:['synth','style'] },
+    { no:'13', t:'정칙화 도입 — 가우시안 사전 = L2', d:'가중치 감쇠(L2)가 왜 “가중치에 평균 0의 가우시안 사전을 둔 MAP”과 정확히 같은가.', sp:['style'] },
+    { no:'14', t:'그라디언트 학습의 한계 — Ch.8 예고', d:'비볼록 손실, 국소 최소, 안장점. 5장의 가정이 6-8장에서 어떻게 깨지는지 미리 본다.', sp:['structure','synth'] },
+    { no:'15', t:'시험 대비 — Q&A 20선', d:'시험에 그대로 나올 만한 20문항. 직관 설명·수식·반례 형태로 풀어 적었다.', sp:['ink'] },
   ];
-  const colMap = { structure:'var(--structure)', 'structure-lo':'var(--structure-lo)', style:'var(--style)', 'style-lo':'var(--style-lo)', synth:'var(--synth)', ink:'var(--ink)', 'ink-soft':'var(--ink-soft)' };
-
+  const colMap = { structure:'var(--structure)', 'structure-lo':'var(--structure-lo)', style:'var(--style)', synth:'var(--synth)', ink:'var(--ink-soft)' };
   const platesEl = document.getElementById('plates');
-  SUBS.forEach(s => {
-    const sp = s.sp.length === 1 ? [s.sp[0], s.sp[0]] : s.sp;
-    const a = document.createElement('a'); a.className = 'plate'; a.href = s.no + '.html';
+  const flowEl = document.getElementById('pathflow');
+  CHAPTERS.forEach((c, idx) => {
+    const sp = c.sp.length === 1 ? [c.sp[0], c.sp[0]] : c.sp;
+    const a = document.createElement('a');
+    a.className = 'plate'; a.href = c.no + '.html';
     a.innerHTML = `
-      <div class="spectrum">${sp.map(x=>`<i style="flex:1;background:${colMap[x]}"></i>`).join('')}</div>
-      <span class="pno">SECTION ${s.no}</span>
-      <h3>${s.t}</h3>
-      <p>${s.d}</p>
-      <span class="kw">${s.kw}</span>
+      <div class="spectrum">${sp.map(s=>`<i style="flex:1;background:${colMap[s]}"></i>`).join('')}</div>
+      <span class="pno">SECTION ${c.no}</span>
+      <h3>${c.t}</h3>
+      <p>${c.d}</p>
       <span class="go">읽기 →</span>`;
     platesEl.appendChild(a);
+
+    const f = document.createElement('a'); f.href = c.no + '.html';
+    f.innerHTML = `<b>${c.no}</b> ${c.t.split('—')[0].slice(0,14)}…`;
+    flowEl.appendChild(f);
+    if (idx < CHAPTERS.length - 1) { const s = document.createElement('span'); s.className='arr'; s.textContent='→'; flowEl.appendChild(s); }
   });
 
-  // 표지 히어로 — 편향-분산 트레이드오프 입자 가시화
   window.addEventListener('load', () => {
-    const canvas = document.getElementById('hero');
-    if (!canvas || !window.THREE) return;
-    const w = canvas.clientWidth || canvas.parentElement.clientWidth;
-    const h = 360;
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(50, w/h, 0.1, 100);
-    camera.position.set(0, 0, 18);
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
-    renderer.setSize(w, h, false);
-    renderer.setClearColor(0xffffff, 0);
-
-    // 진짜 함수: y = sin(x) (잉크 곡선)
-    // 데이터 점: 잡음 추가
-    // 적합 곡선: 단순(편향 큼) ↔ 복잡(분산 큼) 사이를 진동
-    const N_PTS = 18;
-    const DATA = [];
-    let rngState = 20260604;
-    function rng() { rngState = (rngState * 1664525 + 1013904223) >>> 0; return rngState / 4294967296; }
-    function gauss() { const u = 1 - rng(), v = rng(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
-    for (let i = 0; i < N_PTS; i++) {
-      const x = -7 + 14 * (i + 0.5) / N_PTS;
-      const y = Math.sin(x * 0.4) * 3 + gauss() * 0.5;
-      DATA.push({ x, y });
-    }
-
-    // 점 메쉬
-    const ptGeo = new THREE.BufferGeometry();
-    const ptPos = new Float32Array(N_PTS * 3);
-    DATA.forEach((d, i) => { ptPos[i * 3] = d.x; ptPos[i * 3 + 1] = d.y; ptPos[i * 3 + 2] = 0; });
-    ptGeo.setAttribute('position', new THREE.BufferAttribute(ptPos, 3));
-    const ptMat = new THREE.PointsMaterial({ color: 0xC0492E, size: 0.34, sizeAttenuation: true });
-    scene.add(new THREE.Points(ptGeo, ptMat));
-
-    // 진짜 함수 (회색 라인)
-    const trueGeo = new THREE.BufferGeometry();
-    const trueArr = [];
-    for (let i = 0; i <= 200; i++) {
-      const x = -7 + 14 * i / 200; trueArr.push(x, Math.sin(x * 0.4) * 3, 0);
-    }
-    trueGeo.setAttribute('position', new THREE.Float32BufferAttribute(trueArr, 3));
-    scene.add(new THREE.Line(trueGeo, new THREE.LineBasicMaterial({ color: 0x8E8576, transparent: true, opacity: 0.55 })));
-
-    // 적합 곡선 (애니메이션) — degree를 진동시키며 다항식 적합 시뮬레이션
-    const fitGeo = new THREE.BufferGeometry();
-    const fitArr = new Float32Array(401 * 3);
-    fitGeo.setAttribute('position', new THREE.BufferAttribute(fitArr, 3));
-    const fitMat = new THREE.LineBasicMaterial({ color: 0x2D5B7A, linewidth: 2 });
-    const fitLine = new THREE.Line(fitGeo, fitMat);
-    scene.add(fitLine);
-
-    function solvePoly(xs, ys, d) {
-      const N = xs.length, K = d + 1;
-      const sumX = new Float64Array(2 * K - 1), b = new Float64Array(K);
-      for (let n = 0; n < N; n++) {
-        let p = 1; for (let k = 0; k < 2 * K - 1; k++) { sumX[k] += p; p *= xs[n]; }
-        let p2 = 1; for (let k = 0; k < K; k++) { b[k] += ys[n] * p2; p2 *= xs[n]; }
-      }
-      const aug = []; for (let i = 0; i < K; i++) { aug.push(new Float64Array(K + 1)); for (let j = 0; j < K; j++) aug[i][j] = sumX[i + j]; aug[i][K] = b[i]; }
-      for (let p = 0; p < K; p++) {
-        let pv = p; for (let r = p + 1; r < K; r++) if (Math.abs(aug[r][p]) > Math.abs(aug[pv][p])) pv = r;
-        [aug[p], aug[pv]] = [aug[pv], aug[p]];
-        const piv = aug[p][p]; if (Math.abs(piv) < 1e-10) continue;
-        for (let j = p; j <= K; j++) aug[p][j] /= piv;
-        for (let r = 0; r < K; r++) if (r !== p) { const f = aug[r][p]; if (!f) continue; for (let j = p; j <= K; j++) aug[r][j] -= f * aug[p][j]; }
-      }
-      const w = new Float64Array(K); for (let i = 0; i < K; i++) w[i] = aug[i][K]; return w;
-    }
-    const xs = DATA.map(d => d.x), ys = DATA.map(d => d.y);
-
-    let t = 0;
-    function tick() {
-      t += 0.012;
-      // 차수를 1-14 사이로 진동 (sin)
-      const d = Math.round(2 + 6 * (1 + Math.sin(t * 0.6)));
-      const w = solvePoly(xs, ys, d);
-      for (let i = 0; i <= 400; i++) {
-        const x = -7 + 14 * i / 400;
-        let y = 0, p = 1; for (let k = 0; k < w.length; k++) { y += w[k] * p; p *= x; }
-        y = Math.max(-6, Math.min(6, y));
-        fitArr[i * 3] = x; fitArr[i * 3 + 1] = y; fitArr[i * 3 + 2] = 0;
-      }
-      fitGeo.attributes.position.needsUpdate = true;
-      // 색을 차수에 따라 (낮으면 파랑·편향 우세, 높으면 주홍·분산 우세)
-      const mix = (d - 2) / 12;
-      const r = Math.round(45 + (192 - 45) * mix);
-      const g = Math.round(91 + (73 - 91) * mix);
-      const b2 = Math.round(122 + (46 - 122) * mix);
-      fitMat.color.setRGB(r / 255, g / 255, b2 / 255);
-
-      renderer.render(scene, camera);
-      requestAnimationFrame(tick);
-    }
-    tick();
-
-    window.addEventListener('resize', () => {
-      const w2 = canvas.parentElement.clientWidth;
-      renderer.setSize(w2, h, false);
-      camera.aspect = w2 / h; camera.updateProjectionMatrix();
-    });
+    if (window.NST && document.getElementById('hero')) NST.hero(document.getElementById('hero'), { height: Math.min(window.innerWidth*0.46, 460) });
   });
 </script>
+<script src="../assets/widgets.js"></script>
+<script src="widgets-ch05.js"></script>
 </body>
 </html>

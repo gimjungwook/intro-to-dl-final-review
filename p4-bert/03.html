@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>03 · BERT의 구조 — Transformer Encoder 스택</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="assets/bert.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Chapter 03 · 구조 — 인코더만 쌓은 모델</span>
+      <h1>BERT 는 <span class="t-bidir">Transformer Encoder</span>만<br>여러 층 쌓은 모델이다</h1>
+      <p class="lede">BERT 의 새로움은 “구조”가 아니라 “학습 방식”이다. 구조 자체는 P3 에서 본 트랜스포머의 인코더 부분을 그대로 가져다 깊게 쌓은 것이다. 이 장은 그 구조를 짧게, 그러나 빠뜨리지 않고 짚는다. P3 를 이미 안다면 빠르게 훑어도 되지만, 디멘션(dimension) 숫자 한 줄은 손에 익혀 두자 — 11번 외에는 시험에서 다시 나오지 않는다.</p>
+    </header>
+
+    <div class="prose">
+      <h2>1. 인코더와 디코더의 차이부터</h2>
+      <p>P3 트랜스포머는 본래 기계 번역(machine translation) 을 위해 만들어진 모델이다. 영어 문장을 입력해서 프랑스어 문장을 출력하는 구조였다. 그래서 두 부분으로 나뉘어 있었다. <strong>인코더(encoder)</strong> 는 입력 문장을 받아 그 의미를 풍부한 벡터 표현으로 “요약”하고, <strong>디코더(decoder)</strong> 는 그 표현을 받아 출력 문장을 한 단어씩 만들어 낸다.</p>
+
+      <p>둘은 비슷해 보이지만 결정적 차이가 하나 있다. 디코더는 “지금까지 만든 단어들”만 보고 다음 단어를 만들어야 한다. 즉 디코더 안의 self-attention 은 단방향이다(masked self-attention). 인코더는 그런 제약이 없다 — 입력 문장 전체를 한 번에 다 본다. 즉 인코더 안의 self-attention 은 양방향이다.</p>
+
+      <div class="def-box">
+        <div class="deft">핵심</div>
+        <p>BERT = 트랜스포머에서 <b>인코더 부분만</b> 떼어내 거대하게 쌓고, 그 위에 양방향 사전훈련을 얹은 모델. 디코더는 없다.</p>
+      </div>
+
+      <p>왜 인코더만 가져왔는가? 1장과 2장에서 보았듯 BERT 의 목표는 “양방향성”이다. 인코더는 처음부터 양방향 어텐션을 쓰는 부품이므로 그대로 가져다 쓰면 된다. 디코더는 단방향이라 BERT 의 철학과 어긋난다.</p>
+
+      <h2>2. 두 가지 크기 — BASE 와 LARGE</h2>
+      <p>BERT 논문은 두 가지 크기의 모델을 공개했다. 시험에서 자주 묻는 숫자라 한 줄로 정리한다.</p>
+
+      <table class="symbols">
+        <tr><td>모델</td><td>층 수 $L$</td><td>은닉 차원 $H$</td><td>어텐션 헤드 $A$</td><td>파라미터</td></tr>
+        <tr><td><b>BERT BASE</b></td><td>12</td><td>768</td><td>12</td><td>약 110M</td></tr>
+        <tr><td><b>BERT LARGE</b></td><td>24</td><td>1024</td><td>16</td><td>약 340M</td></tr>
+      </table>
+
+      <p>BASE 의 크기는 의도된 선택이다. 비교 대상이었던 OpenAI 의 GPT 가 정확히 같은 크기(L=12, H=768)였기 때문이다. “같은 크기의 모델이면 양방향이 단방향보다 얼마나 좋은가”를 공정하게 비교하기 위함이다. 그 비교에서 BERT BASE 가 GPT 를 모든 GLUE 과제에서 이긴다는 사실이 BERT 의 핵심 메시지 중 하나다(12장에서 자세히).</p>
+
+      <h2>3. 한 층의 내부 — Multi-Head Self-Attention + FFN</h2>
+      <p>이제 한 인코더 층이 어떻게 동작하는지를 짚는다. 한 층은 두 개의 부분으로 이루어진다.</p>
+
+      <p><strong>① Multi-Head Self-Attention.</strong> 입력으로 들어온 토큰 벡터들 $X \in \mathbb{R}^{T \times H}$ (시퀀스 길이 $T$, 은닉 차원 $H$) 을 받아, 각 토큰이 다른 모든 토큰을 얼마나 “주목(attend)” 할지를 계산해 새 표현을 만든다. 수식으로는</p>
+
+      <div class="math-block">$$ \text{Attention}(Q, K, V) = \text{softmax}\!\left(\frac{Q K^\top}{\sqrt{d_k}}\right) V $$</div>
+      <p class="math-note">$Q$=질의(Query), $K$=키(Key), $V$=값(Value) 행렬. $d_k$ 는 헤드 하나의 차원.</p>
+
+      <p>이 수식을 짧게 풀어 보자. $Q K^\top$ 은 “각 토큰의 질의와 각 토큰의 키의 닮은 정도”를 모든 쌍에 대해 계산한 행렬이다. 즉 길이 $T$ 의 시퀀스라면 $T \times T$ 행렬이 나온다. 이 행렬을 $\sqrt{d_k}$ 로 나누는 이유는 차원이 클 때 softmax 가 한쪽으로 너무 쏠리는 것을 막기 위함이다(통계학에서 분산을 정규화하는 것과 같은 발상). softmax 는 한 행의 값을 모두 더하면 1 이 되는 확률 분포로 바꾸어 준다. 그 확률을 가중치 삼아 $V$ 의 행들을 가중평균한 결과가 한 토큰의 새 표현이다.</p>
+
+      <p>“멀티 헤드”라는 말은 이 어텐션 연산을 $A$ 개의 독립된 “관점”으로 동시에 수행한다는 뜻이다. BERT BASE 는 $A=12$ 이므로, 같은 토큰을 12가지 다른 방식으로 본다. 한 헤드는 문법 관계에 집중할 수 있고, 다른 헤드는 의미 관계에 집중할 수 있다. 12개 결과를 모두 이어 붙인 뒤 한 번의 선형 변환으로 합친다.</p>
+
+      <p><strong>② Position-wise Feed-Forward Network.</strong> 어텐션이 “토큰 간의 정보 흐름”을 담당했다면, FFN 은 “한 토큰 자체의 표현을 깊게 가공”한다. 두 개의 선형 층과 그 사이에 GELU 활성화 함수가 있다.</p>
+
+      <div class="math-block">$$ \text{FFN}(x) = \text{GELU}(x W_1 + b_1) \, W_2 + b_2 $$</div>
+      <p class="math-note">$x$ 는 한 토큰 벡터 ($\mathbb{R}^H$). 중간 차원은 $4H$ (BASE 는 3072). 그래서 FFN 이 파라미터의 대부분을 차지한다.</p>
+
+      <p>중요한 점은 FFN 이 위치별(position-wise)로 적용된다는 것이다. 즉 같은 가중치 $W_1, W_2$ 가 모든 토큰에 동일하게 적용된다. 이렇게 하면 토큰 위치마다 다른 매개변수를 학습할 필요가 없어 모델이 가볍고 일반화가 잘 된다.</p>
+
+      <p>이 두 부분 사이마다 잔차 연결(residual connection)과 층 정규화(layer normalization)가 들어간다. 즉 한 층의 전체 흐름은 다음과 같다.</p>
+
+      <div class="math-block">$$ h' = \text{LayerNorm}\bigl(h + \text{Attention}(h)\bigr) $$</div>
+      <div class="math-block">$$ h'' = \text{LayerNorm}\bigl(h' + \text{FFN}(h')\bigr) $$</div>
+      <p class="math-note">$h$ 는 이 층에 들어오는 토큰 벡터. $h''$ 는 이 층에서 나가는 토큰 벡터. 잔차 + 정규화는 깊은 망의 학습 안정성을 위한 표준 장치.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 02</span><span>BERT BASE 인코더 스택 — 12개 층</span></div>
+        <div class="enc-stack" id="enc">
+          <!-- JS 없이도 보이도록 정적으로 12층 채워 둔다 -->
+          <div class="enc-layer"><div class="ln">Layer 12</div><div class="blk"></div><div class="heads">12 heads · 768d</div></div>
+          <div class="enc-layer"><div class="ln">Layer 11</div><div class="blk"></div><div class="heads">12 heads · 768d</div></div>
+          <div class="enc-layer"><div class="ln">Layer 10</div><div class="blk"></div><div class="heads">12 heads · 768d</div></div>
+          <div class="enc-layer"><div class="ln">Layer 9</div><div class="blk"></div><div class="heads">12 heads · 768d</div></div>
+          <div class="enc-layer"><div class="ln">Layer 8</div><div class="blk"></div><div class="heads">12 heads · 768d</div></div>
+          <div class="enc-layer"><div class="ln">Layer 7</div><div class="blk"></div><div class="heads">12 heads · 768d</div></div>
+          <div class="enc-layer"><div class="ln">Layer 6</div><div class="blk"></div><div class="heads">12 heads · 768d</div></div>
+          <div class="enc-layer"><div class="ln">Layer 5</div><div class="blk"></div><div class="heads">12 heads · 768d</div></div>
+          <div class="enc-layer"><div class="ln">Layer 4</div><div class="blk"></div><div class="heads">12 heads · 768d</div></div>
+          <div class="enc-layer"><div class="ln">Layer 3</div><div class="blk"></div><div class="heads">12 heads · 768d</div></div>
+          <div class="enc-layer"><div class="ln">Layer 2</div><div class="blk"></div><div class="heads">12 heads · 768d</div></div>
+          <div class="enc-layer"><div class="ln">Layer 1</div><div class="blk"></div><div class="heads">12 heads · 768d</div></div>
+          <div class="enc-foot">↓ 입력 임베딩 (4장) ↓</div>
+        </div>
+      </div>
+      <p class="widget-cap">한 “블록” 한 줄이 한 인코더 층이다. 한 층 안에 자기주의(self-attention) 12개 헤드와 FFN(2개 선형 + GELU) 이 있고, 잔차+정규화로 묶여 있다. 같은 모양의 층 12개가 위로 쌓이며, 위층일수록 더 추상적인 의미를 잡는다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>4. 깊이가 왜 중요한가</h2>
+      <p>12층, 24층이라는 깊이는 어떤 의미가 있을까? 한 가지 직관적인 답은 “층마다 다른 추상을 잡는다”다. 자연어 처리 분야에서 이를 실험으로 자주 확인한다. BERT 의 아래쪽 층은 어휘적 정보(어떤 단어인가, 어떤 형태소인가)를, 중간 층은 문법적 정보(주어-동사 관계, 의존성 트리), 위쪽 층은 의미적 정보(개체간 관계, 추론에 필요한 정보)를 주로 담는다는 분석이 여러 후속 논문에서 나왔다.</p>
+
+      <div class="analogy">
+        영어 작문 수업을 떠올려 보자. 1학년에는 단어 외우기, 3학년에는 문장 구조, 6학년에는 단락 구성과 의미. 한 사람이 6년에 걸쳐 차근차근 추상의 사다리를 오르는 것과 비슷하다. BERT 의 12층은 그 사다리의 12 단계라고 볼 수 있다.
+      </div>
+
+      <h2>5. 한 가지만 짚자 — 양방향성은 “구조”가 만든다</h2>
+      <p>2장에서 “BERT 의 새로움은 학습 방식이지 구조가 아니다”라고 했지만, 살짝 정정해야 한다. 더 정확히는 다음과 같다.</p>
+
+      <ul style="font-size:.95rem; color:var(--ink-soft); line-height:1.7;">
+        <li><b>양방향성을 가능케 하는 구조는 트랜스포머 인코더가 이미 가지고 있었다.</b> 인코더의 self-attention 은 처음부터 양방향이다.</li>
+        <li><b>그러나 그 인코더를 표준적인 다음 단어 예측(LM)으로 학습시키면 양방향성이 무너진다.</b> 정답을 보면서 정답을 맞히는 자명한 해 때문이다.</li>
+        <li><b>BERT 는 마스킹이라는 학습 방식 변화로 이 충돌을 푼다.</b> 구조는 그대로, 손실 함수만 바꾼다.</li>
+      </ul>
+
+      <p>즉 구조와 학습 방식은 분리된 것이 아니라 짝을 이룬다. 인코더 구조와 마스킹 방식이 손을 맞잡았을 때 비로소 진짜 양방향 사전훈련이 가능해진다. 이게 BERT 의 핵심 묘수다.</p>
+
+      <h2>6. 다음 — 입력은 어떻게 들어가는가</h2>
+      <p>구조의 큰 그림은 봤다. 그런데 한 가지 빠진 게 있다. 인코더에 들어가는 “입력 토큰 벡터” 는 어디서 오는가? 단순히 단어 임베딩 한 장이 들어가는 게 아니라, 세 종류의 임베딩이 합쳐져서 들어간다 — 토큰 임베딩, 세그먼트 임베딩, 위치 임베딩. 다음 장(4장)에서 이 셋의 정체와 합치는 이유를 다룬다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script src="assets/bert.js"></script>
+<script>
+  window.addEventListener('load', () => { BERT.buildNav('03'); });
+</script>
+</body>
+</html>

@@ -3,20 +3,20 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>01 · 좋은 표상이란 — Ch.15</title>
+<title>01 — 좋은 표상이란 무엇인가 — Ch.15</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
-  /* 좋은 표상 판단 위젯 */
-  .rep-stage { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1.4rem 1.2rem 1rem; align-items: center; }
-  .rep-side { text-align: center; }
-  .rep-side canvas { display: block; width: 100%; max-width: 320px; aspect-ratio: 1/1; border-radius: 10px; border: 1px solid var(--line); background: #fff; margin: 0 auto; }
-  .rep-side .rlab { font-family: var(--mono); font-size: .76rem; color: var(--ink-faint); margin-top: .5rem; letter-spacing: .08em; }
-  .rep-verdict { padding: .9rem 1.2rem; border-top: 1px solid var(--line-soft); background: var(--paper); font-size: .9rem; color: var(--ink-soft); line-height: 1.55; }
-  .rep-verdict b.ok { color: var(--structure); } .rep-verdict b.bad { color: var(--style); }
-  @media (max-width: 640px) { .rep-stage { grid-template-columns: 1fr; } }
+  .def-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .8rem; padding: 1.4rem 1.1rem 1rem; }
+  .def-card { border: 1px solid var(--line); border-radius: 10px; padding: .9rem .9rem 1rem; background: #fff; cursor: pointer; transition: border-color .18s, box-shadow .18s, transform .18s; }
+  .def-card.on { border-color: var(--structure); box-shadow: 0 6px 18px -8px rgba(45,91,122,.35); transform: translateY(-2px); }
+  .def-card h4 { margin: 0 0 .4rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .12em; color: var(--ink-faint); }
+  .def-card p { margin: 0; font-size: .78rem; color: var(--ink-soft); line-height: 1.5; }
+  .def-card canvas { display: block; width: 100%; height: 130px; margin-top: .6rem; border-radius: 6px; background: var(--paper); }
+  .def-verdict { padding: 1rem 1.2rem; border-top: 1px solid var(--line-soft); background: var(--paper); font-size: .9rem; color: var(--ink-soft); line-height: 1.55; min-height: 4rem; }
+  @media (max-width: 720px) { .def-grid { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
@@ -28,83 +28,71 @@
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Sub 01 · 좋은 표상의 세 가지 정의</span>
-      <h1>좋은 표상이란 — <span class="t-structure">분리 가능성</span>, <span class="t-style">매니폴드</span>, <span class="t-synth">인과</span></h1>
-      <p class="lede">14장의 오토인코더가 "어떤 표상을 만들어야 하나"였다면, 15장은 "그렇게 만든 표상이 좋은지 어떻게 판별하나"부터 시작한다. 답은 세 가지 기준으로 분해된다.</p>
+      <span class="kicker">Sub 01 — 정의의 세 갈래</span>
+      <h1>좋은 표상이란 <span class="t-structure">무엇</span>인가</h1>
+      <p class="lede">표상 학습이 “좋은 표상을 찾는다”라고 말하려면, 먼저 “좋다”를 정의해야 한다. 15장은 한 줄짜리 정답을 주지 않는다. 대신 서로 다른 세 가지 기준을 제시하고, 어떤 기준이 언제 맞는지를 보여 준다.</p>
     </header>
 
     <div class="prose">
-      <p>딥러닝 책 15장의 첫 단락은 도발적인 주장으로 시작한다. <strong>"이미 우리는 표상학습을 해 왔다. 끝까지 학습된 순방향 분류기조차 부산물로 좋은 표상을 만들기 때문이다."</strong> 마지막 층 직전의 은닉 표현을 잘라 보면, 그 위에서 단순한 선형 분류기조차 정확도가 훌쩍 뛴다. 즉 표상학습은 어떤 특별한 알고리즘이 아니라, 어떤 목적함수를 풀건 그 풀이 과정에서 <em>가운데 층에 자연스럽게 생기는 것</em>이다.</p>
-      <p>그렇다면 똑같이 끝까지 학습된 두 네트워크 중 어느 쪽이 더 "좋은" 표상을 가졌는가? 책은 세 가지 정의를 차례로 제시한다. 우리는 이 세 정의를 모두 "왜 그렇게 정의하나"라는 질문과 함께 다룰 것이다. 시험에서 "분산 표상은 무엇인가" 같은 단답을 적기 위해서가 아니라, "왜 그 정의가 일반화로 이어지는가"를 한 문장으로 설명할 수 있어야 하기 때문이다.</p>
+      <p>“좋은 표상(good representation)”이라는 말은 직관적으로는 누구나 동의할 만큼 자연스럽지만, 정작 학술적인 정의를 내려 보면 사람마다 강조점이 갈린다. 어떤 사람은 “분류기가 일을 쉽게 하도록 부류를 잘 갈라 놓는 표상”이라 답하고, 다른 사람은 “데이터가 살고 있는 진짜 면(manifold, 매니폴드)을 평탄하게 펼쳐 놓은 표상”이라 답하며, 또 다른 사람은 “세상이 데이터를 만들 때 사용한 진짜 요인(causal factor)들이 서로 풀려(disentangled) 있는 표상”이라 답한다.</p>
+      <p>이 절은 그 세 갈래를 차례로 풀어 본다. 핵심은 <strong>세 정의가 모두 다른 측면을 가리키지만 깊은 곳에서는 같은 직관을 공유한다</strong>는 것이다. 그 직관은 “나중에 풀어야 할 어떤 과제든, 이 표상 위에서는 단순한 규칙으로 풀 수 있다”라는 한 문장이다.</p>
+
+      <h2>정의 1 — 부류 분리: 분류기가 일을 쉽게 하는 표상</h2>
+      <p>가장 실용적인 정의는 1장의 좌표계 변환 비유에서 출발한다. 데카르트 좌표에서는 두 동심원을 직선 한 줄로 가를 수 없지만, 극좌표 $(r, \theta)$로 옮기면 $r=$ 일정한 수직선 한 줄로 끝난다. 같은 데이터, 같은 분류기, 표상만 바꿨을 뿐인데 난이도가 완전히 달라진다. 이 관점에서 보면 좋은 표상이란 “선형 분류기(linear classifier)나 가까운 이웃(nearest neighbor) 같은 단순한 모델이 그 위에서 잘 작동하는 표상”이다.</p>
+      <p>이 정의의 장점은 측정 가능하다는 것이다. 표상 $h(x)$를 동결(freeze)한 채 그 위에 로지스틱 회귀(logistic regression)나 선형 SVM 한 층을 얹어 정확도를 재면, 그 숫자가 곧 표상의 “선형 분리도”를 정량적으로 알려 준다. 실제로 표상 학습 논문들이 “선형 프로브(linear probe) 정확도”라는 지표를 자주 쓰는 이유가 이것이다. 강한 비선형 헤드가 표상의 약점을 보완해 버리면 표상 자체의 품질이 가려지지만, 선형 헤드는 그것을 가릴 수 없기 때문이다.</p>
+      <p>그러나 이 정의에는 한계가 있다. “어떤 분류 과제에서 일을 쉽게 한다”라는 말은 곧 “그 과제의 라벨에 의존한다”라는 뜻이기 때문이다. 라벨이 다르면 좋은 표상도 달라질 수 있다. 강아지 품종 분류에 좋은 표상이 강아지 나이 추정에는 좋지 않을 수 있다. 즉, 이 정의는 좋음을 “특정 과제 기준”으로 묶어 버린다.</p>
+
+      <h2>정의 2 — 매니폴드 평탄화: 데이터가 살고 있는 면을 펼치는 표상</h2>
+      <p>두 번째 정의는 라벨 없이도 말할 수 있다. 자연 데이터는 입력 공간(예: $784$차원 픽셀 공간) 안에서 균일하게 흩어져 있지 않고, 훨씬 낮은 차원의 휘어진 면(매니폴드) 위에 몰려 있다. MNIST 숫자 이미지를 픽셀 공간에서 보면 거의 모든 픽셀 조합은 “숫자가 아닌 잡음”이고, 진짜 숫자 이미지는 어떤 휘어진 부분공간 위에만 산다. 좋은 표상은 그 부분공간을 펼쳐 평평한 좌표로 만들어 주는 표상이다.</p>
 
       <div class="analogy">
-        <b>외국에서 살아본 두 사람.</b> 같은 1년을 외국에서 보내고 돌아온 두 사람을 떠올려 보자. 한 명은 단지 그 도시의 길과 가게 위치만 외워 왔다. 다른 한 명은 그 나라 사람들의 사고방식, 시간 감각, 위계 관계라는 <b>가운데 추상층</b>을 얻어 왔다. 같은 1년이지만, 새 도시·새 회사·새 가족을 만났을 때 후자는 즉시 적응한다. 좋은 표상이란 새로운 상황에서도 다시 쓰이는 추상이다. 어떤 표상이 "그 도시 지도"이고 어떤 표상이 "그 문화의 골격"인지를 가르는 것 — 그것이 이 절의 과제다.
+        <b>지구 표면을 펼치는 지도법.</b> 지구는 휘어 있다(3차원 공간 안의 2차원 곡면). 그 위에 사는 사람은 이웃 마을까지의 거리만 신경 쓰면 되니, 평평한 종이 위에 펼쳐 둔 지도가 훨씬 편하다. 메르카토르 도법은 거리는 왜곡하지만 방향은 살리고, 등면적 도법은 면적을 살리고 모양을 왜곡한다. 어느 도법도 완벽하지 않지만, 셋 다 “휘어 있는 표면을 어떤 의미에서 평탄화한다”는 점은 같다. 표상 학습도 같은 일을 한다 — 데이터 매니폴드를 어떤 의미에서 펼쳐 둔 좌표를 만든다.
       </div>
 
-      <h2>정의 1: 선형 분리 가능성 — 표상 위에서 직선이 통하는가</h2>
-      <p>가장 단순한 기준은 이렇다. 좋은 표상 $h$ 위에서는 단순한 분류기조차 잘 동작한다. 다시 말해, 표상이 입력을 잘 "풀어 놓은" 정도를 그 위에서 풀 수 있는 가장 단순한 모델로 측정한다. 이것이 1장에서 본 "데카르트 vs 극좌표" 비유의 정량화다.</p>
+      <p>이 정의의 장점은 라벨 없이도 작동한다는 것이다. 오토인코더(autoencoder), 분포 추정, 자기지도(self-supervised) 학습이 모두 이 정의를 따른다. 이미지를 압축하라고만 시켜도, 모델은 “자연 이미지가 사는 매니폴드”의 좌표를 결과적으로 학습하게 된다. 그 좌표 위에서는 가까운 점들이 비슷한 의미를 가지므로, 분류·검색·생성 모두 그 위에서 단순해진다.</p>
+      <p>한계도 있다. “매니폴드를 평탄화한다”라는 말이 수학적으로 한 가지 의미를 갖는 것이 아니다. 거리·각도·면적 중 무엇을 살릴지 정해야 하고, 그 선택에 따라 다른 표상이 나온다. 또한 분류에 도움이 되지 않는 방향(예: 글씨의 회전각)을 모델이 너무 많이 보존하면, 부류 분리 기준에서는 오히려 나쁜 표상이 될 수도 있다.</p>
 
-      <div class="math-block">$$ h^* = \arg\min_h \; \min_{w,b} \; \mathbb{E}_{(x,y)} \big[\,\ell\big(y, w^{\top} h(x) + b\big)\,\big] $$</div>
-      <p class="math-note">표상 $h$ 위에서 가장 단순한 선형 분류기조차 풀 수 있을 정도로 클래스를 펼쳐 놓는 표상을 찾는다. 안쪽 최소화는 "주어진 표상에서 선형 분류기 최적", 바깥쪽은 "그 최적값이 가장 좋은 표상 선택".</p>
+      <h2>정의 3 — 인과 요소 풀어 놓기: 데이터의 생성 요인이 직교 축인 표상</h2>
+      <p>세 번째 정의는 가장 야심적이다. 모든 데이터는 어떤 숨은 요인(latent factor)들의 조합으로 생성된다고 가정한다. 얼굴 사진은 “신원·표정·조명·각도·머리길이” 같은 요인들의 함수이고, 음성 파형은 “화자·음소·억양·잡음”의 함수다. 이 진짜 요인들이 서로 풀려 있는(disentangled) 표상, 즉 한 축을 움직이면 한 요인만 변하는 좌표가 가장 좋은 표상이라는 주장이다.</p>
+      <p>이 정의가 야심적인 이유는, 풀려 있는 표상은 본 적 없는 조합에까지 일반화할 수 있기 때문이다. “남자 얼굴”만 본 모델이 “여자 + 분노 + 측면”까지 다룰 수 있게 되려면, 표상이 성별 축·표정 축·각도 축을 따로 가지고 있어야 한다. 이 정의가 곧 분산 표상(distributed representation)과 합성성(compositionality)으로 이어진다. 8-9절에서 자세히 본다.</p>
 
-      <p>왜 굳이 안쪽에 선형 분류기를 박아 넣을까. 핵심은 <strong>"표상 자체의 기여를 측정"</strong>하기 위해서다. 만약 안쪽 분류기도 임의로 복잡한 비선형 모델이라면, 입력이 픽셀이든 잘 학습된 표상이든 결국 같은 성능에 도달한다 — 분류기가 표상의 한계를 메워 버리기 때문이다. 분류기를 가장 단순한 선형으로 고정해야, 입력을 "선형으로 풀릴 만큼 정리해 둔 정도"가 측정된다. 이것이 실무에서 흔히 쓰는 <em>linear probe</em>(선형 프로브) 평가의 정확한 의미다.</p>
-
-      <h2>정의 2: 매니폴드 — 데이터가 사는 면을 따라 평평한가</h2>
-      <p>고차원 데이터(자연 이미지, 음성, 자연어 임베딩)는 실제로는 입력 공간의 아주 얇은 부분집합 위에 살고 있다. 224×224×3 = 150,528차원의 이미지 공간에서, "실제로 그럴듯해 보이는 이미지"는 무한히 좁은 휘어진 면(매니폴드, manifold) 위에 있다. 14장에서 본 수축적 오토인코더(contractive autoencoder)나 잡음 제거 오토인코더(denoising autoencoder)는 모두 이 매니폴드의 접평면(tangent space)을 학습하는 장치다.</p>
-
-      <p>좋은 표상의 두 번째 정의는 매니폴드 친화적이다. 표상 공간에서 두 점 사이를 직선으로 이으면 그 직선의 모든 중간 점도 그럴듯한 데이터에 대응해야 한다. 이는 "표상 공간 위의 거리"가 데이터의 실제 변동(variation)의 방향과 일치한다는 뜻이다.</p>
-
-      <div class="analogy">
-        <b>지구본을 평평하게 펼치기.</b> 둥근 지구의 두 도시 사이 최단 거리는 직선이 아니라 호다. 그런데 메르카토르 도법으로 지구를 펼쳐 놓고 보면, 같은 두 점 사이를 직선으로 그을 수 있고 그 직선이 거의 호의 진짜 길이를 닮는다(고위도 왜곡은 무시). 좋은 표상은 휘어진 데이터 매니폴드를 평평하게 펴 둔 지도와 같다. 거리·중간·이웃이 의미대로 작동한다.
-      </div>
-
-      <h2>정의 3: 인과 요소 — 진짜 생성 원인과 정렬되어 있는가</h2>
-      <p>가장 야심찬 기준이다. 우리가 보는 데이터 $x$가 사실은 소수의 <strong>독립적이고 의미 있는 요인들</strong>($z_1, z_2, \dots$ — 조명, 자세, 정체성, 표정 등)이 결합되어 만들어졌다고 보자. 좋은 표상이란 그 진짜 요인들을 분리해서 각 차원에 할당한 표상이다. 이것이 "분리된 표상(disentangled representation)"의 정식 정의다.</p>
-
-      <div class="math-block">$$ x = g(z_1, z_2, \dots, z_k), \quad h(x) \approx (z_1, z_2, \dots, z_k) $$</div>
-      <p class="math-note">관측 $x$는 진짜 인과 요인 $z_i$들로부터 어떤 생성 함수 $g$가 만들어 낸 것이다. 좋은 표상 $h$는 이 $z_i$들을 가능한 한 그대로 복원한 것이다.</p>
-
-      <p>왜 이것이 일반화의 끝판왕인가. 진짜 요인을 잡았다면, 한 번도 본 적 없는 조합(예: "노란 머리에 안경을 쓴 50대 남자가 웃는 모습")도 단지 요인을 적절히 켜고 끄는 것으로 도달한다. 학습 데이터에 있던 모든 조합을 외울 필요가 없다 — 요인들의 "곱집합"을 자동으로 일반화한다. 이것이 4번 절에서 다룰 분산 표상의 지수적 이득의 기반이다.</p>
-
-      <p>아래 위젯에서 두 종류의 표상을 비교해 본다. 왼쪽은 픽셀 그대로(매니폴드가 휘어 있어 직선 분류 불가), 오른쪽은 같은 데이터를 두 인과 요인(반지름·각도)으로 분리한 표상이다. 슬라이더를 움직여 같은 데이터 위에서 같은 선형 분류기의 정확도가 어떻게 바뀌는지 보라.</p>
-    </div>
-
-    <div class="widget">
-      <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 01</span><span>두 표상 위의 선형 분리 가능성 — 같은 데이터, 같은 분류기</span></div>
-        <div class="rep-stage">
-          <div class="rep-side">
-            <canvas id="rep-raw" width="320" height="320"></canvas>
-            <div class="rlab">원시 표상 (픽셀 = 데카르트 (x,y))</div>
+      <div class="widget">
+        <div class="widget-frame">
+          <div class="widget-label"><span class="lab-no">위젯 01</span><span>좋은 표상의 세 정의 — 시각화로 비교</span></div>
+          <div class="def-grid">
+            <div class="def-card on" data-d="0">
+              <h4>정의 1 — 부류 분리</h4>
+              <p>선형 분류기가 단순한 직선 한 줄로 두 부류를 가를 수 있다.</p>
+              <canvas id="def-c0" width="240" height="130"></canvas>
+            </div>
+            <div class="def-card" data-d="1">
+              <h4>정의 2 — 매니폴드 평탄화</h4>
+              <p>휘어 있던 데이터 면이 평평한 좌표로 펼쳐진다.</p>
+              <canvas id="def-c1" width="240" height="130"></canvas>
+            </div>
+            <div class="def-card" data-d="2">
+              <h4>정의 3 — 인과 요소 풀기</h4>
+              <p>한 축을 움직이면 한 요인만 변한다. 다른 요인은 고정.</p>
+              <canvas id="def-c2" width="240" height="130"></canvas>
+            </div>
           </div>
-          <div class="rep-side">
-            <canvas id="rep-good" width="320" height="320"></canvas>
-            <div class="rlab">좋은 표상 ((r, θ) 인과 요인)</div>
-          </div>
+          <div class="def-verdict" id="def-verdict">카드를 클릭해 각 정의가 어떻게 다른 그림을 그리는지 확인하세요.</div>
         </div>
-        <div class="widget-controls">
-          <div class="slider" style="flex:1; min-width:260px;">
-            <label>선형 분류기의 분리선 위치 <b id="rep-bval">b = 1.20</b></label>
-            <input type="range" id="rep-b" min="0.2" max="2.6" step="0.02" value="1.2">
-          </div>
-          <div class="legend">
-            <span><i style="background:var(--structure)"></i> 클래스 A (안)</span>
-            <span><i style="background:var(--style)"></i> 클래스 B (밖)</span>
-            <span><i style="background:var(--ink)"></i> 분리선</span>
-          </div>
-        </div>
-        <div class="rep-verdict" id="rep-verdict"></div>
+        <p class="widget-cap">세 정의는 서로 모순이 아니다. 정의 3이 성립하면 정의 2도 흔히 따라오고, 정의 2가 성립하면 정의 1도 종종 만족된다. 그러나 역은 성립하지 않는다 — 단지 분류만 잘 되도록 만든 표상이 매니폴드 구조나 인과 요인을 보존한다는 보장은 없다.</p>
       </div>
-      <p class="widget-cap">같은 점들을 어떤 좌표계에 올려놓느냐가 분류 가능성을 결정한다. 좋은 표상은 데이터의 진짜 변동 요인을 축으로 삼아 클래스를 직선으로 풀어 놓는다. 1장의 데카르트/극좌표 예시가 여기서 정량화된다.</p>
-    </div>
 
-    <div class="prose">
-      <h2>세 정의는 서로 다른가, 같은가</h2>
-      <p>겉으로는 세 정의가 다르게 보인다. 그러나 자세히 보면 모두 한 가지 직관을 가리킨다 — <strong>데이터의 "진짜 변동 방향"을 표상의 축으로 삼는다</strong>는 것. 선형 분리 가능성은 그 축들이 클래스 경계와 정렬된다는 결과적 측정이고, 매니폴드 친화성은 그 축들을 따라 부드럽게 움직일 수 있다는 기하학적 측정이며, 인과 요인 분리는 그 축들이 진짜로 무엇을 의미하는지에 대한 의미론적 측정이다.</p>
+      <h2>세 정의를 관통하는 한 줄</h2>
+      <p>세 정의를 모두 관통하는 한 줄은 “미래의 과제가 무엇이 되든, 그 과제를 단순한 규칙으로 풀 수 있도록 입력을 다시 써 놓는다”이다. 정의 1은 “분류라는 과제”에 한정해서 그것을 측정하고, 정의 2는 “재구성이라는 과제”에 한정해서 그것을 측정하고, 정의 3은 “모든 가능한 미래 과제”에 대해 일반화 가능하도록 좌표를 풀어 둔다는 가장 강한 요구다.</p>
+      <p>15장 전체는 이 세 정의 사이를 오간다. 비지도 사전훈련은 정의 2를 따라가고, 지도 사전훈련은 정의 1을 따라가며, 풀린 표상(disentangled representation)과 인과 요소 학습은 정의 3을 직접 겨냥한다. 다음 sub-chapter들에서 우리는 이 세 갈래 각각을 어떻게 구현하는지를 본다.</p>
 
-      <p>실제 시험 출제 관점에서 외워야 할 한 줄: <strong>"좋은 표상이란 그 위에서 단순 분류기가 잘 동작하고(분리 가능성), 매니폴드 위를 매끄럽게 따라가며(매니폴드성), 가능하면 진짜 생성 요인과 축이 정렬된(인과적 분리) 표상이다."</strong> 이 세 줄을 모두 적을 수 있으면 15장의 첫 절은 끝난 것이다.</p>
-
-      <p>다음 절에서는 이 좋은 표상을 어떻게 얻는가의 첫 번째 답 — <strong>사전훈련(pretraining)과 미세조정(fine-tuning)</strong>으로 넘어간다. 역사적으로 깊은 망이 학습되기 시작한 출발점이 바로 여기다.</p>
+      <h2>핵심 어휘 정리</h2>
+      <table class="symbols">
+        <tr><td>표상 (representation)</td><td>모델 내부에서 입력을 다시 써 놓은 벡터. $h(x) \in \mathbb{R}^d$로 표기.</td></tr>
+        <tr><td>선형 프로브 (linear probe)</td><td>표상을 동결한 채 그 위에 한 층 선형 분류기를 얹어 정확도를 재는 평가 방법.</td></tr>
+        <tr><td>매니폴드 (manifold)</td><td>고차원 입력 공간 속에 얇게 묻혀 있는 휘어진 저차원 면. 자연 데이터가 사는 면.</td></tr>
+        <tr><td>인과 요소 (causal factor)</td><td>데이터를 실제로 만들어 낸 숨은 요인. 신원·조명·각도 등.</td></tr>
+        <tr><td>풀린 표상 (disentangled)</td><td>한 축을 움직이면 한 요인만 변하는 표상.</td></tr>
+      </table>
     </div>
 
     <nav class="ch-foot"></nav>
@@ -112,21 +100,27 @@
 </div>
 
 <script>
-  // ===== sub-chapter nav =====
   const SUBS = [
     { no:'01', t:'좋은 표상이란', f:'01.html' },
-    { no:'02', t:'사전훈련과 미세조정', f:'02.html' },
-    { no:'03', t:'전이학습·도메인 적응', f:'03.html' },
-    { no:'04', t:'분산 표상의 힘', f:'04.html' },
-    { no:'05', t:'깊이의 지수적 표현력', f:'05.html' },
-    { no:'06', t:'인과 요소와 반지도', f:'06.html' },
-    { no:'07', t:'시험 대비', f:'07.html' },
+    { no:'02', t:'그리디 층별 사전훈련', f:'02.html' },
+    { no:'03', t:'비지도 사전훈련', f:'03.html' },
+    { no:'04', t:'지도 사전훈련', f:'04.html' },
+    { no:'05', t:'전이학습 1 — 도메인이 돕는 원리', f:'05.html' },
+    { no:'06', t:'전이학습 2 — 미세조정 실전', f:'06.html' },
+    { no:'07', t:'도메인 적응', f:'07.html' },
+    { no:'08', t:'분산 표상 1 — 지수적 이득', f:'08.html' },
+    { no:'09', t:'분산 표상 2 — 합성성·의미 산수', f:'09.html' },
+    { no:'10', t:'깊이의 지수적 표현력', f:'10.html' },
+    { no:'11', t:'인과 요소', f:'11.html' },
+    { no:'12', t:'반지도 학습', f:'12.html' },
+    { no:'13', t:'사전으로서의 정칙화', f:'13.html' },
+    { no:'14', t:'시험 대비', f:'14.html' },
   ];
   const CURRENT = '01';
   (function buildNav() {
     document.querySelector('.topbar').innerHTML =
-      `<a class="home" href="index.html">← Chapter 15 · 표상 학습</a>` +
-      `<span class="ch-mini">SUB ${CURRENT} / 07</span>`;
+      `<a class="home" href="index.html">← Chapter 15 — 표상 학습</a>` +
+      `<span class="ch-mini">SUB ${CURRENT} / 14</span>`;
     document.querySelector('.ch-nav ol').innerHTML = SUBS.map(s =>
       `<li><a href="${s.f}" ${s.no === CURRENT ? 'class="current"' : ''}>${s.t}</a></li>`).join('');
     const i = SUBS.findIndex(s => s.no === CURRENT);
@@ -144,116 +138,95 @@
     document.addEventListener('scroll', onScroll, { passive: true }); onScroll();
   })();
 
-  // ===== 위젯: 표상 비교 (원시 vs 좋은 표상) =====
-  (function repWidget() {
-    const rawC = document.getElementById('rep-raw');
-    const goodC = document.getElementById('rep-good');
-    const slider = document.getElementById('rep-b');
-    const bval = document.getElementById('rep-bval');
-    const verdict = document.getElementById('rep-verdict');
+  // 세 정의 위젯
+  (function defWidget() {
     const css = getComputedStyle(document.documentElement);
     const STRUCT = css.getPropertyValue('--structure').trim();
     const STYLE = css.getPropertyValue('--style').trim();
-    const INK = css.getPropertyValue('--ink').trim();
     const FAINT = css.getPropertyValue('--ink-faint').trim();
+    const INK = css.getPropertyValue('--ink').trim();
 
-    function seed(n) { let s = n; return () => (s = (s*1664525+1013904223) % 4294967296) / 4294967296; }
-    const rnd = seed(7);
-    const inner = [], outer = [];
-    for (let i = 0; i < 70; i++) {
-      const a = rnd() * Math.PI * 2;
-      const r = 0.5 + (rnd() - 0.5) * 0.4;
-      inner.push({ r, a, x: r*Math.cos(a), y: r*Math.sin(a) });
-    }
-    for (let i = 0; i < 70; i++) {
-      const a = rnd() * Math.PI * 2;
-      const r = 1.9 + (rnd() - 0.5) * 0.5;
-      outer.push({ r, a, x: r*Math.cos(a), y: r*Math.sin(a) });
-    }
-
-    function drawRaw(boundary) {
-      const ctx = rawC.getContext('2d');
-      const W = rawC.width, H = rawC.height;
-      ctx.fillStyle = '#fff'; ctx.fillRect(0,0,W,H);
-      ctx.strokeStyle = 'rgba(38,34,28,0.06)'; ctx.lineWidth = 1;
-      for (let i = 0; i <= 8; i++) {
-        const p = i/8 * W; ctx.beginPath(); ctx.moveTo(p,0); ctx.lineTo(p,H); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(0,p); ctx.lineTo(W,p); ctx.stroke();
+    function draw0() {
+      const c = document.getElementById('def-c0'); const ctx = c.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0,0,c.width,c.height);
+      // 잘 갈린 두 부류 + 직선 경계
+      for (let i = 0; i < 40; i++) {
+        ctx.fillStyle = STRUCT;
+        ctx.beginPath(); ctx.arc(20 + Math.random()*80, 20 + Math.random()*90, 2.5, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = STYLE;
+        ctx.beginPath(); ctx.arc(140 + Math.random()*80, 20 + Math.random()*90, 2.5, 0, Math.PI*2); ctx.fill();
       }
-      ctx.strokeStyle = 'rgba(38,34,28,0.16)';
-      ctx.beginPath(); ctx.moveTo(W/2, 0); ctx.lineTo(W/2, H); ctx.moveTo(0, H/2); ctx.lineTo(W, H/2); ctx.stroke();
-      const sc = W / 6;
-      function px(x) { return W/2 + x*sc; }
-      function py(y) { return H/2 - y*sc; }
-      // 직선 결정 경계 — 데카르트에서 x=boundary-1.5
-      ctx.strokeStyle = INK; ctx.lineWidth = 2; ctx.setLineDash([6,4]);
-      const bx = boundary - 1.5;
-      ctx.beginPath(); ctx.moveTo(px(bx), 0); ctx.lineTo(px(bx), H); ctx.stroke();
-      ctx.setLineDash([]);
-      function dot(p, c) {
-        ctx.fillStyle = c;
-        ctx.beginPath(); ctx.arc(px(p.x), py(p.y), 3.0, 0, Math.PI*2); ctx.fill();
+      ctx.strokeStyle = INK; ctx.lineWidth = 1.5; ctx.setLineDash([5,3]);
+      ctx.beginPath(); ctx.moveTo(120, 5); ctx.lineTo(120, 125); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle = FAINT; ctx.font = '10px monospace'; ctx.fillText('선형 분류기', 6, 122);
+    }
+    function draw1() {
+      const c = document.getElementById('def-c1'); const ctx = c.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0,0,c.width,c.height);
+      // 휘어진 매니폴드(왼쪽) → 평탄화된 띠(오른쪽)
+      ctx.strokeStyle = STRUCT; ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      for (let x = 0; x < 95; x++) {
+        const y = 65 + Math.sin(x*0.13) * 30;
+        if (x === 0) ctx.moveTo(x+5, y); else ctx.lineTo(x+5, y);
       }
-      inner.forEach(p => dot(p, STRUCT));
-      outer.forEach(p => dot(p, STYLE));
-      ctx.fillStyle = FAINT; ctx.font = '11px "Spline Sans Mono", monospace';
-      ctx.fillText('x', W-12, H/2-4); ctx.fillText('y', W/2+5, 12);
+      ctx.stroke();
+      // 화살표
+      ctx.strokeStyle = FAINT; ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.moveTo(105, 65); ctx.lineTo(130, 65); ctx.lineTo(125, 60); ctx.moveTo(130, 65); ctx.lineTo(125, 70); ctx.stroke();
+      // 펼쳐진 띠
+      ctx.strokeStyle = STRUCT; ctx.lineWidth = 1.8;
+      ctx.beginPath(); ctx.moveTo(140, 65); ctx.lineTo(230, 65); ctx.stroke();
+      // 매니폴드 위 점들
+      for (let i = 0; i < 8; i++) {
+        const x = 10 + i*11;
+        const y = 65 + Math.sin(x*0.13) * 30;
+        ctx.fillStyle = STYLE; ctx.beginPath(); ctx.arc(x, y, 2.5, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = STYLE; ctx.beginPath(); ctx.arc(140 + i*11, 65, 2.5, 0, Math.PI*2); ctx.fill();
+      }
+      ctx.fillStyle = FAINT; ctx.font = '10px monospace'; ctx.fillText('휘어진 면 → 평면', 6, 122);
+    }
+    function draw2() {
+      const c = document.getElementById('def-c2'); const ctx = c.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0,0,c.width,c.height);
+      // 두 축: 색=성별, y=왕족여부
+      ctx.strokeStyle = FAINT; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(20, 65); ctx.lineTo(220, 65); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(120, 15); ctx.lineTo(120, 115); ctx.stroke();
+      // 4 점: king/queen/man/woman
+      ctx.fillStyle = STRUCT;
+      ctx.beginPath(); ctx.arc(165, 35, 4, 0, Math.PI*2); ctx.fill(); // king
+      ctx.fillStyle = STYLE;
+      ctx.beginPath(); ctx.arc(75, 35, 4, 0, Math.PI*2); ctx.fill(); // queen
+      ctx.fillStyle = STRUCT;
+      ctx.beginPath(); ctx.arc(165, 95, 4, 0, Math.PI*2); ctx.fill(); // man
+      ctx.fillStyle = STYLE;
+      ctx.beginPath(); ctx.arc(75, 95, 4, 0, Math.PI*2); ctx.fill(); // woman
+      ctx.fillStyle = INK; ctx.font = '9px monospace';
+      ctx.fillText('king', 152, 28); ctx.fillText('queen', 56, 28);
+      ctx.fillText('man', 152, 110); ctx.fillText('woman', 50, 110);
+      ctx.fillStyle = FAINT; ctx.font = '9px monospace';
+      ctx.fillText('축1 = 성별', 5, 60); ctx.fillText('축2 = 왕족', 124, 12);
     }
 
-    function drawGood(boundary) {
-      const ctx = goodC.getContext('2d');
-      const W = goodC.width, H = goodC.height;
-      ctx.fillStyle = '#fff'; ctx.fillRect(0,0,W,H);
-      ctx.strokeStyle = 'rgba(38,34,28,0.06)'; ctx.lineWidth = 1;
-      for (let i = 0; i <= 8; i++) {
-        const p = i/8 * W; ctx.beginPath(); ctx.moveTo(p,0); ctx.lineTo(p,H); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(0,p); ctx.lineTo(W,p); ctx.stroke();
-      }
-      ctx.strokeStyle = 'rgba(38,34,28,0.2)';
-      ctx.beginPath(); ctx.moveTo(40, H-30); ctx.lineTo(W-10, H-30); ctx.moveTo(40, H-30); ctx.lineTo(40, 10); ctx.stroke();
-      function px(r) { return 40 + r/3 * (W-50); }
-      function py(a) { return (H-30) - ((a + Math.PI) / (2*Math.PI)) * (H-40); }
-      ctx.strokeStyle = INK; ctx.lineWidth = 2; ctx.setLineDash([6,4]);
-      ctx.beginPath(); ctx.moveTo(px(boundary), 10); ctx.lineTo(px(boundary), H-30); ctx.stroke();
-      ctx.setLineDash([]);
-      function dot(p, c) {
-        ctx.fillStyle = c;
-        ctx.beginPath(); ctx.arc(px(p.r), py(p.a), 3.0, 0, Math.PI*2); ctx.fill();
-      }
-      inner.forEach(p => dot(p, STRUCT));
-      outer.forEach(p => dot(p, STYLE));
-      ctx.fillStyle = FAINT; ctx.font = '11px "Spline Sans Mono", monospace';
-      ctx.fillText('r (인과 요인 1)', W-100, H-15); ctx.fillText('θ (요인 2)', 8, 22);
-    }
+    const verdicts = [
+      '<b>정의 1.</b> 표상이 좋다는 것은 “그 위에서 직선 한 줄로 두 부류를 가를 수 있다”는 뜻이다. 측정 쉬움(선형 프로브). 단점: 라벨이 정해져 있어야 한다.',
+      '<b>정의 2.</b> 표상이 좋다는 것은 “휘어 있던 데이터 면이 평평한 좌표로 펼쳐졌다”는 뜻이다. 라벨 없이 측정 가능. 단점: 어떤 의미로 평탄화할지가 모호하다.',
+      '<b>정의 3.</b> 표상이 좋다는 것은 “세상이 데이터를 만든 진짜 요인들이 직교 축으로 풀려 있다”는 뜻이다. 본 적 없는 조합까지 일반화. 단점: 풀어 놓기가 가장 어렵다.',
+    ];
 
-    function score(b) {
-      let rawOK = 0;
-      const rawB = b - 1.5;
-      inner.forEach(p => { if (p.x < rawB) rawOK++; });
-      outer.forEach(p => { if (p.x >= rawB) rawOK++; });
-      const rawAcc = rawOK / (inner.length + outer.length);
-      let goodOK = 0;
-      inner.forEach(p => { if (p.r < b) goodOK++; });
-      outer.forEach(p => { if (p.r >= b) goodOK++; });
-      const goodAcc = goodOK / (inner.length + outer.length);
-      return { rawAcc, goodAcc };
-    }
-
-    function update() {
-      const b = parseFloat(slider.value);
-      bval.textContent = 'b = ' + b.toFixed(2);
-      drawRaw(b); drawGood(b);
-      const { rawAcc, goodAcc } = score(b);
-      verdict.innerHTML =
-        `원시 표상에서 선형 분류 정확도: <b class="bad">${(rawAcc*100).toFixed(0)}%</b> (최적 위치에서도 ~50%) · ` +
-        `좋은 표상(인과 요인)에서: <b class="ok">${(goodAcc*100).toFixed(0)}%</b>. ` +
-        `같은 데이터, 같은 분류기, 표상만 바꿔도 일반화의 가능성이 결정된다.`;
-    }
-    slider.addEventListener('input', update);
-    update();
+    draw0(); draw1(); draw2();
+    document.querySelectorAll('.def-card').forEach(card => {
+      card.addEventListener('click', () => {
+        document.querySelectorAll('.def-card').forEach(c => c.classList.remove('on'));
+        card.classList.add('on');
+        const d = parseInt(card.dataset.d, 10);
+        document.getElementById('def-verdict').innerHTML = verdicts[d];
+      });
+    });
+    document.getElementById('def-verdict').innerHTML = verdicts[0];
   })();
 
-  // KaTeX
   window.addEventListener('load', () => {
     if (window.renderMathInElement) {
       renderMathInElement(document.body, {

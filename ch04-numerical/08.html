@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ch.04 · 08 · 2계 방법 — 헤시안과 뉴턴법</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .traj-stage { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1.4rem 1.1rem 1rem; }
+  @media (max-width: 720px) { .traj-stage { grid-template-columns: 1fr; } }
+  .traj-col { background: #fff; border: 1px solid var(--line-soft); border-radius: 10px; padding: .9rem .9rem .6rem; }
+  .traj-col h5 { margin: 0 0 .5rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-faint); display: flex; justify-content: space-between; }
+  .traj-col.gd h5 { color: var(--structure); }
+  .traj-col.nw h5 { color: var(--style); }
+  .traj-col h5 b { font-weight: 500; color: var(--ink); font-family: var(--mono); font-size: .78rem; letter-spacing: 0; }
+  .traj-canvas { display: block; width: 100%; height: 240px; border-radius: 6px; background: var(--paper); }
+  .hess-table { width: 100%; border-collapse: collapse; margin: 1.2rem auto; font-family: var(--mono); font-size: .82rem; max-width: var(--measure); }
+  .hess-table th, .hess-table td { padding: .5rem .7rem; border-bottom: 1px solid var(--line-soft); text-align: left; }
+  .hess-table th { color: var(--ink-faint); font-weight: 500; text-transform: uppercase; font-size: .7rem; letter-spacing: .12em; }
+  .hess-table td:first-child { color: var(--structure); }
+  .hess-table td.good { color: var(--structure); font-weight: 600; }
+  .hess-table td.bad { color: var(--style); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-Chapter 08 · 곡률을 본다는 것</span>
+      <h1>헤시안과 <span class="t-style">뉴턴법</span>,<br>그리고 딥러닝이 안 쓰는 이유</h1>
+      <p class="lede">기울기는 어느 방향이 내리막인지를 알려준다. 그러나 그 방향이 얼마나 오래 유효한지, 한 걸음을 얼마나 크게 디뎌도 되는지는 알려주지 않는다. 2계 도함수 — 헤시안(Hessian) — 은 바로 그 곡률 정보를 담는다. 그리고 그것을 정직하게 이용하는 알고리즘이 뉴턴법(Newton's Method)이다.</p>
+    </header>
+
+    <div class="prose">
+      <p>지난 절에서 본 경사하강은 어디까지나 <strong>1계 정보(first-order information)</strong>만 쓴다. 한 점에서 함수가 어느 방향으로 얼마나 증가하는지(기울기)만 보고, 그 반대 방향으로 정해진 보폭만큼 간다. 그러나 이 정보만으로는 알 수 없는 것이 있다. 그 방향으로 한 걸음 갔을 때 함수가 어떻게 휘는가, 즉 <em>곡률(curvature)</em>이다.</p>
+
+      <p>비유로 시작하자. 산길에서 내리막을 한 걸음 디딘다고 하자. 기울기는 "지금 이 자리에서 어느 쪽이 가장 가파른 내리막인가"만 알려준다. 그런데 그 방향으로 한 걸음을 디딘 다음, 다시 한 걸음을 디딜 때도 같은 방향이 내리막일까? 답은 길의 모양에 달려 있다. 직선이 길게 이어진 비탈이라면 한참 같은 방향으로 가도 좋다. 반면 곧 절벽 끝에서 다시 위로 휘는 길이라면, 두 걸음만에 다시 오르막에 부딪힌다. 한 점에서의 기울기만 봐서는 두 경우를 구분할 수 없다.</p>
+
+      <p>이 구분을 가능하게 해 주는 것이 <strong>2계 도함수(second derivative)</strong>다. 1변수에서 2계 도함수 $f''(x)$는 기울기 자체의 변화율, 즉 곡선이 휘는 정도를 알려준다. $f''(x) > 0$이면 그릇처럼 위로 휘는 자리이고(볼록, convex), $f''(x) < 0$이면 종처럼 아래로 휘는 자리이며(오목, concave), $f''(x) = 0$이면 변곡점이다. 다변수로 가면 이 정보가 한 숫자에서 한 행렬로 확장되는데, 그것이 바로 헤시안이다.</p>
+
+      <h2>헤시안 — 다변수 곡률의 행렬</h2>
+      <p>$n$개 변수의 함수 $L(\theta_1, \ldots, \theta_n)$의 헤시안 $H$는 모든 2차 편미분을 모은 $n \times n$ 행렬이다.</p>
+
+      <div class="math-block">$$ H_{ij} \;=\; \frac{\partial^2 L}{\partial \theta_i \, \partial \theta_j} $$</div>
+      <p class="math-note">i번째 변수로 한 번 미분한 다음 j번째 변수로 또 한 번 미분한 값. 대각 성분 H_ii는 i번째 축 방향의 곡률, 비대각 성분 H_ij는 두 축이 함께 휘는 정도(공곡률, cross-curvature).</p>
+
+      <p>이 행렬은 거의 항상 <strong>대칭(symmetric)</strong>이다. 함수가 $C^2$ 급(즉 2차 도함수가 연속)이라면 클레로(Clairaut)의 정리에 의해 $\partial^2 L / \partial \theta_i \partial \theta_j = \partial^2 L / \partial \theta_j \partial \theta_i$가 성립하기 때문이다. 대칭 행렬이라는 사실은 곧 헤시안의 모든 고유값이 실수이고, 고유벡터들이 서로 직교한다는 뜻이다(2장에서 다룬 스펙트럼 정리). 그래서 헤시안의 정보는 "각 직교축 방향으로 함수가 얼마나 휘는가"라는 깔끔한 형태로 분해된다.</p>
+
+      <p>헤시안의 고유값 분석은 그 점이 어떤 종류의 정지점(critical point, 즉 $\nabla L = 0$인 점)인지를 즉시 알려준다. 모든 고유값이 양수면 <strong>국소 최저점</strong>(모든 방향으로 위로 휨), 모든 고유값이 음수면 <strong>국소 최대점</strong>(모든 방향으로 아래로 휨), 양수와 음수가 섞여 있으면 <strong>안장점</strong>(어떤 방향은 위로, 어떤 방향은 아래로 휨), 0이 섞여 있으면 판정 불가다. 7절에서 안장점이 고차원에서 압도적으로 많다고 했는데, 그 이유가 바로 이 분석에서 보인다. 차원이 높을수록 모든 고유값이 같은 부호일 확률이 기하급수적으로 떨어지기 때문이다.</p>
+
+      <div class="analogy">
+        <b>헤시안은 지도의 등고선이 그려 주는 "휨"을 한 행렬로 응축한 것이다.</b> 평지에 서서 보면 모든 방향이 평탄해 보이지만, 헤시안은 동서남북 각 방향으로 땅이 얼마나 굽었는지를 정량화한다. 그 굽음의 패턴 — 모두 위, 모두 아래, 혹은 섞임 — 이 그 자리가 골짜기인지, 봉우리인지, 고개(안장점)인지를 정한다. 시야가 좁아 한 걸음 발 밑만 봐도, 헤시안만 있으면 두세 걸음 뒤의 지형을 예측할 수 있다.
+      </div>
+
+      <h2>뉴턴법 — 2차 근사로 한 번에 점프하기</h2>
+      <p>곡률 정보를 손에 쥐었다면 어떻게 활용할까. 가장 자연스러운 답은 함수를 그 자리에서 <strong>2차 함수로 근사</strong>한 다음, 그 근사 함수의 최저점으로 한 번에 점프하는 것이다. 이것이 뉴턴법의 발상이다. 함수 $L(\theta)$를 한 점 $\theta_0$ 주변에서 테일러 전개하면 2차까지는 다음과 같다.</p>
+
+      <div class="math-block">$$ L(\theta) \;\approx\; L(\theta_0) \;+\; \nabla L(\theta_0)^T (\theta - \theta_0) \;+\; \tfrac{1}{2} (\theta - \theta_0)^T H (\theta - \theta_0) $$</div>
+      <p class="math-note">θ_0 근방에서 L의 모양을 (1) 상수 (2) 1차 항(기울기) (3) 2차 항(헤시안) 세 부분으로 근사한 식. 더 멀리 가면 더 높은 차수의 오차가 누적된다.</p>
+
+      <p>이 근사 함수의 최저점은 우변을 $\theta$에 대해 미분해서 0으로 놓으면 얻어진다. $\nabla L(\theta_0) + H (\theta - \theta_0) = 0$이므로 $\theta - \theta_0 = -H^{-1} \nabla L(\theta_0)$다. 그러므로 다음 점은 이렇게 점프한다.</p>
+
+      <div class="math-block">$$ \theta_{t+1} \;=\; \theta_t \;-\; H^{-1} \, \nabla L(\theta_t) $$</div>
+      <p class="math-note">경사하강은 -ε∇L 만큼 갔는데, 뉴턴법은 학습률 자리에 H의 역행렬을 놓는다. 즉 곡률이 큰(가파른) 방향은 작게, 곡률이 작은(완만한) 방향은 크게 자동으로 보정.</p>
+
+      <p>이 식의 의미를 직관적으로 풀면 이렇다. 경사하강은 모든 방향에 같은 학습률 $\epsilon$을 곱했다. 그래서 어떤 방향은 너무 크게, 어떤 방향은 너무 작게 가는 문제가 있었다(6절의 지그재그). 반면 뉴턴법은 학습률을 헤시안의 역행렬이라는 <em>방향별로 다른 비율</em>로 자동 조정한다. 곡률이 큰 축은 작게, 작은 축은 크게. 결과적으로 등고선이 늘인 타원이어도 뉴턴은 거의 한 번에 중심으로 점프할 수 있다. 진짜로 $L$이 2차 함수라면 단 한 번의 뉴턴 step으로 정확한 최저점에 도달한다.</p>
+
+      <p>아래 위젯이 같은 비대칭 손실 표면 위에서 경사하강과 뉴턴법의 궤적을 직접 보여준다. 경사하강이 지그재그로 길게 도는 동안 뉴턴은 거의 직선으로 중심에 꽂힌다. 종횡비 슬라이더로 등고선의 일그러짐을 키워 보면 두 알고리즘의 차이가 더 극적으로 벌어진다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 08</span><span>경사하강 vs 뉴턴법 — 같은 표면, 다른 궤적</span></div>
+        <div class="traj-stage">
+          <div class="traj-col gd">
+            <h5><span>경사하강 · 1계 정보</span><b id="gdIters">반복 0회</b></h5>
+            <canvas id="gdCv" class="traj-canvas"></canvas>
+          </div>
+          <div class="traj-col nw">
+            <h5><span>뉴턴법 · 2계 정보</span><b id="nwIters">반복 0회</b></h5>
+            <canvas id="nwCv" class="traj-canvas"></canvas>
+          </div>
+        </div>
+        <div class="widget-controls">
+          <div class="slider"><label>등고선 종횡비 a <b id="aspectLab">3</b></label><input type="range" id="aspectSl" min="10" max="100" value="30" step="2"></div>
+          <div class="slider"><label>경사하강 학습률 ε <b id="lrLab">0.20</b></label><input type="range" id="lrSl" min="5" max="80" value="20" step="1"></div>
+          <button class="btn" id="stepBtn">한 걸음 진행</button>
+          <button class="btn ghost" id="resetBtn">처음으로</button>
+        </div>
+      </div>
+      <p class="widget-cap">두 알고리즘 모두 같은 시작점에서 출발한다. 경사하강은 매 step마다 -ε·∇L만큼 이동하며, 종횡비가 클수록 단축 방향으로 진동한다. 뉴턴법은 -H⁻¹·∇L만큼 이동하므로 종횡비와 무관하게 거의 한 번에 중심으로 점프한다. 종횡비를 키워서 차이를 확인하라.</p>
+    </div>
+
+    <div class="prose">
+      <h2>뉴턴법의 비용 — O(n³)이라는 벽</h2>
+      <p>뉴턴법이 그렇게 좋다면 왜 딥러닝에서 직접 쓰지 않을까. 첫 번째 답은 <strong>비용</strong>이다. $n$개 파라미터를 가진 모델에서 헤시안 $H$는 $n \times n$ 행렬이고, 그 역행렬을 구하는 데 일반적으로 $O(n^3)$의 연산이 필요하다. 메모리도 $O(n^2)$이다. 현대 신경망의 $n$은 수백만에서 수십억이다. 예를 들어 $n = 10^7$짜리 모델이라면 헤시안 저장에만 $4 \times 10^{14}$ 바이트, 즉 400 테라바이트의 메모리가 필요하다. 역행렬 계산은 그 위에 $10^{21}$ 회의 부동소수점 연산이 필요한데, 최신 GPU 한 대가 초당 약 $10^{14}$ 회를 처리한다면 한 step에 약 $10^7$초 — 약 4개월이 걸린다. 한 step에. 이 한 사실만으로 뉴턴법은 현대 딥러닝에서 직접 쓸 수 없다.</p>
+
+      <h2>뉴턴법의 함정 — 안장점에 끌리는 경향</h2>
+      <p>두 번째 답은 더 미묘하다. 뉴턴법은 정지점($\nabla L = 0$인 점)을 향해 가는데, 정지점이 최저점인지 안장점인지 신경 쓰지 않는다. 안장점도 정지점이므로 뉴턴법은 그곳으로도 끌려간다. 7절에서 봤듯 고차원 손실 표면에는 국소 최저점보다 안장점이 압도적으로 많다. 그래서 순수한 뉴턴법은 종종 안장점에 박혀 거기서 나오지 못한다. 헤시안의 어떤 고유값이 음수일 때 그 방향은 안장점에서 빠져나가야 할 방향인데, 뉴턴법의 식 $-H^{-1} \nabla L$은 음수 고유값을 그대로 받아들여 오히려 그 방향으로 잘못된 점프를 한다.</p>
+
+      <p>이 문제를 해결하려면 헤시안을 그대로 쓰지 않고 <em>수정된 헤시안</em>($H + \alpha I$ 같은 형태)을 써야 한다. 음수 고유값에 양의 상수를 더해 양수로 만들어 주는 방식이다. 그러나 이 수정 자체에 추가 비용이 들고, $\alpha$를 어떻게 정할지 또한 문제다. 결국 정직한 2계 방법은 추가 트릭 없이는 안전하지 않다.</p>
+
+      <h2>1계와 2계 — 정보와 비용의 표</h2>
+      <p>두 접근법의 차이를 한 표로 정리한다.</p>
+
+      <table class="hess-table">
+        <thead><tr><th>속성</th><th>경사하강 (1계)</th><th>뉴턴법 (2계)</th></tr></thead>
+        <tbody>
+          <tr><td>사용 정보</td><td>∇L (n차원 벡터)</td><td>∇L 와 H (n×n 행렬)</td></tr>
+          <tr><td>한 step 비용</td><td class="good">O(n)</td><td class="bad">O(n³) (역행렬)</td></tr>
+          <tr><td>메모리</td><td class="good">O(n)</td><td class="bad">O(n²)</td></tr>
+          <tr><td>학습률</td><td>수동 ε 선택</td><td class="good">자동 (H⁻¹이 흡수)</td></tr>
+          <tr><td>2차 함수에서 수렴</td><td>여러 step 필요</td><td class="good">1 step</td></tr>
+          <tr><td>안장점 행동</td><td>흔들리며 빠져나감</td><td class="bad">박힐 수 있음</td></tr>
+          <tr><td>딥러닝 적용성</td><td class="good">표준</td><td class="bad">직접 불가</td></tr>
+        </tbody>
+      </table>
+
+      <h2>준-뉴턴 방법과 절충안</h2>
+      <p>뉴턴법의 직관 — "곡률 정보를 쓰면 학습률을 자동으로 보정할 수 있다" — 은 너무 매력적이라 그대로 버리기 어렵다. 그래서 헤시안을 완전히 만들지 않고 <em>근사</em>하는 방법들이 개발되었다. 이것을 <strong>준-뉴턴 방법(quasi-Newton method)</strong>이라고 한다. 대표 예가 BFGS와 그 메모리 절약형 L-BFGS다. 이들은 헤시안의 역행렬을 직접 구하지 않고, 매 step의 기울기 변화로부터 점진적으로 근사를 갱신한다. 비용은 $O(n^2)$ 정도로 줄지만 여전히 큰 신경망에는 부담이다.</p>
+
+      <p>더 가벼운 절충안이 <strong>적응적 학습률(adaptive learning rate)</strong> 방법들이다. AdaGrad, RMSProp, Adam 같은 옵티마이저들은 각 파라미터마다 학습률을 따로 조정한다. 헤시안의 대각 성분만 근사하는 셈인데(전체 행렬이 아니므로 비용은 $O(n)$), 이 정도만 해도 6절의 지그재그 문제를 상당히 완화한다. 현대 딥러닝의 사실상 표준이 된 Adam은 이런 절충의 결과물이다.</p>
+
+      <h2>다음으로</h2>
+      <p>이번 절에서는 2계 정보의 의미와 한계를 봤다. 다음 절은 다시 1계로 돌아와 — 어쨌든 딥러닝의 표준이니까 — 학습률 $\epsilon$이 손실 곡면 위에서 어떻게 발산을, 진동을, 수렴을 만드는지를 한 화면에서 본다. 같은 함수에서 $\epsilon$만 바꿨을 때 학습이 어떻게 갈리는지를 손으로 흔들어 본다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'왜 수치 계산이 ML의 발목을 잡는가' },
+    { no:'02', t:'부동소수점 — IEEE 754의 좁은 자' },
+    { no:'03', t:'언더플로 / 오버플로 — softmax는 왜 터지는가' },
+    { no:'04', t:'logsumexp 트릭 — 안정화 수식 유도' },
+    { no:'05', t:'조건수 1 — 행렬은 답을 얼마나 흔드는가' },
+    { no:'06', t:'조건수 2 — 최적화의 지그재그' },
+    { no:'07', t:'경사하강법의 본질' },
+    { no:'08', t:'2계 방법 — 헤시안과 뉴턴법' },
+    { no:'09', t:'학습률의 의미' },
+    { no:'10', t:'제약 최적화 — 라그랑주와 KKT' },
+    { no:'11', t:'시험 대비' },
+  ];
+  function buildNav(current) {
+    const tb = document.querySelector('.topbar');
+    if (tb) tb.innerHTML =
+      `<a class="home" href="index.html">← Ch.04 수치 계산</a>` +
+      `<span class="ch-mini">SUB ${current} / 11</span>`;
+    const ol = document.querySelector('.ch-nav ol');
+    if (ol) ol.innerHTML = SUBS.map(s =>
+      `<li><a href="${s.no}.html" ${s.no === current ? 'class="current"' : ''}>${s.t}</a></li>`).join('');
+    const foot = document.querySelector('.ch-foot');
+    if (foot) {
+      const i = SUBS.findIndex(s => s.no === current);
+      const prev = i > 0 ? SUBS[i-1] : { no:'index', t:'표지로' };
+      const next = i < SUBS.length-1 ? SUBS[i+1] : { no:'index', t:'표지로' };
+      foot.innerHTML =
+        `<a href="${prev.no === 'index' ? 'index.html' : prev.no + '.html'}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+        `<a href="${next.no === 'index' ? 'index.html' : next.no + '.html'}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+    }
+    const bar = document.querySelector('.scroll-progress');
+    if (bar) {
+      const onScroll = () => {
+        const h = document.documentElement;
+        const max = h.scrollHeight - h.clientHeight;
+        bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+      };
+      document.addEventListener('scroll', onScroll, { passive: true });
+      onScroll();
+    }
+  }
+
+  // GD vs Newton 위젯
+  // L(x,y) = 0.5 * (x^2 + a^2 * y^2)  →  ∇L = (x, a^2 * y),  H = diag(1, a^2)
+  // GD step:    [x,y] -= ε * ∇L
+  // Newton step: [x,y] -= H^-1 * ∇L = (x, y)  → 한 step에 원점 도달
+  let state = {
+    a: 3,
+    lr: 0.20,
+    gd: { x: 0.85, y: 0.55, hist: [{x:0.85,y:0.55}] },
+    nw: { x: 0.85, y: 0.55, hist: [{x:0.85,y:0.55}] },
+  };
+
+  function setupCanvas(canvas) {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    canvas.width = w * dpr; canvas.height = h * dpr;
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    return { ctx, w, h };
+  }
+
+  function drawContours(ctx, w, h, a) {
+    ctx.fillStyle = '#FAF7F0'; ctx.fillRect(0,0,w,h);
+    const cx = w/2, cy = h/2;
+    const scale = Math.min(w, h) * 0.35;
+    ctx.lineWidth = 1;
+    for (let lev = 1; lev <= 7; lev++) {
+      const c = lev * 0.13;
+      ctx.strokeStyle = `rgba(45, 91, 122, ${0.10 + lev*0.05})`;
+      ctx.beginPath();
+      for (let t = 0; t <= Math.PI*2 + 0.01; t += 0.04) {
+        const x = Math.sqrt(2*c) * Math.cos(t);
+        const y = Math.sqrt(2*c) * Math.sin(t) / a;
+        const px = cx + x * scale;
+        const py = cy - y * scale;
+        if (t === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.closePath(); ctx.stroke();
+    }
+    ctx.fillStyle = '#26221C';
+    ctx.beginPath(); ctx.arc(cx, cy, 3, 0, Math.PI*2); ctx.fill();
+    return { cx, cy, scale };
+  }
+
+  function drawPath(ctx, hist, color, cx, cy, scale) {
+    if (hist.length < 1) return;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    hist.forEach((p, i) => {
+      const px = cx + p.x * scale, py = cy - p.y * scale;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    });
+    ctx.stroke();
+    hist.forEach((p, i) => {
+      const px = cx + p.x * scale, py = cy - p.y * scale;
+      ctx.fillStyle = i === hist.length - 1 ? color : color.replace('0.85', '0.45');
+      ctx.beginPath(); ctx.arc(px, py, i === hist.length - 1 ? 4 : 2.5, 0, Math.PI*2); ctx.fill();
+    });
+  }
+
+  function render() {
+    const a = state.a;
+    document.getElementById('aspectLab').textContent = a.toFixed(0);
+    document.getElementById('lrLab').textContent = state.lr.toFixed(2);
+    document.getElementById('gdIters').textContent = `반복 ${state.gd.hist.length - 1}회`;
+    document.getElementById('nwIters').textContent = `반복 ${state.nw.hist.length - 1}회`;
+
+    const gdCv = document.getElementById('gdCv');
+    const nwCv = document.getElementById('nwCv');
+    if (!gdCv || !nwCv) return;
+
+    {
+      const { ctx, w, h } = setupCanvas(gdCv);
+      const { cx, cy, scale } = drawContours(ctx, w, h, a);
+      drawPath(ctx, state.gd.hist, 'rgba(45, 91, 122, 0.85)', cx, cy, scale);
+    }
+    {
+      const { ctx, w, h } = setupCanvas(nwCv);
+      const { cx, cy, scale } = drawContours(ctx, w, h, a);
+      drawPath(ctx, state.nw.hist, 'rgba(192, 73, 46, 0.85)', cx, cy, scale);
+    }
+  }
+
+  function stepOnce() {
+    const a = state.a, lr = state.lr;
+    // GD: ∇L = (x, a^2*y)
+    let gx = state.gd.x, gy = state.gd.y;
+    let gxN = gx - lr * gx;
+    let gyN = gy - lr * (a*a) * gy;
+    if (Math.abs(gxN) < 5 && Math.abs(gyN) < 5) {
+      state.gd.x = gxN; state.gd.y = gyN;
+      state.gd.hist.push({ x: gxN, y: gyN });
+      if (state.gd.hist.length > 80) state.gd.hist.shift();
+    }
+    // Newton: -H⁻¹∇L = -(x, y) → 한 step에 0
+    let nx = state.nw.x, ny = state.nw.y;
+    let nxN = nx - nx;
+    let nyN = ny - ny;
+    state.nw.x = nxN; state.nw.y = nyN;
+    state.nw.hist.push({ x: nxN, y: nyN });
+    render();
+  }
+
+  function resetAll() {
+    state.gd = { x: 0.85, y: 0.55, hist: [{x:0.85,y:0.55}] };
+    state.nw = { x: 0.85, y: 0.55, hist: [{x:0.85,y:0.55}] };
+    render();
+  }
+
+  window.addEventListener('load', () => {
+    buildNav('08');
+    document.getElementById('aspectSl').addEventListener('input', (e) => {
+      state.a = parseFloat(e.target.value) / 10;
+      resetAll();
+    });
+    document.getElementById('lrSl').addEventListener('input', (e) => {
+      state.lr = parseFloat(e.target.value) / 100;
+      resetAll();
+    });
+    document.getElementById('stepBtn').addEventListener('click', stepOnce);
+    document.getElementById('resetBtn').addEventListener('click', resetAll);
+    window.addEventListener('resize', render);
+    render();
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [
+          { left: '$$', right: '$$', display: true },
+          { left: '$',  right: '$',  display: false }
+        ]
+      });
+    }
+  });
+</script>
+</body>
+</html>

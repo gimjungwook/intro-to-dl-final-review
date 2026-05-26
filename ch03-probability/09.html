@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>09. 흔한 분포 2 — Gaussian</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .gauss-stage { padding: 1.4rem 1.1rem; display: grid; gap: 1rem; }
+  .gauss-canvas { width: 100%; height: 240px; display: block; background: #fff; border: 1px solid var(--line-soft); border-radius: 7px; }
+  .clt-canvas { width: 100%; height: 220px; display: block; background: #fff; border: 1px solid var(--line-soft); border-radius: 7px; }
+  .gtab { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: .5rem; font-family: var(--mono); font-size: .78rem; }
+  .gtab .item { padding: .55rem .8rem; background: var(--paper-2); border-radius: 7px; }
+  .gtab .item .lab { display: block; font-size: .66rem; color: var(--ink-faint); letter-spacing: .12em; text-transform: uppercase; margin-bottom: .2rem; }
+  .gtab .item .val { font-size: 1rem; font-weight: 600; color: var(--ink); }
+  .clt-row { display: flex; gap: .5rem; flex-wrap: wrap; padding: .2rem 0; }
+  .clt-row button { font-family: var(--mono); font-size: .72rem; letter-spacing: .04em; padding: .42rem .8rem; border-radius: 6px; border: 1px solid var(--line); background: #fff; color: var(--ink-soft); cursor: pointer; }
+  .clt-row button.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-chapter 09. 분포 카탈로그 둘째 묶음</span>
+      <h1>가우시안 분포 —<br><span class="t-structure">왜 종 모양이 그렇게</span> 자주 나오는가</h1>
+      <p class="lede">키, 측정 오차, 신경망 가중치 초기화, 회귀의 잔차 — 자연과 공학에서 가장 자주 마주치는 분포가 가우시안(Gaussian, 정규분포)이다. 두 가지 이유 때문이다 — 중심극한정리(central limit theorem)와 잡음 모델로서의 적합성. 그리고 평균제곱오차(MSE) 손실은 가우시안 가정의 음의 로그우도다.</p>
+    </header>
+
+    <div class="prose">
+      <p>연속값 분포 카탈로그의 첫 자리는 망설임 없이 <strong>가우시안 분포(Gaussian distribution)</strong> — 정규분포(normal distribution)라고도 부른다 — 가 차지한다. 종 모양 곡선 한 줄로 묘사되는 이 분포가 자연과 공학의 셀 수 없이 많은 자리에 나타나는 이유는 단순한 우연이 아니다. 그 이유 두 가지가 이 페이지의 핵심이다.</p>
+
+      <p>먼저 식부터 적어 두자. 평균 $\mu$, 분산 $\sigma^2$인 1차원 가우시안 분포의 확률밀도함수(PDF)는 다음이다.</p>
+
+      <div class="math-block">$$ \mathcal{N}(x; \mu, \sigma^2) = \frac{1}{\sqrt{2 \pi \sigma^2}} \exp\!\left( -\frac{(x - \mu)^2}{2 \sigma^2} \right) $$</div>
+      <p class="math-note">$\mu$는 분포의 중심(평균), $\sigma^2$는 분포의 산포(분산). 앞 분수는 적분이 1이 되도록 맞추는 정규화 상수.</p>
+
+      <p>겉으로 보면 복잡한 식이지만, 모양은 세 부분으로 나뉜다. 첫째, 지수 안 $-(x - \mu)^2 / (2 \sigma^2)$ — 이게 종 모양을 만드는 핵심이다. $x$가 $\mu$에서 멀어질수록 지수의 절댓값이 커져 밀도가 빠르게 작아진다. 둘째, 지수 함수 $\exp$ — 결과를 항상 양수로 만든다. 셋째, 앞의 정규화 상수 — 모든 곳에서의 밀도 적분이 정확히 1이 되도록 강제하는 인수다.</p>
+
+      <p>왜 하필 $(x - \mu)^2 / \sigma^2$ 형태인가. 핵심은 거리의 제곱이다. 평균에서 멀수록 가능성이 작아지는데, 그 "멀어짐"을 거리의 제곱으로 잰다. 이게 분산이라는 척도와 자연스럽게 들어맞는다(분산 자체가 편차 제곱의 기대값이었다). 다른 형태였다면 — 예를 들어 $\exp(-|x - \mu| / \sigma)$로 적었다면 — 라플라스(Laplace) 분포가 된다. 라플라스도 유효한 분포이지만 가우시안과 비교하면 꼬리가 더 두껍고, 봉우리가 더 뾰족하며, 미분 계산이 깔끔하지 않다. 가우시안이 자주 쓰이는 이유는 곧 보겠지만 매끄러운 수학적 성질 때문이다.</p>
+
+      <h2>첫 번째 이유 — 중심극한정리</h2>
+      <p>가우시안이 자연에서 자주 등장하는 첫 번째 이유는 <strong>중심극한정리(central limit theorem, CLT)</strong>다. 이 정리는 거칠게 말하면 다음이다 — 어떤 분포에서 뽑은 독립 표본 여러 개를 합산(또는 평균)하면, 그 합산값의 분포는 원래 분포가 어떤 모양이었든 간에 가우시안에 가까워진다. 표본 수가 많을수록 더 가까워진다.</p>
+
+      <p>이 정리가 매우 강력한 이유는 "원래 분포가 어떤 모양이었든"이라는 조건이 매우 약하다는 데 있다. 동전 던지기처럼 0과 1만 나오는 이산 분포도, 정규분포와 닮은 어떤 종 모양도, 심지어 한쪽으로 강하게 치우친 분포도 — 충분히 많이 합치면 결과는 종 모양에 수렴한다.</p>
+
+      <p>왜 이런 일이 일어나는가. 직관적으로 말하면, 여러 개의 작은 잡음들이 합쳐질 때 양수 편차와 음수 편차가 부분적으로 상쇄되고, 같은 부호로 누적되는 일은 점점 드물어진다. 그래서 합산값은 평균 근처에 집중되고, 평균에서 멀어질수록 그 가능성이 빠르게 줄어드는 — 정확히 가우시안과 같은 — 형태를 갖게 된다.</p>
+
+      <div class="analogy">
+        주사위 한 개를 굴리면 1에서 6이 균등하게 나온다. 분포는 평평한 직사각형이다. 그런데 주사위를 100개 굴려 합을 보면 평균(350) 근처에 봉우리가 생기고 평균에서 멀수록 매우 드물어지는 — <b>익숙한 종 모양</b>이 된다. 한 개일 때와 100개일 때 분포가 이렇게 다른 이유가 곧 중심극한정리다. 자연에서 측정하는 양들 — 사람의 키, 측정 오차, 노이즈 — 은 무수히 많은 작은 요인들의 합으로 만들어지므로, 그 결과 분포가 가우시안이 되는 것은 우연이 아니라 거의 필연이다.
+      </div>
+
+      <p>아래 위젯에서 이 정리를 직접 보자. 세 가지 기반 분포(균등, 지수, 이산 점프) 중 하나를 골라 한 표본을 뽑는다. 그 다음 두 표본을 평균낸 분포, 다섯 표본을 평균낸 분포, 서른 표본을 평균낸 분포가 차례로 그려진다. 기반 분포가 어떤 모양이든 — 평평하든, 한쪽으로 치우쳤든, 두 봉우리든 — 평균 표본 수가 늘어날수록 결과 분포는 종 모양에 빠르게 다가간다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 09a</span><span>중심극한정리 — 기반 분포가 무엇이든 합은 가우시안으로</span></div>
+        <div class="gauss-stage">
+          <canvas id="cltC" class="clt-canvas" width="700" height="220"></canvas>
+          <div class="clt-row">
+            <button class="on" data-base="unif">균등 분포</button>
+            <button data-base="exp">지수 분포 (한쪽 꼬리)</button>
+            <button data-base="bim">이중 봉우리</button>
+          </div>
+        </div>
+        <div class="widget-controls">
+          <div class="slider">
+            <label>평균 낼 표본 수 n <b><span id="nV2">1</span></b></label>
+            <input id="nSl2" type="range" min="1" max="60" value="1" class="s-structure">
+          </div>
+          <span style="font-family: var(--mono); font-size: .72rem; color: var(--ink-faint);">n=1일 때 기반 분포 그대로, n이 커질수록 종 모양으로 수렴</span>
+        </div>
+      </div>
+      <p class="widget-cap">n=1이면 기반 분포의 모양 그대로(균등이면 평평, 지수면 비대칭). n을 키우면 분포 모양이 빠르게 종 모양으로 모이는 것이 보인다 — 이게 중심극한정리의 시각적 증명이다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>두 번째 이유 — 잡음 모델로서 최선의 무지 표현</h2>
+      <p>가우시안이 자주 등장하는 두 번째 이유는 <strong>잡음(noise)에 대해 우리가 가진 정보가 적을 때 가장 합리적인 가정</strong>이라는 것이다. 이건 정보이론과도 연결되는 깊은 결론인데, 한 줄로 말하면 이렇다 — 평균과 분산만 알고 다른 정보가 없을 때, 그 두 양만으로 표현 가능한 분포 중 엔트로피(불확실성)가 가장 큰 분포가 가우시안이다.</p>
+
+      <p>이게 무슨 뜻인가. 우리가 어떤 잡음에 대해 "평균이 0이고 분산은 어느 정도다"라는 사실만 안다면, 그 외 어떤 가정도 추가로 끼워 넣지 않는 "가장 정직한" 분포가 가우시안이다. 가우시안 외의 분포(예: 라플라스, 균등 등)는 평균과 분산 외에 어떤 추가적 모양 가정을 은연중에 끼워 넣게 된다. 가우시안만이 그런 추가 가정을 최소화한다. 이 성질을 통계학에서 최대 엔트로피 원리(maximum entropy principle)라 부른다.</p>
+
+      <p>그래서 잡음이 어떤 모양인지 정말 잘 모를 때, 가우시안을 디폴트로 가정하는 것은 "가장 무책임한 가정이자 가장 안전한 가정"이다. 자연 과학과 공학의 거의 모든 모델이 처음 시작할 때 잡음을 가우시안으로 가정하는 이유다.</p>
+
+      <h2>위젯 — μ와 σ가 종을 어떻게 옮기고 늘리는가</h2>
+      <p>아래 위젯에서 평균 $\mu$와 표준편차 $\sigma$를 조절해 종이 어떻게 움직이고 늘어나는지 확인하자. $\mu$를 바꾸면 종 전체가 좌우로 평행이동한다. $\sigma$를 키우면 종이 옆으로 퍼지고 봉우리가 낮아진다(전체 면적이 1이라는 약속이 지켜져야 하므로). $\sigma$를 줄이면 종이 좁아지고 봉우리가 솟는다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 09b</span><span>가우시안 — μ와 σ가 만드는 종 모양</span></div>
+        <div class="gauss-stage">
+          <canvas id="gC" class="gauss-canvas" width="700" height="240"></canvas>
+          <div class="gtab">
+            <div class="item"><span class="lab">평균 μ</span><span class="val" id="muV">0.00</span></div>
+            <div class="item"><span class="lab">표준편차 σ</span><span class="val" id="siV">1.00</span></div>
+            <div class="item"><span class="lab">봉우리 높이</span><span class="val" id="phV">0.40</span></div>
+          </div>
+        </div>
+        <div class="widget-controls">
+          <div class="slider">
+            <label>μ (평균) <b><span id="muL">0.00</span></b></label>
+            <input id="muSl" type="range" min="-300" max="300" value="0" class="s-structure">
+          </div>
+          <div class="slider">
+            <label>σ (표준편차) <b><span id="siL">1.00</span></b></label>
+            <input id="siSl" type="range" min="20" max="250" value="100" class="s-style">
+          </div>
+        </div>
+      </div>
+      <p class="widget-cap">μ는 종의 위치, σ는 종의 폭. 면적은 항상 1로 보존되므로, 폭이 넓어지면 높이가 낮아지고 폭이 좁아지면 높이가 올라간다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>선형 회귀의 MSE 손실이 가우시안 NLL인 이유</h2>
+      <p>이 페이지에서 시험에 가장 자주 나오는 결론 한 가지. 회귀(regression) 문제에서 자주 쓰는 평균제곱오차(mean squared error, MSE) 손실은 사실 가우시안 가정에서 나온 음의 로그우도(NLL)다. 이 점을 한 줄로 유도해 보자.</p>
+
+      <p>회귀 모델이 입력 $x$에 대해 평균 $f(x)$, 고정된 분산 $\sigma^2$인 가우시안 출력을 낸다고 하자. 즉 $p(y | x) = \mathcal{N}(y; f(x), \sigma^2)$. 그러면 한 데이터점 $(x, y)$의 음의 로그우도는 다음과 같이 풀린다.</p>
+
+      <div class="math-block">$$ -\log p(y | x) = \frac{1}{2 \sigma^2} (y - f(x))^2 + \frac{1}{2} \log(2 \pi \sigma^2) $$</div>
+      <p class="math-note">가우시안 PDF에 로그를 씌우고 부호를 뒤집은 형태. 두 번째 항은 $f$와 무관해서 학습 중에 사라진다.</p>
+
+      <p>둘째 항 $\frac{1}{2} \log(2 \pi \sigma^2)$는 $f$에 의존하지 않으므로 $f$의 파라미터로 미분하면 0이다 — 학습 목적에서 무시할 수 있다. 결국 NLL을 최소화하는 것은 $(y - f(x))^2$을 최소화하는 것과 동등하다 — 정확히 MSE다. 이렇게 우리가 매일 쓰는 회귀 손실은 "출력에 가우시안 잡음이 끼어 있다"는 분포 가정에서 자동으로 따라 나오는 양이다.</p>
+
+      <p>왜 이게 중요한가. MSE를 단순히 "거리 제곱을 줄이는 게 직관적이라" 쓴다고 생각하면 그게 그저 한 가지 임의의 선택처럼 보인다. 그러나 분포 관점에서 보면 MSE는 "잡음을 가우시안으로 가정한다면 가장 합리적인 손실"이라는 한 가지 의미를 갖는다. 만약 잡음이 가우시안이 아니라면(예: 라플라스라면) 다른 손실(절댓값 손실)이 더 적절하다. 이런 식으로 분포 가정과 손실 함수의 짝짓기가 머신러닝의 골격을 만든다.</p>
+
+      <h2>딥러닝에서 가우시안이 나타나는 자리</h2>
+      <p>구체 예시 네 가지. 첫째, 가중치 초기화(weight initialization). He, Xavier 등 표준 초기화가 모두 정규분포에서 가중치를 뽑는다. 잡음에 대한 디폴트 가정을 그대로 이어 받는 자리다. 둘째, 잡음 제거 모델(denoising). 입력에 가우시안 잡음을 추가했다가 복원하도록 학습하는 모델은 데이터 분포의 미분 정보(score)를 학습한다. 이게 디퓨전 모델(diffusion model)의 토대다. 셋째, VAE의 사전 분포. 잠재변수를 표준 가우시안에서 뽑는다. 넷째, 베이즈 신경망(Bayesian neural network)의 가중치 사전 분포. 모두 가우시안이 디폴트다.</p>
+
+      <h2>시험에서 자주 묻는 한 줄</h2>
+      <p>시험 직전 정리. <strong>가우시안은 $\mathcal{N}(\mu, \sigma^2)$, 평균 $\mu$ 표준편차 $\sigma$로 정해진다. 자주 등장하는 이유 두 개 = 중심극한정리(여러 표본의 합/평균은 가우시안에 수렴) + 최대 엔트로피(평균과 분산만 알 때 가장 정직한 분포). 회귀의 MSE 손실 = 가우시안 가정 NLL.</strong> 객관식에서 "MSE는 가우시안 가정 없이도 우도 최대화와 같다"는 보기가 보이면 틀린 보기다. "중심극한정리는 기반 분포 모양에 의존한다"도 틀린 보기다(기반 분포 모양에 무관).</p>
+
+      <p>다음 페이지에서는 가우시안 하나로는 표현할 수 없는 분포들 — 여러 봉우리를 가진 데이터, 한 점에 무게가 몰린 분포, 학습 데이터의 경험분포 — 를 다루는 도구인 혼합 분포(mixture)와 디랙 델타(Dirac delta)를 본다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const CH = [
+    { no:'01', t:'왜 확률이 필요한가', f:'01.html' },
+    { no:'02', t:'확률변수와 분포 — PMF vs PDF', f:'02.html' },
+    { no:'03', t:'결합·주변·조건부 분포', f:'03.html' },
+    { no:'04', t:'연쇄법칙 — 결합을 조건부의 곱으로', f:'04.html' },
+    { no:'05', t:'독립과 조건부 독립', f:'05.html' },
+    { no:'06', t:'기대값 — 분포를 한 숫자로', f:'06.html' },
+    { no:'07', t:'분산과 공분산 — 무상관 ≠ 독립', f:'07.html' },
+    { no:'08', t:'흔한 분포 1 — Bernoulli, Categorical', f:'08.html' },
+    { no:'09', t:'흔한 분포 2 — Gaussian', f:'09.html' },
+    { no:'10', t:'흔한 분포 3 — Mixture, Dirac', f:'10.html' },
+    { no:'11', t:'베이즈 규칙 — 사전이 사후로', f:'11.html' },
+    { no:'12', t:'정보이론 1 — 엔트로피', f:'12.html' },
+    { no:'13', t:'정보이론 2 — KL 발산의 비대칭', f:'13.html' },
+    { no:'14', t:'정보이론 3 — 교차 엔트로피 = NLL', f:'14.html' },
+    { no:'15', t:'시험 대비 체크리스트', f:'15.html' },
+  ];
+  function buildNav(curr) {
+    const tb = document.querySelector('.topbar');
+    if (tb) tb.innerHTML =
+      `<a class="home" href="index.html">← Ch.3 확률과 정보이론</a>` +
+      `<span class="ch-mini">SUB-CHAPTER ${curr} of 15</span>`;
+    const ol = document.querySelector('.ch-nav ol');
+    if (ol) ol.innerHTML = CH.map(c =>
+      `<li><a href="${c.f}" ${c.no === curr ? 'class="current"' : ''}>${c.t}</a></li>`).join('');
+    const foot = document.querySelector('.ch-foot');
+    if (foot) {
+      const i = CH.findIndex(c => c.no === curr);
+      const prev = i > 0 ? CH[i-1] : { f:'index.html', t:'표지로', no:'' };
+      const next = i < CH.length-1 ? CH[i+1] : { f:'index.html', t:'표지로', no:'' };
+      foot.innerHTML =
+        `<a href="${prev.f}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+        `<a href="${next.f}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+    }
+    const bar = document.querySelector('.scroll-progress');
+    if (bar) {
+      const onS = () => {
+        const h = document.documentElement;
+        const m = h.scrollHeight - h.clientHeight;
+        bar.style.width = (m > 0 ? (h.scrollTop / m) * 100 : 0) + '%';
+      };
+      document.addEventListener('scroll', onS, { passive: true });
+      onS();
+    }
+  }
+
+  function drawGauss(mu, si) {
+    const c = document.getElementById('gC');
+    const ctx = c.getContext('2d');
+    const W = c.width, H = c.height;
+    ctx.clearRect(0, 0, W, H);
+    /* axis */
+    ctx.strokeStyle = 'rgba(38,34,28,0.18)';
+    ctx.beginPath(); ctx.moveTo(20, H - 20); ctx.lineTo(W - 10, H - 20); ctx.stroke();
+    /* range -5..5 */
+    function px(x) { return 20 + (x + 5) / 10 * (W - 30); }
+    const peak = 1 / (Math.sqrt(2 * Math.PI) * si);
+    const yScale = (H - 35) / 0.55;
+    /* fill */
+    ctx.fillStyle = 'rgba(45,91,122,0.14)';
+    ctx.beginPath(); ctx.moveTo(20, H - 20);
+    for (let i = 0; i <= 400; i++) {
+      const x = -5 + 10 * i / 400;
+      const y = (1 / (Math.sqrt(2 * Math.PI) * si)) * Math.exp(-0.5 * ((x - mu) / si) ** 2);
+      const Px = px(x), Py = (H - 20) - y * yScale;
+      ctx.lineTo(Px, Py);
+    }
+    ctx.lineTo(W - 10, H - 20); ctx.closePath(); ctx.fill();
+    /* curve */
+    ctx.strokeStyle = '#2D5B7A'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = 0; i <= 400; i++) {
+      const x = -5 + 10 * i / 400;
+      const y = (1 / (Math.sqrt(2 * Math.PI) * si)) * Math.exp(-0.5 * ((x - mu) / si) ** 2);
+      const Px = px(x), Py = (H - 20) - y * yScale;
+      if (i === 0) ctx.moveTo(Px, Py); else ctx.lineTo(Px, Py);
+    }
+    ctx.stroke();
+    /* mean line */
+    ctx.strokeStyle = '#C0492E';
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.moveTo(px(mu), 5); ctx.lineTo(px(mu), H - 20); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#C0492E';
+    ctx.font = '11px "Spline Sans Mono", monospace';
+    ctx.fillText('μ', px(mu) + 4, 14);
+    document.getElementById('muV').textContent = mu.toFixed(2);
+    document.getElementById('siV').textContent = si.toFixed(2);
+    document.getElementById('phV').textContent = peak.toFixed(2);
+  }
+
+  function randn() {
+    let u = 0, v = 0;
+    while (u === 0) u = Math.random();
+    while (v === 0) v = Math.random();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  }
+
+  function sampleBase(kind) {
+    if (kind === 'unif') return Math.random() * 4 - 2;
+    if (kind === 'exp') return -Math.log(1 - Math.random()) - 1; /* shifted */
+    if (kind === 'bim') return (Math.random() < 0.5 ? -1.4 : 1.4) + randn() * 0.25;
+    return 0;
+  }
+
+  let CLT_BASE = 'unif';
+
+  function drawCLT(n) {
+    const c = document.getElementById('cltC');
+    const ctx = c.getContext('2d');
+    const W = c.width, H = c.height;
+    ctx.clearRect(0, 0, W, H);
+    ctx.strokeStyle = 'rgba(38,34,28,0.18)';
+    ctx.beginPath(); ctx.moveTo(20, H - 20); ctx.lineTo(W - 10, H - 20); ctx.stroke();
+    /* sample */
+    const SAM = 6000;
+    const samples = [];
+    for (let s = 0; s < SAM; s++) {
+      let sum = 0;
+      for (let k = 0; k < n; k++) sum += sampleBase(CLT_BASE);
+      samples.push(sum / n);
+    }
+    /* histogram */
+    const BINS = 60;
+    const xMin = -3, xMax = 3;
+    const hist = new Array(BINS).fill(0);
+    for (const v of samples) {
+      const t = (v - xMin) / (xMax - xMin);
+      const i = Math.min(BINS - 1, Math.max(0, Math.floor(t * BINS)));
+      hist[i]++;
+    }
+    const maxH = Math.max(...hist);
+    const barW = (W - 30) / BINS;
+    ctx.fillStyle = 'rgba(45,91,122,0.5)';
+    for (let i = 0; i < BINS; i++) {
+      const h = (hist[i] / maxH) * (H - 35);
+      const px = 20 + i * barW;
+      const py = H - 20 - h;
+      ctx.fillRect(px, py, barW - 1, h);
+    }
+    /* overlay theoretical gaussian fit */
+    let m = 0, vv = 0;
+    for (const v of samples) m += v;
+    m /= samples.length;
+    for (const v of samples) vv += (v - m) ** 2;
+    vv /= samples.length;
+    const ss = Math.sqrt(vv);
+    ctx.strokeStyle = '#C0492E';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    const peak = 1 / (Math.sqrt(2 * Math.PI) * ss);
+    const SCALE = ((H - 35) / Math.max(...hist)) * (SAM * (xMax - xMin) / BINS);
+    for (let i = 0; i <= 400; i++) {
+      const x = xMin + (xMax - xMin) * i / 400;
+      const y = peak * Math.exp(-0.5 * ((x - m) / ss) ** 2);
+      const Px = 20 + (x - xMin) / (xMax - xMin) * (W - 30);
+      const Py = H - 20 - y * SCALE;
+      if (i === 0) ctx.moveTo(Px, Py); else ctx.lineTo(Px, Py);
+    }
+    ctx.stroke();
+  }
+
+  window.addEventListener('load', () => {
+    buildNav('09');
+    const muS = document.getElementById('muSl');
+    const siS = document.getElementById('siSl');
+    function goG() {
+      const mu = parseInt(muS.value, 10) / 100;
+      const si = parseInt(siS.value, 10) / 100;
+      document.getElementById('muL').textContent = mu.toFixed(2);
+      document.getElementById('siL').textContent = si.toFixed(2);
+      drawGauss(mu, si);
+    }
+    muS.addEventListener('input', goG);
+    siS.addEventListener('input', goG);
+    goG();
+
+    const nS = document.getElementById('nSl2');
+    function goC() {
+      const n = parseInt(nS.value, 10);
+      document.getElementById('nV2').textContent = n;
+      drawCLT(n);
+    }
+    nS.addEventListener('input', goC);
+    document.querySelectorAll('[data-base]').forEach(b => {
+      b.addEventListener('click', () => {
+        document.querySelectorAll('[data-base]').forEach(x => x.classList.remove('on'));
+        b.classList.add('on');
+        CLT_BASE = b.dataset.base;
+        goC();
+      });
+    });
+    goC();
+
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$', right:'$$', display:true}, {left:'$', right:'$', display:false}],
+        throwOnError: false,
+      });
+    }
+  });
+</script>
+</body>
+</html>

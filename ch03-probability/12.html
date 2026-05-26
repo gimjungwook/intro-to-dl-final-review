@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>12. 정보이론 1 — Shannon 엔트로피</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .ent-stage { padding: 1.4rem 1.1rem; display: grid; gap: 1rem; }
+  .ent-canvas { width: 100%; height: 220px; display: block; background: #fff; border: 1px solid var(--line-soft); border-radius: 7px; }
+  .ent-bars { display: grid; grid-template-columns: repeat(4, 1fr); gap: .4rem; padding: .4rem; }
+  .ent-bars .pcol { display: flex; flex-direction: column; align-items: center; gap: .3rem; }
+  .ent-bars .pcol .bar { width: 100%; max-width: 80px; background: var(--structure); border-radius: 4px 4px 0 0; transition: height .15s var(--ease); }
+  .ent-bars .pcol .pv { font-family: var(--mono); font-size: .72rem; color: var(--ink); }
+  .ent-bars .pcol .pn { font-family: var(--mono); font-size: .68rem; color: var(--ink-soft); }
+  .ent-bars .pcol .info { font-family: var(--mono); font-size: .64rem; color: var(--style); }
+  .ent-tab { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: .5rem; font-family: var(--mono); font-size: .78rem; }
+  .ent-tab .item { padding: .55rem .8rem; background: var(--paper-2); border-radius: 7px; }
+  .ent-tab .item .lab { display: block; font-size: .66rem; color: var(--ink-faint); letter-spacing: .12em; text-transform: uppercase; margin-bottom: .2rem; }
+  .ent-tab .item .val { font-size: 1rem; font-weight: 600; color: var(--ink); }
+  .ent-tab .item.hi .val { color: var(--style); }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-chapter 12. 분포의 평균 놀라움</span>
+      <h1>Shannon 엔트로피 —<br><span class="t-style">분포가 얼마나 불확실한가</span></h1>
+      <p class="lede">동전이 거의 항상 앞면이 나오면 결과가 뻔하다 — 불확실성이 낮다. 앞뒤가 반반이면 매번 결과를 짐작하기 어렵다 — 불확실성이 높다. 이 "불확실성"을 한 숫자로 잡는 양이 Shannon 엔트로피다. 자기정보 -log p의 평균이라는 매우 단순한 식 하나로 정의된다.</p>
+    </header>
+
+    <div class="prose">
+      <p>지금까지 본 모든 분포 — Bernoulli, Categorical, Gaussian, Mixture — 는 "어떤 값이 얼마나 그럴듯한가"를 표현했다. 그런데 분포 하나를 보고 "이 분포가 얼마나 결과를 예측하기 어려운지" 한 숫자로 말할 수 있을까. 그 한 숫자를 정의하고 이론적 기반을 마련한 것이 정보이론(information theory)이고, 그 핵심 양이 <strong>Shannon 엔트로피(Shannon entropy)</strong>다.</p>
+
+      <p>엔트로피를 이해하려면 먼저 더 단순한 양 — 한 사건의 <strong>자기정보(self-information)</strong> — 부터 봐야 한다. 발상은 직관적이다 — 드물게 일어나는 사건일수록 그것을 알았을 때 더 놀랍고 더 많은 정보를 준다. 매일 일어나는 사건은 들어도 별 정보가 없다. 그러나 일 년에 한 번 일어날 만한 사건이 일어났다면 그 자체로 큰 정보다. 이 "놀라움의 크기"를 수량화한 양이 자기정보다.</p>
+
+      <h2>자기정보 — 드문 사건일수록 놀라움이 크다</h2>
+      <p>한 사건이 일어날 확률이 $p$라고 하자. 자기정보는 다음으로 정의된다.</p>
+
+      <div class="math-block">$$ I(x) = -\log p(x) $$</div>
+      <p class="math-note">$p$가 1에 가까우면 $\log p \to 0$이라 자기정보가 0에 가깝다(놀라움 없음). $p$가 0에 가까우면 $\log p \to -\infty$라 자기정보가 매우 크다(매우 놀람). 음의 부호는 결과를 양수로 만들기 위함.</p>
+
+      <p>왜 하필 로그인가. "드물수록 정보가 크다"라는 직관을 만족시키는 함수는 많을 텐데, 왜 로그여야 할까. 이유는 두 가지 합리적 조건 — (1) 두 독립 사건이 동시에 일어났을 때의 정보는 두 정보의 합이어야 한다, (2) 확률이 작을수록 정보가 단조 증가해야 한다 — 을 동시에 만족시키는 유일한 형태(부호와 밑수 차이 빼면)가 $-\log p$이기 때문이다.</p>
+
+      <p>조건 (1)을 풀어 쓰면 다음과 같다. 두 사건 $A$와 $B$가 독립이라면 동시 확률은 $p(A) p(B)$다. 동시 정보가 개별 정보의 합이려면 $I(A \cap B) = I(A) + I(B)$여야 한다. 그런데 일반적인 함수 $f$에 대해 $f(p(A) p(B)) = f(p(A)) + f(p(B))$를 만족시키는 함수는 로그뿐이다 — 로그의 곱셈을 덧셈으로 바꾸는 성질이 정확히 이 조건을 충족시킨다. 음의 부호는 확률이 작을수록 정보가 크다는 조건을 위해 붙는다.</p>
+
+      <p>로그의 밑수(base)는 단위만 정한다. 밑이 2이면 단위는 비트(bit), 밑이 자연상수 $e$이면 내트(nat), 밑이 10이면 디트(dit)다. 머신러닝에서는 보통 자연로그를 쓴다(미분이 깔끔해서). 단위가 달라도 분포 비교에는 같은 결과가 나온다.</p>
+
+      <h2>엔트로피 — 자기정보의 평균</h2>
+      <p>한 사건의 자기정보를 알았다면, 분포 전체의 "평균 놀라움"은 자연스럽게 정의된다 — 각 사건의 자기정보를 그 사건이 일어날 확률로 가중 평균한 것이다. 이게 <strong>Shannon 엔트로피</strong>다.</p>
+
+      <div class="math-block">$$ H(P) = -\sum_{x} p(x) \log p(x) $$</div>
+      <p class="math-note">각 사건의 확률 $p(x)$에 그 사건의 자기정보 $-\log p(x)$를 곱해 다 더함. 분포 안 모든 사건의 평균 놀라움.</p>
+
+      <p>식을 한 번 더 풀어 읽자. $p(x) \cdot (-\log p(x))$는 "사건 $x$가 일어날 확률 × 그 사건의 놀라움"이다. 자주 일어나는 사건은 가중치가 크지만 놀라움이 작고, 드물게 일어나는 사건은 가중치가 작지만 놀라움이 크다. 두 가지 효과가 곱해져 평균 놀라움을 잰다. 이게 곧 "한 번 결과를 봤을 때 평균적으로 받게 될 정보량"이다.</p>
+
+      <h2>엔트로피가 가장 큰 분포 — 모든 사건이 동등하게 그럴듯할 때</h2>
+      <p>한 가지 매우 중요한 사실. 가능한 결과가 $K$개일 때, 엔트로피를 최대화하는 분포는 모든 결과가 같은 확률 $1/K$를 갖는 균등 분포다. 그리고 그때 엔트로피는 $\log K$다. 반대로 엔트로피가 최소가 되는 분포는 한 결과에 확률 1을 다 몰아넣은 결정적 분포(deterministic distribution)이며, 그때 엔트로피는 0이다.</p>
+
+      <p>왜 그런가. 균등 분포는 어떤 결과도 다른 결과보다 더 그럴듯하지 않다 — 결과를 알기 전 우리의 망설임이 가장 크다. 한 결과에 무게를 다 몰아넣은 분포는 그 결과를 100% 확신한다 — 결과를 알기 전부터 답을 알고 있다. 엔트로피는 정확히 이 망설임의 크기를 잰다.</p>
+
+      <p>이 결론은 9장에서 본 "가우시안이 평균과 분산만 알 때 엔트로피가 최대인 연속 분포"라는 결론과 같은 원리다. 어떤 제약 조건이 주어졌을 때 — 결과가 $K$개라거나, 평균과 분산이 정해져 있다거나 — 엔트로피가 가장 큰 분포가 "추가 가정이 가장 적은, 가장 정직한" 분포다. 이게 최대 엔트로피 원리(maximum entropy principle)다.</p>
+
+      <div class="analogy">
+        엔트로피는 <b>분포의 "예측 어려움"을 양으로 잰 자</b>다. 동전 던지기를 떠올리자. 정상 동전(앞면 0.5, 뒷면 0.5)은 매번 결과를 짐작하기 어렵다 — 엔트로피가 최대(1 bit)다. 살짝 휜 동전(앞면 0.9, 뒷면 0.1)은 거의 매번 앞면이라 짐작이 쉽다 — 엔트로피가 작다(약 0.47 bit). 완전히 휜 동전(앞면 1, 뒷면 0)은 결과를 보지 않아도 안다 — 엔트로피가 0이다. <b>분포가 균등할수록 엔트로피가 크고, 한쪽으로 쏠릴수록 엔트로피가 작다.</b>
+      </div>
+
+      <h2>위젯 — 4면 주사위 확률을 조절해 엔트로피를 본다</h2>
+      <p>아래 위젯은 4가지 결과(A, B, C, D)의 확률을 슬라이더로 조절할 수 있는 분포다. 한 결과의 확률을 1에 가깝게 끌어올리면 엔트로피가 0에 수렴한다. 모두 0.25로 균등하게 두면 엔트로피가 최대(2 bits ≈ 1.386 nats)다. 각 막대의 위에 그 사건의 자기정보 $-\log p$가 함께 표시되니, "자주 일어나는 사건의 정보는 작고, 드문 사건의 정보는 크다"는 점을 직접 확인할 수 있다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 12</span><span>분포 모양 → 엔트로피 변화 (4-면)</span></div>
+        <div class="ent-stage">
+          <div class="ent-bars" id="entBars"></div>
+          <div class="ent-tab">
+            <div class="item"><span class="lab">결과 수 K</span><span class="val">4</span></div>
+            <div class="item"><span class="lab">균등 분포 엔트로피</span><span class="val">2.00 bits</span></div>
+            <div class="item hi"><span class="lab">현재 엔트로피 H(P)</span><span class="val" id="hV">2.00 bits</span></div>
+          </div>
+        </div>
+        <div class="widget-controls" id="sliderRow"></div>
+      </div>
+      <p class="widget-cap">슬라이더로 각 결과 확률을 조절. 한 막대를 키우면 다른 막대들이 줄고 엔트로피가 감소한다. 모두 같으면 엔트로피 최대 (= log₂(4) = 2 bits).</p>
+    </div>
+
+    <div class="prose">
+      <h2>이진 엔트로피 — 가장 단순한 경우</h2>
+      <p>결과가 두 개뿐인 베르누이 분포의 엔트로피를 살펴보자. 한 결과 확률을 $p$, 다른 결과를 $1 - p$라 하면 엔트로피는 다음이다.</p>
+
+      <div class="math-block">$$ H(p) = -p \log p - (1 - p) \log (1 - p) $$</div>
+      <p class="math-note">두 항의 합. $p = 0.5$에서 최댓값(1 bit), $p \to 0$ 또는 $p \to 1$에서 0.</p>
+
+      <p>이 함수는 $p = 0.5$에서 최댓값 1 bit를 가지고 $p \to 0$ 또는 $p \to 1$에서 0에 수렴하는 대칭 종 모양이다. 이게 이진 엔트로피 함수(binary entropy function)다. 분류 손실의 직관, 데이터 인코딩, 결정 트리(decision tree)의 정보 이득(information gain) 등 셀 수 없이 많은 자리에서 등장한다.</p>
+
+      <h2>왜 음수가 안 나오는가</h2>
+      <p>이산 분포의 엔트로피는 항상 0 이상이다. 이유는 단순하다 — $0 \leq p(x) \leq 1$이므로 $\log p(x) \leq 0$이고, 부호를 뒤집은 $-\log p(x) \geq 0$이며, 그것의 가중 평균도 0 이상이다. 등호는 한 결과에 확률 1을 다 몰아넣은 결정적 분포에서만 성립한다.</p>
+
+      <p>한 가지 함정 — 연속 분포의 엔트로피(차분 엔트로피, differential entropy)는 음수가 될 수 있다. 밀도가 1을 넘는 매우 좁은 분포의 차분 엔트로피는 음수다. 시험에서 "엔트로피는 항상 0 이상이다"라는 보기가 보이면, 이산 분포에서만 그렇고 연속에서는 음수가 가능하다는 점을 함정으로 알아 둬야 한다.</p>
+
+      <h2>딥러닝에서 엔트로피가 나타나는 자리</h2>
+      <p>구체 예시 네 가지. 첫째, 분류기 예측의 엔트로피로 모델의 확신 정도를 측정한다 — 엔트로피가 낮으면 모델이 한 클래스에 확신, 높으면 망설임. 이 값을 능동 학습(active learning)에서 "다음에 라벨링할 데이터 선택" 기준으로 쓴다. 둘째, 강화학습의 엔트로피 보너스(entropy bonus). 정책 분포가 너무 한 행동에 쏠리는 것을 막아 탐험(exploration)을 유도한다. 셋째, 변분 추론의 ELBO. ELBO 식 안에 사후 근사 분포의 엔트로피 항이 들어 있어 분포가 너무 좁아지는 것을 막는다. 넷째, 결정 트리의 분할 기준. 분할 후 엔트로피가 가장 많이 줄어드는 변수를 선택한다.</p>
+
+      <h2>시험에서 자주 묻는 한 줄</h2>
+      <p>시험 직전 정리. <strong>자기정보 $I(x) = -\log p(x)$. 엔트로피 $H(P) = -\sum_x p(x) \log p(x) = \mathbb{E}[-\log p(X)]$. 균등 분포에서 최대 = $\log K$. 결정적 분포에서 0. 이진 엔트로피는 $p = 0.5$에서 1 bit 최대.</strong> 객관식에서 "엔트로피는 분포가 한쪽으로 쏠릴수록 커진다"는 보기가 보이면 틀린 보기다(반대다 — 균등할수록 커짐). "결정적 분포의 엔트로피는 0이다"는 옳은 보기다.</p>
+
+      <p>다음 페이지에서는 두 분포 사이의 거리를 재는 KL 발산(Kullback-Leibler divergence)을 본다. 엔트로피의 자연스러운 일반화이자, 변분 추론과 VAE를 이해하는 토대다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const CH = [
+    { no:'01', t:'왜 확률이 필요한가', f:'01.html' },
+    { no:'02', t:'확률변수와 분포 — PMF vs PDF', f:'02.html' },
+    { no:'03', t:'결합·주변·조건부 분포', f:'03.html' },
+    { no:'04', t:'연쇄법칙 — 결합을 조건부의 곱으로', f:'04.html' },
+    { no:'05', t:'독립과 조건부 독립', f:'05.html' },
+    { no:'06', t:'기대값 — 분포를 한 숫자로', f:'06.html' },
+    { no:'07', t:'분산과 공분산 — 무상관 ≠ 독립', f:'07.html' },
+    { no:'08', t:'흔한 분포 1 — Bernoulli, Categorical', f:'08.html' },
+    { no:'09', t:'흔한 분포 2 — Gaussian', f:'09.html' },
+    { no:'10', t:'흔한 분포 3 — Mixture, Dirac', f:'10.html' },
+    { no:'11', t:'베이즈 규칙 — 사전이 사후로', f:'11.html' },
+    { no:'12', t:'정보이론 1 — 엔트로피', f:'12.html' },
+    { no:'13', t:'정보이론 2 — KL 발산의 비대칭', f:'13.html' },
+    { no:'14', t:'정보이론 3 — 교차 엔트로피 = NLL', f:'14.html' },
+    { no:'15', t:'시험 대비 체크리스트', f:'15.html' },
+  ];
+  function buildNav(curr) {
+    const tb = document.querySelector('.topbar');
+    if (tb) tb.innerHTML =
+      `<a class="home" href="index.html">← Ch.3 확률과 정보이론</a>` +
+      `<span class="ch-mini">SUB-CHAPTER ${curr} of 15</span>`;
+    const ol = document.querySelector('.ch-nav ol');
+    if (ol) ol.innerHTML = CH.map(c =>
+      `<li><a href="${c.f}" ${c.no === curr ? 'class="current"' : ''}>${c.t}</a></li>`).join('');
+    const foot = document.querySelector('.ch-foot');
+    if (foot) {
+      const i = CH.findIndex(c => c.no === curr);
+      const prev = i > 0 ? CH[i-1] : { f:'index.html', t:'표지로', no:'' };
+      const next = i < CH.length-1 ? CH[i+1] : { f:'index.html', t:'표지로', no:'' };
+      foot.innerHTML =
+        `<a href="${prev.f}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+        `<a href="${next.f}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+    }
+    const bar = document.querySelector('.scroll-progress');
+    if (bar) {
+      const onS = () => {
+        const h = document.documentElement;
+        const m = h.scrollHeight - h.clientHeight;
+        bar.style.width = (m > 0 ? (h.scrollTop / m) * 100 : 0) + '%';
+      };
+      document.addEventListener('scroll', onS, { passive: true });
+      onS();
+    }
+  }
+
+  const NAMES = ['A', 'B', 'C', 'D'];
+  const ws = [25, 25, 25, 25];
+
+  function probs() {
+    const s = ws.reduce((a, b) => a + b, 0);
+    return ws.map(v => s > 0 ? v / s : 0);
+  }
+
+  function entropy(p) {
+    let h = 0;
+    for (const v of p) {
+      if (v > 1e-9) h -= v * Math.log2(v);
+    }
+    return h;
+  }
+
+  function render() {
+    const p = probs();
+    const h = entropy(p);
+    document.getElementById('hV').textContent = h.toFixed(3) + ' bits';
+
+    const host = document.getElementById('entBars');
+    host.innerHTML = p.map((v, i) => {
+      const inf = v > 1e-9 ? -Math.log2(v) : 0;
+      return `
+        <div class="pcol">
+          <span class="info">I = ${inf.toFixed(2)} bit</span>
+          <span class="pv">${v.toFixed(3)}</span>
+          <div class="bar" style="height: ${(v * 130).toFixed(1)}px"></div>
+          <span class="pn">${NAMES[i]}</span>
+        </div>`;
+    }).join('');
+
+    const sl = document.getElementById('sliderRow');
+    if (!sl.dataset.built) {
+      sl.dataset.built = '1';
+      sl.style.display = 'grid';
+      sl.style.gridTemplateColumns = 'repeat(4, 1fr)';
+      sl.innerHTML = NAMES.map((n, i) => `
+        <div class="slider">
+          <label>w(${n}) <b><span id="w${i}V">${ws[i]}</span></b></label>
+          <input id="w${i}" type="range" min="0" max="100" value="${ws[i]}" class="s-structure">
+        </div>`).join('');
+      NAMES.forEach((_, i) => {
+        document.getElementById('w' + i).addEventListener('input', () => {
+          ws[i] = parseInt(document.getElementById('w' + i).value, 10);
+          document.getElementById('w' + i + 'V').textContent = ws[i];
+          render();
+        });
+      });
+    }
+  }
+
+  window.addEventListener('load', () => {
+    buildNav('12');
+    render();
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$', right:'$$', display:true}, {left:'$', right:'$', display:false}],
+        throwOnError: false,
+      });
+    }
+  });
+</script>
+</body>
+</html>

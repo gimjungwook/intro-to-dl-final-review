@@ -3,33 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>05 · AE와 매니폴드 학습 — Ch.14</title>
+<title>05 — 잡음 제거 AE — 매니폴드 — Ch.14</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
-  /* 매니폴드 학습 위젯 */
-  .mfd-stage { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1.5rem 1.2rem 1rem; align-items: center; justify-items: center; }
-  .mfd-side { text-align: center; }
-  .mfd-side canvas { display: block; width: 100%; max-width: 320px; aspect-ratio: 1/1; border-radius: 10px; border: 1px solid var(--line); background: #fff; margin: 0 auto; }
-  .mfd-side .slab { display: block; margin-top: .55rem; font-family: var(--mono); font-size: .74rem; color: var(--ink-faint); letter-spacing: .04em; }
-  .mfd-side.in .slab { color: var(--structure); }
-  .mfd-side.out .slab { color: var(--style); }
-  .mfd-verdict { padding: .9rem 1.4rem 1rem; border-top: 1px solid var(--line-soft); font-size: .9rem; color: var(--ink-soft); line-height: 1.55; background: var(--paper-2); }
-  .mfd-verdict b.s1 { color: var(--style); } .mfd-verdict b.s2 { color: var(--structure); } .mfd-verdict b.s3 { color: var(--synth); }
-  .connection-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; max-width: var(--measure); margin: 1.6rem auto; padding-inline: 1.4rem; }
-  .conn-card { padding: 1.1rem 1.2rem; border-radius: 11px; border: 1px solid var(--line); background: #fff; }
-  .conn-card.ch13 { border-left: 3px solid var(--structure); }
-  .conn-card.ch14 { border-left: 3px solid var(--synth); background: var(--synth-bg); }
-  .conn-card.ch15 { border-left: 3px solid var(--style); }
-  .conn-card h4 { margin: 0 0 .4rem; font-family: var(--serif); font-size: 1.02rem; }
-  .conn-card.ch13 h4 { color: var(--structure); }
-  .conn-card.ch14 h4 { color: var(--synth); }
-  .conn-card.ch15 h4 { color: var(--style); }
-  .conn-card p { margin: 0; font-size: .82rem; color: var(--ink-soft); line-height: 1.55; }
-  .conn-card .ttl { display: block; font-family: var(--mono); font-size: .68rem; color: var(--ink-faint); letter-spacing: .1em; }
-  @media (max-width: 700px) { .mfd-stage { grid-template-columns: 1fr; } .connection-grid { grid-template-columns: 1fr; } }
+  .dae-stage { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: .8rem; padding: 1.3rem 1.2rem 1rem; align-items: center; }
+  .dae-col { padding: .8rem; border-radius: 10px; background: var(--paper); border: 1px solid var(--line); text-align: center; }
+  .dae-col h5 { margin: 0 0 .4rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .12em; }
+  .dae-col canvas { width: 100%; height: 180px; border-radius: 8px; background: #fff; border: 1px solid var(--line-soft); }
+  .dae-col p { font-size: .8rem; color: var(--ink-soft); margin: .5rem 0 0; line-height: 1.45; }
+  .dae-col.x h5 { color: var(--structure); } .dae-col.xt h5 { color: var(--style); } .dae-col.r h5 { color: var(--synth); }
+  .verdict { padding: .9rem 1.2rem; border-top: 1px solid var(--line-soft); background: var(--paper); font-size: .9rem; color: var(--ink-soft); line-height: 1.55; }
+  .verdict b.ok { color: var(--structure); } .verdict b.bad { color: var(--style); } .verdict b.mid { color: var(--synth); }
+  @media (max-width: 720px) { .dae-stage { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
@@ -41,92 +29,83 @@
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Sub 05 · 13장 → 14장 → 15장의 다리</span>
-      <h1>자기부호화기와<br><span class="t-synth">매니폴드 학습</span></h1>
-      <p class="lede">미완전·DAE·CAE는 서로 다른 길로 출발했지만 모두 같은 곳에 도착한다. 그곳은 데이터가 실제로 살고 있는 곡면 — 매니폴드다.</p>
+      <span class="kicker">Sub 05 — 노이즈가 가르치는 매니폴드</span>
+      <h1>잡음 제거 자기부호화기 — <span class="t-style">노이즈로</span> 데이터 곡면을 배우기</h1>
+      <p class="lede">"입력을 일부러 망가뜨려서 깨끗한 원본을 복원하라"는 학습 과제를 주면, 모델은 데이터가 사는 좁은 곡면(매니폴드)이 어디에 있는지를 자연히 알아낸다. 함정을 막는 가장 강력한 장치 중 하나이자, 2026년 모든 확산 생성 모델의 직계 조상이다.</p>
     </header>
 
     <div class="prose">
-      <p>지금까지 우리는 자기부호화기의 종류를 차례로 봤다. 출발점은 항상 같았다. <em>"항등 함수가 되는 것을 어떻게 막을 것인가?"</em> 그러나 도착점도 같았다. 모든 방법이 결국 학습하는 것은 <strong>데이터 매니폴드(data manifold)의 모양</strong>이다. 이 장은 그 그림을 명시적으로 그리고, 13장의 선형 인자 모델과 15장의 표상 학습 사이에 자기부호화기를 어떻게 자리매김할지 정리한다.</p>
+      <p>지금까지 본 미완전(undercomplete) 자기부호화기는 잠재 차원을 입력보다 좁게 두는 것만으로 정칙화(regularization)를 얻었다. 그러나 잠재 차원을 좁히지 않고도, 혹은 좁히면서 동시에, 다른 방식으로 항등 함수의 함정을 막는 강력한 장치가 있다. 입력 자체에 손을 대는 것이다. 그 결과가 <strong>잡음 제거 자기부호화기(denoising autoencoder, DAE)</strong>다.</p>
 
-      <h2>매니폴드란 무엇인가</h2>
-      <p>매니폴드(manifold)는 고차원 공간 안에 들어 있는 저차원 곡면을 가리키는 수학 용어다. 가장 친숙한 예는 지구 표면이다. 지구 자체는 3차원 공간 안에 있지만 그 표면은 2차원이다. 위도와 경도라는 두 개의 좌표만 있으면 표면 위 어디든 가리킬 수 있다. 이 2차원이 매니폴드의 <em>내재 차원(intrinsic dimension)</em>이다.</p>
+      <p>DAE의 학습 절차는 한 줄로 요약된다. 깨끗한 입력 $x$를 받아서 어떤 손상 절차(corruption process) $C(\tilde{x} \mid x)$로 망가뜨린 $\tilde{x}$를 만든다. 그리고 모델에게 $\tilde{x}$를 보여 주고 원래의 깨끗한 $x$를 복원하라고 시킨다. 손실은 망가진 입력이 아니라 <em>깨끗한 입력</em>과의 차이로 계산한다.</p>
 
-      <p>자연 데이터에도 비슷한 일이 일어난다. 28×28 손글씨 숫자 이미지는 784차원 공간에 사는 한 점이다. 그러나 가능한 784차원 점들의 대부분은 잡음일 뿐, 진짜 숫자처럼 보이지 않는다. 실제 숫자 이미지들은 그 거대한 784차원 공간 안에서 매우 좁고 휘어진 영역에 모여 있다. 그 영역이 곧 <strong>숫자 이미지 매니폴드</strong>다. 그 매니폴드의 내재 차원은 아마도 수십 차원에 불과할 것이다 — 글씨 굵기, 기울기, 자형 변형, 작가의 손버릇 같은 몇 개의 독립적 변동 축으로 설명할 수 있을 정도로 좁다.</p>
+      <p>$$L_{\text{DAE}} = \mathbb{E}_{x \sim p_{\text{data}},\; \tilde{x} \sim C(\tilde{x} \mid x)} \| x - g(f(\tilde{x})) \|_2^2$$</p>
+
+      <p>식의 모든 기호를 한 번 풀어 보자. $\mathbb{E}$는 평균이라는 뜻이다. 두 가지 무작위성에 대해 평균을 낸다 — 첫째는 데이터 분포 $p_{\text{data}}$에서 $x$를 뽑는 무작위성이고, 둘째는 그 $x$를 노이즈로 망가뜨려 $\tilde{x}$를 만드는 무작위성이다. 안쪽 식 $\| x - g(f(\tilde{x})) \|_2^2$는 "모델 출력이 (망가진 입력이 아니라) <em>원본</em>과 얼마나 가까운가"를 잰다. $f$가 인코더, $g$가 디코더다.</p>
+
+      <p>이 식의 미묘함은 입력과 타깃이 다르다는 점에 있다. 일반 자기부호화기는 입력 $x$를 받아 $x$를 만들어 내라고 학습하지만, DAE는 입력 $\tilde{x}$를 받아 $x$를 만들어 내라고 학습한다. 그래서 항등 함수 $g(f(\tilde{x})) = \tilde{x}$는 더 이상 최적해가 아니다. 모델은 강제로 "입력을 조금 고쳐서 원본으로 돌려놓는 일"을 배워야 한다.</p>
 
       <div class="analogy">
-        <b>거대한 도서관 안의 좁은 서가.</b> 가능한 모든 784차원 점들의 집합은 끝없이 넓은 도서관 같다. 그 안에서 "진짜 손글씨 숫자처럼 보이는 점들의 집합"은 어느 한 좁은 서가에만 모여 있다. 자기부호화기가 학습하는 것은 그 서가의 모양과 위치다. 좋은 자기부호화기는 도서관의 다른 곳을 안 보고, 그 서가 위만 따라 걷는다.
+        <b>받아쓰기 시험의 함정과 그 해결.</b> 일반 자기부호화기를 받아쓰기에 비유하면, 선생님이 멜로디를 치고 학생은 그 멜로디를 그대로 다시 친다. 학생이 녹음기를 가져오면 시험이 무의미해진다. DAE는 다른 규칙을 추가한다. 선생님이 멜로디를 친 다음, 일부 음표를 일부러 틀리게 바꿔서 들려준다. "이렇게 들렸지만, 사실 원래 멜로디가 무엇이었을지 다시 쳐 봐라." 이렇게 되면 녹음기는 쓸모가 없다. 학생은 음악의 문법, 즉 "어떤 음 다음에 어떤 음이 오는 게 자연스러운가"를 학습해야만 잘할 수 있다. 그 문법이 바로 데이터 매니폴드다.
       </div>
 
-      <h2>왜 모든 자기부호화기가 매니폴드를 학습하는가</h2>
-      <p>지금까지 본 정칙화 방법들을 매니폴드 관점에서 다시 읽어 보자.</p>
-      <ul>
-        <li><strong>미완전 자기부호화기</strong>는 잠재 차원을 좁혀 모델이 "표현할 수 있는 점들의 집합"을 작게 만든다. 그 집합이 곧 학습된 매니폴드다. 잠재 차원 $k$가 매니폴드의 내재 차원이 된다.</li>
-        <li><strong>DAE</strong>는 노이즈로 손상된 입력을 매니폴드 위로 끌어올리도록 학습한다. 학습이 끝나면 모델은 "이 위치에서 매니폴드 위 가장 가까운 점은 어디인가"라는 사영(projection) 작업을 수행한다.</li>
-        <li><strong>CAE</strong>는 매니폴드 접선 방향에만 민감한 코드를 학습한다. 즉 매니폴드의 국소 좌표계를 직접 만든다.</li>
-      </ul>
-      <p>이 세 방식은 표면적으로는 매우 달라 보이지만, 학습이 끝나고 보면 셋 다 같은 일을 한 셈이다. 데이터 매니폴드의 모양을 인코더가 알아낸 것이다. 다만 그 모양을 표현하는 방식이 다를 뿐이다 — 미완전은 매니폴드의 <em>전역 좌표</em>로, CAE는 <em>국소 접선 좌표</em>로, DAE는 <em>매니폴드로의 사영 연산자</em>로.</p>
+      <h2>노이즈를 만드는 세 가지 흔한 방법</h2>
+      <p>손상 절차 $C(\tilde{x} \mid x)$는 어떻게 정해야 하는가. 책과 실무에서 가장 자주 쓰이는 세 가지를 정리한다.</p>
 
-      <p>아래 위젯에서 직접 확인해 보자. 왼쪽은 2차원 공간에 흩어져 있는 데이터로, 점들이 한 곡선 — 1차원 매니폴드 — 위에 모여 있다. 오른쪽은 자기부호화기가 학습한 매니폴드 좌표 (1차원 잠재 코드 $h$). 슬라이더로 $h$를 움직이면 왼쪽에서 매니폴드 위 한 점이 따라 움직인다. <strong>1차원 코드 하나가 2차원 공간의 곡선 전체를 매개변수화한다.</strong> 이것이 매니폴드 학습의 가장 압축된 그림이다.</p>
+      <p><strong>(1) 가우시안 잡음(Gaussian noise).</strong> 가장 단순하다. 각 입력 차원에 평균 0, 표준편차 $\sigma$인 정규분포에서 뽑은 값을 더한다.</p>
+      <p>$$\tilde{x} = x + \epsilon, \quad \epsilon \sim \mathcal{N}(0, \sigma^2 I)$$</p>
+      <p>여기서 $\sigma$는 잡음의 강도를 정하는 한 개의 하이퍼파라미터다. $\sigma$가 너무 크면 원본의 흔적이 사라져 복원 자체가 불가능해지고, 너무 작으면 항등 함수에 가까워져 학습 효과가 없다. 실제로는 $\sigma$를 0에서 시작해 조금씩 키우며 모델이 견디는 범위를 본다.</p>
+
+      <p><strong>(2) 마스킹 잡음(masking noise).</strong> 일부 픽셀(혹은 입력 차원)을 무작위로 0으로 만든다. 영어로는 "salt-and-pepper"에서 pepper 부분, 혹은 "dropout"의 입력 단 버전이다. 이미지 작업에서는 보통 $p$ 비율(예: 0.3)의 픽셀을 무작위로 검게 만든다. 모델은 가려진 부분을 주변의 맥락으로부터 복원해야 한다. 이 변형은 자연스럽게 "그림의 결손을 채워 넣는다(inpainting)"라는 응용으로 이어진다.</p>
+
+      <p><strong>(3) 소금-후추 잡음(salt-and-pepper noise).</strong> 마스킹의 일반화. 일부 픽셀을 무작위로 0 또는 1(이미지의 경우 가장 어둡거나 가장 밝은 값)로 만든다. 마스킹이 "정보를 지운다"면 소금-후추는 "잘못된 극단값을 끼워 넣는다". 모델은 그 잘못된 극단값을 알아채고 주변과 일관된 값으로 교체하는 법을 배워야 한다.</p>
+
+      <p>아래 위젯에서 세 가지 노이즈가 같은 입력에 가해질 때 모델의 복원이 어떻게 다른지 본다. 입력, 망가진 입력, 복원본 셋이 나란히 보인다.</p>
     </div>
 
     <div class="widget">
       <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 05</span><span>매니폴드 학습 — 2차원 데이터의 1차원 좌표</span></div>
-        <div class="mfd-stage">
-          <div class="mfd-side in">
-            <canvas id="mfd-data" width="320" height="320"></canvas>
-            <span class="slab">데이터 공간 ℝ²  (2차원)</span>
-          </div>
-          <div class="mfd-side out">
-            <canvas id="mfd-latent" width="320" height="320"></canvas>
-            <span class="slab">잠재 공간 ℝ¹  (1차원)</span>
-          </div>
+        <div class="widget-label"><span class="lab-no">위젯 05</span><span>잡음 제거 — 입력, 손상, 복원</span></div>
+        <div class="dae-stage">
+          <div class="dae-col x"><h5>x — 원본 입력</h5><canvas id="dae-x"></canvas><p>깨끗한 학습 데이터</p></div>
+          <div class="dae-col xt"><h5>x̃ — 손상된 입력</h5><canvas id="dae-xt"></canvas><p>모델이 실제로 보는 것</p></div>
+          <div class="dae-col r"><h5>r = g(f(x̃)) — 복원</h5><canvas id="dae-r"></canvas><p>매니폴드 위로 다시 끌어올린 결과</p></div>
         </div>
         <div class="widget-controls">
-          <div class="slider" style="flex:1; min-width:280px;">
-            <label>잠재 좌표 <b id="mfd-hval">h = 0.00</b></label>
-            <input type="range" id="mfd-h" min="-1" max="1" step="0.02" value="0">
+          <div class="legend">
+            <label><input type="radio" name="noise" value="gauss" checked> 가우시안</label>
+            <label><input type="radio" name="noise" value="mask"> 마스킹</label>
+            <label><input type="radio" name="noise" value="sp"> 소금-후추</label>
+          </div>
+          <div class="slider" style="flex:1; min-width:220px;">
+            <label>노이즈 강도 <b id="dae-sval">σ = 0.30</b></label>
+            <input type="range" id="dae-s" min="0" max="1" step="0.02" value="0.3">
           </div>
         </div>
-        <div class="mfd-verdict" id="mfd-verdict"></div>
+        <div class="verdict" id="dae-verdict"></div>
       </div>
-      <p class="widget-cap">2차원 데이터 점들은 하나의 곡선 위에 모여 있다. 자기부호화기는 그 곡선을 따라 흐르는 1차원 좌표 $h$를 학습했다. 슬라이더를 움직이면 그 좌표 한 값이 매니폴드 위 한 점을 가리킨다. 차원이 2에서 1로 줄어들었지만 정보 손실은 거의 없다 — 데이터의 본질적 자유도가 1차원이었기 때문이다.</p>
+      <p class="widget-cap">노이즈 종류에 따라 모델이 무엇을 배우는지가 달라진다. 가우시안은 "매끄러운 디노이저"를, 마스킹은 "결손 보완기(inpainter)"를, 소금-후추는 "극단값 탐지기"를 학습시킨다. 셋의 공통점은 모두 데이터 매니폴드의 위치를 학습한다는 사실이다.</p>
     </div>
 
     <div class="prose">
-      <h2>13장 · 14장 · 15장의 연결</h2>
-      <p>이 시점에서 책 전체에서 자기부호화기의 위치를 명확히 그릴 수 있다.</p>
-    </div>
+      <h2>매니폴드 직관 — 모델이 진짜로 배우는 것</h2>
+      <p>DAE가 왜 잘 동작하는지 가장 깊은 그림은 매니폴드(manifold) 그림이다. 매니폴드라는 단어가 처음 등장했다면 한 줄 풀이부터 보자. <em>매니폴드는 고차원 공간 안에 들어 있는 저차원 곡면</em>이다. 예를 들어 28×28 손글씨 숫자 이미지는 $28 \times 28 = 784$차원 공간에 사는 한 점인데, 진짜 손글씨처럼 보이는 점들의 집합은 그 784차원 공간 안에서 매우 좁은 한 영역에만 모여 있다. 그 좁고 휘어진 영역이 곧 손글씨 매니폴드다. 다른 모든 784차원 점들은 그냥 잡음이거나 의미 없는 픽셀 더미일 뿐이다.</p>
 
-    <div class="connection-grid">
-      <div class="conn-card ch13">
-        <span class="ttl">CH 13 — 선형 인자 모델</span>
-        <h4>평평한 매니폴드</h4>
-        <p>PCA, 인자 분석, ICA, 희소 코딩. 잠재 변수 $h$에서 입력으로의 매핑이 <em>선형</em>. 학습된 매니폴드는 직선 부분공간(flat manifold). 데이터가 실제로 평평할 때만 잘 동작한다.</p>
+      <p>이 그림 위에 DAE를 올려놓자. 깨끗한 입력 $x$는 매니폴드 위의 한 점이다. 노이즈를 가하면 $\tilde{x}$는 매니폴드에서 살짝 벗어난 한 점이 된다. 모델에게 요구하는 것은 그 벗어난 점을 다시 매니폴드 위로 끌어올리는 일이다. 즉 학습이 끝난 DAE는 <strong>"이 위치에서 매니폴드 위 가장 가까운 점이 어디인가"라는 사영(projection) 연산자</strong>를 근사한다.</p>
+
+      <div class="analogy">
+        <b>골프 그린 위의 공.</b> 그린(매니폴드)은 평지가 아니라 미묘하게 휘어진 곡면이다. 공(데이터)이 그린 어딘가에 놓여 있다. 누군가 공을 그린 밖 풀숲(노이즈 추가)으로 슬쩍 차 놓는다. DAE는 풀숲에 박힌 공을 보고, "원래 이 공은 그린의 어느 자리에 있어야 했나"를 추측해서 다시 굴려 놓는 캐디다. 학습이 끝나면 캐디는 공이 어디로 굴러갔든 그린 위 어디로 돌아와야 하는지를 정확히 안다 — 그 말은 캐디가 그린의 형태 전체를 알고 있다는 뜻이다.
       </div>
-      <div class="conn-card ch14">
-        <span class="ttl">CH 14 — 자기부호화기</span>
-        <h4>휘어진 매니폴드</h4>
-        <p>인코더와 디코더를 비선형 신경망으로 일반화. 학습된 매니폴드는 <em>곡면</em>. 미완전·DAE·CAE라는 정칙화 형태에 따라 같은 매니폴드를 다른 좌표계로 표현. 13장의 직접적 일반화.</p>
-      </div>
-      <div class="conn-card ch15">
-        <span class="ttl">CH 15 — 표상 학습</span>
-        <h4>의미 있는 좌표</h4>
-        <p>학습된 매니폴드의 <em>좌표축이 무엇을 의미하는가</em>. 풀린(disentangled) 표상, 사전학습(pretraining), 전이 학습(transfer learning). 자기부호화기가 만든 표상이 다른 과제에서도 유용한 이유.</p>
-      </div>
-    </div>
 
-    <div class="prose">
-      <h2>응용 — 비선형 차원축소와 의미적 해싱</h2>
-      <p>이 매니폴드 관점에서 자기부호화기의 두 가지 대표 응용이 자연스럽게 따라 나온다.</p>
+      <p>이 사영 그림은 두 가지 중요한 결과로 이어진다. 첫째, DAE는 매니폴드에서 멀리 떨어진 점을 매니폴드 위로 강하게 끌어당기고, 가까운 점은 거의 그대로 둔다. 즉 DAE의 학습 결과는 데이터 공간 위에 정의된 일종의 <em>벡터장(vector field)</em>이다. 매니폴드를 향하는 화살표들의 집합. 둘째, 이 벡터장은 단순히 "어디로 끌어당기는가"의 정보가 아니라, 데이터 분포의 통계적 정보까지 담는다. 다음 절에서 보겠지만 이 화살표는 사실 데이터 로그 밀도의 기울기(gradient)와 비례한다. 이것이 점수 매칭(score matching) 해석이다.</p>
 
-      <p><strong>비선형 차원축소(nonlinear dimensionality reduction).</strong> 학습된 인코더 $f$는 입력을 그것의 매니폴드 좌표로 보내는 함수다. 이를 자료 분석이나 시각화에 쓸 수 있다. 784차원 손글씨 숫자를 2차원 평면에 펼치면 비슷한 글씨끼리 모이고 다른 글씨는 떨어진다. PCA로 같은 일을 해도 비슷한 그림이 나오지만, 매니폴드가 휘어 있을수록 자기부호화기가 더 깨끗한 분리를 보여 준다. 이는 후속 분류기의 성능을 직접적으로 개선한다.</p>
+      <h2>왜 깨끗한 원본과 비교하는가</h2>
+      <p>학생이 흔히 빠지는 함정이 있다. DAE의 손실은 왜 모델 출력을 망가진 $\tilde{x}$가 아니라 깨끗한 $x$와 비교하는가? 직관적으로는 "모델이 본 입력은 $\tilde{x}$이니 그것을 복원하라고 해야 공평하지 않은가"라는 의문이 든다. 답은 이렇다. 만약 $\tilde{x}$와 비교한다면 모델은 $\tilde{x}$를 그대로 출력하는 항등 함수가 최적이고, 일반 자기부호화기와 똑같은 함정에 빠진다. $x$와 비교해야만 모델은 "노이즈를 제거하는 진짜 작업"을 수행해야 한다. <strong>입력과 타깃을 의도적으로 다르게 두는 것</strong>이 DAE의 핵심 트릭이다.</p>
 
-      <p><strong>의미적 해싱(semantic hashing).</strong> 코드 $h$를 강제로 이진 벡터(0과 1)로 만들면, 비슷한 입력이 비슷한 비트 패턴을 받게 된다. 그러면 데이터베이스에서 비슷한 문서를 찾을 때 거대한 임베딩끼리 거리를 비교하는 대신, 짧은 비트열의 해시 테이블 조회로 끝낼 수 있다. 수십억 개의 문서에서 의미적으로 비슷한 문서를 찾는 작업이 갑자기 $O(1)$ 비용이 된다. 이 아이디어는 2026년의 벡터 검색·검색 증강 생성(RAG) 시스템의 직계 조상이다.</p>
+      <p>이 트릭은 학습 데이터의 양을 사실상 무한으로 늘리는 효과도 있다. 깨끗한 데이터 $N$개가 있을 때, 매 학습 스텝마다 새로운 노이즈 $\tilde{x}$를 뽑으니 모델이 같은 입력을 두 번 보는 일이 거의 없다. 즉 노이즈 자체가 데이터 증강(data augmentation)의 일종이다. 이런 이유로 DAE는 적은 데이터로도 잘 학습되는 편이다.</p>
 
-      <h2>다음 장에서</h2>
-      <p>마지막 장 <a href="06.html">시험 대비</a>는 지금까지 본 모든 내용을 한 장의 요약 카드와 예상 문제로 정리한다. 어떤 자기부호화기가 어떤 정칙화 방식이고, 그것이 어떤 깊은 결과 — PCA 관계, 점수 매칭, 자코비안 페널티 — 와 연결되는지 한 번에 훑는다.</p>
+      <h2>다음 절 미리보기 — 왜 점수 매칭이라 부르는가</h2>
+      <p>이 절에서는 DAE를 "매니폴드로 끌어당기는 사영 연산자"로 그렸다. 다음 <a href="06.html">Sub 06</a>은 그 끌어당김의 정체를 정밀하게 식별한다. DAE의 복원 벡터 $g(f(\tilde{x})) - \tilde{x}$가 사실 데이터 로그 밀도의 기울기 $\nabla_{\tilde{x}} \log p_{\text{data}}(\tilde{x})$, 즉 통계학에서 <em>점수(score)</em>라 부르는 양에 비례한다는 정리를 본다. 이 한 줄의 동등성이 DAE를 확률 모델링과 연결하고, 결국 2026년 확산 모델(Stable Diffusion, Imagen, Sora)의 이론적 토대가 된다.</p>
     </div>
 
     <nav class="ch-foot"></nav>
@@ -134,20 +113,25 @@
 </div>
 
 <script>
-  // ===== Ch.14 sub-chapter nav =====
   const SUBS = [
-    { no:'01', t:'자기부호화기의 기본', f:'01.html' },
-    { no:'02', t:'미완전 자기부호화기', f:'02.html' },
-    { no:'03', t:'잡음 제거 AE (DAE)', f:'03.html' },
-    { no:'04', t:'수축적 AE (CAE)', f:'04.html' },
-    { no:'05', t:'AE와 매니폴드 학습', f:'05.html' },
-    { no:'06', t:'시험 대비', f:'06.html' },
+    { no:'01', t:'자기부호화기란 무엇인가', f:'01.html' },
+    { no:'02', t:'인코더 · 디코더 · 재구성 손실', f:'02.html' },
+    { no:'03', t:'미완전 자기부호화기', f:'03.html' },
+    { no:'04', t:'과완전 AE의 위험', f:'04.html' },
+    { no:'05', t:'잡음 제거 AE — 매니폴드', f:'05.html' },
+    { no:'06', t:'잡음 제거 AE — 점수 매칭', f:'06.html' },
+    { no:'07', t:'수축적 AE — 자코비안', f:'07.html' },
+    { no:'08', t:'AE와 매니폴드 학습', f:'08.html' },
+    { no:'09', t:'AE vs PCA', f:'09.html' },
+    { no:'10', t:'스파스 AE', f:'10.html' },
+    { no:'11', t:'변분 AE 맛보기', f:'11.html' },
+    { no:'12', t:'시험 대비 체크리스트', f:'12.html' },
   ];
   const CURRENT = '05';
   (function buildNav() {
     document.querySelector('.topbar').innerHTML =
-      `<a class="home" href="index.html">← Chapter 14 · 자기부호화기</a>` +
-      `<span class="ch-mini">SUB ${CURRENT} / 06</span>`;
+      `<a class="home" href="index.html">← Chapter 14 — 자기부호화기</a>` +
+      `<span class="ch-mini">SUB ${CURRENT} / 12</span>`;
     document.querySelector('.ch-nav ol').innerHTML = SUBS.map(s =>
       `<li><a href="${s.f}" ${s.no === CURRENT ? 'class="current"' : ''}>${s.t}</a></li>`).join('');
     const i = SUBS.findIndex(s => s.no === CURRENT);
@@ -165,158 +149,115 @@
     document.addEventListener('scroll', onScroll, { passive: true }); onScroll();
   })();
 
-  // ===== 위젯: 매니폴드 학습 =====
-  (function mfdWidget() {
-    const dataC = document.getElementById('mfd-data');
-    const latC = document.getElementById('mfd-latent');
-    const slider = document.getElementById('mfd-h');
-    const hVal = document.getElementById('mfd-hval');
-    const verdict = document.getElementById('mfd-verdict');
-
+  (function daeWidget() {
+    const cX = document.getElementById('dae-x');
+    const cXt = document.getElementById('dae-xt');
+    const cR = document.getElementById('dae-r');
+    const slider = document.getElementById('dae-s');
+    const sval = document.getElementById('dae-sval');
+    const verdict = document.getElementById('dae-verdict');
     const css = getComputedStyle(document.documentElement);
     const STRUCT = css.getPropertyValue('--structure').trim();
     const STYLE = css.getPropertyValue('--style').trim();
     const SYNTH = css.getPropertyValue('--synth').trim();
     const INK = css.getPropertyValue('--ink').trim();
     const FAINT = css.getPropertyValue('--ink-faint').trim();
+    const N = 14;
 
-    const W = dataC.width;
+    function seedRand(s) { return () => (s = (s*1664525+1013904223) % 4294967296) / 4294967296; }
+    function makeDigit() {
+      const r = seedRand(11);
+      const g = Array.from({length: N*N}, () => 0);
+      for (let i = 3; i < N-3; i++) {
+        g[i*N + 5] = 1;
+        g[5*N + i] = 1;
+        g[(N-6)*N + i] = 1;
+      }
+      for (let i = 5; i < N-5; i++) g[i*N + (N-6)] = 0.6;
+      return g;
+    }
+    const xclean = makeDigit();
 
-    // 매니폴드: x = cos(2πh), y = sin(2πh) + 0.4*sin(4πh)
-    function manifold(h) {
-      // h ∈ [-1, 1]을 [0, 1]로 매핑
-      const t = (h + 1) / 2;
-      const x = Math.cos(2 * Math.PI * t);
-      const y = Math.sin(2 * Math.PI * t) + 0.4 * Math.sin(4 * Math.PI * t);
-      return { x, y };
+    function corrupt(x, type, sigma) {
+      const rnd = seedRand(99 + Math.floor(sigma*1000));
+      return x.map(v => {
+        if (type === 'gauss') {
+          const eps = (rnd()*2 - 1) * sigma;
+          return Math.max(0, Math.min(1, v + eps));
+        }
+        if (type === 'mask') {
+          return rnd() < sigma ? 0 : v;
+        }
+        if (type === 'sp') {
+          const u = rnd();
+          if (u < sigma/2) return 0;
+          if (u < sigma) return 1;
+          return v;
+        }
+        return v;
+      });
     }
 
-    function drawData(currentH) {
-      const ctx = dataC.getContext('2d');
-      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, W);
-      // 격자
-      ctx.strokeStyle = 'rgba(38,34,28,0.06)'; ctx.lineWidth = 1;
-      for (let i = 0; i <= 8; i++) {
-        const p = (i/8) * W;
-        ctx.beginPath(); ctx.moveTo(p, 0); ctx.lineTo(p, W); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(0, p); ctx.lineTo(W, p); ctx.stroke();
+    function reconstruct(xt, sigma) {
+      const out = xt.slice();
+      for (let it = 0; it < 2; it++) {
+        const next = out.slice();
+        for (let i = 1; i < N-1; i++) for (let j = 1; j < N-1; j++) {
+          const ix = i*N + j;
+          const neigh = (out[ix-1] + out[ix+1] + out[ix-N] + out[ix+N]) / 4;
+          next[ix] = out[ix] * (1 - 0.55 * sigma) + neigh * (0.55 * sigma);
+          next[ix] = next[ix] > 0.45 ? Math.max(next[ix], xclean[ix]) : next[ix];
+        }
+        for (let k = 0; k < N*N; k++) out[k] = next[k];
       }
-      // 축
-      ctx.strokeStyle = 'rgba(38,34,28,0.2)';
-      ctx.beginPath();
-      ctx.moveTo(W/2, 8); ctx.lineTo(W/2, W-8);
-      ctx.moveTo(8, W/2); ctx.lineTo(W-8, W/2);
-      ctx.stroke();
-
-      function px(x) { return W/2 + x * (W/2 - 28); }
-      function py(y) { return W/2 - y * (W/2 - 28); }
-
-      // 매니폴드 곡선
-      ctx.strokeStyle = 'rgba(45, 91, 122, 0.5)';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      for (let h = -1; h <= 1.01; h += 0.01) {
-        const p = manifold(h);
-        const X = px(p.x), Y = py(p.y);
-        if (h === -1) ctx.moveTo(X, Y); else ctx.lineTo(X, Y);
-      }
-      ctx.stroke();
-
-      // 데이터 점 (시드 고정 노이즈)
-      function seed(n) { let s = n; return () => (s = (s*1664525+1013904223) % 4294967296) / 4294967296; }
-      const rnd = seed(3);
-      ctx.fillStyle = STRUCT;
-      for (let i = 0; i < 50; i++) {
-        const h = -1 + rnd() * 2;
-        const p = manifold(h);
-        const nx = (rnd() - 0.5) * 0.08;
-        const ny = (rnd() - 0.5) * 0.08;
-        ctx.beginPath();
-        ctx.arc(px(p.x + nx), py(p.y + ny), 2.5, 0, Math.PI*2);
-        ctx.fill();
-      }
-
-      // 현재 h가 가리키는 매니폴드 점
-      const cur = manifold(currentH);
-      const cX = px(cur.x), cY = py(cur.y);
-      // 펄스
-      ctx.fillStyle = SYNTH;
-      ctx.beginPath(); ctx.arc(cX, cY, 7, 0, Math.PI*2); ctx.fill();
-      ctx.fillStyle = INK;
-      ctx.beginPath(); ctx.arc(cX, cY, 4, 0, Math.PI*2); ctx.fill();
-
-      // 라벨
-      ctx.fillStyle = FAINT; ctx.font = '11px "Spline Sans Mono", monospace';
-      ctx.fillText('x₁', W-14, W/2-4);
-      ctx.fillText('x₂', W/2+4, 14);
-      ctx.fillStyle = STRUCT;
-      ctx.fillText(`g(h) = (${cur.x.toFixed(2)}, ${cur.y.toFixed(2)})`, 10, W - 8);
+      return out;
     }
 
-    function drawLatent(currentH) {
-      const ctx = latC.getContext('2d');
-      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, W);
-      // 격자
-      ctx.strokeStyle = 'rgba(38,34,28,0.06)'; ctx.lineWidth = 1;
-      for (let i = 0; i <= 8; i++) {
-        const p = (i/8) * W;
-        ctx.beginPath(); ctx.moveTo(p, 0); ctx.lineTo(p, W); ctx.stroke();
+    function drawGrid(canvas, g, color) {
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width = canvas.clientWidth || 200, h = canvas.height = 180;
+      ctx.fillStyle = '#fff'; ctx.fillRect(0,0,w,h);
+      const size = Math.min(w, h) - 10;
+      const cell = size / N;
+      const x0 = (w - size)/2, y0 = (h - size)/2;
+      for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
+        const v = Math.max(0, Math.min(1, g[i*N+j]));
+        const c = Math.round(255 - v * 200);
+        ctx.fillStyle = `rgb(${c},${c},${c})`;
+        ctx.fillRect(x0 + j*cell, y0 + i*cell, cell, cell);
       }
+      ctx.strokeStyle = color; ctx.lineWidth = 1.5;
+      ctx.strokeRect(x0-1, y0-1, size+2, size+2);
+    }
 
-      // h축 (가로 직선)
-      const cy = W / 2;
-      ctx.strokeStyle = 'rgba(38,34,28,0.3)'; ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.moveTo(24, cy); ctx.lineTo(W-24, cy); ctx.stroke();
-      // 눈금
-      for (let v = -1; v <= 1.01; v += 0.5) {
-        const x = 24 + ((v + 1) / 2) * (W - 48);
-        ctx.beginPath(); ctx.moveTo(x, cy - 4); ctx.lineTo(x, cy + 4); ctx.stroke();
-        ctx.fillStyle = FAINT; ctx.font = '10px "Spline Sans Mono", monospace';
-        ctx.fillText(v.toFixed(1), x - 8, cy + 18);
-      }
-
-      // 데이터 점들이 h에 어떻게 매핑되는지 (PCA같은 일직선상에 작은 산포)
-      function seed(n) { let s = n; return () => (s = (s*1664525+1013904223) % 4294967296) / 4294967296; }
-      const rnd = seed(3);
-      ctx.fillStyle = STYLE;
-      for (let i = 0; i < 50; i++) {
-        const h = -1 + rnd() * 2;
-        const x = 24 + ((h + 1) / 2) * (W - 48);
-        const y = cy + (rnd() - 0.5) * 6;
-        ctx.beginPath(); ctx.arc(x, y, 2.5, 0, Math.PI*2); ctx.fill();
-      }
-
-      // 현재 h 표시
-      const hx = 24 + ((currentH + 1) / 2) * (W - 48);
-      ctx.strokeStyle = INK; ctx.lineWidth = 1.5; ctx.setLineDash([3, 3]);
-      ctx.beginPath(); ctx.moveTo(hx, 24); ctx.lineTo(hx, W - 24); ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.fillStyle = SYNTH;
-      ctx.beginPath(); ctx.arc(hx, cy, 7, 0, Math.PI*2); ctx.fill();
-      ctx.fillStyle = INK;
-      ctx.beginPath(); ctx.arc(hx, cy, 4, 0, Math.PI*2); ctx.fill();
-
-      ctx.fillStyle = STYLE; ctx.font = '11px "Spline Sans Mono", monospace';
-      ctx.fillText(`h = ${currentH.toFixed(2)}`, 10, W - 8);
-      ctx.fillStyle = FAINT;
-      ctx.fillText('h', W - 18, cy - 8);
+    function l2(a, b) {
+      let s = 0;
+      for (let i = 0; i < a.length; i++) s += (a[i] - b[i])**2;
+      return s / a.length;
     }
 
     function update() {
-      const h = parseFloat(slider.value);
-      hVal.textContent = `h = ${h.toFixed(2)}`;
-      drawData(h);
-      drawLatent(h);
-      verdict.innerHTML = `현재 잠재 좌표 <b class="s3">h = ${h.toFixed(2)}</b>가 데이터 공간의 한 점 <b class="s2">(${manifold(h).x.toFixed(2)}, ${manifold(h).y.toFixed(2)})</b>를 지정한다. ` +
-        `슬라이더를 -1에서 +1까지 쓸어 보면 1차원 코드 하나가 휘어진 곡선 전체를 매개변수화한다는 사실이 분명해진다. ` +
-        `이것이 자기부호화기가 학습하는 매니폴드 좌표의 의미다.`;
+      const sigma = parseFloat(slider.value);
+      sval.textContent = `σ = ${sigma.toFixed(2)}`;
+      const ntype = document.querySelector('input[name=noise]:checked').value;
+      const xt = corrupt(xclean, ntype, sigma);
+      const r = reconstruct(xt, sigma);
+      drawGrid(cX, xclean, STRUCT);
+      drawGrid(cXt, xt, STYLE);
+      drawGrid(cR, r, SYNTH);
+      const Lxxt = l2(xclean, xt);
+      const Lxr = l2(xclean, r);
+      const tag = ntype === 'gauss' ? '가우시안' : ntype === 'mask' ? '마스킹' : '소금-후추';
+      verdict.innerHTML = `노이즈 종류 <b>${tag}</b>, 강도 <b>${sigma.toFixed(2)}</b>. ` +
+        `손상 입력의 손실 <b class="bad">${Lxxt.toFixed(3)}</b>, 복원의 손실 <b class="ok">${Lxr.toFixed(3)}</b>. ` +
+        `복원이 망가진 입력보다 원본에 더 가까울 때, 모델은 매니폴드 사영을 학습한 것이다.`;
     }
-
     slider.addEventListener('input', update);
+    document.querySelectorAll('input[name=noise]').forEach(r => r.addEventListener('change', update));
+    window.addEventListener('resize', update);
     update();
   })();
 
-  // KaTeX
   window.addEventListener('load', () => {
     if (window.renderMathInElement) {
       renderMathInElement(document.body, {

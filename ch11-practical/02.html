@@ -3,50 +3,36 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>11.02 · 성능 지표 선택</title>
+<title>11.02 · 성능 지표 선택 — 정확도가 답이 아닌 경우</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
-  /* 컨퓨전 매트릭스 위젯 */
-  .cm-stage { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(260px, 1fr); gap: 1.5rem; padding: 1.5rem 1.2rem 1rem; align-items: center; }
+  .cm-stage { display: grid; grid-template-columns: auto 1fr; gap: 1.4rem; padding: 1.5rem 1.2rem 1rem; align-items: center; }
   @media (max-width: 720px) { .cm-stage { grid-template-columns: 1fr; } }
-  .cm-grid { display: grid; grid-template-columns: 4.5rem 1fr 1fr; grid-template-rows: auto 1fr 1fr; gap: 4px; font-family: var(--mono); font-size: .76rem; }
-  .cm-grid .cm-h { text-align: center; color: var(--ink-faint); font-size: .68rem; letter-spacing: .1em; padding-bottom: .2rem; }
-  .cm-grid .cm-rh { text-align: right; padding-right: .4rem; color: var(--ink-faint); align-self: center; font-size: .68rem; letter-spacing: .1em; }
-  .cm-cell { padding: .7rem .5rem; text-align: center; border-radius: 6px; color: #fff; font-weight: 600; font-size: 1rem; transition: background .2s; }
-  .cm-cell.tp { background: #2D6B4E; } /* true positive */
-  .cm-cell.fn { background: #C57A2B; } /* false negative */
-  .cm-cell.fp { background: #C0492E; } /* false positive */
-  .cm-cell.tn { background: #5A5247; } /* true negative */
-
-  .cm-metrics { display: flex; flex-direction: column; gap: .5rem; font-family: var(--mono); font-size: .82rem; }
-  .cm-metric { display: grid; grid-template-columns: 6rem 1fr 3rem; gap: .6rem; align-items: center; padding: .25rem 0; }
-  .cm-metric label { color: var(--ink-soft); font-size: .76rem; }
-  .cm-metric .cm-bar { height: 8px; background: var(--paper-sink); border-radius: 4px; overflow: hidden; }
-  .cm-metric .cm-bar i { display: block; height: 100%; transition: width .2s var(--ease); }
-  .cm-metric.acc .cm-bar i { background: var(--ink-soft); }
-  .cm-metric.prec .cm-bar i { background: var(--structure); }
-  .cm-metric.rec  .cm-bar i { background: var(--style); }
-  .cm-metric.f1   .cm-bar i { background: var(--synth); }
-  .cm-metric .val { text-align: right; color: var(--ink); font-weight: 600; }
-
-  .cm-ctrl { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; padding: .9rem 1.2rem; background: var(--paper); border-top: 1px solid var(--line-soft); }
-  @media (max-width: 720px) { .cm-ctrl { grid-template-columns: 1fr; } }
-  .cm-preset { display: flex; gap: .4rem; flex-wrap: wrap; padding: .8rem 1.2rem; border-top: 1px solid var(--line-soft); background: var(--paper-2); }
-
-  /* 비대칭 비용 막대 */
-  .cost-bars { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; max-width: var(--measure); margin: 1.4rem auto; padding-inline: 1.4rem; }
-  .cost-bar { padding: 1rem 1.1rem; border-radius: 10px; background: #fff; border: 1px solid var(--line); }
-  .cost-bar h5 { margin: 0 0 .5rem; font-family: var(--mono); font-size: .76rem; letter-spacing: .1em; color: var(--ink-soft); }
-  .cost-bar .row { display: flex; align-items: center; gap: .6rem; margin: .4rem 0; }
-  .cost-bar .row span { font-family: var(--mono); font-size: .72rem; color: var(--ink-soft); width: 5rem; }
-  .cost-bar .bb { flex: 1; height: 14px; background: var(--paper-sink); border-radius: 4px; overflow: hidden; }
-  .cost-bar .bb i { display: block; height: 100%; }
-  .cost-bar.fp .bb i { background: var(--style); }
-  .cost-bar.fn .bb i { background: var(--structure); }
-  .cost-bar .total { font-family: var(--mono); font-size: .82rem; color: var(--ink); margin-top: .5rem; font-weight: 600; }
+  .cm-grid { display: grid; grid-template-columns: 5rem repeat(2, 7rem); grid-template-rows: 3rem repeat(2, 5rem); gap: 0; }
+  .cm-cell { border: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: var(--mono); font-size: .82rem; color: var(--ink); position: relative; }
+  .cm-cell.lbl { background: var(--paper-2); color: var(--ink-soft); border-color: var(--line-soft); font-size: .74rem; padding: .25rem; line-height: 1.3; text-align: center; }
+  .cm-cell.lbl.corner { background: transparent; border: none; }
+  .cm-cell .big { font-size: 1.5rem; font-weight: 600; }
+  .cm-cell .ty { font-size: .62rem; color: var(--ink-faint); letter-spacing: .08em; }
+  .cm-cell.tp { background: rgba(45,91,122,.10); color: var(--structure); }
+  .cm-cell.tn { background: rgba(45,91,122,.06); color: var(--structure); }
+  .cm-cell.fp { background: rgba(192,73,46,.12); color: var(--style); }
+  .cm-cell.fn { background: rgba(164,123,46,.14); color: var(--synth); }
+  .cm-readout { font-family: var(--mono); font-size: .88rem; line-height: 1.9; }
+  .cm-readout .lbl { color: var(--ink-faint); width: 6.5rem; display: inline-block; letter-spacing: .04em; }
+  .cm-readout .val { color: var(--ink); font-weight: 600; font-size: 1rem; }
+  .cm-readout .v-acc { color: var(--ink); }
+  .cm-readout .v-prec { color: var(--structure); }
+  .cm-readout .v-rec { color: var(--style); }
+  .cm-readout .v-f1 { color: var(--synth); }
+  .preset-row { display: flex; gap: .5rem; flex-wrap: wrap; padding: .9rem 1.1rem; border-top: 1px solid var(--line-soft); background: var(--paper); }
+  .preset-row .btn { flex: 1; min-width: 120px; }
+  .preset-row .btn.active { background: var(--style); border-color: var(--style); color: #fff; }
+  .scen-note { padding: 1rem 1.4rem 1.2rem; background: var(--paper-2); border-top: 1px solid var(--line-soft); font-size: .9rem; color: var(--ink-soft); line-height: 1.6; }
+  .scen-note b { color: var(--ink); }
 </style>
 </head>
 <body>
@@ -58,125 +44,74 @@
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Sub-chapter 02 · 무엇을 측정할 것인가</span>
-      <h1>지표가 흐릿하면,<br><span class="t-structure">100번의 실험</span>도 헛수고다</h1>
-      <p class="lede">11장 첫 번째 결정은 모델이 아니라 <em>“무엇을 좋게 만들 것인가”</em>다. 정확도라는 한 단어가 거짓말하는 순간들을 보고, 정밀도·재현율·F-score가 왜 그렇게 생겼는지 수식 형태부터 분해한다.</p>
+      <span class="kicker">Sub-chapter 02 · 정확도가 거짓말하는 순간</span>
+      <h1>무엇을 <span class="t-style">최적화</span>할지<br>적는 일</h1>
+      <p class="lede">11장이 “목표를 정한다”에서 멈추지 않고 “지표를 정한다”까지 가는 이유는, 같은 목표라도 어떤 지표로 측정하느냐에 따라 “좋은 모델”의 정의가 달라지기 때문이다.</p>
     </header>
 
     <div class="prose">
-      <p>가장 흔한 함정부터 시작하자. <strong>이메일 스팸 분류기</strong>를 만든다고 하자. 들어오는 메일 중 5%만 스팸이라고 하면, 가장 간단한 모델은 “모두 정상으로 분류한다”라는 한 줄짜리 코드다. 이 모델의 <strong>정확도(accuracy)는 95%</strong>다. 하지만 한 통의 스팸도 잡지 못한다.</p>
+      <p>대학 1학년 통계 수업에서 분류 모델의 성능을 묻는다면 거의 모두 <strong>정확도(accuracy)</strong>를 떠올린다. 정의는 단순하다 — 전체 예측 중 맞춘 비율. 그런데 11장이 가장 먼저 깨고 가는 통념이 바로 이 “정확도면 충분하지 않은가”라는 직관이다. 책은 정확도가 거짓말하는 네 가지 상황을 명시적으로 적고, 그 상황에 어울리는 다른 지표를 제시한다.</p>
 
-      <div class="analogy">
-        <b>금속 탐지기로 비유.</b> 공항에서 100명 중 1명이 금속을 가지고 있다. 탐지기가 그냥 모두 통과시키면 정확도 99%. 하지만 금속을 잡는 게 목적이라면 이 탐지기는 0점이다. 정확도는 <em>가장 쉬운 일에 가장 후하게 점수를 준다</em>. 그래서 클래스가 불균형하거나 <span class="t-structure">잡는 게 목적인 쪽이 따로 정의된 경우</span>, 정확도는 무의미하다.
-      </div>
+      <h2>먼저 — 베이즈 오차라는 한계</h2>
+      <p>지표 이야기를 시작하기 전에 한 가지 더 짚어 둘 게 있다. 책은 “0% 오차는 도달 불가능”이라는 점을 분명히 한다. 그 이유는 두 가지다. 첫째, <strong>베이즈 오차(Bayes error)</strong> — 입력 자체가 출력의 정답을 완전히 결정하지 못한다. 같은 사진 한 장에 “고양이”와 “스라소니” 라벨이 둘 다 그럴듯할 수 있다. 둘째, 유한한 훈련 데이터로는 분포를 완전히 회복하지 못한다. 이 두 한계 때문에 “목표 오차 0%”라는 비현실적 기준 대신, “현실적으로 도달 가능한 목표 오차는 얼마인가”를 묻는 게 11장의 출발점이다.</p>
 
-      <p>그래서 책은 정확도 대신 <strong>정밀도(precision)</strong>와 <strong>재현율(recall)</strong>이라는 한 쌍을 권한다. 둘 다 “양성(positive)으로 예측한 것” 또는 “실제 양성” 중에서 비율을 잰다는 점에서, 다수 클래스에 휘둘리지 않는다.</p>
+      <p>이 사실은 디버깅 단계에서 의외로 중요하다. 모델 오차가 5%인데 그 분야의 베이즈 오차(인간 전문가가 본 라벨 분산 등)가 4%라면, 모델은 거의 한계에 닿은 것이고 1%를 더 짜내려고 모델 키우기를 하는 건 비용 대비 효과가 절망적이다. 반대로 모델 오차가 15%인데 베이즈 오차가 2%라고 추정된다면, 아직 갈 길이 멀고 모델 쪽에서 따낼 게 많다. 도달 가능한 한계를 먼저 가늠하는 게 “데이터를 더 모을 것인가”라는 다음 sub의 결정에도 직결된다.</p>
 
-      <h2>컨퓨전 매트릭스의 네 칸</h2>
-      <p>모든 이진 분류 지표는 결국 다음 네 칸의 비율 조합이다. 예측 양성/음성과 실제 양성/음성의 교차표다.</p>
+      <h2>정확도가 거짓말하는 4가지 상황</h2>
+      <p>책이 명시적으로 다루는 네 가지 상황을 정리하자. 각 상황은 아래 위젯에서 프리셋으로 직접 만져볼 수 있다.</p>
 
-      <div class="math-block">$$ \begin{array}{c|cc} & \text{실제 양성} & \text{실제 음성} \\ \hline \text{예측 양성} & TP & FP \\ \text{예측 음성} & FN & TN \end{array} $$</div>
-      <p class="math-note">TP = 진짜 양성(맞춤), FP = 가짜 양성(오경보), FN = 가짜 음성(놓침), TN = 진짜 음성(맞춤).</p>
+      <p><b>1) 클래스가 극단적으로 불균형</b>일 때. 의료 진단에서 양성 환자가 1%, 음성이 99%인 데이터를 생각하자. “모두 음성”이라는 아무것도 안 하는 모델만으로 99% 정확도가 나온다. 정확도는 이 모델이 사실은 양성을 한 명도 못 잡아낸다는 사실을 가려 준다. 같은 의미로 스팸 필터에서도, 정상 메일이 압도적으로 많으면 “모두 정상”이 90% 이상 정확도를 낸다.</p>
 
-      <p>이 네 숫자로부터 모든 지표가 정의된다.</p>
+      <p><b>2) 두 종류의 오류가 비용이 다를 때</b>. 스팸 필터에서 “정상 메일을 스팸으로 잘못 거른 것(false positive)”은 사용자가 중요한 메일을 놓치게 만들고, “스팸을 놓친 것(false negative)”은 단지 불편할 뿐이다. 비용이 1대 100 비대칭이라면 정확도라는 평균은 이 비대칭을 평탄하게 만들어 의미를 잃는다. 이때는 두 종류의 오류율을 별도로 보거나, 비용 가중 손실을 정의한다.</p>
 
-      <div class="math-block">$$ \text{Precision} = \frac{TP}{TP + FP}, \qquad \text{Recall} = \frac{TP}{TP + FN} $$</div>
-      <p class="math-note">정밀도 분모 = 모델이 “양성”이라 외친 수. 재현율 분모 = 실제 양성 수.</p>
+      <p><b>3) 양성 클래스 자체가 흥미의 중심</b>일 때. 검색 엔진이 “관련 문서를 찾는 작업”이라면 정확도는 거의 의미가 없다 — 대다수 문서가 무관하므로 “모두 무관”이라고 답해도 정확도 99%다. 정작 중요한 것은 “관련 문서 중 몇 %를 찾아냈는가(재현율)”, “찾아낸 것 중 몇 %가 진짜 관련 있었는가(정밀도)”다. 03 sub에서 본격적으로 다룬다.</p>
 
-      <p><strong>왜 이 형태인가</strong>. 정밀도는 <em>“내가 양성이라고 한 것 중 진짜 양성의 비율”</em>이다 — “경보를 울렸을 때 얼마나 정확했나”다. 재현율은 <em>“실제 양성 중 내가 놓치지 않은 비율”</em>이다 — “있어야 할 양성을 얼마나 잡아냈나”다. 두 분모가 다른 기준이라서 보통 한쪽을 올리면 다른 쪽이 떨어진다 (trade-off).</p>
+      <p><b>4) 모델이 “모르겠다”고 답할 수 있을 때</b>. Street View 사례처럼 일부 입력은 모델이 자신 없으니 사람에게 넘긴다고 하자. 그러면 자동 처리한 사진의 정확도와 자동 처리한 비율(coverage)이 짝으로 의미를 갖는다. 정확도만 보면 “모르겠다고 답하는 비율을 늘릴수록 정확도가 올라가는” 트릭이 가능해 무의미하다.</p>
 
-      <p>스팸 필터로 다시 보면, “모두 정상으로 분류” 모델의 정밀도와 재현율은 둘 다 정의 불가(분자 = 0)다. 즉 <strong>한 통도 양성으로 잡지 못한 모델은 이 지표에서 점수를 받을 수 없다</strong>. 정확도가 가려 주던 사실이 드러난다.</p>
+      <h2>컨퓨전 매트릭스 — 4가지 결과의 분해</h2>
+      <p>분류 모델의 한 예측 결과는 항상 네 칸 중 하나에 들어간다. 실제는 양성인데 양성으로 예측(<b>TP, True Positive</b>), 실제는 음성인데 음성으로 예측(<b>TN, True Negative</b>), 실제는 음성인데 양성으로 예측(<b>FP, False Positive</b>, 헛경보), 실제는 양성인데 음성으로 예측(<b>FN, False Negative</b>, 놓침). 정확도는 이 네 칸을 한 숫자로 뭉뚱그리지만, 좋은 지표 선택은 이 네 칸을 어떻게 묶느냐의 문제다.</p>
+
+      <p>아래 위젯의 4가지 프리셋을 차례로 눌러 보자. 같은 네 칸의 값을 다르게 배치했을 때 정확도, 정밀도, 재현율, F1이 어떻게 갈리는지가 한눈에 보인다.</p>
     </div>
 
     <div class="widget">
       <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 02</span><span>컨퓨전 매트릭스 · 슬라이더로 네 칸을 직접 만진다</span></div>
+        <div class="widget-label"><span class="lab-no">위젯 02</span><span>컨퓨전 매트릭스 — 4 시나리오 비교</span></div>
         <div class="cm-stage">
-          <div class="cm-grid" id="cmg">
-            <div></div><div class="cm-h">실제 양성</div><div class="cm-h">실제 음성</div>
-            <div class="cm-rh">예측 양성</div><div class="cm-cell tp" id="cell-tp">80</div><div class="cm-cell fp" id="cell-fp">20</div>
-            <div class="cm-rh">예측 음성</div><div class="cm-cell fn" id="cell-fn">20</div><div class="cm-cell tn" id="cell-tn">880</div>
-          </div>
-          <div class="cm-metrics" id="cmm">
-            <div class="cm-metric acc"><label>Accuracy</label><div class="cm-bar"><i></i></div><span class="val">0</span></div>
-            <div class="cm-metric prec"><label>Precision</label><div class="cm-bar"><i></i></div><span class="val">0</span></div>
-            <div class="cm-metric rec"><label>Recall</label><div class="cm-bar"><i></i></div><span class="val">0</span></div>
-            <div class="cm-metric f1"><label>F1-score</label><div class="cm-bar"><i></i></div><span class="val">0</span></div>
-          </div>
+          <div class="cm-grid" id="cmgrid"></div>
+          <div class="cm-readout" id="cmreadout"></div>
         </div>
-        <div class="cm-ctrl">
-          <div class="slider"><label>TP <b id="lab-tp">80</b></label><input type="range" id="sl-tp" min="0" max="100" value="80"></div>
-          <div class="slider"><label>FP <b id="lab-fp">20</b></label><input type="range" id="sl-fp" min="0" max="100" value="20"></div>
-          <div class="slider"><label>FN <b id="lab-fn">20</b></label><input type="range" id="sl-fn" min="0" max="100" value="20"></div>
-        </div>
-        <div class="cm-preset">
-          <button class="btn ghost" data-preset="balanced">균형 잡힌 모델</button>
-          <button class="btn ghost" data-preset="majority">"전부 음성" 베이스라인</button>
-          <button class="btn ghost" data-preset="precision">정밀도 우선 (의료 진단)</button>
-          <button class="btn ghost" data-preset="recall">재현율 우선 (암 스크리닝)</button>
-        </div>
+        <div class="preset-row" id="presets"></div>
+        <div class="scen-note" id="scenNote">프리셋을 눌러 시나리오를 바꾼다.</div>
       </div>
-      <p class="widget-cap">슬라이더를 움직이면 네 지표가 동시에 변한다. <b>"전부 음성"</b> 프리셋에서 정확도는 99%, 그러나 정밀도·재현율·F1은 모두 0이라는 점이 정확도의 한계를 가장 분명히 보여 준다. 진짜 음성(TN) 수는 1000 - (TP+FP+FN)으로 자동 계산된다.</p>
+      <p class="widget-cap">같은 정확도라도 어디서 나왔는지에 따라 “좋은 모델”의 의미가 완전히 달라진다. 균형 잡힌 데이터에서 정확도 90%와 희귀 양성 데이터에서 정확도 99%는 비교가 안 된다.</p>
     </div>
 
     <div class="prose">
-      <h2>F-score — 정밀도와 재현율의 조화 평균</h2>
-      <p>정밀도와 재현율을 동시에 보려면 하나의 숫자로 합치고 싶다. 단순한 산술평균은 안 된다. <em>왜 안 되는가</em>. 한쪽이 0이고 다른 쪽이 1이어도 산술평균은 0.5다 — 그런데 한쪽이 0인 모델은 실제로는 쓸 수 없다. 그래서 <strong>조화 평균(harmonic mean)</strong>을 쓴다.</p>
+      <h2>비용 비대칭과 총 비용 최소화</h2>
+      <p>지표 선택의 가장 일반적인 형태는 두 종류의 오류에 다른 가중치를 둔 <strong>총 비용 함수</strong>를 정의하는 것이다. 수식으로 적으면 단순하다.</p>
 
-      <div class="math-block">$$ F_1 = \frac{2 \cdot \text{Precision} \cdot \text{Recall}}{\text{Precision} + \text{Recall}} $$</div>
-      <p class="math-note">한쪽이 0이면 F1 = 0. 두 값이 같을 때 최대(=두 값의 공통 값).</p>
+      <div class="math-block">$$ \\mathrm{Cost} = c_{FP} \\cdot \\#FP + c_{FN} \\cdot \\#FN $$</div>
 
-      <p>이 형태가 왜 옳은가. 조화 평균은 <strong>분수의 평균</strong>에 적합하다. 정밀도와 재현율은 둘 다 “어떤 집합 중 얼마”라는 분수다. 한쪽이 극단으로 작아지면 — 즉 모델이 한쪽 종류의 오류를 거의 다 내고 있다면 — F1도 같이 작아져서 “이 모델은 안 된다”고 외친다. 반면 산술평균은 한쪽을 일방적으로 올려서 평균을 끌어올릴 수 있다.</p>
+      <table class="symbols">
+        <tr><td>$c_{FP}$</td><td>헛경보 한 건의 비용 (예: 스팸으로 잘못 거른 정상 메일이 사용자에게 끼치는 손해)</td></tr>
+        <tr><td>$c_{FN}$</td><td>놓침 한 건의 비용 (예: 스팸을 놓쳐서 사용자가 받게 되는 불편)</td></tr>
+        <tr><td>$\\#FP, \\#FN$</td><td>각각 헛경보 건수, 놓침 건수</td></tr>
+      </table>
 
-      <p>좀 더 일반화한 형태는 $F_\beta$다.</p>
+      <p>스팸 필터에서 $c_{FP}/c_{FN} = 100$이라면, 한 건의 헛경보를 줄이기 위해 100건의 놓침을 감수해도 좋다는 의미다. 이 가중치는 비즈니스 결정이지 모델 결정이 아니다. 11장이 “지표는 데이터 과학자가 단독으로 정하는 게 아니라 도메인 전문가와 함께 정한다”고 강조하는 이유다.</p>
 
-      <div class="math-block">$$ F_\beta = (1 + \beta^2) \cdot \frac{\text{Precision} \cdot \text{Recall}}{\beta^2 \cdot \text{Precision} + \text{Recall}} $$</div>
-      <p class="math-note">β &gt; 1이면 재현율 가중, β &lt; 1이면 정밀도 가중. β=1이 F1.</p>
+      <h2>커버리지 — 모델이 답을 거부할 권리</h2>
+      <p>Street View 사례의 핵심은 “자신 없는 입력에 대해서는 답을 거부”라는 옵션을 모델에 준 것이다. 책은 이것을 다음과 같이 적는다.</p>
 
-      <p>암 스크리닝처럼 <strong>놓치면 안 되는</strong> 경우 $F_2$ ($\beta=2$)를 쓴다 — 재현율을 두 배로 가중한다. 반대로 의료 정밀 진단처럼 <strong>잘못 양성 판정해선 안 되는</strong> 경우 $F_{0.5}$를 쓴다.</p>
+      <p>커버리지 = (자동 처리된 입력의 비율). 정확도는 자동 처리된 입력에 한해서만 측정. 이 두 숫자가 짝으로 묶이면 두 가지 의미 있는 트레이드오프가 가능해진다. 임계값을 높이면 — 자신 있는 입력만 답하므로 정확도는 올라가지만 커버리지는 떨어진다(많은 입력이 사람에게 넘어간다). 임계값을 낮추면 — 더 많이 답하므로 커버리지는 올라가지만 정확도가 떨어진다.</p>
 
-      <h2>비대칭 비용 — 정확도로 가려지지 않는 진짜 손실</h2>
-      <p>책이 별도로 강조하는 점은, FP와 FN의 <strong>비용이 다른 경우</strong>다. 스팸 필터에서 정상 메일을 스팸으로 잘못 분류한 것(FP)은, 진짜 스팸을 받는 것(FN)보다 보통 <em>훨씬 비싸다</em> — 회사 공문이 스팸함에 들어가면 업무가 멈추지만, 스팸 한 통 더 받는 건 사용자가 한 번 더 삭제 버튼을 누르면 끝이다.</p>
-    </div>
+      <p>비즈니스 결정은 이 곡선 위 어디서 멈출지를 정하는 것이다. Street View는 “자동 처리한 사진은 인간 수준 정확도, 자동 처리한 비율은 사용 가능한 만큼”이라는 두 제약을 동시에 만족시키는 임계값을 찾는 문제로 풀었다. 만약 정확도 단일 지표로 평가했다면 “자신 없는 것에 무조건 답하는” 모델과 “자신 있는 것에만 답하는” 모델이 구별되지 않는다.</p>
 
-    <div class="cost-bars">
-      <div class="cost-bar fp">
-        <h5>FP 비용 = 10 (정상 → 스팸)</h5>
-        <div class="row"><span>FP 20건</span><div class="bb"><i id="fp-bar" style="width:67%"></i></div></div>
-        <div class="total">총 비용 200</div>
-      </div>
-      <div class="cost-bar fn">
-        <h5>FN 비용 = 1 (스팸 → 정상)</h5>
-        <div class="row"><span>FN 20건</span><div class="bb"><i id="fn-bar" style="width:7%"></i></div></div>
-        <div class="total">총 비용 20</div>
-      </div>
-    </div>
+      <h2>지표는 한 번 정하면 끝이 아니다</h2>
+      <p>11장이 강조하는 또 한 가지는 지표를 “일단 정해 놓고 사이클을 한 바퀴 돌고 나면 보통 지표 자체를 다시 정의해야 한다”는 점이다. 첫 사이클에서는 “정확도가 80%를 넘으면 좋다”고 적었는데, 진단 단계에서 “실제 사용자가 신경 쓰는 건 정확도가 아니라 응답 시간이었다”는 사실이 드러날 수도 있다. 그러면 지표를 다시 적는다.</p>
 
-    <div class="prose">
-      <p>그래서 책은 단일 지표 대신 <strong>총 비용(total cost)</strong>을 정의해 최소화하라고 한다.</p>
-
-      <div class="math-block">$$ \text{Cost} = c_{\text{FP}} \cdot |\text{FP}| + c_{\text{FN}} \cdot |\text{FN}| $$</div>
-      <p class="math-note">두 종류의 오류에 다른 단가를 매기고 합친다. 비용 단가는 비즈니스가 결정.</p>
-
-      <p>스팸 필터의 경우 $c_{\text{FP}} = 10, c_{\text{FN}} = 1$ 정도로 두면 위 막대처럼 FP의 영향이 압도적이다. 모델은 자연히 보수적이 된다 — 확신이 강할 때만 스팸으로 분류하는 쪽으로 임계값이 이동한다.</p>
-
-      <h2>커버리지 — “모르겠다”고 말할 권리</h2>
-      <p>마지막으로 11장이 특히 강조하는 지표가 <strong>커버리지(coverage)</strong>다. 모든 예제에 강제로 답하지 말고, <em>자신 없으면 거부(abstain)</em>할 권리를 모델에 주는 것이다. 자동 처리한 비율을 커버리지, 그중 정답률을 정확도라고 정의하면 둘은 trade-off 관계가 된다.</p>
-
-      <div class="math-block">$$ \text{Coverage} = \frac{|\text{자동 처리}|}{|\text{전체}|}, \qquad \text{Accuracy} = \frac{|\text{자동 처리 중 정답}|}{|\text{자동 처리}|} $$</div>
-
-      <p>Street View 사례에서 책이 보여 주는 것이 정확히 이 trade-off다. 커버리지를 95% 낮추는 대신 자동 처리 정확도를 인간 수준으로 높였다. 나머지 5%는 사람이 직접 입력한다. <em>완벽한 자동화가 아니라 신뢰할 수 있는 자동화</em>가 비즈니스 목표였다.</p>
-
-      <h2>지표 결정 — 한 줄 가이드</h2>
-      <p>책이 결과적으로 권하는 결정 순서는 단순하다.</p>
-      <ul>
-        <li><strong>오류의 비용이 비대칭이면</strong> → 총 비용(Cost)을 최소화. 비용 단가는 비즈니스가 정한다.</li>
-        <li><strong>양성 클래스가 희소하면</strong> → 정확도 대신 정밀도·재현율·F-score. 어느 쪽을 더 가중할지($\beta$)는 도메인이 정한다.</li>
-        <li><strong>모델이 거부할 수 있어야 한다면</strong> → 커버리지를 별도로 보고. 보통 “고정 정확도 기준에서 최대 커버리지”를 보고한다.</li>
-        <li><strong>이 모든 조건이 없으면</strong> → 그제야 정확도. 단, 이 경우는 흔치 않다.</li>
-      </ul>
-
-      <p>다음 장(<a href="03.html">03</a>)에서는 지표가 정해진 다음의 결정 — <strong>어떤 베이스라인 모델로 시작할 것인가</strong>를 본다.</p>
+      <p>이것은 단순한 “계획 변경”이 아니라 절차의 일부다. 지표를 너무 잘 정의하려고 첫 사이클에서 시간을 낭비하기보다, “일단 그럴듯한 지표 하나 적고 사이클 한 바퀴 돌면서 지표 자체도 점검한다”가 11장의 권고다. 다음 sub에서 그 지표들의 구체적 정의 — 정밀도, 재현율, F1, AUC를 다룬다.</p>
     </div>
 
     <nav class="ch-foot"></nav>
@@ -184,20 +119,24 @@
 </div>
 
 <script>
-  // ch11 sub-chapter 메타 (모든 페이지 동일)
   const SUB = [
-    { no:'01', t:'방법론의 필요성' },
+    { no:'01', t:'절차가 알고리즘보다 중요한 이유' },
     { no:'02', t:'성능 지표 선택' },
-    { no:'03', t:'베이스라인부터' },
-    { no:'04', t:'데이터 vs 모델 키우기' },
-    { no:'05', t:'하이퍼파라미터 탐색' },
-    { no:'06', t:'디버깅과 시험 대비' },
+    { no:'03', t:'정밀도·재현율·F1·AUC' },
+    { no:'04', t:'기본 베이스라인' },
+    { no:'05', t:'데이터 vs 모델 키우기' },
+    { no:'06', t:'하이퍼파라미터 1 — grid vs random' },
+    { no:'07', t:'하이퍼파라미터 2 — 베이지안' },
+    { no:'08', t:'디버깅 결정 트리' },
+    { no:'09', t:'실패 모드 분류' },
+    { no:'10', t:'실전 워크플로우' },
+    { no:'11', t:'시험 대비' },
   ];
   const CUR = '02';
 
   document.querySelector('.topbar').innerHTML =
     `<a class="home" href="index.html">← Ch.11 실용적 방법론</a>` +
-    `<span class="ch-mini">SUB ${CUR} / 06</span>`;
+    `<span class="ch-mini">SUB ${CUR} / 11</span>`;
   document.querySelector('.ch-nav ol').innerHTML = SUB.map(c =>
     `<li><a href="${c.no}.html" ${c.no === CUR ? 'class="current"' : ''}>${c.t}</a></li>`).join('');
   const i = SUB.findIndex(c => c.no === CUR);
@@ -215,61 +154,71 @@
   }, { passive: true });
 
   // 컨퓨전 매트릭스 위젯
-  const TOTAL = 1000;
-  function updateCM() {
-    const tp = parseInt(document.getElementById('sl-tp').value, 10);
-    const fp = parseInt(document.getElementById('sl-fp').value, 10);
-    const fn = parseInt(document.getElementById('sl-fn').value, 10);
-    const tn = Math.max(0, TOTAL - tp - fp - fn);
-    document.getElementById('lab-tp').textContent = tp;
-    document.getElementById('lab-fp').textContent = fp;
-    document.getElementById('lab-fn').textContent = fn;
-    document.getElementById('cell-tp').textContent = tp;
-    document.getElementById('cell-fp').textContent = fp;
-    document.getElementById('cell-fn').textContent = fn;
-    document.getElementById('cell-tn').textContent = tn;
+  const PRESETS = [
+    { name:'균형 잡힌 데이터', tp:85, fn:15, fp:15, tn:85,
+      note:'<b>균형 데이터 + 적절한 모델</b>: 양성 음성 각 100개씩. 정확도 85%, 정밀도, 재현율, F1이 모두 비슷. <b>여기서는 정확도가 정상적으로 작동</b>한다. 다른 지표들이 모두 합의하기 때문이다.' },
+    { name:'클래스 불균형', tp:8, fn:2, fp:5, tn:985,
+      note:'<b>희귀 양성 (10:990)</b>: 의료 진단 같은 상황. 정확도 99.3%로 매우 높아 보이지만, 실제로는 양성 10명 중 2명을 놓치고 있다(재현율 80%). <b>정확도는 거의 음성 데이터로만 결정되어 양성 성능을 가린다</b>. 정밀도, 재현율을 봐야 한다.' },
+    { name:'모두 음성 모델', tp:0, fn:10, fp:0, tn:990,
+      note:'<b>아무것도 안 하는 모델</b>: 모두 음성으로 분류. 정확도 99%로 위와 거의 같다. 그러나 양성을 단 한 명도 못 잡았다(재현율 0%). <b>정확도가 모델이 일하고 있는지조차 알려주지 못한다는 사실의 가장 극단적 증거</b>.' },
+    { name:'희귀 음성', tp:920, fn:80, fp:3, tn:1,
+      note:'<b>음성이 매우 드문 경우</b>: 양성 1000건, 음성 4건. 양성을 거의 다 잡아냈고(92%) 음성을 거의 다 놓쳤지만(75%), 음성이 너무 적어 정확도에 거의 안 잡힌다. <b>여기서는 정밀도와 재현율 중 무엇을 우선할지가 비즈니스 결정</b>이 된다.' },
+  ];
 
-    const acc = (tp + tn) / TOTAL;
-    const prec = (tp + fp) > 0 ? tp / (tp + fp) : 0;
-    const rec  = (tp + fn) > 0 ? tp / (tp + fn) : 0;
-    const f1   = (prec + rec) > 0 ? 2 * prec * rec / (prec + rec) : 0;
+  const grid = document.getElementById('cmgrid');
+  const readout = document.getElementById('cmreadout');
+  const scenNote = document.getElementById('scenNote');
+  const presetsHost = document.getElementById('presets');
 
-    const m = document.querySelectorAll('.cm-metric');
-    const setM = (idx, v) => {
-      m[idx].querySelector('i').style.width = (v*100) + '%';
-      m[idx].querySelector('.val').textContent = v.toFixed(3);
-    };
-    setM(0, acc); setM(1, prec); setM(2, rec); setM(3, f1);
-
-    // 비대칭 비용 막대 동기화
-    const fpCost = fp * 10, fnCost = fn * 1;
-    document.querySelectorAll('.cost-bar.fp .row span')[0].textContent = `FP ${fp}건`;
-    document.querySelectorAll('.cost-bar.fp .total')[0].textContent = `총 비용 ${fpCost}`;
-    document.querySelectorAll('.cost-bar.fn .row span')[0].textContent = `FN ${fn}건`;
-    document.querySelectorAll('.cost-bar.fn .total')[0].textContent = `총 비용 ${fnCost}`;
-    const maxCost = Math.max(fpCost, fnCost, 1);
-    document.getElementById('fp-bar').style.width = (fpCost/maxCost*100) + '%';
-    document.getElementById('fn-bar').style.width = (fnCost/maxCost*100) + '%';
+  function buildGrid() {
+    grid.innerHTML = `
+      <div class="cm-cell lbl corner"></div>
+      <div class="cm-cell lbl">예측 양성</div>
+      <div class="cm-cell lbl">예측 음성</div>
+      <div class="cm-cell lbl">실제 양성</div>
+      <div class="cm-cell tp"><span class="ty">TP</span><span class="big" id="cTP">0</span></div>
+      <div class="cm-cell fn"><span class="ty">FN</span><span class="big" id="cFN">0</span></div>
+      <div class="cm-cell lbl">실제 음성</div>
+      <div class="cm-cell fp"><span class="ty">FP</span><span class="big" id="cFP">0</span></div>
+      <div class="cm-cell tn"><span class="ty">TN</span><span class="big" id="cTN">0</span></div>`;
   }
-  ['sl-tp','sl-fp','sl-fn'].forEach(id => document.getElementById(id).addEventListener('input', updateCM));
+  buildGrid();
 
-  // 프리셋
-  const PRESETS = {
-    balanced:  { tp: 80, fp: 20, fn: 20 },
-    majority:  { tp: 0,  fp: 0,  fn: 100 },
-    precision: { tp: 50, fp: 5,  fn: 50 },
-    recall:    { tp: 95, fp: 60, fn: 5  },
-  };
-  document.querySelectorAll('[data-preset]').forEach(b => {
+  function apply(p) {
+    document.getElementById('cTP').textContent = p.tp;
+    document.getElementById('cFN').textContent = p.fn;
+    document.getElementById('cFP').textContent = p.fp;
+    document.getElementById('cTN').textContent = p.tn;
+    const N = p.tp + p.fn + p.fp + p.tn;
+    const acc = ((p.tp + p.tn) / N * 100).toFixed(2);
+    const prec = (p.tp + p.fp) > 0 ? ((p.tp / (p.tp + p.fp)) * 100).toFixed(2) : '—';
+    const rec = (p.tp + p.fn) > 0 ? ((p.tp / (p.tp + p.fn)) * 100).toFixed(2) : '—';
+    let f1 = '—';
+    if (typeof prec === 'string' && prec !== '—' && typeof rec === 'string' && rec !== '—') {
+      const pf = parseFloat(prec), rf = parseFloat(rec);
+      f1 = (pf + rf > 0) ? ((2 * pf * rf) / (pf + rf)).toFixed(2) : '—';
+    }
+    readout.innerHTML = `
+      <div><span class="lbl">정확도</span><span class="val v-acc">${acc}%</span></div>
+      <div><span class="lbl">정밀도</span><span class="val v-prec">${prec}%</span></div>
+      <div><span class="lbl">재현율</span><span class="val v-rec">${rec}%</span></div>
+      <div><span class="lbl">F1</span><span class="val v-f1">${f1}</span></div>
+      <div><span class="lbl">전체 N</span><span class="val">${N}</span></div>`;
+    scenNote.innerHTML = p.note;
+  }
+
+  PRESETS.forEach((p, idx) => {
+    const b = document.createElement('button');
+    b.className = 'btn ghost' + (idx === 0 ? ' active' : '');
+    b.textContent = p.name;
     b.addEventListener('click', () => {
-      const p = PRESETS[b.dataset.preset];
-      document.getElementById('sl-tp').value = p.tp;
-      document.getElementById('sl-fp').value = p.fp;
-      document.getElementById('sl-fn').value = p.fn;
-      updateCM();
+      document.querySelectorAll('.preset-row .btn').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      apply(p);
     });
+    presetsHost.appendChild(b);
   });
-  updateCM();
+  apply(PRESETS[0]);
 
   window.addEventListener('load', () => {
     if (window.renderMathInElement) renderMathInElement(document.body, {

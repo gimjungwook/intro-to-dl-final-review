@@ -3,23 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>06 · 정칙화 — 가중치 감쇠</title>
+<title>06 · 학습 곡선</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
-<style>
-  .prior-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; max-width: var(--measure); margin: 1.6rem auto; padding-inline: 1.4rem; }
-  @media (max-width: 720px) { .prior-grid { grid-template-columns: 1fr; } }
-  .prior-card { padding: 1.2rem 1.3rem; border-radius: 12px; border: 1px solid var(--line); background: #fff; }
-  .prior-card.l2 { background: linear-gradient(180deg, #fff, var(--structure-bg)); }
-  .prior-card.l1 { background: linear-gradient(180deg, #fff, var(--style-bg)); }
-  .prior-card h4 { margin: 0 0 .5rem; font-family: var(--serif); font-size: 1.1rem; }
-  .prior-card.l2 h4 { color: var(--structure); }
-  .prior-card.l1 h4 { color: var(--style); }
-  .prior-card .eq { font-family: var(--mono); font-size: .82rem; color: var(--ink); margin: .4rem 0; }
-  .prior-card p { margin: .5rem 0; font-size: .9rem; color: var(--ink-soft); line-height: 1.55; }
-</style>
 </head>
 <body>
 <div class="scroll-progress"></div>
@@ -30,97 +18,63 @@
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Section 06 · 가중치 감쇠는 왜 가우시안 사전인가</span>
-      <h1>정칙화 <em>=</em> 사전(prior)을 손실 함수에 적는 일</h1>
-      <p class="lede">L2 정칙화 = 가우시안 사전의 MAP. L1 정칙화 = 라플라스 사전의 MAP. 이 두 등식은 Ch.7 정칙화 단원의 출발점이고, 시험에서도 자주 나온다. 5절의 베이지안 관점이 한 줄의 손실 식으로 떨어진다.</p>
+      <span class="kicker">Section 06 · 데이터 크기와 모델 크기의 시점</span>
+      <h1><span class="t-structure">학습 곡선</span></h1>
+      <p class="lede">데이터 크기 N이 늘어날 때 훈련 오차와 검증 오차가 각각 어떻게 움직이는지를 한 그래프에 그린 것이 학습 곡선이다. 이 곡선의 모양 하나로 "데이터를 더 모을지 모델을 다시 짤지"를 결정할 수 있다.</p>
     </header>
 
     <div class="prose">
-      <p>5절에서 우리는 MAP 추정이 "우도 로그 + 사전 로그"를 최대화하는 일이라고 봤다. 이제 그 사전을 구체적으로 선택해보자. 매개변수 $\theta$가 신경망의 가중치 벡터 $w$라고 하자. 우리는 보통 "가중치가 너무 크지 않을 것이다"라는 사전 믿음을 갖고 있다 (오캄의 면도날: 단순한 모델이 일반화에 유리).</p>
+      <p>앞 장에서 모델 복잡도를 고정한 채 데이터 크기 $N$을 바꿔 가며 그린 곡선이 학습 곡선이다. 이 곡선은 두 가지를 동시에 보여준다. 가로축은 $N$, 세로축은 오차이며, 두 곡선이 함께 그려진다. 하나는 훈련 오차 — 모델이 본 $N$개의 데이터에 대한 평균 손실 — 이고, 다른 하나는 검증 오차 — 모델이 보지 않은 별도의 데이터에 대한 평균 손실 — 이다. 두 곡선의 모양과 그 사이의 간격(일반화 갭, generalization gap)이 모델 진단의 핵심 정보가 된다.</p>
 
-      <p>이 믿음을 가장 자연스럽게 표현하는 사전이 <strong>평균 0인 가우시안</strong>이다. 가중치 $w_i$가 각각 독립적으로 $\mathcal{N}(0, \tau^2)$를 따른다고 가정하자.</p>
+      <p>왜 데이터 크기에 따라 두 오차가 다르게 움직일까. $N$이 매우 작을 때를 떠올려 보자. 데이터 점이 3개라면 어떤 합리적인 모델이라도 그 3개를 거의 완벽히 통과시킬 수 있다. 그래서 훈련 오차는 거의 0에 가깝다. 그러나 3개의 점으로 학습한 모델은 새로운 점에 대해 정확하게 예측하지 못한다. 결과적으로 검증 오차는 매우 크다. $N$이 커질수록 모델이 데이터를 완벽히 통과시키기 어려워진다(점이 너무 많아 동시에 만족시키지 못한다). 그래서 훈련 오차는 점진적으로 증가한다. 동시에 모델이 진짜 패턴에 가까운 함수를 더 잘 잡게 되므로 검증 오차는 감소한다. 두 곡선은 결국 서로 가까워지고, 충분히 큰 $N$에서는 거의 수렴한다.</p>
 
-      <div class="math-block">$$ p(w) \;=\; \prod_i \frac{1}{\sqrt{2\pi}\tau} \exp\!\left(-\frac{w_i^2}{2\tau^2}\right) $$</div>
-      <p class="math-note">평균 0, 분산 $\tau^2$. $\tau$가 작을수록 0 근처에 더 강하게 묶임 — 강한 사전.</p>
+      <h2>학습 곡선의 진단 패턴</h2>
+      <p>학습 곡선의 모양은 모델의 상태에 따라 네 가지 전형적 패턴을 보인다. 첫째, 두 곡선이 모두 높은 곳에서 수렴하면 편향 문제(과소적합)다. 데이터를 아무리 더 모아도 두 오차 모두 낮아지지 않는다. 모델 자체가 진짜 패턴을 표현하지 못하므로, 처방은 모델을 키우거나 더 좋은 특징을 만드는 일이다. 둘째, 훈련 오차는 낮지만 검증 오차가 훨씬 위쪽에서 떠 있으면 분산 문제(과적합)다. 두 곡선 사이에 큰 간격이 있고, 데이터를 더 모으면 그 간격이 줄어들 가능성이 보인다. 처방은 데이터를 더 모으거나, 정칙화를 강화하거나, 모델을 줄이는 일이다.</p>
 
-      <p>이 사전의 로그를 적으면:</p>
-      <div class="math-block">$$ \log p(w) \;=\; -\frac{1}{2\tau^2} \sum_i w_i^2 + \text{const} $$</div>
+      <p>셋째, 두 곡선이 모두 충분히 낮고 거의 만나면 잘 학습된 상태다. 더 모을 데이터의 한계 효용이 낮으므로 다른 자원(설명력, 추론 속도 등)에 투자하는 편이 낫다. 넷째, 검증 오차가 처음에는 감소하다가 어느 지점부터 다시 증가하면 학습이 너무 길어진 상태(epoch 단위 과적합)다. 이 경우 학습 곡선과 별개로 epoch별 검증 오차 곡선을 보고 조기 종료(early stopping)를 적용해야 한다. 학습 곡선은 모델 진단의 가장 신뢰할 수 있는 도구 중 하나이며, 실무에서 가장 먼저 그려야 할 그래프다.</p>
 
-      <p>이 항을 MAP 식에 넣으면:</p>
-      <div class="math-block">$$ \arg\max_w\, \log p(x|w) + \log p(w) \;=\; \arg\min_w\, \underbrace{\big[-\log p(x|w)\big]}_{\text{NLL (데이터 손실)}} + \underbrace{\frac{1}{2\tau^2}\sum_i w_i^2}_{\lambda \|w\|_2^2} $$</div>
-      <p class="math-note">두 번째 항이 정확히 <strong>L2 정칙화</strong>다. $\lambda = 1/(2\tau^2)$. 사전의 강도 $\tau$가 작을수록 (강한 사전) 정칙화 계수 $\lambda$가 크다. 사전이 약하면 정칙화도 약하다 — 직관과 정확히 일치.</p>
+      <h2>일반화 갭의 정량적 해석</h2>
+      <p>학습 곡선의 두 곡선 사이 간격, 즉 일반화 갭(generalization gap)은 $\text{train error}(N)$과 $\text{validation error}(N)$의 차이다. 이 갭이 작으면 모델이 훈련 데이터에 특별히 더 잘 들어맞는 것이 아니라는 뜻이고, 따라서 보지 못한 데이터에 대해서도 비슷한 성능을 보일 것이라는 합리적 기대를 할 수 있다. 갭이 크면 모델이 훈련 데이터에 과도하게 적합한 상태다. PAC 학습 이론은 이 갭의 크기에 대한 확률적 상한을 데이터 크기 $N$, 가설 공간의 복잡도 $\text{VC}(\mathcal{H})$, 신뢰 수준 $\delta$의 함수로 제공한다. 직관적으로는 "복잡도가 크면 갭이 크고, 데이터가 많으면 갭이 작다"는 관계가 핵심이다.</p>
 
-      <h2>가중치 감쇠 (weight decay)는 왜 그렇게 불리는가</h2>
-      <p>L2 정칙화 항의 가중치 $w$에 대한 미분은 $2\lambda w$다. 즉 경사하강 갱신식에 추가되는 항이 $-\eta \cdot 2\lambda w$이고, 이는 매 스텝마다 가중치를 $1 - 2\eta\lambda$ 비율로 줄인다(decay).</p>
-
-      <div class="math-block">$$ w \;\leftarrow\; w - \eta \nabla_w \mathrm{NLL} - 2\eta\lambda w \;=\; (1 - 2\eta\lambda)\, w - \eta \nabla_w \mathrm{NLL} $$</div>
-      <p class="math-note">스텝마다 가중치가 자동으로 0 쪽으로 끌려간다. 그래서 "weight decay"라는 이름. L2 정칙화의 다른 표현.</p>
+      <p>딥러닝에서 흥미로운 점은 일반화 갭이 이론적 상한보다 훨씬 작게 관측된다는 것이다. 신경망의 매개변수 수는 데이터 크기보다 훨씬 크지만 갭은 폭발하지 않는다. 이 현상은 신경망에 내재된 암묵적 정칙화(implicit regularization), 학습 알고리즘이 선호하는 평탄한 최소점(flat minimum), 또는 다른 미지의 메커니즘 때문이라고 추정된다. 5장에서는 고전적 그림을 그리는 데 집중하고, 딥러닝 특유의 일반화 미스터리는 7-8장에서 다시 등장한다.</p>
     </div>
 
-    <h2 style="max-width: var(--measure); margin-inline: auto; padding-inline: 1.4rem">L2와 L1 — 두 가지 사전</h2>
-
-    <div class="prior-grid">
-      <div class="prior-card l2">
-        <h4>L2 (Ridge) = 가우시안 사전</h4>
-        <div class="eq">$p(w_i) = \mathcal{N}(0, \tau^2)$</div>
-        <div class="eq">$\log p(w) \propto -\sum_i w_i^2$</div>
-        <div class="eq">손실 += $\lambda \|w\|_2^2 = \lambda \sum_i w_i^2$</div>
-        <p>가중치를 0 쪽으로 끌어당기지만 정확히 0으로 만들지 않음. 모든 가중치가 작아지지만 살아 있음. 평활(smoothing) 효과.</p>
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 06</span><span>학습 곡선 — 데이터 크기 N과 두 오차의 움직임</span></div>
+        <div id="lc"></div>
       </div>
-      <div class="prior-card l1">
-        <h4>L1 (Lasso) = 라플라스 사전</h4>
-        <div class="eq">$p(w_i) = \mathrm{Laplace}(0, b)$</div>
-        <div class="eq">$\log p(w) \propto -\sum_i |w_i|$</div>
-        <div class="eq">손실 += $\lambda \|w\|_1 = \lambda \sum_i |w_i|$</div>
-        <p>가중치를 정확히 0으로 만든다 (희소성 sparsity). 일부 특징을 완전히 끄는 효과. 특징 선택(feature selection)에 자주 쓰임.</p>
-      </div>
+      <p class="widget-cap">N 슬라이더를 움직이면 훈련 오차(파랑)는 위로, 검증 오차(주황)는 아래로 향하며 점차 가까워진다. 그 사이의 색칠된 영역이 일반화 갭이다. N이 충분히 크면 갭이 0에 가까워지고, 두 곡선이 닿는 수준이 모델의 진짜 한계(편향 + 잡음)다.</p>
     </div>
 
     <div class="prose">
-      <p>두 정칙화의 기하학적 차이를 직관적으로 보면: L2의 제약 영역은 원이고, L1의 제약 영역은 마름모(diamond)다. 손실 함수의 등고선이 제약 영역과 만나는 지점이 최적해인데, 마름모는 꼭짓점이 좌표축 위에 있어 자주 축 위에서 만난다 (한 좌표 = 0). 원에는 그런 꼭짓점이 없어서 0이 잘 안 나온다. 이것이 L1이 희소해를 만들고 L2가 평활해를 만드는 이유의 기하학적 설명이다.</p>
+      <h2>스케일링 법칙 — 학습 곡선이 거듭제곱을 따른다</h2>
+      <p>최근 딥러닝 연구에서 학습 곡선이 거듭제곱 법칙(power law)을 따른다는 관찰이 자주 보고된다. 즉 데이터 크기 $N$, 모델 크기 $M$, 컴퓨팅 자원 $C$가 늘어남에 따라 일반화 오차는 대략 $\text{error} \propto N^{-\alpha}$ 또는 $\text{error} \propto M^{-\beta}$의 형태로 감소한다는 것이다. $\alpha, \beta$는 보통 0.05에서 0.3 사이의 값이고, 이 지수가 작을수록 데이터를 더 많이 모아야 같은 개선을 얻는다. 이를 신경망의 스케일링 법칙(scaling laws)이라 한다. 대규모 언어 모델의 발전이 이 법칙에 기반해 자원 투자를 정당화한다.</p>
+
+      <p>스케일링 법칙의 실용적 함의는 분명하다. 모델의 일반화 오차가 충분히 낮지 않다면, 같은 모델을 더 크게 만들기보다 데이터를 두 배로 늘리는 편이 종종 더 효율적이다. 반대로 데이터가 더 늘릴 수 없는 상한에 다다른 상황이라면 모델 구조를 바꾸는 편이 낫다. 학습 곡선을 그려서 곡선의 기울기가 0에 가까워지는지(데이터 한계) 아니면 여전히 떨어지고 있는지(데이터를 더 모으면 도움)를 보는 것이 이 결정의 출발점이다.</p>
+
+      <h2>학습 곡선을 그릴 때 주의할 점</h2>
+      <p>학습 곡선을 그릴 때 흔히 빠지는 함정 몇 가지를 짚어 두자. 첫째, 데이터 크기 $N$을 늘릴 때 같은 분포에서 추가로 뽑아야 한다. 새로운 출처의 데이터가 섞이면 분포 변화(distribution shift) 효과와 데이터 크기 효과가 뒤섞여 곡선이 깨끗하지 않다. 둘째, 작은 $N$에서는 표본 변동이 크므로 같은 $N$에서 여러 번 무작위로 부분집합을 뽑아 평균을 취해야 의미 있는 곡선이 나온다. 한 번만 뽑으면 곡선이 들쭉날쭉할 수 있다. 셋째, 검증 오차와 시험 오차는 정확히 구분해야 한다. 학습 곡선의 두 번째 곡선으로는 검증 오차를 쓰는 편이 좋고, 시험 오차는 학습 과정 끝의 단 한 번에만 측정한다. 이 구분은 다음 장에서 자세히 다룬다.</p>
 
       <div class="analogy">
-        같은 "작은 가중치를 좋아한다"는 믿음이라도 어떤 형태로 작은지가 다르다. 가우시안은 종 모양이라 "거의 0 근처에 있되 정확히 0일 필요는 없다"고 말한다. 라플라스는 0에서 뾰족하게 솟아 "0이 가장 좋고, 멀어질수록 빠르게 미워진다"고 말한다. 그래서 L1은 답을 0으로 모는 압력이 더 세다.
+        학습 곡선을 <b>운동 능력의 기록</b>에 비유해 보자. 같은 사람이 매주 같은 종목으로 시험을 친다. 처음에는 연습 점수는 들쭉날쭉하고 시험 점수는 낮다. 연습량이 늘수록 연습 점수는 점점 안정되고 약간 낮아지며(완벽하게 외우지 못하므로), 시험 점수는 점점 올라온다. 두 점수가 같은 수준으로 수렴하는 지점이 이 사람의 진짜 실력이다. 더 연습한다고 그 수준 이상으로 올라가지는 않는다. 학습 곡선이 알려주는 정보가 정확히 이것이다.
       </div>
 
-      <h2>왜 정칙화가 일반화를 돕는가 — 편향-분산 해석</h2>
-      <p>3절의 편향-분산 분해로 다시 돌아가자. 정칙화는 모델의 유효 용량(effective capacity)을 줄인다. 즉:</p>
-      <ul style="padding-left: 1.4rem">
-        <li>분산 감소 ↓ (좋음)</li>
-        <li>편향 약간 증가 ↑ (나쁨)</li>
-        <li>총 오차: 보통은 감소 ↓ (좋음) — 분산 감소량이 편향 증가량보다 크기 때문</li>
-      </ul>
-      <p>이는 $\lambda$가 적절할 때만 성립한다. $\lambda$가 너무 크면 편향 증가가 분산 감소를 압도해 총 오차가 오히려 늘어난다. 그래서 정칙화 계수 $\lambda$는 검증셋에서 골라야 한다 (하이퍼파라미터).</p>
-
-      <h2>다른 정칙화 기법들과의 관계 (Ch.7 미리보기)</h2>
-      <ul style="padding-left: 1.4rem">
-        <li><strong>조기 종료 (early stopping)</strong> ≈ L2 정칙화. 학습을 일찍 멈추면 가중치가 0 근처에서 크게 벗어나지 못함. 이론적으로 L2와 동치인 경우가 있음.</li>
-        <li><strong>드롭아웃 (dropout)</strong> ≈ 앙상블/베이지안 평균 근사. 매번 다른 부분망으로 학습 → 분산 감소.</li>
-        <li><strong>데이터 증강 (data augmentation)</strong>: 사전에 "변환에 불변"이라는 정보를 데이터 쪽으로 주입. 가설 공간 자체를 제한하는 대신 데이터 분포를 넓힘.</li>
-        <li><strong>배치 정규화 (batch normalization)</strong>: 의도된 정칙화는 아니지만, 미니배치 통계의 노이즈가 정칙화 효과로 작용한다는 해석.</li>
-        <li><strong>적대적 훈련 (adversarial training)</strong>: 입력에 작은 변형을 줘도 출력이 안 바뀌게 강제. 입력 공간의 평활성에 대한 사전.</li>
-      </ul>
-
-      <p>모든 정칙화 기법의 공통점: <strong>가설 공간을 어떤 방식으로든 좁힌다</strong>는 것. L2처럼 직접 가중치에 페널티를 주든, 드롭아웃처럼 부분망 평균을 강제하든, 같은 일을 한다. Ch.7 정칙화 단원 전체가 이 한 줄의 변주다.</p>
-
-      <h2>시험 출제 가능 — 등식 한 줄로 적기</h2>
-      <p>다음 두 등식을 한 줄로 적고 그 의미를 설명할 수 있어야 한다.</p>
-      <ol style="padding-left: 1.4rem">
-        <li><strong>L2 정칙화 = 가우시안 사전의 MAP.</strong> 정칙화 계수 $\lambda$는 사전 분산 $\tau^2$의 역수에 비례.</li>
-        <li><strong>L1 정칙화 = 라플라스 사전의 MAP.</strong> 희소성을 유도하는 이유는 라플라스 사전이 0에서 뾰족하기 때문.</li>
-      </ol>
-
-      <p>마지막 절은 시험 직전 빠르게 훑어볼 <a href="07.html">예상 출제 Q&A와 핵심 수식 체크리스트</a>다.</p>
+      <p>다음 장에서는 학습 곡선을 그리기 위해 데이터를 어떻게 나누는지 — 훈련·검증·테스트의 분할과 교차검증의 의미 — 를 본다. 데이터 분할은 단순한 사무 작업이 아니라, 일반화 오차를 정직하게 측정하기 위한 통계적 약속이다.</p>
     </div>
 
     <nav class="ch-foot"></nav>
   </main>
 </div>
 
+<script>
+  window.addEventListener('load', () => {
+    NST.buildNav('06');
+    const t = document.getElementById('lc');
+    NST.onVisible(t, () => NST.learningCurve(t));
+  });
+</script>
 <script src="../assets/widgets.js"></script>
 <script src="widgets-ch05.js"></script>
-<script>
-  window.addEventListener('load', () => { NST.buildNav('06'); });
-</script>
 </body>
 </html>

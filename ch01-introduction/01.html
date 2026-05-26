@@ -3,20 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>01 — 표상의 문제 — Ch.1</title>
+<title>01 · 표상의 문제 — Chapter 1</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
-  /* 좌표 변환 위젯 (이 페이지 전용) */
-  .repr-stage { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1.4rem 1.2rem 1rem; align-items: center; }
-  .repr-side { text-align: center; }
-  .repr-side canvas { display: block; width: 100%; max-width: 320px; aspect-ratio: 1/1; border-radius: 10px; border: 1px solid var(--line); background: #fff; margin: 0 auto; }
-  .repr-side .rlab { font-family: var(--mono); font-size: .76rem; color: var(--ink-faint); margin-top: .5rem; letter-spacing: .08em; }
-  .repr-verdict { padding: .9rem 1.2rem; border-top: 1px solid var(--line-soft); background: var(--paper); font-size: .9rem; color: var(--ink-soft); line-height: 1.55; }
-  .repr-verdict b.ok { color: var(--structure); } .repr-verdict b.bad { color: var(--style); }
-  @media (max-width: 640px) { .repr-stage { grid-template-columns: 1fr; } }
+  .coord-stage { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1.4rem 1.1rem 1rem; }
+  .coord-card { background: #fff; border: 1px solid var(--line-soft); border-radius: 9px; padding: .8rem; display: flex; flex-direction: column; align-items: center; }
+  .coord-card canvas { display: block; width: 100%; max-width: 280px; height: 280px; background: var(--paper); border-radius: 6px; border: 1px solid var(--line-soft); }
+  .coord-card h5 { margin: .4rem 0 .2rem; font-family: var(--serif); font-size: 1rem; color: var(--ink); }
+  .coord-card .sep { font-family: var(--mono); font-size: .72rem; color: var(--ink-faint); margin-top: .3rem; }
+  .coord-card.good .sep { color: var(--structure); }
+  .coord-card.bad .sep { color: var(--style); }
+  .coord-toggle { display: flex; justify-content: center; gap: .5rem; padding: .8rem 0 1rem; }
+  @media (max-width: 640px) { .coord-stage { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
@@ -28,66 +29,73 @@
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Sub 01 — 같은 데이터, 다른 표상</span>
-      <h1>표상의 문제 — 왜 입력의 <span class="t-style">모습</span>이 성패를 가르는가</h1>
-      <p class="lede">아무리 좋은 알고리즘도 입력 표상이 나쁘면 무력하고, 평범한 알고리즘도 표상만 바꿔 주면 살아난다. 1장의 가장 깊은 메시지는 이 한 문장이다.</p>
+      <span class="kicker">Sub-Chapter 01 · 표상의 문제</span>
+      <h1>같은 데이터, 다른 표상,<br><span class="t-style">완전히 다른 난이도</span></h1>
+      <p class="lede">학습 문제의 절반은 입력을 어떻게 표현하느냐에서 이미 결정된다. 같은 점들이 어떤 좌표계 위에 놓이느냐에 따라 직선 하나로 깔끔하게 갈리기도 하고, 아무리 복잡한 곡선을 그어도 갈리지 않기도 한다. 1장 전체를 받치는 가장 근본적인 통찰이다.</p>
     </header>
 
     <div class="prose">
-      <p>딥러닝을 처음 배울 때 가장 흔한 오해는 “알고리즘이 똑똑하면 어떤 데이터든 잘 처리한다”는 생각이다. 그러나 인공지능(artificial intelligence) 역사 전체가 이 가정과 정반대 방향으로 흘렀다. 같은 알고리즘이라도 데이터를 어떤 좌표계에 올려놓느냐에 따라 정확도가 마치 다른 기술처럼 갈린다.</p>
-      <p>딥러닝 책 1장이 첫 절을 “표상(representation)”에 할애한 것은 우연이 아니다. 이 절의 핵심 주장은, 인공지능 시스템의 성능이 모델 구조보다도 <strong>“입력을 어떻게 표현했는가”</strong>에 더 크게 좌우된다는 것이다.</p>
+      <p>딥러닝의 첫 페이지를 펴면 가장 먼저 마주치는 단어가 <strong>표상(representation)</strong>이다. 우리말로는 "표현"이라고도 옮기지만, 이 책에서는 단순히 "보여 주는 방식"을 가리키는 말이 아니다. <em>컴퓨터가 데이터를 들고 일할 때 그 데이터를 어떤 좌표 위에, 어떤 숫자 묶음으로 놓아두는가</em>를 가리킨다. 같은 그림을 픽셀(pixel)로 표현할 수도 있고, 평균 밝기와 색감의 통계량으로 표현할 수도 있다. 같은 사람을 키와 몸무게로 표현할 수도 있고, 발걸음 소리의 주파수 분포(spectrum)로 표현할 수도 있다. 표상이 다르면, 그 위에서 일하는 모든 알고리즘의 난이도가 통째로 바뀐다.</p>
+
+      <p>이 장의 첫 번째 메시지는 단순하지만 결정적이다. <strong>"알고리즘의 성능은 모델의 영리함보다, 입력을 어떻게 표상했는가에 더 많이 좌우된다."</strong> 이 말이 처음 들었을 때는 추상적으로 느껴진다. 실제로 1980년대까지의 인공지능(artificial intelligence) 연구자들도 이 점을 충분히 인지하지 못했고, 영리한 알고리즘을 짜는 데 더 많은 시간을 썼다. 그러나 2010년대 이후의 딥러닝 폭발은, 그 시간 배분이 정확히 반대였어야 했다는 사실을 보여 주었다. 알고리즘은 거의 그대로 두고, 표상을 학습으로 얻게 했을 때 모든 것이 바뀌었다.</p>
+
+      <p>이 점을 머리에 박아 두기 위해 한 가지 사고 실험을 먼저 해 보자. 같은 환자의 진료 데이터를 두 가지 방식으로 컴퓨터에 보여 줄 수 있다. 하나는 진료 차트의 모든 글자와 숫자를 화면 캡처해서 픽셀의 배열로 보여 주는 방식이다. 또 하나는 "나이 47세, 수축기 혈압 135, 콜레스테롤 220"처럼 표준화된 수치 표로 보여 주는 방식이다. 두 방식이 담은 정보의 양은 거의 같을 수 있다. 그러나 같은 분류 모델(예컨대 로지스틱 회귀, logistic regression)을 양쪽에 적용했을 때, 픽셀 표상 위에서는 거의 의미 있는 예측이 나오지 않고, 표 형태 표상 위에서는 꽤 쓸 만한 예측이 나온다. 모델이 달라진 것이 아니다. 입력의 모양만 달라졌을 뿐이다.</p>
 
       <div class="analogy">
-        <b>같은 도시, 다른 지도.</b> 서울 지하철로 강남에서 잠실에 갈 때, 지리적으로 정확한 지도를 보면 길이 굽이쳐 보여 어렵다. 그러나 노선도(역과 환승만 표시한 단순화된 그림)를 보면 누구나 한눈에 환승 한 번이라는 답을 찾는다. 도시는 그대로다. 표현이 바뀐 것뿐이다. 그런데 그 표현의 차이가 “길 찾기”라는 같은 과제의 난이도를 결정적으로 바꿔 놓는다.
+        <b>지도(map)와 길찾기.</b> 서울에서 부산까지 가는 길을 묻는다고 해 보자. 손에 든 것이 지하철 노선도 한 장이라면, 운전 경로는 절대 답할 수 없다. 같은 "서울-부산"이라는 문제도 표상이 무엇이냐 — 도로 지도냐, 지하철 노선도냐, 위성사진이냐 — 에 따라 풀 수 있는 질문과 그렇지 않은 질문이 완전히 달라진다. 알고리즘(길찾기 머릿속 절차)을 아무리 정교하게 다듬어도, 지하철 노선도 위에서는 자동차 경로가 나오지 않는다.
       </div>
 
-      <h2>좌표계 비유 — 데카르트와 극좌표</h2>
-      <p>책에서 가장 자주 인용되는 예시는 좌표계 변환이다. 어떤 점 집합을 직교좌표계(Cartesian coordinates)에 그리면 두 부류를 직선으로 가를 수 없다. 그런데 같은 점 집합을 극좌표계(polar coordinates), 즉 “원점에서의 거리($r$)와 각도($\theta$)”로 다시 쓰면, 단 한 줄로 깨끗하게 분리된다. 데이터는 그대로다. 알고리즘은 똑같이 “직선 한 줄”이다. 바뀐 것은 좌표계, 즉 표상이다.</p>
-
-      <p>아래 위젯에서 직접 확인해 보자. 왼쪽은 데카르트 좌표에 그려진 두 개의 동심원(파란 점은 안쪽, 빨간 점은 바깥쪽 고리)이고, 오른쪽은 같은 점들을 극좌표 $(r, \theta)$로 옮긴 그림이다. 위쪽의 슬라이더로 결정 경계(decision boundary)를 움직여 두 부류를 갈라 보자.</p>
+      <p>이를 손에 잡히게 보여 주는 가장 깔끔한 예시가 <strong>좌표계(coordinate system)</strong>의 선택이다. 책에서 든 그림은 이렇다. 평면 위에 점들이 흩어져 있고, 그 점들이 두 부류 — 예컨대 파란 점과 빨간 점 — 로 나뉘어 있다. 우리가 이 두 부류를 가르는 "경계선(decision boundary)"을 학습으로 찾아내고 싶다. 표상은 두 가지로 시도해 볼 수 있다. 하나는 우리에게 익숙한 <em>데카르트 좌표(Cartesian coordinate)</em>다. 점의 위치를 $(x, y)$로 적는다. 다른 하나는 <em>극좌표(polar coordinate)</em>다. 같은 점을 원점으로부터의 거리 $r$과 각도 $\theta$로 적는다. 정확히 같은 점이고, 정확히 같은 두 부류이지만, 어떤 좌표를 골랐느냐에 따라 분류는 직선 하나로 해결되거나, 아무 직선으로도 풀리지 않는 문제가 된다. 아래 위젯에서 직접 확인할 수 있다.</p>
     </div>
 
     <div class="widget">
       <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 01</span><span>같은 데이터, 다른 좌표계 — 직선 한 줄로 분류 가능한가</span></div>
-        <div class="repr-stage">
-          <div class="repr-side">
-            <canvas id="repr-cart" width="320" height="320"></canvas>
-            <div class="rlab">직교좌표 (x, y)</div>
+        <div class="widget-label"><span class="lab-no">위젯 01</span><span>좌표계 토글 · 데카르트(x,y) vs 극좌표(r,θ) · 선형 분리 가능성</span></div>
+        <div class="coord-stage">
+          <div class="coord-card bad">
+            <h5>데카르트 좌표 (x, y)</h5>
+            <canvas id="cart"></canvas>
+            <div class="sep">직선 하나로 분리 불가능</div>
           </div>
-          <div class="repr-side">
-            <canvas id="repr-pol" width="320" height="320"></canvas>
-            <div class="rlab">극좌표 (r, θ)</div>
-          </div>
-        </div>
-        <div class="widget-controls">
-          <div class="slider" style="flex:1; min-width:260px;">
-            <label>결정 경계 위치 <b id="repr-rval">r = 1.50</b></label>
-            <input type="range" id="repr-r" min="0.4" max="2.6" step="0.02" value="1.5">
-          </div>
-          <div class="legend">
-            <span><i style="background:var(--structure)"></i> 안쪽 부류</span>
-            <span><i style="background:var(--style)"></i> 바깥쪽 부류</span>
-            <span><i style="background:var(--ink)"></i> 결정 경계</span>
+          <div class="coord-card good">
+            <h5>극좌표 (r, θ)</h5>
+            <canvas id="polar"></canvas>
+            <div class="sep">단 한 줄 r = c 로 분리 가능</div>
           </div>
         </div>
-        <div class="repr-verdict" id="repr-verdict"></div>
+        <div class="coord-toggle">
+          <button class="btn ghost on" id="toggle-line">분리선 표시</button>
+        </div>
       </div>
-      <p class="widget-cap">동일한 데이터, 동일한 “선형 분류기”, 그러나 결과는 정반대다. 직교좌표에서는 어떤 직선도 동심원을 갈라낼 수 없고, 극좌표에서는 $r$ 축을 가르는 수직선 하나로 끝난다. 좋은 표상이란 알고리즘의 일을 대신해 주는 표상이다.</p>
+      <p class="widget-cap">데이터는 두 동심원이다. 안쪽 원은 파랑, 바깥쪽 원은 빨강. 왼쪽 데카르트 좌표에서는 이 두 부류를 직선 하나로 가를 수 없다. 오른쪽 극좌표에서는 "원점으로부터의 거리 r이 어떤 값보다 큰가" 한 줄로 갈린다. 같은 점, 다른 표상.</p>
     </div>
 
     <div class="prose">
-      <h2>의료 사례 — 사람이 만든 특징의 강점과 약점</h2>
-      <p>현실 데이터에서도 같은 원리가 작동한다. 환자의 사망 위험을 예측하는 모델을 생각해 보자. “나이”, “수축기 혈압”, “기존 진단명” 같은 항목은 의사가 수십 년에 걸쳐 추려 낸 좋은 표상이다. 이런 정제된 특징(feature) 위에서는 단순한 로지스틱 회귀(logistic regression)도 잘 동작한다.</p>
-      <p>그러나 음성 파형, 픽셀 텐서, 자연어 문장처럼 <strong>날것의 입력</strong>에서는 무엇이 “좋은 특징”인지를 사람이 미리 적어 두기가 거의 불가능하다. 얼굴 인식을 예로 들면, “눈의 좌표를 뽑아라”, “눈 사이 거리를 재라”라고 명시적으로 적을 수는 있다. 그러나 조명이 바뀌고, 얼굴이 약간 돌아가고, 머리카락이 가린다면? 모든 변형을 규칙으로 적어 두는 것은 사실상 불가능에 가깝다.</p>
+      <p>왼쪽 그림에서는 파란 점이 가운데에, 빨간 점이 바깥에 있다. 두 부류를 가르는 가장 자연스러운 경계는 동그라미 모양이다. 그런데 우리가 가진 도구가 <strong>선형 분류기(linear classifier)</strong> — 직선 한 개로 평면을 둘로 나누는 모델 — 뿐이라고 가정해 보자. 어떤 직선도 안쪽 파란 점들을 모두 한쪽에, 바깥쪽 빨간 점들을 모두 다른 쪽에 놓을 수 없다. 데카르트 좌표에서는 이 문제가 본질적으로 비선형(nonlinear)이다.</p>
+
+      <p>이제 같은 점들을 극좌표로 바꿔 보자. 한 점의 위치는 이제 $r$(원점으로부터의 거리)과 $\theta$(각도)로 적힌다. 안쪽 파란 점들의 $r$은 작고, 바깥쪽 빨간 점들의 $r$은 크다. 각도 $\theta$는 두 부류 모두에 골고루 흩어져 있어서, 사실상 무시해도 된다. 그러면 분류 규칙은 한 줄로 끝난다. <em>"$r$이 어떤 임계값 $c$보다 크면 빨강, 아니면 파랑."</em> 같은 데이터를 두고, 단 한 줄로 풀린다. 데카르트와 극좌표를 가르는 한 번의 좌표 변환이 문제의 난이도를 비선형에서 선형으로 떨어뜨린 것이다.</p>
+
+      <div class="math-block">$$ \text{Cartesian: } (x, y) \quad\longleftrightarrow\quad \text{Polar: } (r, \theta), \quad r = \sqrt{x^2 + y^2},\; \theta = \arctan2(y, x) $$</div>
+      <p class="math-note">x, y는 점의 가로·세로 좌표. r은 원점으로부터의 거리. θ는 양의 x축에서 잰 각도. 두 좌표는 정보량이 같다 — 손실 없이 서로 변환된다. 그러나 같은 정보를 어떤 축으로 늘어놓느냐에 따라 "이 문제를 풀 수 있는 모델 집합"이 완전히 달라진다.</p>
+
+      <p>이 수식이 왜 이 형태인가? $r = \sqrt{x^2+y^2}$는 피타고라스 정리(Pythagorean theorem)의 단순한 재진술이다. 원점에서 점 $(x, y)$까지의 직선 거리는 가로 변의 제곱과 세로 변의 제곱을 더한 값의 제곱근이다. $\theta = \arctan2(y, x)$는 그 점이 가로 축에서 시계 반대 방향으로 얼마만큼 회전한 위치에 있는지를 라디안(radian)으로 적는다. arctan2는 단순한 arctan(y/x)와 달리, $x$가 음수일 때 사분면(quadrant)을 정확히 구분해 주는 함수다. 만약 이 변환이 손실을 동반했다면 — 예컨대 $r$만 적고 $\theta$를 버렸다면 — 정보가 줄어들었을 것이다. 그러나 $(r, \theta)$는 $(x, y)$와 정확히 같은 양의 정보를 담는다. <em>달라진 것은 정보의 양이 아니라 정보의 배치 방식이다.</em></p>
+
+      <p>그렇다면 왜 하필 이 변환이 학습에 좋았는가? 이 점들이 원래 "원의 중심에서 얼마나 멀리 있는가"라는 한 가지 양으로 결정되는 분포에서 왔기 때문이다. 데카르트 좌표는 <em>"이 점이 화면 어디에 있는가"</em>를 잘 표현하는 좌표이고, 극좌표는 <em>"이 점이 중심에서 얼마나 멀리 있는가"</em>를 잘 표현하는 좌표다. 데이터의 진짜 구조가 후자에 있었기 때문에, 후자가 적합했다. 만약 점들이 "화면의 왼쪽이냐 오른쪽이냐"로 갈렸다면 데카르트가 압도적으로 좋았을 것이다. 즉, <strong>"어떤 표상이 좋은가"에 보편 답은 없다. 데이터의 진짜 구조에 가까울수록 좋은 표상이다.</strong> 이 한 줄이 1장의 첫 번째 주춧돌이다.</p>
 
       <div class="analogy">
-        <b>요리책 하나로 세상의 모든 맛을 설명하기.</b> 김치찌개 레시피를 한 페이지로 정확히 쓸 수는 있다. 하지만 “같은 김치찌개라도 김치의 묵힘 정도가 다르고, 그날 가스불 세기가 다르고, 먹는 사람의 컨디션이 다르다”까지 모두 규칙으로 적으면 그 책은 끝나지 않는다. 현실은 예외의 예외가 무한히 이어진다. 사람이 만든 특징의 한계는 바로 여기에 있다.
+        <b>음악과 악보.</b> 같은 곡을 두 가지 방식으로 적을 수 있다. 하나는 매 순간의 공기 진동을 마이크로 잡은 파형(waveform)이고, 다른 하나는 오선지 위의 음표다. 파형으로 적으면 "이 곡의 코드 진행이 무엇인가"를 묻기 매우 어렵다. 너무 많은 잡음과 시간 정보가 섞여 있다. 음표로 적으면, 코드 진행은 한눈에 보인다. 정보의 양은 음표 쪽이 훨씬 적지만, 코드라는 "진짜 구조"에 맞춰 표현되어 있다.
       </div>
 
-      <h2>그래서 표상학습 — 표상을 “손으로” 짜는 대신 “데이터에서” 배운다</h2>
-      <p>이 문제의식이 1장 후반부로 자연스럽게 이어진다. 사람이 좋은 좌표계를 일일이 설계할 수 없다면, 그 좌표계 자체를 데이터에서 배우게 하자는 것이다. 이 발상이 바로 <span class="t-structure">표상학습(representation learning)</span>이고, 그중에서도 표상을 여러 층으로 쌓아 단계적으로 배우는 방식이 <span class="t-synth">딥러닝(deep learning)</span>이다.</p>
-      <p>다음 장에서는 이 네 단어, 즉 <em>인공지능, 머신러닝, 표상학습, 딥러닝</em>이 어떻게 동심원처럼 점점 좁아지는지, 그리고 좁아질수록 왜 더 강력해지는지를 본다.</p>
+      <h2>표상의 문제가 모델 선택을 압도한다</h2>
+      <p>딥러닝을 처음 만나는 학생이 두 번째로 놀라는 사실은 이것이다. 모델을 더 똑똑하게 바꾸는 것보다, 같은 모델에 더 좋은 표상을 넣는 것이 자주 더 큰 성능 향상을 만든다. 이를 가장 극단적으로 보여 주는 사례가 컴퓨터 비전(computer vision) 분야였다. 2010년대 초까지 비전 연구의 절반은 <em>특징 공학(feature engineering)</em>이었다. 사람이 직접 "이미지에서 모서리(edge)를 찾는 필터를 적용하고, 그 위에 방향 히스토그램(HOG, histogram of oriented gradients)을 계산해라" 같은 절차를 손으로 짰다. 그러고 나서 그 특징 위에 비교적 단순한 분류기를 올렸다. 이때 성능을 끌어올리는 핵심은 분류기를 바꾸는 게 아니라, <em>특징을 더 잘 짜는 것</em>이었다.</p>
+
+      <p>그런데 2012년 AlexNet 이후, 사람들이 발견한 것은 이것이다. <strong>특징을 손으로 짜는 그 자리를 신경망의 깊은 층(deep layers)이 대신할 수 있다.</strong> 그것도 사람보다 더 잘. 즉, 이제는 <em>"좋은 특징을 사람이 설계"</em>하는 대신 <em>"좋은 특징이 저절로 나오게 만들 모델 구조와 학습 방법을 설계"</em>한다. 이 발상의 전환을 이해하는 것이 이 책 1장의 핵심 목표이자, 이후 모든 장의 출발점이다. 후속 sub-chapter들은 이 전환을 더 큰 그림(2장: AI/ML/DL의 관계), 정의(3장: 표상학습이란), 구조(4-5장: 깊이가 만드는 것), 역사(6-8장), 그리고 외부 조건(9-12장: 데이터·계산·모델의 폭발)으로 차례로 풀어 간다.</p>
+
+      <div class="analogy">
+        <b>옷걸이의 정리 방식.</b> 같은 옷 100벌을 옷장에 정리하는 두 가지 방법이 있다. 종류별(셔츠·바지·코트)로 정리하느냐, 색깔별(빨강·노랑·파랑)로 정리하느냐. 어떤 정리가 좋은지는 "주말 약속에 무엇을 입을지" 정하는 사람의 사고 방식에 달려 있다. 옷의 정보량은 같지만, 그것을 어떤 축으로 늘어놓느냐가 매일의 효율을 결정한다. 데이터의 표상도 같다.
+      </div>
+
+      <p>이 sub-chapter를 떠나기 전에 한 문장만 다시 정리하자. <strong>"데이터의 진짜 구조에 가까운 표상을 찾는 일이 학습의 절반이다."</strong> 그리고 그 표상을 사람이 손으로 짜는 시대에서, 모델이 스스로 발견하는 시대로 옮겨 가는 이야기가 곧 딥러닝의 이야기다. 다음 sub-chapter에서는 AI, 머신러닝, 표상학습, 딥러닝의 네 단어가 정확히 어떤 관계인지 — 같은 말인지, 포함 관계인지, 다른 영역인지 — 부터 분명하게 정리한다.</p>
     </div>
 
     <nav class="ch-foot"></nav>
@@ -95,167 +103,163 @@
 </div>
 
 <script>
-  // ===== Ch.1 sub-chapter nav (페이지 자체 생성) =====
-  const SUBS = [
-    { no:'01', t:'표상의 문제', f:'01.html' },
-    { no:'02', t:'AI/ML/RL/DL 동심원', f:'02.html' },
-    { no:'03', t:'깊이가 만드는 것', f:'03.html' },
-    { no:'04', t:'역사적 굴곡', f:'04.html' },
-    { no:'05', t:'데이터/모델/계산 삼각형', f:'05.html' },
-    { no:'06', t:'시험 대비 체크리스트', f:'06.html' },
-  ];
-  const CURRENT = '01';
-  (function buildNav() {
-    document.querySelector('.topbar').innerHTML =
-      `<a class="home" href="index.html">← Chapter 01 — 딥러닝이란 무엇인가</a>` +
-      `<span class="ch-mini">SUB ${CURRENT} / 06</span>`;
-    document.querySelector('.ch-nav ol').innerHTML = SUBS.map(s =>
-      `<li><a href="${s.f}" ${s.no === CURRENT ? 'class="current"' : ''}>${s.t}</a></li>`).join('');
-    const i = SUBS.findIndex(s => s.no === CURRENT);
-    const prev = i > 0 ? SUBS[i-1] : { f:'index.html', t:'챕터 표지', no:'' };
-    const next = i < SUBS.length-1 ? SUBS[i+1] : { f:'index.html', t:'챕터 표지', no:'' };
-    document.querySelector('.ch-foot').innerHTML =
-      `<a href="${prev.f}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
-      `<a href="${next.f}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
-    // 스크롤 진행
-    const bar = document.querySelector('.scroll-progress');
-    const onScroll = () => {
-      const h = document.documentElement;
-      const max = h.scrollHeight - h.clientHeight;
-      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
-    };
-    document.addEventListener('scroll', onScroll, { passive: true }); onScroll();
-  })();
+const SUBS = [
+  { no:'01', t:'표상의 문제' },
+  { no:'02', t:'AI · ML · 표상학습 · DL' },
+  { no:'03', t:'표상학습이란 무엇인가' },
+  { no:'04', t:'깊이 1 — 표상의 사다리' },
+  { no:'05', t:'깊이 2 — 합성성' },
+  { no:'06', t:'역사 1 — 사이버네틱스' },
+  { no:'07', t:'역사 2 — 연결주의' },
+  { no:'08', t:'역사 3 — 부활과 폭발' },
+  { no:'09', t:'폭발 1 — 데이터' },
+  { no:'10', t:'폭발 2 — 계산' },
+  { no:'11', t:'폭발 3 — 모델 크기' },
+  { no:'12', t:'응용 — 어디까지' },
+  { no:'13', t:'시험 대비 체크리스트' },
+];
 
-  // ===== 위젯: 데카르트 vs 극좌표 분류 =====
-  (function reprWidget() {
-    const cartC = document.getElementById('repr-cart');
-    const polC = document.getElementById('repr-pol');
-    const slider = document.getElementById('repr-r');
-    const rval = document.getElementById('repr-rval');
-    const verdict = document.getElementById('repr-verdict');
-    const css = getComputedStyle(document.documentElement);
-    const STRUCT = css.getPropertyValue('--structure').trim();
-    const STYLE = css.getPropertyValue('--style').trim();
-    const INK = css.getPropertyValue('--ink').trim();
-    const FAINT = css.getPropertyValue('--ink-faint').trim();
+function buildNav(cur) {
+  const ol = document.querySelector('.ch-nav ol');
+  ol.innerHTML = SUBS.map(s =>
+    `<li><a href="${s.no}.html"${s.no===cur?' class="current"':''}>${s.t}</a></li>`).join('');
+  const tb = document.querySelector('.topbar');
+  tb.innerHTML =
+    `<a class="home" href="index.html">← Ch.01 표지</a>` +
+    `<span class="ch-mini">SUB ${cur} / 13</span>`;
+  const i = SUBS.findIndex(s => s.no === cur);
+  const prev = i > 0 ? SUBS[i-1] : { no:'', t:'챕터 표지로' };
+  const next = i < SUBS.length-1 ? SUBS[i+1] : { no:'', t:'챕터 표지로' };
+  const prevHref = prev.no ? prev.no+'.html' : 'index.html';
+  const nextHref = next.no ? next.no+'.html' : 'index.html';
+  const foot = document.querySelector('.ch-foot');
+  foot.innerHTML =
+    `<a href="${prevHref}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+    `<a href="${nextHref}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+}
+function progressBar() {
+  const bar = document.querySelector('.scroll-progress');
+  document.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max>0 ? (h.scrollTop/max)*100 : 0) + '%';
+  }, { passive: true });
+}
 
-    // 동심원 데이터 생성 (시드 고정)
-    function seed(n) { let s = n; return () => (s = (s*1664525+1013904223) % 4294967296) / 4294967296; }
-    const rnd = seed(42);
-    const inner = [], outer = [];
-    for (let i = 0; i < 60; i++) {
-      const a = rnd() * Math.PI * 2;
-      const r = 0.55 + (rnd() - 0.5) * 0.45;  // 안쪽: r ≈ 0.55
-      inner.push({ r, a, x: r*Math.cos(a), y: r*Math.sin(a) });
-    }
-    for (let i = 0; i < 60; i++) {
-      const a = rnd() * Math.PI * 2;
-      const r = 2.0 + (rnd() - 0.5) * 0.5;   // 바깥쪽: r ≈ 2.0
-      outer.push({ r, a, x: r*Math.cos(a), y: r*Math.sin(a) });
-    }
-
-    function drawCart(boundaryR) {
-      const ctx = cartC.getContext('2d');
-      const W = cartC.width, H = cartC.height;
-      ctx.fillStyle = '#fff'; ctx.fillRect(0,0,W,H);
-      // 격자
-      ctx.strokeStyle = 'rgba(38,34,28,0.06)'; ctx.lineWidth = 1;
-      for (let i = 0; i <= 8; i++) {
-        const p = i/8 * W; ctx.beginPath(); ctx.moveTo(p,0); ctx.lineTo(p,H); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(0,p); ctx.lineTo(W,p); ctx.stroke();
-      }
-      // 축 (원점)
-      ctx.strokeStyle = 'rgba(38,34,28,0.16)';
-      ctx.beginPath(); ctx.moveTo(W/2, 0); ctx.lineTo(W/2, H); ctx.moveTo(0, H/2); ctx.lineTo(W, H/2); ctx.stroke();
-      const sc = W / 6;  // -3..+3
-      function px(x) { return W/2 + x*sc; }
-      function py(y) { return H/2 - y*sc; }
-      // "직선" 결정 경계 — 데카르트에서 boundaryR 의미: x = boundaryR (수직선) 시도
-      ctx.strokeStyle = INK; ctx.lineWidth = 2; ctx.setLineDash([6,4]);
-      ctx.beginPath(); ctx.moveTo(px(boundaryR - 1.5), 0); ctx.lineTo(px(boundaryR - 1.5), H); ctx.stroke();
-      ctx.setLineDash([]);
-      // 점
-      function dot(p, c) {
-        ctx.fillStyle = c;
-        ctx.beginPath(); ctx.arc(px(p.x), py(p.y), 3.2, 0, Math.PI*2); ctx.fill();
-      }
-      inner.forEach(p => dot(p, STRUCT));
-      outer.forEach(p => dot(p, STYLE));
-      // 라벨
-      ctx.fillStyle = FAINT; ctx.font = '11px "Spline Sans Mono", monospace';
-      ctx.fillText('x', W-12, H/2-4); ctx.fillText('y', W/2+5, 12);
-    }
-
-    function drawPolar(boundaryR) {
-      const ctx = polC.getContext('2d');
-      const W = polC.width, H = polC.height;
-      ctx.fillStyle = '#fff'; ctx.fillRect(0,0,W,H);
-      // 격자
-      ctx.strokeStyle = 'rgba(38,34,28,0.06)'; ctx.lineWidth = 1;
-      for (let i = 0; i <= 8; i++) {
-        const p = i/8 * W; ctx.beginPath(); ctx.moveTo(p,0); ctx.lineTo(p,H); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(0,p); ctx.lineTo(W,p); ctx.stroke();
-      }
-      // 축
-      ctx.strokeStyle = 'rgba(38,34,28,0.2)';
-      ctx.beginPath(); ctx.moveTo(40, H-30); ctx.lineTo(W-10, H-30); ctx.moveTo(40, H-30); ctx.lineTo(40, 10); ctx.stroke();
-      // 매핑: r∈[0,3] → x∈[40, W-10], θ∈[-π,π] → y∈[H-30, 10]
-      function px(r) { return 40 + r/3 * (W-50); }
-      function py(a) { return (H-30) - ((a + Math.PI) / (2*Math.PI)) * (H-40); }
-      // 결정 경계: r = boundaryR (수직선)
-      ctx.strokeStyle = INK; ctx.lineWidth = 2; ctx.setLineDash([6,4]);
-      ctx.beginPath(); ctx.moveTo(px(boundaryR), 10); ctx.lineTo(px(boundaryR), H-30); ctx.stroke();
-      ctx.setLineDash([]);
-      function dot(p, c) {
-        ctx.fillStyle = c;
-        ctx.beginPath(); ctx.arc(px(p.r), py(p.a), 3.2, 0, Math.PI*2); ctx.fill();
-      }
-      inner.forEach(p => dot(p, STRUCT));
-      outer.forEach(p => dot(p, STYLE));
-      ctx.fillStyle = FAINT; ctx.font = '11px "Spline Sans Mono", monospace';
-      ctx.fillText('r →', W-30, H-15); ctx.fillText('θ ↑', 8, 22);
-    }
-
-    function score(boundaryR) {
-      // Cartesian: x = boundaryR-1.5 기준 좌/우 분리 (절대 불가능)
-      let cartOK = 0; const cartTotal = inner.length + outer.length;
-      const cartB = boundaryR - 1.5;
-      inner.forEach(p => { if (p.x < cartB) cartOK++; });
-      outer.forEach(p => { if (p.x >= cartB) cartOK++; });
-      const cartAcc = cartOK / cartTotal;
-      // Polar: r = boundaryR 기준
-      let polOK = 0;
-      inner.forEach(p => { if (p.r < boundaryR) polOK++; });
-      outer.forEach(p => { if (p.r >= boundaryR) polOK++; });
-      const polAcc = polOK / cartTotal;
-      return { cartAcc, polAcc };
-    }
-
-    function update() {
-      const r = parseFloat(slider.value);
-      rval.textContent = 'r = ' + r.toFixed(2);
-      drawCart(r);
-      drawPolar(r);
-      const { cartAcc, polAcc } = score(r);
-      verdict.innerHTML =
-        `직교좌표에서 같은 직선 분류기: <b class="bad">${(cartAcc*100).toFixed(0)}%</b> 정확도 (최적 위치에서도 50% 부근에 갇힌다), ` +
-        `극좌표에서: <b class="ok">${(polAcc*100).toFixed(0)}%</b> 정확도. ` +
-        `같은 알고리즘, 같은 데이터, 표상만 바꿨을 뿐이다.`;
-    }
-    slider.addEventListener('input', update);
-    update();
-  })();
-
-  // KaTeX
-  window.addEventListener('load', () => {
-    if (window.renderMathInElement) {
-      renderMathInElement(document.body, {
-        delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
-        throwOnError: false,
-      });
-    }
+window.addEventListener('load', () => {
+  buildNav('01');
+  progressBar();
+  drawCart();
+  drawPolar();
+  document.getElementById('toggle-line').addEventListener('click', e => {
+    const on = e.target.classList.toggle('on');
+    drawCart(on); drawPolar(on);
   });
+});
+
+// --- 위젯: 두 동심원 분류 시각화 ---
+function makePoints() {
+  const pts = [];
+  // 안쪽 파랑
+  for (let i = 0; i < 60; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const r = 0.18 + Math.random() * 0.18;
+    pts.push({ x: Math.cos(a)*r, y: Math.sin(a)*r, c: 'blue' });
+  }
+  // 바깥쪽 빨강
+  for (let i = 0; i < 80; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const r = 0.55 + Math.random() * 0.20;
+    pts.push({ x: Math.cos(a)*r, y: Math.sin(a)*r, c: 'red' });
+  }
+  return pts;
+}
+const PTS = makePoints();
+
+function styleColor(c) {
+  if (c==='blue') return getComputedStyle(document.documentElement).getPropertyValue('--structure').trim();
+  return getComputedStyle(document.documentElement).getPropertyValue('--style').trim();
+}
+
+function drawCart(showLine=true) {
+  const cv = document.getElementById('cart');
+  const ctx = cv.getContext('2d');
+  const W = cv.width = cv.clientWidth;
+  const H = cv.height = cv.clientHeight;
+  ctx.clearRect(0,0,W,H);
+  // 축
+  ctx.strokeStyle = 'rgba(38,34,28,.18)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(W/2, 10); ctx.lineTo(W/2, H-10);
+  ctx.moveTo(10, H/2); ctx.lineTo(W-10, H/2);
+  ctx.stroke();
+  // 직선 분리선 시도 (어떤 직선도 실패함을 보여주기 위한 예시 — y = 0)
+  if (showLine) {
+    ctx.strokeStyle = 'rgba(192,73,46,.7)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6,4]);
+    ctx.beginPath();
+    ctx.moveTo(20, H*0.45); ctx.lineTo(W-20, H*0.55);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(192,73,46,.85)';
+    ctx.font = '11px monospace';
+    ctx.fillText('어떤 직선도 실패', 12, 16);
+  }
+  // 점
+  for (const p of PTS) {
+    ctx.fillStyle = styleColor(p.c);
+    ctx.beginPath();
+    ctx.arc(W/2 + p.x*W*0.45, H/2 - p.y*H*0.45, 3, 0, Math.PI*2);
+    ctx.fill();
+  }
+}
+
+function drawPolar(showLine=true) {
+  const cv = document.getElementById('polar');
+  const ctx = cv.getContext('2d');
+  const W = cv.width = cv.clientWidth;
+  const H = cv.height = cv.clientHeight;
+  ctx.clearRect(0,0,W,H);
+  // 축
+  ctx.strokeStyle = 'rgba(38,34,28,.18)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(W/2, 10); ctx.lineTo(W/2, H-10);
+  ctx.moveTo(10, H/2); ctx.lineTo(W-10, H/2);
+  ctx.stroke();
+  // 라벨
+  ctx.fillStyle = 'rgba(94,82,71,.85)';
+  ctx.font = '11px monospace';
+  ctx.fillText('θ →', W-30, H/2+14);
+  ctx.fillText('r ↑', W/2+6, 18);
+  // r = c 분리선
+  if (showLine) {
+    ctx.strokeStyle = 'rgba(45,91,122,.8)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6,4]);
+    const yLine = H/2 - 0.45 * H * 0.45;
+    ctx.beginPath();
+    ctx.moveTo(20, yLine); ctx.lineTo(W-20, yLine);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(45,91,122,.9)';
+    ctx.font = '11px monospace';
+    ctx.fillText('r = c 로 단번에 분리', 12, 16);
+  }
+  // 점 — (θ, r) 좌표로 매핑: x = θ, y = r
+  for (const p of PTS) {
+    const r = Math.sqrt(p.x*p.x + p.y*p.y);
+    const th = Math.atan2(p.y, p.x); // -π..π
+    const px = W/2 + (th / Math.PI) * W * 0.45;
+    const py = H/2 - r * H * 0.45;
+    ctx.fillStyle = styleColor(p.c);
+    ctx.beginPath();
+    ctx.arc(px, py, 3, 0, Math.PI*2);
+    ctx.fill();
+  }
+}
 </script>
 </body>
 </html>

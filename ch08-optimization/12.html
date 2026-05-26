@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>12 · 초기화 2 — Xavier·He, 분산 균형</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .init-stage { padding: 1.2rem 1.1rem 1rem; }
+  .init-svg { display: block; width: 100%; max-width: 720px; margin: 0 auto; height: 340px; }
+  .init-pick { display: flex; gap: .4rem; flex-wrap: wrap; justify-content: center; padding: .6rem 1.1rem; border-top: 1px solid var(--line-soft); }
+  .init-pick .btn.ghost.on { background: var(--style); color: #fff; border-color: var(--style); }
+  .init-legend { display: flex; gap: 1.2rem; justify-content: center; padding: .4rem 1rem .8rem; flex-wrap: wrap; font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a class="home" href="index.html">← Ch.08 최적화</a>
+  <span class="ch-mini">SUB 12 / 17</span>
+</div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol id="navlist"></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 12 · 활성값과 기울기의 분산을 동시에 맞춘다</span>
+      <h1>층을 지나도 신호가 그대로,<br><span class="t-style">Xavier와 He</span>의 분산 균형 공식</h1>
+      <p class="lede">대칭성을 깨는 것만으로는 부족하다. 가중치의 분산까지 정확히 맞춰야 깊은 네트워크에서 신호가 소실되지도 폭발하지도 않는다. Xavier·He는 그 분산을 분석으로 유도한 공식들이다.</p>
+    </header>
+
+    <div class="prose">
+
+      <p>11번 절에서 본 대칭성 깨기는 신경망 학습의 필요조건이지만 충분조건은 아니다. 단순히 작은 무작위 값으로 초기화하면 — 예: $W \sim \mathcal{N}(0, 0.01^2)$ — 대칭성은 깨지지만 깊은 네트워크에서 신호가 빠르게 소실된다. 반대로 큰 무작위 값으로 초기화하면 신호와 기울기가 폭발한다. 정확한 분산을 맞추는 것이 핵심이다.</p>
+
+      <p>2010년 Xavier Glorot와 Yoshua Bengio가 제안한 <strong>Xavier 초기화(Glorot 초기화)</strong>는 이 분산을 분석적으로 유도한 첫 공식이다. 그 뒤 2015년 Kaiming He 등이 ReLU에 맞춘 <strong>He 초기화(Kaiming 초기화)</strong>를 제안했다. 이 절은 두 공식의 유도 직관과 어느 경우에 어느 것을 쓰는지를 본다.</p>
+
+      <h2>이상적 조건 — 활성값과 기울기 분산의 보존</h2>
+
+      <p>좋은 초기화의 목표는 한 줄로 정리된다. <strong>층을 지나도 활성값의 분산과 기울기의 분산이 일정하게 유지되어야 한다.</strong> 분산이 매 층마다 일정하면, 깊은 네트워크에서도 신호가 소실되거나 폭발하지 않는다.</p>
+
+      <p>활성값 분산을 보존하려면, 한 층의 입력 분산 $\sigma_{\text{in}}^2$이 출력 분산 $\sigma_{\text{out}}^2$와 같아야 한다. 선형 변환 $y = Wx$에서 $W$의 각 원소가 독립이고 평균 0이라면, $\mathrm{Var}(y_i) = m \cdot \mathrm{Var}(W) \cdot \sigma_{\text{in}}^2$이다($m$은 입력 차원). 분산이 보존되려면 $\mathrm{Var}(W) = 1/m$이어야 한다.</p>
+
+      <p>그런데 역전파의 기울기 분산도 비슷하게 보존되어야 한다. 기울기 역전파의 식 $\nabla x = W^\top \nabla y$를 같은 방식으로 분석하면 $\mathrm{Var}(W) = 1/n$이어야 한다($n$은 출력 차원). 두 조건은 일반적으로 동시에 만족할 수 없다 — 입력과 출력 차원이 다르기 때문이다.</p>
+
+      <h2>Xavier 초기화 — 두 요구의 타협</h2>
+
+      <p>Xavier 초기화는 두 조건의 조화 평균 비슷한 타협을 한다.</p>
+
+      <div class="math-block">$$ W_{i,j} \sim U\left(-\sqrt{\frac{6}{m+n}},\, \sqrt{\frac{6}{m+n}}\right), \quad \text{또는} \quad W \sim \mathcal{N}\left(0,\, \frac{2}{m+n}\right) $$</div>
+      <p class="math-note">Xavier (Glorot) 초기화. $m$은 입력 차원(fan-in), $n$은 출력 차원(fan-out). 균등분포 또는 정규분포 형태.</p>
+
+      <p>왜 분산이 $2/(m+n)$인가? 두 조건 $1/m$과 $1/n$의 산술 평균을 취하면 $1/(m+n)/2 \cdot 2 = 2/(m+n)$이다. 균등분포 $U(-a, a)$의 분산이 $a^2/3$이므로, $a = \sqrt{6/(m+n)}$이 나온다.</p>
+
+      <p>이 공식은 한 가지 가정을 한다 — "활성화 함수가 선형이다." 실제 신경망은 비선형 활성화(시그모이드, tanh, ReLU)를 쓰므로 가정이 깨진다. 그래도 tanh 같은 활성화에서는 Xavier가 잘 작동한다. tanh가 작은 입력에서 거의 선형이라 가정이 근사적으로 성립하기 때문이다.</p>
+
+      <h2>He 초기화 — ReLU 보정</h2>
+
+      <p>ReLU는 입력의 절반(음수)을 0으로 만든다. 그래서 ReLU 출력의 분산은 입력 분산의 약 절반이다. Xavier 공식 그대로 쓰면 분산이 매 층마다 절반씩 줄어들어 신호가 소실된다.</p>
+
+      <p>이를 보정하기 위해 He(Kaiming) 초기화는 분산을 두 배로 키운다.</p>
+
+      <div class="math-block">$$ W \sim \mathcal{N}\left(0,\, \frac{2}{m}\right), \quad \text{ReLU 활성화에 맞춘 초기화} $$</div>
+      <p class="math-note">He 초기화. 분모에 $m+n$ 대신 $m$만 사용. ReLU의 분산 절반 손실을 분산을 두 배로 키워 보정.</p>
+
+      <p>현대 딥러닝에서 ReLU 계열(ReLU, LeakyReLU, ELU, GELU)이 표준이므로, He 초기화가 사실상 기본 선택이다. PyTorch의 `nn.init.kaiming_normal_`, TensorFlow의 `tf.keras.initializers.HeNormal` 등이 모두 이 공식이다.</p>
+
+      <h2>잘못된 초기화 4종 비교 — 활성값 분산이 어떻게 변하는가</h2>
+
+      <p>아래 위젯은 30층 ReLU 네트워크에 표준 정규 입력을 통과시키며 각 층의 활성값 분산을 측정한다. 4종 초기화를 비교한다.</p>
+
+      <ul>
+        <li><strong>너무 작음 ($\sigma=0.01$):</strong> 신호가 빠르게 소실. 1층부터 거의 0.</li>
+        <li><strong>너무 큼 ($\sigma=1.0$):</strong> 신호가 폭발. 수치 한계 초과.</li>
+        <li><strong>Xavier ($2/(m+n)$):</strong> ReLU에서 절반 손실로 느린 소실.</li>
+        <li><strong>He ($2/m$):</strong> ReLU에 맞춰 분산이 일정 유지. 안정.</li>
+      </ul>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 12</span><span>30층 ReLU 네트워크 — 4종 초기화의 활성값 분산</span></div>
+        <div class="init-stage">
+          <svg class="init-svg" id="initSvg" viewBox="0 0 720 340"></svg>
+        </div>
+        <div class="init-pick">
+          <button class="btn ghost" data-init="tiny">너무 작은 $(\sigma=0.01)$</button>
+          <button class="btn ghost" data-init="big">너무 큰 $(\sigma=1.0)$</button>
+          <button class="btn ghost on" data-init="xavier">Xavier $2/(m+n)$</button>
+          <button class="btn ghost" data-init="he">He $2/m$</button>
+        </div>
+        <div class="init-legend">
+          <span style="color:var(--ink-faint)">30층 완전연결 ReLU 네트워크, fan-in = fan-out = 128, 입력 = N(0,1)</span>
+        </div>
+      </div>
+      <p class="widget-cap">y축 = log10(활성값 분산). 너무 작은 초기화는 빨리 0으로 가라앉고, 너무 큰 초기화는 폭발한다. Xavier는 ReLU에서 분산이 절반씩 줄어 천천히 소실. He만 분산이 일정하게 유지된다 — 그래서 깊은 ReLU 네트워크의 표준.</p>
+    </div>
+
+    <div class="prose">
+
+      <h2>실전 — PyTorch/TensorFlow 기본값</h2>
+
+      <p>PyTorch의 `nn.Linear` 기본 초기화는 $W \sim U(-1/\sqrt{m}, 1/\sqrt{m})$이다. Xavier보다 약간 보수적이지만 일반적으로 잘 작동한다. 더 정확하게 하려면 명시적으로 `kaiming_normal_` 또는 `xavier_normal_`을 적용한다.</p>
+
+      <p>현대 모델(ResNet, Transformer 등)은 더 정교한 초기화를 쓴다. Transformer는 보통 $W \sim \mathcal{N}(0, 0.02^2)$ 같은 작은 분산을 쓰는데, 이는 다양한 정규화 기법(LayerNorm, residual scaling 등)과 결합해 작동한다. ResNet은 residual block의 마지막 BN의 $\gamma$를 0으로 초기화해 "처음에는 identity로 동작"하게 만드는 트릭을 쓴다.</p>
+
+      <p>요약하면, 표준 He 초기화는 깊은 ReLU 네트워크의 좋은 기본값이고, 특수한 구조(트랜스포머 등)에서는 그 구조에 맞는 변형이 쓰인다. 그리고 다음 절에서 볼 배치 정규화(batch normalization)는 잘못된 초기화의 효과를 어느 정도 자동으로 보정해 준다.</p>
+
+      <h2>시험 답안 핵심</h2>
+
+      <p>Xavier·He가 시험에 나오면 다음 세 가지를 적자. 첫째, <strong>활성값과 기울기 분산을 동시에 보존</strong>. 둘째, <strong>Xavier: $\mathrm{Var}(W) = 2/(m+n)$, 입력·출력 차원의 평균 — tanh에 적합</strong>. 셋째, <strong>He: $\mathrm{Var}(W) = 2/m$, ReLU의 절반 손실 보정 — 현대 표준</strong>. fan-in $m$, fan-out $n$ 표기를 정확히.</p>
+    </div>
+
+    <nav class="ch-foot" id="chFoot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'순수 vs ML 최적화' }, { no:'02', t:'학습의 장애물' }, { no:'03', t:'미니배치 SGD 1' }, { no:'04', t:'미니배치 SGD 2' },
+    { no:'05', t:'학습률의 의미' }, { no:'06', t:'모멘텀 1' }, { no:'07', t:'모멘텀 2 (네스테로프)' }, { no:'08', t:'적응 1 (AdaGrad)' },
+    { no:'09', t:'적응 2 (RMSProp)' }, { no:'10', t:'적응 3 (Adam)' }, { no:'11', t:'초기화 1 (대칭성)' }, { no:'12', t:'초기화 2 (Xavier·He)' },
+    { no:'13', t:'배치 정규화 1' }, { no:'14', t:'배치 정규화 2' }, { no:'15', t:'학습률 스케줄' }, { no:'16', t:'기울기 클리핑' },
+    { no:'17', t:'시험 대비' },
+  ];
+  const CUR = '12';
+  const navlist = document.getElementById('navlist');
+  SUBS.forEach(s => { const li = document.createElement('li'); li.innerHTML = `<a href="${s.no}.html"${s.no===CUR?' class="current"':''}>${s.t}</a>`; navlist.appendChild(li); });
+  const chFoot = document.getElementById('chFoot');
+  const idx = SUBS.findIndex(s => s.no === CUR);
+  const prev = idx > 0 ? SUBS[idx-1] : { no:'index', t:'표지로' };
+  const next = idx < SUBS.length-1 ? SUBS[idx+1] : { no:'index', t:'표지로' };
+  chFoot.innerHTML = `<a href="${prev.no}.html"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` + `<a href="${next.no}.html" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
+        throwOnError: false,
+      });
+    }
+  });
+
+  // 4종 초기화 위젯
+  (function () {
+    const svg = document.getElementById('initSvg');
+    const W = 720, H = 340, PAD = 50;
+    const LAYERS = 30;
+    const DIM = 128;
+    const inits = {
+      tiny: { label: '너무 작은 (σ=0.01)' },
+      big: { label: '너무 큰 (σ=1.0)' },
+      xavier: { label: 'Xavier 2/(m+n)' },
+      he: { label: 'He 2/m' },
+    };
+
+    function relu(x) { return Math.max(0, x); }
+    function gaussian(sigma) {
+      const u = Math.random(), v = Math.random();
+      return Math.sqrt(-2*Math.log(u)) * Math.cos(2*Math.PI*v) * sigma;
+    }
+
+    function simulate(initKey) {
+      let x = new Float32Array(DIM);
+      for (let i = 0; i < DIM; i++) x[i] = gaussian(1);
+      const variances = [];
+      const inMean = x.reduce((a,b)=>a+b,0)/DIM;
+      const inVar = x.reduce((a,b)=>a+(b-inMean)*(b-inMean),0)/DIM;
+      variances.push(inVar);
+      for (let l = 0; l < LAYERS; l++) {
+        let sigma;
+        if (initKey === 'tiny') sigma = 0.01;
+        else if (initKey === 'big') sigma = 1.0;
+        else if (initKey === 'xavier') sigma = Math.sqrt(2.0 / (DIM + DIM));
+        else sigma = Math.sqrt(2.0 / DIM);
+        const y = new Float32Array(DIM);
+        for (let i = 0; i < DIM; i++) {
+          let s = 0;
+          for (let j = 0; j < DIM; j++) s += gaussian(sigma) * x[j];
+          y[i] = relu(s);
+        }
+        x = y;
+        const m = x.reduce((a,b)=>a+b,0)/DIM;
+        const v = x.reduce((a,b)=>a+(b-m)*(b-m),0)/DIM;
+        variances.push(v);
+      }
+      return variances;
+    }
+
+    function render(initKey) {
+      const v = simulate(initKey);
+      const logV = v.map(x => Math.log10(Math.max(x, 1e-30)));
+      const yMin = -20, yMax = 5;
+      function xPx(i) { return PAD + i / LAYERS * (W - 2*PAD); }
+      function yPx(lv) { return H - PAD - (lv - yMin) / (yMax - yMin) * (H - 2*PAD); }
+      let html = '';
+      html += `<line x1="${PAD}" y1="${H-PAD}" x2="${W-PAD}" y2="${H-PAD}" stroke="#8E8576" stroke-width="1"/>`;
+      html += `<line x1="${PAD}" y1="${PAD}" x2="${PAD}" y2="${H-PAD}" stroke="#8E8576" stroke-width="1"/>`;
+      for (let lv = -20; lv <= 5; lv += 5) {
+        html += `<line x1="${PAD}" y1="${yPx(lv)}" x2="${W-PAD}" y2="${yPx(lv)}" stroke="#8E8576" stroke-width="0.5" opacity="0.3"/>`;
+        html += `<text x="${PAD-8}" y="${yPx(lv)+4}" font-family="Spline Sans Mono, monospace" font-size="10" fill="#5A5247" text-anchor="end">10^${lv}</text>`;
+      }
+      html += `<rect x="${PAD}" y="${yPx(2)}" width="${W-2*PAD}" height="${yPx(-2)-yPx(2)}" fill="#A47B2E" opacity="0.08"/>`;
+      html += `<text x="${W-PAD-5}" y="${yPx(0)+4}" font-family="Spline Sans Mono, monospace" font-size="10" fill="#A47B2E" text-anchor="end">안정 영역</text>`;
+      let p = `M ${xPx(0)},${yPx(logV[0])}`;
+      for (let i = 1; i < logV.length; i++) p += ` L ${xPx(i)},${yPx(logV[i])}`;
+      html += `<path d="${p}" stroke="#2D5B7A" stroke-width="2.2" fill="none"/>`;
+      logV.forEach((lv, i) => {
+        html += `<circle cx="${xPx(i)}" cy="${yPx(lv)}" r="2.5" fill="#2D5B7A"/>`;
+      });
+      html += `<text x="${W-PAD-5}" y="${H-PAD+22}" font-family="Spline Sans Mono, monospace" font-size="11" fill="#5A5247" text-anchor="end">층 깊이</text>`;
+      html += `<text x="${PAD+5}" y="${PAD+14}" font-family="Spline Sans Mono, monospace" font-size="11" fill="#5A5247">활성값 분산 (log10)</text>`;
+      html += `<text x="${PAD+10}" y="${H-PAD-15}" font-family="Spline Sans Mono, monospace" font-size="11" fill="#C0492E" font-weight="600">${inits[initKey].label}</text>`;
+      svg.innerHTML = html;
+    }
+
+    document.querySelectorAll('.init-pick .btn').forEach(b => {
+      b.addEventListener('click', () => {
+        document.querySelectorAll('.init-pick .btn').forEach(x => x.classList.remove('on'));
+        b.classList.add('on');
+        render(b.dataset.init);
+      });
+    });
+    render('xavier');
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>09 · 고유분해 2 — 대칭 행렬과 PCA</title>
+<link rel="stylesheet" href="./assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 09 · 가장 좋은 행렬 + 데이터의 주축</span>
+      <h1>고유분해 2 —<br><span class="t-structure">대칭과 PCA</span></h1>
+      <p class="lede">대칭 행렬은 “가장 좋은 행렬”이다. 모든 고유값이 실수, 모든 고유벡터가 직교. PCA(주성분 분석)는 이 사실 위에 세워진다.</p>
+    </header>
+
+    <div class="prose">
+      <p>이 sub의 한 줄은 다음이다. <strong>대칭 행렬은 항상 “직교 좌표계로의 회전 + 그 좌표계에서의 스케일 + 다시 회전”으로 분해된다. 그리고 데이터의 공분산 행렬은 항상 대칭이므로, 이 분해를 데이터에 적용하면 PCA(principal component analysis)가 된다.</strong> Chapter 13의 핵심을 미리 만져 두는 셈이다.</p>
+
+      <h2>스펙트럼 정리(spectral theorem)</h2>
+      <p>대칭 행렬에 대한 가장 중요한 결과는 다음이다.</p>
+
+      <div class="math-block">$$ A = A^\top \;\;\Rightarrow\;\; A = Q \Lambda Q^\top $$</div>
+      <p class="math-note">대칭 A는 직교행렬 Q와 대각행렬 Λ로 분해. Q⁻¹ = Qᵀ.</p>
+
+      <p>두 가지가 중요하다. 첫째, $Q$가 단순한 “행렬 V”가 아니라 <strong>직교 행렬</strong>이라는 점이다. <a href="06.html">sub 06</a>에서 직교 행렬은 “길이와 각도를 보존하는 변환”이라 했다. 둘째, 그러므로 $Q^{-1} = Q^\top$이 되어 일반 고유분해의 $V^{-1}$이 깔끔하게 $Q^\top$으로 바뀐다. 수치적으로도 안정적이고, 표기도 깔끔하다.</p>
+
+      <h2>대칭 행렬의 세 가지 좋은 성질</h2>
+
+      <h3>① 모든 고유값이 실수</h3>
+      <p>일반 행렬은 복소수 고유값을 가질 수 있다(<a href="08.html">sub 08</a>의 위젯에서 행렬 1번이 복소 고유값을 가졌다). 그러나 대칭 행렬의 고유값은 항상 실수다. 그래서 “이 방향으로 $\lambda$배 늘인다”라는 기하학적 해석이 항상 가능하다.</p>
+
+      <h3>② 다른 고유값에 해당하는 고유벡터는 서로 직교</h3>
+      <p>$A\mathbf{v}_1 = \lambda_1 \mathbf{v}_1, A\mathbf{v}_2 = \lambda_2 \mathbf{v}_2$이고 $\lambda_1 \neq \lambda_2$라면 $\mathbf{v}_1 \cdot \mathbf{v}_2 = 0$. 즉 두 고유 방향이 직각으로 떨어져 있다.</p>
+
+      <h3>③ 같은 고유값에 해당하는 고유공간 안에서도 직교 기저를 잡을 수 있다</h3>
+      <p>고유값이 중복(degenerate)되는 경우에도, 그 고유공간 내부에서 그람-슈미트(Gram-Schmidt) 직교화로 직교 기저를 잡을 수 있다. 결국 모든 고유벡터를 직교하게 잡을 수 있고, 그것들이 $Q$의 열들이 된다.</p>
+
+      <div class="analogy">
+        대칭 행렬을 <b>완벽하게 균형 잡힌 회전 의자</b>라고 상상해 보자. 일반 행렬은 “비뚤어진 의자”라 어떤 방향으로 앉으면 비틀려 보이지만, 대칭 행렬은 모든 방향이 정확히 직각으로 정렬된 “수학적으로 가장 안정된 모양”이다. 이 안정성 덕분에 어떤 비뚤어진 행렬도 “대칭 부품”으로 변환해 다룰 수 있다(SVD가 정확히 이 일을 한다).
+      </div>
+
+      <h2>대칭 행렬이 신경망에 등장하는 자리</h2>
+      <p>대칭 행렬이 머신러닝과 신경망에서 왜 그토록 자주 등장할까? 세 가지 대표적 자리가 있다.</p>
+
+      <ul>
+        <li><strong>공분산 행렬</strong> $C = X^\top X / N$ — 데이터의 분포 모양을 잰다.</li>
+        <li><strong>그람 행렬</strong> $G = X X^\top$ — 데이터 샘플 쌍 사이의 점 곱들을 모은 표.</li>
+        <li><strong>헤시안 행렬</strong> $H = \nabla^2 f$ — 함수의 2차 도함수. 항상 대칭(편미분 순서 무관).</li>
+      </ul>
+
+      <p>이 세 가지가 “데이터의 통계 구조”와 “손실 함수의 곡률”을 알려 주는 핵심 도구다. 대칭 행렬을 잘 다루지 못하면 PCA, 가우시안 분포, 최적화 이론, 자연 기울기(natural gradient) 같은 개념이 모두 막막해진다.</p>
+
+      <h2>스펙트럼 분해의 “바깥곱” 표현</h2>
+      <p>$A = Q \Lambda Q^\top$를 풀어 적으면 다음과 같이 “고유 트리플의 합”으로 표현된다.</p>
+
+      <div class="math-block">$$ A = \sum_{i=1}^{n} \lambda_i \mathbf{q}_i \mathbf{q}_i^\top $$</div>
+      <p class="math-note">각 항이 “바깥곱(outer product)” — 열벡터 × 행벡터 = 행렬 한 장.</p>
+
+      <p>각 항 $\mathbf{q}_i \mathbf{q}_i^\top$는 “랭크 1인 대칭 행렬”이다. 즉 행렬 $A$는 “$n$개의 랭크 1 조각”의 가중합이고, 각 조각의 무게가 고유값 $\lambda_i$다. 이 사실이 <a href="11.html">sub 11</a>의 SVD 저랭크 근사로 자연스럽게 이어진다. “$\lambda_i$가 큰 조각만 남기고 작은 조각은 버리면, 원래 행렬과 비슷한 근사가 된다.”</p>
+
+      <h2>PCA — 데이터의 주축을 찾아서</h2>
+      <p>이제 PCA로 가자. $N$개의 데이터 샘플을 $d$차원 벡터로 모은 설계 행렬 $X \in \mathbb{R}^{N \times d}$가 있다고 하자(각 행이 한 샘플, 각 열이 한 특징). 이 데이터를 “가장 잘 설명하는 새로운 좌표계”를 찾고 싶다.</p>
+
+      <p>“가장 잘 설명한다”의 정의가 무엇일까? PCA가 사용하는 정의는 “데이터의 분산(variance)이 가장 큰 방향”이다. 데이터가 가장 길게 늘어선 방향이 “주성분 1번(PC1)”, 그 다음으로 길게 늘어선 직각 방향이 “주성분 2번(PC2)”, ... 이런 식으로 $d$개의 직교 주축을 찾는다.</p>
+
+      <h3>한 줄로 적힌 PCA</h3>
+      <p>알고리즘은 놀랍게도 한 줄로 요약된다.</p>
+
+      <ol>
+        <li>데이터를 평균 0으로 정렬한다.</li>
+        <li>공분산 행렬 $C = X^\top X / N$를 계산한다.</li>
+        <li>$C$의 고유분해 $C = Q \Lambda Q^\top$를 한다.</li>
+        <li>$\lambda_i$가 큰 순서대로 정렬한다. 그 순서의 고유벡터들이 주성분이다.</li>
+      </ol>
+
+      <p>왜 이렇게 되는가? 한 방향 $\mathbf{w}$로 데이터를 사영(projection)했을 때의 분산은 $\mathbf{w}^\top C \mathbf{w}$다(여기서 $\mathbf{w}$는 단위벡터). 이 값을 최대로 만드는 $\mathbf{w}$를 찾는 문제는 “라그랑주 승수법(Lagrange multiplier)”으로 풀면 정확히 “$C$의 가장 큰 고유값에 해당하는 고유벡터”로 답이 나온다.</p>
+
+      <div class="math-block">$$ \max_{\|\mathbf{w}\|=1} \mathbf{w}^\top C \mathbf{w} \;\;\Rightarrow\;\; \mathbf{w} = \mathbf{q}_1 \;\; (\text{largest eigenvalue } \lambda_1) $$</div>
+      <p class="math-note">최대 분산 방향 = 공분산의 최대 고유벡터. 라그랑주로 직접 유도 가능.</p>
+
+      <h3>차원 축소</h3>
+      <p>처음 $k$개의 주성분만 남기면 “데이터를 $k$차원으로 압축”할 수 있다. 분산이 큰 $k$개 방향만 남기고 나머지는 “잡음”으로 간주해 버리는 것이다. 보존되는 분산의 비율은 다음과 같이 계산된다.</p>
+
+      <div class="math-block">$$ \text{보존 분산} = \frac{\lambda_1 + \cdots + \lambda_k}{\lambda_1 + \cdots + \lambda_d} $$</div>
+      <p class="math-note">상위 k개 고유값의 합 ÷ 전체 합. PCA 선택의 기준.</p>
+
+      <p>실무에서는 “총 분산의 95%를 보존하는 가장 작은 $k$”를 자주 선택한다. 그러면 데이터의 거의 모든 정보를 유지하면서도 차원을 크게 줄일 수 있다.</p>
+
+      <div class="example">
+        <b>MNIST 손글씨 PCA</b>. 28×28 = 784차원의 손글씨 이미지를 PCA로 분석하면, 첫 50개 주성분이 전체 분산의 약 95%를 설명한다. 즉 784차원을 50차원으로 줄여도 “이 숫자가 무엇인지” 거의 다 알 수 있다. PCA가 찾은 50개 방향은 “손글씨가 가장 많이 변하는 50가지 패턴”에 해당한다. 그림으로 그리면 “굵기, 기울기, 위치, 모양” 같은 직관적인 변화들이 보인다.
+      </div>
+
+      <h2>PCA의 한계</h2>
+      <p>PCA는 매우 강력하지만 만능은 아니다. 두 가지 가정에 기댄다.</p>
+
+      <ul>
+        <li>“데이터의 중요한 구조는 분산이 큰 방향에 있다.” 그러나 어떤 문제에서는 “작게 흔들리는 디테일”이 더 중요하다.</li>
+        <li>“데이터는 선형 부분공간에 놓여 있다.” 곡선이나 매니폴드(manifold) 구조는 PCA가 잘 못 잡는다.</li>
+      </ul>
+
+      <p>그래서 비선형 차원 축소법들(t-SNE, UMAP, kernel PCA, autoencoder)이 발전해 왔다. 그러나 PCA는 여전히 “가장 먼저 해 보는 baseline”이고, 결과를 해석하기에 가장 직관적이다.</p>
+
+      <div class="analogy">
+        PCA는 <b>옷장 정리</b>다. 옷을 “가장 많이 입는 순서”로 정렬해 위쪽에 둔다. 윗자리 5벌만 보면 그 사람의 평소 스타일이 거의 다 보인다. 옷의 본래 색·소재·디자인은 모두 그대로지만, “꺼내기 쉬운 순서”라는 새 좌표계로 옮긴 것이다. 데이터의 모든 정보를 잃지 않고, 더 유용한 순서로 재배치하는 일이 PCA가 하는 일이다.
+      </div>
+
+      <h2>positive semi-definite 행렬과의 관계</h2>
+      <p>공분산 행렬 $C = X^\top X / N$은 단순히 대칭일 뿐만 아니라 “양의 준정부호(positive semi-definite, PSD)”다. 즉 모든 고유값이 $\geq 0$이다.</p>
+
+      <div class="math-block">$$ \mathbf{w}^\top C \mathbf{w} = \mathbf{w}^\top X^\top X \mathbf{w} / N = \|X\mathbf{w}\|^2 / N \geq 0 $$</div>
+      <p class="math-note">자기 자신과 자기 자신의 내적은 항상 ≥ 0. 그러므로 모든 고유값도 ≥ 0.</p>
+
+      <p>분산은 음수가 될 수 없으므로 이 사실은 직관적으로도 당연하다. 그 결과 PCA의 “보존 분산 비율”도 항상 0에서 1 사이가 보장된다.</p>
+
+      <h2>Rayleigh 몫과 일반화 고유값</h2>
+      <p>PCA의 “분산 최대화” 같은 문제를 일반화하면 “레일리 몫(Rayleigh quotient)”의 최적화 문제가 된다.</p>
+
+      <div class="math-block">$$ R(\mathbf{w}) = \frac{\mathbf{w}^\top A \mathbf{w}}{\mathbf{w}^\top \mathbf{w}} $$</div>
+      <p class="math-note">대칭 A에 대한 Rayleigh 몫. 최댓값 = 최대 고유값, 최솟값 = 최소 고유값.</p>
+
+      <p>레일리 몫의 최댓값이 정확히 $A$의 최대 고유값이고, 최솟값이 최소 고유값이다. 이 사실이 “최대 고유벡터 = 최대 분산 방향”의 일반화다. 또한 “일반화 고유값 문제 $A\mathbf{w} = \lambda B \mathbf{w}$”는 LDA(linear discriminant analysis), kernel methods, normal modes 분석 등에서 끊임없이 등장한다.</p>
+
+      <h2>이번 sub의 한 줄 요약</h2>
+      <p>“대칭 행렬은 직교 분해된다 → PCA가 가능하다.” 이 사실이 데이터 분석과 차원 축소의 시작이다. <a href="10.html">다음 sub</a>에서는 “대칭이 아니라 직사각형 행렬에도 적용되는 분해” — SVD(특이값 분해, singular value decomposition) — 로 넘어간다. SVD는 “모든 행렬에 적용되는 가장 일반적인 분해 도구”다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script src="./assets/widgets.js"></script>
+<script>
+  window.addEventListener('load', () => { NST.buildNav('09'); });
+</script>
+</body>
+</html>

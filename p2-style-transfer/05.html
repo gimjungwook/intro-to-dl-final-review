@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>05 · 스타일 손실과 전체 손실</title>
+<link rel="stylesheet" href="assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Chapter 05 · 두 손실의 줄다리기</span>
+      <h1><span class="t-style">스타일 손실</span>과<br>전체 손실의 협상</h1>
+      <p class="lede">스타일은 한 층으로 부족하다. 여러 층의 Gram을 가중합하고, 콘텐츠 손실과 더해 α와 β의 균형으로 결과를 조율한다.</p>
+    </header>
+
+    <div class="prose">
+      <p>4장에서 스타일을 <span class="t-style">Gram 행렬</span> $G^l$로 표현했다. 이제 “스타일이 얼마나 비슷한가”를 손실로 만든다. 스타일 이미지를 $a$라 하고, 그 Gram 행렬을 $A^l$, 생성 이미지의 Gram 행렬을 $G^l$이라 하자. 한 층 $l$에서의 스타일 차이는 다음과 같다.</p>
+
+      <div class="math-block">$$ E_l = \frac{1}{4N_l^2 M_l^2}\sum_{i,j}\left(G_{ij}^{l} - A_{ij}^{l}\right)^2 $$</div>
+
+      <p>구조는 콘텐츠 손실과 똑같다 — 차이의 제곱합이다. 다른 점은 단 하나, feature map 자체가 아니라 <strong>feature map에서 만든 Gram 행렬을 비교</strong>한다는 것이다.</p>
+      <table class="symbols">
+        <tr><td>$G_{ij}^{l}$</td><td>생성 이미지의 $l$층 Gram 행렬 원소 (필터 $i$–$j$ 동시 출현)</td></tr>
+        <tr><td>$A_{ij}^{l}$</td><td>스타일 이미지의 같은 Gram 행렬 원소</td></tr>
+        <tr><td>$G-A$</td><td>두 이미지의 필터 상관관계 차이</td></tr>
+        <tr><td>$\sum_{i,j}$</td><td>모든 필터 쌍의 상관관계 차이를 합산</td></tr>
+        <tr><td>$4N_l^2 M_l^2$</td><td>층 크기가 커도 손실 규모가 폭주하지 않도록 하는 정규화 상수</td></tr>
+      </table>
+
+      <p>정규화 상수 $4N_l^2 M_l^2$가 왜 필요한지만 짚고 가자. Gram 원소는 $M_l$개 위치를 더한 값이라, 위치가 많은 큰 층일수록 숫자 자체가 거대해진다. 그 큰 숫자를 그대로 제곱해 더하면 큰 층 하나가 손실 전체를 압도해 버린다. $N_l^2 M_l^2$로 나누는 것은 <em>모든 층을 공정한 저울에 올려놓기 위한 보정</em>이다.</p>
+
+      <h2>스타일은 여러 층을 동시에 본다</h2>
+      <p>스타일은 한 층만으로 충분하지 않다. 얕은 층은 색·에지·작은 질감 같은 <strong>작은 스케일</strong>의 스타일을 잡고, 깊은 층은 더 큰 질감 구조와 복잡한 패턴을 잡는다. 그래서 논문은 여러 층의 스타일 손실을 가중합한다.</p>
+      <div class="math-block">$$ \mathcal{L}_{style}(a, x) = \sum_{l=0}^{L} w_l\, E_l $$</div>
+      <p class="math-note">w_l = 각 층의 스타일 손실에 주는 가중치. 보통 conv1_1, conv2_1, conv3_1, conv4_1, conv5_1을 함께 사용.</p>
+      <p>$w_l$은 각 층의 스타일을 얼마나 중요하게 볼지 정하는 가중치다. 낮은 층만 쓰면 작은 질감은 잘 옮겨지지만 큰 구조의 스타일은 약하고, 높은 층까지 포함하면 더 큰 스케일의 패턴이 반영된다.</p>
+
+      <div class="analogy">
+        스타일을 옮기는 일은 <b>여러 굵기의 붓을 한 세트로 쓰는 것</b>과 같다. 가는 붓(얕은 층)은 잔 붓질과 색의 결을, 굵은 붓(깊은 층)은 화면 전체를 가로지르는 큰 흐름을 옮긴다. 가는 붓만 쓰면 디테일은 살지만 그림의 “큰 기운”이 빠지고, 굵은 붓만 쓰면 분위기는 있지만 질감이 거칠어진다. $w_l$은 이 붓들의 사용 비율이다.
+      </div>
+
+      <h2>전체 손실: 구조와 질감의 한 식</h2>
+      <p>이제 두 손실을 합친다. 논문의 전체 손실은 놀라울 만큼 단순한 덧셈이다.</p>
+      <div class="math-block">$$ \mathcal{L}_{total}(p, a, x) = \alpha\,\mathcal{L}_{content}(p, x) + \beta\,\mathcal{L}_{style}(a, x) $$</div>
+      <table class="symbols">
+        <tr><td>$p$</td><td>콘텐츠 이미지 — 구조를 제공하는 사진</td></tr>
+        <tr><td>$a$</td><td>스타일 이미지 — 질감과 색감을 제공하는 그림</td></tr>
+        <tr><td>$x$</td><td>생성 이미지 — 알고리즘이 실제로 바꾸는 결과 후보</td></tr>
+        <tr><td>$\alpha$</td><td>콘텐츠를 얼마나 강하게 유지할지</td></tr>
+        <tr><td>$\beta$</td><td>스타일을 얼마나 강하게 입힐지</td></tr>
+      </table>
+
+      <p>덧셈은 단순하지만 의미는 <strong>협상</strong>이다. 콘텐츠 손실만 줄이면 원본 사진처럼 되고, 스타일 손실만 줄이면 스타일 그림의 질감 덩어리처럼 되어 사진 구조가 사라진다. 좋은 스타일 전이는 두 조건을 동시에 어느 정도 만족하는 <span class="t-synth">타협점</span>이다. 아래 위젯에서 $\alpha$와 $\beta$의 비율을 직접 끌어당겨, 구조가 강한 쪽과 질감이 강한 쪽 사이를 오가 보라.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 05</span><span>α/β 줄다리기 — 구조를 지킬까, 질감을 입힐까</span></div>
+        <div id="ab"></div>
+      </div>
+      <p class="widget-cap">왼쪽 두 장은 콘텐츠 $p$와 스타일 $a$, 오른쪽 큰 장이 생성 이미지 $x$다. 슬라이더를 β 쪽으로 밀면 질감이 강해지는 대신 콘텐츠 손실(구조 차이)이 커지고, α 쪽으로 밀면 구조는 또렷해지지만 스타일 손실이 커진다. 두 막대가 동시에 0이 될 수는 없다 — 그래서 “협상”이다.</p>
+    </div>
+
+    <div class="prose">
+      <p>논문 Figure 3의 핵심도 바로 이 지점이다. 열(column)은 $\alpha/\beta$ 비율 변화에 따른 결과 차이를, 행(row)은 어떤 스타일 층들을 포함했는지에 따른 차이를 보여준다. 즉 이 논문은 단순히 “스타일 전이가 된다”만 보인 것이 아니라, <strong>어떤 층과 어떤 가중치가 결과를 어떻게 바꾸는지</strong>까지 체계적으로 보여준다.</p>
+      <p>그런데 한 가지 질문이 남는다. 이 손실을 “줄인다”는 것은 구체적으로 무엇을 바꾸는 일인가? 모델인가, 이미지인가? 다음 장에서 이 논문의 가장 헷갈리는 지점 — <span class="t-synth">학습이 아니라 최적화</span> — 를 정리한다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  window.addEventListener('load', () => {
+    NST.buildNav('05');
+    const a = document.getElementById('ab');
+    NST.onVisible(a, () => NST.alphaBeta(a));
+  });
+</script>
+<script src="assets/widgets.js"></script>
+</body>
+</html>

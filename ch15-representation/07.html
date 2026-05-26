@@ -3,32 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>07 · 시험 대비 — Ch.15</title>
+<title>07 — 도메인 적응 — Ch.15</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
-  /* 논문 연결 카드 */
-  .paper-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; max-width: var(--measure); margin: 1.4rem auto; padding-inline: 1.4rem; }
-  .paper-card { padding: 1.2rem 1.3rem; border-radius: 12px; border: 1px solid var(--line); background: #fff; }
-  .paper-card.p1 { border-left: 3px solid var(--style); background: var(--style-bg); }
-  .paper-card.p2 { border-left: 3px solid var(--structure); background: var(--structure-bg); }
-  .paper-card h4 { margin: 0 0 .4rem; font-family: var(--serif); font-size: 1.1rem; }
-  .paper-card.p1 h4 { color: var(--style); } .paper-card.p2 h4 { color: var(--structure); }
-  .paper-card .tag { font-family: var(--mono); font-size: .68rem; letter-spacing: .04em; color: var(--ink-faint); }
-  .paper-card p { margin: .5rem 0; font-size: .9rem; color: var(--ink-soft); line-height: 1.55; }
-  .paper-card .link { display: inline-block; font-family: var(--mono); font-size: .72rem; margin-top: .5rem; color: var(--ink-soft); }
-  @media (max-width: 640px) { .paper-grid { grid-template-columns: 1fr; } }
-
-  /* Q&A 패널 (P2 디자인 시스템 차용) */
-  .qa-list { max-width: var(--measure); margin: 1.6rem auto; padding-inline: 1.4rem; }
-
-  /* 최종 한 줄 요약 카드 */
-  .oneline { max-width: var(--measure); margin: 2rem auto; padding: 1.4rem 1.6rem; background: linear-gradient(135deg, var(--structure-bg), var(--style-bg)); border: 1px solid var(--line); border-radius: 14px; }
-  .oneline .tag { font-family: var(--mono); font-size: .7rem; letter-spacing: .15em; color: var(--ink-faint); margin-bottom: .6rem; display: block; }
-  .oneline p { margin: 0; font-family: var(--serif); font-size: 1.15rem; line-height: 1.55; color: var(--ink); }
-  .oneline p b { color: var(--structure); }
+  .da-stage { padding: 1.3rem 1.2rem 1rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .da-panel { border: 1px solid var(--line); border-radius: 10px; padding: .9rem; background: #fff; }
+  .da-panel h4 { margin: 0 0 .5rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .12em; color: var(--ink-faint); }
+  .da-panel canvas { display: block; width: 100%; height: 170px; border-radius: 6px; background: var(--paper); }
+  .da-verdict { padding: 1rem 1.2rem; border-top: 1px solid var(--line-soft); background: var(--paper); font-size: .9rem; color: var(--ink-soft); line-height: 1.5; min-height: 4rem; }
+  @media (max-width: 640px) { .da-stage { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
@@ -40,125 +26,64 @@
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Sub 07 · 강의에서 다룬 두 논문이 15장의 어디에 닿는가</span>
-      <h1>시험 대비 — <span class="t-style">P1·P2 논문</span>에서 표상이 어떻게 쓰였는가</h1>
-      <p class="lede">15장의 추상 개념들은 강의 Week 11의 두 논문에서 살아 움직였다. 적대적 예시는 표상 공간의 선형성이 만든 부산물이고, 신경 스타일 전이는 콘텐츠와 텍스처가 표상 공간에서 분리된다는 증거다. 시험은 두 논문을 매개로 15장을 물을 가능성이 높다.</p>
+      <span class="kicker">Sub 07 — 분포가 바뀌면 무엇이 무너지는가</span>
+      <h1>도메인 <span class="t-style">적응</span> — 분포 변화에 어떻게 대응하나</h1>
+      <p class="lede">학습 분포와 테스트 분포가 다르면 모델은 무너진다. 그러나 두 분포가 “어떤 의미로” 다른지에 따라 대처법은 갈린다. 라벨 변화, 입력 변화, 둘 다의 변화 — 도메인 적응은 그 갈래마다 다른 처방을 가진다.</p>
     </header>
 
     <div class="prose">
-      <p>이제 15장의 모든 통찰을 강의에서 다룬 두 논문 — P1 적대적 예시(Goodfellow et al. 2015), P2 신경 스타일 전이(Gatys et al. 2015) — 와 묶어 본다. 시험에서 "15장의 분산 표상 개념을 적용해 P2 결과를 설명하시오"처럼 두 영역을 잇는 문제가 나올 가능성이 매우 높다. 각 논문이 15장의 어떤 절을 정확히 어떻게 사용하는지 외워 두자.</p>
+      <p>지금까지의 전이학습은 “라벨이 다른 두 과제 사이에서 표상을 옮긴다”는 그림이었다. 그러나 현실에서는 라벨 집합이 같지만 분포 자체가 다른 경우가 훨씬 흔하다. 한국에서 학습된 자율주행 모델이 인도에서 동작해야 한다. 낮 사진으로 학습된 객체 검출기가 밤 사진에도 동작해야 한다. 영어로 학습된 감정 분류기가 한국어에도 작동해야 한다. 이 모든 사례에서 “할 일은 같은데 데이터의 모습이 달라졌다.” 이 상황을 다루는 분야가 도메인 적응(domain adaptation)이다.</p>
 
-      <h2>두 논문 ↔ Ch.15 연결 지도</h2>
-    </div>
+      <h2>세 종류의 분포 변화 — 공변량 변동, 라벨 변동, 개념 변동</h2>
+      <p>책과 통계학 문헌은 분포 변화를 세 가지로 갈라 분석한다. 각각이 다른 처방을 요구한다.</p>
+      <p><strong>(1) 공변량 변동(covariate shift).</strong> 입력 분포 $p(x)$만 바뀌고, $p(y \mid x)$는 같다. 예: 같은 카메라로 찍은 사진이지만 한쪽은 한국, 다른 쪽은 인도. 객체와 라벨 사이의 관계는 같다(사람은 어디서 보든 사람이다). 입력의 분포만 바뀌었다. 처방: 입력 표상을 두 도메인에서 비슷하게 만들어 “도메인 불변(invariant)”인 좌표를 학습.</p>
+      <p><strong>(2) 라벨 변동(label shift).</strong> $p(y)$만 바뀌고, $p(x \mid y)$는 같다. 예: 의료 데이터에서 학습 분포는 환자 50% 정상 50%, 배포 분포는 환자 5% 정상 95%. 같은 환자 한 명의 “모습”은 같지만, 빈도가 다르다. 처방: 빈도 보정(prior correction) — 베이즈 규칙으로 $p(y \mid x)$를 새 $p(y)$에 맞춰 다시 계산.</p>
+      <p><strong>(3) 개념 변동(concept drift).</strong> $p(y \mid x)$ 자체가 바뀐다. 같은 입력이라도 정답이 시간에 따라 변한다. 예: 사기 거래 탐지 — 사기 패턴이 새로 출현. 처방: 지속적 재학습(online learning), 새 데이터로 가중치를 끊임없이 갱신.</p>
 
-    <div class="paper-grid">
-      <div class="paper-card p1">
-        <span class="tag">P1 · Adversarial Examples (2015)</span>
-        <h4>표상의 선형성이 만든 부작용</h4>
-        <p>책 4번 절(분산 표상)과 5번 절(깊이의 표현력)의 그림자다. 깊은 망의 표상 공간이 거의 선형으로 동작하는 것이 보편 근사를 쉽게 만드는 동시에, 작은 픽셀 변화에 큰 출력 변화를 일으키는 취약점이 된다.</p>
-        <p><b>15장 연결:</b> 좋은 표상의 조건 (1번 절)에는 "매끄러움(smoothness)" 사전이 있어야 한다. 적대적 예시는 매끄러움 사전이 표상 공간에서 깨졌다는 증거. 적대적 훈련은 매끄러움을 강제로 거는 한 형태의 정칙화 = 사전(prior, 6번 절).</p>
-        <span class="link">→ 관련: Ch.15 1번, 4번, 6번</span>
-      </div>
-      <div class="paper-card p2">
-        <span class="tag">P2 · Neural Style Transfer (2015)</span>
-        <h4>표상이 콘텐츠와 텍스처를 분리한다는 증거</h4>
-        <p>책 1번 절(좋은 표상의 인과 분리)과 3번 절(전이학습)을 시각적으로 가장 극적으로 보여 준다. ImageNet으로 학습된 VGG는 단 한 번도 "콘텐츠"와 "스타일"을 분리하라고 배운 적이 없는데, 그 부산물로 두 변동이 거의 독립적 부분공간에 들어 있다.</p>
-        <p><b>15장 연결:</b> 인과 요소 분리(1번 절)의 가장 강력한 경험적 증거. 그리고 VGG라는 사전훈련 모델을 다른 과제(스타일 전이)에 그대로 가져다 쓴다는 점에서 전이학습(2·3번 절)의 극단적 사례. "표상이 좋으면 새 과제를 학습 없이 풀 수 있다"의 시연.</p>
-        <span class="link">→ 관련: Ch.15 1번, 2번, 3번</span>
-      </div>
-    </div>
-
-    <div class="prose">
-      <h2>예상 시험 문제 7개</h2>
-      <p>다음 일곱 문제는 15장의 핵심 개념을 P1·P2와 묶어 출제할 가능성이 높은 형태로 만든 것이다. 각 문제마다 답안의 골격을 제시한다.</p>
-    </div>
-
-    <div class="qa-list">
-      <div class="qa">
-        <div class="qa-q"><span class="qn">Q1</span><span>왜 사전훈련된 모델의 얕은 층은 새 도메인에 그대로 가져다 써도 되고, 깊은 층은 다시 학습해야 하는가?</span><span class="qx">+</span></div>
-        <div class="qa-a"><div class="qa-a-inner">
-          <span class="rel">Ch.15 2번, 3번 — 전이학습의 핵심 원리</span>
-          얕은 층은 모서리·색·텍스처 같은 거의 도메인 무관한 시각적 어휘를 잡는다. 이 어휘는 자연 이미지의 통계 자체에 가까워서 의료 영상이든 위성 이미지든 거의 그대로 통한다. 반면 깊은 층은 점점 과제 특이적이 된다 — ImageNet의 깊은 층은 "골든리트리버 vs 셰퍼드"를 구분하는 표상이라서 새 과제의 클래스 구분에는 직접 쓰이지 못한다. <b>한 줄 답안:</b> "공유되는 변동 요인의 분포가 얕은 층에 집중되어 있고, 깊은 층은 도메인 특이 요인을 학습하기 때문."
-        </div></div>
+      <div class="analogy">
+        <b>여행지에서 길 찾기의 세 가지 다른 어려움.</b> 한국에서 운전을 잘하던 사람이 인도에 가면 세 가지 다른 어려움이 동시에 닥친다. (1) 도로의 모습이 다르다(공변량 변동) — 같은 차량 행동 규칙이지만 풍경이 다르다. (2) 차량 비율이 다르다(라벨 변동) — 한국에서는 승용차가 많지만 인도에서는 오토릭샤가 많다. 같은 “오토릭샤”라도 빈도가 다르니 의사결정의 기본값이 달라진다. (3) 운전 규칙 자체가 다르다(개념 변동) — 좌측통행이라 같은 입력이 정반대 행동을 요구한다. 각 어려움은 다른 학습 처방을 요구한다.
       </div>
 
-      <div class="qa">
-        <div class="qa-q"><span class="qn">Q2</span><span>n개의 뉴런으로 one-hot은 n개의 영역을 표현하는 반면 분산 표상은 2^n개를 표현한다. 이 지수적 이득이 왜 일반화 능력으로 이어지는지 설명하라.</span><span class="qx">+</span></div>
-        <div class="qa-a"><div class="qa-a-inner">
-          <span class="rel">Ch.15 4번 — 분산 표상의 핵심</span>
-          학습 데이터에는 가능한 조합의 일부만 들어 있다. one-hot 표상이라면 학습 중 보지 못한 새 ID는 일반화의 대상이 아니다 — 처음 보는 식별자에 대해 아무 정보가 없다. 분산 표상은 다르다. 각 비트가 진짜 생성 요인(예: "동물인가", "포유류인가", "크기")을 잡았다면, 학습 중 본 적 없는 비트 조합도 각 비트의 의미를 통해 자동으로 일반화된다. 즉 표현 가능 영역의 지수적 격차가 그대로 일반화 가능 영역의 격차로 이어진다. <b>한 줄 답안:</b> "각 차원이 독립적 인과 요인이면 본 적 없는 조합도 차원별 학습 결과의 합으로 일반화된다."
-        </div></div>
+      <h2>표상 학습 관점의 도메인 적응</h2>
+      <p>책이 강조하는 핵심은 “표상 학습이 가장 잘 다루는 것은 공변량 변동”이라는 점이다. 도메인 불변 표상(domain-invariant representation)을 학습하면 입력 분포의 차이를 가운데 층에서 흡수할 수 있다. 그러면 위쪽 분류 헤드는 두 도메인에서 같은 표상을 보게 되므로 자연스럽게 둘 다 잘 풀린다.</p>
+      <p>도메인 불변 표상을 학습하는 대표 기법은 도메인 적대 학습(domain-adversarial training, DANN)이다. 표상 위에 “이 표상이 어느 도메인 출신인지를 맞히는” 분류기를 하나 더 두고, 표상은 그 분류기를 속이려고(즉, 도메인을 구분 못 하게) 학습한다. GAN의 발상과 같다 — 두 신호 사이의 적대 게임이 표상을 “도메인 정보가 없는” 좌표로 밀어붙인다.</p>
+
+      <div class="widget">
+        <div class="widget-frame">
+          <div class="widget-label"><span class="lab-no">위젯 07</span><span>도메인 적응 전후 — 같은 표상 공간에서 두 도메인이 정렬되는 모습</span></div>
+          <div class="da-stage">
+            <div class="da-panel">
+              <h4>적응 전 — 두 도메인이 분리됨</h4>
+              <canvas id="da-a" width="320" height="170"></canvas>
+            </div>
+            <div class="da-panel">
+              <h4>적응 후 — 라벨에만 따라 분리</h4>
+              <canvas id="da-b" width="320" height="170"></canvas>
+            </div>
+          </div>
+          <div class="da-verdict" id="da-v">적응 전에는 표상이 도메인(원본·대상)을 강하게 분리한다 — 분류기가 도메인을 라벨로 착각할 위험. 적응 후에는 도메인 신호가 사라지고 라벨 신호만 남는다 — 한 분류기가 두 도메인에서 같은 결정 경계를 사용할 수 있다.</div>
+        </div>
+        <p class="widget-cap">색 = 라벨(빨강/파랑), 모양 = 도메인(원·삼각형). 적응의 목표는 모양 구분은 흐리게, 색 구분은 또렷하게 만드는 것이다.</p>
       </div>
 
-      <div class="qa">
-        <div class="qa-q"><span class="qn">Q3</span><span>깊이가 같은 함수를 표현하는 데 폭(width)에 비해 지수적으로 효율적인 이유를 ReLU 망의 선형 영역 수 관점에서 설명하라.</span><span class="qx">+</span></div>
-        <div class="qa-a"><div class="qa-a-inner">
-          <span class="rel">Ch.15 5번 — 깊이의 지수적 표현력</span>
-          ReLU 망의 출력은 조각별 선형 함수다. 각 층을 통과할 때마다 이전 층의 모든 결정 경계가 새 층의 결정 경계와 곱해지면서 영역의 수가 곱셈으로 늘어난다. 곱셈을 L번 반복하면 지수가 된다 — Montufar et al.(2014)의 정리는 깊이 L의 망이 만드는 영역 수의 하한이 약 $(n/d)^{(L-1)d} \cdot \binom{n}{d}$ 임을 보였다. 핵심은 깊이 L이 지수의 위치에 있다는 것. <b>본질:</b> 깊은 망은 낮은 층의 특징을 높은 층이 재사용하므로 같은 자원으로 곱셈적 표현력을 얻는다.
-        </div></div>
-      </div>
+      <h2>라벨 없는 대상 도메인 — 의사라벨링</h2>
+      <p>현실 적응 시나리오에서 가장 흔한 설정은 “원본 도메인에 라벨이 있고, 대상 도메인에는 라벨이 없다(unsupervised domain adaptation)”이다. 이 경우 도메인 적대 학습 외에 또 한 가지 흔히 쓰이는 처방은 의사라벨링(pseudo-labeling)이다.</p>
+      <p>의사라벨링의 절차는 단순하다. (1) 먼저 원본 도메인 라벨로 모델을 학습한다. (2) 그 모델로 대상 도메인 데이터에 예측을 돌려, 신뢰도(예: softmax 확률 > 0.9)가 높은 것만 “의사 라벨”로 채택한다. (3) 원본 라벨 + 의사 라벨을 합쳐 모델을 다시 학습한다. 이 절차를 반복하면 모델이 점차 대상 도메인에 적응한다.</p>
+      <p>위험은 명확하다 — 잘못 붙인 의사 라벨이 모델을 잘못된 방향으로 굳힌다(confirmation bias). 이를 완화하기 위해 신뢰도 기준을 매우 높게 잡거나, 일관성 정칙화(같은 입력의 작은 변형이 같은 라벨을 받도록)와 결합하는 것이 보통이다. 반지도 학습(12절)과 같은 발상을 공유한다.</p>
 
-      <div class="qa">
-        <div class="qa-q"><span class="qn">Q4</span><span>P2 신경 스타일 전이가 작동한다는 사실이 15장의 어떤 주장을 경험적으로 지지하는지 설명하라.</span><span class="qx">+</span></div>
-        <div class="qa-a"><div class="qa-a-inner">
-          <span class="rel">Ch.15 1번, 3번 — P2 연결</span>
-          15장 1번 절의 "좋은 표상은 인과 요인을 분리한다"는 주장의 가장 강력한 경험적 증거다. VGG는 단 한 번도 "콘텐츠를 잡아라, 스타일을 잡아라"라고 배우지 않았다 — 단지 ImageNet 분류만 학습했다. 그런데 그 표상 공간에서 콘텐츠(깊은 층의 raw feature)와 스타일(필터 간 Gram 상관)이 거의 독립적 부분공간에 들어 있다. 두 손실의 단순 가중합으로 분리·재조합이 가능하다는 사실이 곧 표상이 인과 요인을 어느 정도 분리했다는 증거. 또한 같은 VGG를 분류와 무관한 새 과제(이미지 생성)에 그대로 쓴다는 점에서 전이학습(3번 절)의 극단적 사례이기도 하다.
-        </div></div>
-      </div>
+      <h2>“같은 과제, 다른 분포”라는 미묘한 위치</h2>
+      <p>도메인 적응은 전이학습의 형제이지만 분명히 다르다. 전이학습은 “라벨이 다른 두 과제”이고, 도메인 적응은 “같은 라벨, 다른 분포”다. 이 차이가 처방을 갈라 놓는다. 전이학습은 분류 헤드를 갈아 끼우는 것이 자연스러운 첫걸음이지만, 도메인 적응은 분류 헤드를 그대로 두고 표상 자체를 두 분포에서 정렬하는 것이 자연스러운 첫걸음이다.</p>
+      <p>실전에서는 두 문제가 종종 섞인다. 예: ImageNet으로 사전훈련된 모델을 의료 X-ray의 폐렴 분류에 옮긴다. 이때 (1) 자연 이미지 → X-ray는 도메인 변화, (2) 1,000개 카테고리 → 2개 카테고리(폐렴/정상)는 과제 변화. 둘 다 일어난다. 절차도 두 가지를 함께 적용한다 — 헤드 교체(전이) + 미세조정 + 적응 정칙화.</p>
 
-      <div class="qa">
-        <div class="qa-q"><span class="qn">Q5</span><span>P1 적대적 예시는 표상학습 관점에서 어떤 문제를 드러내는가? 매끄러움 사전과 어떻게 연결되는가?</span><span class="qx">+</span></div>
-        <div class="qa-a"><div class="qa-a-inner">
-          <span class="rel">Ch.15 1번, 6번 — P1 연결</span>
-          좋은 표상의 한 가지 조건은 "매끄러움(smoothness)" 사전이다 — 가까운 입력은 가까운 출력에 매핑되어야 한다. 적대적 예시는 이 사전이 표상 공간에서 깨졌다는 증거다. 픽셀에서 거의 보이지 않을 만큼 작은 변화가 표상 공간에서는 결정 경계를 가로지르는 큰 이동을 만든다. 이는 깊은 망이 표현력을 얻기 위해 거의 선형으로 동작하도록 설계되었기 때문이다(ReLU·LSTM·maxout 모두). FGSM은 그 선형성의 방향을 그대로 이용해 만든 공격이다. 적대적 훈련은 학습 시 손실에 "가장 나쁜 인근 점"의 페널티를 추가하는 식으로 매끄러움을 강제로 거는 정칙화 = 사전(prior)이다.
-        </div></div>
-      </div>
-
-      <div class="qa">
-        <div class="qa-q"><span class="qn">Q6</span><span>반지도학습이 어떤 조건에서 분류 정확도를 끌어올리고, 어떤 조건에서 오히려 떨어뜨리는가? 책의 "인과 요소" 관점에서 답하라.</span><span class="qx">+</span></div>
-        <div class="qa-a"><div class="qa-a-inner">
-          <span class="rel">Ch.15 6번 — 반지도학습의 조건</span>
-          반지도학습은 입력 분포 $p(x)$를 형성하는 인과 요인과 라벨 $y$를 결정하는 인과 요인이 <b>공유될 때</b> 작동한다. 수식으로 $x = g(z), y = h(z_S)$ where $z_S \subset z$. 이 조건이면 $p(x)$를 잘 설명하는 것이 자동으로 $z_S$를 부분적으로 복원하는 것과 같아져 분류에 도움이 된다. 반대로 라벨 없는 데이터의 분포가 라벨과 무관한 변동을 많이 가지고 있으면, 그 변동을 학습하는 데 모델 용량이 낭비되어 정확도가 오히려 떨어진다(negative transfer). <b>실무 처방:</b> 자기지도 목표는 다운스트림이 의지할 인과 요인을 잡도록 설계해야 한다 — 단순한 픽셀 복원보다는 "같은 이미지의 두 뷰는 가깝게" 같은 의미 보존 목표가 일반적으로 더 좋다.
-        </div></div>
-      </div>
-
-      <div class="qa">
-        <div class="qa-q"><span class="qn">Q7</span><span>15장의 마지막 통찰 — "모든 정칙화는 사전(prior)이다"를 자기 말로 설명하고, 6가지 사전을 두 가지 이상 짝지어 보라.</span><span class="qx">+</span></div>
-        <div class="qa-a"><div class="qa-a-inner">
-          <span class="rel">Ch.15 6번 — 통합적 시각</span>
-          15장의 결론은 7장의 정칙화, 14장의 오토인코더, 이 장의 반지도·전이학습이 모두 "표상에 어떤 사전을 거는가"의 변형이라는 것이다. 6가지 대표 사전:
-          <b>① 매끄러움</b>(가까운 입력 → 가까운 라벨, 데이터 증강·드롭아웃),
-          <b>② 매니폴드</b>(데이터는 얇은 면 위에, DAE·CAE),
-          <b>③ 인과 요인 분리</b>(각 차원이 독립적 의미, β-VAE·제로샷),
-          <b>④ 희소성</b>(소수 뉴런 활성, L1·ReLU),
-          <b>⑤ 시간적 일관성</b>(의미는 천천히 변함, SFA·비디오 자기지도),
-          <b>⑥ 계층적 인과</b>(낮은 추상에서 높은 추상으로 합성, 깊은 망 자체).
-          어떤 사전도 보편적으로 옳지 않다. 데이터의 성격에 따라 적절한 사전을 선택하는 것이 표상학습의 실제 기술이다. <b>한 줄 답안:</b> "모든 정칙화 기법은 모델이 만들 수 있는 표상의 공간에 어떤 모양의 사전 분포를 거는 것이고, 그 모양이 데이터의 진짜 인과 구조와 맞을 때만 정칙화가 효과를 낸다."
-        </div></div>
-      </div>
-    </div>
-
-    <div class="prose">
-      <h2>외울 핵심 한 줄 (시험 직전 카드)</h2>
-      <ul>
-        <li><b>좋은 표상 3정의:</b> 선형 분리 가능성 · 매니폴드 친화성 · 인과 요인 분리.</li>
-        <li><b>사전훈련의 핵심:</b> 라벨 없는 데이터로 가중치에 "사전(prior)"을 거는 것. 큰 데이터의 표상을 작은 과제에 빌려준다.</li>
-        <li><b>전이학습 조건:</b> 소스·타깃이 변동 요인을 공유할 때 작동. 얕은 층 공유, 깊은 층 교체가 표준.</li>
-        <li><b>분산 표상의 이득:</b> $n$ 뉴런 → $2^n$ 영역. one-hot의 $n$ 대비 지수적. 각 비트가 인과 요인이면 본 적 없는 조합도 일반화.</li>
-        <li><b>깊이의 이득:</b> 같은 함수를 얕은 망으로 흉내내려면 너비가 지수적으로 필요. 합성성 = 낮은 층의 재사용성.</li>
-        <li><b>반지도학습 조건:</b> $p(x)$와 $p(y|x)$가 같은 인과 요인을 공유할 때 작동. 무작정 사전훈련은 오히려 해.</li>
-        <li><b>통합:</b> 모든 정칙화는 표상 위의 사전(prior). 6가지 — 매끄러움·매니폴드·분리·희소성·시간일관성·계층.</li>
-      </ul>
-
-      <div class="oneline">
-        <span class="tag">CH.15 ONE-LINER</span>
-        <p>표상학습은 <b>"같은 자원으로 더 많은 개념을, 한 도메인의 학습을 다른 도메인으로 옮길 수 있게"</b> 만드는 일이다. 그것을 가능하게 하는 두 기둥은 <b>분산 표상</b>(한 층 안의 조합)과 <b>깊이</b>(층 사이의 합성)이며, 모든 정칙화·사전훈련·전이학습은 <b>표상 위에 어떤 사전(prior)을 거는가</b>라는 한 가지 메타 질문의 변형이다.</p>
-      </div>
-
-      <h2>마지막 — 표지로 돌아가 전체 챕터를 다시 한 번</h2>
-      <p>이제 7개 sub-chapter를 모두 보았다. <a href="index.html">표지로 돌아가</a> 각 카드의 한 줄 설명을 다시 읽으며 머릿속 지도를 굳히자. 핵심은 "왜"다. 분산 표상이 왜 일반화로 이어지는지, 깊이가 왜 지수적 이득을 주는지, 반지도학습이 왜 가끔만 작동하는지 — 이 "왜"들이 시험에서 외움보다 더 큰 점수 차이를 만든다.</p>
-
-      <p>그리고 15장은 책 전체의 마무리다. 1장에서 시작된 "표상학습으로서 딥러닝"의 약속이 여기서 회수된다. 시험에서 어떤 문제가 나오든, 답은 결국 한 줄로 돌아간다 — <strong>"좋은 표상을 만드는 것이 좋은 모델을 만드는 일이다."</strong></p>
+      <h2>핵심 어휘 정리</h2>
+      <table class="symbols">
+        <tr><td>도메인 적응 (domain adaptation)</td><td>같은 과제, 다른 분포 사이에서 모델을 적응시키는 학습.</td></tr>
+        <tr><td>공변량 변동 (covariate shift)</td><td>$p(x)$만 바뀌고 $p(y \mid x)$는 같음. 가장 다루기 쉬움.</td></tr>
+        <tr><td>라벨 변동 (label shift)</td><td>$p(y)$만 바뀜. 베이즈 보정으로 해결.</td></tr>
+        <tr><td>개념 변동 (concept drift)</td><td>$p(y \mid x)$ 자체가 바뀜. 지속적 재학습 필요.</td></tr>
+        <tr><td>도메인 적대 학습 (DANN)</td><td>표상이 도메인 정보를 잃도록 적대 게임으로 학습.</td></tr>
+        <tr><td>의사라벨링 (pseudo-labeling)</td><td>높은 신뢰도 예측을 라벨로 채택해 자기학습.</td></tr>
+      </table>
     </div>
 
     <nav class="ch-foot"></nav>
@@ -168,18 +93,25 @@
 <script>
   const SUBS = [
     { no:'01', t:'좋은 표상이란', f:'01.html' },
-    { no:'02', t:'사전훈련과 미세조정', f:'02.html' },
-    { no:'03', t:'전이학습·도메인 적응', f:'03.html' },
-    { no:'04', t:'분산 표상의 힘', f:'04.html' },
-    { no:'05', t:'깊이의 지수적 표현력', f:'05.html' },
-    { no:'06', t:'인과 요소와 반지도', f:'06.html' },
-    { no:'07', t:'시험 대비', f:'07.html' },
+    { no:'02', t:'그리디 층별 사전훈련', f:'02.html' },
+    { no:'03', t:'비지도 사전훈련', f:'03.html' },
+    { no:'04', t:'지도 사전훈련', f:'04.html' },
+    { no:'05', t:'전이학습 1 — 도메인이 돕는 원리', f:'05.html' },
+    { no:'06', t:'전이학습 2 — 미세조정 실전', f:'06.html' },
+    { no:'07', t:'도메인 적응', f:'07.html' },
+    { no:'08', t:'분산 표상 1 — 지수적 이득', f:'08.html' },
+    { no:'09', t:'분산 표상 2 — 합성성·의미 산수', f:'09.html' },
+    { no:'10', t:'깊이의 지수적 표현력', f:'10.html' },
+    { no:'11', t:'인과 요소', f:'11.html' },
+    { no:'12', t:'반지도 학습', f:'12.html' },
+    { no:'13', t:'사전으로서의 정칙화', f:'13.html' },
+    { no:'14', t:'시험 대비', f:'14.html' },
   ];
   const CURRENT = '07';
   (function buildNav() {
     document.querySelector('.topbar').innerHTML =
-      `<a class="home" href="index.html">← Chapter 15 · 표상 학습</a>` +
-      `<span class="ch-mini">SUB ${CURRENT} / 07</span>`;
+      `<a class="home" href="index.html">← Chapter 15 — 표상 학습</a>` +
+      `<span class="ch-mini">SUB ${CURRENT} / 14</span>`;
     document.querySelector('.ch-nav ol').innerHTML = SUBS.map(s =>
       `<li><a href="${s.f}" ${s.no === CURRENT ? 'class="current"' : ''}>${s.t}</a></li>`).join('');
     const i = SUBS.findIndex(s => s.no === CURRENT);
@@ -197,10 +129,74 @@
     document.addEventListener('scroll', onScroll, { passive: true }); onScroll();
   })();
 
-  // Q&A 아코디언
-  document.querySelectorAll('.qa').forEach(q => {
-    q.querySelector('.qa-q').addEventListener('click', () => q.classList.toggle('open'));
-  });
+  (function daWidget() {
+    const css = getComputedStyle(document.documentElement);
+    const STRUCT = css.getPropertyValue('--structure').trim();
+    const STYLE = css.getPropertyValue('--style').trim();
+    const FAINT = css.getPropertyValue('--ink-faint').trim();
+    function dot(ctx, x, y, c, shape) {
+      ctx.fillStyle = c;
+      if (shape === 'circle') {
+        ctx.beginPath(); ctx.arc(x, y, 3.5, 0, Math.PI*2); ctx.fill();
+      } else {
+        ctx.beginPath();
+        ctx.moveTo(x, y - 4); ctx.lineTo(x - 4, y + 3); ctx.lineTo(x + 4, y + 3); ctx.closePath(); ctx.fill();
+      }
+    }
+    function drawA() {
+      const c = document.getElementById('da-a'); const ctx = c.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0,0,c.width,c.height);
+      // 적응 전: 도메인이 좌우로 분리, 라벨은 위아래 약하게
+      for (let i = 0; i < 25; i++) {
+        const x = 30 + Math.random()*80;
+        const y = 20 + Math.random()*60;
+        dot(ctx, x, y, STRUCT, 'circle');
+      }
+      for (let i = 0; i < 25; i++) {
+        const x = 30 + Math.random()*80;
+        const y = 95 + Math.random()*60;
+        dot(ctx, x, y, STYLE, 'circle');
+      }
+      for (let i = 0; i < 25; i++) {
+        const x = 200 + Math.random()*80;
+        const y = 20 + Math.random()*60;
+        dot(ctx, x, y, STRUCT, 'tri');
+      }
+      for (let i = 0; i < 25; i++) {
+        const x = 200 + Math.random()*80;
+        const y = 95 + Math.random()*60;
+        dot(ctx, x, y, STYLE, 'tri');
+      }
+      // 도메인 분리 선
+      ctx.strokeStyle = FAINT; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
+      ctx.beginPath(); ctx.moveTo(160, 5); ctx.lineTo(160, 165); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle = FAINT; ctx.font = '10px monospace';
+      ctx.fillText('원본 도메인', 38, 14); ctx.fillText('대상 도메인', 208, 14);
+    }
+    function drawB() {
+      const c = document.getElementById('da-b'); const ctx = c.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0,0,c.width,c.height);
+      // 적응 후: 라벨만 위아래로 분리, 도메인은 섞임
+      for (let i = 0; i < 25; i++) {
+        const x = 30 + Math.random()*260;
+        const y = 20 + Math.random()*60;
+        const sh = Math.random() < 0.5 ? 'circle' : 'tri';
+        dot(ctx, x, y, STRUCT, sh);
+      }
+      for (let i = 0; i < 25; i++) {
+        const x = 30 + Math.random()*260;
+        const y = 95 + Math.random()*60;
+        const sh = Math.random() < 0.5 ? 'circle' : 'tri';
+        dot(ctx, x, y, STYLE, sh);
+      }
+      // 라벨 분리 선
+      ctx.strokeStyle = FAINT; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
+      ctx.beginPath(); ctx.moveTo(10, 87); ctx.lineTo(310, 87); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle = FAINT; ctx.font = '10px monospace';
+      ctx.fillText('라벨 0', 6, 14); ctx.fillText('라벨 1', 6, 164);
+    }
+    drawA(); drawB();
+  })();
 
   window.addEventListener('load', () => {
     if (window.renderMathInElement) {

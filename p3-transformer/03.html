@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>03 · Attention의 직관 2</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Chapter 03 · 가중치는 어디서 오는가</span>
+      <h1>Attention의 직관 2 —<br>가중 평균은 좋은데, <span class="t-synth">가중치</span>는 누가 정하나</h1>
+      <p class="lede">앞 장에서 한 토큰의 출력이 "다른 토큰들의 가중 평균"이라는 점까지 왔다. 그렇다면 그 가중치 — "어디를 얼마나 볼까" — 는 누가, 어떻게 정하는가. 이 장은 그 답을 수식 직전까지 따라간다.</p>
+    </header>
+
+    <div class="prose">
+      <p>먼저 가능한 가장 단순한 답부터 시도해 보자. <strong>"모든 가중치를 1/N로 똑같이 두면 어떨까"</strong>. 길이 $N$의 시퀀스라면, 한 토큰의 출력은 모든 토큰 벡터의 평균이다. 이게 바로 단순 평균(uniform average)이다.</p>
+
+      <div class="math-block">$$ \text{output}(i) \;=\; \frac{1}{N} \sum_{j=1}^{N} v_j $$</div>
+      <p class="math-note">모든 토큰을 똑같이 보는 경우. 가중치 = $1/N$ 상수.</p>
+
+      <p>이 방식의 문제는 명백하다. 출력이 <strong>$i$와 무관해진다</strong>. 어느 위치의 토큰을 계산하든 같은 평균값이 나온다. 그러면 한 단어 한 단어를 다르게 표현할 이유가 없다. "the"와 "cat"의 출력이 같다면 다음 층은 어차피 같은 입력을 받는다 — 위치 정보가 사라지고, 시퀀스는 정보 없는 평균 한 점으로 압축된다. 이는 분명 우리가 원하는 것이 아니다.</p>
+
+      <p>그렇다면 다음 시도 — <strong>"가중치를 사람이 직접 정해 둘까"</strong>. 예컨대 영어 문법 책을 참고해서 "주어와 동사 사이는 0.8, 형용사와 명사 사이는 0.6 ..."처럼 규칙을 손으로 박아 넣을 수 있다. 이 방식은 1980년대까지의 규칙 기반 자연어 처리(rule-based NLP)가 시도하다가 좌절한 길이다. 언어가 너무 다양하고 예외가 너무 많아서, 규칙은 곧바로 부서진다. 그리고 우리가 만들고 싶은 것은 영어 모델뿐만이 아니라 모든 언어, 모든 도메인에 두루 쓰이는 일반 모델이다.</p>
+
+      <h2>가중치를 학습하는 한 가지 방법</h2>
+      <p>그러면 남은 길은 하나다 — <strong>가중치 자체를 데이터에서 학습시키자</strong>. 그렇게 하려면 두 가지를 만족해야 한다.</p>
+
+      <p><strong>(1) 가중치가 토큰 쌍 $(i, j)$에 따라 다르게 나와야 한다.</strong> "cat → mat"과 "cat → the"는 다른 값이어야 한다. 그러려면 두 토큰의 정보를 모두 받아서 하나의 숫자로 압축하는 함수가 필요하다.</p>
+
+      <p><strong>(2) 그 함수가 미분 가능해야 한다.</strong> 미분이 가능해야 역전파(backpropagation)로 가중치를 갱신할 수 있다. 미분 불가능한 if-else 규칙은 학습이 안 된다.</p>
+
+      <p>가장 간단한 후보는 <em>"두 벡터의 내적(inner product)"</em>이다. 두 벡터 $a, b$의 내적은 다음과 같이 정의된다.</p>
+
+      <div class="math-block">$$ a \cdot b \;=\; \sum_{k=1}^{d} a_k \, b_k \;=\; \|a\| \|b\| \cos\theta $$</div>
+      <p class="math-note">$a, b$ = 벡터. $a_k, b_k$ = 그 벡터의 $k$번째 성분. $\theta$ = 두 벡터 사이의 각도. $\|a\|$ = 벡터의 길이.</p>
+
+      <p>내적은 직관적 의미가 매우 분명하다. 두 벡터가 같은 방향을 가리키면 큰 양수, 직각이면 0, 반대 방향이면 큰 음수다. 그러므로 두 토큰의 벡터를 적절히 잘 만들어 두기만 하면, 그 둘의 내적은 "이 두 토큰은 얼마나 비슷한가"의 점수가 된다. 이 점수가 곧 attention의 가중치를 만드는 재료다.</p>
+
+      <h2>점수에서 가중치로 — softmax의 역할</h2>
+      <p>그런데 한 가지 문제가 남는다. 내적의 결과는 음수도 될 수 있고, 그 절대값에도 한계가 없다. 그러나 우리는 가중치가 "0과 1 사이이면서, 모든 가중치의 합이 1"이기를 바란다. 그래야 "100% 주의력을 어떻게 나눌까"라는 해석이 살아난다.</p>
+
+      <p>이 두 조건을 동시에 만족시키는 표준 도구가 <strong>softmax</strong> 함수다. softmax는 임의의 실수 점수들 $s_1, s_2, \ldots, s_N$을 받아 그것들을 확률처럼 정규화한다.</p>
+
+      <div class="math-block">$$ \text{softmax}(s)_i \;=\; \frac{e^{s_i}}{\sum_{j=1}^{N} e^{s_j}} $$</div>
+      <p class="math-note">$e^{s_i}$ = 점수에 지수함수를 씌운 값(항상 양수). 분모는 모든 토큰의 $e^{s_j}$ 합. 결과는 확률 분포가 된다.</p>
+
+      <p>softmax의 동작은 세 단계로 풀어 보면 명확하다. <strong>(1)</strong> 모든 점수에 $e^x$를 씌운다 → 음수가 양수로 바뀌고, 큰 점수는 더 크게 강조된다. <strong>(2)</strong> 그 양수들의 합으로 각각을 나눈다 → 합이 1이 된다. <strong>(3)</strong> 그 결과는 "점수가 큰 토큰은 큰 가중치, 작은 토큰은 작은 가중치"라는 분포다.</p>
+
+      <p>왜 굳이 $e^x$인가. 두 가지 이유다. 첫째, $e^x$는 모든 실수를 양수로 보낸다(범위 보장). 둘째, $e^x$의 미분이 곧 자기 자신이라 미분 식이 매우 깔끔하다 — 역전파에 유리하다. 비슷한 역할을 하는 다른 함수도 있지만, $e^x$가 가장 자주 쓰이는 표준이다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 03</span><span>softmax 분포 — 점수가 어떻게 확률이 되는가</span></div>
+        <div id="sm"></div>
+      </div>
+      <p class="widget-cap">네 개의 점수를 직접 조절해 보라. 점수가 비슷할 때 분포는 평탄하고, 한 점수가 크게 튀면 분포가 그곳으로 쏠린다. "온도 T"는 softmax의 부드러움을 조절한다 — T가 클수록 평탄, 작을수록 뾰족.</p>
+    </div>
+
+    <div class="prose">
+      <h2>온도 — 분포의 "뾰족함"을 조절하는 손잡이</h2>
+      <p>위 위젯에는 점수 외에 "온도(temperature) $T$"라는 추가 슬라이더가 있다. 이는 softmax의 변형으로, 다음과 같이 정의된다.</p>
+
+      <div class="math-block">$$ \text{softmax}(s/T)_i \;=\; \frac{e^{s_i / T}}{\sum_{j} e^{s_j / T}} $$</div>
+      <p class="math-note">$T$ = 온도. $T \to 0$이면 가장 큰 점수에 1, 나머지에 0. $T \to \infty$이면 균등 분포($1/N$).</p>
+
+      <p>$T$를 1.0으로 고정해 두면 우리가 방금 본 보통의 softmax다. $T$를 키우면 점수의 차이가 줄어들어 분포가 평탄해지고, $T$를 0에 가깝게 줄이면 가장 큰 점수만 살아남아 거의 one-hot에 가까운 뾰족한 분포가 된다. 직관적으로는 "$T$가 클수록 모델이 우유부단하게 모두를 본다, $T$가 작을수록 한 곳에 집착한다"고 외워도 좋다. Transformer의 표준 attention에서 $T$는 명시적으로 안 쓰지만, 다음 장에서 보겠지만 <strong>$\sqrt{d_k}$로 나누는 행위가 사실상 온도 조절과 같다</strong>.</p>
+
+      <h2>가중 평균 + 학습되는 점수 = Attention</h2>
+      <p>이제 모든 재료가 모였다. Attention 메커니즘은 다음 세 단계로 요약할 수 있다.</p>
+
+      <p><strong>1.</strong> 토큰 $i$와 토큰 $j$의 벡터 사이의 내적으로 점수 $s_{ij}$를 만든다. <strong>2.</strong> 한 행($i$ 고정)의 점수들에 softmax를 적용해 가중치 $w_{ij}$로 변환한다. <strong>3.</strong> 그 가중치로 다른 토큰들의 벡터를 가중 평균해 새 표현을 만든다.</p>
+
+      <p>이 세 단계가 자연어처럼 곱셈, 함수, 합산만으로 이루어져 있다는 점이 핵심이다. 모두 미분 가능하다. 그러므로 한 문장이 모델을 통과해 어떤 손실을 일으키면, 손실을 줄이는 방향으로 모든 가중치가 자동으로 갱신된다. 가중치 — 이 경우 "어디를 볼까"라는 결정 자체 — 가 데이터에서 학습된다.</p>
+
+      <p>다음 장에서는 같은 메커니즘을 좀 더 일반화한다. 토큰 자체의 벡터를 그대로 쓰는 대신, 세 개의 서로 다른 역할 — Query, Key, Value — 로 분리해서 쓰는 이유와 의미를 본다. 그 분리가 Transformer의 두 번째 핵심 도약이다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  window.addEventListener('load', () => {
+    TFR.buildNav('03');
+    const s = document.getElementById('sm');
+    TFR.onVisible(s, () => TFR.softmaxDemo(s));
+  });
+</script>
+<script src="assets/widgets.js"></script>
+</body>
+</html>

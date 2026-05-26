@@ -74,15 +74,16 @@
   <div class="paper-meta">
     <span><b>딥러닝 개론</b> 기말고사 인터랙티브 복습</span>
     <span>저자 <b>Goodfellow, Bengio, Courville (2016)</b></span>
-    <span>읽는 시간 <b>약 40분</b></span>
+    <span>읽는 시간 <b>약 70분</b></span>
     <span>D-day <b>2026-06-04</b></span>
   </div>
 </div>
 
 <section class="section-intro">
-  <h2>한 문장으로</h2>
-  <p>11장은 <strong>“성공적인 딥러닝 응용은 새 알고리즘을 발명해서가 아니라, 평범한 알고리즘을 규율 있는 절차로 적용해서 만들어진다”</strong>는 한 문장으로 압축된다. Goodfellow는 같은 책에서 이 장이 가장 실용적이라고 말한다. 모델을 처음 만들 때, 모델이 안 되는 이유를 진단할 때, 무엇을 다음에 시도할지 결정할 때 — 이 장의 4단계 절차가 길잡이다.</p>
-  <p>처음 읽을 때 가장 중요한 점은, <em>"잘 적용된 평범한 알고리즘이 잘못 적용된 특이한 알고리즘을 보통 이긴다"</em>는 책의 명제다. Street View 주소 인식 시스템 같은 상용 프로젝트가 거대한 새 모델이 아니라 <span class="t-structure">목표 설정 → 베이스라인 → 진단 → 한 번에 한 가지 수정</span>이라는 반복 루프로 만들어졌다는 점을 기억하자.</p>
+  <h2>이 장이 왜 시험에 중요한가</h2>
+  <p>11장의 핵심 명제는 한 문장으로 압축된다 — <strong>“성공적인 딥러닝 응용은 새 알고리즘을 발명해서가 아니라, 평범한 알고리즘을 규율 있는 절차로 적용해서 만들어진다.”</strong> 모델을 처음 만들 때, 모델이 안 되는 이유를 진단할 때, 무엇을 다음에 시도할지 결정할 때 이 장의 4단계 절차가 모든 길잡이가 된다. Goodfellow는 같은 책 안에서 이 장이 가장 실용적이라고 직접 말한다.</p>
+  <p>그래서 다른 장들(6장 순방향 신경망, 7장 정칙화, 8장 최적화, 9장 합성곱, 10장 순환)은 “무엇을 쓸 수 있는가 — 부품 카탈로그”를 다루지만, 11장은 그 위에서 “언제 어느 부품을 끼울 것인가 — 운영 매뉴얼”을 다룬다. 그러므로 11장이 시험에 단독으로 나오기보다는, 다른 장의 문제 안에 <em>“왜 이 선택을 했는가”</em>를 묻는 형태로 녹아 나오는 경우가 많다. 책의 길이는 짧지만 출제 가중치는 절대 작지 않다는 뜻이다.</p>
+  <p>또 하나 — 11장에 등장하는 <strong>Street View 주소 인식</strong> 사례는 단순한 예시가 아니다. 책의 저자 Goodfellow 본인이 Google에서 실제로 진행한 상업 프로젝트이며, 11장 전체가 이 사례를 관통선으로 깔고 사이클을 펼친다. 시험에서 “책에서 본 적용 예”를 묻는다면 거의 확실히 이 사례다.</p>
 </section>
 
 <div class="twopole">
@@ -98,7 +99,7 @@
 </section>
 
 <footer class="colophon">
-  <p>이 해설은 Goodfellow, Bengio, Courville(2016) 11장 "Practical Methodology"를 바탕으로 정리한 시험 대비 자료다. Street View 주소 인식 사례를 관통선으로 깔고, 책의 네 단계 절차(<b>지표 결정 → 베이스라인 → 더 많은 데이터? → 하이퍼파라미터 · 디버깅</b>)를 위젯과 의사결정 흐름으로 직접 만질 수 있게 한다. 이 장이 시험에 직접 나오기보다는, 다른 장(Ch.7 정칙화, Ch.8 최적화, Ch.10 RNN)을 묶어 주는 운영 매뉴얼이라는 점을 의식하면서 읽는다.</p>
+  <p>이 해설은 Goodfellow, Bengio, Courville(2016) 11장 "Practical Methodology"를 바탕으로 정리한 시험 대비 자료다. Street View 주소 인식 사례를 관통선으로 깔고, 책의 네 단계 절차(<b>지표 결정 → 베이스라인 → 더 많은 데이터? → 하이퍼파라미터 · 디버깅</b>)를 위젯과 의사결정 흐름으로 직접 만질 수 있게 했다. 11개 sub로 분해해, 한 자리에서 외워야 했던 내용을 한 번에 한 가지씩 다룬다.</p>
   <p class="src">
     원문 · <a href="https://www.deeplearningbook.org/contents/guidelines.html">deeplearningbook.org/guidelines</a><br>
     과제 요약 · <a href="../../../03-과제-제출/IntroToDL_Week8_22000168.md">IntroToDL_Week8_22000168.md (Ch.11-12)</a><br>
@@ -108,12 +109,17 @@
 
 <script>
   const SUBCHAPTERS = [
-    { no:'01', t:'실용 방법론의 필요성 — 왜 절차가 알고리즘보다 중요한가', d:'딥러닝 모델은 부품이 너무 많아서 한 번에 한 곳만 고쳐야 한다. Street View 주소 인식 사례로 “방법론 vs 새 알고리즘” 구도를 본다.', sp:['structure'] },
-    { no:'02', t:'성능 지표 선택 — 무엇을 최적화할지 정하는 게 절반', d:'정확도가 거짓말하는 순간들. 정밀도·재현율·F-score·커버리지의 수식 형태와 그것을 왜 그렇게 적었는지. 컨퓨전 매트릭스 슬라이더로 직접 만져 본다.', sp:['style','structure'] },
-    { no:'03', t:'베이스라인부터 — 최소 동작하는 모델 먼저', d:'입력 종류별 기본 모델 카탈로그(이미지=CNN, 시퀀스=GRU/LSTM, 표=MLP). SGD+모멘텀의 위치, 전이학습이 종종 최강인 이유.', sp:['structure','synth'] },
-    { no:'04', t:'데이터를 더 모을 것인가, 모델을 키울 것인가', d:'학습 곡선 두 줄(train · validation)이 어디서 멀어지는가만 보면 결정된다. 과소적합 vs 과대적합의 시각적 진단 + 로그스케일 외삽.', sp:['structure-lo','style']},
-    { no:'05', t:'하이퍼파라미터 탐색 전략 — grid · random · bayesian', d:'학습률이 왜 단연 1순위 하이퍼파라미터인가. 같은 예산 25회 시도에서 grid·random·bayesian의 결과 차이를 시뮬레이션으로 본다.', sp:['style','synth']},
-    { no:'06', t:'디버깅과 시험 대비 — 가설 → 검증 → 한 번에 한 가지', d:'활성·기울기 히스토그램, tiny dataset 적합, 자동미분 vs 유한차분 비교. 디버깅 결정 트리. Q1·Q2 모범답안과 시험 직전 체크리스트.', sp:['ink'] },
+    { no:'01', t:'알고리즘보다 절차가 중요한 이유', d:'책의 첫 명제 — 잘 적용된 평범한 알고리즘이 잘못 적용된 특이한 알고리즘을 보통 이긴다. Street View 주소 인식 사례로 “방법론 vs 새 알고리즘” 구도를 본다.', sp:['structure'] },
+    { no:'02', t:'성능 지표 선택 — 정확도가 답이 아닌 경우', d:'Bayes 오차의 의미, 비대칭 비용, 희귀 양성 문제. 정확도가 거짓말하는 4가지 상황과 그 안에서 어떤 지표를 골라야 하는가.', sp:['style'] },
+    { no:'03', t:'정밀도·재현율·F1·AUC — 언제 무엇을 쓰는가', d:'정밀도·재현율의 KaTeX 정의, F-score 가중치, ROC와 PR 곡선의 차이, AUC 단일 숫자의 함정. 컨퓨전 매트릭스 슬라이더로 직접 만진다.', sp:['style','structure'] },
+    { no:'04', t:'기본 베이스라인 — 어떤 모델로 시작하는가', d:'입력 종류별 카탈로그(이미지=CNN, 시퀀스=GRU/LSTM, 표=MLP). SGD+모멘텀의 위치, 전이학습이 종종 최강인 이유, BatchNorm·dropout·early stopping을 처음부터 켜는 이유.', sp:['structure','synth'] },
+    { no:'05', t:'데이터 모으기 vs 모델 키우기 — 학습 곡선 읽기', d:'훈련 오차와 검증 오차 두 줄만 보면 결정된다. 과소적합·과대적합·적절·노이즈 네 시나리오의 곡선을 인터랙티브로 보고, 로그스케일 외삽으로 “얼마나 더 모을지” 가늠한다.', sp:['structure-lo','style']},
+    { no:'06', t:'하이퍼파라미터 탐색 1 — grid vs random', d:'학습률이 단연 1순위 하이퍼파라미터인 이유(U자 곡선의 양쪽 끝이 모두 용량을 죽인다). grid는 왜 차원이 늘면 지수 폭발하는가, random search는 왜 log scale에서 sampling하나.', sp:['style','synth']},
+    { no:'07', t:'하이퍼파라미터 탐색 2 — 베이지안 최적화', d:'Spearmint, TPE, SMAC의 공통 아이디어 — 지금까지 본 결과로 “다음에 무엇을 시험할지”를 모델로 결정. 학습 한 번 자체가 비쌀 때 왜 베이지안이 random을 이기는가.', sp:['synth','structure']},
+    { no:'08', t:'디버깅 결정 트리 — 무엇부터 의심하는가', d:'책의 디버깅 5종 세트(시각화, 고신뢰 오답, tiny dataset, 자동미분 vs 유한차분, 활성·기울기 히스토그램)를 “무엇부터 의심할지”의 결정 트리로 풀어 인터랙티브로 만진다.', sp:['ink']},
+    { no:'09', t:'실패 모드 분류 — 데이터·모델·코드 버그 진단', d:'증상이 같아도 원인은 셋 — 데이터 문제(라벨 오류, 분포 이동), 모델 문제(용량 부족, 정칙화 과다), 코드 버그(축 뒤집힘, 정규화 누락). 어떤 증상이 어떤 원인을 가리키는가.', sp:['style-lo','ink']},
+    { no:'10', t:'실전 워크플로우 — 빠른 사이클의 가치', d:'Goodfellow가 강조하는 “한 번의 사이클을 얼마나 빠르게 도는가”의 의미. 코드 1줄 수정 후 결과까지 5분 vs 5시간의 차이는 1년 후 모델 품질에 어떻게 누적되는가.', sp:['synth','style']},
+    { no:'11', t:'시험 대비 (15-20개)', d:'Q1·Q2 모범답안(생성·대화 모델의 평가 + 활성/기울기 모니터링이 잡는 다른 문제들). 헷갈리는 정의 20개 빠른 점검. 다른 장(7·8·10장)과의 연결고리.', sp:['ink','structure']},
   ];
   const colMap = { structure:'var(--structure)', 'structure-lo':'var(--structure-lo)', style:'var(--style)', 'style-lo':'var(--style-lo)', synth:'var(--synth)', ink:'var(--ink-soft)' };
   const platesEl = document.getElementById('plates');
@@ -163,10 +169,9 @@
       const cx = (c / (COLS - 1) - 0.5) * W;
       const cy = (r / (ROWS - 1) - 0.5) * H;
       content[p*3]=cx; content[p*3+1]=cy; content[p*3+2]=Math.sin(cx*1.6)*Math.cos(cy*1.6)*0.05;
-      // 방법론: 네 단계 원환 (지표→베이스라인→데이터·튜닝→디버깅 → 다시 지표)
       const ang = Math.atan2(cy, cx);
       const rad = Math.sqrt(cx*cx + cy*cy);
-      const stage = Math.floor(((ang + Math.PI) / (Math.PI*2)) * 4); // 0-3
+      const stage = Math.floor(((ang + Math.PI) / (Math.PI*2)) * 4);
       const targetRad = 0.55 + (rad % 0.7) * 0.3;
       const sx = Math.cos(ang) * targetRad + Math.cos(stage * Math.PI/2) * 0.45;
       const sy = Math.sin(ang) * targetRad + Math.sin(stage * Math.PI/2) * 0.45;

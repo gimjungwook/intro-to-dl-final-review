@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>12 / 11 / 시험 대비 — 한 장 요약과 예상 문제</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .summary-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: .55rem; max-width: var(--measure); margin: 1.6rem auto; padding-inline: 1.4rem; }
+  @media (max-width: 720px) { .summary-grid { grid-template-columns: 1fr 1fr; } }
+  .sum-card { padding: .9rem .85rem; border: 1px solid var(--line); border-radius: 9px; background: #fff; border-top: 3px solid var(--structure); display: flex; flex-direction: column; gap: .35rem; }
+  .sum-card.s2 { border-top-color: var(--style); }
+  .sum-card.s3 { border-top-color: var(--synth); }
+  .sum-card.s4 { border-top-color: var(--structure-lo); }
+  .sum-card.s5 { border-top-color: var(--style-lo); }
+  .sum-card .sc-title { font-family: var(--serif); font-size: 1rem; color: var(--ink); }
+  .sum-card .sc-body { font-size: .76rem; color: var(--ink-soft); line-height: 1.55; }
+  .sum-card .sc-body b { color: var(--ink); font-weight: 600; }
+  .sum-card .sc-key { font-family: var(--mono); font-size: .64rem; color: var(--ink-faint); letter-spacing: .04em; margin-top: .3rem; }
+
+  .compare-table { max-width: var(--measure); margin: 1.6rem auto; padding-inline: 1.4rem; }
+  .compare-table table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+  .compare-table th { text-align: left; padding: .7rem .8rem; background: var(--paper-2); font-family: var(--serif); font-size: .95rem; color: var(--ink); border-bottom: 2px solid var(--line); }
+  .compare-table td { padding: .65rem .8rem; border-bottom: 1px solid var(--line-soft); vertical-align: top; color: var(--ink-soft); line-height: 1.5; }
+  .compare-table td:first-child { font-family: var(--mono); font-size: .82rem; color: var(--structure); white-space: nowrap; font-weight: 600; }
+  .compare-table tr:hover td { background: var(--paper); }
+
+  .qa { border: 1px solid var(--line); border-radius: 11px; margin: .7rem auto; max-width: var(--measure); overflow: hidden; background: #fff; }
+  .qa-q { display: flex; gap: .8rem; align-items: baseline; padding: 1rem 1.2rem; cursor: pointer; font-family: var(--serif); font-size: 1.06rem; color: var(--ink); transition: background .15s; }
+  .qa-q:hover { background: var(--paper-2); }
+  .qa-q .qn { font-family: var(--mono); font-size: .8rem; color: var(--style); flex: none; }
+  .qa-q .qx { margin-left: auto; color: var(--ink-faint); transition: transform .2s var(--ease); flex: none; }
+  .qa.open .qa-q .qx { transform: rotate(45deg); }
+  .qa-a { max-height: 0; overflow: hidden; transition: max-height .4s var(--ease); }
+  .qa.open .qa-a { max-height: 80rem; }
+  .qa-a-inner { padding: 0 1.2rem 1.3rem; font-size: .95rem; color: var(--ink-soft); line-height: 1.65; }
+  .qa-a-inner .rel { font-family: var(--mono); font-size: .7rem; color: var(--ink-faint); display: block; margin-bottom: .5rem; }
+  .qa-a-inner b { color: var(--ink); }
+  .qa-a-inner code { font-family: var(--mono); font-size: .85em; background: var(--paper-sink); padding: .1em .3em; border-radius: 3px; }
+
+  .checklist { max-width: var(--measure); margin: 1.4rem auto; padding-inline: 1.4rem; list-style: none; }
+  .checklist li { position: relative; padding: .5rem 0 .5rem 1.9rem; border-bottom: 1px solid var(--line-soft); font-size: .92rem; color: var(--ink-soft); }
+  .checklist li::before { content: "✓"; position: absolute; left: 0; top: .5rem; width: 1.3rem; height: 1.3rem; line-height: 1.3rem; text-align: center; border-radius: 50%; background: var(--synth-bg); color: var(--synth); font-size: .8rem; font-weight: 700; }
+  .checklist li b { color: var(--ink); }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-chapter 11 / 마지막 한 시간</span>
+      <h1>시험 대비 —<br><span class="t-style">한 장</span>으로 정리한 응용 챕터</h1>
+      <p class="lede">D-day 직전에 다시 펼쳐 보기 위한 페이지. 다섯 도메인의 한 줄 정답, 도메인 비교 표, 예상 문제 7개의 모범 답안, 그리고 시험장에서 꼭 끌어내야 할 키워드 체크리스트.</p>
+    </header>
+
+    <div class="prose">
+      <h2>다섯 도메인 — 카드 한 장 요약</h2>
+      <p>각 도메인의 “본체 + 핵심 트릭 + 시험 단골 키워드”를 한 카드에 담았다. 한 카드를 5초 안에 머릿속에 떠올릴 수 있어야 한다.</p>
+    </div>
+
+    <div class="summary-grid">
+      <div class="sum-card s1">
+        <div class="sc-title">Vision</div>
+        <div class="sc-body"><b>CNN + softmax + NLL</b>. ImageNet 사전훈련 가중치 사용. 표준화·증강·국소 대비 정규화로 “외울 필요 없는 변이”를 미리 제거.</div>
+        <div class="sc-key">사전학습 · 증강 · 정규화</div>
+      </div>
+      <div class="sum-card s2">
+        <div class="sc-title">Speech</div>
+        <div class="sc-body"><b>스펙트로그램 + RNN/Transformer + CTC</b>. 파형은 너무 길어 STFT로 압축. 정렬 문제를 CTC가 자동으로 학습.</div>
+        <div class="sc-key">STFT · CTC · end-to-end</div>
+      </div>
+      <div class="sum-card s3">
+        <div class="sc-title">NLP</div>
+        <div class="sc-body"><b>임베딩 + 인코더-디코더 + 어텐션</b>. 차원의 저주를 분산 표상으로 해소. 큰 어휘 softmax는 hierarchical·NCE·sampling.</div>
+        <div class="sc-key">임베딩 · 어텐션 · NCE</div>
+      </div>
+      <div class="sum-card s4">
+        <div class="sc-title">RecSys</div>
+        <div class="sc-body"><b>행렬 분해 = 임베딩 내적</b>. 관찰된 칸만 손실에 부과. 콜드 스타트 + 탐험-착취 충돌이 RL로 이어짐.</div>
+        <div class="sc-key">잠재 인자 · 콜드 스타트</div>
+      </div>
+      <div class="sum-card s5">
+        <div class="sc-title">RL</div>
+        <div class="sc-body"><b>정책/가치 신경망 + 누적 할인 보상</b>. ε-greedy로 탐험-착취 균형. DQN(가치 기반) vs REINFORCE(정책 기반).</div>
+        <div class="sc-key">벨만 · DQN · ε-greedy</div>
+      </div>
+    </div>
+
+    <div class="prose">
+      <h2>도메인 비교 표 — 같은 골격, 다른 옷</h2>
+      <p>응용 챕터의 모든 시험 문제는 결국 이 표로 환원된다. 도메인이 다르면 무엇이 바뀌고 무엇이 그대로인가.</p>
+    </div>
+
+    <div class="compare-table">
+      <table>
+        <thead>
+          <tr><th>도메인</th><th>입력 모양</th><th>본체</th><th>출력 손실</th><th>핵심 트릭</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Vision</td><td>H×W×3 텐서</td><td>CNN</td><td>softmax + NLL</td><td>증강 · 사전훈련</td></tr>
+          <tr><td>Speech</td><td>1D 파형 → 2D 스펙트로그램</td><td>2D conv + RNN/Transformer</td><td>CTC</td><td>STFT · 정렬 학습</td></tr>
+          <tr><td>NLP</td><td>이산 토큰열</td><td>임베딩 + Enc-Dec + Attention</td><td>(큰 어휘) softmax + NLL</td><td>분산 표상 · NCE</td></tr>
+          <tr><td>RecSys</td><td>희소 (user, item, rating) 쌍</td><td>임베딩 행렬</td><td>관찰값 MSE + L2</td><td>잠재 인자 · 콜드 스타트</td></tr>
+          <tr><td>RL</td><td>(s, a, r, s′) 시계열</td><td>정책/가치 신경망</td><td>벨만 / 정책 경사</td><td>탐험-착취 · 할인</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="prose">
+      <h2>예상 문제 7개 — 클릭하면 모범 답안</h2>
+      <p>아래는 본 챕터의 LMS 질문 2개를 포함해, 응용 챕터에서 “출제자가 묻고 싶어할” 질문 7개의 모범 답안이다. 시험 직전 30분에 펼쳐서 답이 자동으로 나오는지 확인해 보면 된다.</p>
+    </div>
+
+    <div id="qaHost"></div>
+
+    <div class="prose">
+      <h2>시험장에서 꼭 끌어내야 할 키워드 체크리스트</h2>
+      <p>답안에 다음 키워드들이 들어가면 점수가 안정된다. 답안을 한 줄 쓰고 “이 키워드 중 두 개가 들어갔는가?”를 자문하라.</p>
+    </div>
+
+    <ul class="checklist">
+      <li><b>비전 분류 워크플로</b>를 묻는 문제 → <code>표준화</code>·<code>증강</code>·<code>사전훈련(transfer learning)</code>·<code>softmax</code>·<code>음의 로그우도(NLL)</code>·<code>국소 대비 정규화</code></li>
+      <li><b>음성 인식 진화</b>를 묻는 문제 → <code>GMM-HMM</code>·<code>DNN-HMM</code>·<code>CTC</code>·<code>end-to-end LSTM</code>·<code>2D conv on spectrogram</code>·<code>17.7%</code></li>
+      <li><b>왜 임베딩</b>이냐를 묻는 문제 → <code>차원의 저주</code>·<code>one-hot 등거리 문제</code>·<code>분포 가설</code>·<code>분산 표상</code>·<code>의미적 방향(king-man+woman)</code></li>
+      <li><b>왜 어텐션</b>이냐를 묻는 문제 → <code>고정 요약 벡터 한계</code>·<code>긴 시퀀스 정보 손실</code>·<code>soft alignment</code>·<code>미분 가능한 정렬 학습</code>·<code>NMT가 첫 등장 도메인</code></li>
+      <li><b>큰 어휘 softmax</b>를 묻는 문제 → <code>hierarchical softmax</code>·<code>NCE</code>·<code>importance sampling</code>·<code>negative sampling</code>·<code>O(N) → O(log N)</code></li>
+      <li><b>행렬 분해 추천</b>을 묻는 문제 → <code>희소성</code>·<code>R ≈ UVᵀ</code>·<code>관찰값에만 손실</code>·<code>L2 정칙화</code>·<code>잠재 인자(latent factor)</code>·<code>콜드 스타트</code></li>
+      <li><b>RL의 본질적 어려움</b>을 묻는 문제 → <code>탐험-착취 trade-off</code>·<code>지연 보상(credit assignment)</code>·<code>닫힌 루프 데이터</code>·<code>분포 이동</code>·<code>ε-greedy</code></li>
+      <li><b>도메인 비교</b>를 묻는 문제 → <code>입력 모양</code>·<code>본체(CNN/RNN/임베딩)</code>·<code>손실 함수(NLL/CTC/MSE/벨만)</code>·<code>도메인 고유 증강</code></li>
+    </ul>
+
+    <div class="prose">
+      <h2>다음으로 — 13-15장과의 연결</h2>
+      <p>응용 챕터는 책의 Part II(현대적 실천)의 마지막 장이다. 여기서 보인 임베딩과 표상이라는 키워드는 곧장 Part III의 큰 주제로 이어진다.</p>
+      <ul>
+        <li><a href="../ch13-linear-factor/index.html">13장 선형 요소 모델</a> → PCA·ICA·희소 코딩. 비지도로 분산 표상을 잡는 가장 단순한 방법들. 추천 시스템의 행렬 분해가 PCA의 사촌.</li>
+        <li><a href="../ch14-autoencoder/index.html">14장 자기부호화기</a> → 입력을 재구성하도록 학습하면 가운데 층에 “저차원 표상”이 자동으로 잡힌다. 단어 임베딩의 일반화.</li>
+        <li><a href="../ch15-representation/index.html">15장 표상 학습</a> → 사전훈련·전이학습·매니폴드 가정·인과 요소. 응용 챕터의 “사전학습”이 왜 작동하는지의 이론적 뼈대.</li>
+      </ul>
+
+      <p>시험 D-9에서 가장 시간 대비 효과가 좋은 복습 경로는 <strong>Ch.9(CNN) → Ch.10(RNN) → Ch.12(응용)</strong>의 삼각형이다. Ch.12는 단독으로 외울 게 많지 않다 — Ch.9·10의 부품이 어떻게 도메인별로 조립되는지의 카탈로그라는 점만 기억하면, 단답형이든 서술형이든 안정적으로 답이 나온다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    { no: '01', t: '응용 챕터의 의미' },
+    { no: '02', t: '대규모 비전 분류 1 — ImageNet' },
+    { no: '03', t: '대규모 비전 분류 2 — 증강·전이학습' },
+    { no: '04', t: '음성 인식 — 파형 → 스펙트로그램' },
+    { no: '05', t: 'NLP 1 — 단어 임베딩' },
+    { no: '06', t: 'NLP 2 — 분포 가설·임베딩 산수' },
+    { no: '07', t: 'NLP 3 — 언어 모델·번역·어텐션' },
+    { no: '08', t: '추천 시스템 — 협업 필터링' },
+    { no: '09', t: '강화학습 — agent-environment 루프' },
+    { no: '10', t: '공통 교훈 — 표상 위의 단순 산수' },
+    { no: '11', t: '시험 대비' },
+  ];
+  function buildNav(cur) {
+    const tb = document.querySelector('.topbar');
+    if (tb) tb.innerHTML =
+      '<a class="home" href="index.html">← Chapter 12 / 응용</a>' +
+      '<span class="ch-mini">SUB ' + cur + ' / 11</span>';
+    const ol = document.querySelector('.ch-nav ol');
+    if (ol) ol.innerHTML = SUBS.map(c =>
+      '<li><a href="' + c.no + '.html"' + (c.no === cur ? ' class="current"' : '') + '>' + c.t + '</a></li>').join('');
+    const foot = document.querySelector('.ch-foot');
+    if (foot) {
+      const i = SUBS.findIndex(c => c.no === cur);
+      const prev = i > 0 ? SUBS[i - 1] : { no: '', t: '표지로', _href: 'index.html' };
+      const next = i < SUBS.length - 1 ? SUBS[i + 1] : { no: '', t: '표지로', _href: 'index.html' };
+      const hp = prev._href || (prev.no + '.html');
+      const hn = next._href || (next.no + '.html');
+      foot.innerHTML =
+        '<a href="' + hp + '"><div class="dir">← 이전</div><div class="ti">' + prev.t + '</div></a>' +
+        '<a href="' + hn + '" class="next"><div class="dir">다음 →</div><div class="ti">' + next.t + '</div></a>';
+    }
+  }
+  function initScroll() {
+    const bar = document.querySelector('.scroll-progress');
+    if (!bar) return;
+    const on = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    document.addEventListener('scroll', on, { passive: true }); on();
+  }
+
+  window.addEventListener('load', () => {
+    buildNav('11'); initScroll();
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false},
+        ],
+        throwOnError: false,
+      });
+    }
+  });
+
+  // Q&A 카드
+  const QAS = [
+    {
+      q: '비전 분류 파이프라인의 다섯 단계를 차례로 말하고, 각 단계가 왜 필요한지 한 문장씩 설명하라.',
+      rel: '12.01 · 12.06 표',
+      a: `<b>① 원본 입력</b>(H×W×3 텐서) → <b>② 표준화·정규화</b>(채널별 평균 0, 분산 1로 맞춰 활성화 함수가 잘 작동하는 영역으로 입력을 모음) → <b>③ 데이터 증강</b>(좌우 반전·작은 평행 이동·색조 흔들기로 가짜 변이를 주입해 강건성 확보) → <b>④ CNN 본체</b>(합성곱·풀링으로 위치 정보를 점차 버리고 의미 정보를 압축, ImageNet 사전훈련 가중치로 초기화) → <b>⑤ softmax + 음의 로그우도</b>(점수를 합 1 확률로 압축하고 정답 분포와의 거리를 측정 = MLE). 어느 한 단계도 단독으로 충분하지 않다 — 워크플로 전체가 모델이다.`,
+    },
+    {
+      q: 'CTC(Connectionist Temporal Classification)가 왜 음성 인식에 필요한가? 식의 형태와 함께 설명하라.',
+      rel: '12.02',
+      a: `음성은 <b>가변 길이 입력 → 가변 길이 출력</b>이고, 어느 프레임이 어느 글자에 대응하는지의 정렬이 라벨에 적혀 있지 않다. CTC는 “빈 토큰(blank, ϕ)”을 알파벳에 추가한 뒤, 모든 가능한 프레임-글자 정렬 경로의 확률을 더해 정답 시퀀스의 확률을 정의한다: <code>p(y|X) = Σ_{π ∈ 𝓑⁻¹(y)} Π_t p(π_t|X)</code>. 𝓑는 blank 제거+중복 병합 함수. 이렇게 하면 모델이 “어느 정렬이 맞는가”를 추측할 필요 없이, <b>모든 정렬을 동시에 고려해</b> 정답 시퀀스의 우도를 최대화할 수 있다. 동적 계획법(HMM forward 알고리즘)으로 효율적으로 계산된다.`,
+    },
+    {
+      q: '왜 어텐션은 NLP(특히 신경 기계번역)에서 먼저 등장하고 채택되었는가? 비전·음성과 비교해서 답하라.',
+      rel: '12.03 · LMS Q1',
+      a: `NLP에서 어텐션이 먼저 채택된 이유는 두 가지다. (1) <b>출력이 정확한 위치 정보를 요구</b>한다 — 번역에서 한국어 단어 하나는 영어 원문의 특정 위치 단어와 짝지어진다. 비전 분류의 출력은 한 클래스, 음성 인식의 출력은 정렬되지 않은 글자열로, 이런 명시적 “시점별 매핑” 요구가 약하다. (2) <b>고정 요약 벡터의 병목이 가장 극심</b>했다 — 50단어 문장을 300차원 벡터에 다 욱여넣어야 했던 NMT에서 손실이 가장 컸다. 비전은 처음부터 CNN이 공간 정보를 통째로 들고 있었고, 음성은 CTC로 정렬을 다른 방식으로 풀고 있었다. NLP에 어텐션이 들어간 뒤, 그 가치가 입증되자 ViT(비전), Conformer(음성)로 역수출되었다.`,
+    },
+    {
+      q: '데이터 증강의 의미가 비전과 NLP/음성에서 본질적으로 어떻게 다른가?',
+      rel: '12.01 · 12.02 · LMS Q2',
+      a: `<b>비전</b>의 증강은 <b>공간적 대칭성</b>을 이용한다 — 좌우 반전, 작은 평행 이동, 작은 회전, 색조·채도 흔들기. 이미지의 라벨이 이런 변환에 불변이라는 도메인 지식의 직접 적용이다. <b>음성</b>은 좌우 반전이 불가능(거꾸로 재생하면 다른 단어)하므로 대신 <b>속도 변화·소음 추가·SpecAugment</b>(스펙트로그램 시간/주파수 마스킹)를 쓴다. <b>NLP</b>는 더 어렵다 — 단어 치환은 문법·의미를 깨기 쉽다. 흔히 쓰는 처방은 <b>back-translation</b>(번역→역번역), <b>synonym replacement</b>, <b>word dropout</b>. 핵심 차이: 비전은 “라벨이 절대 안 바뀌는 변환”을 풍부하게 가지지만, 언어는 변환 대부분이 라벨을 미묘하게 바꾼다. 그래서 NLP 증강은 “라벨이 거의 안 바뀌는” 약한 변형으로 한정되고, 효과가 비전만큼 강력하지 않다.`,
+    },
+    {
+      q: 'word2vec 같은 단어 임베딩이 one-hot 표현보다 왜 강력한가? "차원의 저주"와 연결해서 설명하라.',
+      rel: '12.03',
+      a: `One-hot 표현에서는 어휘 V 안의 <b>모든 단어 쌍의 거리가 같다</b>. 결과적으로 “cat이 들어간 문장에서 배운 패턴”이 “dog이 들어간 문장”으로 전혀 일반화되지 않는다 — 학습 데이터의 정보가 단어 단위로 고립된다. 이것이 <b>NLP판 차원의 저주</b>다. 임베딩은 단어를 100-300차원 실수 벡터로 옮기되, <b>분포 가설</b>(같은 문맥에 등장하는 단어는 비슷한 의미)에 따라 의미 가까운 단어를 좌표상으로도 가깝게 놓는다. 그 결과 (1) 한 단어에 대한 학습이 의미적으로 가까운 모든 단어로 일반화되고, (2) 의미가 좌표 방향으로 구조화되어 <code>king − man + woman ≈ queen</code> 같은 벡터 산수가 의미 산수처럼 작동한다.`,
+    },
+    {
+      q: '추천 시스템의 행렬 분해에서, 왜 손실 함수에 “관찰된 칸만” 넣는가? 빈칸을 0으로 보면 어떤 일이 생기는가?',
+      rel: '12.04',
+      a: `평점 행렬은 99% 이상이 빈칸이다. <b>빈칸을 0으로 간주해 손실에 넣으면</b>, 모델은 “모든 칸을 0으로 예측”하는 자명한 해에 끌려간다 — 그것이 거의 모든 칸에서 정답이 되니까. 빈칸은 “0”이 아니라 “모름(unknown)”이다. 그래서 손실은 <code>Σ_{(u,i)∈Ω} (R_ui − u_u·v_i)²</code>처럼 <b>관찰된 쌍 Ω에만</b> 정의하고, 빈칸은 <b>예측 대상</b>으로 따로 떼어 둔다. 학습된 임베딩이 관찰된 패턴을 잘 설명하면, 같은 임베딩이 빈칸에서도 합리적인 예측을 내놓을 것이라는 베팅이다. L2 정칙화 <code>λ(||U||²+||V||²)</code>는 임베딩이 관찰값에 과적합하는 것을 막아 이 베팅이 무너지지 않게 한다.`,
+    },
+    {
+      q: '강화학습의 탐험-착취 충돌을 추천 시스템의 콜드 스타트 문제와 연결해서 설명하라.',
+      rel: '12.04 · 12.05',
+      a: `둘은 같은 구조의 다른 이름이다. RL agent가 ε=0(완전 착취)으로 굳으면, 한 번 “좋아 보인” arm만 반복해 당겨 진짜 최적 arm을 영원히 못 찾을 수 있다. 추천 시스템도 마찬가지 — 한 번 사용자에게 “액션 좋아함”이라고 추정하면 액션만 추천하게 되고, 사용자는 액션만 보게 되고, 데이터는 액션으로만 쌓이며, 모델은 이 추정을 영원히 강화한다. 사용자가 사실은 다큐멘터리도 좋아했을 가능성은 데이터에 들어오지 않는다. 양쪽 다 해법은 같다 — <b>ε-greedy 같은 의도적 탐험</b>으로 “지금 추정 최적이 아닌 선택”을 가끔 강제해야 한다. 더 본질적으로, 두 문제 모두 <b>“모델의 행동이 다음 학습 데이터를 결정한다”</b>는 폐쇄 루프 구조 때문에 발생하고, 그래서 추천 시스템은 점차 contextual bandit / RL 프레임워크로 재정의되어 왔다.`,
+    },
+  ];
+  const host = document.getElementById('qaHost');
+  QAS.forEach((qa, i) => {
+    const d = document.createElement('div');
+    d.className = 'qa';
+    d.innerHTML = `
+      <div class="qa-q">
+        <span class="qn">Q${String(i+1).padStart(2,'0')}</span>
+        <span>${qa.q}</span>
+        <span class="qx">+</span>
+      </div>
+      <div class="qa-a"><div class="qa-a-inner"><span class="rel">관련: ${qa.rel}</span>${qa.a}</div></div>
+    `;
+    d.querySelector('.qa-q').addEventListener('click', () => d.classList.toggle('open'));
+    host.appendChild(d);
+  });
+</script>
+</body>
+</html>

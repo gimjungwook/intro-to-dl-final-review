@@ -3,41 +3,24 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>07. 시험 대비 체크리스트</title>
+<title>07. 분산과 공분산 — 무상관 ≠ 독립</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
-  /* 시험 빈출 한 줄 카드 */
-  .quick { max-width: var(--measure); margin: 1.6rem auto; padding-inline: 1.4rem; }
-  .quick-card { background: #fff; border: 1px solid var(--line); border-left: 3px solid var(--structure); border-radius: 0 9px 9px 0; padding: .9rem 1.2rem; margin: .55rem 0; }
-  .quick-card .q { font-family: var(--serif); font-size: 1.02rem; color: var(--ink); margin-bottom: .35rem; }
-  .quick-card .a { font-size: .9rem; color: var(--ink-soft); line-height: 1.55; }
-  .quick-card .a code { font-family: var(--mono); background: var(--paper-sink); padding: .05em .35em; border-radius: 3px; font-size: .88em; }
-  .quick-card.tr { border-left-color: var(--style); }
-  .quick-card.tr .a b { color: var(--style); }
-
-  /* 공식 박스 */
-  .formula-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .7rem; max-width: var(--measure); margin: 1.4rem auto; padding-inline: 1.4rem; }
-  .formula { background: var(--paper-2); padding: .8rem 1rem; border-radius: 8px; border-left: 2px solid var(--ink-soft); }
-  .formula .name { font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; color: var(--ink-faint); text-transform: uppercase; margin-bottom: .25rem; }
-  .formula .ex { font-family: var(--mono); font-size: .92rem; color: var(--ink); overflow-x: auto; }
-  @media (max-width: 600px){ .formula-grid{ grid-template-columns: 1fr; } }
-
-  /* 페이지별 색인 */
-  .index-back { max-width: var(--measure); margin: 1.4rem auto; padding-inline: 1.4rem; }
-  .index-back ol { padding-left: 1.6rem; }
-  .index-back ol li { margin: .3rem 0; font-size: .92rem; color: var(--ink-soft); line-height: 1.5; }
-  .index-back ol li a { color: var(--structure); text-decoration: none; font-weight: 600; }
-  .index-back ol li a:hover { text-decoration: underline; }
-
-  /* 30분 회독 계획 */
-  .plan { max-width: var(--measure); margin: 1.4rem auto; padding-inline: 1.4rem; }
-  .plan-row { display: grid; grid-template-columns: 4rem 1fr; gap: 1rem; padding: .55rem 0; border-bottom: 1px solid var(--line-soft); font-size: .92rem; }
-  .plan-row .t { font-family: var(--mono); font-size: .8rem; color: var(--style); padding-top: .1rem; }
-  .plan-row .what { color: var(--ink); line-height: 1.5; }
-  .plan-row .what b { color: var(--structure); }
+  .scatter-stage { padding: 1.4rem 1.1rem; display: grid; gap: 1rem; }
+  .scatter-canvas { width: 100%; height: 340px; display: block; background: #fff; border: 1px solid var(--line-soft); border-radius: 7px; }
+  .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .5rem; font-family: var(--mono); font-size: .78rem; }
+  .stat-grid .item { padding: .6rem .8rem; background: var(--paper-2); border-radius: 7px; }
+  .stat-grid .item .lab { display: block; font-size: .66rem; letter-spacing: .12em; color: var(--ink-faint); text-transform: uppercase; margin-bottom: .2rem; }
+  .stat-grid .item .val { font-size: 1rem; font-weight: 600; color: var(--ink); }
+  .stat-grid .item.cov .val { color: var(--style); }
+  .stat-grid .item.cor .val { color: var(--structure); }
+  .preset-row { display: flex; gap: .5rem; flex-wrap: wrap; padding: .2rem 0; }
+  .preset-row button { font-family: var(--mono); font-size: .72rem; letter-spacing: .04em; padding: .45rem .8rem; border-radius: 6px; border: 1px solid var(--line); background: #fff; color: var(--ink-soft); cursor: pointer; }
+  .preset-row button.on { background: var(--style); color: #fff; border-color: var(--style); }
+  @media (max-width: 700px){ .stat-grid{ grid-template-columns: repeat(2,1fr); } }
 </style>
 </head>
 <body>
@@ -49,152 +32,98 @@
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Sub-chapter 07. 마지막 30분 회독</span>
-      <h1>시험 직전에<br>한 번에 훑는 <span class="t-style">체크리스트</span></h1>
-      <p class="lede">정의 한 줄, 공식 한 줄, 헷갈리기 쉬운 함정, 객관식 빈출 답. 다른 페이지에서 다 본 내용을 시험 직전 30분 동안 다시 한번 통과시키기 위한 자료다.</p>
+      <span class="kicker">Sub-chapter 07. 산포와 동조</span>
+      <h1>분산과 공분산 —<br><span class="t-style">무상관 ≠ 독립</span></h1>
+      <p class="lede">기대값이 분포의 무게중심이라면, 분산(variance)은 그 중심에서 얼마나 흩어졌는지를 잰다. 공분산(covariance)은 변수 두 개가 함께 움직이는 경향을 잰다. 그런데 함정이 하나 있다 — 공분산이 0이라고 해서 두 변수가 독립인 것은 아니다.</p>
     </header>
 
     <div class="prose">
-      <h2>가장 자주 나오는 한 줄 답 12개</h2>
-      <p>아래 카드들은 객관식 또는 단답 시험에서 그대로 정답인 한 줄들이다. 질문을 읽고 답을 가린 채 자신이 한 줄로 답할 수 있는지 확인하라.</p>
+      <p>앞 페이지에서 본 기대값은 분포를 한 점으로 압축하는 가장 자연스러운 방법이었다. 그러나 한 점만으로는 분포를 충분히 묘사하지 못한다. 같은 평균을 가졌어도 좁게 모인 분포가 있고 넓게 퍼진 분포가 있다. 시험 점수 평균이 70점인 반(class)이라도, 모두가 65에서 75 사이에 모여 있는 반과 30에서 100까지 흩어진 반은 전혀 다른 반이다. 이 흩어진 정도를 한 숫자로 잡는 양이 <strong>분산(variance)</strong>이다.</p>
+
+      <p>분산은 평균에서 떨어진 거리의 제곱의 평균으로 정의된다. 식은 다음과 같다.</p>
+
+      <div class="math-block">$$ \mathrm{Var}(X) = \mathbb{E}\!\left[ (X - \mathbb{E}[X])^2 \right] $$</div>
+      <p class="math-note">$X - \mathbb{E}[X]$는 평균에서 떨어진 거리(편차). 제곱한 뒤 기대값을 다시 취한 양이 분산.</p>
+
+      <p>왜 제곱하는가. 가장 자연스러워 보이는 정의는 "평균에서 떨어진 거리의 평균"일 것이다. 그런데 $X - \mathbb{E}[X]$를 그대로 평균 내면 양수와 음수가 정확히 상쇄되어 항상 0이 나온다(기대값의 정의에서 그렇다). 그래서 부호를 없애야 한다. 부호를 없애는 방법은 둘이 있다 — 절댓값을 쓰거나 제곱을 쓰는 것이다. 절댓값을 써도 흩어짐을 잴 수는 있지만, 절댓값은 미분이 매끄럽지 않고 대수적 조작이 까다롭다. 반면 제곱은 모든 곳에서 부드럽게 미분되며, $(a+b)^2 = a^2 + 2ab + b^2$ 같은 친숙한 전개가 가능해 식을 다루기가 훨씬 편하다. 그래서 통계학·확률론은 제곱을 표준으로 채택했다.</p>
+
+      <p>제곱은 또 한 가지 효과를 만든다 — 큰 편차일수록 더 강하게 벌점을 매긴다. 평균에서 1만큼 떨어진 점은 1만큼 기여하지만, 10만큼 떨어진 점은 100만큼 기여한다. 그래서 분산은 큰 이상치(outlier)에 민감하다. 정규분포 같은 종 모양 분포에서는 이 성질이 적당히 작용하지만, 꼬리가 두꺼운 분포(heavy-tailed distribution)에서는 분산이 매우 크게 나와 분포의 성격을 왜곡할 수도 있다. 이 점은 시험에서는 자주 나오지 않지만 실무에서는 중요한 함정이다.</p>
+
+      <p>제곱이 단위까지 바꾸는 부작용도 짚어두자. 점수의 단위가 "점"이라면 분산의 단위는 "점의 제곱"이 된다 — 직관적이지 않다. 그래서 제곱근을 다시 취해 단위를 원래대로 돌려놓은 양을 표준편차(standard deviation)라 부른다. $\sigma = \sqrt{\mathrm{Var}(X)}$. 분산과 표준편차는 같은 정보를 담은 두 가지 표기일 뿐이다. 일반적으로 "퍼짐"을 직관적으로 말할 때는 표준편차를, 식 전개에서는 분산을 쓴다.</p>
+
+      <h2>공분산 — 두 변수가 함께 움직이는 경향</h2>
+      <p>변수가 두 개일 때는 한 가지 양이 더 등장한다. <strong>공분산(covariance)</strong>은 두 변수가 자기 평균에서 어떻게 동시에 떨어지는지를 잰다.</p>
+
+      <div class="math-block">$$ \mathrm{Cov}(X, Y) = \mathbb{E}\!\left[ (X - \mathbb{E}[X])(Y - \mathbb{E}[Y]) \right] $$</div>
+      <p class="math-note">$X$의 편차와 $Y$의 편차를 곱한 뒤 기대값을 취한다. 분산이 한 변수의 제곱이라면, 공분산은 두 변수의 곱.</p>
+
+      <p>식의 의미는 한 줄로 압축된다. $X$가 자기 평균보다 클 때 $Y$도 자기 평균보다 큰 경향이면 두 편차의 곱이 양수가 되고, 평균을 내도 양수가 나온다 → 공분산이 양수다. 반대로 $X$가 클 때 $Y$가 작아지는 경향이면 곱이 음수가 되고 공분산은 음수다. 두 변수가 따로 노는 것 같으면 양수와 음수가 섞여 평균이 0에 가까워진다.</p>
+
+      <p>그런데 공분산에는 한 가지 불편한 점이 있다. 단위가 두 변수의 단위 곱이라는 점이다. 키(cm)와 몸무게(kg)의 공분산은 "cm·kg" 단위가 되어 그 값이 큰지 작은지 직관적으로 비교하기 어렵다. 그래서 공분산을 양쪽 표준편차로 나눈 무차원(dimensionless) 양인 <strong>상관계수(correlation coefficient)</strong> $\rho$를 자주 쓴다.</p>
+
+      <div class="math-block">$$ \rho(X, Y) = \frac{\mathrm{Cov}(X, Y)}{\sigma_X \, \sigma_Y} $$</div>
+      <p class="math-note">공분산을 두 변수의 표준편차로 나눈 양. $-1 \leq \rho \leq 1$로 항상 떨어진다. 단위에 무관해서 비교 가능.</p>
+
+      <p>$\rho = 1$이면 $Y$가 $X$의 양의 선형 함수, $\rho = -1$이면 음의 선형 함수, $\rho = 0$이면 선형적으로는 무관하다는 뜻이다. 마지막의 "선형적으로는"이 핵심이다.</p>
+
+      <h2>가장 유명한 함정 — 공분산이 0이어도 독립이 아니다</h2>
+      <p>이제 이 페이지에서 가장 중요한 한 문장에 도달한다. <strong>두 변수가 독립이면 공분산은 반드시 0이다. 그러나 공분산이 0이라고 해서 두 변수가 독립인 것은 아니다.</strong> 이 한 방향이 시험에 매우 자주 나온다.</p>
+
+      <p>왜 한 방향만 성립하는가. 독립이라는 조건은 두 변수의 결합 분포가 주변 분포의 곱으로 정확히 풀린다는 매우 강한 조건이다. 공분산이 0이라는 조건은 두 편차의 곱의 평균이 0이라는, 훨씬 약한 조건이다. 강한 조건이 성립하면 약한 조건은 따라온다. 그러나 약한 조건이 성립한다고 해서 강한 조건까지 보장되지는 않는다.</p>
+
+      <p>구체적 반례를 만들자. $X$가 $-1, 0, 1$ 세 값을 각각 $1/3$ 확률로 갖는다고 하자. 그리고 $Y = X^2$로 정의하자. $Y$는 $X$에 완전히 종속이다 — $X$를 알면 $Y$가 정확히 결정된다. 그런데도 $\mathrm{Cov}(X, Y) = \mathbb{E}[X \cdot X^2] - \mathbb{E}[X] \cdot \mathbb{E}[X^2] = 0 - 0 \cdot \tfrac{2}{3} = 0$이다. $X^3$의 평균이 0이고 $X$의 평균이 0이기 때문이다. 즉 $X$와 $Y$는 완전히 종속인데 공분산은 0이다. 공분산은 <em>선형 관계</em>만 잡는다. 비선형 종속은 보지 못한다.</p>
+
+      <div class="analogy">
+        체중계가 무게는 정확히 재지만 키는 못 잰다고 하자. 그 체중계가 "키와 몸무게가 무관하다"라고 말할 수 있을까. 못 한다 — 자기가 못 보는 정보가 있다는 것을 알 뿐이다. <b>공분산은 선형 동조만 보는 체중계다.</b> 비선형으로 강하게 묶여 있어도 공분산은 그 묶임을 잡아내지 못한다. 0이라는 보고는 "선형으로는 안 묶였다"는 보고일 뿐, "전혀 안 묶였다(독립)"라는 보고가 아니다.
+      </div>
+
+      <h2>위젯 — 원형 의존 vs 선형 의존</h2>
+      <p>아래 위젯에서 "원형 의존" 프리셋을 선택하면, 점들이 원 위에 흩어져 있다. 두 축은 분명히 강하게 묶여 있지만 — 한 변수가 0이면 다른 변수는 두 극단값 중 하나가 된다 — 공분산은 0에 매우 가깝게 나온다. 반대로 "선형 의존" 프리셋은 같은 강도의 묶임을 직선 위에 놓는다. 이 경우 상관계수는 1에 가깝다. 같은 "강하게 묶인" 두 변수가 산점도 모양에 따라 완전히 다른 공분산 값을 가진다는 점을 직접 확인하라.</p>
     </div>
 
-    <div class="quick">
-      <div class="quick-card">
-        <div class="q">Q. 이진 분류 마지막 층의 시그모이드는 어느 분포의 파라미터인가?</div>
-        <div class="a">A. <b>베르누이 분포의 φ = P(Y=1 | x)</b>. 손실은 이진 교차 엔트로피 = 베르누이의 음의 로그우도.</div>
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 07</span><span>공분산 산점도 — 같은 강도, 다른 모양</span></div>
+        <div class="scatter-stage">
+          <canvas id="scC" class="scatter-canvas" width="700" height="340"></canvas>
+          <div class="stat-grid">
+            <div class="item"><span class="lab">평균 X</span><span class="val" id="mxV">0.00</span></div>
+            <div class="item"><span class="lab">평균 Y</span><span class="val" id="myV">0.00</span></div>
+            <div class="item cov"><span class="lab">공분산 Cov(X,Y)</span><span class="val" id="covV">0.00</span></div>
+            <div class="item cor"><span class="lab">상관계수 ρ</span><span class="val" id="corV">0.00</span></div>
+          </div>
+          <div class="preset-row">
+            <button class="on" data-mode="linpos">선형 + (ρ ≈ +0.9)</button>
+            <button data-mode="linneg">선형 - (ρ ≈ -0.9)</button>
+            <button data-mode="ind">독립 (ρ ≈ 0)</button>
+            <button data-mode="circle">원형 (ρ ≈ 0, 종속)</button>
+            <button data-mode="parabola">포물선 (ρ ≈ 0, 종속)</button>
+          </div>
+        </div>
+        <div class="widget-controls">
+          <div class="slider">
+            <label>표본 잡음 <b><span id="nV">0.10</span></b></label>
+            <input id="nSl" type="range" min="0" max="80" value="10" class="s-structure">
+          </div>
+          <span style="font-family: var(--mono); font-size: .72rem; color: var(--ink-faint);">"원형 / 포물선"에서 ρ가 0에 가깝지만 그림은 완전히 묶여 있다</span>
+        </div>
       </div>
-      <div class="quick-card">
-        <div class="q">Q. 다클래스 분류 마지막 층의 softmax는 어느 분포의 파라미터인가?</div>
-        <div class="a">A. <b>범주분포(Categorical)의 φ_k 벡터</b>. 한 샘플의 손실 = -log p(정답 클래스).</div>
-      </div>
-      <div class="quick-card">
-        <div class="q">Q. 평균 제곱 오차(MSE) 손실은 어느 분포 가정에서 음의 로그우도가 되는가?</div>
-        <div class="a">A. <b>가우시안 분포(σ² 상수 가정)</b>. 출력층이 μ만 내놓고 σ를 상수로 고정하면 NLL의 미분 가능 부분이 정확히 (y - μ)².</div>
-      </div>
-      <div class="quick-card">
-        <div class="q">Q. KL 발산은 거리 함수인가?</div>
-        <div class="a">A. <b>아니다</b>. 음이 아니고 같을 때만 0이라는 점은 거리스럽지만, 대칭이 아니다(D(P‖Q) ≠ D(Q‖P)). 삼각 부등식도 일반적으로 성립하지 않는다.</div>
-      </div>
-      <div class="quick-card tr">
-        <div class="q">Q. 공분산이 0이면 두 변수는 독립인가?</div>
-        <div class="a">A. <b>일반적으로 아니다</b>. 공분산은 선형 관계만 잡는다. 반례: $X \sim$ Uniform$[-1, 1]$, $Y = X^2$ → 완전 결정되어 있지만 공분산은 0.</div>
-      </div>
-      <div class="quick-card tr">
-        <div class="q">Q. 𝔼[X + Y] = 𝔼[X] + 𝔼[Y]가 성립하려면 X와 Y가 독립이어야 하는가?</div>
-        <div class="a">A. <b>아니다</b>. 기대값의 선형성은 독립과 무관하게 항상 성립. 단, <code>𝔼[XY] = 𝔼[X]𝔼[Y]</code>는 독립일 때만 성립한다(같지 않음에 주의).</div>
-      </div>
-      <div class="quick-card">
-        <div class="q">Q. 엔트로피 H(X)가 최대가 되는 이산 분포는?</div>
-        <div class="a">A. <b>균등 분포</b>. K개 결과의 균등 분포 엔트로피 = log K. (연속에서는 분산이 같다는 제약 아래 가우시안.)</div>
-      </div>
-      <div class="quick-card">
-        <div class="q">Q. 교차 엔트로피 H(P, Q)를 최소화하는 것과 KL 발산 D_KL(P‖Q)를 최소화하는 것의 관계는?</div>
-        <div class="a">A. <b>같다</b>. H(P, Q) = H(P) + D_KL(P‖Q)인데 H(P)는 학습 중에 바뀌지 않는 상수.</div>
-      </div>
-      <div class="quick-card">
-        <div class="q">Q. 베이즈 규칙에서 분모 P(D)의 역할은?</div>
-        <div class="a">A. <b>정규화 상수(evidence)</b>. 모든 θ에 대해 우도×사전을 합한 값. 모양 자체에 영향을 안 주므로 θ를 비교할 때는 분자만 봐도 충분.</div>
-      </div>
-      <div class="quick-card">
-        <div class="q">Q. 1% 유병률의 질병에 99% 정확한 검사가 양성이면 환자일 확률은?</div>
-        <div class="a">A. <b>약 50%</b>. 정확한 검사여도 사전이 낮으면 거짓 양성이 진짜 양성과 비슷한 수가 나옴. 단일 검사로 단정 불가.</div>
-      </div>
-      <div class="quick-card">
-        <div class="q">Q. 다변량 가우시안의 등고선은 무슨 모양인가?</div>
-        <div class="a">A. <b>타원체</b>. 축의 방향과 길이가 공분산 행렬의 고유분해(고유벡터, 고유값)로 결정. 공분산이 단위행렬이면 구.</div>
-      </div>
-      <div class="quick-card">
-        <div class="q">Q. L2 정칙화는 베이즈 관점에서 무엇과 같은가?</div>
-        <div class="a">A. <b>가중치에 평균 0의 가우시안 사전을 둔 MAP 추정</b>. L1 정칙화는 라플라스 사전.</div>
-      </div>
-    </div>
-
-    <div class="prose">
-      <h2>꼭 외울 공식 8개</h2>
-      <p>식 자체보다 <em>왜 이 형태인가</em>를 잡는 게 우선이지만, 시험장에서 빠르게 적용해야 할 식은 결국 외워 두는 게 시간 절약이다. 다음 여덟 개만 정확히 기억해도 객관식, 단답형 대부분을 처리할 수 있다.</p>
-    </div>
-
-    <div class="formula-grid">
-      <div class="formula">
-        <div class="name">조건부확률</div>
-        <div class="ex">$P(Y\mid X) = \dfrac{P(X, Y)}{P(X)}$</div>
-      </div>
-      <div class="formula">
-        <div class="name">베이즈 규칙</div>
-        <div class="ex">$P(\theta\mid \mathcal{D}) = \dfrac{P(\mathcal{D}\mid\theta) P(\theta)}{P(\mathcal{D})}$</div>
-      </div>
-      <div class="formula">
-        <div class="name">기대값 (이산)</div>
-        <div class="ex">$\mathbb{E}[f(x)] = \sum_x P(x) f(x)$</div>
-      </div>
-      <div class="formula">
-        <div class="name">분산 (두 식)</div>
-        <div class="ex">$\mathrm{Var}(X) = \mathbb{E}[X^2] - \mathbb{E}[X]^2$</div>
-      </div>
-      <div class="formula">
-        <div class="name">공분산</div>
-        <div class="ex">$\mathrm{Cov}(X,Y) = \mathbb{E}[XY] - \mathbb{E}[X]\mathbb{E}[Y]$</div>
-      </div>
-      <div class="formula">
-        <div class="name">엔트로피</div>
-        <div class="ex">$H(X) = -\sum_x P(x) \log P(x)$</div>
-      </div>
-      <div class="formula">
-        <div class="name">KL 발산</div>
-        <div class="ex">$D_{\mathrm{KL}}(P\|Q) = \sum_x P(x)\log\dfrac{P(x)}{Q(x)}$</div>
-      </div>
-      <div class="formula">
-        <div class="name">교차 엔트로피 = H + KL</div>
-        <div class="ex">$H(P, Q) = H(P) + D_{\mathrm{KL}}(P\|Q)$</div>
-      </div>
+      <p class="widget-cap">"선형 +"는 ρ가 +0.9 가까이로 강한 양의 상관. "원형"은 같은 점 개수, 같은 산포 폭, 하지만 ρ가 0 근처 — 선형 측정자는 이 묶임을 보지 못한다. 시험에서 "ρ=0이면 X와 Y는 독립이다"는 보기는 틀린 보기다.</p>
     </div>
 
     <div class="prose">
-      <h2>헷갈리기 쉬운 짝 — 마지막 확인</h2>
-      <ul style="max-width: var(--measure); margin-inline: auto; padding-inline: 2.5rem; font-size: .95rem; color: var(--ink-soft); line-height: 1.8;">
-        <li><strong>독립 vs 무상관</strong>: 독립 → 무상관(역은 일반적으로 거짓). 공분산은 선형 관계만 잡음.</li>
-        <li><strong>PMF vs PDF</strong>: 이산은 PMF(값 자체가 확률), 연속은 PDF(밀도 → 구간 적분이 확률).</li>
-        <li><strong>기대값의 선형성 vs 곱의 기대값</strong>: 합은 무조건, 곱은 독립일 때만.</li>
-        <li><strong>분산의 합</strong>: $\mathrm{Var}(X+Y) = \mathrm{Var}(X) + \mathrm{Var}(Y) + 2\mathrm{Cov}(X,Y)$. 독립이면 마지막 항이 0.</li>
-        <li><strong>MLE vs MAP</strong>: MLE는 우도만 최대화(사전 균등 가정), MAP는 사후 최대화(사전 영향 받음). 정칙화 = MAP의 사전.</li>
-        <li><strong>교차 엔트로피 vs NLL</strong>: 둘은 같은 것의 다른 이름. 분류기 손실에서 정답 원핫이면 H(P, Q) = -log Q(정답).</li>
-        <li><strong>KL의 비대칭</strong>: forward KL(P‖Q)는 Q가 P의 모든 모드를 덮길 원함(mean-seeking), reverse KL(Q‖P)는 Q가 P의 한 모드에 집중하길 원함(mode-seeking). VAE는 reverse KL을 씀.</li>
-      </ul>
+      <h2>예외 한 가지 — 두 변수가 정규분포라면 공분산 0 = 독립</h2>
+      <p>위의 "공분산 0이어도 독립은 아니다"라는 함정에는 한 가지 중요한 예외가 있다. 두 변수가 결합 정규분포(jointly Gaussian)를 따른다면, 공분산이 0이라는 사실로부터 독립을 결론지을 수 있다. 결합 정규분포의 밀도식이 두 변수의 곱으로 깔끔하게 풀어지기 때문이다 — 다른 분포에서는 일반적으로 성립하지 않는 매우 특수한 성질이다.</p>
 
-      <h2>다른 페이지로 돌아가기 — 빠른 색인</h2>
-    </div>
+      <p>이 예외 때문에 가우시안 가정을 자주 쓰는 통계 모델에서는 "무상관 = 독립"이라는 약식 표현이 통용된다. 그러나 그 표현은 가우시안일 때만 유효하다. 분포 가정 없이 "무상관이니까 독립이다"라고 말하면 곧바로 시험에서 틀린다. 이 한 줄 — "공분산 0 → 독립은 일반적으로 거짓, 가우시안에서만 참" — 을 그대로 외우는 편이 가장 안전하다.</p>
 
-    <div class="index-back">
-      <ol>
-        <li><a href="01.html">01. 왜 확률이 필요한가</a> — 결정 답 vs 분포 답, 불확실성의 세 원천</li>
-        <li><a href="02.html">02. 확률변수, 분포, 조건부</a> — PMF/PDF, 결합, 주변, 조건부, 연쇄법칙, 독립과 조건부독립</li>
-        <li><a href="03.html">03. 기대값, 분산, 공분산</a> — 분포를 세 숫자로 요약, 공분산 0 ≠ 독립</li>
-        <li><a href="04.html">04. 베이즈 규칙</a> — 사전→사후 위젯, 의료 검사 함정, MAP/MLE/정칙화의 베이즈 해석</li>
-        <li><a href="05.html">05. 정보이론</a> — 엔트로피/KL/교차 엔트로피 = MLE의 다른 얼굴, 두 가우시안 KL 위젯</li>
-        <li><a href="06.html">06. 흔한 분포 카탈로그</a> — Bernoulli/Categorical/Gaussian/Mixture/Dirac과 딥러닝 출력층 매핑 표</li>
-        <li><a href="index.html">표지로 돌아가기</a></li>
-      </ol>
-    </div>
+      <h2>딥러닝에서 분산과 공분산이 나타나는 자리</h2>
+      <p>구체적 예시 네 개를 본다. 첫째, 평균제곱오차(mean squared error, MSE) 손실. 가우시안 잡음 가정 아래 음의 로그우도(negative log-likelihood)를 풀어 쓰면 잔차의 분산을 최소화하는 형태가 된다. 즉 MSE는 분산 최소화의 다른 이름이다. 둘째, 배치 정규화(batch normalization). 미니배치의 평균과 분산을 추정해 입력을 표준화하는 기법이다 — 분산 추정이 핵심 연산이다. 셋째, PCA(principal component analysis). 데이터의 공분산 행렬(covariance matrix)을 고유분해해 가장 큰 분산 방향을 찾는다. 넷째, 변분 추론(variational inference)의 reparameterization. 평균과 분산을 신경망이 출력하고, 가우시안 잡음을 곱해 잠재변수를 샘플링한다. 모두 이 페이지에서 본 분산·공분산이 직접 들어 있는 자리다.</p>
 
-    <div class="prose">
-      <h2>시험 직전 30분 회독 계획</h2>
-      <p>시험장에 들어가기 30분 전, 이 페이지만으로 빠르게 훑을 수 있도록 시간 배분을 적어 둔다. 위 카드와 공식을 가린 채 답을 떠올려 보고, 막히면 그 페이지만 다시 본다.</p>
-    </div>
+      <h2>시험에서 자주 묻는 한 줄</h2>
+      <p>시험 직전 정리. <strong>$\mathrm{Var}(X) = \mathbb{E}[(X-\mathbb{E}[X])^2]$, $\mathrm{Cov}(X,Y) = \mathbb{E}[(X-\mathbb{E}[X])(Y-\mathbb{E}[Y])]$, 상관계수 $\rho = \mathrm{Cov}/(\sigma_X \sigma_Y) \in [-1, 1]$. 독립 ⇒ 공분산 0. 공분산 0 ⇏ 독립 (반례 = $Y=X^2$). 단, 두 변수가 결합 정규분포이면 공분산 0 = 독립.</strong> 객관식에서 "ρ=0이면 X, Y는 항상 독립"이라는 보기가 보이면 즉시 틀린 보기로 표시한다. 그리고 분산은 음수가 될 수 없다는 점도 함께 기억하자(제곱의 평균이므로).</p>
 
-    <div class="plan">
-      <div class="plan-row"><span class="t">0-5분</span><span class="what"><b>한 줄 답 12개</b>를 위에서 아래로 가린 채 답해 보기. 막힌 카드는 표시.</span></div>
-      <div class="plan-row"><span class="t">5-10분</span><span class="what"><b>공식 8개</b>를 손으로 한 번씩 쓰기. 베이즈 규칙은 분자 분모를 분리해서 적기.</span></div>
-      <div class="plan-row"><span class="t">10-15분</span><span class="what"><b>05. 정보이론</b> 페이지의 세 위젯 한 번씩 흔들기. 엔트로피 최대점, KL 비대칭, CE = -log p(정답)를 눈에 다시 새기기.</span></div>
-      <div class="plan-row"><span class="t">15-20분</span><span class="what"><b>06. 분포 카탈로그</b> 마지막의 매핑 표 한 번 통째로 읽기. sigmoid/softmax/linear → 각 분포, 손실을 입으로 말해 보기.</span></div>
-      <div class="plan-row"><span class="t">20-25분</span><span class="what"><b>03. 공분산 위젯</b>으로 공분산 0 ≠ 독립 반례 한 번 떠올리기. Y = X² 예시를 머릿속에 다시 그리기.</span></div>
-      <div class="plan-row"><span class="t">25-30분</span><span class="what"><b>04. 베이즈 의료 검사</b> 표를 다시 보기. 1% 유병률/99% 정확도 → 50% 결과의 계산 흐름을 종이에 한 번 더 쓰기.</span></div>
-    </div>
-
-    <div class="prose">
-      <p>3장은 다른 장에 비해 그 자체로 출제되는 비중이 크진 않다. 그러나 이 장이 흔들리면 5–9장의 손실 함수 문제, 14–15장의 잠재변수 모델 문제가 한꺼번에 무너진다. <em>정확한 한 줄</em>로 답할 수 있는지를 기준으로 자신의 상태를 점검하자.</p>
-
-      <p>이 mini-site의 마지막 페이지다. <a href="index.html">표지로 돌아가서</a> 다른 sub-chapter로 들어가거나, <a href="../index.html">상위 인덱스로 가서</a> 다음 장(4번 수치 계산)으로 이동할 수 있다.</p>
+      <p>다음 페이지부터는 분포 카탈로그(distribution catalog)다. 이산 분류기에 자주 등장하는 베르누이(Bernoulli) 분포와 범주(categorical) 분포부터 시작한다. 시그모이드(sigmoid)와 소프트맥스(softmax)가 각각 어느 분포의 파라미터인지가 거기서 정리된다.</p>
     </div>
 
     <nav class="ch-foot"></nav>
@@ -204,18 +133,26 @@
 <script>
   const CH = [
     { no:'01', t:'왜 확률이 필요한가', f:'01.html' },
-    { no:'02', t:'확률변수, 분포, 조건부', f:'02.html' },
-    { no:'03', t:'기대값, 분산, 공분산', f:'03.html' },
-    { no:'04', t:'베이즈 규칙', f:'04.html' },
-    { no:'05', t:'정보이론 — 엔트로피/KL/교차 엔트로피', f:'05.html' },
-    { no:'06', t:'흔한 분포 카탈로그', f:'06.html' },
-    { no:'07', t:'시험 대비 체크리스트', f:'07.html' },
+    { no:'02', t:'확률변수와 분포 — PMF vs PDF', f:'02.html' },
+    { no:'03', t:'결합·주변·조건부 분포', f:'03.html' },
+    { no:'04', t:'연쇄법칙 — 결합을 조건부의 곱으로', f:'04.html' },
+    { no:'05', t:'독립과 조건부 독립', f:'05.html' },
+    { no:'06', t:'기대값 — 분포를 한 숫자로', f:'06.html' },
+    { no:'07', t:'분산과 공분산 — 무상관 ≠ 독립', f:'07.html' },
+    { no:'08', t:'흔한 분포 1 — Bernoulli, Categorical', f:'08.html' },
+    { no:'09', t:'흔한 분포 2 — Gaussian', f:'09.html' },
+    { no:'10', t:'흔한 분포 3 — Mixture, Dirac', f:'10.html' },
+    { no:'11', t:'베이즈 규칙 — 사전이 사후로', f:'11.html' },
+    { no:'12', t:'정보이론 1 — 엔트로피', f:'12.html' },
+    { no:'13', t:'정보이론 2 — KL 발산의 비대칭', f:'13.html' },
+    { no:'14', t:'정보이론 3 — 교차 엔트로피 = NLL', f:'14.html' },
+    { no:'15', t:'시험 대비 체크리스트', f:'15.html' },
   ];
   function buildNav(curr) {
     const tb = document.querySelector('.topbar');
     if (tb) tb.innerHTML =
       `<a class="home" href="index.html">← Ch.3 확률과 정보이론</a>` +
-      `<span class="ch-mini">SUB-CHAPTER ${curr} of 07</span>`;
+      `<span class="ch-mini">SUB-CHAPTER ${curr} of 15</span>`;
     const ol = document.querySelector('.ch-nav ol');
     if (ol) ol.innerHTML = CH.map(c =>
       `<li><a href="${c.f}" ${c.no === curr ? 'class="current"' : ''}>${c.t}</a></li>`).join('');
@@ -240,8 +177,121 @@
     }
   }
 
+  function randn() {
+    let u = 0, v = 0;
+    while (u === 0) u = Math.random();
+    while (v === 0) v = Math.random();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  }
+
+  let MODE = 'linpos';
+  let NOISE = 0.1;
+  const N = 320;
+  let pts = [];
+
+  function regen() {
+    pts = [];
+    for (let i = 0; i < N; i++) {
+      let x, y;
+      if (MODE === 'linpos') { x = randn() * 1.4; y = 0.85 * x + randn() * (0.4 + NOISE * 2); }
+      else if (MODE === 'linneg') { x = randn() * 1.4; y = -0.85 * x + randn() * (0.4 + NOISE * 2); }
+      else if (MODE === 'ind') { x = randn() * 1.4; y = randn() * 1.4 + randn() * NOISE; }
+      else if (MODE === 'circle') {
+        const t = Math.random() * Math.PI * 2;
+        const r = 1.5 + randn() * (0.12 + NOISE * 1.2);
+        x = r * Math.cos(t); y = r * Math.sin(t);
+      } else if (MODE === 'parabola') {
+        x = randn() * 1.4;
+        y = (x * x) - 1.2 + randn() * (0.18 + NOISE * 1.6);
+      }
+      pts.push([x, y]);
+    }
+  }
+
+  function stats() {
+    let sx = 0, sy = 0;
+    for (const [x, y] of pts) { sx += x; sy += y; }
+    const mx = sx / pts.length, my = sy / pts.length;
+    let vx = 0, vy = 0, cov = 0;
+    for (const [x, y] of pts) {
+      vx += (x - mx) ** 2;
+      vy += (y - my) ** 2;
+      cov += (x - mx) * (y - my);
+    }
+    vx /= pts.length; vy /= pts.length; cov /= pts.length;
+    const sxsig = Math.sqrt(vx), sysig = Math.sqrt(vy);
+    const rho = (sxsig > 1e-9 && sysig > 1e-9) ? cov / (sxsig * sysig) : 0;
+    return { mx, my, cov, rho };
+  }
+
+  function draw() {
+    const c = document.getElementById('scC');
+    const ctx = c.getContext('2d');
+    const W = c.width, H = c.height;
+    ctx.clearRect(0, 0, W, H);
+
+    /* axes */
+    ctx.strokeStyle = 'rgba(38,34,28,0.18)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(W/2, 10); ctx.lineTo(W/2, H - 10);
+    ctx.moveTo(20, H/2); ctx.lineTo(W - 10, H/2);
+    ctx.stroke();
+
+    /* grid */
+    ctx.strokeStyle = 'rgba(38,34,28,0.06)';
+    for (let i = -3; i <= 3; i++) {
+      if (i === 0) continue;
+      const px = W/2 + i * (W * 0.13);
+      const py = H/2 + i * (H * 0.13);
+      ctx.beginPath(); ctx.moveTo(px, 10); ctx.lineTo(px, H - 10); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(20, py); ctx.lineTo(W - 10, py); ctx.stroke();
+    }
+
+    const sx = W * 0.13, sy = H * 0.13;
+
+    /* mean cross */
+    const st = stats();
+    const cx = W/2 + st.mx * sx, cy = H/2 - st.my * sy;
+    ctx.strokeStyle = 'rgba(192,73,46,0.7)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.moveTo(cx - 12, cy); ctx.lineTo(cx + 12, cy);
+    ctx.moveTo(cx, cy - 12); ctx.lineTo(cx, cy + 12); ctx.stroke();
+    ctx.setLineDash([]);
+
+    /* points */
+    ctx.fillStyle = 'rgba(45,91,122,0.6)';
+    for (const [x, y] of pts) {
+      const px = W/2 + x * sx, py = H/2 - y * sy;
+      ctx.beginPath(); ctx.arc(px, py, 2.4, 0, Math.PI * 2); ctx.fill();
+    }
+
+    document.getElementById('mxV').textContent = st.mx.toFixed(2);
+    document.getElementById('myV').textContent = st.my.toFixed(2);
+    document.getElementById('covV').textContent = st.cov.toFixed(2);
+    document.getElementById('corV').textContent = st.rho.toFixed(2);
+  }
+
+  function go() { regen(); draw(); }
+
   window.addEventListener('load', () => {
     buildNav('07');
+    document.querySelectorAll('[data-mode]').forEach(b => {
+      b.addEventListener('click', () => {
+        document.querySelectorAll('[data-mode]').forEach(x => x.classList.remove('on'));
+        b.classList.add('on');
+        MODE = b.dataset.mode;
+        go();
+      });
+    });
+    const sl = document.getElementById('nSl');
+    sl.addEventListener('input', () => {
+      NOISE = parseInt(sl.value, 10) / 100;
+      document.getElementById('nV').textContent = NOISE.toFixed(2);
+      go();
+    });
+    go();
     if (window.renderMathInElement) {
       renderMathInElement(document.body, {
         delimiters: [{left:'$$', right:'$$', display:true}, {left:'$', right:'$', display:false}],

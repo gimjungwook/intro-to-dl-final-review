@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>07 · FGSM — Fast Gradient Sign Method 정의</title>
+<link rel="stylesheet" href="assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Chapter 07 · 한 줄짜리 공격</span>
+      <h1>x̃ = x + ε·sign(∇<sub>x</sub> L)<br><span class="t-style">기호 하나하나의 의미</span></h1>
+      <p class="lede">앞 두 장에서 우리는 ε · sign(∇<sub>x</sub> L)이 어떤 최적화 문제의 닫힌 해이고, 왜 고차원에서 그렇게 무서운지를 손에 익혔다. 이 장은 그 결과를 한 줄로 묶은 FGSM(Fast Gradient Sign Method)의 정식 정의를 본다. 기호 하나하나가 무엇이고 왜 그렇게 쓰여 있는지, 그리고 왜 한 걸음(one-step)인지를 짚는다.</p>
+    </header>
+
+    <div class="prose">
+      <h2>정의 — 논문 그대로</h2>
+      <p>Goodfellow, Shlens, Szegedy (2015) 논문 2번 "The Linear Explanation of Adversarial Examples"와 3번 "Linear Perturbation of Non-Linear Models"에서 적대적 입력은 다음 한 줄로 정의된다.</p>
+
+      <div class="math-block">$$ \tilde{x} \;=\; x \;+\; \epsilon \cdot \text{sign}\!\left(\nabla_x L(\theta, x, y)\right) $$</div>
+      <p class="math-note">x = 원본 입력, y = 정답 라벨, θ = 모델 가중치, L = 손실 함수, ε = 섭동 크기 예산. 이 식은 한 번의 역전파(backpropagation)로 ∇<sub>x</sub> L을 계산하고 그 부호를 취해 ε을 곱한 뒤 원본에 더한다. 그래서 "Fast" Gradient Sign Method다.</p>
+
+      <p>이 공식이 처음 보면 단순해 보이지만, 등호의 양변에 들어 있는 5개 기호 — x, ε, sign, ∇<sub>x</sub> L, θ — 가 각각 무엇이고 왜 그렇게 쓰여 있는지를 분명히 해야 한다. 시험에 자주 나오는 함정이 바로 이 다섯 기호의 정확한 해석이다.</p>
+
+      <h2>각 기호의 의미</h2>
+      <div class="prose">
+        <p><strong>x — 원본 입력.</strong> 픽셀 값으로 이루어진 벡터. 보통 [0, 1] 또는 [0, 255] 범위로 정규화되어 있다. 적대적 입력 x̃이 유효한 이미지가 되려면 픽셀 값이 같은 범위 안에 있어야 한다. 그래서 실제 구현에서는 FGSM 후에 x̃ = clip(x + ε · sign(∇<sub>x</sub> L), 0, 1)처럼 클립(clipping)을 한 번 더 한다. 시험에서는 보통 클립을 생략하지만 정확한 답에는 포함하는 것이 안전하다.</p>
+        <p><strong>ε (epsilon) — 섭동 크기 예산.</strong> ∞-노름 제약 ‖x̃ − x‖<sub>∞</sub> ≤ ε. 사람 눈이 인지하지 못할 만큼 작은 값을 고른다. 논문의 panda → gibbon 예시에서는 ε = 0.007. 일반적으로 픽셀 값이 [0, 1] 범위면 ε은 0.001 ~ 0.05 사이의 값을 쓴다. ε이 더 크면 변화가 사람 눈에도 보이기 시작한다.</p>
+        <p><strong>sign(·) — 부호 함수.</strong> 입력 벡터의 각 성분에 대해 +1 또는 −1을 돌려준다. ∇<sub>x</sub> L이 양수면 그 픽셀을 +ε만큼 키우고, 음수면 −ε만큼 줄인다는 결정. 부호만 취하는 이유는 ∞-노름 제약 아래에서 wᵀδ를 최대화하는 닫힌 해가 정확히 ε · sign(w)이기 때문(5장에서 증명했다).</p>
+        <p><strong>∇<sub>x</sub> L — 손실의 입력에 대한 기울기.</strong> 손실 L을 입력 x의 각 성분으로 편미분한 벡터. 모델 가중치 θ에 대한 기울기 ∇<sub>θ</sub> L이 아니라는 점이 중요하다. 일반 학습에서는 가중치를 업데이트하기 위해 ∇<sub>θ</sub> L을 계산하지만, FGSM은 입력을 바꾸기 위해 ∇<sub>x</sub> L을 계산한다. 같은 역전파 알고리즘이지만 목적이 다르다.</p>
+        <p><strong>θ — 모델 가중치.</strong> 학습이 끝난 모델의 고정된 가중치. FGSM 공격 동안 θ는 변하지 않는다. 즉 우리는 모델을 학습시키는 것이 아니라, 학습된 모델을 속이는 입력을 찾는 것이다. 학습(가중치 변경)과 공격(입력 변경)이 정반대 방향의 두 최적화 과정임을 분명히 하자.</p>
+      </div>
+
+      <h2>"Fast"라는 이름의 의미 — 한 번의 역전파</h2>
+      <p>FGSM의 가장 큰 매력은 빠르다는 점이다. 적대적 예제를 만드는 일반적인 방법은 두 가지였다. 첫째, Szegedy et al. (2013)이 한 박스 제약 L-BFGS는 수십~수백 번의 반복 최적화를 거쳐야 한다. 한 적대적 예제를 만드는 데 몇 초~몇 분이 걸린다. 둘째, 더 정교한 공격(예: Carlini & Wagner)은 수천 번의 기울기 단계를 쓴다.</p>
+
+      <p>그러나 FGSM은 단 한 번의 역전파만 쓴다. 정확히는 학습 한 단계와 같은 양의 계산이다. 즉 학습 중에 매 미니배치마다 적대적 예제를 만들어 학습 데이터에 섞어 넣을 수 있을 정도로 빠르다. 이 속도가 적대적 훈련(<a href="09.html">CHAPTER 09</a>)이라는 방어 전략을 실제로 가능하게 만들었다. 만약 적대적 예제를 만드는 비용이 학습 한 단계보다 훨씬 컸다면, 적대적 훈련은 계산적으로 비실용적이었을 것이다.</p>
+
+      <p>FGSM이 빠른 또 다른 이유는 ε · sign(∇<sub>x</sub> L)의 크기가 명시적이라는 점이다. L-BFGS 류 공격은 어느 ε에서 라벨이 뒤집힐지 알 수 없어서 ε을 줄여가며 이진 탐색을 해야 한다. 그러나 FGSM은 우리가 ε을 미리 정하고 그것을 정확히 쓴다. 시간을 ε 탐색에 쓰지 않는다.</p>
+
+      <h2>왜 한 걸음인가 — 1차 근사의 한계와 충분함</h2>
+      <p>FGSM은 한 걸음만 간다. δ = ε · sign(∇<sub>x</sub> L)을 계산한 뒤 x̃ = x + δ로 끝. 그러나 손실 함수는 비선형이고 한 걸음으로 모든 비선형성을 다 활용하지는 못한다. 더 정확한 공격을 원한다면 여러 걸음을 가는 것이 자연스럽다 — 이것이 PGD(<a href="11.html">CHAPTER 11</a>)의 아이디어다.</p>
+
+      <p>그렇다면 왜 FGSM은 한 걸음만 가는가? 두 가지 이유가 있다. 첫째, 한 걸음만으로도 충분히 강하다. 4장과 6장에서 본 것처럼, 신경망이 지역적으로 선형이라면 ε 안에서 1차 테일러 근사가 잘 작동한다. 한 걸음으로도 ε · ‖∇<sub>x</sub> L‖₁만큼 손실을 키울 수 있고, 그것이 ImageNet 규모에서는 라벨을 뒤집기에 충분하다. 둘째, 한 걸음의 단순성이 분석을 가능하게 한다. 여러 걸음 공격은 강력하지만 "왜 적대적 예제가 존재하는가"라는 이론적 질문에 답하기는 어렵다. FGSM의 한 줄 공식은 "선형 가설로부터 직접 따라 나오는 자연스러운 공격"이라는 의미를 갖는다.</p>
+
+      <div class="analogy">
+        높은 절벽에서 내려가는 두 가지 방법을 생각하자. 한 가지는 한 점프로 가장 가파른 방향으로 뛰어내리는 것. 다른 한 가지는 작은 보폭으로 가장 가파른 방향을 매번 다시 계산하며 천천히 걷는 것. 한 점프는 빠르고 직관적이지만 절벽 곡면이 휘어 있으면 최적의 착지점을 놓친다. 작은 보폭은 느리지만 매번 새 정보로 보정하므로 더 정확하다. FGSM은 한 점프, PGD는 작은 보폭이다. <b>FGSM의 한 점프가 통하는 이유는 선형 가설 덕분에 절벽이 ε 안에서는 거의 평면이기 때문이다.</b>
+      </div>
+
+      <h2>FGSM의 친척들 — 표적 vs 비표적</h2>
+      <p>FGSM 공식에는 두 가지 변형이 있다. 본 식 ε · sign(∇<sub>x</sub> L)은 정답 클래스 y에서 멀어지는 방향으로 가는 비표적(untargeted) 공격이다. 즉 "어떤 답이든 정답만 아니면 된다"는 목표. 결과 라벨은 우리가 통제하지 않는다.</p>
+
+      <p>반면 표적(targeted) 공격은 특정 다른 클래스 y′로 끌고 가고 싶을 때 쓴다. 공식을 살짝 바꾼다.</p>
+
+      <div class="math-block">$$ \tilde{x} \;=\; x \;-\; \epsilon \cdot \text{sign}\!\left(\nabla_x L(\theta, x, y')\right) $$</div>
+      <p class="math-note">정답 y가 아닌 표적 클래스 y′의 손실을 줄이는 방향. 부호가 뒤집힌 점에 주의. 비표적은 정답 손실을 키우고, 표적은 표적 손실을 줄인다.</p>
+
+      <p>비표적은 그냥 틀리게 만들고, 표적은 우리가 원하는 답으로 틀리게 만든다. 표적이 더 강한 공격이고 실현 난이도도 더 높다. ε이 같다면 표적 공격이 비표적보다 성공률이 낮다. 시험에서는 보통 비표적 FGSM을 다룬다.</p>
+
+      <h2>알고리즘 의사코드</h2>
+      <div class="math-block">$$ \begin{aligned} &amp;\text{1.\quad 입력 } x, \text{ 정답 } y, \text{ 모델 } f_\theta, \text{ 손실 } L, \text{ 예산 } \epsilon. \\ &amp;\text{2.\quad 손실 계산 } \ell = L(f_\theta(x), y). \\ &amp;\text{3.\quad 역전파로 } g = \nabla_x \ell. \\ &amp;\text{4.\quad 적대적 입력 } \tilde{x} = \text{clip}(x + \epsilon \cdot \text{sign}(g), 0, 1). \\ &amp;\text{5.\quad 반환 } \tilde{x}. \end{aligned} $$</div>
+      <p class="math-note">한 번의 forward(2단계)와 한 번의 backward(3단계)로 끝난다. 모델 학습 한 스텝과 같은 비용. 클립(4단계)은 픽셀 값이 유효 범위를 벗어나지 않게 보정.</p>
+
+      <h2>실제 코드는 어떻게 생겼나</h2>
+      <p>PyTorch 의사코드로 옮기면 다음과 같다. 한 점에서 한 번 실행되는 함수다.</p>
+
+      <pre style="background:var(--paper-2);padding:1rem 1.2rem;border-radius:8px;font-family:var(--mono);font-size:.78rem;line-height:1.6;color:var(--ink);overflow:auto;max-width:var(--measure);margin:1.4rem auto;">def fgsm_attack(model, x, y, epsilon):
+    x.requires_grad = True
+    output = model(x)
+    loss   = F.cross_entropy(output, y)
+    loss.backward()
+    sign_grad = x.grad.sign()
+    x_adv = x + epsilon * sign_grad
+    x_adv = torch.clamp(x_adv, 0, 1)
+    return x_adv.detach()</pre>
+
+      <p>핵심은 x.requires_grad = True 한 줄이다. 보통 학습에서 우리는 모델 가중치 θ에 대해 requires_grad를 켜고 입력 x는 그대로 둔다. 여기서는 정반대다. x에 대해 기울기를 계산하고 θ는 그대로 둔다. 이 한 줄의 차이가 학습과 공격의 차이다.</p>
+
+      <h2>FGSM이 답하지 못하는 것</h2>
+      <p>FGSM이 단순하고 빠르고 강력하다는 점은 분명하다. 그러나 FGSM이 모든 적대적 위협을 다 설명하지는 않는다. 한 가지 자주 나오는 오해를 정리하자.</p>
+
+      <div class="misconception">
+        <div class="box wrong">
+          <h4>오해</h4>
+          <p>"FGSM이 가장 강력한 공격이다."</p>
+        </div>
+        <div class="box right">
+          <h4>정확한 표현</h4>
+          <p>FGSM은 1차 근사 위에서 ∞-노름 제약의 닫힌 해다. 즉 1차 근사가 잘 맞을 때 최적이지, 비선형 손실 표면에서 절대적으로 최적은 아니다. PGD는 같은 ε에서 여러 걸음으로 비선형성을 활용해 FGSM보다 강한 공격을 만든다. C&amp;W는 ε 자체를 최소화하는 별개의 최적화로 더 정교한 공격을 만든다. FGSM의 의의는 "가장 강한 공격"이 아니라 "가장 빠른 비자명한 공격이자 적대적 훈련의 기본 도구"다.</p>
+        </div>
+      </div>
+
+      <h2>이 장의 한 줄과 다음 장 예고</h2>
+      <p>FGSM은 5장과 6장의 분석 결과를 한 줄에 묶은 것이다. ε · sign(∇<sub>x</sub> L)이 ∞-노름 제약 아래 손실을 가장 빠르게 키우는 1차 근사 해이고, 그것을 한 걸음 적용한 결과가 x̃이다. 다음 장(<a href="08.html">CHAPTER 08</a>)에서는 이 공식을 가장 작은 모델 — 2차원 입력의 로지스틱 회귀 — 위에서 끝까지 손으로 계산한다. 시험에서 직접 손으로 답을 적을 수 있도록 만드는 것이 그 장의 목표다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  window.addEventListener('load', () => { NST.buildNav('07'); });
+</script>
+<script src="assets/widgets.js"></script>
+</body>
+</html>

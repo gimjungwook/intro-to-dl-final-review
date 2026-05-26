@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>04 · 스타일 표현 — Gram 행렬</title>
+<link rel="stylesheet" href="assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Chapter 04 · 스타일은 위치가 아니라 상관관계</span>
+      <h1>스타일 표현 — <span class="t-style">Gram 행렬</span></h1>
+      <p class="lede">콘텐츠가 “무엇이 어디에 있는가”라면, 스타일은 “어떤 질감들이 함께 나타나는가”다. 이 장은 그 직관을 하나의 행렬로 못 박는다.</p>
+    </header>
+
+    <div class="prose">
+      <p>스타일(style)은 콘텐츠보다 훨씬 미묘하다. <em>“반 고흐 스타일”</em>이라고 할 때 우리가 가리키는 것은 특정 별이 정확히 어느 좌표에 있는지가 아니다. 소용돌이치는 붓질, 강한 보색 대비, 반복되는 곡선, 두껍게 칠한 물감의 질감 — 즉 <strong>“어떤 시각적 패턴들이 한 화면 안에서 자주 같이 등장하는가”</strong>에 가깝다. 스타일은 위치별 정답이라기보다 <span class="t-style">통계적 분포</span>인 것이다.</p>
+
+      <div class="analogy">
+        콘텐츠 표현이 <b>가구가 방 어디에 놓였는지 그린 평면도</b>라면, 스타일 표현은 <b>방 전체에서 나무 질감, 금속 광택, 따뜻한 조명이 얼마나 자주 함께 나타나는지 적은 인테리어 재료표</b>다. 평면도는 배치를 보존하고, 재료표는 분위기를 보존한다. 같은 재료표를 가진 두 방은 가구 위치가 전혀 달라도 “같은 분위기”로 느껴진다.
+      </div>
+
+      <h2>필터끼리 손을 잡는 정도</h2>
+      <p>2장에서 본 것처럼, CNN의 한 층은 여러 필터의 반응 지도(feature map)로 이미지를 다시 표현한다. 어떤 필터는 세로선에, 어떤 필터는 특정 색 대비에, 어떤 필터는 곡선에 반응한다. 여기서 Gatys et al.이 던진 질문은 이것이다.</p>
+      <p style="font-family:var(--serif);font-style:italic;font-size:1.15rem;color:var(--ink-soft);text-align:center;margin:1.6rem auto;">“두 필터가 이미지 전체에서 얼마나 자주 <span class="t-style">동시에</span> 반응하는가?”</p>
+      <p>세로선 필터와 “따뜻한 주황” 필터가 늘 같은 자리에서 함께 켜진다면, 그 이미지에는 <em>주황빛 세로 줄무늬</em>라는 질감이 반복된다는 뜻이다. 이 “함께 켜지는 정도”를 모든 필터 쌍에 대해 적어 놓은 표가 바로 <span class="t-style">그램 행렬(Gram Matrix)</span>이다.</p>
+
+      <p>어떤 층의 feature map을 $F^l \in \mathbb{R}^{N_l \times M_l}$라 하자. $N_l$은 필터 개수, $M_l$은 공간 위치 개수다(예: 64개의 필터가 각각 $56\times56=3136$개 위치에서 반응). Gram 행렬의 원소는 다음과 같이 정의된다.</p>
+
+      <div class="math-block">$$ G_{ij}^{l} \;=\; \sum_{k} F_{ik}^{l}\,F_{jk}^{l} $$</div>
+      <p class="math-note">필터 i와 필터 j의 반응을, 모든 공간 위치 k에 대해 곱해서 더한다.</p>
+
+      <p>한 줄짜리 수식이지만, 천천히 뜯어보면 의미가 또렷하다.</p>
+      <table class="symbols">
+        <tr><td>$i$</td><td>첫 번째 필터의 번호</td></tr>
+        <tr><td>$j$</td><td>두 번째 필터의 번호</td></tr>
+        <tr><td>$k$</td><td>feature map 안의 공간 위치 (1번 픽셀, 2번 픽셀, …)</td></tr>
+        <tr><td>$F_{ik}^{l}$</td><td>$i$번 필터가 $k$ 위치에서 보인 반응값</td></tr>
+        <tr><td>$F_{jk}^{l}$</td><td>$j$번 필터가 <em>같은</em> $k$ 위치에서 보인 반응값</td></tr>
+        <tr><td>$F_{ik}^{l}F_{jk}^{l}$</td><td>그 위치에서 두 필터가 <strong>함께</strong> 강하게 반응했는지 (둘 다 크면 곱도 큼)</td></tr>
+        <tr><td>$\sum_{k}$</td><td>모든 위치에 걸쳐 그 동시 반응을 합산</td></tr>
+      </table>
+
+      <p>곱셈이 핵심이다. 두 필터가 같은 자리에서 <em>둘 다</em> 크게 반응하면 곱이 커진다. 한쪽만 켜지면 곱은 작다. 그래서 $G_{ij}^{l}$는 <strong>“$i$번 필터와 $j$번 필터가 이미지 전체에서 얼마나 같이 나타나는가”</strong>를 하나의 숫자로 압축한다. 대각 원소 $G_{ii}^{l}$는 자기 자신과의 곱이므로 “$i$번 필터가 전체적으로 얼마나 강했는가”가 된다.</p>
+
+      <h2>위치를 버리고 통계를 남긴다</h2>
+      <p>여기에 이 정의의 가장 중요한 성질이 숨어 있다. $\sum_k$로 모든 위치를 더해 버리는 순간, <strong>“그 패턴이 정확히 어디 있었는가”라는 정보는 사라진다.</strong> 남는 것은 “이런 필터와 저런 필터가 함께 나타나는 경향이 얼마나 강한가”라는 전역 통계뿐이다.</p>
+      <p>이것이 스타일 표현으로 적합한 이유다. 우리는 반 고흐의 붓질이 캔버스 <em>왼쪽 위 3센티 지점</em>에 있길 바라는 게 아니라, 화면 어디에든 그 붓질의 질감이 고르게 배어 있길 바란다. 위치를 버리는 것은 결함이 아니라 <span class="t-style">설계 의도</span>다.</p>
+
+      <p>아래 위젯에서 이 성질을 직접 확인할 수 있다. 왼쪽은 여섯 개 필터의 반응 지도이고, 오른쪽은 그것으로 계산한 $6\times6$ Gram 행렬이다. <strong>“공간 위치 섞기” 슬라이더</strong>를 올리면 모든 feature map의 픽셀 위치가 똑같은 규칙으로 마구 뒤섞인다 — 그림은 알아볼 수 없게 망가지는데도, <em>Gram 행렬은 거의 그대로</em> 남는다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 04</span><span>Gram 행렬 — 위치를 섞어도 통계는 남는다</span></div>
+        <div id="gram" style="padding-bottom:.4rem"></div>
+      </div>
+      <p class="widget-cap">Gram 행렬의 한 칸에 마우스를 올리면 어떤 두 필터의 동시 출현을 재는지 강조된다. <b>F1</b>과 <b>F2</b>는 같은 세로 줄무늬(위상만 다름)라 강하게 상관되고, 멀리 떨어진 필터끼리는 거의 독립이다. 슬라이더를 100%까지 올려보라 — 픽셀은 난장판이 되어도 행렬의 무늬는 살아남는다. 위치를 버렸기 때문이다.</p>
+    </div>
+
+    <div class="prose">
+      <p>정리하면, 한 층에서의 스타일은 <strong>필터 반응들의 공분산 구조</strong>다. 콘텐츠가 “무엇이 어디에”를 묻는다면, 스타일은 “무엇과 무엇이 함께”를 묻는다. 같은 feature map에서 출발하지만, 한쪽은 위치를 <span class="t-structure">지키고</span> 다른 쪽은 위치를 <span class="t-style">지운다</span>. 이 비대칭이 콘텐츠와 스타일을 분리해 다룰 수 있게 하는 수학적 지렛대다.</p>
+      <p>다음 장에서는 이 Gram 행렬을 <strong>여러 층</strong>에서 계산해 “스타일이 얼마나 비슷한가”를 하나의 손실로 만들고, 콘텐츠 손실과 합쳐 <span class="t-synth">α와 β의 줄다리기</span>로 끌고 간다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  window.addEventListener('load', () => {
+    NST.buildNav('04');
+    const g = document.getElementById('gram');
+    NST.onVisible(g, () => NST.gram(g));
+  });
+</script>
+<script src="assets/widgets.js"></script>
+</body>
+</html>

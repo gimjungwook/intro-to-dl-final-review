@@ -26,8 +26,8 @@
   .plate { position: relative; display: flex; flex-direction: column; text-decoration: none; color: inherit; background: #fff; border: 1px solid var(--line); border-radius: 13px; padding: 1.3rem 1.3rem 1.4rem; transition: transform .2s var(--ease), border-color .2s, box-shadow .2s; overflow: hidden; }
   .plate:hover { transform: translateY(-4px); border-color: var(--structure-lo); box-shadow: var(--shadow-plate); }
   .plate .pno { font-family: var(--mono); font-size: .74rem; letter-spacing: .14em; color: var(--ink-faint); }
-  .plate h3 { font-family: var(--serif); font-size: 1.3rem; margin: .5rem 0 .5rem; line-height: 1.2; }
-  .plate p { font-size: .9rem; color: var(--ink-soft); line-height: 1.5; margin: 0; }
+  .plate h3 { font-family: var(--serif); font-size: 1.22rem; margin: .5rem 0 .5rem; line-height: 1.22; }
+  .plate p { font-size: .88rem; color: var(--ink-soft); line-height: 1.5; margin: 0; }
   .plate .spectrum { display: flex; height: 4px; border-radius: 2px; overflow: hidden; margin-bottom: 1rem; }
   .plate .spectrum i { display: block; height: 100%; }
   .plate .go { margin-top: 1rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; color: var(--structure); opacity: 0; transform: translateX(-4px); transition: .2s var(--ease); }
@@ -66,7 +66,7 @@
 <header class="masthead">
   <div class="hero-wrap">
     <canvas id="hero"></canvas>
-    <div class="hero-cap"><b>왼쪽 시점의 정보</b> ↔ <em>오른쪽 시점으로 흐르는 은닉 상태</em> · 마우스 드래그로 시간 펼치기</div>
+    <div class="hero-cap"><b>왼쪽: 회로도(접힌 RNN)</b> ↔ <em>오른쪽: 시간축으로 펼친 그래프</em> · 마우스 드래그로 시간 펼치기</div>
   </div>
 </header>
 
@@ -76,20 +76,20 @@
   <div class="paper-meta">
     <span><b>딥러닝 개론</b> 기말고사 복습 · Ch.10</span>
     <span>저본 <b>Goodfellow, Bengio, Courville (2016) 10장</b></span>
-    <span>읽는 시간 <b>약 45분</b></span>
-    <span>구성 <b>7 sub-chapter · 7 위젯</b></span>
+    <span>읽는 시간 <b>약 75분</b></span>
+    <span>구성 <b>14 sub-chapter · 위젯 8개</b></span>
   </div>
 </div>
 
 <section class="section-intro">
   <h2>한 문장으로</h2>
   <p>이 장은 <strong>"가변 길이 시퀀스(variable-length sequence)를 어떻게 단 하나의 모델로 다룰까"</strong>라는 질문에, 매 시간 단계마다 같은 매개변수를 재사용하며 이전 상태를 다음 상태로 전달하는 <span class="t-structure">순환 신경망(Recurrent Neural Network, RNN)</span>으로 답한다. 합성곱(Convolution)이 공간을 따라 매개변수를 공유했듯, 순환(Recurrence)은 시간을 따라 매개변수를 공유한다.</p>
-  <p>처음 읽을 때 가장 중요한 점은, 이 장이 <em>"긴 시퀀스를 다루는 새로운 트릭들"</em>의 모음이 <strong>아니라는 것이다</strong>. 9장(CNN)과 11장(실용 방법론) 사이에서 이 장은 <strong>"왜 단순한 시간 펼치기로는 충분하지 않은가"</strong>를 다룬다. <span class="t-style">기울기 폭발/소실(Exploding/Vanishing Gradient)</span>이라는 깊은 시간의 저주가 모든 이야기의 중심에 있고, <span class="t-synth">LSTM·GRU의 게이트(Gate)</span>는 그 저주를 풀려는 구조적 응답이다. 그리고 그 끝에서 다음 장(Attention)이 시작된다.</p>
+  <p>처음 읽을 때 가장 큰 함정은 "RNN은 그냥 옆으로 펼친 깊은 신경망이다"라는 한 줄 요약이다. 그 한 줄에는 두 가지 큰 그림이 빠져 있다. 첫째, <strong>왜 옆으로 펼치는가</strong> — 가변 길이 입력과 위치 독립성이라는 두 요구를 동시에 만족시키는 가장 작은 구조가 시간 공유라는 점. 둘째, <strong>왜 그것만으로는 안 되는가</strong> — 같은 함수를 시간만큼 반복해서 합성하면, 그 도함수도 시간만큼 곱해지면서 <span class="t-style">기울기 폭발/소실(Exploding/Vanishing Gradient)</span>이라는 깊은 시간의 저주가 생긴다는 점. <span class="t-synth">LSTM과 GRU의 게이트(Gate)</span>는 그 저주를 풀기 위해 "선형 자체 루프"라는 정보 고속도로를 깐 구조적 응답이고, 그 끝에서 다음 장(Attention)이 시작된다.</p>
 </section>
 
 <div class="twopole">
   <div class="pole s1"><h4>RNN의 약속</h4><p>매개변수 공유로 가변 길이를 다룬다. 위치 독립, 학습 효율, 일반화 능력. 이 사이트에서 <b>쿨한 파랑</b>으로 표시된다.</p></div>
-  <div class="pole s2"><h4>RNN의 저주</h4><p>같은 야코비안이 반복 곱해지면 기울기가 폭발하거나 소실된다. 10-20 시간 단계만 넘어도 학습 불가능. 이 사이트에서 <b>웜한 주홍</b>으로 표시된다.</p></div>
+  <div class="pole s2"><h4>RNN의 저주</h4><p>같은 야코비안이 반복 곱해지면 기울기가 폭발하거나 소실된다. 10-20 시간 단계만 넘어도 학습이 어렵다. 이 사이트에서 <b>웜한 주홍</b>으로 표시된다.</p></div>
 </div>
 
 <section class="plates" id="plates"></section>
@@ -100,23 +100,30 @@
 </section>
 
 <footer class="colophon">
-  <p>이 해설은 Goodfellow et al.(2016) Chapter 10의 흐름을 따르되, 정의 나열 대신 <strong>"왜 그 형태인가"</strong>를 늘 함께 설명한다. CNN의 공간 공유에서 RNN의 시간 공유로 자연스럽게 잇고, LSTM 게이트는 "장기 메모리 회로"라는 비유로 풀어낸다. 모든 수식은 산문과 위젯으로 동행한다.</p>
+  <p>이 해설은 Goodfellow et al.(2016) Chapter 10의 흐름을 따르되, 정의 나열 대신 <strong>"왜 그 형태인가"</strong>를 늘 함께 설명한다. CNN의 공간 공유에서 RNN의 시간 공유로 자연스럽게 잇고, BPTT는 손계산 한 예제로 풀어 보이며, LSTM 게이트는 "장기 메모리 회로"라는 비유로 분해한다. 모든 수식은 산문과 위젯으로 동행한다.</p>
   <p class="src">
     원서 · <a href="https://www.deeplearningbook.org/contents/rnn.html">deeplearningbook.org / Chapter 10</a><br>
-    7주차 과제 · <a href="../../../03-과제-제출/IntroToDL_Week7_22000168.md">IntroToDL_Week7_22000168.md</a><br>
-    컨셉 노트 · <a href="../../../../../../../3-Resources/Concepts/RNN은-이전-상태를-다음-시점으로-전달하며-문맥을-누적한다.md">RNN 컨셉</a> · <a href="../../../../../../../3-Resources/Concepts/연산-그래프-펼치기는-RNN의-순환-계산을-시간-흐름으로-전개한다.md">시간 펼치기</a> · <a href="../../../../../../../3-Resources/Concepts/교사-강요는-정답-피드백으로-출력-순환-네트워크의-훈련을-안정화한다.md">교사 강요</a>
+    7주차 과제 · IntroToDL_Week7_22000168.md<br>
+    컨셉 노트 · RNN / 시간 펼치기 / 교사 강요 / 어텐션 (Obsidian Vault)
   </p>
 </footer>
 
 <script>
   const SUBS = [
-    { no:'01', t:'왜 시퀀스에 FC·CNN은 충분하지 않은가', d:'가변 길이와 문맥 의존성. 같은 단어가 위치에 따라 의미가 달라지는 세계. 위치별 별도 모델이 왜 무너지는지 슬라이더로 확인.', sp:['structure-lo','structure'] },
-    { no:'02', t:'시간 펼치기와 매개변수 공유', d:'$h^{(t)} = f(h^{(t-1)}, x^{(t)}; \\theta)$를 펼쳐 깊은 네트워크로 만든다. CNN의 공간 공유와 RNN의 시간 공유가 같은 원리임을 시각화.', sp:['structure','synth'] },
-    { no:'03', t:'BPTT — 시간을 거슬러 가는 역전파', d:'펼쳐진 그래프에서 어떻게 손실이 모든 시간 단계로 흘러 들어가는가. 메모리 비용과 계산 비용의 거래. 교사 강요(Teacher Forcing) 비교.', sp:['structure','style'] },
-    { no:'04', t:'기울기 폭발/소실 — 깊은 시간의 저주', d:'$\\prod_t W^T \\mathrm{diag}(f\'(h_t))$가 폭발할까 소실할까. 시퀀스 길이 슬라이더로 노름이 지수적으로 폭발/소실되는 모습을 직접 본다.', sp:['style','style-lo'] },
-    { no:'05', t:'LSTM·GRU — 게이트가 푸는 문제', d:'forget·input·output 게이트가 어떻게 "선형 자체 루프(linear self-loop)"라는 기울기 고속도로를 만드는가. 입력 슬라이더로 4개 게이트 활성도 시각화.', sp:['synth','structure'] },
-    { no:'06', t:'양방향·인코더-디코더 — Attention으로 가는 다리', d:'정방향+역방향 합성. seq2seq의 고정 길이 컨텍스트 병목. Attention이 왜 다음 장에서 등장할 수밖에 없었는가.', sp:['style','synth'] },
-    { no:'07', t:'시험 대비 — 핵심 정리와 예상 질문', d:'10장의 모든 수식을 한 쪽에. RNN 구조 패턴 3종, 게이트 식, BPTT 비용, LSTM vs GRU 비교 체크리스트와 예상 질문 9개.', sp:['ink-soft','ink'] },
+    { no:'01', t:'왜 시퀀스에 FC·CNN은 부족한가', d:'가변 길이와 문맥 의존성. 같은 단어가 위치에 따라 의미가 달라지는 세계. 위치별 별도 모델이 왜 무너지는지부터 출발한다.', sp:['structure-lo','structure'] },
+    { no:'02', t:'RNN의 기본 아이디어 — 같은 함수를 시간축으로', d:'$h^{(t)} = f(h^{(t-1)}, x^{(t)};\\theta)$ 한 줄로 표현되는 핵심. 한 사람이 메모를 갱신하며 책을 읽는 비유로 푼다.', sp:['structure','synth'] },
+    { no:'03', t:'시간 펼치기 — 회로도에서 펼쳐진 그래프로', d:'루프가 있는 회로도가 어떻게 방향성 비순환 그래프로 펴지는가. 마우스로 직접 펼쳐 보는 위젯과 함께.', sp:['synth','structure'] },
+    { no:'04', t:'매개변수 공유 — CNN의 공간 공유와 같은 원리', d:'9장에서 본 합성곱의 공간 공유, 10장의 시간 공유. 같은 색은 같은 가중치라는 한 가지 약속이 모든 위치에 통한다.', sp:['structure','structure-lo'] },
+    { no:'05', t:'BPTT 1 — 시간을 거슬러 가는 역전파의 직관', d:'손실이 마지막 시점에서 발생했다면, 그 책임은 어느 시점의 어느 가중치가 나눠 가질까. "비난 분배"라는 비유로 푼다.', sp:['structure','style'] },
+    { no:'06', t:'BPTT 2 — 손으로 풀어 보는 T=3 예시', d:'$T=3$ 시퀀스에서 손실 한 개를 W, U, b로 미분해 본다. 같은 W가 세 번 곱해진다는 것의 의미를 직접 본다.', sp:['style','style-lo'] },
+    { no:'07', t:'기울기 폭발과 소실 — 같은 야코비안의 반복 곱', d:'$\\prod_t W^\\top \\mathrm{diag}(f\'(h_t))$가 폭발할까 소실할까. 시퀀스 길이 슬라이더로 노름이 지수적으로 갈라지는 모습을 본다.', sp:['style','style-lo'] },
+    { no:'08', t:'기울기 클리핑 — 폭발만 막는 처방', d:'8장(Optimization)에서 배운 기울기 클리핑이 왜 RNN에서 특히 중요한가. "절벽에서 방향을 유지하며 보폭만 줄인다."', sp:['style','synth'] },
+    { no:'09', t:'LSTM 1 — 세 게이트의 역할', d:'forget·input·output 게이트가 무엇을 결정하는가. 입력 슬라이더로 네 회로의 활성도를 직접 본다.', sp:['synth','structure'] },
+    { no:'10', t:'LSTM 2 — cell state의 정보 고속도로', d:'왜 LSTM은 BPTT의 곱셈 지옥을 피하는가. 선형 자체 루프 $C_t = f_t \\odot C_{t-1} + i_t \\odot \\tilde C_t$의 의미.', sp:['structure','synth'] },
+    { no:'11', t:'GRU — LSTM의 축약형, 두 게이트만으로', d:'세 게이트를 둘로 줄이고 cell state를 hidden state와 합친다. 어떤 약속이 사라지고 어떤 약속이 남는가.', sp:['synth','structure-lo'] },
+    { no:'12', t:'양방향 RNN — 과거와 미래를 함께 보기', d:'단방향 RNN으로는 잡을 수 없는 "뒤를 봐야 풀리는" 의존성이 있다. 정방향과 역방향을 합치는 단순한 처방.', sp:['structure-lo','style-lo'] },
+    { no:'13', t:'인코더-디코더 — seq2seq의 등장', d:'서로 다른 길이의 입력과 출력을 잇는 다리. 하나의 컨텍스트 벡터에서 시작해, 어텐션이 왜 다음 장에서 등장할 수밖에 없었는지로 마친다.', sp:['style','synth'] },
+    { no:'14', t:'시험 대비 — 핵심 정리와 예상 질문', d:'10장의 모든 수식을 한 쪽에. RNN 구조 패턴 3종, 게이트 4식, BPTT 비용, LSTM vs GRU 체크리스트와 예상 질문 20+개.', sp:['ink-soft','ink'] },
   ];
   const colMap = { structure:'var(--structure)', 'structure-lo':'var(--structure-lo)', style:'var(--style)', 'style-lo':'var(--style-lo)', synth:'var(--synth)', ink:'var(--ink)', 'ink-soft':'var(--ink-soft)' };
 
@@ -135,13 +142,12 @@
     platesEl.appendChild(a);
 
     const f = document.createElement('a'); f.href = c.no + '.html';
-    f.innerHTML = `<b>${c.no}</b> ${c.t.split('—')[0].slice(0,14)}`;
+    f.innerHTML = `<b>${c.no}</b> ${c.t.split('—')[0].slice(0,12)}`;
     flowEl.appendChild(f);
     if (idx < SUBS.length - 1) { const s = document.createElement('span'); s.className='arr'; s.textContent='→'; flowEl.appendChild(s); }
   });
 
-  // 표지 hero — 시간 펼치기 입자 모핑
-  // 왼쪽: 회로도 형태 (작은 루프), 오른쪽: 시간축으로 펼친 chain
+  // 표지 hero — 시간 펼치기 입자 모핑 (회로도 ↔ 펼쳐진 chain)
   window.addEventListener('load', () => {
     const canvas = document.getElementById('hero');
     if (!canvas || !window.THREE) return;
@@ -156,23 +162,21 @@
     renderer.setSize(w, h, false);
     renderer.setClearColor(0xffffff, 0);
 
-    const T = 7; // time steps
+    const T = 7;
     const perStep = 80;
     const total = T * perStep;
     const geo = new THREE.BufferGeometry();
     const positions = new Float32Array(total * 3);
     const colors = new Float32Array(total * 3);
-    const folded = new Float32Array(total * 3);   // 작은 루프
-    const unfolded = new Float32Array(total * 3); // 시간축으로 펼침
+    const folded = new Float32Array(total * 3);
+    const unfolded = new Float32Array(total * 3);
     for (let t = 0; t < T; t++) {
       for (let i = 0; i < perStep; i++) {
         const k = t * perStep + i;
-        // 폴드(folded): 모든 시점이 한 원에 겹쳐 있는 회로도
         const theta = (i / perStep) * Math.PI * 2;
         folded[k*3]   = Math.cos(theta) * 0.6;
         folded[k*3+1] = Math.sin(theta) * 0.6;
         folded[k*3+2] = 0;
-        // 언폴드: 시간축으로 펼쳐진 chain
         const x = (t - (T-1)/2) * 0.95;
         unfolded[k*3]   = x;
         unfolded[k*3+1] = Math.sin((i/perStep) * Math.PI * 2) * 0.4;
@@ -180,7 +184,6 @@
         positions[k*3]   = folded[k*3];
         positions[k*3+1] = folded[k*3+1];
         positions[k*3+2] = folded[k*3+2];
-        // 시점별 그라데이션
         const tt = t / (T-1);
         colors[k*3]   = 0.18 + tt * 0.57;
         colors[k*3+1] = 0.35 - tt * 0.15;
@@ -193,7 +196,6 @@
     const pts = new THREE.Points(geo, mat);
     scene.add(pts);
 
-    // 시점 간 연결선 (펼쳐졌을 때만 보임)
     const lineGeo = new THREE.BufferGeometry();
     const linePos = new Float32Array((T-1) * 6);
     lineGeo.setAttribute('position', new THREE.BufferAttribute(linePos, 3));
@@ -219,7 +221,6 @@
         pos[k*3+2] = folded[k*3+2] * (1-m) + unfolded[k*3+2] * m;
       }
       pts.geometry.attributes.position.needsUpdate = true;
-      // 연결선
       for (let i = 0; i < T-1; i++) {
         const a = i * perStep, b = (i+1) * perStep;
         linePos[i*6]   = pos[a*3];

@@ -3,320 +3,326 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>05 · 평평한 매니폴드 — Ch.14·15로 가는 다리</title>
+<title>13 / 05 / 전통 PCA — 분산 최대화 시점</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
-  .mn-stage { display: grid; grid-template-columns: 1fr; padding: 1.4rem 1.1rem .6rem; }
-  .mn-stage canvas { display: block; width: 100%; height: 400px; border-radius: 9px; border: 1px solid var(--line); background: #fff; cursor: grab; }
-  .mn-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; padding: 1rem 1.1rem; align-items: end; }
-  @media (max-width: 600px) { .mn-controls { grid-template-columns: 1fr; } }
-  .mn-toggle { display: flex; gap: .5rem; flex-wrap: wrap; }
-  .mn-toggle button { flex: 1; min-width: 120px; padding: .65rem 1rem; border-radius: 8px; border: 1px solid var(--line); background: #fff; color: var(--ink-soft); font-family: var(--mono); font-size: .8rem; cursor: pointer; }
-  .mn-toggle button.on { background: var(--structure); color: #fff; border-color: var(--structure); }
-  .mn-meta { font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); }
-  .mn-meta b { color: var(--structure); }
-  .mn-meta .lbl { display: block; font-size: .66rem; color: var(--ink-faint); letter-spacing: .12em; text-transform: uppercase; margin-bottom: .2rem; }
+  .pca-stage { padding: 1.4rem 1.1rem; display: flex; gap: 1.1rem; justify-content: center; flex-wrap: wrap; align-items: flex-start; }
+  .pca-main canvas { display: block; border-radius: 8px; border: 1px solid var(--line); background: #fff; cursor: crosshair; }
+  .pca-side { display: flex; flex-direction: column; gap: .65rem; min-width: 220px; }
+  .pca-side .panel { padding: .65rem .8rem; background: var(--paper-2); border-radius: 7px; font-size: .82rem; line-height: 1.5; color: var(--ink-soft); }
+  .pca-side .panel b { color: var(--style); font-family: var(--mono); }
+  .pca-bar { display: flex; align-items: baseline; gap: .5rem; font-family: var(--mono); font-size: .72rem; color: var(--ink-faint); }
+  .pca-bar .b1 { width: 110px; height: 8px; border-radius: 4px; background: var(--paper-sink); overflow: hidden; }
+  .pca-bar .b1 i { display: block; height: 100%; background: var(--style); transition: width .25s var(--ease); }
+  .pca-bar .b1.s2 i { background: var(--structure); }
+  .pca-ctr { padding: .8rem 1rem; border-top: 1px solid var(--line-soft); background: var(--paper); display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; }
+  .pca-modes { display: flex; gap: .3rem; }
+  .pca-modes button { padding: .4rem .8rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .08em; border: 1px solid var(--line); background: #fff; color: var(--ink); border-radius: 5px; cursor: pointer; }
+  .pca-modes button.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
 </style>
 </head>
 <body>
 <div class="scroll-progress"></div>
-<div class="topbar">
-  <a class="home" href="index.html">← Chapter 13 · 선형 요소 모델</a>
-  <span class="ch-mini">SUB-CHAPTER 05 / 06</span>
-</div>
+<div class="topbar"></div>
 
 <div class="ch-layout">
-  <aside class="ch-nav"><nav><ol>
-    <li><a href="01.html">잠재 변수 모델</a></li>
-    <li><a href="02.html">요소 분석과 확률적 PCA</a></li>
-    <li><a href="03.html">ICA — 비가우시안 독립</a></li>
-    <li><a href="04.html">희소 코딩</a></li>
-    <li><a href="05.html" class="current">평평한 매니폴드</a></li>
-    <li><a href="06.html">시험 대비 요약</a></li>
-  </ol></nav></aside>
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Sub-Chapter 05 · 기하학적 시선</span>
-      <h1>선형 모델은<br><span class="t-synth">평평한 평면</span>만 그릴 수 있다</h1>
-      <p class="lede">FA, PPCA, ICA, 희소 코딩 — 모두 데이터에 저차원 부분공간을 끼워 맞춘다. 그 공간이 평평하다는 것이 이 가족의 강점이자 한계이며, 다음 장 오토인코더의 출발점이다.</p>
+      <span class="kicker">Sub-chapter 05 / 기하의 시점</span>
+      <h1>전통 PCA —<br>가장 멀리 흩어진 <span class="t-style">방향</span>을 찾는 일</h1>
+      <p class="lede">PPCA가 확률의 옷을 입은 PCA였다면, 이 절은 그 옷을 벗기고 PCA의 기하적 정의로 돌아간다. "데이터가 가장 멀리 흩어진 방향을 찾아 그 직선 위에 사영한다" — 이 한 줄이 PCA의 전부다.</p>
     </header>
 
     <div class="prose">
-      <p>지금까지 본 네 모델 — FA, PPCA, ICA, 희소 코딩 — 의 차이만 강조해 왔지만, 한 단계 위에서 보면 이들은 모두 <strong>같은 기하학적 그림</strong>을 그린다. 데이터에 <span class="t-structure">저차원 부분공간(subspace)</span>을 끼워 맞춘다는 점에서 동일하다.</p>
+      <p>PCA(Principal Component Analysis)는 1901년 칼 피어슨이 처음 도입한 이래 통계학에서 가장 널리 쓰이는 알고리즘 중 하나다. 통계 교과서에서는 보통 확률 모델 없이 순수한 기하 알고리즘으로 정의되고, 머신러닝 교과서에서는 가끔 PPCA의 극한으로 정의된다. 같은 알고리즘이 두 가지 시점을 갖는다는 게 PCA의 특이한 매력이다. 이 절에서는 기하적 시점에서 PCA를 다시 본다. 직선과 평면 위의 사영이라는 한 가지 그림으로 모든 것을 풀어 본다.</p>
 
-      <h2>매니폴드 가설 — 고차원 데이터는 사실 저차원에 산다</h2>
+      <p>PCA가 풀려는 문제부터 정의하자. $d$차원 공간에 $n$개의 점이 있다 — 데이터 행렬 $\mathbf{X} \in \mathbb{R}^{n \times d}$. 이 점들을 잘 요약하는 짧은 표상을 만들고 싶다. 구체적으로 <strong>$k$차원($k < d$) 직선 또는 평면 위에 사영해서 잃는 정보를 최소화</strong>하고 싶다. 정보를 잃는다는 말은 사영 후 잃어버린 거리 — 즉 사영 오차의 제곱합 — 가 작다는 뜻이다. 이 문제의 정확한 답이 PCA의 한 줄 정의다.</p>
 
-      <p>딥러닝의 가장 중요한 작업 가설 중 하나가 <strong>매니폴드 가설(manifold hypothesis)</strong>이다.</p>
+      <div class="math-block">$$ \max_{\mathbf{w}, \|\mathbf{w}\|=1} \; \text{Var}(\mathbf{Xw}) \quad \Longleftrightarrow \quad \min_{\mathbf{w}, \|\mathbf{w}\|=1} \; \sum_i \|\mathbf{x}_i - (\mathbf{w}^\top \mathbf{x}_i)\mathbf{w}\|^2 $$</div>
+      <p class="math-note">왼쪽: 단위 방향 $\mathbf{w}$ 위에 사영했을 때 분산을 최대로 만드는 방향을 찾는다. 오른쪽: 사영 후 잃어버린 거리의 제곱합을 최소로 만드는 방향. 두 정의가 정확히 같은 답을 준다.</p>
 
-      <div class="analogy">
-        예를 들어 28×28 픽셀의 손글씨 숫자 이미지 한 장은 $\mathbb{R}^{784}$의 한 점이다. 이론적으로 가능한 모든 픽셀 조합은 어마어마하지만, 그 대부분은 우리가 "숫자"라고 알아볼 수 있는 그림이 아니다. <b>의미 있는 숫자 이미지들은 이 784차원 공간 안의 훨씬 더 좁은 영역에 모여 있다.</b> 그 영역을 매니폴드(manifold)라고 부른다. 매니폴드의 내재 차원(intrinsic dimension)은 보통 수십 차원 정도에 그친다고 본다 — 글씨의 두께, 기울기, 곡률, 위치, 크기 같은 몇 개의 자유도면 한 숫자의 거의 모든 변형을 설명할 수 있다.
-      </div>
-
-      <p>선형 요소 모델은 이 매니폴드를 <strong>가장 단순한 모양 — 평평한 부분공간(affine subspace)</strong>으로 가정한다.</p>
-
-      <div class="math-block">$$ \mathcal{M} = \{ W h + b \mid h \in \mathbb{R}^K \} \subset \mathbb{R}^D $$</div>
-      <p class="math-note">잠재 h를 모든 가능한 값으로 훑었을 때 관측이 그릴 수 있는 점들의 집합. 이 집합은 R^D 안에 놓인 K차원 평면.</p>
-
-      <p>이 평면의 차원은 잠재 변수의 차원 $K$이고, 그 방향은 $W$의 열들이 결정한다. 매니폴드가 평면이라는 사실은 단순함의 원천이자 한계의 원천이다.</p>
-
-      <h2>왜 PCA는 매니폴드 가설의 가장 단순한 구현인가</h2>
-
-      <p>PCA의 최적화 문제를 매니폴드의 언어로 다시 적어보자.</p>
-
-      <div class="math-block">$$ \min_{W, b} \; \sum_{i=1}^{N} \| x^{(i)} - \mathrm{Proj}_{\mathcal{M}}(x^{(i)}) \|^2 $$</div>
-      <p class="math-note">데이터 점들을 매니폴드 M(여기서는 K차원 평면)에 직교 사영했을 때의 평균 제곱 거리를 최소화. 이 식이 그대로 PCA의 목적함수.</p>
-
-      <p>이 식이 말하는 바는 명확하다 — "데이터 점들이 그 위에 거의 놓여 있는 평면을 찾아라". 점들이 정말 평면 근처에 모여 있다면 PCA는 그 평면을 정확히 잡아낸다. 점들이 곡면 위에 놓여 있다면? PCA는 그 곡면에 <strong>접하는 가장 잘 맞는 평평한 평면</strong>을 줄 뿐이고, 곡면을 따라가지는 못한다.</p>
-    </div>
-
-    <div class="widget">
-      <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 05</span><span>평평한 매니폴드(선형) vs 휘어진 매니폴드(비선형)</span></div>
-        <div class="mn-stage">
-          <canvas id="mn"></canvas>
-        </div>
-        <div class="mn-controls">
-          <div class="mn-toggle">
-            <button id="m-flat" class="on">평평한 매니폴드 (PCA가 잡음)</button>
-            <button id="m-curve">휘어진 매니폴드 (선형 모델은 무력)</button>
-          </div>
-          <div class="mn-meta">
-            <span class="lbl">데이터 형태</span><b id="mn-form">평면 위 점구름 (잡음 ε)</b>
-            <br><span class="lbl">평면 모델 잔여 오차</span><b id="mn-res">낮음 — 모델이 잘 맞음</b>
-          </div>
-        </div>
-      </div>
-      <p class="widget-cap">왼쪽 모드에서는 점들이 진짜로 평면 근처에 모여 있어, 선형 모델(주황 평면)이 잘 들어맞는다. 오른쪽 모드에서는 같은 데이터를 휘어 놓아서, 점들이 곡면 위에 놓이게 된다. 그래도 PCA가 줄 수 있는 답은 여전히 한 장의 평평한 평면뿐이고, 사영 잔여 오차가 크게 늘어난다. 마우스 드래그로 시점을 돌릴 수 있다.</p>
-    </div>
-
-    <div class="prose">
-      <h2>왜 평평함이 한계인가</h2>
-
-      <p>실제 데이터의 매니폴드는 거의 항상 휘어 있다. 얼굴 사진의 매니폴드는 표정·각도·조명에 따라 휘어진 곡면이고, 손글씨의 매니폴드는 글자의 형태 변형에 따라 휘어진다. 평면으로는 이런 곡면을 따라잡을 수 없다.</p>
-
-      <p>해법은 두 가지 방향이다.</p>
-
-      <ul>
-        <li><strong>여러 평면을 짜깁기.</strong> 데이터 공간 안의 여러 부분에 각자 다른 선형 모델을 학습시켜, 전체적으로 곡면을 조각조각 근사한다 (mixture of factor analyzers, local PCA).</li>
-        <li><strong>비선형 매니폴드로 일반화.</strong> 선형 매핑 $Wh$를 비선형 함수 $g(h)$로 바꾼다. 이것이 <strong>오토인코더</strong>의 길이다.</li>
-      </ul>
-
-      <p>책은 두 번째 길을 따라간다. 다음 장(14장)에서는 인코더 $h = f(x)$와 디코더 $r = g(h)$가 모두 비선형 신경망인 오토인코더를 다룬다. 그러면 모델이 평평한 평면이 아니라 휘어진 곡면을 따라갈 수 있게 된다.</p>
+      <p>두 정의가 같은 답을 준다는 것이 PCA의 신기한 점이다. 직관으로 풀면 다음과 같다. 데이터가 어떤 방향으로 길게 늘어져 있다고 하자. 그 늘어진 방향을 따라 사영하면 사영된 점들의 분산이 크다(왼쪽 정의의 최대). 동시에 그 방향에 수직으로 잃어버리는 거리는 작다(오른쪽 정의의 최소). 데이터가 가장 길게 늘어진 방향을 잡으면 동시에 두 목표가 달성된다. 이게 PCA가 "분산 최대화"와 "사영 오차 최소화" 두 정의를 동시에 갖는 이유다.</p>
 
       <div class="analogy">
-        <b>한 줄 비유.</b> 선형 요소 모델은 굽은 길에 <b>일자형 자(ruler)</b>를 대고 거리를 재는 것과 같다. 길이 진짜로 직선이면 자는 완벽히 들어맞는다. 길이 휘면 자가 길의 일부에서는 떨어지고 일부에서는 닿는다 — 평균적으로는 가장 잘 맞춰진 자일 수는 있지만, 길의 진짜 모양을 표현하지는 못한다. 오토인코더는 휘는 자를 도입한다.
+        도시의 야경 사진 한 장이 있다고 해 보자. 사진은 가로세로 두 방향으로 점들이 흩어져 있는데, 자세히 보면 대각선으로 강이 흘러서 그 방향으로 가장 멀리 늘어져 있다. PCA는 <b>"그 강의 방향이 데이터의 첫 번째 주성분(first principal component)"</b>이라고 답한다. 그 강에 수직인 방향이 두 번째 주성분이다. 사진을 강 방향으로만 길게 자르면(=사영), 강의 모든 야경이 일렬로 펼쳐진다. 강에 수직인 정보(가로폭)는 잃지만, 가장 중요한 길이 방향의 정보는 보존된다.
       </div>
 
-      <h2>Slow Feature Analysis — 시간 차원으로의 확장</h2>
+      <h2>왜 답이 공분산 행렬의 고유벡터인가</h2>
 
-      <p>책의 13장 끝부분에서 잠시 다루는 모델 가족이 하나 더 있다. <strong>Slow Feature Analysis(SFA)</strong>는 정적 데이터가 아니라 <strong>시간 시퀀스</strong>에서, 시간에 따라 천천히 변하는 잠재 요소를 추출하는 모델이다.</p>
+      <p>위 최대화 문제의 답을 직접 풀어 보자. 라그랑주 승수 없이 직관만으로도 풀린다. 데이터를 중심화(centering)해서 평균을 0으로 옮겼다고 하자. 그러면 사영된 점들 $\{\mathbf{w}^\top \mathbf{x}_i\}$의 분산은 다음과 같다.</p>
 
-      <p>예를 들어 동영상의 한 프레임에서 다음 프레임으로 갈 때 픽셀 값들은 빠르게 출렁이지만 — "이 영상이 사람이 걷고 있다"는 의미 같은 고수준 정보는 천천히 변한다. SFA는 "관측에서 천천히 변하는 선형 결합"을 찾도록 학습된다. 형식은 여전히 선형이지만, 최적화 기준이 "분산 보존"이나 "비가우시안성"이 아니라 "시간에 따른 변화율 최소화"라는 점이 다르다.</p>
+      <div class="math-block">$$ \text{Var}(\mathbf{Xw}) = \frac{1}{n} \sum_i (\mathbf{w}^\top \mathbf{x}_i)^2 = \mathbf{w}^\top \left(\frac{1}{n} \mathbf{X}^\top \mathbf{X}\right) \mathbf{w} = \mathbf{w}^\top \mathbf{S} \mathbf{w} $$</div>
+      <p class="math-note">$\mathbf{S} = \frac{1}{n} \mathbf{X}^\top \mathbf{X}$는 표본 공분산 행렬. 사영된 분산은 공분산 행렬의 이차 형식(quadratic form)으로 정확히 적힌다.</p>
 
-      <p>SFA는 이 장에서 짧게만 다뤄지지만, 표상 학습에서 <strong>"시간적 안정성(temporal stability)"</strong>이 또 하나의 신호가 될 수 있다는 점을 보여 준다 — 15장(표상 학습)이 이어 받는 아이디어다.</p>
+      <p>이제 문제는 단위 길이 $\mathbf{w}$에 대해 $\mathbf{w}^\top \mathbf{S} \mathbf{w}$를 최대로 만드는 일이다. 선형대수의 고전적 결과에 의하면 이 답은 $\mathbf{S}$의 가장 큰 고유값에 해당하는 고유벡터다. 그리고 그 최대값이 바로 그 고유값 $\lambda_1$이다. 즉 첫 번째 주성분 방향은 데이터 공분산의 가장 큰 고유벡터이고, 그 방향의 분산은 가장 큰 고유값이다.</p>
 
-      <h2>13장의 메시지 한 줄로</h2>
+      <p>두 번째 주성분도 마찬가지로 푼다. 단 첫 번째 주성분에 직교(orthogonal)해야 한다는 제약 아래에서 분산을 최대로 만드는 방향을 찾는다. 답은 두 번째로 큰 고유값에 해당하는 고유벡터다. 이렇게 $k$개 주성분을 차례로 잡으면 데이터를 가장 잘 요약하는 $k$차원 부분 공간이 나온다.</p>
 
-      <p>선형 요소 모델의 가족은 단순하지만 강력한 한 가지를 가르친다. <strong>"잠재 변수의 사전 분포가 모델이 무엇을 발견하는지를 결정한다."</strong> 가우시안 사전은 가장 분산이 큰 평면을 주고, 비가우시안 사전은 통계적으로 독립인 원천을 주며, 첨예한 희소 사전은 국소적이고 해석 가능한 사전을 준다. 동일한 데이터, 동일한 선형 매핑 — 단지 잠재 분포의 모양만 바꾸었을 뿐인데 그렇다.</p>
+      <div class="key-point">
+        <p>PCA의 한 줄: <em>"데이터 공분산 행렬의 가장 큰 $k$개 고유벡터가 데이터를 가장 잘 요약하는 $k$차원 평면의 기저(basis)이고, 그 고유값들이 그 방향의 분산이다."</em> 이 한 줄에 알고리즘 전체가 들어 있다. 학습은 공분산 행렬 한 번 만들고 고유분해 한 번 돌리면 끝.</p>
+      </div>
 
-      <p>이 통찰은 책 전체를 관통한다. 오토인코더는 비선형 매핑을 도입하면서도 이 사전의 역할을 유지한다 — 희소 사전은 희소 오토인코더가 되고, 잡음에 강한 사전은 잡음 제거 오토인코더가 된다. 표상 학습 장에서는 이 사전을 다시 데이터 자체의 구조(시간적 안정성, 변환 등가성 등)에서 유도한다. 모두 13장이 깐 그림 위에 색을 더하는 작업이다.</p>
+      <div class="widget">
+        <div class="widget-frame">
+          <div class="widget-label"><span class="lab-no">위젯 05</span><span>2D PCA · 두 주성분이 데이터에서 자동으로 떠오르는 모습</span></div>
+          <div class="pca-stage">
+            <div class="pca-main">
+              <canvas id="pcaC" width="420" height="380"></canvas>
+            </div>
+            <div class="pca-side">
+              <div class="panel">파란 점은 데이터. <b>주황 화살표</b>가 1번 주성분, <b>파란 화살표</b>가 2번 주성분. 화살표 길이는 그 방향의 분산(고유값 √).</div>
+              <div class="pca-bar"><span>PC1</span><div class="b1"><i id="bar1" style="width:80%"></i></div><span id="pct1">80%</span></div>
+              <div class="pca-bar"><span>PC2</span><div class="b1 s2"><i id="bar2" style="width:20%"></i></div><span id="pct2">20%</span></div>
+              <div class="panel">데이터를 1번 주성분 위에 사영하면 <b><span id="proj1">80%</span></b>의 분산이 보존된다. 1차원으로 차원 축소했을 때 잃는 정보가 적다.</div>
+              <div class="panel" style="background:var(--paper-sink)">캔버스 위에 점을 추가하려면 <b>좌클릭</b>. 점이 추가될 때마다 PCA가 재계산된다.</div>
+            </div>
+          </div>
+          <div class="pca-ctr">
+            <div class="pca-modes">
+              <button id="modeLine" class="on">대각 분포</button>
+              <button id="modeCircle">원형 분포</button>
+              <button id="modeCross">교차 분포</button>
+            </div>
+            <button class="btn ghost" id="pcaClear">모든 점 지우기</button>
+          </div>
+        </div>
+        <p class="widget-cap">데이터의 분포를 바꾸면 주성분이 자동으로 따라온다. 대각 분포에서는 PC1이 대각선 방향으로 정렬되고 거의 모든 분산(약 95%+)을 한 방향이 잡는다. 원형 분포에서는 두 방향의 분산이 거의 비슷해서 PCA가 사실상 의미를 잃는다. 교차 분포에서는 PC1이 어느 한쪽 가지로 정렬되어 십자가의 양쪽 가지를 구분하지 못한다 — PCA의 한계가 보인다.</p>
+      </div>
 
-      <p>마지막 장으로 가서, 시험에 대비해 이 모든 흐름을 한 장의 카드와 빠른 답안으로 정리한다.</p>
+      <h2>왜 분산 최대화가 정보 보존인가 — 가우시안 가정의 그림자</h2>
+
+      <p>"분산이 크면 정보가 많다"는 말은 어디서 정당화되는가. 직관으로는 그럴듯하지만 엄밀히는 한 가지 가정이 깔려 있다 — <strong>데이터가 가우시안이거나 가우시안에 가깝다는 가정</strong>이다. 가우시안에서는 변수 하나의 "정보량"이 정확히 분산의 로그(log variance)로 측정되기 때문이다. 분산이 크면 그 방향에서 데이터를 구별할 수 있는 정보가 많다.</p>
+
+      <p>이 가정이 깨지면 어떻게 되는가. 예를 들어 데이터가 두 모드(modes)를 가진 분포에서 나왔다고 하자. 그러면 두 모드를 잇는 방향의 분산은 크지만, 그 방향이 반드시 "가장 중요한" 정보를 담은 방향은 아니다. 두 모드가 어느 방향으로든 분리될 수 있다면 그 방향이 더 중요한 정보를 담는다. 이게 PCA가 클러스터링 문제에서 자주 빗나가는 이유 중 하나다. sub 06에서 이 한계를 더 자세히 본다.</p>
+
+      <h2>PCA를 실제로 굴리는 두 알고리즘</h2>
+
+      <p>이론적으로는 공분산 행렬 $\mathbf{S}$의 고유분해로 풀 수 있지만, 실제로는 두 가지 방법이 더 자주 쓰인다.</p>
+
+      <p><strong>특이값 분해(Singular Value Decomposition, SVD)</strong>. 데이터 행렬 $\mathbf{X}$를 직접 SVD $\mathbf{X} = \mathbf{U} \boldsymbol{\Sigma} \mathbf{V}^\top$로 분해한다. $\mathbf{V}$의 열들이 정확히 PCA의 주성분 방향이고, $\boldsymbol{\Sigma}$의 대각 원소(특이값)의 제곱이 고유값 $\lambda_i$의 $n$배에 해당한다. 큰 데이터셋에서 공분산 행렬을 명시적으로 만들지 않고도 PCA를 할 수 있어서 수치적으로 더 안정적이다.</p>
+
+      <p><strong>전력법(power iteration)</strong>. 주성분 한두 개만 필요할 때 사용. 무작위 벡터에서 시작해 $\mathbf{S}$를 반복해서 곱하고 정규화하면 가장 큰 고유벡터로 수렴한다. 두 번째 주성분은 첫 번째 주성분 성분을 매번 빼면서 같은 과정을 반복한다. 매우 큰 데이터셋에서 효율적이고 점진적(online)으로도 굴릴 수 있다.</p>
+
+      <h2>PCA의 핵심 사용 사례</h2>
+
+      <p>PCA가 머신러닝에서 가장 자주 쓰이는 곳은 네 가지다. 첫째, <strong>차원 축소</strong>. 1000차원 데이터를 50차원으로 줄여 다음 단계 분류기에 넘기는 일. 둘째, <strong>시각화</strong>. 고차원 데이터를 2D 또는 3D로 사영해서 사람이 볼 수 있게 만드는 일. 셋째, <strong>잡음 제거</strong>. 작은 고유값에 해당하는 방향(잡음으로 가정)을 버리고 큰 고유값 방향만 남긴다. 넷째, <strong>특징 추출</strong>. 얼굴 인식의 고전적 방법 "Eigenfaces"가 그 예 — 얼굴 이미지의 PCA 주성분이 사람의 얼굴 특징(눈썹의 진하기, 코의 길이 등)에 해당하는 방향이 된다.</p>
+
+      <p>실용에서 PCA는 거의 모든 데이터 분석 파이프라인의 첫 단계로 들어간다. 본격적인 모델링에 들어가기 전에 데이터의 주요 변동 방향을 보고, 차원을 줄이고, 시각화하고, 어떤 클러스터 구조가 있는지를 빠르게 확인하는 도구로 쓰인다. 13장 전체에서 가장 자주 만나는 도구이기도 하다.</p>
+
+      <h2>이 절을 닫으며</h2>
+
+      <p>PCA의 한 줄을 다시 적자. "데이터 공분산의 가장 큰 고유벡터들이 데이터를 가장 잘 요약하는 평면을 정의한다." 이 한 줄을 외워 두면 PCA에 대한 거의 모든 질문에 답할 수 있다. 다음 절에서는 이 강력하지만 단순한 모델이 어디서 무너지는지를 본다 — 가우시안 가정과 선형성이 만들어내는 두 가지 본질적 한계.</p>
     </div>
 
-    <nav class="ch-foot">
-      <a href="04.html"><div class="dir">← 이전</div><div class="ti">희소 코딩</div></a>
-      <a href="06.html" class="next"><div class="dir">다음 →</div><div class="ti">시험 대비 요약</div></a>
-    </nav>
+    <nav class="ch-foot"></nav>
   </main>
 </div>
 
 <script>
-  window.addEventListener('load', () => {
+  const SUBS = [
+    { no:'01', t:'잠재 변수의 직관' },
+    { no:'02', t:'생성 vs 판별 모델' },
+    { no:'03', t:'요소 분석 (FA)' },
+    { no:'04', t:'확률적 PCA' },
+    { no:'05', t:'전통 PCA' },
+    { no:'06', t:'PCA의 한계' },
+    { no:'07', t:'ICA — 칵테일 파티' },
+    { no:'08', t:'희소 코딩 1' },
+    { no:'09', t:'희소 코딩 2 — ISTA' },
+    { no:'10', t:'슬로우 피처 분석' },
+    { no:'11', t:'매니폴드의 첫 등장' },
+    { no:'12', t:'시험 대비' },
+  ];
+  function buildNav(cur) {
+    const tb = document.querySelector('.topbar');
+    if (tb) tb.innerHTML =
+      '<a class="home" href="index.html">← Chapter 13 / 선형 요소 모델</a>' +
+      '<span class="ch-mini">SUB ' + cur + ' / 12</span>';
+    const ol = document.querySelector('.ch-nav ol');
+    if (ol) ol.innerHTML = SUBS.map(c =>
+      '<li><a href="' + c.no + '.html"' + (c.no === cur ? ' class="current"' : '') + '>' + c.t + '</a></li>').join('');
+    const foot = document.querySelector('.ch-foot');
+    if (foot) {
+      const i = SUBS.findIndex(c => c.no === cur);
+      const prev = i > 0 ? SUBS[i - 1] : { no: '', t: '표지로', _href: 'index.html' };
+      const next = i < SUBS.length - 1 ? SUBS[i + 1] : { no: '', t: '표지로', _href: 'index.html' };
+      const hp = prev._href || (prev.no + '.html');
+      const hn = next._href || (next.no + '.html');
+      foot.innerHTML =
+        '<a href="' + hp + '"><div class="dir">← 이전</div><div class="ti">' + prev.t + '</div></a>' +
+        '<a href="' + hn + '" class="next"><div class="dir">다음 →</div><div class="ti">' + next.t + '</div></a>';
+    }
+  }
+  function initScroll() {
     const bar = document.querySelector('.scroll-progress');
-    const onScroll = () => {
+    if (!bar) return;
+    const on = () => {
       const h = document.documentElement;
       const max = h.scrollHeight - h.clientHeight;
       bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
     };
-    document.addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
-
+    document.addEventListener('scroll', on, { passive: true }); on();
+  }
+  function initKatex() {
     if (window.renderMathInElement) {
       renderMathInElement(document.body, {
-        delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }],
+        delimiters: [
+          { left: '$$', right: '$$', display: true },
+          { left: '$', right: '$', display: false },
+        ],
         throwOnError: false,
       });
     }
+  }
+  function widget05() {
+    const css = getComputedStyle(document.documentElement);
+    const C = {
+      style: css.getPropertyValue('--style').trim() || '#C0492E',
+      structure: css.getPropertyValue('--structure').trim() || '#2D5B7A',
+      synth: css.getPropertyValue('--synth').trim() || '#A47B2E',
+      faint: css.getPropertyValue('--ink-faint').trim() || '#8E8576',
+      paper2: css.getPropertyValue('--paper-2').trim() || '#F3EEE3',
+    };
+    const c = document.getElementById('pcaC');
+    if (!c) return;
+    const ctx = c.getContext('2d');
+    const bar1 = document.getElementById('bar1'), bar2 = document.getElementById('bar2');
+    const pct1 = document.getElementById('pct1'), pct2 = document.getElementById('pct2');
+    const proj1 = document.getElementById('proj1');
+    const modes = ['modeLine','modeCircle','modeCross'];
+    const btns = modes.map(id => document.getElementById(id));
+    const clear = document.getElementById('pcaClear');
 
-    // ============================ 매니폴드 위젯 ============================
-    const canvas = document.getElementById('mn');
-    const ctx = canvas.getContext('2d');
-    function resize() {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      const w = canvas.clientWidth, h = 400;
-      canvas.width = w * dpr; canvas.height = h * dpr;
-      ctx.setTransform(dpr,0,0,dpr,0,0);
+    let pts = [];
+    function gauss(){ let u=0,v=0; while(u===0)u=Math.random(); while(v===0)v=Math.random(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+    function fill(mode) {
+      pts = [];
+      if (mode === 'modeLine') {
+        for (let i = 0; i < 90; i++) {
+          const t = gauss();
+          pts.push({ x: t * 1.5 + gauss() * 0.3, y: t * 0.9 + gauss() * 0.3 });
+        }
+      } else if (mode === 'modeCircle') {
+        for (let i = 0; i < 90; i++) {
+          pts.push({ x: gauss() * 1.0, y: gauss() * 0.95 });
+        }
+      } else { // cross
+        for (let i = 0; i < 45; i++) pts.push({ x: gauss() * 1.4, y: gauss() * 0.2 });
+        for (let i = 0; i < 45; i++) pts.push({ x: gauss() * 0.2, y: gauss() * 1.4 });
+      }
+      draw();
     }
-    resize();
-    window.addEventListener('resize', resize);
-
-    // 잠재 (h1, h2) → 관측 (x, y, z)
-    // flat: x = h1*w1 + h2*w2 + noise
-    // curve: 같은 매핑에 + bend
-    const N = 600;
-    const pts = [];
-    function randn() {
-      let u = 0, v = 0;
-      while (u === 0) u = Math.random();
-      while (v === 0) v = Math.random();
-      return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+    function setMode(id) {
+      btns.forEach(b => b.classList.remove('on'));
+      document.getElementById(id).classList.add('on');
+      fill(id);
     }
-    for (let i = 0; i < N; i++) {
-      const h1 = randn() * 1.4;
-      const h2 = randn() * 0.85;
-      pts.push({ h1, h2 });
-    }
+    btns.forEach((b, i) => b.addEventListener('click', () => setMode(modes[i])));
+    clear.addEventListener('click', () => { pts = []; draw(); });
 
-    const w1 = [0.95, 0.18, 0.25];
-    const w2 = [-0.16, 0.84, 0.48];
-    const sigma = 0.12;
+    function tx(x) { return c.width/2 + x * 90; }
+    function ty(y) { return c.height/2 - y * 90; }
+    function fromX(px) { return (px - c.width/2) / 90; }
+    function fromY(py) { return -(py - c.height/2) / 90; }
 
-    function mapping(h1, h2, curveAmt) {
-      const x = h1 * w1[0] + h2 * w2[0];
-      const y = h1 * w1[1] + h2 * w2[1];
-      const z = h1 * w1[2] + h2 * w2[2] + curveAmt * 0.5 * (h1 * h1 - 1);
-      return [x, y, z];
-    }
-
-    let mode = 'flat';
-    const bFlat = document.getElementById('m-flat'), bCurve = document.getElementById('m-curve');
-    bFlat.addEventListener('click', () => { mode = 'flat'; bFlat.classList.add('on'); bCurve.classList.remove('on'); });
-    bCurve.addEventListener('click', () => { mode = 'curve'; bCurve.classList.add('on'); bFlat.classList.remove('on'); });
-
-    // 회전
-    let yaw = 0.5, pitch = 0.25;
-    let drag = false, sx = 0, sy = 0;
-    canvas.addEventListener('pointerdown', (e) => { drag = true; sx = e.clientX; sy = e.clientY; canvas._y = yaw; canvas._p = pitch; });
-    window.addEventListener('pointermove', (e) => {
-      if (!drag) return;
-      yaw = canvas._y + (e.clientX - sx) * 0.005;
-      pitch = Math.max(-1, Math.min(1, canvas._p + (e.clientY - sy) * 0.005));
+    c.addEventListener('click', (e) => {
+      const r = c.getBoundingClientRect();
+      pts.push({ x: fromX(e.clientX - r.left), y: fromY(e.clientY - r.top) });
+      draw();
     });
-    window.addEventListener('pointerup', () => { drag = false; });
 
-    let t0 = 0;
-    function draw() {
-      t0 += 0.005;
-      const w = canvas.clientWidth, h = 400;
-      ctx.clearRect(0,0,w,h);
-      ctx.fillStyle = '#FAF7F0'; ctx.fillRect(0,0,w,h);
-
-      const cx = w/2, cy = h/2;
-      const scale = Math.min(w, h) * 0.15;
-
-      const yaw2 = yaw + (drag ? 0 : Math.sin(t0 * 0.4) * 0.15);
-      const cy0 = Math.cos(yaw2), sy0 = Math.sin(yaw2);
-      const cp = Math.cos(pitch), sp = Math.sin(pitch);
-
-      function project(x, y, z) {
-        const x1 = x * cy0 + z * sy0;
-        const z1 = -x * sy0 + z * cy0;
-        const y2 = y * cp - z1 * sp;
-        const z2 = y * sp + z1 * cp;
-        return [cx + x1 * scale, cy - y2 * scale, z2];
+    function pca() {
+      if (pts.length < 2) return null;
+      let mx = 0, my = 0;
+      for (const p of pts) { mx += p.x; my += p.y; }
+      mx /= pts.length; my /= pts.length;
+      let sxx = 0, syy = 0, sxy = 0;
+      for (const p of pts) {
+        sxx += (p.x - mx) ** 2;
+        syy += (p.y - my) ** 2;
+        sxy += (p.x - mx) * (p.y - my);
       }
-
-      const curveAmt = mode === 'flat' ? 0 : 1;
-
-      // 매니폴드 (평면 또는 곡면)을 메시로
-      const Mres = 18;
-      const meshPts = [];
-      for (let i = 0; i <= Mres; i++) {
-        const row = [];
-        for (let j = 0; j <= Mres; j++) {
-          const h1 = -2.6 + 5.2 * i / Mres;
-          const h2 = -1.7 + 3.4 * j / Mres;
-          const [X, Y, Z] = mapping(h1, h2, curveAmt);
-          row.push(project(X, Y, Z));
-        }
-        meshPts.push(row);
-      }
-
-      // 메시 선
-      ctx.strokeStyle = `rgba(192, 73, 46, 0.30)`;
-      ctx.lineWidth = 0.7;
-      for (let i = 0; i <= Mres; i++) {
-        ctx.beginPath();
-        for (let j = 0; j <= Mres; j++) {
-          const [px, py] = meshPts[i][j];
-          if (j === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
-        }
-        ctx.stroke();
-      }
-      for (let j = 0; j <= Mres; j++) {
-        ctx.beginPath();
-        for (let i = 0; i <= Mres; i++) {
-          const [px, py] = meshPts[i][j];
-          if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
-        }
-        ctx.stroke();
-      }
-
-      // 데이터 점들 (매니폴드 + 잡음)
-      const drawn = [];
-      for (let i = 0; i < N; i++) {
-        const p = pts[i];
-        const [X, Y, Z] = mapping(p.h1, p.h2, curveAmt);
-        // 잡음
-        const nx = randn() * 0; // 정적 잡음은 미리 안 만들었으니 일시적으로 0 (점 위치 안정성)
-        const x = X + (Math.sin(p.h1 * 7.3 + p.h2 * 2.1) * sigma);
-        const y = Y + (Math.cos(p.h1 * 3.7 + p.h2 * 5.9) * sigma);
-        const z = Z + (Math.sin(p.h1 * 5.1 - p.h2 * 4.2) * sigma);
-        const [px, py, pz] = project(x, y, z);
-        drawn.push({ px, py, pz });
-      }
-      drawn.sort((a,b) => a.pz - b.pz);
-      drawn.forEach(({ px, py, pz }) => {
-        const depth = (pz + 2) / 4;
-        const r = 2 + depth * 1.3;
-        ctx.fillStyle = `rgba(45, 91, 122, ${0.45 + depth * 0.4})`;
-        ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI*2); ctx.fill();
-      });
-
-      // 축
-      ctx.strokeStyle = 'rgba(38,34,28,.25)';
-      ctx.lineWidth = 1;
-      [[1.5,0,0,'x'],[0,1.5,0,'y'],[0,0,1.5,'z']].forEach(([ax,ay,az,name]) => {
-        const [px0, py0] = project(0,0,0);
-        const [px1, py1] = project(ax, ay, az);
-        ctx.beginPath(); ctx.moveTo(px0, py0); ctx.lineTo(px1, py1); ctx.stroke();
-        ctx.fillStyle = '#8E8576';
-        ctx.font = '10px "Spline Sans Mono", monospace';
-        ctx.fillText(name, px1 + 4, py1 - 2);
-      });
-
-      // 라벨
-      if (mode === 'flat') {
-        document.getElementById('mn-form').textContent = '평면 위 점구름 (잡음 ε)';
-        document.getElementById('mn-res').textContent = '낮음 — 선형 모델 잘 맞음';
+      sxx /= pts.length; syy /= pts.length; sxy /= pts.length;
+      // 2x2 고유분해
+      const tr = sxx + syy;
+      const det = sxx * syy - sxy * sxy;
+      const d2 = tr * tr / 4 - det;
+      const sq = d2 > 0 ? Math.sqrt(d2) : 0;
+      const lam1 = tr / 2 + sq;
+      const lam2 = tr / 2 - sq;
+      // 고유벡터
+      let v1, v2;
+      if (Math.abs(sxy) > 1e-6) {
+        v1 = { x: lam1 - syy, y: sxy };
+        const n1 = Math.hypot(v1.x, v1.y);
+        v1.x /= n1; v1.y /= n1;
       } else {
-        document.getElementById('mn-form').textContent = '곡면(2차) 위 점구름';
-        document.getElementById('mn-res').textContent = '높음 — 평면으로 따라잡을 수 없음';
+        v1 = sxx >= syy ? { x: 1, y: 0 } : { x: 0, y: 1 };
       }
-
-      ctx.fillStyle = '#8E8576';
-      ctx.font = '11px "Spline Sans Mono", monospace';
-      ctx.fillText('주황 메시 = 모델이 가정한 매니폴드 / 파란 점 = 데이터', 14, h - 14);
-
-      requestAnimationFrame(draw);
+      v2 = { x: -v1.y, y: v1.x };
+      return { mx, my, lam1, lam2, v1, v2 };
     }
-    draw();
-  });
+
+    function draw() {
+      ctx.clearRect(0, 0, c.width, c.height);
+      ctx.strokeStyle = C.paper2;
+      for (let i = -2; i <= 2; i++) {
+        ctx.beginPath(); ctx.moveTo(tx(i), 0); ctx.lineTo(tx(i), c.height); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, ty(i)); ctx.lineTo(c.width, ty(i)); ctx.stroke();
+      }
+      // 점
+      ctx.fillStyle = C.structure + 'B0';
+      for (const p of pts) {
+        ctx.beginPath(); ctx.arc(tx(p.x), ty(p.y), 3, 0, Math.PI*2); ctx.fill();
+      }
+      const res = pca();
+      if (!res) {
+        bar1.style.width = '0%'; bar2.style.width = '0%';
+        pct1.textContent = '—'; pct2.textContent = '—'; proj1.textContent = '—';
+        return;
+      }
+      // 평균 점
+      ctx.fillStyle = C.synth;
+      ctx.beginPath(); ctx.arc(tx(res.mx), ty(res.my), 4, 0, Math.PI*2); ctx.fill();
+      // PC1
+      const len1 = Math.sqrt(res.lam1) * 2.4;
+      const len2 = Math.sqrt(res.lam2) * 2.4;
+      function arr(v, l, color) {
+        const x0 = res.mx, y0 = res.my;
+        const x1 = x0 + v.x * l, y1 = y0 + v.y * l;
+        ctx.strokeStyle = color; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(tx(x0), ty(y0)); ctx.lineTo(tx(x1), ty(y1)); ctx.stroke();
+        // 화살촉
+        const ang = Math.atan2(ty(y1) - ty(y0), tx(x1) - tx(x0));
+        const ah = 10;
+        ctx.beginPath();
+        ctx.moveTo(tx(x1), ty(y1));
+        ctx.lineTo(tx(x1) - ah * Math.cos(ang - 0.4), ty(y1) - ah * Math.sin(ang - 0.4));
+        ctx.lineTo(tx(x1) - ah * Math.cos(ang + 0.4), ty(y1) - ah * Math.sin(ang + 0.4));
+        ctx.closePath(); ctx.fillStyle = color; ctx.fill();
+      }
+      arr(res.v1, len1, C.style);
+      arr(res.v2, len2, C.structure);
+      arr({ x: -res.v1.x, y: -res.v1.y }, len1, C.style);
+      arr({ x: -res.v2.x, y: -res.v2.y }, len2, C.structure);
+
+      const total = res.lam1 + res.lam2;
+      const p1 = total > 0 ? res.lam1 / total : 0;
+      const p2 = total > 0 ? res.lam2 / total : 0;
+      bar1.style.width = (p1 * 100).toFixed(0) + '%';
+      bar2.style.width = (p2 * 100).toFixed(0) + '%';
+      pct1.textContent = (p1 * 100).toFixed(0) + '%';
+      pct2.textContent = (p2 * 100).toFixed(0) + '%';
+      proj1.textContent = (p1 * 100).toFixed(0) + '%';
+    }
+    setMode('modeLine');
+  }
+  window.addEventListener('load', () => { buildNav('05'); initScroll(); initKatex(); widget05(); });
 </script>
 </body>
 </html>

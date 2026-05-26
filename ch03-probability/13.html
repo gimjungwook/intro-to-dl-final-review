@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>13. 정보이론 2 — KL 발산의 비대칭</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .kl-stage { padding: 1.4rem 1.1rem; display: grid; gap: 1rem; }
+  .kl-canvas { width: 100%; height: 260px; display: block; background: #fff; border: 1px solid var(--line-soft); border-radius: 7px; }
+  .kl-tab { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; font-family: var(--mono); font-size: .78rem; }
+  .kl-tab .item { padding: .55rem .8rem; background: var(--paper-2); border-radius: 7px; }
+  .kl-tab .item .lab { display: block; font-size: .66rem; color: var(--ink-faint); letter-spacing: .12em; text-transform: uppercase; margin-bottom: .2rem; }
+  .kl-tab .item .val { font-size: 1.1rem; font-weight: 600; color: var(--ink); }
+  .kl-tab .item.pq .val { color: var(--structure); }
+  .kl-tab .item.qp .val { color: var(--style); }
+  .kctrl { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; }
+  .kctrl .pn { padding: .6rem .8rem; background: var(--paper-2); border-radius: 7px; }
+  .kctrl .pn h5 { margin: 0 0 .4rem; font-family: var(--mono); font-size: .68rem; letter-spacing: .12em; color: var(--ink-faint); text-transform: uppercase; }
+  .kctrl .pn.P h5 { color: var(--structure); }
+  .kctrl .pn.Q h5 { color: var(--style); }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-chapter 13. 두 분포 사이의 거리, 그러나 거리는 아닌</span>
+      <h1>KL 발산 —<br><span class="t-style">KL(P‖Q) ≠ KL(Q‖P)</span>의 비대칭</h1>
+      <p class="lede">두 분포가 얼마나 다른지를 한 숫자로 잰다. 그런데 이 양은 일반적인 거리(distance)와 한 가지 결정적 차이가 있다 — 비대칭이다. KL(P‖Q)와 KL(Q‖P)는 다른 양이며, 이 차이가 변분추론(variational inference)·VAE·지식 증류(knowledge distillation)의 학습 방향을 결정한다.</p>
+    </header>
+
+    <div class="prose">
+      <p>앞 페이지에서 본 엔트로피는 분포 하나의 불확실성을 재는 양이었다. 이제 분포 두 개를 비교하는 양을 본다. 두 분포 $P$와 $Q$가 있을 때 둘이 얼마나 다른지를 한 숫자로 표현하는 가장 흔한 양이 <strong>KL 발산(Kullback-Leibler divergence)</strong>이다. 식은 다음이다.</p>
+
+      <div class="math-block">$$ D_{\mathrm{KL}}(P \,\|\, Q) = \sum_{x} p(x) \log \frac{p(x)}{q(x)} = \mathbb{E}_{x \sim P}\!\left[ \log \frac{p(x)}{q(x)} \right] $$</div>
+      <p class="math-note">두 분포 비의 로그를 $P$ 분포로 평균낸 양. 연속 분포일 때는 합 대신 적분.</p>
+
+      <p>이 식이 무엇을 재는지 한 줄로 압축하면 — "진짜 분포가 $P$인데 우리가 $Q$로 그것을 표현하려 할 때 평균적으로 얼마나 비효율적인가"다. 정보이론 관점에서는 "잘못된 분포 $Q$를 사용해서 데이터를 인코딩할 때 진짜 분포 $P$ 대비 평균 몇 bit를 더 쓰게 되는가"다. 0 이상의 양이며, $P = Q$일 때만 0이다.</p>
+
+      <h2>왜 이 형태인가 — 우도비의 평균</h2>
+      <p>식의 핵심은 $\log(p/q)$다. 한 점 $x$에서 $P$의 밀도가 $Q$의 밀도보다 더 크면 $p/q > 1$이라 로그가 양수, 작으면 음수다. 두 분포가 정확히 일치하는 점에서는 0이다. 즉 $\log(p/q)$는 "이 점에서 $P$가 $Q$를 얼마나 강하게 선호하는가"를 잰다.</p>
+
+      <p>이 양을 $P$ 분포로 평균낸 것 — 그게 KL이다. $P$가 자주 만들어 내는 곳에서 $p/q$가 크면(=$Q$가 그곳을 잘 못 잡으면) KL이 크다. $P$가 잘 안 만들어 내는 곳에서 $p/q$가 어떻게 되든 평균에 기여가 작다. 그래서 KL은 "$P$의 관점에서 $Q$가 얼마나 잘못 맞췄나"를 잰다.</p>
+
+      <p>식을 두 가지로 쪼개 보면 더 분명해진다. $D_{\mathrm{KL}}(P \| Q) = -\sum p(x) \log q(x) + \sum p(x) \log p(x) = H(P, Q) - H(P)$. 첫 항이 교차 엔트로피(cross-entropy, 다음 페이지에서 자세히), 둘째 항이 $P$의 음수 엔트로피다. 정리하면 KL = 교차 엔트로피 - 엔트로피. 두 항의 차이가 0이라는 것은 $P$와 $Q$가 일치한다는 것이며, 양수라는 것은 $Q$가 $P$를 정확히 못 잡았다는 것이다.</p>
+
+      <h2>핵심 함정 — KL은 거리가 아니다</h2>
+      <p>여기가 가장 중요하다. KL 발산은 종종 "두 분포 사이의 거리"라고 설명되지만, 엄밀히 말하면 거리(distance, metric)의 정의를 만족하지 않는다. 거리는 세 가지 조건을 만족해야 한다 — (1) 항상 0 이상, (2) 자기 자신과는 0, (3) 대칭 $d(a, b) = d(b, a)$. KL은 (1)과 (2)를 만족하지만 <strong>(3)을 만족하지 않는다</strong>. 일반적으로 $D_{\mathrm{KL}}(P \| Q) \neq D_{\mathrm{KL}}(Q \| P)$다.</p>
+
+      <p>그래서 KL은 "발산(divergence)"이라는 다른 이름으로 불린다. 두 분포가 다르다는 정보를 양으로 잡되, 두 방향이 같은 양을 주지 않는 측정자다. 이 비대칭이 단순한 수학적 불편함이 아니라 — 실제로 두 방향이 매우 다른 학습 동작을 만들어 낸다는 점이 시험과 실무 모두에서 핵심이다.</p>
+
+      <h2>두 방향의 의미 차이 — mode-seeking vs mode-covering</h2>
+      <p>$D_{\mathrm{KL}}(P \| Q)$를 최소화하도록 $Q$를 학습한다고 하자. 식 안에서 $P$ 분포로 평균을 취하므로 $P$가 큰 곳에서만 $Q$가 잘 맞춰야 페널티가 작아진다. 그래서 $Q$는 $P$의 봉우리들을 모두 덮어야 한다 — $P$가 무게를 갖는 곳에서 $Q$가 0에 가까우면 $\log(p/q) \to \infty$로 페널티가 매우 커지기 때문이다. 이 방향을 <strong>모드 덮기(mode-covering)</strong> 또는 평균 추구(mean-seeking)라 한다. $Q$가 $P$의 모든 봉우리를 다 잡으려 하므로 $Q$가 넓게 퍼진다.</p>
+
+      <p>반대로 $D_{\mathrm{KL}}(Q \| P)$를 최소화하면 어떻게 될까. 식 안에서 $Q$ 분포로 평균을 취하므로 $Q$가 큰 곳에서만 페널티가 강하다. $Q$가 작은 곳은 평균에 기여가 미미하다. 그래서 $Q$는 $P$의 한 봉우리만 잘 잡고 나머지를 무시해도 페널티가 작다. 이 방향을 <strong>모드 추구(mode-seeking)</strong>라 한다. $Q$가 $P$의 한 봉우리에 집중되어 좁아진다.</p>
+
+      <div class="analogy">
+        $P$가 두 봉우리를 가진 분포(예: 남자 키 분포와 여자 키 분포의 혼합)이고 우리가 단일 가우시안 $Q$로 그것을 근사한다고 하자. 두 방향에서 $Q$가 어떻게 자리를 잡을지가 달라진다. <b>모드 덮기 방향(KL(P‖Q))</b>은 두 봉우리를 모두 덮으려고 $Q$의 평균이 두 봉우리 사이 어딘가에 떨어지고 분산이 매우 크게 늘어난다. <b>모드 추구 방향(KL(Q‖P))</b>은 두 봉우리 중 하나에 $Q$가 집중되고 다른 봉우리는 통째로 무시된다. 어느 쪽이 맞는 답인가는 문제에 따라 다르다 — 다 덮어야 할 때(예: 모드 손실을 피하는 GAN)는 모드 덮기, 한 봉우리에 정확히 맞춰야 할 때(예: 변분 추론)는 모드 추구가 적절하다.
+      </div>
+
+      <h2>위젯 — 두 가우시안의 두 방향 KL을 직접 계산</h2>
+      <p>아래 위젯은 두 가우시안 $P = \mathcal{N}(\mu_P, \sigma_P^2)$과 $Q = \mathcal{N}(\mu_Q, \sigma_Q^2)$의 KL 발산을 양방향으로 계산해 보여 준다. $\mu$와 $\sigma$를 조절하면서 두 방향이 어떻게 다른 값을 주는지 확인할 수 있다. 특히 한 가우시안이 다른 가우시안보다 분산이 매우 작을 때 두 방향이 크게 갈라진다 — 좁은 분포가 평균이 되는 방향이 더 큰 값을 준다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 13</span><span>두 가우시안의 비대칭 KL — 양방향 동시 비교</span></div>
+        <div class="kl-stage">
+          <canvas id="klC" class="kl-canvas" width="700" height="260"></canvas>
+          <div class="kl-tab">
+            <div class="item pq"><span class="lab">KL(P ‖ Q)</span><span class="val" id="pqV">0.000</span></div>
+            <div class="item qp"><span class="lab">KL(Q ‖ P)</span><span class="val" id="qpV">0.000</span></div>
+          </div>
+          <div class="kctrl">
+            <div class="pn P">
+              <h5>P (파랑)</h5>
+              <div class="slider"><label>μ_P <b><span id="mpV">0.00</span></b></label>
+                <input id="mpSl" type="range" min="-300" max="300" value="0" class="s-structure"></div>
+              <div class="slider"><label>σ_P <b><span id="spV">1.00</span></b></label>
+                <input id="spSl" type="range" min="30" max="250" value="100" class="s-structure"></div>
+            </div>
+            <div class="pn Q">
+              <h5>Q (주홍)</h5>
+              <div class="slider"><label>μ_Q <b><span id="mqV">1.50</span></b></label>
+                <input id="mqSl" type="range" min="-300" max="300" value="150" class="s-style"></div>
+              <div class="slider"><label>σ_Q <b><span id="sqV">1.00</span></b></label>
+                <input id="sqSl" type="range" min="30" max="250" value="100" class="s-style"></div>
+            </div>
+          </div>
+        </div>
+        <div class="widget-controls">
+          <span style="font-family: var(--mono); font-size: .72rem; color: var(--ink-faint);">σ_P를 0.3으로 줄여 보라 — KL(P‖Q)이 KL(Q‖P)보다 훨씬 커지는 비대칭이 분명해진다.</span>
+        </div>
+      </div>
+      <p class="widget-cap">두 분포가 정확히 일치하면 양방향 모두 0이다. P와 Q의 분산이 같으면 두 방향이 어느 정도 비슷한 값을 주지만, 한쪽이 매우 좁아지면 비대칭이 극명해진다 — 좁은 쪽에서 본 KL이 더 크다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>KL은 항상 0 이상 — Jensen 부등식으로 보이는 것</h2>
+      <p>KL이 항상 0 이상이라는 사실(Gibbs' inequality라고도 부른다)은 어떻게 보장될까. 핵심은 로그 함수의 오목성(concavity)이다. Jensen 부등식에 따르면 오목한 함수의 기대값은 기대값의 함수보다 작거나 같다. 이를 KL 식에 적용하면 $-D_{\mathrm{KL}}(P \| Q) = \mathbb{E}_P[\log(q/p)] \leq \log \mathbb{E}_P[q/p] = \log 1 = 0$이 된다. 양변에 마이너스를 붙이면 $D_{\mathrm{KL}}(P \| Q) \geq 0$. 등호는 $P = Q$일 때만 성립한다.</p>
+
+      <p>이 사실이 학습에 매우 중요한 이유. KL을 손실로 쓸 때, 최소값이 0이고 분포가 일치할 때만 0이 된다는 보장이 있다. 즉 "KL을 0으로 줄였으니 학습이 끝났다"는 명확한 멈춤 기준이 있다. 만약 KL이 음수가 될 수 있는 함수였다면 손실이 무한정 내려가는 학습이 가능했을 것이고, 그건 의미 있는 학습이 아니다.</p>
+
+      <h2>딥러닝에서 KL이 나타나는 자리</h2>
+      <p>구체 예시 다섯 가지. 첫째, 변분 추론(variational inference). 진짜 사후 $p(z | x)$를 근사 분포 $q(z)$로 대체할 때, $D_{\mathrm{KL}}(q \| p)$를 최소화한다. 둘째, VAE의 ELBO. 잠재변수 사후 근사와 사전 사이의 KL이 ELBO의 정규화 항이다. 셋째, GAN의 진동(mode collapse) 문제. JS divergence 같은 대칭 변형이나 Wasserstein distance를 쓰는 이유가 KL의 비대칭과 무한 발산 문제를 피하기 위해서다. 넷째, 지식 증류(knowledge distillation). 큰 모델의 출력 분포와 작은 모델의 출력 분포 사이 KL을 줄여 작은 모델이 큰 모델을 따라하도록 학습한다. 다섯째, 강화학습의 PPO/TRPO. 새 정책과 옛 정책 사이 KL을 일정 수준 이하로 제한해 학습 안정성을 확보한다.</p>
+
+      <h2>시험에서 자주 묻는 한 줄</h2>
+      <p>시험 직전 정리. <strong>$D_{\mathrm{KL}}(P \| Q) = \mathbb{E}_P[\log p/q] \geq 0$, $= 0 \iff P = Q$. 비대칭 — $D_{\mathrm{KL}}(P \| Q) \neq D_{\mathrm{KL}}(Q \| P)$ (거리가 아니다). $D_{\mathrm{KL}}(P \| Q)$ 최소화 → $Q$가 $P$의 모든 봉우리를 덮음(mode-covering). $D_{\mathrm{KL}}(Q \| P)$ 최소화 → $Q$가 $P$의 한 봉우리에 집중(mode-seeking).</strong> 객관식에서 "KL은 두 분포 사이의 거리(metric)다"라는 보기가 보이면 틀린 보기다(비대칭). "KL은 항상 0 이상"은 옳은 보기다.</p>
+
+      <p>다음 페이지에서는 KL과 매우 가까운 친척 — 교차 엔트로피(cross-entropy) — 를 본다. 분류기에서 매일 쓰는 손실이 이 양이며, 그 손실이 동시에 음의 로그우도(NLL)와 KL과 최대우도추정(MLE)과 같다는 사실이 거기서 한 줄로 정리된다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const CH = [
+    { no:'01', t:'왜 확률이 필요한가', f:'01.html' },
+    { no:'02', t:'확률변수와 분포 — PMF vs PDF', f:'02.html' },
+    { no:'03', t:'결합·주변·조건부 분포', f:'03.html' },
+    { no:'04', t:'연쇄법칙 — 결합을 조건부의 곱으로', f:'04.html' },
+    { no:'05', t:'독립과 조건부 독립', f:'05.html' },
+    { no:'06', t:'기대값 — 분포를 한 숫자로', f:'06.html' },
+    { no:'07', t:'분산과 공분산 — 무상관 ≠ 독립', f:'07.html' },
+    { no:'08', t:'흔한 분포 1 — Bernoulli, Categorical', f:'08.html' },
+    { no:'09', t:'흔한 분포 2 — Gaussian', f:'09.html' },
+    { no:'10', t:'흔한 분포 3 — Mixture, Dirac', f:'10.html' },
+    { no:'11', t:'베이즈 규칙 — 사전이 사후로', f:'11.html' },
+    { no:'12', t:'정보이론 1 — 엔트로피', f:'12.html' },
+    { no:'13', t:'정보이론 2 — KL 발산의 비대칭', f:'13.html' },
+    { no:'14', t:'정보이론 3 — 교차 엔트로피 = NLL', f:'14.html' },
+    { no:'15', t:'시험 대비 체크리스트', f:'15.html' },
+  ];
+  function buildNav(curr) {
+    const tb = document.querySelector('.topbar');
+    if (tb) tb.innerHTML =
+      `<a class="home" href="index.html">← Ch.3 확률과 정보이론</a>` +
+      `<span class="ch-mini">SUB-CHAPTER ${curr} of 15</span>`;
+    const ol = document.querySelector('.ch-nav ol');
+    if (ol) ol.innerHTML = CH.map(c =>
+      `<li><a href="${c.f}" ${c.no === curr ? 'class="current"' : ''}>${c.t}</a></li>`).join('');
+    const foot = document.querySelector('.ch-foot');
+    if (foot) {
+      const i = CH.findIndex(c => c.no === curr);
+      const prev = i > 0 ? CH[i-1] : { f:'index.html', t:'표지로', no:'' };
+      const next = i < CH.length-1 ? CH[i+1] : { f:'index.html', t:'표지로', no:'' };
+      foot.innerHTML =
+        `<a href="${prev.f}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+        `<a href="${next.f}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+    }
+    const bar = document.querySelector('.scroll-progress');
+    if (bar) {
+      const onS = () => {
+        const h = document.documentElement;
+        const m = h.scrollHeight - h.clientHeight;
+        bar.style.width = (m > 0 ? (h.scrollTop / m) * 100 : 0) + '%';
+      };
+      document.addEventListener('scroll', onS, { passive: true });
+      onS();
+    }
+  }
+
+  /* KL between two Gaussians has closed form:
+     KL(N(mu1, s1^2) || N(mu2, s2^2)) = log(s2/s1) + (s1^2 + (mu1 - mu2)^2) / (2 s2^2) - 0.5
+  */
+  function klGauss(m1, s1, m2, s2) {
+    return Math.log(s2 / s1) + (s1 * s1 + (m1 - m2) * (m1 - m2)) / (2 * s2 * s2) - 0.5;
+  }
+
+  function draw() {
+    const mp = parseInt(document.getElementById('mpSl').value, 10) / 100;
+    const sp = parseInt(document.getElementById('spSl').value, 10) / 100;
+    const mq = parseInt(document.getElementById('mqSl').value, 10) / 100;
+    const sq = parseInt(document.getElementById('sqSl').value, 10) / 100;
+
+    document.getElementById('mpV').textContent = mp.toFixed(2);
+    document.getElementById('spV').textContent = sp.toFixed(2);
+    document.getElementById('mqV').textContent = mq.toFixed(2);
+    document.getElementById('sqV').textContent = sq.toFixed(2);
+
+    const pq = klGauss(mp, sp, mq, sq);
+    const qp = klGauss(mq, sq, mp, sp);
+    document.getElementById('pqV').textContent = pq.toFixed(3);
+    document.getElementById('qpV').textContent = qp.toFixed(3);
+
+    const c = document.getElementById('klC');
+    const ctx = c.getContext('2d');
+    const W = c.width, H = c.height;
+    ctx.clearRect(0, 0, W, H);
+    ctx.strokeStyle = 'rgba(38,34,28,0.18)';
+    ctx.beginPath(); ctx.moveTo(20, H - 20); ctx.lineTo(W - 10, H - 20); ctx.stroke();
+
+    function gauss(x, m, s) { return (1 / (Math.sqrt(2 * Math.PI) * s)) * Math.exp(-0.5 * ((x - m) / s) ** 2); }
+    const xMin = -6, xMax = 6;
+    const SAMP = 400;
+    const yScale = (H - 35) / 1.3;
+
+    /* P fill */
+    ctx.fillStyle = 'rgba(45,91,122,0.18)';
+    ctx.beginPath(); ctx.moveTo(20, H - 20);
+    for (let i = 0; i <= SAMP; i++) {
+      const x = xMin + (xMax - xMin) * i / SAMP;
+      const y = gauss(x, mp, sp);
+      const Px = 20 + (x - xMin) / (xMax - xMin) * (W - 30);
+      const Py = (H - 20) - y * yScale;
+      ctx.lineTo(Px, Py);
+    }
+    ctx.lineTo(W - 10, H - 20); ctx.closePath(); ctx.fill();
+    /* P stroke */
+    ctx.strokeStyle = '#2D5B7A'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = 0; i <= SAMP; i++) {
+      const x = xMin + (xMax - xMin) * i / SAMP;
+      const y = gauss(x, mp, sp);
+      const Px = 20 + (x - xMin) / (xMax - xMin) * (W - 30);
+      const Py = (H - 20) - y * yScale;
+      if (i === 0) ctx.moveTo(Px, Py); else ctx.lineTo(Px, Py);
+    }
+    ctx.stroke();
+
+    /* Q fill */
+    ctx.fillStyle = 'rgba(192,73,46,0.16)';
+    ctx.beginPath(); ctx.moveTo(20, H - 20);
+    for (let i = 0; i <= SAMP; i++) {
+      const x = xMin + (xMax - xMin) * i / SAMP;
+      const y = gauss(x, mq, sq);
+      const Px = 20 + (x - xMin) / (xMax - xMin) * (W - 30);
+      const Py = (H - 20) - y * yScale;
+      ctx.lineTo(Px, Py);
+    }
+    ctx.lineTo(W - 10, H - 20); ctx.closePath(); ctx.fill();
+    /* Q stroke */
+    ctx.strokeStyle = '#C0492E'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = 0; i <= SAMP; i++) {
+      const x = xMin + (xMax - xMin) * i / SAMP;
+      const y = gauss(x, mq, sq);
+      const Px = 20 + (x - xMin) / (xMax - xMin) * (W - 30);
+      const Py = (H - 20) - y * yScale;
+      if (i === 0) ctx.moveTo(Px, Py); else ctx.lineTo(Px, Py);
+    }
+    ctx.stroke();
+
+    /* legend */
+    ctx.font = '12px "Spline Sans Mono", monospace';
+    ctx.fillStyle = '#2D5B7A';
+    ctx.fillText('P', 30, 22);
+    ctx.fillStyle = '#C0492E';
+    ctx.fillText('Q', 50, 22);
+  }
+
+  window.addEventListener('load', () => {
+    buildNav('13');
+    ['mpSl','spSl','mqSl','sqSl'].forEach(id => {
+      document.getElementById(id).addEventListener('input', draw);
+    });
+    draw();
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$', right:'$$', display:true}, {left:'$', right:'$', display:false}],
+        throwOnError: false,
+      });
+    }
+  });
+</script>
+</body>
+</html>

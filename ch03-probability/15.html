@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>15. 시험 대비 체크리스트</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .trap-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; max-width: var(--wide); margin: 1rem auto; padding-inline: 1.4rem; }
+  .trap-grid .trap { padding: .95rem 1.1rem; background: #fff; border: 1px solid var(--line); border-radius: 9px; border-left: 3px solid var(--style); }
+  .trap-grid .trap h4 { margin: 0 0 .35rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .12em; color: var(--style); text-transform: uppercase; }
+  .trap-grid .trap p { margin: 0 0 .4rem; font-size: .88rem; line-height: 1.5; color: var(--ink); }
+  .trap-grid .trap p.x { color: var(--ink-faint); text-decoration: line-through; }
+  .trap-grid .trap p.o { color: var(--structure); font-weight: 600; }
+  @media (max-width: 700px){ .trap-grid{ grid-template-columns: 1fr; } }
+
+  .formula-tab { max-width: var(--measure); margin: 1.5rem auto; padding-inline: 1.4rem; }
+  .formula-tab table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+  .formula-tab td { padding: .55rem .6rem; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+  .formula-tab td:first-child { width: 9rem; font-family: var(--mono); color: var(--structure); white-space: nowrap; font-size: .78rem; }
+
+  .mini-quiz { max-width: var(--measure); margin: 1.6rem auto; padding: 1.2rem 1.4rem; background: var(--paper-2); border-radius: 9px; border-left: 3px solid var(--synth); }
+  .mini-quiz h3 { margin: 0 0 .6rem; font-family: var(--serif); font-size: 1.1rem; color: var(--synth); }
+  .mini-quiz ol { margin: 0; padding-left: 1.3rem; line-height: 1.6; font-size: .92rem; }
+  .mini-quiz ol li { margin-bottom: .5rem; }
+  .ans { background: rgba(164,123,46,0.13); padding: .15rem .4rem; border-radius: 4px; font-family: var(--mono); font-size: .82rem; color: var(--synth); cursor: pointer; }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-chapter 15. 시험 직전 한 페이지로</span>
+      <h1>시험 대비 —<br><span class="t-style">함정 20개와 한 줄 정리</span></h1>
+      <p class="lede">앞 14장의 내용을 시험 직전에 한 번에 훑을 수 있는 단일 페이지. 한 줄 수식 정리, 자주 나오는 객관식 함정 20개, 단답형 미니 퀴즈로 구성된다. 시험 한 시간 전이라면 이 페이지만 정독해도 핵심은 잡힌다.</p>
+    </header>
+
+    <div class="prose">
+      <h2>한 줄 수식 정리 — 외워야 할 식 모음</h2>
+      <p>다음 표는 이 장의 모든 수식을 한 줄씩 정리한 것이다. 시험에서 식이 그대로 빈칸으로 나올 수 있으므로 각 줄을 한 번씩 직접 적어 보며 외우는 편이 좋다.</p>
+    </div>
+
+    <div class="formula-tab">
+      <table>
+        <tr><td>분포의 약속</td><td>$\sum_x p(x) = 1$, $\int p(x) dx = 1$, $p(x) \geq 0$</td></tr>
+        <tr><td>주변 분포</td><td>$p(x) = \sum_y p(x, y) = \int p(x, y) dy$</td></tr>
+        <tr><td>조건부 분포</td><td>$p(x | y) = p(x, y) / p(y)$, 단 $p(y) > 0$</td></tr>
+        <tr><td>곱셈 규칙</td><td>$p(x, y) = p(x | y) p(y) = p(y | x) p(x)$</td></tr>
+        <tr><td>연쇄법칙</td><td>$p(x_1, \ldots, x_n) = \prod_i p(x_i | x_{<i})$</td></tr>
+        <tr><td>독립</td><td>$p(x, y) = p(x) p(y)$ ↔ $p(y | x) = p(y)$</td></tr>
+        <tr><td>기대값</td><td>$\mathbb{E}[X] = \sum_x x p(x) = \int x p(x) dx$</td></tr>
+        <tr><td>기대값 선형성</td><td>$\mathbb{E}[aX + bY] = a \mathbb{E}[X] + b \mathbb{E}[Y]$ (독립 무관)</td></tr>
+        <tr><td>분산</td><td>$\mathrm{Var}(X) = \mathbb{E}[(X - \mathbb{E}[X])^2] = \mathbb{E}[X^2] - \mathbb{E}[X]^2$</td></tr>
+        <tr><td>공분산</td><td>$\mathrm{Cov}(X, Y) = \mathbb{E}[(X-\mathbb{E}[X])(Y-\mathbb{E}[Y])] = \mathbb{E}[XY] - \mathbb{E}[X]\mathbb{E}[Y]$</td></tr>
+        <tr><td>상관계수</td><td>$\rho = \mathrm{Cov}(X, Y) / (\sigma_X \sigma_Y) \in [-1, 1]$</td></tr>
+        <tr><td>Bernoulli</td><td>$P(X = x) = \phi^x (1 - \phi)^{1 - x}$, $x \in \{0, 1\}$</td></tr>
+        <tr><td>시그모이드</td><td>$\sigma(z) = 1 / (1 + e^{-z})$</td></tr>
+        <tr><td>소프트맥스</td><td>$\phi_i = e^{z_i} / \sum_j e^{z_j}$</td></tr>
+        <tr><td>가우시안</td><td>$\mathcal{N}(x; \mu, \sigma^2) = \frac{1}{\sqrt{2\pi\sigma^2}} \exp(-(x-\mu)^2 / (2\sigma^2))$</td></tr>
+        <tr><td>혼합 분포</td><td>$p(x) = \sum_i \pi_i p_i(x)$, $\sum \pi_i = 1$</td></tr>
+        <tr><td>경험분포</td><td>$\hat{p}_{\text{data}}(x) = \frac{1}{N} \sum_i \delta(x - x^{(i)})$</td></tr>
+        <tr><td>베이즈 규칙</td><td>$p(y | x) = p(x | y) p(y) / p(x)$, 분모 = $\sum_y p(x|y) p(y)$</td></tr>
+        <tr><td>자기정보</td><td>$I(x) = -\log p(x)$</td></tr>
+        <tr><td>Shannon 엔트로피</td><td>$H(P) = -\sum_x p(x) \log p(x) = \mathbb{E}[-\log p(X)]$</td></tr>
+        <tr><td>이진 엔트로피</td><td>$H(p) = -p \log p - (1-p) \log (1-p)$, 최대 = $p = 0.5$</td></tr>
+        <tr><td>KL 발산</td><td>$D_{\mathrm{KL}}(P \| Q) = \sum p(x) \log (p(x)/q(x)) \geq 0$, 비대칭</td></tr>
+        <tr><td>교차 엔트로피</td><td>$H(P, Q) = -\sum p(x) \log q(x) = H(P) + D_{\mathrm{KL}}(P \| Q)$</td></tr>
+        <tr><td>NLL (one-hot)</td><td>$-\log q(c^*)$ = 교차 엔트로피 = MLE의 부호 뒤집은 양</td></tr>
+        <tr><td>MSE = 가우시안 NLL</td><td>$\frac{1}{2\sigma^2} (y - f(x))^2 + \text{const}$</td></tr>
+      </table>
+    </div>
+
+    <div class="prose">
+      <h2>자주 나오는 객관식 함정 20개 — 옳은 답과 함정 답</h2>
+      <p>아래 20개는 시험에서 매번 비슷한 형태로 등장하는 함정 문항이다. 각각에 대해 흔히 등장하는 잘못된 보기(취소선 처리)와 옳은 답(파란색)을 함께 적었다. 한 번씩 머리에 박아 두면 시험에서 같은 함정에 다시 빠지지 않는다.</p>
+    </div>
+
+    <div class="trap-grid">
+      <div class="trap"><h4>함정 01 — PMF vs PDF</h4>
+        <p class="x">PDF 값은 1을 넘을 수 없다.</p>
+        <p class="o">PDF는 1을 넘을 수 있다. PDF는 확률이 아니라 밀도이며, 면적(적분)이 확률이다.</p></div>
+
+      <div class="trap"><h4>함정 02 — 주변 vs 조건부</h4>
+        <p class="x">주변 분포를 얻으려면 한 변수를 고정하고 나머지를 본다.</p>
+        <p class="o">주변 분포는 다른 변수에 대해 합산(또는 적분)한다. 한 변수를 고정한 뒤 정규화한 것은 조건부 분포.</p></div>
+
+      <div class="trap"><h4>함정 03 — 곱셈 규칙</h4>
+        <p class="x">$p(x, y) = p(x) + p(y)$.</p>
+        <p class="o">$p(x, y) = p(x | y) p(y) = p(y | x) p(x)$. 독립일 때만 $p(x) p(y)$.</p></div>
+
+      <div class="trap"><h4>함정 04 — 연쇄법칙</h4>
+        <p class="x">연쇄법칙은 변수들이 독립일 때만 성립한다.</p>
+        <p class="o">연쇄법칙은 항상 성립한다. 독립과 무관하게 결합을 조건부의 곱으로 풀 수 있다.</p></div>
+
+      <div class="trap"><h4>함정 05 — 독립과 조건부 독립</h4>
+        <p class="x">$X$와 $Y$가 독립이면 어떤 $Z$가 주어져도 조건부 독립이다.</p>
+        <p class="o">독립과 조건부 독립은 서로 함의하지 않는다. 두 개념은 별도다.</p></div>
+
+      <div class="trap"><h4>함정 06 — 기대값 선형성</h4>
+        <p class="x">$\mathbb{E}[X + Y] = \mathbb{E}[X] + \mathbb{E}[Y]$는 독립일 때만 성립한다.</p>
+        <p class="o">기대값 선형성은 독립 여부와 무관하게 항상 성립한다.</p></div>
+
+      <div class="trap"><h4>함정 07 — 평균/중앙값/최빈값</h4>
+        <p class="x">왜도가 큰 분포에서도 평균과 중앙값은 일치한다.</p>
+        <p class="o">대칭 분포에서만 세 값이 일치. 왜도 양수면 mode &lt; median &lt; mean 순.</p></div>
+
+      <div class="trap"><h4>함정 08 — 무상관 ≠ 독립</h4>
+        <p class="x">$\rho = 0$이면 $X$와 $Y$는 독립이다.</p>
+        <p class="o">$\rho = 0$은 선형으로만 무관. 일반적으로 독립을 함의하지 않음. 단, 결합 정규분포에서는 동등.</p></div>
+
+      <div class="trap"><h4>함정 09 — 분산 부호</h4>
+        <p class="x">분산은 음수일 수 있다.</p>
+        <p class="o">분산은 제곱의 평균이므로 항상 0 이상. 공분산은 음수 가능.</p></div>
+
+      <div class="trap"><h4>함정 10 — 출력층 + 손실 짝</h4>
+        <p class="x">다중 라벨 분류에는 소프트맥스가 적절하다.</p>
+        <p class="o">다중 라벨은 라벨마다 독립 시그모이드 + 이진 교차 엔트로피. 소프트맥스는 단일 라벨 다중 분류용.</p></div>
+
+      <div class="trap"><h4>함정 11 — 소프트맥스의 정체</h4>
+        <p class="x">소프트맥스는 임의의 정규화 함수일 뿐 분포와 무관하다.</p>
+        <p class="o">소프트맥스는 신경망 출력을 Categorical 분포 파라미터로 변환하는 다리.</p></div>
+
+      <div class="trap"><h4>함정 12 — 중심극한정리</h4>
+        <p class="x">CLT는 기반 분포가 가우시안일 때만 성립한다.</p>
+        <p class="o">CLT는 기반 분포 모양에 무관. 충분히 많은 표본을 평균내면 가우시안에 수렴.</p></div>
+
+      <div class="trap"><h4>함정 13 — MSE의 정체</h4>
+        <p class="x">MSE는 분포 가정 없이 그냥 거리를 최소화하는 손실이다.</p>
+        <p class="o">MSE는 가우시안 잡음 가정 아래의 NLL. 잡음이 라플라스라면 절댓값 손실이 더 자연스럽다.</p></div>
+
+      <div class="trap"><h4>함정 14 — 혼합 분포 분산</h4>
+        <p class="x">혼합 분포의 분산은 성분 분산의 가중 평균과 같다.</p>
+        <p class="o">혼합 분포 분산 = 가중 평균 분산 + 봉우리 간 분산. 두 항의 합.</p></div>
+
+      <div class="trap"><h4>함정 15 — 베이즈 규칙</h4>
+        <p class="x">사후 분포는 사전 분포보다 항상 더 평평하다.</p>
+        <p class="o">반대다. 사후는 사전보다 좁다(또는 같다). 관측이 누적될수록 더 좁아진다.</p></div>
+
+      <div class="trap"><h4>함정 16 — 엔트로피 최대</h4>
+        <p class="x">엔트로피는 분포가 한쪽으로 쏠릴수록 크다.</p>
+        <p class="o">엔트로피는 균등 분포에서 최대 ($\log K$), 결정적 분포에서 0.</p></div>
+
+      <div class="trap"><h4>함정 17 — 연속 엔트로피 부호</h4>
+        <p class="x">엔트로피는 항상 0 이상이다.</p>
+        <p class="o">이산 분포에서만 0 이상. 연속(차분) 엔트로피는 음수 가능.</p></div>
+
+      <div class="trap"><h4>함정 18 — KL은 거리</h4>
+        <p class="x">KL 발산은 두 분포 사이의 거리(metric)다.</p>
+        <p class="o">KL은 비대칭이므로 거리가 아니다. 발산(divergence)이라 부른다.</p></div>
+
+      <div class="trap"><h4>함정 19 — KL 부호</h4>
+        <p class="x">KL 발산은 음수가 될 수 있다.</p>
+        <p class="o">KL은 항상 0 이상, $P = Q$일 때만 0 (Gibbs' inequality).</p></div>
+
+      <div class="trap"><h4>함정 20 — 교차 엔트로피 = NLL?</h4>
+        <p class="x">교차 엔트로피와 NLL은 다른 손실이다.</p>
+        <p class="o">정답이 one-hot일 때 교차 엔트로피 = NLL = MLE의 부호 뒤집은 양 = KL의 학습 가능 부분.</p></div>
+    </div>
+
+    <div class="prose">
+      <h2>한 줄 미니 퀴즈 — 답이 즉시 떠오르지 않으면 해당 페이지로</h2>
+      <p>아래는 머리로 즉시 답이 떠올라야 하는 단답형 질문 10개다. 답 위에 마우스를 올리면 정답이 보인다. 답이 안 떠오르면 해당 sub-chapter로 돌아가 한 번 더 읽기를 권한다.</p>
+    </div>
+
+    <div class="mini-quiz">
+      <h3>단답형 즉답 퀴즈</h3>
+      <ol>
+        <li>딥러닝 모델이 단정이 아니라 분포를 출력하는 이유 하나? <span class="ans">불확실성 표현</span></li>
+        <li>PDF와 PMF의 차이를 한 문장으로? <span class="ans">PMF는 확률, PDF는 밀도 (적분이 확률)</span></li>
+        <li>결합에서 주변을 얻는 연산? <span class="ans">다른 변수에 대한 합산/적분</span></li>
+        <li>연쇄법칙의 한 줄 식? <span class="ans">$p(a,b,c) = p(a)p(b|a)p(c|a,b)$</span></li>
+        <li>독립 ⇒ 공분산 0인가, 공분산 0 ⇒ 독립인가? <span class="ans">앞만 참. 뒤는 일반적으로 거짓 (가우시안 예외)</span></li>
+        <li>기대값 선형성에 독립 필요? <span class="ans">필요 없음</span></li>
+        <li>분류기 출력층의 활성-손실 짝 두 가지? <span class="ans">sigmoid+BCE / softmax+CE</span></li>
+        <li>가우시안이 자주 나오는 두 이유? <span class="ans">CLT + 최대 엔트로피</span></li>
+        <li>베이즈 규칙의 분모 이름과 정체? <span class="ans">증거(evidence) = $\sum_y p(x|y) p(y)$</span></li>
+        <li>교차 엔트로피와 KL의 관계? <span class="ans">$H(P,Q) = H(P) + D_{\mathrm{KL}}(P\|Q)$</span></li>
+      </ol>
+    </div>
+
+    <div class="prose">
+      <h2>3장이 다른 장에 어떻게 다시 등장하는가</h2>
+      <p>이 장은 시험에서 직접 점수를 따는 자리이기도 하지만, 그 이상으로 6장 이후 거의 모든 장의 토대가 되는 장이다. 다음 표가 그 매핑이다.</p>
+
+      <ul>
+        <li><strong>5장(머신러닝 기초)</strong> — 모델, 학습, 일반화의 정의가 모두 분포 언어로 적힌다. 학습 = 모델 분포가 데이터 분포에 가까워지도록 파라미터 조정.</li>
+        <li><strong>6장(피드포워드 신경망)</strong> — 출력층 활성 + 비용 함수 짝 표. 이 표의 모든 행이 3장에서 본 분포 하나에 대응한다.</li>
+        <li><strong>7장(정칙화)</strong> — 가중치 감쇠(weight decay) = 가중치에 가우시안 사전 분포 두기. 정칙화는 베이즈 사전의 다른 이름.</li>
+        <li><strong>8장(최적화)</strong> — 미니배치 손실의 기대값 = 진짜 손실 (경험분포 근사). SGD는 이 한 줄 위에 서 있다.</li>
+        <li><strong>9장(CNN)</strong> — 분류기 손실은 그대로 categorical cross-entropy.</li>
+        <li><strong>10장(RNN)</strong> — 언어 모델의 NLL = 연쇄법칙으로 푼 조건부 곱의 음수 로그.</li>
+        <li><strong>13–15장(잠재변수 모델)</strong> — VAE의 ELBO 식이 KL과 교차 엔트로피로 가득. 디퓨전 모델의 학습 목표도 KL 변형.</li>
+      </ul>
+
+      <h2>마지막 한 문단</h2>
+      <p>이 장의 모든 식 — 분포의 정의에서 교차 엔트로피까지 — 는 사실 한 줄로 압축된다. <em>"세상을 분포로 보고, 모델 분포를 진짜 분포에 가깝게 만든다."</em> 분포라는 언어가 있어야 우리가 모르는 부분(불확실성)을 정직하게 표현할 수 있고, 그 분포들 사이의 거리(KL, 교차 엔트로피)가 있어야 무엇을 줄여야 하는지 알 수 있다. 그 거리를 줄이는 방향이 곧 학습이다.</p>
+
+      <p>시험 직전이라면 — 이 한 문장을 머리에 박은 채로 14페이지의 표를 다시 한 번 훑어 보길 권한다. 시험에서 만나는 거의 모든 객관식이 이 표의 행 하나에 해당한다. 만점은 어렵더라도, 함정 답에 빠지지 않는 것은 충분히 가능하다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const CH = [
+    { no:'01', t:'왜 확률이 필요한가', f:'01.html' },
+    { no:'02', t:'확률변수와 분포 — PMF vs PDF', f:'02.html' },
+    { no:'03', t:'결합·주변·조건부 분포', f:'03.html' },
+    { no:'04', t:'연쇄법칙 — 결합을 조건부의 곱으로', f:'04.html' },
+    { no:'05', t:'독립과 조건부 독립', f:'05.html' },
+    { no:'06', t:'기대값 — 분포를 한 숫자로', f:'06.html' },
+    { no:'07', t:'분산과 공분산 — 무상관 ≠ 독립', f:'07.html' },
+    { no:'08', t:'흔한 분포 1 — Bernoulli, Categorical', f:'08.html' },
+    { no:'09', t:'흔한 분포 2 — Gaussian', f:'09.html' },
+    { no:'10', t:'흔한 분포 3 — Mixture, Dirac', f:'10.html' },
+    { no:'11', t:'베이즈 규칙 — 사전이 사후로', f:'11.html' },
+    { no:'12', t:'정보이론 1 — 엔트로피', f:'12.html' },
+    { no:'13', t:'정보이론 2 — KL 발산의 비대칭', f:'13.html' },
+    { no:'14', t:'정보이론 3 — 교차 엔트로피 = NLL', f:'14.html' },
+    { no:'15', t:'시험 대비 체크리스트', f:'15.html' },
+  ];
+  function buildNav(curr) {
+    const tb = document.querySelector('.topbar');
+    if (tb) tb.innerHTML =
+      `<a class="home" href="index.html">← Ch.3 확률과 정보이론</a>` +
+      `<span class="ch-mini">SUB-CHAPTER ${curr} of 15</span>`;
+    const ol = document.querySelector('.ch-nav ol');
+    if (ol) ol.innerHTML = CH.map(c =>
+      `<li><a href="${c.f}" ${c.no === curr ? 'class="current"' : ''}>${c.t}</a></li>`).join('');
+    const foot = document.querySelector('.ch-foot');
+    if (foot) {
+      const i = CH.findIndex(c => c.no === curr);
+      const prev = i > 0 ? CH[i-1] : { f:'index.html', t:'표지로', no:'' };
+      const next = i < CH.length-1 ? CH[i+1] : { f:'index.html', t:'표지로', no:'' };
+      foot.innerHTML =
+        `<a href="${prev.f}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+        `<a href="${next.f}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+    }
+    const bar = document.querySelector('.scroll-progress');
+    if (bar) {
+      const onS = () => {
+        const h = document.documentElement;
+        const m = h.scrollHeight - h.clientHeight;
+        bar.style.width = (m > 0 ? (h.scrollTop / m) * 100 : 0) + '%';
+      };
+      document.addEventListener('scroll', onS, { passive: true });
+      onS();
+    }
+  }
+
+  window.addEventListener('load', () => {
+    buildNav('15');
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$', right:'$$', display:true}, {left:'$', right:'$', display:false}],
+        throwOnError: false,
+      });
+    }
+  });
+</script>
+</body>
+</html>

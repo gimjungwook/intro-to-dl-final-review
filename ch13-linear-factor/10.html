@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>13 / 10 / 슬로우 피처 분석 (SFA)</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .sfa-stage { padding: 1.4rem 1.1rem; }
+  .sfa-row { display: grid; grid-template-columns: 1fr; gap: .9rem; }
+  .sfa-cell { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: .7rem .9rem; }
+  .sfa-cell h5 { margin: 0 0 .35rem; font-family: var(--mono); font-size: .7rem; letter-spacing: .12em; color: var(--ink-faint); text-transform: uppercase; }
+  .sfa-cell h5 b { color: var(--ink); }
+  .sfa-cell h5 .badge { display: inline-block; padding: 0 .4em; border-radius: 3px; margin-left: .4em; font-size: .9em; }
+  .sfa-cell h5 .b-fast { background: var(--style); color: #fff; }
+  .sfa-cell h5 .b-slow { background: var(--structure); color: #fff; }
+  .sfa-cell canvas { display: block; width: 100%; height: 90px; background: var(--paper-2); border-radius: 5px; }
+  .sfa-ctr { padding: .8rem 1rem; border-top: 1px solid var(--line-soft); background: var(--paper); display: flex; gap: 1.2rem; flex-wrap: wrap; align-items: center; justify-content: center; }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-chapter 10 / 시간의 시점</span>
+      <h1>슬로우 피처 분석 —<br>시간에 <span class="t-style">천천히 변하는</span> 특징</h1>
+      <p class="lede">영상에서 "자동차의 위치"는 매 프레임 빠르게 변하지만 "자동차의 정체성"은 거의 변하지 않는다. 변하지 않는 것이 더 중요한 정보일 때가 많다. 슬로우 피처 분석은 이 직관을 잠재 가정으로 옮긴다.</p>
+    </header>
+
+    <div class="prose">
+      <p>지금까지 본 모델들 — FA, PCA, ICA, 희소 코딩 — 은 모두 한 가지 공통점이 있다. 데이터가 어떤 <em>순서</em>로 들어오는지 신경 쓰지 않는다는 점이다. 데이터셋의 점들을 무작위로 섞어도 PCA가 찾는 주성분이나 ICA가 찾는 음원이 그대로다. 이건 데이터에 시간 구조가 있을 때 큰 정보를 버리는 셈이다. <strong>슬로우 피처 분석(Slow Feature Analysis, SFA)</strong>은 데이터의 시간 순서를 정면으로 활용하는 모델이다. Wiskott와 Sejnowski가 2002년에 정리한 이 알고리즘은 단순한 가정 한 줄에서 출발한다 — <em>"의미 있는 잠재 차원은 시간에 천천히 변한다."</em></p>
+
+      <p>왜 이 가정이 자연스러운가. 신경과학의 영감에서 출발해 보자. 우리가 영상을 볼 때 두 종류의 정보가 동시에 변한다. <strong>"내용"</strong> — 이 영상이 무엇을 보여 주는가, 어떤 물체가 등장하는가, 그 물체의 정체는 무엇인가. 그리고 <strong>"표면"</strong> — 그 물체가 정확히 어느 픽셀에 있는가, 어느 각도에서 비춰지는가, 어떤 조명을 받는가. 표면 정보는 매 프레임 빠르게 변한다 — 물체가 움직이면 픽셀이 바뀐다. 내용 정보는 천천히 변한다 — 같은 자동차는 1초 동안 여전히 같은 자동차다.</p>
+
+      <div class="analogy">
+        사진첩에서 한 친구의 사진을 1년 동안 매주 한 장씩 본다고 하자. 친구가 어디에 있는지, 무슨 옷을 입었는지, 얼굴 표정이 어떤지는 매주 다르다. 그러나 친구의 정체성, 성별, 대략적인 외모는 1년 내내 거의 같다. <b>SFA가 하는 일은 "1년 동안 변하지 않는 것"을 빠르게 변하는 것에서 분리하는 것이다.</b> 변하지 않는 것이 친구의 정체성에 가장 가깝다.
+      </div>
+
+      <h2>SFA의 정확한 정의 — 가장 천천히 변하는 함수를 찾기</h2>
+
+      <p>SFA를 수식으로 옮기면 다음과 같다. 입력 시계열을 $\mathbf{x}(t) \in \mathbb{R}^d$라고 하고, 우리가 찾고 싶은 잠재 함수가 $h(t) = \mathbf{w}^\top \mathbf{x}(t)$라고 하자(가장 단순한 선형 형태). 이 잠재 함수가 "시간에 천천히 변한다"는 것을 어떻게 측정할까. 가장 단순한 지표는 <strong>한 시간 단위 동안의 변화의 제곱의 평균</strong>이다.</p>
+
+      <div class="math-block">$$ \Delta(h) = \langle \dot{h}(t)^2 \rangle_t = \langle (h(t+1) - h(t))^2 \rangle_t $$</div>
+      <p class="math-note">$\dot{h}(t) = h(t+1) - h(t)$는 잠재의 한 시간 단위 변화. 그것의 제곱의 시간 평균이 "변화의 크기"를 잰다. 이게 작을수록 잠재가 천천히 변한다는 뜻.</p>
+
+      <p>그러면 SFA의 목표는 분명하다 — $\Delta(h)$를 최소화하는 $\mathbf{w}$를 찾는다. 단, 한 가지 함정이 있다. $\mathbf{w} = \mathbf{0}$이면 $h(t) = 0$ 상수가 되고 $\Delta = 0$이 되어 최소다. 그러나 상수는 아무 정보가 없다. 이걸 피하기 위해 <strong>$h$의 분산을 1로 정규화</strong>한다.</p>
+
+      <div class="math-block">$$ \min_{\mathbf{w}} \; \Delta(\mathbf{w}^\top \mathbf{x}) \quad \text{subject to} \quad \text{Var}(\mathbf{w}^\top \mathbf{x}) = 1 $$</div>
+      <p class="math-note">분산이 0이 되는 자명한 해를 막기 위해 분산을 1로 고정한 제약 최적화. PCA의 "분산을 최대로"와 비교하면, SFA는 "변화를 최소로 (분산은 1로 고정)"의 거울 문제다.</p>
+
+      <p>이 최적화의 답은 PCA와 유사하게 일반화된 고유값 문제(generalized eigenvalue problem)로 풀린다. 차이의 공분산 행렬과 데이터의 공분산 행렬 두 개의 일반화된 고유분해다. 가장 작은 고유값에 해당하는 고유벡터가 가장 천천히 변하는 잠재 차원이고, 그 다음 작은 고유값이 두 번째로 천천히 변하는 차원이 된다(첫 번째 차원과 직교한다는 제약 아래에서).</p>
+
+      <div class="key-point">
+        <p>SFA의 한 줄: <em>"분산을 1로 정규화한 후, 시간에 따른 변화의 평균 제곱이 가장 작은 방향을 찾는다."</em> 그 답은 PCA와 비슷한 일반화된 고유값 분해다. 단, PCA는 "변화가 큰 방향"을, SFA는 "변화가 작은 방향"을 찾는다.</p>
+      </div>
+
+      <div class="widget">
+        <div class="widget-frame">
+          <div class="widget-label"><span class="lab-no">위젯 10</span><span>관측 시계열 · 빠른 특징 vs 느린 특징 분리</span></div>
+          <div class="sfa-stage">
+            <div class="sfa-row">
+              <div class="sfa-cell">
+                <h5>관측 신호 <b>x(t)</b> · 빠른 진동 + 느린 추세가 섞임</h5>
+                <canvas id="sfaX" width="640" height="90"></canvas>
+              </div>
+              <div class="sfa-cell">
+                <h5>SFA 1번 — <b>가장 느린 특징</b> <span class="badge b-slow">slow</span> · 추세를 잡는다</h5>
+                <canvas id="sfaSlow" width="640" height="90"></canvas>
+              </div>
+              <div class="sfa-cell">
+                <h5>SFA 마지막 — <b>가장 빠른 특징</b> <span class="badge b-fast">fast</span> · 잡음을 잡는다</h5>
+                <canvas id="sfaFast" width="640" height="90"></canvas>
+              </div>
+            </div>
+          </div>
+          <div class="sfa-ctr">
+            <button class="btn" id="sfaRedo">새 시계열 생성</button>
+            <div class="slider">
+              <label>느린 추세 강도<b id="trendVal">1.00</b></label>
+              <input type="range" id="trendSlider" min="0" max="2" step="0.01" value="1.0">
+            </div>
+            <div class="slider">
+              <label>빠른 진동 강도<b id="fastVal">0.80</b></label>
+              <input type="range" id="fastSlider" min="0" max="2" step="0.01" value="0.8">
+            </div>
+          </div>
+        </div>
+        <p class="widget-cap">위: 관측 시계열은 천천히 변하는 추세와 빠르게 진동하는 사인파가 섞여 있다. 가운데: SFA 1번 차원이 천천히 변하는 추세를 잡아낸다(파랑). 아래: SFA의 가장 빠른 차원이 빠른 진동을 잡는다(주황). 슬라이더로 두 성분의 강도를 바꾸면 SFA가 여전히 정확히 두 성분을 분리한다.</p>
+      </div>
+
+      <h2>SFA가 자연 영상에서 무엇을 배우는가</h2>
+
+      <p>Wiskott와 Sejnowski의 원논문이 보인 것은 자연스러운 영상에서 SFA가 학습한 결과다. 그들은 가상의 시점이 자연 풍경 영상 위를 천천히 움직이는 시뮬레이션을 만들고, 매 프레임의 작은 패치를 SFA에 입력했다. 시간에 따라 패치 안의 픽셀이 빠르게 변하는데, SFA의 가장 느린 차원이 학습한 것이 무엇이었는가?</p>
+
+      <p>놀랍게도 SFA의 느린 차원이 <strong>"이 영상이 풍경의 어디를 보고 있는가"</strong>와 비슷한 정보를 잡았다. 정확히는 시점의 절대 위치를 잡지는 못했지만, 천천히 변하는 풍경의 큰 구조 — 큰 색깔 영역, 큰 텍스처 — 를 잡았다. 그러니까 시간 구조를 잠재 가정으로 활용하는 것만으로 의미 있는 표상이 자연스럽게 떠올랐다는 것이다.</p>
+
+      <p>이게 SFA가 신경과학에서도 주목받는 이유다. 포유류의 시각피질이 두 가지 정보 — 빠르게 변하는 "위치" 정보와 천천히 변하는 "정체성" 정보 — 를 다른 경로로 처리한다는 가설이 있다(ventral stream vs dorsal stream). SFA는 그 분리가 어떻게 단순한 시간 가정에서 자연스럽게 나오는지 보여 준다.</p>
+
+      <h2>SFA와 다른 모델들의 비교</h2>
+
+      <p>SFA의 위치를 다른 선형 요소 모델들과 비교해 보면 가정의 출처가 무엇인가가 분명해진다.</p>
+
+      <table class="compare-tbl">
+        <thead><tr><th>모델</th><th>핵심 가정 (잠재의 성격)</th><th>활용하는 정보</th></tr></thead>
+        <tbody>
+          <tr><td>PCA / FA</td><td>가우시안, 무작위</td><td>1차·2차 통계 (평균·공분산)만</td></tr>
+          <tr><td>ICA</td><td>비가우시안, 독립</td><td>고차 통계 (4차 누적량 등)</td></tr>
+          <tr><td>희소 코딩</td><td>희소 (대부분 0)</td><td>희소성 사전</td></tr>
+          <tr><td>SFA</td><td>시간에 천천히 변함</td><td>데이터의 시간 순서</td></tr>
+        </tbody>
+      </table>
+
+      <p>이 표가 보여 주는 것은 각 모델이 데이터의 어떤 측면을 핵심 가정으로 삼는가다. SFA는 시간 순서를 직접 활용하므로 시계열 데이터(영상, 음성, 센서 신호)에 자연스럽게 맞는다. PCA, ICA, 희소 코딩은 시간을 무시하므로 정적인 데이터(이미지 패치, 텍스트 임베딩, 사용자 평점)에 적합하다. 같은 데이터라도 시간 정보를 살릴 것인가 무시할 것인가에 따라 어느 모델을 쓸지가 갈린다.</p>
+
+      <h2>SFA의 비선형 확장과 신경망과의 관계</h2>
+
+      <p>위에서 본 SFA는 선형 — $h = \mathbf{w}^\top \mathbf{x}$. 그러나 실제 응용에서는 비선형 확장이 자주 쓰인다. 입력을 2차 다항 특징으로 펼친 후 SFA를 적용하면 비선형 느린 특징을 얻을 수 있다. 이 비선형 SFA가 표정 인식, 음성 인식, 자세 추적 같은 응용에서 유용한 표상을 학습할 수 있다.</p>
+
+      <p>최근에는 SFA의 핵심 아이디어 — "시간에 천천히 변하는 것이 의미 있다" — 가 자기지도 학습(self-supervised learning)의 한 흐름으로 흡수되었다. SimCLR, BYOL 같은 현대 자기지도 알고리즘은 같은 이미지의 두 변형이 같은 표상을 가져야 한다는 손실을 쓰는데, 이는 SFA의 "느림"을 변형에 대한 invariance로 일반화한 것이다. 시간 구조 대신 augmentation 구조를 쓰는 것뿐, 본질은 같다.</p>
+
+      <h2>이 절을 닫으며</h2>
+
+      <p>SFA는 잠재 가정으로 시간 구조를 활용하는 가장 단순한 선형 모델이다. 잠재가 가우시안이고 사상이 선형이라는 점에서 PCA의 가족에 속하지만, 잠재 차원의 의미를 결정하는 기준이 다르다. PCA는 "분산이 크다"는 기준을, SFA는 "시간에 느리다"는 기준을 쓴다. 두 기준이 같은 데이터에서 매우 다른 잠재를 찾을 수 있다 — 빠르게 진동하지만 진폭이 큰 신호는 PCA가 잡고 SFA가 버린다.</p>
+
+      <p>다음 절에서는 13장의 모든 모델이 공통으로 갖는 한 가지 제약 — 데이터가 평면 위에 있다는 가정 — 을 매니폴드라는 더 일반적인 개념과 비교한다. 그리고 그 비교가 14장 오토인코더로 가는 다리가 된다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'잠재 변수의 직관' },
+    { no:'02', t:'생성 vs 판별 모델' },
+    { no:'03', t:'요소 분석 (FA)' },
+    { no:'04', t:'확률적 PCA' },
+    { no:'05', t:'전통 PCA' },
+    { no:'06', t:'PCA의 한계' },
+    { no:'07', t:'ICA — 칵테일 파티' },
+    { no:'08', t:'희소 코딩 1' },
+    { no:'09', t:'희소 코딩 2 — ISTA' },
+    { no:'10', t:'슬로우 피처 분석' },
+    { no:'11', t:'매니폴드의 첫 등장' },
+    { no:'12', t:'시험 대비' },
+  ];
+  function buildNav(cur) {
+    const tb = document.querySelector('.topbar');
+    if (tb) tb.innerHTML =
+      '<a class="home" href="index.html">← Chapter 13 / 선형 요소 모델</a>' +
+      '<span class="ch-mini">SUB ' + cur + ' / 12</span>';
+    const ol = document.querySelector('.ch-nav ol');
+    if (ol) ol.innerHTML = SUBS.map(c =>
+      '<li><a href="' + c.no + '.html"' + (c.no === cur ? ' class="current"' : '') + '>' + c.t + '</a></li>').join('');
+    const foot = document.querySelector('.ch-foot');
+    if (foot) {
+      const i = SUBS.findIndex(c => c.no === cur);
+      const prev = i > 0 ? SUBS[i - 1] : { no: '', t: '표지로', _href: 'index.html' };
+      const next = i < SUBS.length - 1 ? SUBS[i + 1] : { no: '', t: '표지로', _href: 'index.html' };
+      const hp = prev._href || (prev.no + '.html');
+      const hn = next._href || (next.no + '.html');
+      foot.innerHTML =
+        '<a href="' + hp + '"><div class="dir">← 이전</div><div class="ti">' + prev.t + '</div></a>' +
+        '<a href="' + hn + '" class="next"><div class="dir">다음 →</div><div class="ti">' + next.t + '</div></a>';
+    }
+  }
+  function initScroll() {
+    const bar = document.querySelector('.scroll-progress');
+    if (!bar) return;
+    const on = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    document.addEventListener('scroll', on, { passive: true }); on();
+  }
+  function initKatex() {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [
+          { left: '$$', right: '$$', display: true },
+          { left: '$', right: '$', display: false },
+        ],
+        throwOnError: false,
+      });
+    }
+  }
+  function widget10() {
+    const css = getComputedStyle(document.documentElement);
+    const C = {
+      style: css.getPropertyValue('--style').trim() || '#C0492E',
+      structure: css.getPropertyValue('--structure').trim() || '#2D5B7A',
+      synth: css.getPropertyValue('--synth').trim() || '#A47B2E',
+      faint: css.getPropertyValue('--ink-faint').trim() || '#8E8576',
+    };
+    const cX = document.getElementById('sfaX');
+    const cS = document.getElementById('sfaSlow');
+    const cF = document.getElementById('sfaFast');
+    if (!cX || !cS || !cF) return;
+    const trS = document.getElementById('trendSlider');
+    const trV = document.getElementById('trendVal');
+    const faS = document.getElementById('fastSlider');
+    const faV = document.getElementById('fastVal');
+    const redo = document.getElementById('sfaRedo');
+
+    const N = 320;
+    let trend = new Float64Array(N), fast = new Float64Array(N);
+    function gauss(){ let u=0,v=0; while(u===0)u=Math.random(); while(v===0)v=Math.random(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+    function gen() {
+      // 느린 추세: 저주파 사인 + 무작위 워크
+      let s = 0;
+      for (let i = 0; i < N; i++) {
+        s += gauss() * 0.05;
+        trend[i] = Math.sin(2 * Math.PI * i / 200) + s * 0.5;
+      }
+      // 빠른 진동: 고주파 사인
+      for (let i = 0; i < N; i++) {
+        fast[i] = Math.sin(2 * Math.PI * i / 12) + gauss() * 0.2;
+      }
+    }
+    gen();
+
+    function drawSig(c, sig, color, fill) {
+      const ctx = c.getContext('2d');
+      const w = c.width || c.clientWidth, h = c.height;
+      c.width = w;
+      ctx.clearRect(0, 0, w, h);
+      let mn = Infinity, mx = -Infinity;
+      for (let i = 0; i < sig.length; i++) { if (sig[i] < mn) mn = sig[i]; if (sig[i] > mx) mx = sig[i]; }
+      const rg = Math.max(0.001, mx - mn);
+      ctx.strokeStyle = C.faint + '30';
+      ctx.beginPath(); ctx.moveTo(0, h - 6 - (0 - mn) / rg * (h - 12)); ctx.lineTo(w, h - 6 - (0 - mn) / rg * (h - 12)); ctx.stroke();
+      if (fill) {
+        ctx.fillStyle = color + '20';
+        ctx.beginPath();
+        ctx.moveTo(0, h - 6);
+        for (let i = 0; i < sig.length; i++) {
+          const X = (i / (sig.length-1)) * w;
+          const Y = h - 6 - (sig[i] - mn) / rg * (h - 12);
+          ctx.lineTo(X, Y);
+        }
+        ctx.lineTo(w, h-6); ctx.closePath(); ctx.fill();
+      }
+      ctx.strokeStyle = color; ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      for (let i = 0; i < sig.length; i++) {
+        const X = (i / (sig.length-1)) * w;
+        const Y = h - 6 - (sig[i] - mn) / rg * (h - 12);
+        if (i === 0) ctx.moveTo(X, Y); else ctx.lineTo(X, Y);
+      }
+      ctx.stroke();
+    }
+
+    function update() {
+      const a = parseFloat(trS.value), b = parseFloat(faS.value);
+      trV.textContent = a.toFixed(2);
+      faV.textContent = b.toFixed(2);
+      const x = new Float64Array(N);
+      for (let i = 0; i < N; i++) x[i] = a * trend[i] + b * fast[i];
+      drawSig(cX, x, C.synth, true);
+      drawSig(cS, trend, C.structure, true);
+      drawSig(cF, fast, C.style, true);
+    }
+    trS.addEventListener('input', update);
+    faS.addEventListener('input', update);
+    redo.addEventListener('click', () => { gen(); update(); });
+    setTimeout(update, 30);
+  }
+  window.addEventListener('load', () => { buildNav('10'); initScroll(); initKatex(); widget10(); });
+</script>
+</body>
+</html>

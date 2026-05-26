@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>13 — 사전으로서의 정칙화 — Ch.15</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .pr-stage { padding: 1.4rem 1.2rem 1rem; }
+  .pr-canvas-wrap { border: 1px solid var(--line); border-radius: 10px; padding: 1rem; background: #fff; }
+  .pr-canvas-wrap canvas { display: block; width: 100%; height: 240px; border-radius: 6px; background: var(--paper); }
+  .pr-toggle { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: center; padding: 1rem 1.2rem; border-top: 1px solid var(--line-soft); background: var(--paper); }
+  .pr-toggle button { padding: .55rem 1.1rem; border: 1px solid var(--line); background: #fff; font-family: var(--mono); font-size: .76rem; border-radius: 999px; cursor: pointer; color: var(--ink-soft); transition: all .15s; }
+  .pr-toggle button.on { background: var(--style); color: #fff; border-color: var(--style); }
+  .pr-verdict { padding: 1rem 1.2rem; border-top: 1px solid var(--line-soft); background: var(--paper); font-size: .9rem; color: var(--ink-soft); line-height: 1.55; min-height: 5rem; }
+  .pr-verdict b.tip { color: var(--structure); }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 13 — 모든 정칙화는 가설이다</span>
+      <h1>사전(prior)으로서의 <span class="t-style">정칙화</span></h1>
+      <p class="lede">평활성, 매니폴드 접선, 희소성, 천천히 변하는 특징. 책이 정리하는 네 가지 정칙화는 모두 “세상에 대한 가설”이고, 좋은 표상은 그 가설들의 조합이다. P2 신경 스타일 전이의 정칙화도 같은 시각으로 읽힌다.</p>
+    </header>
+
+    <div class="prose">
+      <p>15장의 마지막 핵심 시각 — 모든 정칙화(regularization)는 “데이터를 만든 진짜 인과 구조가 어떤 모습일 것이다”라는 사전 가설(prior)이다. 책은 이 시각을 명시적으로 정리한다 — 정칙화는 가중치나 활성에 “패널티”를 부여하는 기술적 트릭이 아니라, 학습자가 데이터를 보는 사전 신념을 수학적으로 표현한 것이다.</p>
+      <p>이 시각이 중요한 이유는, 정칙화를 “덧붙이는 기술”이 아니라 “표상 학습의 핵심 결정”으로 보게 만들기 때문이다. 어떤 정칙화를 고를지가 결국 어떤 표상이 학습될지를 결정한다. 책은 네 가지 정칙화 사전을 정리한다 — 평활성, 매니폴드 접선, 희소성, 느린 변화. 하나씩 본다.</p>
+
+      <h2>정칙화 1 — 평활성(smoothness)</h2>
+      <p>“가까운 두 입력은 비슷한 출력을 가진다”는 가정. 수식으로 쓰면 $f(x) \approx f(x + \epsilon)$ for small $\epsilon$. 가장 흔한 정칙화고, 가장 일반적인 사전이다. 자연 데이터에서 “고양이” 사진에 약간의 노이즈를 더해도 여전히 “고양이”라는 직관이 이 사전을 정당화한다.</p>
+      <p>평활성 정칙화의 구현은 다양하다. (a) 가중치 감쇠(weight decay, $L^2$ 정칙화)는 함수가 입력 변화에 너무 민감하지 않도록 가중치 크기를 누른다. (b) 데이터 증강(data augmentation)은 같은 입력의 작은 변형이 같은 라벨을 가지도록 명시적으로 학습. (c) 적대적 학습(adversarial training, P1과 연결)은 “작은 변형”의 정의를 “모델을 가장 흔들 수 있는 방향”으로 강화. 모두 같은 평활성 사전의 다른 강도의 구현.</p>
+
+      <h2>정칙화 2 — 매니폴드 접선(tangent)</h2>
+      <p>평활성의 더 정교한 형태. 자연 데이터가 매니폴드 위에 산다는 가정을 추가하면, “변화의 방향”을 두 종류로 가를 수 있다 — 매니폴드 위(접선 방향)와 매니폴드 밖(법선 방향). 매니폴드 접선 정칙화는 “매니폴드 접선 방향의 변화에는 출력이 둔감, 법선 방향의 변화에는 민감”하도록 강제한다.</p>
+      <p>이 사전의 강력한 예가 “회전 불변(rotation invariant)” CNN의 학습이다. 글자 인식에서 “약간의 회전”은 매니폴드 접선 방향이므로 같은 라벨, “완전히 다른 글자로의 변형”은 매니폴드를 가로지르는 법선 방향이므로 다른 라벨. 이 두 종류의 변화를 구분하는 것이 매니폴드 접선 사전의 일.</p>
+
+      <h2>정칙화 3 — 희소성(sparsity)</h2>
+      <p>“데이터는 적은 수의 활성 요인으로 설명된다”는 가정. 표상의 대부분 차원이 대부분의 입력에 대해 0(또는 거의 0)에 가깝도록 강제한다. 한 입력은 가용한 모든 특징 중 소수만을 “켠다”는 직관이다.</p>
+      <p>희소성 정칙화는 $L^1$ 정칙화(가중치나 활성의 절댓값에 패널티)로 구현된다. 결과로 학습된 표상은 “해석 가능한” 경향이 있다 — 각 차원이 명확한 단일 의미를 가지기 쉽다. 풀린 표상(11절)과도 연결된다 — 희소한 표상은 일종의 “자동적 풀림”을 가져온다.</p>
+
+      <div class="math-block">$$ \mathcal{L}_{\text{total}} = \mathcal{L}_{\text{data}} + \lambda \, \Omega(h) $$</div>
+      <p class="math-note">$\mathcal{L}_{\text{data}}$ = 데이터 손실(예: 분류 손실). $\Omega(h)$ = 표상 $h$에 대한 정칙화 항(평활성/희소성/매니폴드 등). $\lambda$가 두 항의 균형. 모든 정칙화가 이 형태로 일반화된다.</p>
+
+      <h2>정칙화 4 — 느린 변화(slow features)</h2>
+      <p>“의미 있는 요인은 시간에 따라 천천히 변한다”는 가정. 비디오에서 한 객체의 위치는 프레임마다 조금씩만 움직이지, 갑자기 다른 위치로 점프하지 않는다. 화자의 음성에서 “화자 정체”라는 요인은 한 발화 동안 일정하다. 느린 변화 정칙화는 표상이 “시간 축에서 천천히 변하는” 요인에 가중치를 두도록 강제한다.</p>
+      <p>이 사전은 비디오·음성·시계열에서 특히 강력하다. 같은 객체의 두 프레임이 가까운 표상을 갖도록 만드는 “시간 일관성(temporal consistency)” 손실이 그 구현이다. 자기지도 비디오 학습(예: MoCo for Video)에서 핵심으로 쓰인다.</p>
+
+      <div class="analogy">
+        <b>그림 그릴 때의 “스타일 가이드”.</b> 그림을 그릴 때 “선은 부드럽게 / 색은 절제해서 / 형태는 단순히 / 명암은 명확하게” 같은 스타일 가이드를 따른다. 이 가이드들은 “좋은 그림이란 어떤 것인가”에 대한 가설이고, 그것을 따라 그린 그림이 결과적으로 “좋은” 그림이 된다. 정칙화도 마찬가지다. 평활성·매니폴드·희소성·느린 변화는 “좋은 표상이란 어떤 것인가”에 대한 사전이고, 그것을 따라 학습한 표상이 일반화도 잘 되고 해석도 쉬워진다.
+      </div>
+
+      <h2>P2 응용 — 신경 스타일 전이의 정칙화</h2>
+      <p>Week 11에서 다룬 P2 신경 스타일 전이(Gatys et al., 2015)는 정칙화 시각으로 다시 읽을 수 있다. P2의 목적함수는 두 항의 합 — 콘텐츠 손실(생성 이미지가 콘텐츠 사진과 깊은 층 특징이 비슷할 것) + 스타일 손실(생성 이미지가 스타일 그림과 Gram 행렬이 비슷할 것). 두 항 모두 “좋은 결과 이미지는 어떤 모습이어야 한다”는 사전 가설의 수학적 표현이다.</p>
+      <p>특히 스타일 손실의 Gram 행렬은 “스타일이란 위치에 무관한 특징 간 공기(co-occurrence) 통계”라는 강한 사전이다. 이 사전이 맞기 때문에 — 같은 화가의 다른 그림도 같은 Gram 통계를 가진다 — P2가 작동한다. 만약 스타일을 “공간적으로 위치 의존적인” 무엇으로 정의했다면 같은 알고리즘이 무너졌을 것이다. P2의 성공은 정칙화(=사전)의 선택이 결과를 좌우한다는 책의 주장을 가장 깔끔하게 보여 주는 응용 사례다.</p>
+
+      <div class="widget">
+        <div class="widget-frame">
+          <div class="widget-label"><span class="lab-no">위젯 13</span><span>네 가지 정칙화 사전 — 같은 데이터, 다른 사전, 다른 함수</span></div>
+          <div class="pr-stage">
+            <div class="pr-canvas-wrap">
+              <canvas id="pr-c" width="640" height="240"></canvas>
+            </div>
+          </div>
+          <div class="pr-toggle">
+            <button class="on" data-p="none">정칙화 없음</button>
+            <button data-p="smooth">평활성</button>
+            <button data-p="manifold">매니폴드 접선</button>
+            <button data-p="sparse">희소성</button>
+            <button data-p="slow">느린 변화</button>
+          </div>
+          <div class="pr-verdict" id="pr-v"><b>정칙화 없음.</b> 데이터에 정확히 맞추지만 매끄럽지 않고 일반화가 안 된다. 같은 점 7개를 지나는 무수히 많은 함수 중 “가장 흔들리는” 것을 골라 버렸다.</div>
+        </div>
+        <p class="widget-cap">7개의 데이터 점만 보이고, 그 외의 영역에서는 어떤 함수가 “옳은가”를 결정할 정보가 없다. 정칙화 사전이 그 빈 영역의 함수 모양을 결정한다 — 어떤 사전을 고르느냐에 따라 같은 데이터가 다른 함수로 학습된다.</p>
+      </div>
+
+      <h2>책의 결론 — 정칙화는 표상 학습의 결정</h2>
+      <p>15장 전체의 결론을 한 줄로 요약하면 다음과 같다. <strong>표상 학습은 “데이터에서 가장 일반적인 표상을 찾는 일”이 아니라, “데이터에 어떤 사전 가설을 곱해서 좋은 표상을 만들어 낼지 결정하는 일”이다.</strong> 정칙화의 선택, 학습 목표의 선택, 구조의 선택 모두 사전 가설의 다른 표현이고, 좋은 표상은 그 사전들의 조합이 데이터의 진짜 인과 구조와 맞을 때 나온다.</p>
+      <p>이 시각이 “좋은 표상의 한 가지 정답은 없다”는 1절의 결론과 자연스럽게 이어진다. 정의 1(부류 분리), 정의 2(매니폴드 평탄화), 정의 3(인과 요인 풀기)은 모두 다른 사전을 강조하는 시각이고, 어떤 사전이 맞을지는 도메인과 과제에 따라 다르다. 표상 학습이 “과학”이자 “실무 예술”인 이유가 이것이다.</p>
+
+      <h2>핵심 어휘 정리</h2>
+      <table class="symbols">
+        <tr><td>사전 (prior)</td><td>데이터를 보기 전 학습자가 가지는 신념. 정칙화의 수학적 표현.</td></tr>
+        <tr><td>평활성 (smoothness)</td><td>가까운 입력은 비슷한 출력. 가장 일반적 사전.</td></tr>
+        <tr><td>매니폴드 접선 (tangent)</td><td>매니폴드 위 변화는 둔감, 매니폴드 밖 변화는 민감.</td></tr>
+        <tr><td>희소성 (sparsity)</td><td>대부분 차원이 거의 0인 표상. 해석 가능성 향상.</td></tr>
+        <tr><td>느린 변화 (slow features)</td><td>의미 있는 요인은 시간에 따라 천천히 변한다.</td></tr>
+        <tr><td>Gram 행렬 (P2)</td><td>스타일 손실의 핵심. 위치 무관 공기 통계.</td></tr>
+      </table>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'좋은 표상이란', f:'01.html' },
+    { no:'02', t:'그리디 층별 사전훈련', f:'02.html' },
+    { no:'03', t:'비지도 사전훈련', f:'03.html' },
+    { no:'04', t:'지도 사전훈련', f:'04.html' },
+    { no:'05', t:'전이학습 1 — 도메인이 돕는 원리', f:'05.html' },
+    { no:'06', t:'전이학습 2 — 미세조정 실전', f:'06.html' },
+    { no:'07', t:'도메인 적응', f:'07.html' },
+    { no:'08', t:'분산 표상 1 — 지수적 이득', f:'08.html' },
+    { no:'09', t:'분산 표상 2 — 합성성·의미 산수', f:'09.html' },
+    { no:'10', t:'깊이의 지수적 표현력', f:'10.html' },
+    { no:'11', t:'인과 요소', f:'11.html' },
+    { no:'12', t:'반지도 학습', f:'12.html' },
+    { no:'13', t:'사전으로서의 정칙화', f:'13.html' },
+    { no:'14', t:'시험 대비', f:'14.html' },
+  ];
+  const CURRENT = '13';
+  (function buildNav() {
+    document.querySelector('.topbar').innerHTML =
+      `<a class="home" href="index.html">← Chapter 15 — 표상 학습</a>` +
+      `<span class="ch-mini">SUB ${CURRENT} / 14</span>`;
+    document.querySelector('.ch-nav ol').innerHTML = SUBS.map(s =>
+      `<li><a href="${s.f}" ${s.no === CURRENT ? 'class="current"' : ''}>${s.t}</a></li>`).join('');
+    const i = SUBS.findIndex(s => s.no === CURRENT);
+    const prev = i > 0 ? SUBS[i-1] : { f:'index.html', t:'챕터 표지', no:'' };
+    const next = i < SUBS.length-1 ? SUBS[i+1] : { f:'index.html', t:'챕터 표지', no:'' };
+    document.querySelector('.ch-foot').innerHTML =
+      `<a href="${prev.f}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+      `<a href="${next.f}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+    const bar = document.querySelector('.scroll-progress');
+    const onScroll = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    document.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+  })();
+
+  (function prWidget() {
+    const css = getComputedStyle(document.documentElement);
+    const STRUCT = css.getPropertyValue('--structure').trim();
+    const STYLE = css.getPropertyValue('--style').trim();
+    const SYNTH = css.getPropertyValue('--synth').trim();
+    const FAINT = css.getPropertyValue('--ink-faint').trim();
+    const INK = css.getPropertyValue('--ink').trim();
+
+    const canvas = document.getElementById('pr-c');
+    const ctx = canvas.getContext('2d');
+    const verdict = document.getElementById('pr-v');
+
+    // 7개의 데이터 점
+    const data = [
+      { x: 60, y: 160 }, { x: 140, y: 80 }, { x: 220, y: 170 },
+      { x: 300, y: 100 }, { x: 380, y: 150 }, { x: 460, y: 90 }, { x: 540, y: 130 },
+    ];
+
+    function render(prior) {
+      const W = canvas.width = canvas.clientWidth * 2;
+      const H = canvas.height = 480;
+      ctx.scale(2, 2);
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W / 2, H / 2);
+
+      // 보조선
+      ctx.strokeStyle = FAINT; ctx.lineWidth = 0.5; ctx.setLineDash([2, 4]);
+      for (let y = 40; y < H / 2 - 20; y += 40) {
+        ctx.beginPath(); ctx.moveTo(20, y); ctx.lineTo(W / 2 - 20, y); ctx.stroke();
+      }
+      ctx.setLineDash([]);
+
+      // 함수 그리기
+      const color = prior === 'none' ? STYLE : (prior === 'sparse' ? SYNTH : STRUCT);
+      ctx.strokeStyle = color; ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      for (let i = 0; i <= 600; i++) {
+        const x = i;
+        let y;
+        if (prior === 'none') {
+          // 과적합: 데이터 사이를 격렬하게 흔드는 곡선
+          y = interpolateRaw(data, x);
+        } else if (prior === 'smooth') {
+          // 평활성: 부드러운 스플라인
+          y = interpolateSmooth(data, x);
+        } else if (prior === 'manifold') {
+          // 매니폴드: 데이터가 살고 있는 “면”에 가까운 함수
+          y = interpolateManifold(data, x);
+        } else if (prior === 'sparse') {
+          // 희소성: 거의 조각별 상수, 소수의 변경점
+          y = interpolateSparse(data, x);
+        } else if (prior === 'slow') {
+          // 느린 변화: 매우 평탄
+          y = interpolateSlow(data, x);
+        }
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      // 데이터 점
+      data.forEach(d => {
+        ctx.fillStyle = INK;
+        ctx.beginPath(); ctx.arc(d.x, d.y, 5, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+      });
+
+      const verdicts = {
+        none: '<b>정칙화 없음.</b> 데이터에 정확히 맞추지만 매끄럽지 않고 일반화가 안 된다. 같은 점 7개를 지나는 무수히 많은 함수 중 “가장 흔들리는” 것을 골라 버렸다.',
+        smooth: '<b class="tip">평활성 사전.</b> “가까운 입력은 비슷한 출력”이라는 가정으로 데이터 사이를 부드럽게 잇는다. 가장 일반적이고 가장 안전한 사전.',
+        manifold: '<b class="tip">매니폴드 접선 사전.</b> 데이터가 매끄러운 면 위에 있다는 가정으로, 매니폴드를 따라가는 함수만 허용한다.',
+        sparse: '<b class="tip">희소성 사전.</b> “함수는 적은 수의 변경점만 가진다”는 가정으로, 거의 조각별 상수에 가까운 함수를 학습. 해석은 쉽지만 표현력은 제한.',
+        slow: '<b class="tip">느린 변화 사전.</b> “출력은 입력 변화에 비례해 천천히 변한다”는 강한 가정. 함수가 거의 평탄해진다. 시계열·비디오에 적합.',
+      };
+      verdict.innerHTML = verdicts[prior];
+    }
+
+    function interpolateRaw(d, x) {
+      // 데이터 점들 사이에 큰 진동
+      let y = 130;
+      for (let i = 0; i < d.length - 1; i++) {
+        const x1 = d[i].x, x2 = d[i + 1].x;
+        if (x >= x1 && x <= x2) {
+          const t = (x - x1) / (x2 - x1);
+          // 진동을 더해 과적합 표현
+          y = d[i].y * (1 - t) + d[i + 1].y * t + Math.sin(t * Math.PI * 6) * 30 * (1 - 2 * Math.abs(t - 0.5));
+          return y;
+        }
+      }
+      return y;
+    }
+    function interpolateSmooth(d, x) {
+      // 스플라인 근사
+      let y = 0, sum = 0;
+      for (const p of d) {
+        const w = 1 / (Math.pow((x - p.x) / 60, 2) + 0.4);
+        y += p.y * w; sum += w;
+      }
+      return y / sum;
+    }
+    function interpolateManifold(d, x) {
+      // 매니폴드: 데이터를 약하게 부드러움
+      let y = 0, sum = 0;
+      for (const p of d) {
+        const w = Math.exp(-Math.pow((x - p.x) / 80, 2));
+        y += p.y * w; sum += w;
+      }
+      return y / sum;
+    }
+    function interpolateSparse(d, x) {
+      // 희소: 가장 가까운 점의 값을 단순히 사용 (조각별 상수)
+      let best = d[0], bestDist = Infinity;
+      for (const p of d) {
+        const dist = Math.abs(x - p.x);
+        if (dist < bestDist) { bestDist = dist; best = p; }
+      }
+      return best.y;
+    }
+    function interpolateSlow(d, x) {
+      // 느린 변화: 평균 + 매우 천천히
+      let avg = 0;
+      d.forEach(p => avg += p.y);
+      avg /= d.length;
+      const smooth = interpolateSmooth(d, x);
+      return avg * 0.6 + smooth * 0.4;
+    }
+
+    render('none');
+    document.querySelectorAll('.pr-toggle button').forEach(b => {
+      b.addEventListener('click', () => {
+        document.querySelectorAll('.pr-toggle button').forEach(x => x.classList.remove('on'));
+        b.classList.add('on');
+        render(b.dataset.p);
+      });
+    });
+    window.addEventListener('resize', () => {
+      const active = document.querySelector('.pr-toggle button.on');
+      render(active.dataset.p);
+    });
+  })();
+
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
+        throwOnError: false,
+      });
+    }
+  });
+</script>
+</body>
+</html>

@@ -11,7 +11,7 @@
 <style>
   .masthead { position: relative; max-width: var(--wide); margin: 0 auto; padding: 1.5rem 1.4rem 0; }
   .hero-wrap { position: relative; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: linear-gradient(180deg,#fff,var(--paper-2)); box-shadow: var(--shadow-plate); }
-  #hero { display: block; width: 100%; height: 360px; }
+  #hero { display: block; width: 100%; height: 380px; }
   .hero-cap { position: absolute; left: 1.2rem; bottom: 1rem; font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; color: var(--ink-faint); pointer-events: none; }
   .hero-cap b { color: var(--structure); } .hero-cap em { color: var(--style); font-style: normal; }
   .title-block { max-width: var(--wide); margin: 2.4rem auto 0; padding-inline: 1.4rem; }
@@ -60,30 +60,31 @@
 <header class="masthead">
   <div class="hero-wrap">
     <canvas id="hero"></canvas>
-    <div class="hero-cap"><b>설계도 — 수학식</b> ↔ <em>공법 — 부동소수점과 수렴</em> · 마우스를 올려보세요</div>
+    <div class="hero-cap"><b>등고선의 종횡비 = 조건수</b> ↔ <em>마우스를 좌우로 — 지그재그가 시작된다</em></div>
   </div>
 </header>
 
 <div class="title-block">
-  <span class="kicker">Deep Learning Book · Chapter 4 · Numerical Computation</span>
+  <span class="kicker">Deep Learning Book · Goodfellow, Bengio, Courville · Chapter 4 · Numerical Computation</span>
   <h1>수학식이 컴퓨터에서<br><em>무너지지 않게</em> 만드는 법</h1>
   <div class="paper-meta">
     <span><b>딥러닝 개론</b> 기말고사 인터랙티브</span>
     <span>제작 <b>김정욱</b></span>
-    <span>분량 <b>약 30분</b></span>
-    <span>위젯 <b>5개</b></span>
+    <span>시험 <b>2026-06-04 (목)</b></span>
+    <span>분량 <b>약 60분 · 11개 sub</b></span>
+    <span>위젯 <b>7개</b></span>
   </div>
 </div>
 
 <section class="section-intro">
   <h2>한 문장으로</h2>
-  <p>이 장은 <strong>"수학적으로 옳은 식이 컴퓨터에서도 옳게 굴러가는가"</strong>라는 질문에 답한다. 부동소수점(floating point)은 유한한 비트로 무한한 실수를 흉내 내기 때문에, 종이 위에서는 자명한 계산도 실제로는 0으로 깎이거나 무한대로 터질 수 있다.</p>
-  <p>처음 읽을 때 가장 중요한 점은, 이 장이 <em>"새로운 모델을 제안하는"</em> 장이 <strong>아니라는</strong> 것이다. 이 장은 뒤이어 나오는 모든 학습 과정(softmax, log-likelihood, 경사하강, 헤시안)의 <span class="t-synth">바닥에서 작동하는 공법(工法)</span>을 다룬다. 좋은 설계도(수식)와 좋은 시공(수치 안정성·최적화)이 다 있어야 건물이 선다.</p>
+  <p>이 장은 <strong>"수학적으로 옳은 식이 컴퓨터에서도 옳게 굴러가는가"</strong>라는 질문에 답한다. 부동소수점(floating point)은 유한한 비트로 무한한 실수를 흉내 내기 때문에, 종이 위에서는 자명한 계산도 실제로는 <span class="t-style">0으로 깎이거나 무한대로 터질 수 있다</span>. 그리고 그 위에 다시 최적화(optimization)가 얹히는데, 어디로 얼마나 갈지를 정하는 일은 곡률(curvature)과 학습률(learning rate)이라는 두 칼날 위에서 줄을 타는 일이다.</p>
+  <p>처음 읽을 때 가장 중요한 점은, 이 장이 <em>"새로운 모델을 제안하는"</em> 장이 <strong>아니라는</strong> 것이다. 이 장은 뒤이어 나오는 모든 학습 과정 — softmax, log-likelihood, 경사하강, 헤시안, 라그랑주 — 의 <span class="t-synth">바닥에서 묵묵히 돌아가는 공법(工法)</span>을 다룬다. 좋은 설계도(수식)와 좋은 시공(수치 안정성·최적화)이 다 있어야 비로소 모델이라는 건물이 선다. 이 장의 모든 절은 6장 이후 신경망 학습의 어딘가에서 반드시 다시 나타난다.</p>
 </section>
 
 <div class="twopole">
-  <div class="pole s1"><h4>수치 안정성 (공법)</h4><p>언더플로, 오버플로, 조건수. 종이에서 같은 식이라도 컴퓨터에서는 다른 결과가 나올 수 있다. logsumexp 트릭, max 빼기, 안정화된 softmax.</p></div>
-  <div class="pole s2"><h4>경사 기반 최적화 (방향)</h4><p>기울기, 헤시안, 학습률. 어디로 얼마나 내려갈 것인가의 문제. 안장점, 곡률, 뉴턴 방법, KKT 조건까지.</p></div>
+  <div class="pole s1"><h4>수치 안정성 (공법 · 표현)</h4><p>언더플로, 오버플로, 조건수. 종이에서 같은 식이라도 컴퓨터에서는 다른 결과가 나올 수 있다. logsumexp 트릭, max 빼기, 안정화된 softmax. IEEE 754가 정한 좁은 자.</p></div>
+  <div class="pole s2"><h4>경사 기반 최적화 (방향 · 보폭)</h4><p>기울기, 헤시안, 학습률. 어디로 얼마나 내려갈 것인가의 문제. 안장점, 곡률, 뉴턴 방법, 라그랑주와 KKT 조건. 1계와 2계 정보가 알려 주는 것의 차이.</p></div>
 </div>
 
 <section class="plates" id="plates"></section>
@@ -94,7 +95,7 @@
 </section>
 
 <footer class="colophon">
-  <p>이 해설은 Goodfellow, Bengio, Courville의 Deep Learning Book Chapter 4 (Numerical Computation)을 바텀업으로 다시 쓴 것이다. 부동소수점의 한계에서 출발해 1계·2계 최적화와 제약 최적화까지 단계별로 쌓아 올린다. 모든 수식은 "왜 그 형태인가"를 함께 설명한다.</p>
+  <p>이 해설은 Goodfellow, Bengio, Courville의 Deep Learning Book Chapter 4 (Numerical Computation)을 바텀업으로 다시 쓴 것이다. 부동소수점의 한계에서 출발해 1계·2계 최적화와 제약 최적화까지 단계별로 쌓아 올린다. 모든 수식은 "왜 그 형태인가"를 함께 설명하고, 모든 기호는 그 자리에서 풀이한다.</p>
   <p class="src">
     원서 · <a href="https://www.deeplearningbook.org/contents/numerical.html">deeplearningbook.org/contents/numerical.html</a><br>
     선행학습 노트 · <a href="../../../05-선행학습/Deep-Learning-Book-04-Numerical-Computation-상세해설.md">Ch.04 상세해설</a><br>
@@ -104,12 +105,17 @@
 
 <script>
   const CHAPTERS = [
-    { no:'01', t:'부동소수점의 함정', d:'언더플로와 오버플로. 왜 softmax는 식 그대로 짜면 터지는가. max 빼기와 logsumexp 트릭의 등가성과 안전성.', sp:['synth','style'] },
-    { no:'02', t:'잘못된 조건수', d:'조건수 κ가 큰 행렬은 입력의 작은 흔들림을 출력의 큰 흔들림으로 증폭한다. 등고선 타원이 가늘어질수록 경사하강은 지그재그를 그린다.', sp:['structure','synth'] },
-    { no:'03', t:'경사 기반 최적화', d:'미분과 기울기. 왜 음의 기울기가 가장 가파른 하강 방향인가. 학습률 ε 슬라이더로 발산·진동·수렴을 직접 본다.', sp:['structure'] },
-    { no:'04', t:'헤시안과 2계 방법', d:'곡률 H가 알려 주는 추가 정보. 뉴턴법은 어떻게 한 번에 점프하는가. GD와 Newton의 궤적 비교, 그리고 안장점에서 깨지는 이유.', sp:['structure-lo','synth'] },
-    { no:'05', t:'제약 최적화와 KKT', d:'해가 어떤 집합 안에 있어야 할 때. 라그랑주 승수의 직관과 KKT 조건이 왜 그 형태인가.', sp:['style','synth'] },
-    { no:'06', t:'시험 대비 — 한 장 요약과 예상 문제', d:'중간/기말 빈출 질문 카드. softmax 안정화, 조건수, 안장점, 헤시안, 뉴턴법의 한 줄 답안. Ch.8 최적화로 가는 다리.', sp:['ink-soft','ink'] },
+    { no:'01', t:'왜 수치 계산이 ML의 발목을 잡는가', d:'이론에서 자명한 식이 컴퓨터에서 무너지는 이유. 종이의 실수와 메모리의 부동소수점 사이에 놓인 간극, 그리고 그 간극이 학습을 어떻게 침묵시키는가.', sp:['synth','ink-soft'], kw:'간극 · 침묵 · NaN' },
+    { no:'02', t:'부동소수점 — IEEE 754의 좁은 자', d:'32 / 64 / 16 비트 부동소수점이 표현할 수 있는 수의 범위와 정밀도. 부호·지수·가수의 3분할 구조, 기계 입실론(machine epsilon)의 의미.', sp:['structure-lo','synth'], kw:'IEEE 754 · float32 · 기계 입실론' },
+    { no:'03', t:'언더플로 / 오버플로 — softmax는 왜 터지는가', d:'분류기의 마지막에 등장하는 softmax를 식 그대로 짜면 큰 입력에서 ∞, 작은 입력에서 0/0이 된다. 실제로 NaN이 어떻게 학습을 죽이는지 단계별로.', sp:['style','synth'], kw:'언더플로 · 오버플로 · softmax' },
+    { no:'04', t:'logsumexp 트릭 — 안정화 수식 유도', d:'max를 빼는 한 줄이 어떻게 폭주를 막는가. logsumexp의 두 가지 등가 형태와 그 의미. PyTorch가 내부에서 이미 해 주는 일.', sp:['structure','synth'], kw:'logsumexp · max 빼기 · 등가성' },
+    { no:'05', t:'조건수 1 — 행렬은 답을 얼마나 흔드는가', d:'조건수 κ가 큰 시스템은 입력의 작은 흔들림을 출력의 큰 흔들림으로 증폭한다. 흔들리는 책상 비유, 그리고 고유값의 비로 정의되는 κ.', sp:['structure','structure-lo'], kw:'조건수 · κ · 고유값' },
+    { no:'06', t:'조건수 2 — 최적화의 지그재그', d:'등고선이 가는 타원이 될수록 경사하강은 단축을 따라 진동한다. 종횡비를 슬라이더로 직접 바꿔 보고 궤적을 비교한다.', sp:['structure-lo','style'], kw:'타원 등고선 · 지그재그 · 진동' },
+    { no:'07', t:'경사하강법의 본질 — 1계 정보로 내려가기', d:'음의 기울기가 왜 가장 가파른 하강 방향인가. 학습률 ε의 적절한 크기. 발산·진동·수렴이라는 3분류와 실제 곡선.', sp:['structure','synth'], kw:'gradient · 학습률 · 수렴' },
+    { no:'08', t:'2계 방법 — 헤시안과 뉴턴법', d:'기울기는 어디로 가는지를, 헤시안은 거기서 곡면이 얼마나 굽었는지를 말해 준다. 뉴턴법은 한 번에 점프하지만 딥러닝에서 직접 안 쓰이는 이유.', sp:['style-lo','structure'], kw:'헤시안 · 뉴턴법 · 곡률' },
+    { no:'09', t:'학습률의 의미 — 발산·진동·수렴의 3분류', d:'같은 함수에서 ε를 바꾸면 학습은 발산도 진동도 수렴도 된다. 1/L 이하라는 단순한 안전 한계와 그 직관.', sp:['style','synth'], kw:'학습률 · 1/L · 안정성' },
+    { no:'10', t:'제약 최적화 — 라그랑주와 KKT', d:'해가 어떤 영역 안에 있어야 할 때. 라그랑주 승수의 직관적 의미, KKT 조건이 왜 그 네 가지 형태로 적히는가.', sp:['style','synth'], kw:'라그랑주 · KKT · 제약' },
+    { no:'11', t:'시험 대비 — 빈출 카드와 한 장 요약', d:'중간/기말에서 자주 묻는 18개 질문 카드와 한 줄 답안. softmax 안정화, 조건수, 안장점, 헤시안, 뉴턴법, KKT의 핵심을 시험 직전에 다시 본다.', sp:['ink-soft','ink'], kw:'한 줄 답안 · 시험 카드' },
   ];
   const colMap = { structure:'var(--structure)', 'structure-lo':'var(--structure-lo)', style:'var(--style)', 'style-lo':'var(--style-lo)', synth:'var(--synth)', ink:'var(--ink)', 'ink-soft':'var(--ink-soft)' };
   const platesEl = document.getElementById('plates');
@@ -123,30 +129,30 @@
       <span class="pno">SUB-CHAPTER ${c.no}</span>
       <h3>${c.t}</h3>
       <p>${c.d}</p>
+      <span class="kw">${c.kw}</span>
       <span class="go">읽기 →</span>`;
     platesEl.appendChild(a);
 
     const f = document.createElement('a'); f.href = c.no + '.html';
-    f.innerHTML = `<b>${c.no}</b> ${c.t}`;
+    f.innerHTML = `<b>${c.no}</b> ${c.t.length > 18 ? c.t.slice(0,18) + '…' : c.t}`;
     flowEl.appendChild(f);
     if (idx < CHAPTERS.length - 1) { const s = document.createElement('span'); s.className='arr'; s.textContent='→'; flowEl.appendChild(s); }
   });
 
-  // 히어로 — 손실 표면 위의 경사하강 입자
+  // 히어로 — 손실 표면 위의 경사하강 입자 + 마우스 좌우로 종횡비
   window.addEventListener('load', () => {
     const canvas = document.getElementById('hero');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     function resize() {
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      const w = canvas.clientWidth, h = 360;
+      const w = canvas.clientWidth, h = 380;
       canvas.width = w * dpr; canvas.height = h * dpr;
       ctx.setTransform(dpr,0,0,dpr,0,0);
     }
     resize();
     window.addEventListener('resize', resize);
 
-    // 손실 함수: 타원 + 마우스에 의해 종횡비 변형
     let mouseX = 0.5;
     canvas.addEventListener('mousemove', (e) => {
       const r = canvas.getBoundingClientRect();
@@ -154,36 +160,31 @@
     });
     canvas.addEventListener('mouseleave', () => { mouseX = 0.5; });
 
-    // 입자: GD 궤적
     let particles = [];
     function spawn() {
       particles = [];
-      for (let i = 0; i < 18; i++) {
-        const theta = (i / 18) * Math.PI * 2;
-        particles.push({ x: Math.cos(theta) * 0.8, y: Math.sin(theta) * 0.5, vx:0, vy:0, life: Math.random() });
+      for (let i = 0; i < 22; i++) {
+        const theta = (i / 22) * Math.PI * 2;
+        particles.push({ x: Math.cos(theta) * 0.85, y: Math.sin(theta) * 0.55, vx:0, vy:0, life: Math.random() });
       }
     }
     spawn();
 
-    function loss(x, y, a) { return 0.5 * (x*x + a*a*y*y); }
     function grad(x, y, a) { return [x, a*a*y]; }
 
     function draw() {
-      const w = canvas.clientWidth, h = 360;
+      const w = canvas.clientWidth, h = 380;
       ctx.clearRect(0,0,w,h);
-      // 배경
       ctx.fillStyle = '#FAF7F0'; ctx.fillRect(0,0,w,h);
 
       const cx = w/2, cy = h/2;
       const scale = Math.min(w, h) * 0.32;
-      // 종횡비: mouseX 0→1이면 a 1→6
       const a = 1 + mouseX * 5;
 
-      // 등고선
       ctx.lineWidth = 1;
-      for (let lev = 1; lev <= 7; lev++) {
-        const c = lev * 0.18;
-        ctx.strokeStyle = `rgba(45, 91, 122, ${0.10 + lev*0.04})`;
+      for (let lev = 1; lev <= 8; lev++) {
+        const c = lev * 0.16;
+        ctx.strokeStyle = `rgba(45, 91, 122, ${0.09 + lev*0.04})`;
         ctx.beginPath();
         for (let t = 0; t <= Math.PI*2 + 0.01; t += 0.04) {
           const x = Math.sqrt(2*c) * Math.cos(t);
@@ -195,43 +196,36 @@
         ctx.closePath(); ctx.stroke();
       }
 
-      // 경사하강 입자
-      const lr = 0.04;
+      const lr = 0.05;
       particles.forEach(p => {
         const [gx, gy] = grad(p.x, p.y, a);
-        // 이전 위치 저장
         const px0 = cx + p.x * scale, py0 = cy - p.y * scale;
         p.x -= lr * gx;
         p.y -= lr * gy;
         p.life += 0.01;
         const px1 = cx + p.x * scale, py1 = cy - p.y * scale;
 
-        // 궤적
-        ctx.strokeStyle = `rgba(164, 123, 46, ${0.65 - p.life*0.5})`;
+        ctx.strokeStyle = `rgba(164, 123, 46, ${0.62 - p.life*0.5})`;
         ctx.lineWidth = 1.5;
         ctx.beginPath(); ctx.moveTo(px0, py0); ctx.lineTo(px1, py1); ctx.stroke();
 
-        // 점
         ctx.fillStyle = `rgba(192, 73, 46, ${Math.max(0.2, 1 - p.life)})`;
         ctx.beginPath(); ctx.arc(px1, py1, 2.5, 0, Math.PI*2); ctx.fill();
 
-        // 중앙 가까이 가면 재생성
-        if (Math.abs(p.x) < 0.02 && Math.abs(p.y) < 0.02 || p.life > 1.2) {
+        if ((Math.abs(p.x) < 0.02 && Math.abs(p.y) < 0.02) || p.life > 1.2) {
           const theta = Math.random() * Math.PI * 2;
-          p.x = Math.cos(theta) * 0.8;
-          p.y = Math.sin(theta) * 0.5;
+          p.x = Math.cos(theta) * 0.85;
+          p.y = Math.sin(theta) * 0.55;
           p.life = 0;
         }
       });
 
-      // 중심
       ctx.fillStyle = '#26221C';
       ctx.beginPath(); ctx.arc(cx, cy, 3, 0, Math.PI*2); ctx.fill();
 
-      // 조건수 라벨
       ctx.fillStyle = '#8E8576';
       ctx.font = '11px "Spline Sans Mono", monospace';
-      ctx.fillText(`κ ≈ ${(a*a).toFixed(1)}`, 14, h - 14);
+      ctx.fillText(`κ ≈ ${(a*a).toFixed(1)}   ε = ${lr}`, 14, h - 14);
 
       requestAnimationFrame(draw);
     }

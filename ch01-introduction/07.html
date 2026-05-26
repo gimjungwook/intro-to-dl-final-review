@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>07 · 역사 2 — 연결주의 — Chapter 1</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .bp-stage { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1.4rem 1rem 1rem; align-items: center; }
+  .bp-card { background: #fff; border: 1px solid var(--line-soft); border-radius: 9px; padding: 1rem; }
+  .bp-card h5 { margin: 0 0 .5rem; font-family: var(--serif); font-size: .98rem; }
+  .bp-card .step { font-family: var(--mono); font-size: .78rem; color: var(--ink-soft); margin: .3rem 0; line-height: 1.5; }
+  .bp-card .step b { color: var(--structure); }
+  .bp-card.back .step b { color: var(--style); }
+  .bp-flow { padding: 1.2rem 1rem 0; font-family: var(--mono); font-size: .82rem; text-align: center; color: var(--ink-faint); }
+  .bp-flow span { color: var(--ink); }
+  @media (max-width: 640px) { .bp-stage { grid-template-columns: 1fr; } }
+  .dist-stage { padding: 1.4rem 1rem 1rem; }
+  .dist-toggle { display: flex; justify-content: center; gap: .5rem; margin-bottom: 1rem; }
+  .dist-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .5rem; max-width: 500px; margin: 0 auto; }
+  .dist-cell { aspect-ratio: 1; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: .68rem; color: #fff; transition: background .25s var(--ease); }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-Chapter 07 · 두 번째 물결</span>
+      <h1>연결주의 (1980-1990s)와<br><span class="t-style">두 번째 겨울</span></h1>
+      <p class="lede">1980년대 역전파(backpropagation)의 재발견은 다층 신경망을 학습 가능하게 만들었다. 분산 표상(distributed representation), 회귀 신경망(RNN), 합성곱 신경망(CNN)의 원형이 모두 이 시기에 등장한다. 그러나 데이터와 계산이 부족했고, SVM 같은 경쟁 모델의 등장으로 두 번째 겨울이 시작된다.</p>
+    </header>
+
+    <div class="prose">
+      <p>1980년대 중반은 신경망 연구의 두 번째 르네상스였다. 1980년대 초까지 이어진 첫 번째 겨울이 풀린 계기는 두 가지였다. 첫째, 다층 신경망을 학습시키는 알고리즘 — 역전파(backpropagation) — 가 여러 연구자에 의해 독립적으로 재발견되었다. 둘째, 인지과학(cognitive science) 쪽에서 "인간의 지능은 기호 처리(symbolic processing)가 아니라 수많은 단순한 유닛의 병렬 연결에서 나온다"는 새로운 패러다임 — <strong>연결주의(connectionism)</strong> — 가 떠올랐다. 두 흐름이 만나 1980년대 후반에서 1990년대 초까지의 두 번째 부흥을 만들었다.</p>
+
+      <h2>역전파의 재발견 — 1986년의 결정적 논문</h2>
+
+      <p>역전파의 수학적 원리는 사실 1970년대에 여러 사람이 따로따로 발견하고 있었다. Paul Werbos가 1974년 박사학위 논문에서, Seppo Linnainmaa가 1970년에 — 일반적인 미분 자동화(automatic differentiation)의 형태로 — 같은 아이디어를 제시했다. 그러나 이 결과들이 신경망 학계에 본격적으로 알려진 것은 1986년 David Rumelhart, Geoffrey Hinton, Ronald Williams의 Nature 논문 "Learning representations by back-propagating errors"에서였다. 이 논문이 다층 신경망에 역전파를 적용하면 은닉층의 가중치도 학습할 수 있다는 것을, 실제 예시와 함께 보여 주었다.</p>
+
+      <p>역전파의 핵심 아이디어는 <em>연쇄 법칙(chain rule)의 영리한 적용</em>이다. 다층 신경망에서 출력 손실 $L$을 첫 층의 가중치 $w$로 미분하려면, 출력에서 첫 층까지의 모든 중간 단계의 미분을 곱해야 한다. 이 곱셈을 순서대로 한 번씩만 하면(출력 → 입력 방향), 모든 층의 가중치에 대한 미분을 효율적으로 얻을 수 있다. 즉, 손실의 기울기(gradient)를 출력에서 입력 방향으로 거꾸로 전파(back-propagate)한다.</p>
+
+      <div class="math-block">$$ \frac{\partial L}{\partial w^{(\ell)}} = \frac{\partial L}{\partial a^{(L)}} \cdot \frac{\partial a^{(L)}}{\partial a^{(L-1)}} \cdots \frac{\partial a^{(\ell+1)}}{\partial w^{(\ell)}} $$</div>
+      <p class="math-note">L은 손실 함수. w^(ℓ)은 ℓ번째 층의 가중치. a^(L)은 최종 출력. 연쇄 법칙으로 손실의 기울기를 출력에서 ℓ층까지 거꾸로 곱해 가며 계산한다.</p>
+
+      <p>이 수식이 왜 이 형태인가? 손실 $L$이 가중치 $w^{(\ell)}$에 의존하는 경로는 한 가지뿐이다 — $w^{(\ell)}$이 $a^{(\ell+1)}$을 만들고, $a^{(\ell+1)}$이 $a^{(\ell+2)}$를 만들고, … , 결국 $a^{(L)}$이 만들어진 후 $L$이 계산된다. 이 긴 의존 사슬에 연쇄 법칙을 적용하면 정확히 위 형태가 된다. 그런데 만약 우리가 첫 층부터 마지막 층까지 한 단계씩 미분을 계산하면, 각 가중치마다 이 긴 사슬을 처음부터 다시 계산해야 한다. 반대로 마지막 층에서 첫 층까지 한 번만 거꾸로 내려오면서 누적 곱셈을 저장해 두면, 모든 가중치의 미분을 한 번의 패스로 얻을 수 있다. 이것이 역전파의 효율성이다.</p>
+
+      <p>아래 위젯에서 순방향과 역방향의 정보 흐름이 정확히 어떻게 다른지를 보자. 순방향(forward)은 입력에서 출력으로 가면서 각 층의 활성화 값을 계산한다. 역방향(backward)은 출력 손실에서 입력으로 거꾸로 가면서 각 층의 가중치에 대한 손실의 기울기를 계산한다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 07</span><span>역전파의 두 패스 — 순방향과 역방향</span></div>
+        <div class="bp-stage">
+          <div class="bp-card">
+            <h5>순방향 (Forward Pass)</h5>
+            <div class="step"><b>1.</b> 입력 x → 1층 가중치 W¹ → 활성화 a¹</div>
+            <div class="step"><b>2.</b> a¹ → 2층 가중치 W² → 활성화 a²</div>
+            <div class="step"><b>3.</b> a² → 3층 가중치 W³ → 출력 ŷ</div>
+            <div class="step"><b>4.</b> ŷ와 정답 y로 손실 L 계산</div>
+          </div>
+          <div class="bp-card back">
+            <h5>역방향 (Backward Pass)</h5>
+            <div class="step"><b>1.</b> ∂L/∂ŷ 계산 (출력에서 시작)</div>
+            <div class="step"><b>2.</b> ∂L/∂a² 계산 (W³ 통해 거슬러)</div>
+            <div class="step"><b>3.</b> ∂L/∂a¹, ∂L/∂W² 계산</div>
+            <div class="step"><b>4.</b> ∂L/∂W¹ 계산 (입력까지 도달)</div>
+          </div>
+        </div>
+        <div class="bp-flow">x → <span>a¹</span> → <span>a²</span> → <span>ŷ</span> → L &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; L → <span>∂L/∂ŷ</span> → <span>∂L/∂a²</span> → <span>∂L/∂a¹</span> → <span>∂L/∂x</span></div>
+      </div>
+      <p class="widget-cap">순방향은 활성화 값을 입력에서 출력으로 흘리고, 역방향은 손실의 기울기를 출력에서 입력으로 거꾸로 흘린다. 두 패스 한 번씩만 돌면 모든 가중치의 갱신 방향이 결정된다. 이것이 1986년 Rumelhart-Hinton-Williams 논문의 결정타였다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>분산 표상의 발견 — 1986년의 또 다른 통찰</h2>
+
+      <p>같은 시기에 Hinton과 동료들은 <strong>분산 표상(distributed representation)</strong>이라는 또 하나의 핵심 개념을 정리했다. 전통적 인지과학과 AI는 개념을 한 개의 기호(symbol)로 표현했다. "고양이"는 한 개의 단어, "빨강"은 한 개의 색 코드, "민들레"는 한 개의 종 이름이었다. 이를 국소 표상(local representation) 또는 one-hot 표상이라고 부른다. 한 개념 = 한 차원이다.</p>
+
+      <p>분산 표상은 그 반대다. 한 개념을 여러 차원이 함께 표현한다. "고양이"는 한 개의 차원이 아니라, "털이 있다(0.9)", "네 발(0.95)", "포유류(1.0)", "야행성(0.7)" 같은 여러 차원의 조합으로 표현된다. 새로운 개념 "표범"을 추가할 때도 차원을 늘릴 필요가 없다 — 같은 차원에서 "야생(0.95)"라는 차원 값을 키우면 된다. 이 방식의 장점은 두 가지다. 첫째, 표상이 자연스럽게 짧아진다(저차원성). 둘째, 의미가 비슷한 개념은 자동으로 표상 공간에서 가까워진다(매니폴드 성질).</p>
+
+      <p>분산 표상은 단순한 표기법의 차이가 아니라, <strong>"개념의 의미는 그 개념 자체에 있는 게 아니라, 다른 개념들과의 관계 속 위치에 있다"</strong>는 인식론적 입장이다. 이 시각은 후에 word2vec(2013), GloVe(2014), BERT(2018) 같은 단어 임베딩 기법의 직접적인 출발점이 된다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 08</span><span>국소 표상 vs 분산 표상 — 같은 4개념, 다른 표현</span></div>
+        <div class="dist-stage">
+          <div class="dist-toggle">
+            <button class="btn ghost on" id="dist-local">국소 (one-hot)</button>
+            <button class="btn ghost" id="dist-dist">분산 (distributed)</button>
+          </div>
+          <div class="dist-grid" id="dist-grid"></div>
+          <p style="font-family:var(--mono);font-size:.78rem;color:var(--ink-soft);text-align:center;margin-top:1rem;line-height:1.6;">국소: 4개 개념 = 4차원, 각 개념은 한 차원만 활성. 표상끼리의 거리는 모두 같다.<br>분산: 4개 개념 = 4차원, 각 개념이 여러 차원에 분산. 비슷한 개념끼리 가까워진다.</p>
+        </div>
+      </div>
+      <p class="widget-cap">고양이·강아지·새·자동차를 표현한다. 국소 표상은 각 개념이 한 차원을 독차지하지만, 분산 표상은 "털, 네 발, 날개, 바퀴" 같은 속성들로 의미를 분산해서 담는다. 그러면 자동으로 "고양이와 강아지가 가깝다"가 표현된다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>이 시기에 등장한 모델들 — 모두 현재 모델의 원형</h2>
+
+      <div class="analogy">
+        <b>분산된 책임.</b> 회사에서 한 직원의 역할을 한 단어로 정의하기보다, "리더십(0.7), 분석력(0.8), 영어(0.5), 디자인(0.3)" 같은 여러 차원의 점수로 적으면 더 풍부한 정보가 된다. 새 직원이 들어와도 같은 차원의 점수로 표현되므로, 두 직원의 유사성을 곧장 비교할 수 있다. 분산 표상도 같은 발상이다. 의미를 한 자리에 가두지 않고, 여러 속성에 펼쳐 놓는다.
+      </div>
+
+      <p>두 번째 부흥기에는 오늘날 우리가 쓰는 거의 모든 신경망 구조의 원형이 등장했다. <strong>CNN의 원형</strong>은 1989년 Yann LeCun이 우편번호 인식을 위해 만든 LeNet-5다. 합성곱(convolution), 풀링(pooling), 가중치 공유(weight sharing) 같은 핵심 아이디어가 이때 자리잡았다. <strong>RNN(recurrent neural network)</strong>은 1980년대 후반에 Jordan과 Elman이 시간 의존성을 다루는 구조로 제안했다. <strong>LSTM(long short-term memory)</strong>은 1997년 Hochreiter와 Schmidhuber가 RNN의 기울기 소실 문제를 풀려고 만들었다. 이 모든 것이 1990년대 말까지 다 나와 있었다.</p>
+
+      <p>그렇다면 왜 이 모든 모델이 곧장 폭발하지 못했는가? 답은 두 가지다. <strong>데이터와 계산이 모자랐다.</strong> 1990년대의 데이터셋은 MNIST(6만 장의 손글씨)나 그보다 작은 것들이었다. 모델의 표현력이 데이터를 압도해서 과적합(overfitting)이 일어나기 쉬웠다. 계산 측면에서는 CPU 한 대로 며칠씩 돌려야 작은 모델이 학습됐다. 깊은 모델은 시도하기조차 어려웠다.</p>
+
+      <div class="analogy">
+        <b>씨앗과 토양.</b> 좋은 씨앗을 척박한 땅에 심으면 자라지 못한다. 1990년대의 신경망 아이디어(역전파, CNN, RNN, LSTM)는 좋은 씨앗이었지만, 데이터와 계산이라는 토양이 척박했다. 같은 씨앗이 2010년대에 GPU와 인터넷 데이터라는 풍부한 토양에 심어졌을 때 비로소 본래의 잠재력이 드러났다. 한 시대의 실패가 곧 아이디어의 실패는 아니다.
+      </div>
+
+      <h2>두 번째 겨울 — 1990년대 말의 SVM과 신경망의 정체</h2>
+
+      <p>1990년대 중반부터 또 다른 모델 — 서포트 벡터 머신(SVM, support vector machine) — 이 등장했다. SVM은 신경망과 달리 명확한 수학적 보장(convex optimization, 최대 마진 원리)이 있었고, 작은 데이터에서 신경망보다 잘 작동했다. 1990년대 후반에는 비전·텍스트·생물정보학 거의 모든 분야에서 SVM이 신경망보다 좋은 성능을 보였다. 동시에 결정 트리의 앙상블 — 랜덤 포레스트(2001), 그라디언트 부스팅(1999) — 도 정형 데이터에서 강력한 성능을 보였다.</p>
+
+      <p>그 결과 신경망은 다시 학계 주류에서 밀려났다. 1990년대 말부터 2000년대 중반까지 신경망 논문은 주요 학회에서 거의 거부됐다. Yann LeCun, Geoffrey Hinton, Yoshua Bengio — 후에 "딥러닝 3대 거장"으로 불리는 이들 — 도 이 시기에는 학계 변두리에 있었다. 이 시기를 흔히 <strong>두 번째 인공지능 겨울</strong>이라고 부른다.</p>
+
+      <p>그러나 이 겨울은 첫 번째와는 결이 달랐다. 표현력의 한계가 폭로돼 멈춘 것이 아니라, "더 좋은 대안이 있어서" 잠시 옆으로 밀려난 것이었다. 그래서 데이터와 계산이라는 외부 조건이 갖춰지자 신경망은 다시 살아날 수 있었다. 그것이 sub-chapter 08에서 보는 세 번째 부흥의 이야기다.</p>
+
+      <div class="analogy">
+        <b>한물간 가수의 컴백.</b> 어떤 가수가 좋은 노래를 가지고도 시대를 못 만나서 묻혔다가, 20년 후 새로운 미디어가 등장하면서 그 노래가 다시 발견되는 일이 있다. 노래 자체가 나쁜 게 아니었다. 그 노래를 받아 줄 청중과 채널이 부족했을 뿐이다. 1990년대 신경망 아이디어도 비슷한 위치였다. 2010년대 GPU와 인터넷 데이터라는 채널이 열리자, 그 아이디어들이 다시 빛났다.
+      </div>
+
+      <p>이 sub-chapter의 정리. <strong>"두 번째 부흥은 역전파와 분산 표상이라는 두 가지 아이디어를 가져왔지만, 데이터와 계산의 부족으로 폭발하지 못한 채 겨울을 맞았다."</strong> 다음 sub-chapter는 그 잠재력이 2006년 이후 어떻게 풀려나왔는지를 본다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+const SUBS = [
+  { no:'01', t:'표상의 문제' },
+  { no:'02', t:'AI · ML · 표상학습 · DL' },
+  { no:'03', t:'표상학습이란 무엇인가' },
+  { no:'04', t:'깊이 1 — 표상의 사다리' },
+  { no:'05', t:'깊이 2 — 합성성' },
+  { no:'06', t:'역사 1 — 사이버네틱스' },
+  { no:'07', t:'역사 2 — 연결주의' },
+  { no:'08', t:'역사 3 — 부활과 폭발' },
+  { no:'09', t:'폭발 1 — 데이터' },
+  { no:'10', t:'폭발 2 — 계산' },
+  { no:'11', t:'폭발 3 — 모델 크기' },
+  { no:'12', t:'응용 — 어디까지' },
+  { no:'13', t:'시험 대비 체크리스트' },
+];
+function buildNav(cur) {
+  const ol = document.querySelector('.ch-nav ol');
+  ol.innerHTML = SUBS.map(s =>
+    `<li><a href="${s.no}.html"${s.no===cur?' class="current"':''}>${s.t}</a></li>`).join('');
+  document.querySelector('.topbar').innerHTML =
+    `<a class="home" href="index.html">← Ch.01 표지</a><span class="ch-mini">SUB ${cur} / 13</span>`;
+  const i = SUBS.findIndex(s => s.no === cur);
+  const prev = i > 0 ? SUBS[i-1] : { no:'', t:'챕터 표지로' };
+  const next = i < SUBS.length-1 ? SUBS[i+1] : { no:'', t:'챕터 표지로' };
+  const ph = prev.no ? prev.no+'.html' : 'index.html';
+  const nh = next.no ? next.no+'.html' : 'index.html';
+  document.querySelector('.ch-foot').innerHTML =
+    `<a href="${ph}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+    `<a href="${nh}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+}
+function progressBar() {
+  const bar = document.querySelector('.scroll-progress');
+  document.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max>0 ? (h.scrollTop/max)*100 : 0) + '%';
+  }, { passive: true });
+}
+
+const CONCEPTS = ['고양이', '강아지', '새', '자동차'];
+const LOCAL = [
+  [1, 0, 0, 0],
+  [0, 1, 0, 0],
+  [0, 0, 1, 0],
+  [0, 0, 0, 1],
+];
+const DIST = [
+  [0.9, 0.95, 0.0, 0.0],  // 고양이: 털, 네발
+  [0.85, 0.95, 0.0, 0.0], // 강아지: 털, 네발
+  [0.3, 0.0, 0.95, 0.0],  // 새: 약간 털, 날개
+  [0.0, 0.0, 0.0, 1.0],   // 자동차: 바퀴만
+];
+const FEATS = ['털', '네발', '날개', '바퀴'];
+
+function renderDist(mode) {
+  const grid = document.getElementById('dist-grid');
+  grid.innerHTML = '';
+  // 헤더
+  const head = document.createElement('div');
+  head.style.gridColumn = 'span 4';
+  head.style.display = 'grid';
+  head.style.gridTemplateColumns = 'repeat(4, 1fr)';
+  head.style.gap = '.5rem';
+  head.style.marginBottom = '.4rem';
+  FEATS.forEach((f, i) => {
+    const lab = document.createElement('div');
+    lab.style.fontFamily = 'var(--mono)';
+    lab.style.fontSize = '.7rem';
+    lab.style.color = 'var(--ink-faint)';
+    lab.style.textAlign = 'center';
+    lab.textContent = mode === 'local' ? `dim ${i+1}` : f;
+    head.appendChild(lab);
+  });
+  grid.appendChild(head);
+  const data = mode === 'local' ? LOCAL : DIST;
+  CONCEPTS.forEach((c, ci) => {
+    data[ci].forEach((v, fi) => {
+      const cell = document.createElement('div');
+      cell.className = 'dist-cell';
+      const intensity = Math.floor(v * 200);
+      cell.style.background = `rgba(45, 91, 122, ${0.15 + v * 0.7})`;
+      cell.textContent = v.toFixed(2);
+      cell.title = `${c} · ${FEATS[fi]}: ${v.toFixed(2)}`;
+      grid.appendChild(cell);
+    });
+    // 행 라벨
+    const lab = document.createElement('div');
+    lab.style.gridColumn = 'span 4';
+    lab.style.fontFamily = 'var(--mono)';
+    lab.style.fontSize = '.7rem';
+    lab.style.color = 'var(--ink-soft)';
+    lab.style.textAlign = 'right';
+    lab.style.marginTop = '-.2rem';
+    lab.style.marginBottom = '.3rem';
+    lab.textContent = `← ${c}`;
+    grid.appendChild(lab);
+  });
+}
+
+window.addEventListener('load', () => {
+  buildNav('07');
+  progressBar();
+  renderDist('local');
+  document.getElementById('dist-local').addEventListener('click', () => {
+    document.getElementById('dist-local').classList.add('on');
+    document.getElementById('dist-dist').classList.remove('on');
+    renderDist('local');
+  });
+  document.getElementById('dist-dist').addEventListener('click', () => {
+    document.getElementById('dist-dist').classList.add('on');
+    document.getElementById('dist-local').classList.remove('on');
+    renderDist('dist');
+  });
+});
+</script>
+</body>
+</html>

@@ -3,25 +3,24 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>02 — AI/ML/RL/DL 동심원 — Ch.1</title>
+<title>02 · AI · ML · 표상학습 · DL — Chapter 1</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
-  .ven-stage { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 1rem; padding: 1.4rem 1.4rem 1rem; align-items: center; }
-  #venn { width: 100%; height: auto; max-height: 380px; }
-  .ven-ring { cursor: pointer; transition: stroke-width .15s var(--ease), opacity .15s; }
-  .ven-ring:hover, .ven-ring.active { stroke-width: 3; }
-  .ven-label { font-family: var(--mono); font-size: 12px; fill: var(--ink); font-weight: 600; pointer-events: none; }
-  .ven-sublabel { font-family: var(--mono); font-size: 9.5px; fill: var(--ink-faint); pointer-events: none; }
-  .ven-detail { padding: 1.1rem 1.2rem; background: var(--paper); border-radius: 10px; border: 1px solid var(--line-soft); min-height: 240px; }
-  .ven-detail h4 { margin: 0 0 .4rem; font-family: var(--serif); font-size: 1.25rem; color: var(--ink); }
-  .ven-detail .vd-def { font-size: .92rem; color: var(--ink-soft); line-height: 1.55; margin: 0 0 .9rem; }
-  .ven-detail .vd-ex { font-size: .85rem; color: var(--ink-soft); line-height: 1.55; padding: .7rem .9rem; background: var(--paper-2); border-radius: 7px; border-left: 3px solid var(--structure); }
-  .ven-detail .vd-ex b { color: var(--ink); }
-  .ven-detail .vd-key { font-family: var(--mono); font-size: .68rem; letter-spacing: .12em; color: var(--ink-faint); text-transform: uppercase; margin: 0 0 .35rem; }
-  @media (max-width: 720px) { .ven-stage { grid-template-columns: 1fr; } }
+  .venn-stage { position: relative; max-width: 540px; margin: 0 auto; padding: 1.4rem 1rem 1rem; }
+  .venn-stage svg { display: block; width: 100%; height: auto; }
+  .venn-stage .ring { fill: none; stroke-width: 2; cursor: pointer; transition: stroke-width .15s, opacity .15s; }
+  .venn-stage .ring:hover { stroke-width: 4; }
+  .venn-stage .label { font-family: var(--mono); font-size: 12px; fill: var(--ink); pointer-events: none; }
+  .venn-readout { max-width: var(--measure); margin: 0 auto; padding: .6rem 1.4rem 1.2rem; min-height: 6rem; font-size: .9rem; color: var(--ink-soft); line-height: 1.55; }
+  .venn-readout h5 { margin: 0 0 .3rem; font-family: var(--serif); font-size: 1.05rem; color: var(--ink); }
+  .venn-readout .ex { display: block; margin-top: .4rem; font-family: var(--mono); font-size: .8rem; color: var(--ink-faint); }
+  .level-table { width: 100%; max-width: var(--measure); margin: 1.6rem auto; border-collapse: collapse; font-size: .9rem; }
+  .level-table th, .level-table td { padding: .55rem .6rem; border-bottom: 1px solid var(--line-soft); text-align: left; vertical-align: top; }
+  .level-table th { background: var(--paper-2); font-family: var(--mono); font-size: .72rem; letter-spacing: .08em; color: var(--ink-faint); }
+  .level-table td:first-child { font-family: var(--mono); color: var(--structure); white-space: nowrap; }
 </style>
 </head>
 <body>
@@ -33,82 +32,83 @@
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Sub 02 — 네 개념의 포함 관계</span>
-      <h1>AI <span class="t-structure">⊃</span> ML <span class="t-structure">⊃</span> 표상학습 <span class="t-structure">⊃</span> 딥러닝</h1>
-      <p class="lede">시험에서 가장 자주 묻는 “네 단어 구분”을 한 그림으로. 좁아지는 동심원은 단순한 분류가 아니라 “문제 정의를 누가 하느냐”의 점진적 위임이다.</p>
+      <span class="kicker">Sub-Chapter 02 · 동심원 한 장</span>
+      <h1>AI ⊃ ML ⊃ 표상학습 ⊃ <span class="t-structure">DL</span></h1>
+      <p class="lede">인공지능, 머신러닝, 표상학습, 딥러닝 — 흔히 섞여 쓰이는 네 단어가 사실은 좁아지는 동심원이다. 각 단계에서 "무엇이 결정되어 있고 무엇이 학습되는가"가 정확히 한 칸씩 바뀐다. 이 한 장의 그림이 1장의 두 번째 주춧돌이다.</p>
     </header>
 
     <div class="prose">
-      <p>강의노트와 교재가 일관되게 강조하는 시험 포인트가 있다. 인공지능(AI), 머신러닝(machine learning, ML), 표상학습(representation learning), 딥러닝(deep learning, DL) — 이 네 단어는 같은 말이 아니지만, 모두 한 줄로 늘어선 사이즈 차이가 아니다. <strong>중심으로 갈수록 인간이 손을 떼는 부분이 늘어난다.</strong></p>
-      <p>가장 바깥의 AI는 “지능적으로 보이는 모든 컴퓨터 행동”을 통칭한다. 그 안의 ML은 “규칙을 직접 적지 않고 데이터로부터 학습하는” 좁은 영역이다. 다시 그 안의 표상학습은 “특징(feature)까지도 모델이 알아서 뽑게 하는” 더 좁은 영역이고, 가장 안쪽의 딥러닝은 “그 표상학습을 여러 층으로 쌓아 단계적으로 배우는” 가장 좁은 핵심이다.</p>
+      <p>딥러닝을 공부한다고 하면 가장 먼저 듣는 질문이 있다. <em>"AI랑 머신러닝이랑 딥러닝이랑 뭐가 다른 거야?"</em> 학부 1학년 친구가 묻기도 하고, 비전공자 부모님이 묻기도 한다. 이 sub-chapter는 그 질문에 한 문장으로 답할 수 있게 만든다. 답은 이렇다. <strong>인공지능(AI, artificial intelligence)이 가장 넓고, 그 안에 머신러닝(ML, machine learning)이 있고, 그 안에 표상학습(representation learning)이 있고, 그 안에 딥러닝(DL, deep learning)이 있다.</strong> 네 단어는 동의어가 아니라 좁아지는 동심원이다.</p>
+
+      <p>왜 이 정리가 중요한가? 1980년대의 전문가 시스템(expert system)도 인공지능이라고 불렸고, 1990년대의 결정 트리(decision tree)도 머신러닝의 핵심이었다. 즉, "AI = 신경망", "ML = 딥러닝"이라는 식의 등치는 역사적으로 틀린 등치다. 동시에, 모든 머신러닝이 표상을 학습하는 것은 아니고, 모든 표상학습이 깊은(deep) 것도 아니다. 각 동심원은 무엇이 늘어나고 무엇이 줄어드는지를 정확히 보여 준다. 그것을 한눈에 본 다음에야 "왜 딥러닝이 그 가장 안쪽에 들어가는가"가 자연스럽게 이해된다.</p>
 
       <div class="analogy">
-        <b>요리 자율도의 사다리.</b> AI = 누군가 요리를 하기만 하면 된다. ML = 사람이 레시피를 쓰지 않고 맛본 데이터로부터 배운다. 표상학습 = 사람이 “재료의 어떤 속성이 중요한지”조차 적지 않는다. 딥러닝 = 위 모든 일을 여러 단계(다듬기 → 손질 → 조리 → 마무리)로 나누어 단계마다 배우게 한다. 안쪽으로 갈수록 사람이 손대는 양은 줄고 데이터에 맡기는 양은 늘어난다.
+        <b>탈것의 동심원.</b> "탈것(vehicle) ⊃ 자동차(car) ⊃ 전기차(EV) ⊃ 테슬라(Tesla)"라고 적으면 무엇이 들어 있는지 한눈에 보인다. 자전거는 탈것이지만 자동차는 아니다. 디젤 자동차는 자동차이지만 전기차는 아니다. 동심원의 안쪽으로 갈수록 정의가 좁아지고, 추가로 만족해야 할 조건이 늘어난다. AI → ML → 표상학습 → DL도 정확히 같은 구조다. 안쪽으로 갈수록 "자동화되는 부분"이 한 단계씩 늘어난다.
       </div>
 
-      <h2>아래 그림에서 원을 직접 만져 보자</h2>
-      <p>각 원에 마우스를 올리면 그 영역의 정의, 대표 예시, 인접 영역과의 핵심 차이가 오른쪽에 떠 오른다. 시험 직전 “정의 한 줄 + 예시 한 줄”만 정확히 떠올릴 수 있어도 이 절은 충분히 잡힌다.</p>
+      <p>아래 위젯에서 각 원을 마우스로 가리키면, 그 단계가 무엇을 다루는지, 무엇이 사람의 손에 맡겨져 있고 무엇이 학습되는지가 표시된다. 동심원의 정확한 의미는 그 다음 절에서 한 줄씩 풀어 설명한다.</p>
     </div>
 
     <div class="widget">
       <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 02</span><span>네 동심원 — 원을 클릭하면 정의와 예시가 보입니다</span></div>
-        <div class="ven-stage">
-          <svg id="venn" viewBox="0 0 400 380" xmlns="http://www.w3.org/2000/svg">
-            <!-- AI (가장 큰 원) -->
-            <circle class="ven-ring" data-key="ai" cx="200" cy="190" r="170" fill="rgba(45,91,122,0.06)" stroke="#2D5B7A" stroke-width="1.5"/>
-            <text class="ven-label" x="200" y="38" text-anchor="middle">AI — Artificial Intelligence</text>
-            <text class="ven-sublabel" x="200" y="52" text-anchor="middle">규칙기반 + 검색 + 학습 + 추론 모두 포함</text>
-
-            <!-- ML -->
-            <circle class="ven-ring" data-key="ml" cx="200" cy="200" r="135" fill="rgba(45,91,122,0.10)" stroke="#2D5B7A" stroke-width="1.5"/>
-            <text class="ven-label" x="200" y="80" text-anchor="middle">ML — Machine Learning</text>
-            <text class="ven-sublabel" x="200" y="93" text-anchor="middle">데이터에서 함수를 학습</text>
-
-            <!-- Representation Learning -->
-            <circle class="ven-ring" data-key="rl" cx="200" cy="210" r="100" fill="rgba(192,73,46,0.10)" stroke="#C0492E" stroke-width="1.5"/>
-            <text class="ven-label" x="200" y="128" text-anchor="middle">Representation Learning</text>
-            <text class="ven-sublabel" x="200" y="141" text-anchor="middle">특징(feature)까지 학습</text>
-
-            <!-- Deep Learning -->
-            <circle class="ven-ring" data-key="dl" cx="200" cy="225" r="65" fill="rgba(164,123,46,0.18)" stroke="#A47B2E" stroke-width="2"/>
-            <text class="ven-label" x="200" y="225" text-anchor="middle">Deep Learning</text>
-            <text class="ven-sublabel" x="200" y="240" text-anchor="middle">표상을 다층으로 학습</text>
+        <div class="widget-label"><span class="lab-no">위젯 02</span><span>4중 동심원 · 각 원에 마우스를 올려 보기</span></div>
+        <div class="venn-stage">
+          <svg viewBox="0 0 540 380">
+            <circle class="ring" data-key="ai" cx="270" cy="190" r="175" stroke="#5A5247" fill="rgba(94,82,71,.04)"/>
+            <circle class="ring" data-key="ml" cx="270" cy="190" r="135" stroke="#2D5B7A" fill="rgba(45,91,122,.05)"/>
+            <circle class="ring" data-key="rl" cx="270" cy="190" r="90" stroke="#A47B2E" fill="rgba(164,123,46,.07)"/>
+            <circle class="ring" data-key="dl" cx="270" cy="190" r="50" stroke="#C0492E" fill="rgba(192,73,46,.09)"/>
+            <text class="label" x="270" y="35" text-anchor="middle">AI · 인공지능</text>
+            <text class="label" x="270" y="73" text-anchor="middle">ML · 머신러닝</text>
+            <text class="label" x="270" y="118" text-anchor="middle">표상학습</text>
+            <text class="label" x="270" y="195" text-anchor="middle" style="fill:#C0492E;font-weight:600">DL</text>
           </svg>
-          <div class="ven-detail" id="ven-detail">
-            <p class="vd-key">선택된 영역</p>
-            <h4 id="vd-title">AI — Artificial Intelligence</h4>
-            <p class="vd-def" id="vd-def">“지능적으로 보이는” 컴퓨터 행동의 가장 넓은 우산. 명시적 규칙으로 짠 전문가 시스템도 AI고, 데이터로 학습한 모델도 AI다.</p>
-            <div class="vd-ex" id="vd-ex"><b>예시 —</b> 1997년 IBM Deep Blue가 카스파로프를 이긴 체스 엔진은 AI지만, 머신러닝은 아니다. 사람이 평가 함수와 탐색 규칙을 직접 적었다.</div>
-          </div>
+        </div>
+        <div class="venn-readout" id="vread">
+          <h5>마우스를 올려 보세요</h5>
+          <p>네 원 각각에 마우스를 올리면 정의, 예시, 그리고 "누가 결정하는가"가 나타납니다.</p>
         </div>
       </div>
-      <p class="widget-cap">동심원이 좁아질수록 “사람이 손으로 정해야 하는 부분”이 줄어든다. 시험에서 묻기 좋은 핵심 구분: <em>AI는 학습이 없어도 성립하지만, ML은 학습이 필수이고, 표상학습은 특징까지 학습하며, 딥러닝은 그 학습을 다층으로 쌓는다.</em></p>
+      <p class="widget-cap">바깥쪽 원은 가장 넓은 정의(AI)이고, 안으로 갈수록 학습이 차지하는 부분이 한 단계씩 늘어난다. 가장 안쪽(DL)은 표상까지 깊은 층으로 학습한다.</p>
     </div>
 
     <div class="prose">
-      <h2>강화학습(RL)은 어디에 속하는가</h2>
-      <p>시험에서 한 번씩 등장하는 함정 — 강화학습(reinforcement learning, RL)은 위 동심원의 어디에 속하는가? 답은 <strong>ML 안의 또 다른 갈래</strong>다. 흔히 “지도학습 / 비지도학습 / 강화학습”이 ML의 세 갈래로 나란히 놓이지만, 이 세 갈래의 구분은 “모델이 어떤 형태의 경험(experience)을 받는가”다.</p>
+      <h2>네 동심원, 한 칸씩 좁아지는 정의</h2>
 
-      <table class="symbols">
-        <tr><td><b>지도학습</b></td><td>입력 $x$와 정답 라벨 $y$가 짝지어진 데이터. 예측 함수를 학습한다. 분류, 회귀가 대표.</td></tr>
-        <tr><td><b>비지도학습</b></td><td>라벨 없는 데이터 분포 자체를 학습한다. 군집화, 밀도추정, 표상학습.</td></tr>
-        <tr><td><b>강화학습</b></td><td>환경과 상호작용해 보상(reward)을 받으며 정책을 학습한다. AlphaGo, 로봇 제어.</td></tr>
+      <p><strong>인공지능(artificial intelligence)</strong>은 가장 넓은 정의다. <em>"사람이 했을 때 지능적이라고 부를 만한 일을 컴퓨터가 하게 만드는 모든 시도"</em>라고 표현할 수 있다. 여기에는 머신러닝이 들어 있지만, 그 외에도 많은 것이 들어간다. 체스 프로그램의 미니맥스(minimax) 탐색, 1980년대의 전문가 시스템처럼 규칙을 손으로 적어 넣은 시스템, 자동 정리 증명기(theorem prover)도 모두 AI다. 이 단계에서는 "학습"이 본질 조건이 아니다. 사람이 모든 지식을 직접 인코딩(encoding)해도, 그것이 결과적으로 지능적인 행동을 만들면 AI다.</p>
+
+      <p><strong>머신러닝(machine learning)</strong>은 그 안에 들어가는 좁은 영역이다. 핵심 조건이 하나 추가된다. <em>"명시적으로 규칙을 적지 않고, 데이터로부터 패턴을 추출해서 행동을 결정해야 한다."</em> 즉, 지식을 손으로 적는 대신, 예시(example)를 보여 주고 그 안에서 규칙을 뽑아 내는 방식이다. 결정 트리(decision tree), 서포트 벡터 머신(SVM, support vector machine), 랜덤 포레스트(random forest), 로지스틱 회귀(logistic regression) 같은 전통적 모델이 모두 머신러닝에 속한다. 하지만 이 단계에서도 한 가지가 여전히 사람의 손에 남아 있다. 바로 <em>"어떤 특징(feature)을 입력으로 줄 것인가"</em>이다.</p>
+
+      <p>예를 들어 의료 데이터로 당뇨 여부를 예측한다고 하자. 머신러닝 단계에서는 "나이, 체질량지수, 공복 혈당, 혈압"이라는 특징을 사람이 골라서 입력으로 준다. 모델은 그 특징들 사이의 관계만 학습한다. 만약 영상 데이터 — 안저(eye fundus) 사진 — 를 그대로 던지면, 전통적 머신러닝은 잘 작동하지 못한다. 픽셀 자체가 좋은 특징이 아니기 때문이다. 그래서 비전 분야 사람들은 HOG, SIFT 같은 손으로 짠 특징 추출기(hand-crafted feature extractor)를 먼저 통과시키고, 그 출력을 머신러닝 모델에 넣었다. <strong>"어떤 특징을 줄 것인가"는 사람의 일</strong>이었다.</p>
+
+      <p><strong>표상학습(representation learning)</strong>은 이 자리에서 한 발 더 들어간다. <em>"특징조차도 학습으로 얻자"</em>는 발상이다. 원본 데이터(raw data) — 이미지의 픽셀, 음성의 파형, 텍스트의 글자 — 를 그대로 입력으로 받고, 모델 자체가 그 안에서 "예측에 유용한 표상"을 찾아낸다. 대표적인 예가 오토인코더(autoencoder)다. 오토인코더는 입력을 좁은 중간 층(hidden layer)으로 압축했다가 다시 펴서 원본을 복원하도록 학습한다. 학습이 끝나면 그 좁은 중간 층은 "원본의 본질을 짧게 요약하는 표상"이 된다. 이 표상이 사람이 손으로 짠 특징보다 자주 더 좋다. 이 단계에서 사라진 인간의 일은 <em>"특징을 무엇으로 정할지"</em>이고, 새로 모델이 떠맡은 일은 <em>"좋은 특징을 자기가 직접 찾아내는 것"</em>이다.</p>
+
+      <p><strong>딥러닝(deep learning)</strong>은 표상학습의 더 좁은 안쪽이다. <em>"표상을 한 번에 학습하지 않고, 여러 층으로 나누어 단계적으로 만들어 가자"</em>는 발상이다. 첫 층은 원본에서 가장 가까운 단순한 표상을 찾고, 두 번째 층은 첫 층의 출력을 받아서 더 추상적인 표상을 만들고, 세 번째 층은 다시 그 위에서 더 고차원의 개념을 만든다. 이미지라면 첫 층은 모서리(edge)나 색상 변화, 둘째 층은 모서리의 조합인 무늬와 모양 일부분(motif), 셋째 층은 사물의 부분(part), 그 다음 층은 사물 전체로 올라간다. 깊이가 핵심이라기보다, <em>표상을 여러 단계로 합성한다는 점</em>이 핵심이다. 이 합성의 힘이 무엇인지는 sub-chapter 04와 05에서 본격적으로 살핀다.</p>
+
+      <h3>네 단계의 "누가 결정하는가" 표</h3>
+
+      <table class="level-table">
+        <tr><th>단계</th><th>핵심 조건</th><th>사람이 결정</th><th>모델이 학습</th><th>대표 예시</th></tr>
+        <tr><td>AI</td><td>지능적 행동</td><td>전부 (규칙·지식)</td><td>없음 가능</td><td>체스 미니맥스, 전문가 시스템</td></tr>
+        <tr><td>ML</td><td>데이터로 학습</td><td>특징(feature)</td><td>특징 위 패턴</td><td>SVM, 랜덤 포레스트</td></tr>
+        <tr><td>표상학습</td><td>특징도 학습</td><td>모델 구조·손실</td><td>표상 자체</td><td>얕은 오토인코더</td></tr>
+        <tr><td>DL</td><td>표상을 깊이로</td><td>모델 구조·손실</td><td>여러 층의 합성 표상</td><td>CNN, Transformer</td></tr>
       </table>
 
-      <p>중요한 점은, 강화학습도 내부 정책 네트워크를 신경망으로 두면 “심층 강화학습(deep RL)”이 되어 동심원의 가장 안쪽으로 들어간다는 것이다. 즉 동심원은 “기술 갈래”가 아니라 “학습이 얼마나 깊은 자리까지 내려갔는가”를 나타내는 그림이라고 봐야 한다.</p>
+      <div class="analogy">
+        <b>요리사의 자동화 사다리.</b> AI = "어떤 방식으로든 손님에게 음식이 나오는 시스템"이다. 사람 요리사가 손으로 모든 걸 해도 좋다. ML = "레시피는 사람이 짜지만, 굽는 시간과 온도는 데이터로 결정한다." 표상학습 = "어떤 재료가 좋은지(특징)도 모델이 직접 발견한다." DL = "재료에서 손질, 양념, 굽기를 여러 단계로 나누어, 각 단계의 결정을 모두 학습한다." 안쪽으로 갈수록 자동화되는 부분이 한 단계씩 늘어난다.
+      </div>
 
-      <h2>네 단어를 한 줄씩 — 시험 직전 암송용</h2>
-      <p>각자 한 줄로 외우자. 시험에서 “구분하라” 문항이 나오면 이 4줄을 차례로 적기만 해도 절반은 답한 것이다.</p>
+      <h2>왜 이 순서로 좁아지는가</h2>
+      <p>이 동심원의 진짜 의미는 단순한 정의 정리가 아니라, <strong>"역사가 왜 이 순서로 흘렀는지"</strong>를 보여 준다는 데 있다. 처음에는 사람들이 지능적 행동 자체를 모방하려 했다(AI). 그러나 모든 규칙을 손으로 적는 것이 비현실적임을 깨닫고, 데이터에서 패턴을 뽑는 방식으로 넘어갔다(ML). 그러자 이번에는 "어떤 특징을 줄 것인가"가 새로운 병목이 되었고, 그 자리도 자동화하려는 시도가 등장했다(표상학습). 표상을 한 번에 짜는 것이 어려우니, 단계로 나누자는 발상이 마지막 안쪽 동심원이 되었다(DL). 즉, <em>안쪽 동심원으로 갈수록 자동화되는 인간의 결정이 한 칸씩 늘어난다.</em></p>
 
-      <ul class="checklist">
-        <li><b>AI</b> — 지능적으로 보이는 컴퓨터 행동의 가장 넓은 우산. 학습이 없어도 성립한다.</li>
-        <li><b>ML</b> — 데이터에서 입력↔출력 함수를 학습한다. 좋은 특징(feature)은 여전히 사람이 설계한다.</li>
-        <li><b>표상학습</b> — 특징까지 모델이 데이터에서 뽑게 한다. 사람의 손이 한 단계 더 떨어진다.</li>
-        <li><b>딥러닝</b> — 표상학습을 여러 층으로 쌓아 단순한 표상에서 복잡한 표상까지 단계적으로 배운다.</li>
-      </ul>
+      <p>이 순서를 반대 방향으로 읽으면, <strong>"딥러닝의 성공은 단순히 신경망이 똑똑해서가 아니라, 사람이 손으로 짜던 부분을 한 단계 더 모델에게 넘긴 결과"</strong>라는 사실이 분명해진다. 이 관점은 새로운 모델이 나올 때마다 "이번에는 어떤 결정을 더 모델에게 넘긴 것인가?"라는 질문을 자연스럽게 떠올리게 한다. 예컨대 Transformer는 시퀀스 처리에서 "어디에 주목할지(attention)"라는 결정을 사람의 손에서 모델로 넘긴 사례이고, BERT는 "어떤 사전훈련 과제를 풀게 할지"라는 자리를 마스크 언어 모델링(MLM, masked language modeling)으로 자동화한 사례다. 이 시각은 시험 범위의 모든 모델(P1 FGSM, P2 NST, P3 Transformer, P4 BERT)을 하나의 줄기로 묶어 준다.</p>
 
-      <p>다음 절에서는 “여러 층으로 쌓는다”는 말이 왜 그토록 중요한지, 즉 <strong>깊이(depth)가 실제로 무엇을 만드는지</strong>를 표상의 사다리로 직접 본다.</p>
+      <div class="analogy">
+        <b>병원의 직급.</b> 대형 병원에 가면 환자(데이터)가 들어왔을 때 누가 무엇을 결정하는지가 명확히 나뉘어 있다. 접수 데스크는 환자 분류만, 간호사는 기본 진단만, 전공의는 1차 치료, 전문의는 어려운 결정. 안쪽 직급으로 갈수록 책임 범위가 좁아지고 전문성이 깊어진다. AI → ML → 표상학습 → DL의 동심원도 같은 구조다. 안쪽으로 갈수록 결정의 범위가 좁아지고 자동화의 깊이가 깊어진다.
+      </div>
+
+      <p>요약하자. <strong>AI ⊃ ML ⊃ 표상학습 ⊃ DL.</strong> 안으로 갈수록 사람의 손에서 모델의 손으로 결정이 한 단계씩 옮겨 간다. 이 한 장의 그림을 들고 다음 sub-chapter로 넘어가자. 이제 표상학습이 정확히 무엇인지, 그리고 왜 그것이 "좋은 표상의 발견"이라는 새로운 문제를 낳는지를 본격적으로 살핀다.</p>
     </div>
 
     <nav class="ch-foot"></nav>
@@ -116,90 +116,61 @@
 </div>
 
 <script>
-  const SUBS = [
-    { no:'01', t:'표상의 문제', f:'01.html' },
-    { no:'02', t:'AI/ML/RL/DL 동심원', f:'02.html' },
-    { no:'03', t:'깊이가 만드는 것', f:'03.html' },
-    { no:'04', t:'역사적 굴곡', f:'04.html' },
-    { no:'05', t:'데이터/모델/계산 삼각형', f:'05.html' },
-    { no:'06', t:'시험 대비 체크리스트', f:'06.html' },
-  ];
-  const CURRENT = '02';
-  (function buildNav() {
-    document.querySelector('.topbar').innerHTML =
-      `<a class="home" href="index.html">← Chapter 01 — 딥러닝이란 무엇인가</a>` +
-      `<span class="ch-mini">SUB ${CURRENT} / 06</span>`;
-    document.querySelector('.ch-nav ol').innerHTML = SUBS.map(s =>
-      `<li><a href="${s.f}" ${s.no === CURRENT ? 'class="current"' : ''}>${s.t}</a></li>`).join('');
-    const i = SUBS.findIndex(s => s.no === CURRENT);
-    const prev = i > 0 ? SUBS[i-1] : { f:'index.html', t:'챕터 표지', no:'' };
-    const next = i < SUBS.length-1 ? SUBS[i+1] : { f:'index.html', t:'챕터 표지', no:'' };
-    document.querySelector('.ch-foot').innerHTML =
-      `<a href="${prev.f}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
-      `<a href="${next.f}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
-    const bar = document.querySelector('.scroll-progress');
-    const onScroll = () => {
-      const h = document.documentElement;
-      const max = h.scrollHeight - h.clientHeight;
-      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
-    };
-    document.addEventListener('scroll', onScroll, { passive: true }); onScroll();
-  })();
-
-  // ===== 동심원 인터랙션 =====
-  (function venn() {
-    const data = {
-      ai: {
-        title: 'AI — Artificial Intelligence',
-        def: '“지능적으로 보이는” 컴퓨터 행동의 가장 넓은 우산. 명시적 규칙으로 짠 전문가 시스템도 AI고, 데이터로 학습한 모델도 AI다. 학습이 필수 조건은 아니다.',
-        ex: '1997년 IBM Deep Blue가 카스파로프를 이긴 체스 엔진은 AI지만 머신러닝은 아니다. 사람이 평가 함수와 탐색 규칙을 직접 적었다.',
-      },
-      ml: {
-        title: 'ML — Machine Learning',
-        def: '데이터에서 입력 $x$와 출력 $y$ 사이의 함수를 학습한다. 사람이 규칙을 다 적지 않아도 되지만, “어떤 특징을 보라”는 지정은 여전히 사람이 한다.',
-        ex: '환자 사망 위험 예측에서 “나이, 혈압, 기존 진단명”을 입력으로 받는 로지스틱 회귀. 특징은 의사가 추렸고, 모델은 그 위에서 가중치를 학습한다.',
-      },
-      rl: {
-        title: 'Representation Learning — 표상학습',
-        def: '특징(feature)까지 모델이 데이터에서 뽑게 한다. 사람의 손이 한 단계 더 떨어진다. 좋은 특징이 무엇인지 사전에 알 수 없는 음성/이미지/자연어에서 핵심.',
-        ex: 'word2vec — “고양이”라는 단어 자체를 사람이 어떻게 표현할지 정하지 않고, 주변 단어 통계로부터 벡터 표현을 학습한다.',
-      },
-      dl: {
-        title: 'Deep Learning — 딥러닝',
-        def: '표상학습을 여러 층(layer)으로 쌓아, 단순한 표상(픽셀의 모서리)에서 복잡한 표상(얼굴, 객체)까지 단계적으로 배운다. “깊이”는 층 수가 아니라 합성의 깊이.',
-        ex: '얼굴 인식 CNN — 1층은 가로/세로 에지, 중간 층은 눈/코/입 부위, 마지막 층은 “이 사람이 누구인가”까지 계층적으로 잡는다.',
-      },
-    };
-    const rings = document.querySelectorAll('.ven-ring');
-    const titleEl = document.getElementById('vd-title');
-    const defEl = document.getElementById('vd-def');
-    const exEl = document.getElementById('vd-ex');
-    let active = 'ai';
-    function render(k) {
-      active = k;
-      rings.forEach(r => r.classList.toggle('active', r.dataset.key === k));
-      titleEl.textContent = data[k].title;
-      defEl.innerHTML = data[k].def;
-      exEl.innerHTML = '<b>예시 —</b> ' + data[k].ex;
-      if (window.renderMathInElement) {
-        renderMathInElement(defEl, { delimiters: [{left:'$',right:'$',display:false}], throwOnError:false });
-      }
-    }
-    rings.forEach(r => {
-      r.addEventListener('mouseenter', () => render(r.dataset.key));
-      r.addEventListener('click', () => render(r.dataset.key));
+const SUBS = [
+  { no:'01', t:'표상의 문제' },
+  { no:'02', t:'AI · ML · 표상학습 · DL' },
+  { no:'03', t:'표상학습이란 무엇인가' },
+  { no:'04', t:'깊이 1 — 표상의 사다리' },
+  { no:'05', t:'깊이 2 — 합성성' },
+  { no:'06', t:'역사 1 — 사이버네틱스' },
+  { no:'07', t:'역사 2 — 연결주의' },
+  { no:'08', t:'역사 3 — 부활과 폭발' },
+  { no:'09', t:'폭발 1 — 데이터' },
+  { no:'10', t:'폭발 2 — 계산' },
+  { no:'11', t:'폭발 3 — 모델 크기' },
+  { no:'12', t:'응용 — 어디까지' },
+  { no:'13', t:'시험 대비 체크리스트' },
+];
+function buildNav(cur) {
+  const ol = document.querySelector('.ch-nav ol');
+  ol.innerHTML = SUBS.map(s =>
+    `<li><a href="${s.no}.html"${s.no===cur?' class="current"':''}>${s.t}</a></li>`).join('');
+  const tb = document.querySelector('.topbar');
+  tb.innerHTML = `<a class="home" href="index.html">← Ch.01 표지</a><span class="ch-mini">SUB ${cur} / 13</span>`;
+  const i = SUBS.findIndex(s => s.no === cur);
+  const prev = i > 0 ? SUBS[i-1] : { no:'', t:'챕터 표지로' };
+  const next = i < SUBS.length-1 ? SUBS[i+1] : { no:'', t:'챕터 표지로' };
+  const ph = prev.no ? prev.no+'.html' : 'index.html';
+  const nh = next.no ? next.no+'.html' : 'index.html';
+  document.querySelector('.ch-foot').innerHTML =
+    `<a href="${ph}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+    `<a href="${nh}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+}
+function progressBar() {
+  const bar = document.querySelector('.scroll-progress');
+  document.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max>0 ? (h.scrollTop/max)*100 : 0) + '%';
+  }, { passive: true });
+}
+const READS = {
+  ai:  { t:'AI · 인공지능 (가장 바깥)', d:'사람이 했을 때 지능적이라고 부를 만한 일을 컴퓨터가 하게 만드는 모든 시도. "학습"이 본질 조건이 아니다.', ex:'예: 체스 미니맥스 탐색, 1980년대 전문가 시스템, 자동 정리 증명기' },
+  ml:  { t:'ML · 머신러닝', d:'명시적 규칙 대신 데이터에서 패턴을 추출해 행동을 결정. 단, 어떤 "특징"을 입력으로 줄지는 사람이 결정한다.', ex:'예: SVM, 결정 트리, 랜덤 포레스트, 로지스틱 회귀' },
+  rl:  { t:'표상학습', d:'특징 자체도 학습으로 얻는다. 원본 데이터(픽셀·파형·글자)를 그대로 받아 좋은 표상을 모델이 찾아낸다.', ex:'예: 얕은 오토인코더, word2vec, PCA(가장 단순한 형태)' },
+  dl:  { t:'DL · 딥러닝 (가장 안쪽)', d:'표상을 여러 층으로 합성해 단계적으로 만든다. 각 층이 이전 층의 출력을 받아 더 추상적인 표상을 만든다.', ex:'예: CNN, RNN, Transformer, 깊은 오토인코더' },
+};
+window.addEventListener('load', () => {
+  buildNav('02');
+  progressBar();
+  const rd = document.getElementById('vread');
+  document.querySelectorAll('.venn-stage .ring').forEach(c => {
+    c.addEventListener('mouseenter', () => {
+      const r = READS[c.dataset.key];
+      rd.innerHTML = `<h5>${r.t}</h5><p>${r.d}</p><span class="ex">${r.ex}</span>`;
     });
-    render('ai');
-  })();
-
-  window.addEventListener('load', () => {
-    if (window.renderMathInElement) {
-      renderMathInElement(document.body, {
-        delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
-        throwOnError: false,
-      });
-    }
   });
+});
 </script>
 </body>
 </html>

@@ -3,36 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>06 · 시험 대비 — Ch.14</title>
+<title>06 — DAE 점수 매칭 해석 — Ch.14</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
-  /* 시험 대비 — 요약 카드 + 비교 표 + Q&A */
-  .summary-card { max-width: var(--measure); margin: 1.8rem auto; padding: 1.6rem 1.6rem 1.4rem; border-radius: 14px; background: linear-gradient(180deg, #fff, var(--paper-2)); border: 1px solid var(--line); box-shadow: var(--shadow-plate); }
-  .summary-card h2 { margin-top: 0; font-size: 1.5rem; }
-  .summary-card .leadrow { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; margin: 1rem 0 1.4rem; }
-  .summary-card .leadrow .b { padding: .8rem .9rem; border-radius: 9px; background: var(--paper); border: 1px solid var(--line-soft); }
-  .summary-card .leadrow .b b { display: block; font-family: var(--serif); font-size: 1.05rem; color: var(--ink); margin-bottom: .25rem; }
-  .summary-card .leadrow .b span { font-size: .85rem; color: var(--ink-soft); line-height: 1.45; }
-  .summary-card .leadrow .b.q b { color: var(--style); }
-  .summary-card .leadrow .b.a b { color: var(--structure); }
-  @media (max-width: 600px) { .summary-card .leadrow { grid-template-columns: 1fr; } }
-
-  /* 비교 표 */
-  .ae-table { max-width: var(--measure); margin: 1.4rem auto 1.6rem; padding-inline: 1.4rem; }
-  .ae-table table { width: 100%; border-collapse: collapse; font-size: .9rem; background: #fff; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
-  .ae-table th, .ae-table td { padding: .65rem .8rem; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line-soft); }
-  .ae-table th { background: var(--paper-2); font-family: var(--mono); font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-soft); }
-  .ae-table tr:last-child td { border-bottom: none; }
-  .ae-table tr:hover td { background: var(--paper); }
-  .ae-table .name { font-family: var(--serif); font-weight: 600; color: var(--structure); }
-
-  /* 키워드 칩 */
-  .keyword-row { max-width: var(--measure); margin: 1.4rem auto; padding-inline: 1.4rem; display: flex; flex-wrap: wrap; gap: .4rem; }
-  .keyword-row .k { padding: .35rem .7rem; border-radius: 14px; background: var(--paper); border: 1px solid var(--line); font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); }
-  .keyword-row .k b { color: var(--style); }
+  .score-stage { padding: 1.4rem 1.2rem 1rem; display: grid; grid-template-columns: 1fr; gap: .8rem; }
+  .score-stage canvas { display: block; width: 100%; max-width: 720px; aspect-ratio: 16/10; border-radius: 10px; border: 1px solid var(--line); background: #fff; margin: 0 auto; }
+  .verdict { padding: .9rem 1.2rem; border-top: 1px solid var(--line-soft); background: var(--paper); font-size: .9rem; color: var(--ink-soft); line-height: 1.55; }
+  .verdict b.ok { color: var(--structure); } .verdict b.bad { color: var(--style); } .verdict b.mid { color: var(--synth); }
 </style>
 </head>
 <body>
@@ -44,114 +24,74 @@
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Sub 06 · 기말고사 한 장 요약과 예상 문제</span>
-      <h1>시험 대비 —<br><span class="t-style">한 장 요약</span>과 빈출 질문 카드</h1>
-      <p class="lede">14장의 모든 내용을 한 페이지에 압축한다. 핵심 한 문장, 비교 표, 자주 나오는 다섯 가지 질문에 대한 한 줄 답안. 시험장에서 바로 떠올릴 수 있는 형태.</p>
+      <span class="kicker">Sub 06 — DAE의 화살표 = 데이터 로그 밀도의 기울기</span>
+      <h1>잡음 제거 AE의 <span class="t-synth">점수 매칭</span> 해석 — DAE와 확률 분포를 잇는 한 줄</h1>
+      <p class="lede">DAE가 학습한 "복원 화살표"가 사실은 데이터 로그 밀도의 기울기, 즉 통계학에서 점수(score)라 부르는 양에 비례한다는 정리. 이 한 줄이 DAE를 확률 모델로 끌어올리고, 확산 모델의 이론적 출발점이 된다.</p>
     </header>
 
     <div class="prose">
-      <h2>1) 한 문장 요약</h2>
-    </div>
+      <p>앞 절에서 DAE를 "매니폴드로 끌어당기는 사영 연산자"로 그렸다. 이 절은 그 끌어당김이 사실 한 가지 정확한 통계적 양을 추정하고 있음을 보인다. 그 양의 이름은 <strong>점수(score)</strong>이고, 데이터 분포 $p_{\text{data}}(x)$의 로그를 입력 $x$에 대해 미분한 벡터다.</p>
 
-    <div class="summary-card">
-      <h2>14장 핵심 — 한 줄</h2>
-      <p style="font-size: 1.05rem; line-height: 1.6;"><strong>자기부호화기는 입력을 입력으로 매핑하는 신경망이지만, 항등 함수가 되지 않도록 손발을 묶어 두어야 비로소 데이터의 구조를 학습한다.</strong> 손발을 묶는 방식(미완전·잡음 제거·수축적)이 자기부호화기의 종류를 결정하며, 학습 결과는 모두 같은 한 가지 — 데이터 매니폴드의 모양 — 로 수렴한다.</p>
-      <div class="leadrow">
-        <div class="b q"><b>왜 항등 함수가 위험한가</b><span>입력과 타깃이 같은 학습은 데이터를 외워서 완벽한 손실 0을 달성할 수 있다. 그러면 학습한 것은 색인표일 뿐 데이터 구조가 아니다.</span></div>
-        <div class="b a"><b>해결은 정칙화</b><span>잠재 차원을 좁히거나(미완전), 입력에 노이즈를 섞거나(DAE), 자코비안에 페널티를 주거나(CAE). 셋 다 같은 매니폴드 학습으로 귀결.</span></div>
+      <p>$$s(x) \;\equiv\; \nabla_x \log p_{\text{data}}(x)$$</p>
+
+      <p>식의 모든 기호를 풀어 보자. $\nabla_x$는 입력 벡터 $x$의 각 성분에 대한 편미분을 모은 그래디언트 벡터다. $\log p_{\text{data}}(x)$는 데이터 분포의 로그 밀도다. 둘을 합치면 "데이터 로그 밀도가 가장 가파르게 증가하는 방향과 그 속도"가 된다. 이 벡터가 가리키는 방향으로 입력을 움직이면 그 입력이 데이터 분포에서 더 그럴듯해지고, 반대 방향으로 움직이면 덜 그럴듯해진다. 점수는 통계학에서 "분포의 모양을 가장 압축적으로 표현한 양" 중 하나로, 정규화 상수(normalizing constant)에 의존하지 않는다는 큰 장점을 가진다.</p>
+
+      <div class="analogy">
+        <b>안개 낀 산속의 등산객.</b> 데이터 분포를 산의 지형이라고 하자. 봉우리(밀도가 높은 곳)는 진짜 데이터가 모여 있는 곳이고, 골짜기(밀도가 낮은 곳)는 그렇지 않은 곳이다. 안개가 자욱해서 등산객은 봉우리가 어디 있는지 직접 볼 수 없다. 그러나 발 밑의 <em>기울기</em>를 느낄 수 있다면, "위쪽으로 한 걸음 옮기면 점점 봉우리에 가까워진다"는 사실은 알 수 있다. 그 발 밑의 기울기가 곧 점수다. 데이터 밀도의 정확한 값을 몰라도 어디로 가야 할지는 알 수 있다 — 이것이 점수가 분포의 정규화 상수를 모르고도 의미가 있는 이유다.
       </div>
+
+      <h2>핵심 정리 — DAE의 화살표 = 점수에 비례</h2>
+      <p>Vincent(2011)의 정리에 따르면, 입력에 가우시안 잡음 $\epsilon \sim \mathcal{N}(0, \sigma^2 I)$을 가해서 학습한 DAE의 복원 출력 $r(\tilde{x}) = g(f(\tilde{x}))$는 다음 관계를 만족한다.</p>
+
+      <p>$$r(\tilde{x}) - \tilde{x} \;\propto\; \sigma^2 \cdot \nabla_{\tilde{x}} \log p_{\text{data}}(\tilde{x})$$</p>
+
+      <p>식의 의미를 단어로 풀자. 왼쪽 $r(\tilde{x}) - \tilde{x}$는 "DAE가 망가진 입력에서 출력까지 그린 화살표", 즉 매니폴드로 끌어당기는 벡터다. 오른쪽 $\nabla_{\tilde{x}} \log p_{\text{data}}(\tilde{x})$는 같은 위치에서 평가한 데이터 로그 밀도의 그래디언트다. 비례 상수 $\sigma^2$은 노이즈의 분산이다. 한 줄로 말하면 <strong>"DAE의 복원 화살표는 데이터 분포의 점수에 비례한다."</strong></p>
+
+      <p>왜 이렇게 되는가의 직관은 이렇다. 모델이 학습 데이터에서 본 깨끗한 $x$는 데이터 분포 $p_{\text{data}}$에서 뽑힌 것이다. 노이즈로 $\tilde{x}$를 만들었을 때 모델에게 요구되는 "최적의 복원"은 베이즈 규칙(Bayes' rule)으로 표현되며, 그 결과는 사후 평균(posterior mean) $\mathbb{E}[x \mid \tilde{x}]$이다. 가우시안 잡음의 경우 이 사후 평균과 $\tilde{x}$의 차이가 정확히 분포 기울기에 비례하는 형태로 정리된다. 자세한 수식 유도는 책의 14장 후반과 Vincent의 논문에 있으며, 시험 답안에서는 "DAE의 복원-입력 차이가 score에 비례한다"는 정리 자체와 그 의미를 적는 것으로 충분하다.</p>
+
+      <p>이 정리의 무게는 그 함의에 있다. <strong>DAE는 확률 분포 $p_{\text{data}}$를 명시적으로 모델링하지 않으면서도 그 분포에 대한 정보를 학습한다.</strong> 잠재 변수도, 정규화 상수도 다루지 않는다. 그저 "노이즈를 제거하라"는 과제만 풀게 했는데, 모델 내부에는 데이터 분포의 기울기가 새겨진다. 책은 이를 "DAE는 암묵적으로 점수 매칭(score matching)을 수행한다"고 표현한다.</p>
+
+      <div class="analogy">
+        <b>지진계가 산의 지형을 그리는 일.</b> 지진계는 진동의 세기만 잴 수 있고 산의 높이를 직접 측정하지는 못한다. 그러나 여러 지점에서 진동의 기울기를 모으면 산의 등고선을 복원할 수 있다. DAE도 마찬가지다. 어떤 한 점의 데이터 밀도를 직접 알지 못해도, 모든 점에서 "어느 방향으로 움직여야 더 그럴듯해지는가"를 안다면 분포 전체의 모양이 사실상 다 그려진 것이다.
+      </div>
+
+      <h2>왜 이 결과가 그렇게 중요한가</h2>
+      <p>이 한 줄이 2020년 이후 모든 확산 모델(diffusion model)의 이론적 토대가 된다. Stable Diffusion, DALL-E 3, Imagen, Sora, 그리고 2026년 현재 상용 생성 모델 대부분이 이 점수 학습(score-based learning)의 사촌이다. 한 줄로 그 연결을 정리하면 이렇다.</p>
+
+      <p>확산 모델은 데이터를 점진적으로 더 큰 노이즈로 망가뜨리는 일련의 단계를 정의하고, 각 단계에서 그 노이즈를 약간씩 되돌리는 신경망을 학습한다. 학습된 그 네트워크가 추정하는 것이 바로 단계별 데이터 분포의 점수다. 추론 시에는 순수 가우시안 잡음에서 출발해, 점수를 따라 "더 그럴듯한 방향"으로 한 걸음씩 움직이는 식으로 데이터를 생성한다. 즉 확산 생성의 매 스텝이 사실 DAE 한 번이다. DAE 한 번에서는 "어떤 한 노이즈 레벨의 매니폴드로 끌어당기기"가 일어나고, 그것을 여러 노이즈 레벨에 걸쳐 누적하면 순수 잡음에서 데이터로 가는 경로가 된다.</p>
+
+      <p>아래 위젯에서 이 그림을 직접 본다. 2차원 데이터 분포 위에 점수 벡터장을 그리고, DAE가 학습한 복원 화살표를 옆에 그려서 둘이 같은 패턴을 그린다는 사실을 확인한다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 06</span><span>점수 벡터장 — 데이터 매니폴드로 향하는 화살표</span></div>
+        <div class="score-stage">
+          <canvas id="score-canvas"></canvas>
+        </div>
+        <div class="widget-controls">
+          <div class="slider" style="flex:1; min-width:240px;">
+            <label>잡음 표준편차 <b id="sc-sval">σ = 0.20</b></label>
+            <input type="range" id="sc-s" min="0.05" max="0.6" step="0.01" value="0.2">
+          </div>
+          <div class="legend">
+            <span><i style="background:var(--structure)"></i> 데이터 분포(매니폴드)</span>
+            <span><i style="background:var(--style)"></i> 점수 화살표 = DAE 복원 방향</span>
+          </div>
+        </div>
+        <div class="verdict" id="sc-verdict"></div>
+      </div>
+      <p class="widget-cap">2차원 공간 위에 데이터 분포는 곡선 모양이다. 격자 위 각 점에서 화살표는 "데이터로 가는 방향"을 가리킨다. 이것이 정확히 점수 $\nabla \log p(x)$이고 동시에 DAE가 학습한 복원 화살표다. σ가 클수록 매니폴드에서 멀리 떨어진 곳까지 강하게 끌어당긴다.</p>
     </div>
 
     <div class="prose">
-      <h2>2) 네 종류의 자기부호화기 비교</h2>
-      <p>시험에 가장 자주 나오는 형식이 "이 자기부호화기는 어떤 종류이고 손실 함수가 어떻게 되는가"이다. 한 표로 정리해 두면 답안 작성이 훨씬 빨라진다.</p>
-    </div>
+      <h2>한 줄로 외워 두는 요약</h2>
+      <p>시험 답안의 한 줄. <strong>"DAE의 복원에서 입력을 뺀 벡터 $g(f(\tilde{x})) - \tilde{x}$는 가우시안 잡음 가정 하에 데이터 로그 밀도의 그래디언트, 즉 점수 $\nabla \log p(x)$에 비례한다. 따라서 DAE는 명시적으로 분포를 모델링하지 않으면서도 점수 매칭(score matching)을 암묵적으로 수행한다. 이 결과가 확산 모델의 이론적 출발점이다."</strong></p>
 
-    <div class="ae-table">
-      <table>
-        <thead>
-          <tr><th>종류</th><th>제약 방식</th><th>손실 함수 (핵심항)</th><th>학습되는 것</th></tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td class="name">미완전 (Undercomplete)</td>
-            <td>잠재 차원 dim(h) &lt; dim(x)</td>
-            <td>$\|x - g(f(x))\|^2$</td>
-            <td>선형이면 PCA 부분공간, 비선형이면 휘어진 매니폴드</td>
-          </tr>
-          <tr>
-            <td class="name">희소 (Sparse)</td>
-            <td>잠재 활성에 L1/KL 페널티</td>
-            <td>$\|x - g(f(x))\|^2 + \lambda \|h\|_1$</td>
-            <td>대부분 0인 코드. 희소 코딩의 feed-forward 일반화</td>
-          </tr>
-          <tr>
-            <td class="name">잡음 제거 (DAE)</td>
-            <td>입력에 노이즈 (가우시안·마스킹)</td>
-            <td>$\|x - g(f(\tilde{x}))\|^2,\; \tilde{x} \sim C(\tilde{x}\|x)$</td>
-            <td>데이터 매니폴드. 점수 매칭 해석 → 확산 모델의 뿌리</td>
-          </tr>
-          <tr>
-            <td class="name">수축적 (CAE)</td>
-            <td>인코더 자코비안에 페널티</td>
-            <td>$\|x - g(f(x))\|^2 + \lambda \|\partial f/\partial x\|_F^2$</td>
-            <td>매니폴드 접선 방향에만 민감한 코드</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+      <p>이 한 줄에서 평가자가 확인하려는 키워드는 다음 다섯이다. (1) 가우시안 잡음 가정, (2) 복원 - 입력의 형태, (3) 그것이 그래디언트 of 로그 밀도, (4) 점수 매칭이라는 용어, (5) 확산 모델과의 연결. 다섯이 모두 들어가면 답안의 완성도가 높다.</p>
 
-    <div class="prose">
-      <h2>3) 핵심 키워드</h2>
-      <p>시험 답안에서 자연스럽게 등장해야 하는 용어들. 영어 원어를 괄호 안에 함께 쓰는 습관이 인상을 좌우한다.</p>
-    </div>
-
-    <div class="keyword-row">
-      <span class="k"><b>encoder</b>  f(x) → h</span>
-      <span class="k"><b>decoder</b>  g(h) → r</span>
-      <span class="k"><b>latent code</b>  h</span>
-      <span class="k"><b>reconstruction loss</b>  ‖x − r‖²</span>
-      <span class="k"><b>identity function</b>  항등 함수의 함정</span>
-      <span class="k"><b>undercomplete</b>  dim(h) &lt; dim(x)</span>
-      <span class="k"><b>overcomplete</b>  dim(h) ≥ dim(x)</span>
-      <span class="k"><b>denoising AE</b>  DAE</span>
-      <span class="k"><b>contractive AE</b>  CAE</span>
-      <span class="k"><b>Jacobian penalty</b>  ‖∂f/∂x‖²_F</span>
-      <span class="k"><b>score matching</b>  ∇ log p</span>
-      <span class="k"><b>manifold</b>  데이터가 사는 곡면</span>
-      <span class="k"><b>tangent space</b>  접선 공간</span>
-      <span class="k"><b>PCA equivalence</b>  선형 미완전 AE</span>
-      <span class="k"><b>semantic hashing</b>  이진 코드 해싱</span>
-    </div>
-
-    <div class="prose">
-      <h2>4) 빈출 다섯 문제 — 한 줄 답안</h2>
-      <p>아래 다섯 가지는 같은 주제로 출제되더라도 표현만 바꿔 반복적으로 등장하는 형태다. 각 카드를 눌러 답안의 핵심 한 줄과 그 근거를 펼쳐 볼 수 있다.</p>
-    </div>
-
-    <div class="qa-block" id="qa-block"></div>
-
-    <div class="prose">
-      <h2>5) 시험 직전 체크리스트</h2>
-      <p>시험장 들어가기 직전에 다섯 분 동안 머릿속에 다시 새기면 좋은 항목들. 모든 자기부호화기 문제는 결국 이 다섯 가지를 묻는다.</p>
-      <ul class="checklist">
-        <li>자기부호화기의 두 부분 — 인코더 $h = f(x)$와 디코더 $r = g(h)$. 손실은 일반적으로 $\|x - r\|^2$.</li>
-        <li>항등 함수의 함정 — 손실이 0이 되도록 외울 수 있다. 정칙화가 필요한 이유.</li>
-        <li>네 가지 정칙화 — 미완전(차원 좁힘), 희소(L1 페널티), DAE(노이즈), CAE(자코비안 페널티).</li>
-        <li>선형 미완전 AE는 PCA와 같은 부분공간을 학습한다. 단 축은 PCA와 같지 않을 수 있다(회전).</li>
-        <li>DAE는 점수 매칭과 동등하다 — $g(f(\tilde{x})) - \tilde{x} \propto \nabla \log p(\tilde{x})$. 모든 정칙화 AE는 결국 데이터 매니폴드를 학습한다.</li>
-      </ul>
-
-      <h2>6) 13장·15장과의 다리</h2>
-      <p>14장은 단독으로 출제되기보다 13장 또는 15장과 묶여 나오는 경우가 많다. 한 문장씩만 외워 두자.</p>
-      <ul>
-        <li><strong>13장 → 14장</strong>. 선형 인자 모델(PCA·인자 분석·ICA·희소 코딩)은 모두 평평한 매니폴드를 가정한다. 자기부호화기는 인코더·디코더를 비선형으로 일반화하여 휘어진 매니폴드를 배운다.</li>
-        <li><strong>14장 → 15장</strong>. 자기부호화기가 만드는 표상은 그 자체로 분류·검색·전이 학습의 입력이 된다. 15장은 "이렇게 얻은 표상이 어떤 의미에서 좋은가, 어떻게 평가하는가"를 다룬다.</li>
-      </ul>
-
-      <h2>마치며</h2>
-      <p>14장의 가장 깊은 통찰을 한 줄로 다시 적으면 다음과 같다. <strong>"좋은 자기부호화기란 데이터를 외우지 못하게 손발을 묶어 두었을 때, 그 묶임 속에서도 살아남는 표상을 만든다."</strong> 그 살아남은 표상은 항상 데이터 매니폴드의 모양과 같다. 어떤 종류의 손발 묶기든, 충분히 학습되면 같은 곳에 도달한다.</p>
-      <p>이 통찰이 다음 장의 표상 학습으로 자연스럽게 연결된다. 또한 이 장의 DAE는 2026년 현재 모든 생성형 AI의 기반이 된 <strong>확산 모델</strong>의 직계 조상이다. 1세대 자기부호화기에서 출발한 한 줄의 아이디어 — "노이즈를 제거하는 것은 데이터 분포의 기울기를 따라가는 것이다" — 가 지금 우리가 보는 Stable Diffusion, DALL-E, Imagen, Sora 모두의 핵심에서 작동하고 있다.</p>
+      <h2>다음 절 미리보기 — 같은 목표를 해석적으로 달성하는 CAE</h2>
+      <p>DAE는 입력에 무작위 잡음을 가해서 모델이 매니폴드를 학습하게 만든다. 노이즈를 가하는 것은 일종의 "확률적 페널티"라고 볼 수 있다. 다음 <a href="07.html">Sub 07: 수축적 AE</a>에서는 같은 목표(매니폴드 학습)를 노이즈 없이 명시적인 페널티항 — 인코더 자코비안 행렬의 프로베니우스 노름의 제곱 — 으로 달성하는 방법을 본다. DAE와 CAE는 같은 목표의 확률적 쌍둥이와 해석적 쌍둥이다.</p>
     </div>
 
     <nav class="ch-foot"></nav>
@@ -159,20 +99,25 @@
 </div>
 
 <script>
-  // ===== Ch.14 sub-chapter nav =====
   const SUBS = [
-    { no:'01', t:'자기부호화기의 기본', f:'01.html' },
-    { no:'02', t:'미완전 자기부호화기', f:'02.html' },
-    { no:'03', t:'잡음 제거 AE (DAE)', f:'03.html' },
-    { no:'04', t:'수축적 AE (CAE)', f:'04.html' },
-    { no:'05', t:'AE와 매니폴드 학습', f:'05.html' },
-    { no:'06', t:'시험 대비', f:'06.html' },
+    { no:'01', t:'자기부호화기란 무엇인가', f:'01.html' },
+    { no:'02', t:'인코더 · 디코더 · 재구성 손실', f:'02.html' },
+    { no:'03', t:'미완전 자기부호화기', f:'03.html' },
+    { no:'04', t:'과완전 AE의 위험', f:'04.html' },
+    { no:'05', t:'잡음 제거 AE — 매니폴드', f:'05.html' },
+    { no:'06', t:'잡음 제거 AE — 점수 매칭', f:'06.html' },
+    { no:'07', t:'수축적 AE — 자코비안', f:'07.html' },
+    { no:'08', t:'AE와 매니폴드 학습', f:'08.html' },
+    { no:'09', t:'AE vs PCA', f:'09.html' },
+    { no:'10', t:'스파스 AE', f:'10.html' },
+    { no:'11', t:'변분 AE 맛보기', f:'11.html' },
+    { no:'12', t:'시험 대비 체크리스트', f:'12.html' },
   ];
   const CURRENT = '06';
   (function buildNav() {
     document.querySelector('.topbar').innerHTML =
-      `<a class="home" href="index.html">← Chapter 14 · 자기부호화기</a>` +
-      `<span class="ch-mini">SUB ${CURRENT} / 06</span>`;
+      `<a class="home" href="index.html">← Chapter 14 — 자기부호화기</a>` +
+      `<span class="ch-mini">SUB ${CURRENT} / 12</span>`;
     document.querySelector('.ch-nav ol').innerHTML = SUBS.map(s =>
       `<li><a href="${s.f}" ${s.no === CURRENT ? 'class="current"' : ''}>${s.t}</a></li>`).join('');
     const i = SUBS.findIndex(s => s.no === CURRENT);
@@ -190,54 +135,113 @@
     document.addEventListener('scroll', onScroll, { passive: true }); onScroll();
   })();
 
-  // ===== Q&A 아코디언 =====
-  const QA = [
-    {
-      n: 'Q1',
-      q: '왜 자기부호화기는 단순히 "입력을 입력으로 매핑"하면 안 되는가?',
-      a: `<b>한 줄 답안.</b> 입력과 타깃이 같으면 모델은 항등 함수($f(x)=x, g(h)=h$)로 손실을 정확히 0으로 만들 수 있고, 이때 학습된 것은 "데이터 구조"가 아니라 "답안지 베끼기"이기 때문이다.<br><br>` +
-         `<b>근거.</b> 자기부호화기의 손실은 $\\|x - g(f(x))\\|^2$이다. 어떤 제약도 없으면 가장 쉬운 최적해는 항등 변환이고, 이때 잠재 코드 $h$는 단순히 $x$를 가리키는 이름표가 된다. 우리가 원하는 것은 데이터의 매니폴드 구조이지 색인표가 아니므로, 미완전·DAE·CAE 같은 정칙화가 필요해진다.`,
-    },
-    {
-      n: 'Q2',
-      q: '선형 미완전 자기부호화기와 PCA는 같은 것인가, 다른 것인가?',
-      a: `<b>한 줄 답안.</b> <strong>같은 부분공간</strong>을 학습하지만 <strong>같은 축</strong>을 학습하지는 않는다.<br><br>` +
-         `<b>근거.</b> 인코더와 디코더가 선형이고 손실이 평균 제곱 오차일 때, 미완전 자기부호화기는 PCA가 찾는 것과 같은 $k$차원 부분공간을 학습한다. 그러나 PCA는 그 부분공간 안에서 직교하고 분산이 큰 순서로 정렬된 축을 고르는 반면, 자기부호화기의 $W_e$는 그런 직교성을 보장하지 않는다. 같은 평면을 회전된 좌표계로 표현한다고 생각하면 된다. 비선형으로 일반화하는 순간 자기부호화기는 PCA가 도달할 수 없는 휘어진 매니폴드까지 표현할 수 있다.`,
-    },
-    {
-      n: 'Q3',
-      q: 'DAE의 손실 함수가 왜 점수 매칭(score matching)과 같다고 하는가?',
-      a: `<b>한 줄 답안.</b> 가우시안 노이즈로 학습된 DAE의 "복원 방향" $g(f(\\tilde{x})) - \\tilde{x}$가 데이터 로그 밀도의 기울기 $\\nabla_{\\tilde{x}} \\log p_{\\text{data}}(\\tilde{x})$에 비례하기 때문이다.<br><br>` +
-         `<b>근거.</b> 손상된 $\\tilde{x}$에서 원본 $x$로 가는 화살표는 "더 그럴듯한 입력으로 향하는 방향"이다. 이 방향이 곧 데이터 분포의 로그 밀도가 증가하는 방향, 즉 점수(score)다. 이 동등성 덕분에 DAE는 명시적으로 확률 분포를 학습하지 않으면서도 그 분포를 암묵적으로 모델링한다. 이 결과는 2020년 이후 확산 모델(diffusion model)의 이론적 토대가 되었다.`,
-    },
-    {
-      n: 'Q4',
-      q: 'CAE의 자코비안 페널티 $\\|\\partial f/\\partial x\\|_F^2$가 모델을 항등 함수로 만들지 않는 이유는?',
-      a: `<b>한 줄 답안.</b> 자코비안 페널티는 "코드를 무감각하게" 만들지만, <strong>재구성 손실</strong>이 "꼭 필요한 정보는 살려라"라고 반박하기 때문이다. 두 항이 충돌하면서 모델은 데이터 매니폴드의 접선 방향에만 민감한 절충점에 도달한다.<br><br>` +
-         `<b>근거.</b> 자코비안 페널티만 있으면 $f(x) = $ 상수 함수가 최적이다(감도 0). 그러나 재구성 손실은 "$h$로부터 $x$를 다시 만들 수 있어야 한다"고 요구하므로, 데이터를 구분하는 데 꼭 필요한 차원의 감도는 남겨야 한다. 결과적으로 학습된 인코더는 매니폴드 접선 방향에만 민감하고 그 외 방향에는 둔감해진다. DAE와 같은 목표를 해석적으로 달성한 것.`,
-    },
-    {
-      n: 'Q5',
-      q: '미완전 AE·DAE·CAE의 결과가 결국 같다는 것은 무슨 뜻인가?',
-      a: `<b>한 줄 답안.</b> 출발점은 다르지만(차원 제약 / 노이즈 / 페널티) 모두 데이터 매니폴드의 모양을 학습한다는 의미에서 같은 곳에 도달한다.<br><br>` +
-         `<b>근거.</b> 셋 다 자기부호화기가 "데이터 분포가 집중된 좁은 매니폴드"를 인식하고, 그 위에서만 정확히 복원하도록 학습된다. 미완전은 잠재 차원 자체를 매니폴드 좌표로 쓴다. DAE는 매니폴드로의 사영 연산자를 학습한다. CAE는 매니폴드의 국소 접선 공간을 명시적으로 직선화한다. 표현 방식이 다를 뿐 본질적으로 같은 매니폴드를 그리고 있다 — 이것이 14장이 매니폴드 학습의 통일적 관점에서 닫히는 이유다.`,
-    },
-  ];
+  (function scoreWidget() {
+    const canvas = document.getElementById('score-canvas');
+    const slider = document.getElementById('sc-s');
+    const sval = document.getElementById('sc-sval');
+    const verdict = document.getElementById('sc-verdict');
+    const css = getComputedStyle(document.documentElement);
+    const STRUCT = css.getPropertyValue('--structure').trim();
+    const STYLE = css.getPropertyValue('--style').trim();
+    const SYNTH = css.getPropertyValue('--synth').trim();
+    const FAINT = css.getPropertyValue('--ink-faint').trim();
 
-  const qaBlock = document.getElementById('qa-block');
-  QA.forEach(item => {
-    const qa = document.createElement('div');
-    qa.className = 'qa';
-    qa.innerHTML =
-      `<div class="qa-q"><span class="qn">${item.n}</span><span>${item.q}</span><span class="qx">+</span></div>` +
-      `<div class="qa-a"><div class="qa-a-inner">${item.a}</div></div>`;
-    qaBlock.appendChild(qa);
-    qa.querySelector('.qa-q').addEventListener('click', () => {
-      qa.classList.toggle('open');
-    });
-  });
+    function manifold(t) {
+      const u = (t * 2 - 1) * Math.PI;
+      return { x: 0.7 * Math.cos(u), y: 0.5 * Math.sin(2*u) };
+    }
 
-  // KaTeX
+    function logDensity(x, y, sigma) {
+      let bestSq = Infinity;
+      for (let i = 0; i <= 60; i++) {
+        const p = manifold(i/60);
+        const d = (p.x-x)*(p.x-x) + (p.y-y)*(p.y-y);
+        if (d < bestSq) bestSq = d;
+      }
+      return -bestSq / (2 * sigma * sigma);
+    }
+
+    function nearestOnManifold(x, y) {
+      let best = { d: Infinity, p: {x:0,y:0} };
+      for (let i = 0; i <= 200; i++) {
+        const p = manifold(i/200);
+        const d = (p.x-x)*(p.x-x) + (p.y-y)*(p.y-y);
+        if (d < best.d) { best.d = d; best.p = p; }
+      }
+      return best.p;
+    }
+
+    function draw(sigma) {
+      const ctx = canvas.getContext('2d');
+      const W = canvas.width = canvas.clientWidth, H = canvas.height = Math.round(W * 10/16);
+      ctx.fillStyle = '#fff'; ctx.fillRect(0,0,W,H);
+
+      function px(x) { return W/2 + x * (W/2 - 40); }
+      function py(y) { return H/2 - y * (H/2 - 40); }
+
+      ctx.strokeStyle = 'rgba(38,34,28,0.07)'; ctx.lineWidth = 1;
+      for (let i = -1; i <= 1; i += 0.25) {
+        const x = px(i);
+        ctx.beginPath(); ctx.moveTo(x, 10); ctx.lineTo(x, H-10); ctx.stroke();
+        const y = py(i);
+        ctx.beginPath(); ctx.moveTo(10, y); ctx.lineTo(W-10, y); ctx.stroke();
+      }
+
+      ctx.strokeStyle = STRUCT; ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      for (let i = 0; i <= 200; i++) {
+        const p = manifold(i/200);
+        const X = px(p.x), Y = py(p.y);
+        if (i === 0) ctx.moveTo(X, Y); else ctx.lineTo(X, Y);
+      }
+      ctx.stroke();
+
+      const step = 0.16;
+      ctx.strokeStyle = STYLE; ctx.fillStyle = STYLE; ctx.lineWidth = 1.4;
+      for (let xi = -0.95; xi <= 0.95; xi += step) {
+        for (let yi = -0.7; yi <= 0.7; yi += step * 0.85) {
+          const near = nearestOnManifold(xi, yi);
+          const dx = near.x - xi, dy = near.y - yi;
+          const len = Math.sqrt(dx*dx + dy*dy);
+          if (len < 1e-3) continue;
+          const scale = Math.min(0.18, len) * (1 - Math.exp(-len / sigma));
+          const ux = dx/len * scale, uy = dy/len * scale;
+          const X = px(xi), Y = py(yi);
+          const X2 = px(xi + ux), Y2 = py(yi + uy);
+          ctx.beginPath(); ctx.moveTo(X, Y); ctx.lineTo(X2, Y2); ctx.stroke();
+          const ang = Math.atan2(Y2-Y, X2-X);
+          ctx.beginPath();
+          ctx.moveTo(X2, Y2);
+          ctx.lineTo(X2 - 5*Math.cos(ang - 0.4), Y2 - 5*Math.sin(ang - 0.4));
+          ctx.lineTo(X2 - 5*Math.cos(ang + 0.4), Y2 - 5*Math.sin(ang + 0.4));
+          ctx.closePath(); ctx.fill();
+        }
+      }
+
+      ctx.fillStyle = FAINT; ctx.font = '11px "Spline Sans Mono", monospace';
+      ctx.fillText('데이터 분포(매니폴드)', 12, H - 14);
+      ctx.fillText(`σ = ${sigma.toFixed(2)} · 화살표 ∝ ∇ log p(x)`, W - 240, H - 14);
+    }
+
+    function update() {
+      const sigma = parseFloat(slider.value);
+      sval.textContent = `σ = ${sigma.toFixed(2)}`;
+      draw(sigma);
+      verdict.innerHTML = `잡음 표준편차 <b>σ = ${sigma.toFixed(2)}</b>. ` +
+        `화살표는 데이터 매니폴드를 향한다 — 이것이 점수 $\\nabla \\log p(x)$이며 동시에 DAE가 학습한 복원 화살표 $g(f(\\tilde{x})) - \\tilde{x}$다. ` +
+        `σ가 클수록 멀리 떨어진 점도 강하게 끌어당긴다.`;
+      if (window.renderMathInElement) {
+        renderMathInElement(verdict, {
+          delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
+          throwOnError: false,
+        });
+      }
+    }
+    slider.addEventListener('input', update);
+    window.addEventListener('resize', update);
+    update();
+  })();
+
   window.addEventListener('load', () => {
     if (window.renderMathInElement) {
       renderMathInElement(document.body, {

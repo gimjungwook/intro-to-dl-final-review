@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>12 · 양방향 RNN — 과거와 미래를 함께 보기</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .bi-stage { padding: 1.4rem 1.2rem 1rem; }
+  .bi-stage svg { width: 100%; height: auto; max-height: 360px; background: #fff; border: 1px solid var(--line); border-radius: 10px; display: block; }
+  .bi-ctl { display: flex; flex-wrap: wrap; gap: 1.1rem; padding: 1rem 1.2rem; border-top: 1px solid var(--line-soft); background: var(--paper); font-size: .87rem; }
+  .bi-ctl label { display: flex; flex-direction: column; gap: .25rem; min-width: 200px; flex: 1; }
+  .bi-ctl label span { color: var(--ink-soft); font-family: var(--mono); font-size: .78rem; }
+  .bi-ctl input[type=range] { width: 100%; accent-color: var(--structure); }
+  .bi-ctl button { padding: .5rem .9rem; background: var(--ink); color: var(--paper); border: none; border-radius: 6px; cursor: pointer; font-family: var(--mono); font-size: .82rem; }
+  .bi-ctl button:hover { background: var(--structure); }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar">
+  <a class="home" href="index.html">← Ch.10 표지</a>
+  <span class="ch-mini">SUB 12 / 14</span>
+</div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol id="navlist"></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-chapter 12 · 두 방향으로 시퀀스를 읽다</span>
+      <h1>과거와 미래를<br><span class="t-structure">함께</span> 본다</h1>
+      <p class="lede">지금까지의 RNN은 모두 시간을 한 방향으로만 흘렀다. 시간 1에서 시간 $T$까지, 왼쪽에서 오른쪽으로. 그러나 자연어를 비롯한 많은 시퀀스에서 현재 시점의 해석은 미래 시점에 달려 있다. "은행"이라는 단어가 "강 위에 앉아 있는" 맥락인지 "돈을 입금하러 간" 맥락인지는, 그 단어 뒤에 무엇이 오는지를 봐야 결정된다. 양방향 RNN(Bidirectional RNN, BiRNN)은 같은 시퀀스에 두 개의 RNN을 — 정방향과 역방향으로 — 동시에 적용해, 매 시점의 표현이 과거와 미래를 모두 참조하도록 한다. 1997년 슈스터(Schuster)와 팔리왈(Paliwal)이 제안한 이 단순한 처방은 오늘날까지 거의 모든 인코더(encoder) 구조의 기본이 되었다.</p>
+    </header>
+
+    <div class="prose">
+      <h2>단방향 RNN의 한계 — 미래는 어떻게 참조하나</h2>
+      <p>SUB 02에서 본 점화식 $h_t = f(h_{t-1}, x_t; \theta)$는 시점 $t$의 상태가 시점 $t$ 이전의 입력에만 의존한다. 시점 $t$의 출력 $\hat y_t = g(h_t)$ 역시 마찬가지로 과거에만 의존한다. 시간을 거꾸로 거슬러 미래를 참조할 길이 없다. 이 한계가 결정적인 문제가 되는 경우를 두 개만 보자.</p>
+
+      <p><strong>예 1 — 음성 인식의 동음이의어.</strong> 한국어에서 "사과를 먹었다"의 '사과'는 과일이고, "사과를 받아 주세요"의 '사과'는 사과 행위다. 두 문장에서 첫 단어 '사과'만으로는 의미를 결정할 수 없다. 두 단어 뒤의 '먹었다' 혹은 '받아 주세요'를 들어야 결정할 수 있다. 단방향 RNN은 '사과'를 듣는 순간 가능한 두 의미 중 하나를 선택해야 하지만, 그 시점에서는 정보가 부족하다.</p>
+
+      <p><strong>예 2 — 품사 태깅의 모호성.</strong> 영어 'book'은 명사("a book to read")이기도 하고 동사("to book a flight")이기도 하다. 'I will book' 다음에 'a flight'가 오면 동사, 'this book'처럼 'this'가 앞에 오면 명사다. 'book' 시점에서 단방향 RNN은 과거('I will')만 보고 결정해야 하므로, 'will'이 조동사라는 약한 단서로 동사를 추측할 수밖에 없다. 다음 단어를 함께 봤다면 훨씬 안정적인 결정이 가능하다.</p>
+
+      <div class="analogy">
+        단방향 RNN은 <b>"한 자 한 자 카드를 뒤집으며 글을 읽되, 뒤에 무엇이 나올지는 모르는 상태로 즉시 의미를 결정해야 하는 독자"</b>다. 양방향 RNN은 <b>"먼저 전체 문장을 한 번 훑고 다시 처음부터 읽는, 두 번 읽는 독자"</b>다. 두 번째 읽을 때는 미래에 무엇이 나올지 이미 알고 있으므로, 첫 단어의 의미도 전체 문맥에 맞춰 결정할 수 있다. 두 번 읽는 비용은 두 배지만, 정확도는 훨씬 좋다.
+      </div>
+
+      <h2>BiRNN의 정의 — 정방향과 역방향을 같이</h2>
+      <p>BiRNN은 같은 시퀀스 $x_1, \ldots, x_T$에 두 개의 RNN을 적용한다. 첫째는 일반적인 정방향(forward) RNN으로, $\vec h_t = f(\vec h_{t-1}, x_t; \theta_f)$를 시간 1에서 $T$까지 계산한다. 둘째는 역방향(backward) RNN으로, $\overleftarrow h_t = f(\overleftarrow h_{t+1}, x_t; \theta_b)$를 시간 $T$에서 1까지 계산한다. 두 방향은 독립된 매개변수($\theta_f, \theta_b$)를 가진다.</p>
+
+      <div class="math-block">$$\vec h_t = f\!\left(\vec h_{t-1}, x_t; \theta_f\right), \quad \overleftarrow h_t = f\!\left(\overleftarrow h_{t+1}, x_t; \theta_b\right)$$</div>
+      <p class="math-note">정방향은 t=1→T, 역방향은 t=T→1. 두 RNN은 매개변수를 공유하지 않는다.</p>
+
+      <p>매 시점 $t$의 최종 표현은 두 방향의 상태를 결합해 만든다. 가장 단순한 결합은 이어 붙임(concatenation)이다.</p>
+
+      <div class="math-block">$$h_t = [\vec h_t \,;\, \overleftarrow h_t], \quad \hat y_t = g(h_t)$$</div>
+      <p class="math-note">결합된 $h_t$의 차원은 단방향의 2배. 출력 $\hat y_t$가 과거와 미래를 모두 참조.</p>
+
+      <p>이 한 줄로 매 시점의 출력이 전체 시퀀스에 의존하게 된다. 시점 $t$의 $\vec h_t$는 $x_1, \ldots, x_t$를 요약하고, $\overleftarrow h_t$는 $x_t, \ldots, x_T$를 요약하므로, $h_t = [\vec h_t; \overleftarrow h_t]$는 전체 시퀀스의 시점 $t$ 관점의 요약이 된다. 정확히 "전체 문장을 두 번 읽은 독자의 한 시점에서의 종합 인상"에 해당한다.</p>
+
+      <h2>BiLSTM, BiGRU — 게이트 구조와의 조합</h2>
+      <p>BiRNN의 두 RNN 각각은 기본 RNN뿐 아니라 LSTM이나 GRU로 만들 수도 있다. 실무에서 가장 자주 쓰이는 조합은 BiLSTM(양방향 LSTM)이다. 두 LSTM을 각각 정방향과 역방향으로 적용하고 hidden state(또는 cell state)를 결합한다. 매개변수는 단방향 LSTM의 2배이고 계산도 2배지만, 시퀀스의 모든 위치에서 양쪽 문맥을 참조하는 표현이 만들어진다.</p>
+
+      <p>BiLSTM은 2010년대 중후반까지 자연어 처리(Natural Language Processing, NLP)의 사실상 표준 인코더였다. 명명 개체 인식(Named Entity Recognition, NER), 품사 태깅, 의미 역할 분석(Semantic Role Labeling, SRL) 등 거의 모든 시퀀스 라벨링 과제에서 BiLSTM이 기본 베이스라인을 제공했다. 2018년 ELMo, BERT 같은 사전 학습(pre-training) 모델들도 그 핵심에 BiLSTM이나 양방향 Transformer를 두었다. "양쪽 문맥을 모두 보는 표현"이 NLP의 표준 도구가 된 셈이다.</p>
+
+      <h2>주의 — BiRNN은 어디에서 쓸 수 없는가</h2>
+      <p>BiRNN의 가장 큰 제약은 <strong>전체 시퀀스가 미리 주어져야 한다</strong>는 점이다. 역방향 RNN은 시간 $T$에서 시작해 1까지 계산하므로, $T$ 시점의 입력이 알려져 있어야 한다. 이 때문에 BiRNN은 다음 두 가지 응용에는 쓸 수 없다.</p>
+
+      <p><strong>1. 실시간 스트리밍 입력.</strong> 음성 비서나 라이브 캡션 같은 응용에서는 사용자가 말하는 중에 곧장 응답을 만들어야 한다. 미래 입력이 아직 없다. BiRNN을 쓰려면 발화가 끝날 때까지 기다려야 하므로 지연(latency)이 발생한다. 이런 경우 단방향 RNN을 쓰거나, 짧은 미래 윈도만 보는 "지연 BiRNN" 변형을 쓴다.</p>
+
+      <p><strong>2. 생성형 모델(generative model).</strong> 다음 단어 예측이나 텍스트 생성은 본질적으로 미래가 아직 결정되지 않은 상황이다. "I am going to ___" 다음에 어떤 단어가 올지 결정해야 하는데, 그 단어 자체가 모델의 출력이다. 미래를 미리 볼 수 없으므로 BiRNN의 역방향 패스가 불가능하다. 따라서 언어 모델, 텍스트 생성, 기계 번역의 디코더(decoder)는 모두 단방향이다.</p>
+
+      <p>이 제약 때문에 BiRNN의 자연스러운 자리는 <strong>인코더</strong>다. 인코더는 전체 입력 시퀀스를 한 번에 읽고 그 의미를 압축된 표현으로 만드는 역할을 하므로, 양방향 처리가 가능하다. 디코더는 한 단어씩 생성해야 하므로 단방향이다. 이 분업은 다음 장(<a href="13.html">SUB 13</a>)의 인코더-디코더 구조에서 명확히 보인다.</p>
+
+      <h2>왜 두 방향이면 충분한가</h2>
+      <p>BiRNN을 처음 본 사람이 흔히 묻는 질문이 있다. "왜 4 방향, 8 방향은 안 되는가". 답은 두 가지다. 첫째, 시퀀스에는 단 두 방향(과거 → 현재, 미래 → 현재)만 의미가 있다. 더 많은 "방향"은 정의되지 않는다. 둘째, 두 방향을 결합하면 이미 매 시점이 전체 시퀀스를 참조하므로, 추가 방향이 새 정보를 가져오지 않는다.</p>
+
+      <p>다만 더 강한 변형으로 "깊은 BiRNN(Deep BiRNN)"이 있다. 정·역방향 BiRNN을 한 층 적용해 표현을 만든 뒤, 그 위에 또 BiRNN을 한 층 쌓는다. 이렇게 여러 층을 쌓으면 각 층이 더 추상적인 시퀀스 표현을 학습한다. 음성 인식에서 자주 쓰이는 5-7층짜리 BiLSTM이 그 예다. 다만 깊이가 깊을수록 학습이 어려워지므로, 잔차 연결이나 정규화 기법과 함께 쓰는 것이 일반적이다.</p>
+
+      <p>아래 위젯은 같은 입력 시퀀스에 단방향과 양방향 RNN을 적용한 결과를 나란히 보여 준다. 입력의 특정 위치에 "단서"를 두고, 단방향에서는 그 단서 이전 위치의 출력이 단서를 모르지만, 양방향에서는 단서 이전 위치도 단서 정보를 받아 출력이 달라지는 모습을 직접 확인할 수 있다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 12</span><span>단방향 vs 양방향 RNN — 미래 단서가 과거 출력에 영향을 미치는 모습</span></div>
+        <div class="bi-stage">
+          <svg id="biSvg" viewBox="0 0 720 360" preserveAspectRatio="xMidYMid meet"></svg>
+        </div>
+        <div class="bi-ctl">
+          <label><span>단서 위치 t* <b id="lblCue">8</b></span><input type="range" id="ctlCue" min="0" max="14" step="1" value="8"></label>
+          <label><span>단서 강도 <b id="lblStr">1.0</b></span><input type="range" id="ctlStr" min="0" max="2" step="0.05" value="1.0"></label>
+          <label><span>시퀀스 길이 T <b id="lblT">15</b></span><input type="range" id="ctlT" min="8" max="20" step="1" value="15"></label>
+        </div>
+      </div>
+      <p class="widget-cap">단서 위치 t*에 강한 입력 신호가 들어간다. 단방향(파랑)은 t* 이후 출력만 단서의 영향을 받고, t* 이전 출력은 단서를 전혀 모른다. 양방향(주홍)은 t* 이전 출력도 역방향 패스를 통해 단서 정보를 받아, 곡선이 t* 양쪽에서 모두 변한다. "은행" 같은 모호한 단어의 의미 결정이 어떻게 미래 단서에 의존하는지를 직관적으로 본다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>핵심 정리</h2>
+      <ul class="checklist">
+        <li>BiRNN은 같은 시퀀스에 정방향($\vec h$)과 역방향($\overleftarrow h$) 두 RNN을 적용해 결합($h_t = [\vec h_t; \overleftarrow h_t]$).</li>
+        <li>매개변수와 계산은 단방향의 2배. 두 방향은 매개변수 공유하지 않음.</li>
+        <li>매 시점 출력이 전체 시퀀스에 의존하게 됨. 미래 단서가 과거 위치의 표현에 반영.</li>
+        <li>BiLSTM, BiGRU도 같은 원리로 구성 가능. 2010년대 NLP의 표준 인코더.</li>
+        <li>제약: 전체 시퀀스가 미리 주어져야 함. 실시간 스트리밍이나 생성형 모델에는 부적합.</li>
+        <li>자연스러운 자리는 인코더(전체를 읽음). 디코더는 단방향(한 단어씩 생성).</li>
+        <li>깊은 BiRNN은 여러 층을 쌓아 더 추상적 표현. 학습 안정화를 위한 정규화·잔차 연결과 함께 씀.</li>
+      </ul>
+    </div>
+
+    <nav class="ch-foot" id="chfoot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    ['01','왜 시퀀스에 FC·CNN은 부족한가'],['02','RNN의 기본 아이디어'],['03','시간 펼치기'],
+    ['04','매개변수 공유'],['05','BPTT 1 — 직관'],['06','BPTT 2 — 손계산'],
+    ['07','기울기 폭발과 소실'],['08','기울기 클리핑'],['09','LSTM 1 — 세 게이트'],
+    ['10','LSTM 2 — cell state'],['11','GRU'],['12','양방향 RNN'],
+    ['13','인코더-디코더'],['14','시험 대비'],
+  ];
+  const CUR = '12';
+  const ol = document.getElementById('navlist');
+  SUBS.forEach(([n,t]) => {
+    const li = document.createElement('li');
+    li.innerHTML = `<a href="${n}.html"${n===CUR?' class="current"':''}>${t}</a>`;
+    ol.appendChild(li);
+  });
+  const i = SUBS.findIndex(s=>s[0]===CUR);
+  const prev = i>0 ? SUBS[i-1] : ['','표지로'];
+  const next = i<SUBS.length-1 ? SUBS[i+1] : ['','표지로'];
+  document.getElementById('chfoot').innerHTML =
+    `<a href="${prev[0]?prev[0]+'.html':'index.html'}"><div class="dir">← 이전</div><div class="ti">${prev[1]}</div></a>` +
+    `<a href="${next[0]?next[0]+'.html':'index.html'}" class="next"><div class="dir">다음 →</div><div class="ti">${next[1]}</div></a>`;
+  const bar = document.querySelector('.scroll-progress');
+  document.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max>0 ? (h.scrollTop/max)*100 : 0) + '%';
+  }, { passive: true });
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) renderMathInElement(document.body, {
+      delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }],
+      throwOnError: false,
+    });
+  });
+
+  // ---------- 위젯: BiRNN ----------
+  const svg = document.getElementById('biSvg');
+  const ctlCue = document.getElementById('ctlCue');
+  const ctlStr = document.getElementById('ctlStr');
+  const ctlT = document.getElementById('ctlT');
+  const lblCue = document.getElementById('lblCue');
+  const lblStr = document.getElementById('lblStr');
+  const lblT = document.getElementById('lblT');
+
+  function drawBi() {
+    const cue = parseInt(ctlCue.value);
+    const str = parseFloat(ctlStr.value);
+    const T = parseInt(ctlT.value);
+    lblCue.textContent = Math.min(cue, T-1);
+    lblStr.textContent = str.toFixed(2);
+    lblT.textContent = T;
+
+    const xs = new Array(T).fill(0);
+    if (cue < T) xs[cue] = str;
+
+    // 단방향 (forward only): h_t = 0.7*h_{t-1} + x_t
+    const hF = new Array(T).fill(0);
+    for (let t = 0; t < T; t++) {
+      hF[t] = (t>0 ? 0.7*hF[t-1] : 0) + xs[t];
+    }
+    // 역방향
+    const hB = new Array(T).fill(0);
+    for (let t = T-1; t >= 0; t--) {
+      hB[t] = (t<T-1 ? 0.7*hB[t+1] : 0) + xs[t];
+    }
+    // 양방향 결합 (단순 합으로 표현)
+    const hBi = hF.map((v,i) => 0.5*v + 0.5*hB[i]);
+
+    const W = 720, H = 360, M = { l: 50, r: 30, t: 30, b: 100 };
+    const PW = W - M.l - M.r, PH = H - M.t - M.b;
+    const xp = (i) => M.l + (i/(T-1))*PW;
+    const ymin = -0.2, ymax = Math.max(2, str*1.5);
+    const yp = (v) => M.t + PH - ((v - ymin) / (ymax - ymin)) * PH;
+
+    let s = `<rect width="${W}" height="${H}" fill="#fff" />`;
+    s += `<line x1="${M.l}" y1="${M.t}" x2="${M.l}" y2="${M.t+PH}" stroke="#8E8576" />`;
+    s += `<line x1="${M.l}" y1="${M.t+PH}" x2="${M.l+PW}" y2="${M.t+PH}" stroke="#8E8576" />`;
+    // baseline
+    s += `<line x1="${M.l}" y1="${yp(0)}" x2="${M.l+PW}" y2="${yp(0)}" stroke="#26221C" stroke-opacity="0.1" />`;
+
+    // input bars
+    for (let t = 0; t < T; t++) {
+      if (xs[t] !== 0) {
+        s += `<rect x="${xp(t)-4}" y="${yp(xs[t])}" width="8" height="${yp(0)-yp(xs[t])}" fill="#5A5247" />`;
+      }
+      s += `<circle cx="${xp(t)}" cy="${yp(0)}" r="2" fill="#26221C" />`;
+      s += `<text x="${xp(t)}" y="${yp(0)+18}" fill="#8E8576" font-family="Spline Sans Mono, monospace" font-size="10" text-anchor="middle">${t}</text>`;
+    }
+
+    // hF line (forward / 단방향)
+    let pF = '';
+    hF.forEach((v,i) => { pF += (i===0?'M':'L') + xp(i) + ',' + yp(v) + ' '; });
+    s += `<path d="${pF}" stroke="#2D5B7A" stroke-width="2.5" fill="none" />`;
+
+    // hBi line
+    let pBi = '';
+    hBi.forEach((v,i) => { pBi += (i===0?'M':'L') + xp(i) + ',' + yp(v) + ' '; });
+    s += `<path d="${pBi}" stroke="#C0492E" stroke-width="2.5" fill="none" />`;
+
+    // markers
+    hF.forEach((v,i) => { s += `<circle cx="${xp(i)}" cy="${yp(v)}" r="3" fill="#2D5B7A" />`; });
+    hBi.forEach((v,i) => { s += `<circle cx="${xp(i)}" cy="${yp(v)}" r="3" fill="#C0492E" />`; });
+
+    // cue marker
+    if (cue < T) {
+      s += `<line x1="${xp(cue)}" y1="${M.t}" x2="${xp(cue)}" y2="${M.t+PH}" stroke="#A47B2E" stroke-dasharray="3,3" stroke-width="1.5" />`;
+      s += `<text x="${xp(cue)}" y="${M.t-8}" fill="#A47B2E" font-family="Spline Sans Mono, monospace" font-size="11" text-anchor="middle">단서 t*=${cue}</text>`;
+    }
+
+    // legend
+    s += `<g transform="translate(${M.l},${M.t+PH+50})">`;
+    s += `<line x1="0" y1="0" x2="30" y2="0" stroke="#2D5B7A" stroke-width="2.5" />`;
+    s += `<text x="40" y="4" fill="#26221C" font-family="Spline Sans Mono, monospace" font-size="12">단방향 (forward only) — t* 이후만 단서 반영</text>`;
+    s += `<line x1="0" y1="20" x2="30" y2="20" stroke="#C0492E" stroke-width="2.5" />`;
+    s += `<text x="40" y="24" fill="#26221C" font-family="Spline Sans Mono, monospace" font-size="12">양방향 BiRNN — t* 이전 위치도 단서 반영 (역방향 패스)</text>`;
+    s += `<rect x="0" y="36" width="14" height="10" fill="#5A5247" />`;
+    s += `<text x="22" y="44" fill="#26221C" font-family="Spline Sans Mono, monospace" font-size="12">입력 시퀀스 x_t</text>`;
+    s += `</g>`;
+
+    svg.innerHTML = s;
+  }
+  [ctlCue, ctlStr, ctlT].forEach(el => el.addEventListener('input', drawBi));
+  drawBi();
+</script>
+</body>
+</html>

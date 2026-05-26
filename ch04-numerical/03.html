@@ -3,26 +3,29 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ch.04 · 03 · 경사 기반 최적화</title>
+<title>Ch.04 · 03 · 언더플로/오버플로 — softmax는 왜 터지는가</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
-  .gd-stage { display: grid; grid-template-columns: 1fr 16rem; gap: 1rem; padding: 1.2rem 1.1rem 1rem; }
-  @media (max-width: 720px) { .gd-stage { grid-template-columns: 1fr; } }
-  .gd-canvas-wrap { background: #fff; border: 1px solid var(--line-soft); border-radius: 10px; overflow: hidden; aspect-ratio: 16 / 9; position: relative; }
-  .gd-canvas-wrap canvas { display: block; width: 100%; height: 100%; }
-  .gd-side { display: flex; flex-direction: column; gap: .7rem; }
-  .gd-card { background: var(--paper-2); border: 1px solid var(--line-soft); border-radius: 9px; padding: .7rem .9rem; }
-  .gd-card h5 { margin: 0 0 .3rem; font-family: var(--mono); font-size: .65rem; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-faint); }
-  .gd-card .val { font-family: var(--serif); font-size: 1.2rem; color: var(--ink); line-height: 1.1; }
-  .gd-card .sub { font-family: var(--mono); font-size: .68rem; color: var(--ink-soft); margin-top: .2rem; }
-  .gd-card.warn { background: var(--style-bg); } .gd-card.warn .val { color: var(--style); }
-  .gd-card.good { background: var(--structure-bg); } .gd-card.good .val { color: var(--structure); }
-
-  .fn-picker { display: flex; gap: .35rem; flex-wrap: wrap; }
-  .fn-picker .btn.ghost.on { background: var(--structure); color: #fff; border-color: var(--structure); }
+  .sm-stage { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1.4rem 1.1rem 1rem; }
+  @media (max-width: 720px) { .sm-stage { grid-template-columns: 1fr; } }
+  .sm-col { background: #fff; border: 1px solid var(--line-soft); border-radius: 10px; padding: 1rem 1.1rem; }
+  .sm-col h5 { margin: 0 0 .6rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-faint); }
+  .sm-col.naive h5 { color: var(--style); }
+  .sm-col.stable h5 { color: var(--structure); }
+  .sm-row { display: grid; grid-template-columns: 2.5rem 1fr 4rem; gap: .5rem; align-items: center; padding: .25rem 0; font-family: var(--mono); font-size: .82rem; }
+  .sm-row .lbl { color: var(--ink-faint); }
+  .sm-row .bar { height: 8px; background: var(--paper-sink); border-radius: 4px; overflow: hidden; position: relative; }
+  .sm-row .bar i { display: block; height: 100%; background: var(--structure); border-radius: 4px; transition: width .25s var(--ease); }
+  .sm-row.bad i { background: var(--style); }
+  .sm-row .val { text-align: right; color: var(--ink); font-size: .78rem; }
+  .sm-row .val.bad { color: var(--style); font-weight: 600; }
+  .sm-row .val.nan { color: var(--style); font-style: italic; }
+  .sm-warn { margin-top: .7rem; font-family: var(--mono); font-size: .72rem; padding: .5rem .7rem; border-radius: 6px; }
+  .sm-warn.bad { background: var(--style-bg); color: var(--style); }
+  .sm-warn.good { background: var(--structure-bg); color: var(--structure); }
 </style>
 </head>
 <body>
@@ -34,108 +37,92 @@
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Sub-Chapter 03 · 경사 기반 최적화</span>
-      <h1>왜 음의 <span class="t-structure">기울기</span>가<br>가장 가파른 하강 방향인가</h1>
-      <p class="lede">미분과 기울기는 한 점에서 "어디로 한 발 내디디면 함수값이 가장 빨리 줄어드는가"를 알려 준다. 그러나 한 발의 길이(학습률 ε)를 잘못 잡으면, 같은 방향이라도 진동·발산·정체가 모두 가능하다.</p>
+      <span class="kicker">Sub-Chapter 03 · 분류기의 무덤</span>
+      <h1>왜 <span class="t-synth">softmax</span>는 식<br>그대로 짜면 터지는가</h1>
+      <p class="lede">분류 모델의 마지막 한 줄에 등장하는 softmax는 가장 흔하면서도 가장 자주 학습을 죽이는 함수다. 같은 수식, 다른 결과 — 이 절은 그 죽음의 두 가지 모양을 단계별로 분해한다.</p>
     </header>
 
     <div class="prose">
-      <p>지금까지는 <em>왜 수치적으로 위험한가</em>를 봤다. 이제는 정면으로 <strong>어디로 가야 함수값이 줄어드는가</strong>의 문제에 들어간다. 이것이 경사 기반 최적화의 핵심 질문이다.</p>
+      <p>2절에서 부동소수점이 표현할 수 있는 수의 범위가 좁다는 것을 봤다. 이번 절에서는 그 좁음이 실제 학습에서 어떻게 문제를 일으키는지를 한 가지 구체적 사례 — softmax 함수 — 로 본다. softmax는 분류 모델의 마지막 한 줄에서 거의 모든 신경망이 쓴다. 정의는 단순하다.</p>
 
-      <h2>미분의 의미 — 한 점에서의 기울기</h2>
-      <p>일변수 함수 $f: \mathbb{R} \to \mathbb{R}$에서 미분계수 $f'(x)$는 한 점 $x$에서의 접선 기울기다.</p>
+      <div class="math-block">$$ \mathrm{softmax}(x)_i = \frac{e^{x_i}}{\sum_{j=1}^{n} e^{x_j}} $$</div>
+      <p class="math-note">x_i: i번째 클래스의 로짓(logit). 분자는 그 로짓의 자연 지수. 분모는 모든 로짓의 자연 지수를 더한 정규화 상수.</p>
 
-      <div class="math-block">$$ f(x + h) \;\approx\; f(x) + h \cdot f'(x) \quad (h \text{가 작을 때}) $$</div>
-      <p class="math-note">테일러 1차 근사. 작은 한 발을 내디딘 뒤의 함수값을 기울기로 예측한다.</p>
+      <p>이 식이 왜 그렇게 자주 쓰이는지부터 짚자. 분류 문제에서 우리는 신경망의 마지막 층이 내놓는 임의의 실수 점수 $x_1, x_2, \ldots, x_n$을 클래스별 확률로 바꾸고 싶다. 확률이 되려면 두 가지 조건이 필요하다. ① 각 값이 0 이상이어야 하고, ② 모든 값의 합이 1이어야 한다. 자연 지수 $e^{x}$는 어떤 실수 입력이든 양수로 바꾸어 주고, 모든 항을 합으로 나누면 합이 자동으로 1이 된다. 게다가 자연 지수는 미분이 자기 자신이라 역전파가 깔끔하고, 로그를 씌우면 교차 엔트로피(cross-entropy) 손실과 잘 맞물린다. 수학적으로는 더할 나위 없다.</p>
 
-      <p>왜 이 형태가 유용한가. $h$가 작을 때 함수의 행동은 직선처럼 보인다는 것이 1차 근사다. 만약 $f'(x) > 0$이면 오른쪽으로 가면 값이 늘고, $f'(x) < 0$이면 오른쪽으로 가면 값이 준다. 그래서 함수값을 줄이려면 <strong>$f'(x)$의 반대 방향</strong>으로 가면 된다. 이것이 1차원 경사하강의 본질이다.</p>
+      <p>그러나 컴퓨터에서 이 식을 그대로 짜면 두 가지 사고가 기다린다. 첫째는 <strong>오버플로(overflow)</strong>다. 만약 어떤 $x_i$가 매우 크면 — 예를 들어 신경망이 한 클래스에 과도하게 확신해서 $x_i = 1000$이 되면 — $e^{1000}$은 float32 범위인 $3.4 \times 10^{38}$을 한참 넘어선다. 그래서 컴퓨터는 그 값을 <code>+inf</code>로 처리한다. 분자가 <code>inf</code>면 분모도 다른 항이 작더라도 <code>inf</code>가 포함되어 있으니 결과는 $\tfrac{\text{inf}}{\text{inf}}$, 즉 <code>NaN</code>이다.</p>
 
-      <div class="math-block">$$ x_{k+1} \;=\; x_k \;-\; \varepsilon \, f'(x_k) $$</div>
-      <p class="math-note">ε는 학습률(learning rate). 한 번에 얼마나 움직일지 결정.</p>
-
-      <h2>다변수로 확장 — 기울기 벡터</h2>
-      <p>이제 입력이 $\mathbf{x} \in \mathbb{R}^n$인 함수 $f(\mathbf{x})$로 가자. 각 좌표축마다 편미분이 정의되고, 이를 모은 벡터가 <strong>기울기(gradient)</strong>다.</p>
-
-      <div class="math-block">$$ \nabla f(\mathbf{x}) \;=\; \left( \frac{\partial f}{\partial x_1}, \frac{\partial f}{\partial x_2}, \ldots, \frac{\partial f}{\partial x_n} \right)^\top $$</div>
-      <p class="math-note">∇f는 "지금 위치에서 어느 방향으로 가면 함수값이 가장 빨리 커지는가"를 가리킨다.</p>
-
-      <p>왜 그것이 "가장 빨리 증가하는 방향"인가. 단위 벡터 $\mathbf{u}$ 방향으로 한 발 움직였을 때의 1차 변화량은 방향 미분 $\mathbf{u}^\top \nabla f$다. 이 값을 가장 크게 만드는 $\mathbf{u}$는 코시-슈바르츠 부등식에 의해 $\nabla f / \|\nabla f\|$, 곧 기울기와 같은 방향이다. 따라서 함수값을 가장 빨리 <strong>줄이려면</strong> 그 반대 방향, 즉 $-\nabla f(\mathbf{x})$로 가면 된다.</p>
+      <p>둘째는 <strong>언더플로(underflow)</strong>다. 모든 $x_i$가 매우 작으면 — 예를 들어 신경망 초기화가 잘못되어 모든 logit이 $-1000$이 되면 — 모든 $e^{x_i}$가 float32의 최소 양수인 $1.2 \times 10^{-38}$보다 작아져 전부 $0$으로 깎인다. 분모가 0이고 분자도 0이니 결과는 $\tfrac{0}{0}$, 다시 <code>NaN</code>이다. <em>크게 가도 NaN, 작게 가도 NaN</em> — softmax는 양쪽으로 함정을 둔다.</p>
 
       <div class="analogy">
-        안개 낀 산 위에서 가장 빨리 내려가고 싶다고 하자. 멀리 보이지 않으니 발끝 주변의 경사만 더듬을 수 있다. 발 밑에서 가장 가파르게 떨어지는 방향을 골라 한 걸음 내디디고, 다시 그 자리에서 가장 가파른 방향을 다시 골라 내딛는 것. 이것이 경사하강법이다. 매 걸음의 길이가 너무 짧으면 평생 못 내려가고, 너무 길면 절벽 너머 다른 봉우리로 튕겨 나간다.
+        softmax 함수는 <b>경사가 양쪽으로 가파른 좁은 능선 위의 길</b>과 같다. 한 발만 오른쪽으로 디디면 오버플로 절벽으로 떨어지고, 한 발만 왼쪽으로 디디면 언더플로 절벽으로 떨어진다. 능선의 가운데에서만 풍경이 멀쩡하다. 학습이 잘 되고 있을 때는 logit들이 적당한 크기에 있어서 능선 위를 잘 걷지만, 한순간이라도 한 logit이 폭주하면 그날의 모든 그래디언트는 NaN으로 변한다.
       </div>
 
-      <h2>학습률 ε의 세 가지 운명</h2>
-      <p>학습률이 적절하면 함수값이 매끄럽게 줄어든다. 그러나 ε를 잘못 잡으면 세 가지 병리 현상이 나타난다.</p>
+      <h2>해법 — 입력에서 최댓값 빼기</h2>
+      <p>이 사고를 막는 표준 처방은 의외로 한 줄이다. 모든 입력에서 입력 전체의 최댓값을 먼저 빼 준다.</p>
 
-      <ul>
-        <li><strong>너무 작으면</strong> 진행은 단조롭게 줄지만 너무 느려서 사실상 정체된다. 학습 시간이 폭발한다.</li>
-        <li><strong>적당히 크면</strong> 최솟값을 중심으로 좌우로 진동하지만 점점 좁아지며 수렴한다.</li>
-        <li><strong>너무 크면</strong> 한 발이 골짜기를 건너뛰어 반대편 더 높은 곳으로 도약하고, 다음 발은 더 큰 기울기에 의해 다시 더 멀리 튕긴다. 곧 발산한다.</li>
-      </ul>
+      <div class="math-block">$$ \mathrm{softmax}(x)_i = \frac{e^{x_i - m}}{\sum_{j} e^{x_j - m}}, \quad m = \max_j x_j $$</div>
+      <p class="math-note">m: 입력 벡터의 최댓값. 분자와 분모를 모두 e^m으로 나눈 것과 같으므로 수학적으로 원래 식과 완전히 등가.</p>
 
-      <p>이 세 운명이 가르는 경계가 무엇인지가 사실 앞 장의 조건수와도 연결된다. 이차 함수 $f(x) = \tfrac{1}{2} a x^2$의 경우, 안정 조건은 $\varepsilon < \tfrac{2}{a}$다. 곡률 $a$가 크면(가파르면) 작은 ε만 허용된다. 아래 위젯에서 직접 만져 보자.</p>
+      <p>이 형태가 왜 안전한가. 가장 큰 입력 $m$을 모든 값에서 빼면, $x_i - m \le 0$이 항상 성립한다. 그러면 모든 지수 인자는 $0$ 이하가 되고, $e^{x_i - m}$은 $0$ 이상 $1$ 이하의 양수가 된다. 더 이상 오버플로가 일어날 수 없다. 또한 적어도 한 항(원래 최댓값에 해당하는 항)은 $x_i - m = 0$이라 $e^0 = 1$이므로, 분모는 최소 $1$ 이상이 보장된다. 그래서 $\tfrac{0}{0}$ 사고도 사라진다.</p>
+
+      <p>등가성의 증명은 한 줄이면 된다. 분자와 분모에 각각 $e^{-m}$을 곱한다.</p>
+
+      <div class="math-block">$$ \frac{e^{x_i}}{\sum_j e^{x_j}} = \frac{e^{x_i} \cdot e^{-m}}{\sum_j e^{x_j} \cdot e^{-m}} = \frac{e^{x_i - m}}{\sum_j e^{x_j - m}} $$</div>
+      <p class="math-note">분자 분모에 같은 양수를 곱한 것이므로 값은 그대로다. 하지만 부동소수점 위에서 결과는 다르다.</p>
+
+      <p>같은 분수에 같은 상수를 곱했으니 종이 위에서는 완전히 같은 식이다. 그러나 컴퓨터 위에서는 천양지차다. 원래 식은 분자 분모 모두 폭주하지만, 변형된 식은 분자 분모 모두 안전한 범위에 머문다. <strong>수학적 등가성이 수치적 안정성을 보장하지 않는다</strong>는 이 장의 핵심 메시지를 가장 깔끔하게 보여 주는 예다.</p>
+
+      <div class="analogy">
+        반 학생들의 시험 점수에서 1등 점수를 빼 본다고 생각하자. 1등은 0점이 되고, 나머지는 음수가 된다. 그 다음 모든 점수에 exp를 씌우고 합으로 나누면, 결국 1등이 가장 큰 비중을 차지하고 나머지는 작은 비중을 차지하는 분포가 된다. 이 분포는 원래 점수에서 시작해서 똑같이 만든 분포와 정확히 같다. 그러나 계산 중간에 천문학적인 숫자가 등장하지 않는다. 1등 빼기는 "결과를 바꾸지 않으면서 도중의 숫자만 작게 만드는" 트릭이다.
+      </div>
+
+      <h2>위젯 — 같은 식, 다른 운명</h2>
+      <p>아래 위젯에서 입력 5개를 슬라이더로 옮겨 보고, naive 구현과 stable 구현이 어느 지점에서 갈라지는지 직접 확인한다. "전부 큰 값"을 누르면 naive 쪽이 $\infty$로 폭주하고, "전부 작은 값"을 누르면 분모가 0이 되어 NaN이 된다. stable 쪽은 그 어느 입력에서도 흔들리지 않고 깨끗한 확률 분포를 낸다.</p>
     </div>
 
     <div class="widget">
       <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 03</span><span>1D 함수 위에서 학습률 ε 실험</span></div>
-        <div class="gd-stage">
-          <div class="gd-canvas-wrap"><canvas id="gdCanvas"></canvas></div>
-          <div class="gd-side">
-            <div class="gd-card good" id="gdStatusCard">
-              <h5>수렴 상태</h5>
-              <div class="val" id="gdStatus">수렴</div>
-              <div class="sub" id="gdStatusSub">매끄럽게 감소</div>
-            </div>
-            <div class="gd-card">
-              <h5>현재 위치 x</h5>
-              <div class="val" id="gdX">—</div>
-              <div class="sub">시작 x₀ = −2.5</div>
-            </div>
-            <div class="gd-card">
-              <h5>스텝 수</h5>
-              <div class="val" id="gdSteps">0</div>
-              <div class="sub" id="gdValue">f(x) = —</div>
-            </div>
+        <div class="widget-label"><span class="lab-no">위젯 03</span><span>softmax 안정화 — naive vs stable</span></div>
+        <div class="sm-stage">
+          <div class="sm-col naive">
+            <h5>Naive — exp(x) 그대로</h5>
+            <div id="smNaive"></div>
+            <div class="sm-warn bad" id="smNaiveWarn">정상</div>
+          </div>
+          <div class="sm-col stable">
+            <h5>Stable — exp(x − max)</h5>
+            <div id="smStable"></div>
+            <div class="sm-warn good" id="smStableWarn">정상</div>
           </div>
         </div>
         <div class="widget-controls">
-          <div class="slider"><label>학습률 ε <b id="gdLRLabel">0.10</b></label><input type="range" id="gdLR" min="1" max="220" value="10" step="1"></div>
-          <div class="fn-picker">
-            <button class="btn ghost on" data-fn="quad">f = ½ x²</button>
-            <button class="btn ghost" data-fn="steep">f = ½·4·x² (가파른)</button>
-            <button class="btn ghost" data-fn="multi">f = x⁴ − 3x² + x (다중 최소)</button>
-          </div>
-          <button class="btn" id="gdRun">처음부터 다시</button>
+          <div class="slider"><label>입력 1 (x₁) <b id="lv1">2.0</b></label><input type="range" id="r1" min="-1500" max="1500" value="200" step="10"></div>
+          <div class="slider"><label>입력 2 (x₂) <b id="lv2">1.0</b></label><input type="range" id="r2" min="-1500" max="1500" value="100" step="10"></div>
+          <div class="slider"><label>입력 3 (x₃) <b id="lv3">0.0</b></label><input type="range" id="r3" min="-1500" max="1500" value="0" step="10"></div>
+          <div class="slider"><label>입력 4 (x₄) <b id="lv4">−1.0</b></label><input type="range" id="r4" min="-1500" max="1500" value="-100" step="10"></div>
+          <div class="slider"><label>입력 5 (x₅) <b id="lv5">−2.0</b></label><input type="range" id="r5" min="-1500" max="1500" value="-200" step="10"></div>
+          <button class="btn" id="smBig">전부 큰 값 ↑</button>
+          <button class="btn ghost" id="smSmall">전부 작은 값 ↓</button>
+          <button class="btn ghost" id="smReset">초기값</button>
         </div>
       </div>
-      <p class="widget-cap">ε를 작게 두면 수렴은 안전하지만 느리다. 0.5 부근에서 진동하며 수렴, 1.0 가까이 가면 발산한다. 가파른 함수에서는 같은 ε도 더 빨리 깨진다(안정 조건 ε &lt; 2/a). 다중 최소 함수에서는 시작점에 따라 다른 국소최소(local minimum)로 빨려 든다.</p>
+      <p class="widget-cap">슬라이더를 모두 오른쪽으로 옮기면 naive 쪽이 ∞로 폭주하고, 왼쪽으로 옮기면 분모가 0이 되어 NaN이 된다. stable 쪽은 같은 입력에서도 항상 합이 1인 깨끗한 확률 분포를 낸다. 두 구현의 수식은 완전히 같지만, 부동소수점 위에서의 결과는 다르다.</p>
     </div>
 
     <div class="prose">
-      <h2>평평한 곳, 안장점, 국소최소 — 기울기가 0인 세 가지 함정</h2>
-      <p>경사하강이 멈추는 조건은 $\nabla f(\mathbf{x}) = \mathbf{0}$이다. 그런데 기울기가 0이 되는 점이 항상 우리가 원하는 전역 최솟값(global minimum)인 것은 아니다. 적어도 세 가지가 있다.</p>
+      <h2>NaN이 학습을 죽이는 경로</h2>
+      <p>위 위젯에서 한 번 NaN이 나오면, 실제 학습 코드에서는 그 NaN이 어디까지 전염되는가. 다음과 같은 단계로 모델이 침묵한다. ① 분류기의 마지막 logit이 어떤 한 배치에서 큰 값을 찍는다. ② softmax 출력에 NaN이 들어간다. ③ 교차 엔트로피 손실 $-\sum y_i \log p_i$의 $\log p_i$가 NaN이 된다. ④ 손실의 기울기 $\partial L / \partial w$가 NaN으로 변한다. ⑤ 가중치 업데이트 $w \leftarrow w - \epsilon \cdot \nabla w$에서 모든 가중치가 NaN으로 덮어쓰여진다. ⑥ 다음 배치의 forward 모든 출력이 NaN이고, 학습은 영원히 멈춘다.</p>
 
-      <ul>
-        <li><strong>국소 최소(local minimum)</strong> — 근방에서는 가장 낮지만, 더 멀리 가면 더 낮은 곳이 있을 수 있다. 일변수 다항식에서 흔히 보인다.</li>
-        <li><strong>평평한 고원(plateau)</strong> — 넓은 영역에서 기울기가 거의 0이라 어디로 가야 할지 신호가 없다. 학습이 사실상 멈춘다.</li>
-        <li><strong>안장점(saddle point)</strong> — 어떤 방향에서는 최소이고 다른 방향에서는 최대인 점. 고차원에서는 국소최소보다 훨씬 흔하다.</li>
-      </ul>
+      <p>이 6단계는 한 번 발생하면 되돌릴 수 없다. 그래서 실제 학습 코드는 안정한 softmax를 직접 짜기보다 PyTorch의 <code>torch.nn.functional.log_softmax</code>나 <code>torch.nn.CrossEntropyLoss</code>같이 이미 내부에서 max 빼기를 해 주는 함수를 쓴다. 직접 분류 출력에 <code>F.softmax</code>를 쓴 다음 그 결과에 <code>torch.log</code>를 씌우는 패턴은 위험하다. 한 번이라도 logit이 폭주하면 NaN이 곧장 나온다.</p>
 
-      <p>특히 안장점은 1계 정보만으로는 국소최소와 구분되지 않는다. 둘 다 $\nabla f = 0$이기 때문이다. 안장점과 최소를 가르려면 2계 정보, 곧 헤시안(Hessian)이 필요하다. 그래서 다음 장에서 곡률을 직접 본다.</p>
+      <h2>일반화 — exp가 들어간 모든 식</h2>
+      <p>softmax는 가장 자주 보이는 사례일 뿐, 같은 사고는 자연 지수 $e^{x}$가 들어간 거의 모든 식에서 일어난다. 시그모이드(sigmoid) $\sigma(x) = \tfrac{1}{1+e^{-x}}$는 1절에서 봤다. log-sigmoid, softplus $\log(1 + e^x)$, GELU의 일부 형태, 그리고 임의의 분포의 정규화 상수(partition function) $Z = \sum_i e^{x_i}$도 모두 같은 함정을 갖는다. 한 가지 일반화된 처방이 다음 절에서 본 logsumexp 트릭이다.</p>
 
-      <h2>경사하강의 변형들 — 짧게 한 줄로</h2>
-      <p>아래 세 가지는 Ch.8에서 깊이 다루지만, 이 장에서 미리 자리를 잡아 두면 좋다.</p>
-
-      <ul>
-        <li><strong>배치(BGD) · 확률적(SGD) · 미니배치(MBGD)</strong> — 매 스텝에 쓰는 데이터의 양이 다르다. 미니배치가 잡음(noise)과 속도의 타협점.</li>
-        <li><strong>모멘텀(momentum)</strong> — 이전 스텝의 이동량을 누적해 진동을 줄이고 긴 축 방향 학습을 가속.</li>
-        <li><strong>Adam류 적응 학습률</strong> — 좌표별로 다른 ε를 자동으로 잡아 조건수 효과를 완화.</li>
-      </ul>
+      <p>한 가지 흥미로운 사실은, 같은 입력에서도 <em>분포의 모양은 입력 크기에 의존하지 않는다</em>는 점이다. $x = (1000, 999, 998)$의 softmax 결과는 $x = (2, 1, 0)$의 결과와 정확히 같다. 두 경우 모두 가장 큰 값이 가장 큰 확률을 받는 분포다. 그래서 max 빼기는 "결과를 바꾸지 않으면서 표현만 안전하게" 만드는, 거의 공짜에 가까운 트릭이다.</p>
 
       <h2>다음으로</h2>
-      <p>다음 장에서는 기울기보다 한 단계 깊은 정보, <strong>헤시안</strong>으로 들어간다. 곡률을 알면 학습률을 자동으로 보정할 수 있고, 한 번에 큰 점프(뉴턴법)도 시도할 수 있다. 그러나 모든 비용이 무료는 아니다.</p>
+      <p>지금까지 softmax가 어떻게 무너지는지, 그리고 max 빼기로 어떻게 막는지를 봤다. 다음 절에서는 이 발상을 좀 더 일반화한 <strong>logsumexp 트릭</strong>을 본다. log-likelihood, KL divergence, attention의 softmax까지 모두 이 트릭의 변주다. 그리고 5절부터는 두 번째 수치 함정인 조건수(condition number)와 그 위에서 도는 최적화로 넘어간다.</p>
     </div>
 
     <nav class="ch-foot"></nav>
@@ -144,18 +131,23 @@
 
 <script>
   const SUBS = [
-    { no:'01', t:'부동소수점의 함정' },
-    { no:'02', t:'잘못된 조건수' },
-    { no:'03', t:'경사 기반 최적화' },
-    { no:'04', t:'헤시안과 2계 방법' },
-    { no:'05', t:'제약 최적화와 KKT' },
-    { no:'06', t:'시험 대비' },
+    { no:'01', t:'왜 수치 계산이 ML의 발목을 잡는가' },
+    { no:'02', t:'부동소수점 — IEEE 754의 좁은 자' },
+    { no:'03', t:'언더플로 / 오버플로 — softmax는 왜 터지는가' },
+    { no:'04', t:'logsumexp 트릭 — 안정화 수식 유도' },
+    { no:'05', t:'조건수 1 — 행렬은 답을 얼마나 흔드는가' },
+    { no:'06', t:'조건수 2 — 최적화의 지그재그' },
+    { no:'07', t:'경사하강법의 본질' },
+    { no:'08', t:'2계 방법 — 헤시안과 뉴턴법' },
+    { no:'09', t:'학습률의 의미' },
+    { no:'10', t:'제약 최적화 — 라그랑주와 KKT' },
+    { no:'11', t:'시험 대비' },
   ];
   function buildNav(current) {
     const tb = document.querySelector('.topbar');
     if (tb) tb.innerHTML =
       `<a class="home" href="index.html">← Ch.04 수치 계산</a>` +
-      `<span class="ch-mini">SUB ${current} / 06</span>`;
+      `<span class="ch-mini">SUB ${current} / 11</span>`;
     const ol = document.querySelector('.ch-nav ol');
     if (ol) ol.innerHTML = SUBS.map(s =>
       `<li><a href="${s.no}.html" ${s.no === current ? 'class="current"' : ''}>${s.t}</a></li>`).join('');
@@ -180,210 +172,99 @@
     }
   }
 
-  // ===== 위젯: 1D GD =====
-  const FUNCS = {
-    quad:  { f: x => 0.5 * x * x,                 g: x => x,                   xmin: -3, xmax: 3, ymax: 5,  start: -2.5, name: '½x²' },
-    steep: { f: x => 0.5 * 4 * x * x,              g: x => 4 * x,               xmin: -2, xmax: 2, ymax: 8,  start: -1.8, name: '2x²' },
-    multi: { f: x => x*x*x*x - 3*x*x + x,         g: x => 4*x*x*x - 6*x + 1,   xmin: -2.2, xmax: 2.2, ymax: 5,  start: -2.0, name: 'x⁴−3x²+x' },
-  };
-
-  let currentFn = 'quad';
-  let runId = 0;
-
-  function setupCanvas() {
-    const c = document.getElementById('gdCanvas');
-    const rect = c.getBoundingClientRect();
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    c.width = rect.width * dpr;
-    c.height = rect.height * dpr;
-    const ctx = c.getContext('2d');
-    ctx.setTransform(dpr,0,0,dpr,0,0);
-    return { ctx, w: rect.width, h: rect.height };
+  function smRow(label, p, isNaN, isInf) {
+    let valStr, cls = '';
+    if (isNaN) { valStr = 'NaN'; cls = 'nan'; }
+    else if (isInf) { valStr = '∞'; cls = 'bad'; }
+    else valStr = p.toFixed(4);
+    const w = isFinite(p) && !isNaN ? Math.max(0, Math.min(1, p)) * 100 : 0;
+    const rowCls = (isNaN || isInf) ? 'sm-row bad' : 'sm-row';
+    return `<div class="${rowCls}"><span class="lbl">${label}</span><div class="bar"><i style="width:${w}%"></i></div><span class="val ${cls}">${valStr}</span></div>`;
   }
 
-  function plot(ctx, w, h, fn, x, history, lr) {
-    ctx.clearRect(0,0,w,h);
-    ctx.fillStyle = '#FAF7F0'; ctx.fillRect(0,0,w,h);
-    const padL = 36, padR = 16, padT = 16, padB = 28;
-    const pw = w - padL - padR, ph = h - padT - padB;
-    const xSpan = fn.xmax - fn.xmin;
-    const ySpan = fn.ymax;
-    const toPx = (xx) => padL + ((xx - fn.xmin) / xSpan) * pw;
-    const toPy = (yy) => padT + (1 - yy / ySpan) * ph;
+  function softmaxNaive(xs) {
+    const exps = xs.map(x => Math.exp(x));
+    const sum = exps.reduce((a,b) => a+b, 0);
+    return exps.map(e => e / sum);
+  }
+  function softmaxStable(xs) {
+    const m = Math.max.apply(null, xs);
+    const exps = xs.map(x => Math.exp(x - m));
+    const sum = exps.reduce((a,b) => a+b, 0);
+    return exps.map(e => e / sum);
+  }
 
-    // 그리드
-    ctx.strokeStyle = 'rgba(38,34,28,0.06)';
-    ctx.lineWidth = 1;
-    for (let k = 0; k <= 6; k++) {
-      const py = padT + (k/6) * ph;
-      ctx.beginPath(); ctx.moveTo(padL, py); ctx.lineTo(padL + pw, py); ctx.stroke();
-    }
-    for (let k = 0; k <= 8; k++) {
-      const px = padL + (k/8) * pw;
-      ctx.beginPath(); ctx.moveTo(px, padT); ctx.lineTo(px, padT + ph); ctx.stroke();
-    }
-
-    // 축 라벨
-    ctx.fillStyle = '#8E8576';
-    ctx.font = '10px "Spline Sans Mono", monospace';
-    ctx.fillText('x', padL + pw - 8, padT + ph + 14);
-    ctx.fillText('f(x)', padL - 28, padT + 8);
-
-    // 함수 곡선
-    ctx.strokeStyle = '#2D5B7A';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    for (let i = 0; i <= 200; i++) {
-      const xx = fn.xmin + (i/200) * xSpan;
-      const yy = fn.f(xx);
-      const py = toPy(Math.max(0, Math.min(ySpan, yy)));
-      const px = toPx(xx);
-      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
-    }
-    ctx.stroke();
-
-    // 궤적 (점 + 연결선)
-    if (history.length > 1) {
-      ctx.strokeStyle = 'rgba(192, 73, 46, 0.4)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      history.forEach((xx, i) => {
-        const yy = fn.f(xx);
-        const px = toPx(xx);
-        const py = toPy(Math.max(0, Math.min(ySpan, yy)));
-        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
-      });
-      ctx.stroke();
-    }
-
-    // 점들
-    history.forEach((xx, i) => {
-      const yy = fn.f(xx);
-      const px = toPx(xx);
-      const py = toPy(Math.max(0, Math.min(ySpan, yy)));
-      const isLast = i === history.length - 1;
-      ctx.fillStyle = isLast ? '#C0492E' : 'rgba(164, 123, 46, 0.6)';
-      ctx.beginPath(); ctx.arc(px, py, isLast ? 4.5 : 2.2, 0, Math.PI*2); ctx.fill();
+  function render() {
+    const ids = ['r1','r2','r3','r4','r5'];
+    const xs = ids.map(id => parseFloat(document.getElementById(id).value) / 100);
+    xs.forEach((v, i) => {
+      const lab = document.getElementById('lv' + (i+1));
+      lab.textContent = (v >= 0 ? '+' : '') + v.toFixed(1);
     });
 
-    // 현재 점 접선
-    if (history.length > 0) {
-      const xx = history[history.length-1];
-      const yy = fn.f(xx);
-      const gg = fn.g(xx);
-      const dx = 0.25;
-      const x1 = xx - dx, x2 = xx + dx;
-      const y1 = yy + gg * (x1 - xx);
-      const y2 = yy + gg * (x2 - xx);
-      ctx.strokeStyle = 'rgba(38, 34, 28, 0.5)';
-      ctx.lineWidth = 1.2;
-      ctx.setLineDash([3, 3]);
-      ctx.beginPath();
-      ctx.moveTo(toPx(x1), toPy(Math.max(0, Math.min(ySpan, y1))));
-      ctx.lineTo(toPx(x2), toPy(Math.max(0, Math.min(ySpan, y2))));
-      ctx.stroke();
-      ctx.setLineDash([]);
+    const naive = softmaxNaive(xs);
+    const stable = softmaxStable(xs);
+
+    let nHtml = '', sHtml = '';
+    let nBad = false;
+    for (let i = 0; i < 5; i++) {
+      const nNaN = isNaN(naive[i]);
+      const nInf = !nNaN && !isFinite(naive[i]);
+      if (nNaN || nInf) nBad = true;
+      nHtml += smRow('x' + (i+1), naive[i], nNaN, nInf);
+
+      const sNaN = isNaN(stable[i]);
+      const sInf = !sNaN && !isFinite(stable[i]);
+      sHtml += smRow('x' + (i+1), stable[i], sNaN, sInf);
     }
-  }
+    document.getElementById('smNaive').innerHTML = nHtml;
+    document.getElementById('smStable').innerHTML = sHtml;
 
-  function run() {
-    runId++;
-    const myId = runId;
-    const fn = FUNCS[currentFn];
-    const lr = parseFloat(document.getElementById('gdLR').value) / 100;
-    document.getElementById('gdLRLabel').textContent = lr.toFixed(2);
+    const naiveSum = naive.reduce((a,b) => a + (isFinite(b) ? b : 0), 0);
+    const stableSum = stable.reduce((a,b) => a + (isFinite(b) ? b : 0), 0);
 
-    const { ctx, w, h } = setupCanvas();
-    let x = fn.start;
-    let history = [x];
-    let steps = 0;
-    let status = 'running';
-
-    function step() {
-      if (myId !== runId) return;
-      const g = fn.g(x);
-      const next = x - lr * g;
-      if (!isFinite(next) || Math.abs(next) > 50) {
-        status = 'diverged';
-        updateState(history, lr, fn, status);
-        plot(ctx, w, h, fn, x, history, lr);
-        return;
-      }
-      x = next;
-      history.push(x);
-      steps++;
-      plot(ctx, w, h, fn, x, history, lr);
-
-      if (Math.abs(g) < 0.005 && steps > 3) {
-        status = 'converged';
-        updateState(history, lr, fn, status);
-        return;
-      }
-      if (steps > 200) {
-        status = 'slow';
-        updateState(history, lr, fn, status);
-        return;
-      }
-      updateState(history, lr, fn, 'running');
-      setTimeout(step, 50);
-    }
-    step();
-  }
-
-  function updateState(history, lr, fn, status) {
-    const x = history[history.length - 1];
-    document.getElementById('gdX').textContent = isFinite(x) ? x.toFixed(3) : '발산';
-    document.getElementById('gdSteps').textContent = history.length - 1;
-    document.getElementById('gdValue').textContent = isFinite(x) ? `f(x) = ${fn.f(x).toFixed(4)}` : 'f(x) = ∞';
-
-    const card = document.getElementById('gdStatusCard');
-    const lbl = document.getElementById('gdStatus');
-    const sub = document.getElementById('gdStatusSub');
-
-    // 진동 감지: 최근 8개 점에서 부호 변화 잦은가
-    let osc = 0;
-    if (history.length >= 5) {
-      for (let i = history.length - 4; i < history.length - 1; i++) {
-        if (history[i] * history[i+1] < 0) osc++;
-      }
-    }
-
-    if (status === 'diverged') {
-      card.className = 'gd-card warn';
-      lbl.textContent = '발산';
-      sub.textContent = `ε = ${lr.toFixed(2)}이 안정 조건을 깬다`;
-    } else if (status === 'converged') {
-      card.className = 'gd-card good';
-      lbl.textContent = '수렴';
-      sub.textContent = osc >= 2 ? '진동 후 수렴' : '매끄럽게 감소';
-    } else if (status === 'slow') {
-      card.className = 'gd-card';
-      lbl.textContent = '느린 진행';
-      sub.textContent = 'ε가 너무 작아 200스텝 내 미수렴';
+    const naiveWarn = document.getElementById('smNaiveWarn');
+    if (nBad) {
+      const hasNaN = naive.some(p => isNaN(p));
+      const hasInf = naive.some(p => isFinite(p) === false && !isNaN(p));
+      naiveWarn.className = 'sm-warn bad';
+      if (hasInf && hasNaN) naiveWarn.textContent = '폭주 (∞ + NaN) — 큰 입력에서 exp 오버플로';
+      else if (hasInf) naiveWarn.textContent = '오버플로 — exp(x) → ∞';
+      else if (hasNaN) naiveWarn.textContent = '언더플로 → 0/0 → NaN';
     } else {
-      card.className = osc >= 2 ? 'gd-card' : 'gd-card good';
-      lbl.textContent = osc >= 2 ? '진동 중' : '진행 중';
-      sub.textContent = `현재 ε = ${lr.toFixed(2)}`;
+      naiveWarn.className = 'sm-warn good';
+      naiveWarn.textContent = `합 = ${naiveSum.toFixed(4)} · 정상`;
     }
+
+    const stableWarn = document.getElementById('smStableWarn');
+    stableWarn.className = 'sm-warn good';
+    stableWarn.textContent = `합 = ${stableSum.toFixed(4)} · 항상 정상`;
   }
 
   window.addEventListener('load', () => {
     buildNav('03');
-    document.getElementById('gdLR').addEventListener('input', () => {
-      document.getElementById('gdLRLabel').textContent = (parseFloat(document.getElementById('gdLR').value) / 100).toFixed(2);
+    ['r1','r2','r3','r4','r5'].forEach(id => {
+      document.getElementById(id).addEventListener('input', render);
     });
-    document.getElementById('gdRun').addEventListener('click', run);
-    document.querySelectorAll('.fn-picker .btn').forEach(b => {
-      b.addEventListener('click', () => {
-        document.querySelectorAll('.fn-picker .btn').forEach(x => x.classList.remove('on'));
-        b.classList.add('on');
-        currentFn = b.dataset.fn;
-        run();
+    document.getElementById('smBig').addEventListener('click', () => {
+      [['r1',1200],['r2',1100],['r3',1000],['r4',900],['r5',800]].forEach(([id,v]) => {
+        document.getElementById(id).value = v;
       });
+      render();
     });
-    window.addEventListener('resize', () => { run(); });
-    setTimeout(run, 100);
-
+    document.getElementById('smSmall').addEventListener('click', () => {
+      [['r1',-800],['r2',-900],['r3',-1000],['r4',-1100],['r5',-1200]].forEach(([id,v]) => {
+        document.getElementById(id).value = v;
+      });
+      render();
+    });
+    document.getElementById('smReset').addEventListener('click', () => {
+      [['r1',200],['r2',100],['r3',0],['r4',-100],['r5',-200]].forEach(([id,v]) => {
+        document.getElementById(id).value = v;
+      });
+      render();
+    });
+    render();
     if (window.renderMathInElement) {
       renderMathInElement(document.body, {
         delimiters: [

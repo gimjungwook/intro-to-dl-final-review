@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>10 — 스파스 AE — Ch.14</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .sparse-stage { padding: 1.4rem 1.2rem 1rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: stretch; }
+  .sparse-side { padding: .9rem; border-radius: 10px; background: #fff; border: 1px solid var(--line); text-align: center; }
+  .sparse-side h5 { margin: 0 0 .4rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .12em; }
+  .sparse-side.act h5 { color: var(--structure); } .sparse-side.dist h5 { color: var(--style); }
+  .sparse-side canvas { width: 100%; height: 200px; border-radius: 8px; background: var(--paper); border: 1px solid var(--line-soft); }
+  .sparse-side p { font-size: .8rem; color: var(--ink-soft); margin: .5rem 0 0; line-height: 1.45; }
+  .verdict { padding: .9rem 1.2rem; border-top: 1px solid var(--line-soft); background: var(--paper); font-size: .9rem; color: var(--ink-soft); line-height: 1.55; }
+  .verdict b.ok { color: var(--structure); } .verdict b.bad { color: var(--style); } .verdict b.mid { color: var(--synth); }
+  @media (max-width: 720px) { .sparse-stage { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 10 — 차원 대신 활성도에 페널티</span>
+      <h1>스파스 자기부호화기 — 잠재가 <span class="t-style">대부분 0</span>이 되도록 강제하기</h1>
+      <p class="lede">잠재 차원을 좁히는 대신, 차원은 충분히 크게 두되 활성도가 대부분 0이 되도록 페널티를 건다. 13장의 희소 코딩(sparse coding)을 신경망으로 빠르게 일반화한 정칙화 가족.</p>
+    </header>
+
+    <div class="prose">
+      <p>지금까지 본 미완전 자기부호화기는 잠재 차원 $k$를 입력 차원 $d$보다 좁게 두는 것으로 모델을 정칙화했다. 그러나 어떤 경우에는 잠재 차원을 일부러 크게 두고(과완전, overcomplete), 그 큰 잠재 공간을 "대부분 0이 되도록" 만드는 방향의 정칙화를 쓰고 싶다. 그 결과가 <strong>스파스 자기부호화기(sparse autoencoder)</strong>다.</p>
+
+      <p>스파스 자기부호화기의 손실은 재구성 손실에 잠재 활성도의 페널티를 추가한다.</p>
+
+      <p>$$L_{\text{sparse}} = \mathbb{E}_{x \sim p_{\text{data}}} \Big[ \| x - g(f(x)) \|_2^2 \;+\; \lambda \, \Omega(h) \Big]$$</p>
+
+      <p>여기서 $\Omega(h)$는 잠재 표상 $h$의 "희소성"을 측정하는 함수다. 가장 흔한 선택은 잠재 활성의 절댓값 합, 즉 $L^1$ 노름이다.</p>
+
+      <p>$$\Omega(h) = \| h \|_1 = \sum_{i=1}^{k} |h_i|$$</p>
+
+      <p>$L^1$ 노름은 잠재의 모든 성분의 절댓값을 더한 값이다. 이 값이 작아지려면 가능한 한 많은 성분이 0이 되어야 한다. 단순히 "값이 작아지는" $L^2$ 노름과는 다르다. $L^2$는 큰 값에 더 큰 페널티를 주므로 모든 값을 작게 만들지만, $L^1$은 0에 가까운 값에도 같은 비율의 페널티를 주므로 "아예 0으로 만들어 버리는" 효과를 낳는다. 이 차이가 "값을 줄이라"와 "값을 0으로 만들어라"의 차이다. 이것이 $L^1$이 희소성을 유도하는 핵심 이유다.</p>
+
+      <div class="analogy">
+        <b>예산 절감의 두 방식.</b> $L^2$ 절감은 "모든 부서 예산을 비례적으로 10% 줄여라"라는 명령과 같다. 모든 부서가 조금씩 작아진다. $L^1$ 절감은 "필요 없는 부서는 통째로 없애고 꼭 필요한 부서만 남겨라"라는 명령에 가깝다. 결과적으로 몇 부서는 그대로, 많은 부서는 폐쇄된다. 스파스 자기부호화기는 잠재 채널을 부서에 비유하면, $L^1$ 페널티로 "정말 필요한 채널만 켜고 나머지는 꺼라"라는 학습을 유도한다.
+      </div>
+
+      <h2>활성도 페널티를 확률로 해석하기 — 라플라스 사전분포</h2>
+      <p>딥러닝 책의 중요한 통찰은 이 활성도 페널티가 확률 모델 관점에서도 자연스럽다는 점이다. $L^1$ 페널티는 잠재 변수 $h$에 라플라스 사전분포(Laplace prior)를 두고 그것의 음의 로그 사전분포(negative log-prior)를 계산한 것과 정확히 일치한다.</p>
+
+      <p>$$p(h_i) = \frac{1}{2b} \exp\Big(-\frac{|h_i|}{b}\Big) \quad \Longrightarrow \quad -\log p(h) = \text{const} + \frac{1}{b} \sum_i |h_i|$$</p>
+
+      <p>라플라스 분포는 가우시안과 비슷하게 종 모양이지만 평균(0) 근처에서 훨씬 뾰족하고 양쪽 꼬리가 더 두껍다. "0 근처에 많이 모여 있지만 가끔 큰 값이 튀어나오는" 분포다. 자연 데이터의 특징을 표현하기에 잘 맞는다. 예를 들어 자연 이미지의 가버 필터(Gabor filter) 응답이나 음성의 웨이블릿(wavelet) 계수가 라플라스 분포와 비슷한 형태를 가진다. 즉 스파스 자기부호화기는 "자연 신호의 잠재 구조가 라플라스에 가깝다는 사전 지식을 모델에 내장한 것"으로 읽을 수 있다.</p>
+
+      <h2>왜 스파스성이 의미 있는 표상을 만드는가</h2>
+      <p>스파스 활성도가 만드는 표상의 특징은 두 가지다. 첫째, <strong>분리된 채널 의미(disentangled channel meaning)</strong>다. 각 잠재 채널이 다른 채널과 거의 동시에 켜지지 않으므로, 한 채널은 한 가지 의미를 전담하게 된다. 학습이 끝나면 "이 채널은 가로 모서리, 저 채널은 둥근 곡선, 또 다른 채널은 특정 텍스처"와 같이 채널별 역할 분담이 자연스럽게 생긴다. 둘째, <strong>잠재 차원이 매우 크면서도 효율적</strong>이다. 한 입력에 대해 활성되는 채널이 전체의 5-10%에 불과하므로, 메모리는 큰 잠재 공간을 가지면서도 추론 시 실제 활성된 채널만 다루면 된다.</p>
+
+      <p>이 그림은 신경과학과의 흥미로운 연결을 가진다. 시각 피질의 V1 단계 신경세포들은 한 자극에 대해 전체 세포의 매우 작은 부분만 강하게 반응하는 것으로 알려져 있다(소위 sparse coding hypothesis). 13장의 희소 코딩 모델은 이 관찰을 명시적으로 모델링하려는 시도였고, 스파스 자기부호화기는 그것의 신경망 일반화다. 다만 책은 "이것이 뇌의 작동 방식과 정말 같은지는 통계적 아티팩트일 수 있다"라는 신중한 단서를 단다.</p>
+
+      <h2>희소 코딩과의 관계 — amortized inference</h2>
+      <p>스파스 자기부호화기를 13장의 희소 코딩(sparse coding)과 어떻게 비교할지가 시험에서 자주 물어진다. 한 줄로 정리하면 다음과 같다.</p>
+
+      <p>희소 코딩에는 학습된 인코더가 없다. 새 입력 $x$가 들어올 때마다 "이 입력을 가장 잘 재구성하면서 활성도가 가장 희소한 코드 $h$"를 매번 새로 최적화로 풀어야 한다. 이 최적화는 반복적인 알고리즘(예: ISTA, FISTA)을 요구하므로 한 입력당 추론 비용이 크다.</p>
+
+      <p>스파스 자기부호화기는 같은 목표(희소한 표상)를 달성하지만 추론 방식이 다르다. 학습 단계에서 인코더 신경망 $f$가 이미 "어떤 입력에 어떤 희소 코드를 부여해야 하는가"를 배워 두므로, 새 입력이 들어오면 단 한 번의 순방향 전파(forward pass)로 코드를 얻는다. 이를 <strong>amortized inference</strong>라 부른다. 학습 시 한 번의 비용 투자로 모든 미래 추론을 빠르게 만드는 셈이다.</p>
+
+      <div class="analogy">
+        <b>맞춤 정장 vs 기성품.</b> 희소 코딩은 손님이 올 때마다 맞춤 정장을 새로 재단하는 일과 같다. 결과는 완벽하지만 매번 시간이 든다. 스파스 자기부호화기는 미리 학습한 패턴 라이브러리(인코더 신경망)에서 가장 가까운 옷을 즉시 골라 주는 기성품 가게와 같다. 첫 가게 오픈 비용(학습)은 크지만 손님 한 명당 응대 시간은 압도적으로 짧다. 2026년의 대규모 신경망 시스템이 거의 모두 amortized inference를 채택한 이유다.
+      </div>
+
+      <h2>실무 변형 — KL 페널티</h2>
+      <p>$L^1$ 페널티 외에 자주 쓰이는 다른 변형이 KL(Kullback-Leibler) 다이버전스 페널티다. 각 잠재 채널의 평균 활성도 $\hat{\rho}_i$가 사용자가 지정한 목표 활성도 $\rho$(보통 0.05 같은 작은 값)에 가까워지도록 페널티를 건다.</p>
+
+      <p>$$\Omega_{\text{KL}}(h) = \sum_{i=1}^{k} \Big[ \rho \log \frac{\rho}{\hat{\rho}_i} + (1-\rho) \log \frac{1-\rho}{1-\hat{\rho}_i} \Big]$$</p>
+
+      <p>이 식의 직관은 "각 채널이 평균적으로 5% 정도만 켜져 있어야 한다"는 명시적 요구다. $L^1$ 페널티가 "절댓값을 줄여라"라면 KL 페널티는 "평균 활성도 분포를 지정한 모양으로 유지하라"이다. 시그모이드 활성화처럼 0과 1 사이로 제한된 잠재에 잘 어울리고, 학습이 조금 더 안정적이다.</p>
+
+      <p>아래 위젯에서 페널티의 강도 $\lambda$를 바꿔 가며 잠재 활성도의 분포가 어떻게 0 쪽으로 몰리는지를 확인한다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 10</span><span>스파스 활성도 — 페널티 강도와 활성도 분포</span></div>
+        <div class="sparse-stage">
+          <div class="sparse-side act">
+            <h5>잠재 활성도 (32채널)</h5>
+            <canvas id="sp-act"></canvas>
+            <p>각 막대 = 한 잠재 채널의 활성도</p>
+          </div>
+          <div class="sparse-side dist">
+            <h5>활성도 분포 (히스토그램)</h5>
+            <canvas id="sp-dist"></canvas>
+            <p>0 근처에 얼마나 모이는가</p>
+          </div>
+        </div>
+        <div class="widget-controls">
+          <div class="slider" style="flex:1; min-width:240px;">
+            <label>페널티 강도 <b id="sp-lval">λ = 0.30</b></label>
+            <input type="range" id="sp-l" min="0" max="2" step="0.05" value="0.3">
+          </div>
+          <div class="legend">
+            <span><i style="background:var(--structure)"></i> 활성 채널</span>
+            <span><i style="background:var(--style)"></i> 0 또는 매우 작음</span>
+          </div>
+        </div>
+        <div class="verdict" id="sp-verdict"></div>
+      </div>
+      <p class="widget-cap">λ=0에서는 모든 채널이 다양한 값을 가진다. λ를 키울수록 활성도가 0 쪽으로 몰리고, 한 입력당 비제로 채널이 줄어든다. 그러면서도 재구성이 가능한 정도까지만 몇 개 채널이 강하게 살아남는 패턴이 만들어진다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>한 줄 요약</h2>
+      <p>시험 답안의 한 줄. <strong>"스파스 자기부호화기는 재구성 손실에 잠재 활성도의 $L^1$(또는 KL) 페널티 $\lambda \Omega(h)$를 더한 자기부호화기다. 이 페널티는 라플라스 사전분포의 음의 로그 사전분포로 해석할 수 있다. 결과적으로 잠재 차원이 크더라도 한 입력당 비제로 활성도가 매우 작아지는 표상이 학습되며, 이는 13장 희소 코딩의 amortized inference 일반화다."</strong></p>
+
+      <h2>다음 절 미리보기 — 잠재를 분포로 일반화하기</h2>
+      <p>여기까지의 모든 자기부호화기는 잠재 코드가 한 점이었다. 다음 <a href="11.html">Sub 11: 변분 자기부호화기(VAE)</a>에서는 그 잠재 코드를 분포로 일반화한다. 인코더가 "이 입력에 대응하는 잠재 분포의 평균과 분산"을 출력하고, 디코더가 그 분포에서 샘플링한 점에서 입력을 복원한다. 이 한 걸음으로 자기부호화기는 단순한 표상 학습기에서 생성 모델(generative model)로 격상된다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'자기부호화기란 무엇인가', f:'01.html' },
+    { no:'02', t:'인코더 · 디코더 · 재구성 손실', f:'02.html' },
+    { no:'03', t:'미완전 자기부호화기', f:'03.html' },
+    { no:'04', t:'과완전 AE의 위험', f:'04.html' },
+    { no:'05', t:'잡음 제거 AE — 매니폴드', f:'05.html' },
+    { no:'06', t:'잡음 제거 AE — 점수 매칭', f:'06.html' },
+    { no:'07', t:'수축적 AE — 자코비안', f:'07.html' },
+    { no:'08', t:'AE와 매니폴드 학습', f:'08.html' },
+    { no:'09', t:'AE vs PCA', f:'09.html' },
+    { no:'10', t:'스파스 AE', f:'10.html' },
+    { no:'11', t:'변분 AE 맛보기', f:'11.html' },
+    { no:'12', t:'시험 대비 체크리스트', f:'12.html' },
+  ];
+  const CURRENT = '10';
+  (function buildNav() {
+    document.querySelector('.topbar').innerHTML =
+      `<a class="home" href="index.html">← Chapter 14 — 자기부호화기</a>` +
+      `<span class="ch-mini">SUB ${CURRENT} / 12</span>`;
+    document.querySelector('.ch-nav ol').innerHTML = SUBS.map(s =>
+      `<li><a href="${s.f}" ${s.no === CURRENT ? 'class="current"' : ''}>${s.t}</a></li>`).join('');
+    const i = SUBS.findIndex(s => s.no === CURRENT);
+    const prev = i > 0 ? SUBS[i-1] : { f:'index.html', t:'챕터 표지', no:'' };
+    const next = i < SUBS.length-1 ? SUBS[i+1] : { f:'index.html', t:'챕터 표지', no:'' };
+    document.querySelector('.ch-foot').innerHTML =
+      `<a href="${prev.f}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+      `<a href="${next.f}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+    const bar = document.querySelector('.scroll-progress');
+    const onScroll = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    document.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+  })();
+
+  (function sparseWidget() {
+    const actC = document.getElementById('sp-act');
+    const distC = document.getElementById('sp-dist');
+    const slider = document.getElementById('sp-l');
+    const lval = document.getElementById('sp-lval');
+    const verdict = document.getElementById('sp-verdict');
+    const css = getComputedStyle(document.documentElement);
+    const STRUCT = css.getPropertyValue('--structure').trim();
+    const STYLE = css.getPropertyValue('--style').trim();
+    const FAINT = css.getPropertyValue('--ink-faint').trim();
+
+    function seedRand(s) { return () => (s = (s*1664525+1013904223) % 4294967296) / 4294967296; }
+    const K = 32;
+    const baseRnd = seedRand(13);
+    const raw = Array.from({length: K}, () => baseRnd() * 2.4 - 0.3);
+
+    function softThresh(v, lam) {
+      if (v > lam) return v - lam;
+      if (v < -lam) return v + lam;
+      return 0;
+    }
+
+    function drawActivation(lam) {
+      const ctx = actC.getContext('2d');
+      const W = actC.width = actC.clientWidth || 200, H = actC.height = 200;
+      ctx.fillStyle = '#fff'; ctx.fillRect(0,0,W,H);
+      const bw = (W - 20) / K;
+      ctx.strokeStyle = 'rgba(38,34,28,0.2)';
+      ctx.beginPath(); ctx.moveTo(10, H/2); ctx.lineTo(W-10, H/2); ctx.stroke();
+      let nonzero = 0;
+      for (let i = 0; i < K; i++) {
+        const v = softThresh(raw[i], lam * 0.6);
+        const x = 10 + i * bw + 1;
+        const barH = Math.abs(v) * (H/2 - 10);
+        if (Math.abs(v) > 0.02) nonzero++;
+        ctx.fillStyle = Math.abs(v) > 0.02 ? STRUCT : 'rgba(192, 73, 46, 0.45)';
+        if (v >= 0) ctx.fillRect(x, H/2 - barH, bw - 2, barH);
+        else ctx.fillRect(x, H/2, bw - 2, barH);
+      }
+      ctx.fillStyle = FAINT; ctx.font = '10px "Spline Sans Mono", monospace';
+      ctx.fillText(`비제로 채널 ${nonzero}/${K}`, 12, 14);
+      return nonzero;
+    }
+
+    function drawDist(lam) {
+      const ctx = distC.getContext('2d');
+      const W = distC.width = distC.clientWidth || 200, H = distC.height = 200;
+      ctx.fillStyle = '#fff'; ctx.fillRect(0,0,W,H);
+      const bins = 24;
+      const counts = new Array(bins).fill(0);
+      let minV = -1.6, maxV = 2.2;
+      const vals = raw.map(v => softThresh(v, lam * 0.6));
+      for (const v of vals) {
+        const t = (v - minV) / (maxV - minV);
+        const idx = Math.max(0, Math.min(bins-1, Math.floor(t * bins)));
+        counts[idx]++;
+      }
+      const maxC = Math.max(1, ...counts);
+      const bw = (W - 20) / bins;
+      for (let i = 0; i < bins; i++) {
+        const x = 10 + i * bw + 1;
+        const v = minV + (i + 0.5) / bins * (maxV - minV);
+        const barH = counts[i] / maxC * (H - 40);
+        ctx.fillStyle = Math.abs(v) < 0.05 ? STYLE : STRUCT;
+        ctx.fillRect(x, H - 20 - barH, bw - 2, barH);
+      }
+      ctx.strokeStyle = 'rgba(38,34,28,0.2)';
+      const zeroX = 10 + ((0 - minV) / (maxV - minV)) * (W - 20);
+      ctx.beginPath(); ctx.moveTo(zeroX, 16); ctx.lineTo(zeroX, H - 20); ctx.stroke();
+      ctx.fillStyle = FAINT; ctx.font = '10px "Spline Sans Mono", monospace';
+      ctx.fillText('0', zeroX - 4, H - 6);
+      ctx.fillText('활성도 값', W - 80, H - 6);
+    }
+
+    function update() {
+      const lam = parseFloat(slider.value);
+      lval.textContent = `λ = ${lam.toFixed(2)}`;
+      const nz = drawActivation(lam);
+      drawDist(lam);
+      let msg = '';
+      const pct = (100 * nz / 32).toFixed(0);
+      if (lam < 0.2) msg = `λ=${lam.toFixed(2)} — 거의 페널티 없음. 비제로 채널 <b class="bad">${pct}%</b>로 대부분 채널이 활성. 코드가 빽빽하다.`;
+      else if (lam < 0.8) msg = `λ=${lam.toFixed(2)} — 적정 희소화. 비제로 채널 <b class="mid">${pct}%</b>. 진짜 필요한 채널만 살아남기 시작.`;
+      else msg = `λ=${lam.toFixed(2)} — 강한 희소화. 비제로 채널 <b class="ok">${pct}%</b>. 코드가 매우 희소. 너무 강하면 재구성도 손해.`;
+      verdict.innerHTML = msg;
+    }
+    slider.addEventListener('input', update);
+    window.addEventListener('resize', update);
+    update();
+  })();
+
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
+        throwOnError: false,
+      });
+    }
+  });
+</script>
+</body>
+</html>

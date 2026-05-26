@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>12 · GLUE 벤치마크 — BERT 가 깬 기록의 의미</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="assets/bert.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Chapter 12 · GLUE 벤치마크</span>
+      <h1>아홉 개 시험을 한꺼번에<br><span class="t-mask">7점 이상</span>을 끌어올린 일</h1>
+      <p class="lede">한 모델이 한 작업에서 SOTA 를 갱신하는 일은 종종 일어난다. 그러나 같은 모델이 아홉 개 작업에서 모두 SOTA 를 갱신하고 평균 점수를 7 점 이상 끌어올리는 일은 흔하지 않다. 이 장은 그 사건이 일어난 무대인 GLUE 벤치마크의 구성, BERT 의 구체적 성과, 그리고 이 결과가 자연어 처리 연구의 패러다임을 바꾼 사연을 본다.</p>
+    </header>
+
+    <div class="prose">
+      <h2>1. GLUE 라는 무대</h2>
+      <p>GLUE (General Language Understanding Evaluation) 는 2018 년 4 월 New York University 등의 연구진이 만든 자연어 이해 평가 묶음이다. 단일 작업 SOTA 만 보면 모델이 특정 데이터셋에 과적합된 것일 수 있다. 그래서 GLUE 는 9 개의 서로 다른 자연어 이해 작업을 한 묶음으로 만들어, "한 모델이 모든 작업에서 골고루 잘하는가" 를 평가하도록 설계되었다. 한 작업만 잘하는 모델은 평균 점수가 낮아진다.</p>
+
+      <div class="def-box bidir-side">
+        <div class="deft">GLUE 9 개 작업</div>
+        <p><b>단일 문장 분류 (2개)</b> — SST-2 (감성), CoLA (문법성).<br><b>유사도·패러프레이즈 (3개)</b> — MRPC (패러프레이즈 F1), STS-B (유사도 회귀), QQP (Quora 패러프레이즈).<br><b>자연어 추론 (4개)</b> — MNLI (matched/mismatched), QNLI (질의응답 형식의 NLI), RTE (작은 NLI), WNLI (Winograd Schema, 작은 추론).</p>
+      </div>
+
+      <p>9 개 작업 중 평가 지표가 다 다르다. 정확도, F1 점수, Pearson 상관계수, Matthews 상관계수 등이 섞여 있다. GLUE 의 종합 점수는 단순히 9 개 점수의 평균이다. 그러나 어떤 작업의 데이터셋이 너무 작은 경우 평균에 큰 분산이 생기는 문제가 있어, 보통은 9 개 중 분산이 큰 작은 작업들을 빼고 8 개 또는 7 개의 평균을 보고하기도 한다.</p>
+
+      <h2>2. BERT 의 GLUE 성적</h2>
+      <p>BERT 논문의 핵심 표는 Table 1 이다. 9 개 작업의 점수를 한 줄로 늘어놓고, 종전 최고 단일 모델인 OpenAI GPT 와 GLUE 리더보드 상위 모델 점수와 BERT-BASE / BERT-LARGE 점수를 비교했다. 모든 칸에서 BERT 가 종전을 넘어섰고, 특히 CoLA, RTE, QQP 같은 작은 데이터셋이나 어려운 작업에서 큰 차이가 나왔다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 08</span><span>GLUE 막대 비교 — 이전 SOTA vs BERT BASE</span></div>
+        <div id="glue"></div>
+      </div>
+      <p class="widget-cap">왼쪽 회색 막대는 이전 SOTA (대부분 OpenAI GPT 또는 ELMo 기반의 특화 모델), 오른쪽 청록 막대는 BERT-BASE 의 점수다. CoLA 에서 17.1 점, MRPC 에서 2.9 점, QNLI 에서 8.2 점이 한꺼번에 올라갔고, 평균은 75.1 에서 79.6 으로 4.5 점 (LARGE 는 82.1 로 7.0 점) 상승했다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>3. 4 ~ 7 점이라는 차이가 왜 충격이었는가</h2>
+      <p>GLUE 벤치마크가 만들어지고 2018 년 한 해 동안의 SOTA 갱신폭은 보통 한 작업에서 0.5 ~ 2 점 정도였다. 큰 모델, 더 많은 데이터, 더 영리한 정규화로 이 정도가 쌓이는 것이 일반적인 속도였다. 그런데 BERT 는 단일 논문, 단일 모델 구조로 평균 4.5 ~ 7 점을 끌어올렸다. 이는 그 분야의 약 1 ~ 2 년치 누적 진보를 한꺼번에 압축한 결과였다.</p>
+
+      <div class="analogy">
+        한 운동 선수가 100m 달리기 세계 기록을 한 번에 0.05 초 단축한다고 상상해 보자. 그건 거의 매년 일어나는 평범한 갱신이다. 그러나 같은 선수가 100m, 200m, 400m, 800m, 1500m, 5000m, 10000m, 마라톤, 허들 — 9 가지 종목 모두에서 세계 기록을 한꺼번에 갱신했다고 상상해 보면 다르다. 그건 단순히 "그 종목들에서 더 좋아졌다" 가 아니라 "달리기에 대한 접근 방식 자체가 새롭다" 는 의미가 된다. BERT 의 GLUE 성적은 후자의 충격이었다.
+      </div>
+
+      <h2>4. 작은 데이터에서 더 큰 차이</h2>
+      <p>BERT 의 성능 향상이 특히 두드러진 것은 작은 데이터셋의 작업이었다. CoLA (1 만 문장), MRPC (5천 쌍), RTE (2500 쌍), STS-B (8천 쌍) 같은 작은 데이터에서는 종전 모델이 표현을 처음부터 학습해야 했기 때문에 데이터 부족이 곧 성능 한계였다. BERT 는 사전훈련된 양방향 표현을 가져다 작은 데이터로 미세조정만 하면 되었으므로, 데이터 부족의 영향을 거의 받지 않았다.</p>
+
+      <p>이 사실은 "사전훈련 + 미세조정" 패러다임의 결정적 장점을 보여 준다. 라벨된 데이터가 적은 도메인에서도 사전훈련된 모델을 쓰면 곧바로 SOTA 가 가능하다. 이는 실무에서 매우 중요했다. 의료, 법률, 특정 산업 등 라벨된 데이터를 모으기 어려운 영역들도 BERT 미세조정으로 빠르게 자연어 처리 시스템을 만들 수 있게 되었다.</p>
+
+      <h2>5. CoLA — 가장 큰 점수 차이의 의미</h2>
+      <p>CoLA 의 점수 변화는 특별히 주목할 만하다. 종전 SOTA 35.0 (Matthews 상관계수) 에서 BERT-LARGE 60.5 로 25.5 점이 한꺼번에 올랐다. 비율로 따지면 거의 73% 가 늘어난 셈이다. CoLA 는 한 문장이 문법적으로 받아들일 만한 영어인가를 판단하는 작업으로, 의미 단위가 아닌 구조 단위 — 통사적 일치, 어순, 형태론적 형태 — 의 미묘한 감각을 요구한다.</p>
+
+      <p>이 결과는 사전훈련된 BERT 가 어휘적 통계뿐 아니라 통사 구조 (syntactic structure) 도 어느 정도 학습한다는 사실의 증거였다. 후속 연구들이 BERT 의 자기주의 (self-attention) 패턴을 분석해 본 결과, 일부 헤드가 주어-동사 일치, 목적어 인식, 격 표시 같은 통사적 의존관계를 명확히 추출하고 있음이 밝혀졌다. BERT 는 의미적 의식뿐 아니라 문법적 의식까지 포함하는 다층적 표현을 학습한다.</p>
+
+      <h2>6. 평균 79.6 (BASE) vs 82.1 (LARGE) — 모델 크기의 효과</h2>
+      <p>BERT-BASE 와 BERT-LARGE 의 차이는 단순히 층 수와 차원이다. BASE 는 12 층, 768 차원, 12 헤드, 1.1억 파라미터. LARGE 는 24 층, 1024 차원, 16 헤드, 3.4억 파라미터. 두 모델이 같은 33억 단어 데이터로 같은 손실에 같은 절차로 사전훈련되었다. 차이는 오직 크기 한 가지였다.</p>
+
+      <p>그 차이가 GLUE 평균에서 2.5 점 (79.6 → 82.1) 이라는 일관된 격차를 만들어 냈다. 즉 "사전훈련 + 미세조정" 패러다임 안에서는 모델 크기가 곧 성능이라는 단순한 법칙이 성립했다. 이 사실이 이후 GPT-2 (1.5B), GPT-3 (175B), T5 (11B), PaLM (540B) 같은 거대 모델 경쟁의 직접적 동기가 되었다. "사전훈련된 표현은 모델이 클수록 더 좋다" 는 발견이 산업계 전체를 모델 크기 경쟁으로 몰아갔다.</p>
+
+      <h2>7. GLUE 의 한계와 SuperGLUE 의 등장</h2>
+      <p>BERT 가 GLUE 의 거의 모든 작업에서 사람 수준 (human baseline) 에 근접하거나 넘어서자, GLUE 자체의 변별력이 떨어졌다. 이에 GLUE 제작팀은 2019 년 더 어려운 작업으로 구성된 SuperGLUE 를 발표했다. CommitmentBank, COPA, MultiRC, ReCoRD, RTE, WiC, WSC, BoolQ 등 8 개 작업으로, 모두 다단계 추론·세계 지식·상식 등을 더 요구한다.</p>
+
+      <p>SuperGLUE 에서도 BERT 변형들이 빠르게 사람 수준에 도달했고, 다시 더 어려운 벤치마크 (MMLU, BIG-bench, HELM 등) 가 만들어졌다. 평가 벤치마크는 모델 발전과 함께 끊임없이 갱신되는 무대다. BERT 의 GLUE 결과는 그 사이클의 첫 번째 큰 충격이었다.</p>
+
+      <h2>8. 한 줄 정리 와 다음</h2>
+      <div class="def-box synth-side">
+        <div class="deft">한 줄 정리</div>
+        <p>BERT 는 GLUE 9 개 작업에서 모두 종전 SOTA 를 갱신하고 평균 점수를 75.1 → 79.6 (BASE) / 82.1 (LARGE) 로 4.5 ~ 7.0 점 끌어올렸다. 특히 작은 데이터셋 (CoLA, MRPC) 과 구조적 감각이 필요한 작업에서 큰 차이를 보였으며, 이는 사전훈련 + 미세조정 패러다임의 결정적 정당화였다.</p>
+      </div>
+
+      <p>다음 장은 BERT 이후의 흐름 — GPT 의 디코더 전용, T5 의 시퀀스-투-시퀀스 — 와 BERT 자신의 인코더 전용 흐름을 한 그림에 놓고 비교한다. 같은 트랜스포머 부품으로 만들어진 세 흐름이 왜 갈라졌으며, 각각 어디에 쓰이는지를 정리한다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script src="assets/bert.js"></script>
+<script>
+  window.addEventListener('load', () => {
+    BERT.buildNav('12');
+    const g = document.getElementById('glue');
+    BERT.onVisible(g, () => BERT.glueChart(g));
+  });
+</script>
+</body>
+</html>
+</content>
+</invoke>

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>12 · MAP 추정 — 정칙화로 가는 다리</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Section 12 · 사후의 한 점만 골라 답하는 절충</span>
+      <h1>MAP 추정 — <span class="t-style">정칙화로 가는 다리</span></h1>
+      <p class="lede">완전한 베이지안 추론은 계산이 무겁다. 그 부담을 피하면서 사전 정보는 포함시키는 절충이 MAP 추정이다. 그리고 MAP의 식은 놀랍게도 우리가 흔히 쓰는 정칙화와 정확히 같은 형태다.</p>
+    </header>
+
+    <div class="prose">
+      <p>11장에서 우리는 베이지안 추정이 매개변수에 대한 분포 — 사후 $p(\theta \mid \mathcal{D})$ — 를 답한다고 했다. 그 분포를 그대로 다루는 데는 계산적 부담이 크다. 사후 적분이 닫힌 식으로 풀리는 켤레 사전이 있는 단순한 경우만 다룰 수 있고, 신경망처럼 매개변수가 수백만 개인 모델에서는 사후 분포의 모양을 그릴 수도 없다. 그래서 베이지안의 사고를 부분적으로만 빌려 쓰는 절충이 필요했고, 그 절충의 표준이 최대사후확률(maximum a posteriori, MAP) 추정이다.</p>
+
+      <p>MAP의 정의는 단순하다. 사후 분포 $p(\theta \mid \mathcal{D})$를 가장 크게 만드는 한 점만 골라 답한다.</p>
+
+      <div class="math-block">$$ \theta_{\text{MAP}} = \arg\max_\theta \; p(\theta \mid \mathcal{D}) = \arg\max_\theta \; p(\mathcal{D} \mid \theta)\, p(\theta) $$</div>
+      <p class="math-note">두 번째 등식은 분모 $p(\mathcal{D})$가 $\theta$와 무관하므로 $\arg\max$에 영향을 주지 않는다는 사실로부터. 결과적으로 MAP는 우도와 사전의 곱을 최대화한다.</p>
+
+      <p>이 식이 MLE와 어떻게 다른지 비교해 보자. MLE는 우도 $p(\mathcal{D} \mid \theta)$만 최대화한다. MAP는 거기에 사전 $p(\theta)$의 곱이 들어간다. 사전이 어디서나 같은 값(균등 사전)이면 MAP는 MLE와 같다. 사전이 어떤 영역을 더 선호하면 MAP는 그 영역 쪽으로 끌려간다. 데이터가 매우 많으면 우도가 사전을 압도하므로 MAP는 MLE에 수렴한다. 데이터가 적으면 사전이 결과를 좌우한다.</p>
+
+      <h2>로그를 취하면 손실 + 정칙화의 모양이 나온다</h2>
+      <p>MAP를 컴퓨터에서 풀려면 곱을 합으로 바꿔야 한다. 양변에 음의 로그를 취한다.</p>
+
+      <div class="math-block">$$ \theta_{\text{MAP}} = \arg\min_\theta \; \Bigl[ -\log p(\mathcal{D} \mid \theta) - \log p(\theta) \Bigr] $$</div>
+      <p class="math-note">곱이 합으로 바뀌고, 최대화가 음의 로그의 최소화로 바뀐다. 두 항 모두 매개변수 $\theta$의 함수다.</p>
+
+      <p>이 식의 두 항이 무엇인지 보자. 첫 항 $-\log p(\mathcal{D} \mid \theta)$는 정확히 MLE에서 본 음의 로그우도(NLL)다. 분류면 교차 엔트로피, 회귀(가우시안 잡음 가정)면 MSE의 스케일된 형태. 즉 우리가 8장에서 "손실 함수의 합 = 경험적 위험"이라고 부른 그 양이다. 둘째 항 $-\log p(\theta)$는 사전의 로그를 음수로 뒤집은 것이다. 어떤 $\theta$가 사전에서 가능성이 낮으면(즉 $p(\theta)$가 작으면) 이 항이 크다. 즉 사전에 어긋나는 $\theta$를 벌하는 "벌점 항"이다.</p>
+
+      <p>이 두 항의 구조를 다시 적으면 다음과 같다.</p>
+
+      <div class="math-block">$$ \theta_{\text{MAP}} = \arg\min_\theta \; \underbrace{\bigl[-\log p(\mathcal{D} \mid \theta)\bigr]}_{\text{데이터 적합 항}} + \underbrace{\bigl[-\log p(\theta)\bigr]}_{\text{사전 벌점 항}} $$</div>
+
+      <p>이 식이 8장에서 본 정칙화가 더해진 경험적 위험 식과 정확히 같은 형태다. 데이터 적합 항이 손실의 합이고, 사전 벌점 항이 정칙화 항이다. 즉 <strong>"손실 + $\lambda \cdot$ 정칙화"라는 형태의 학습 목적 함수는 사실 어떤 사전을 둔 MAP 추정의 식이다.</strong> 정칙화 계수 $\lambda$가 무엇인지는 어떤 사전을 두느냐에 따라 결정된다. 13장에서 가우시안 사전을 두면 $\lambda$가 사전의 분산과 잡음의 분산의 비율로 정확히 나옴을 본다.</p>
+
+      <h2>MAP의 동전 던지기 예</h2>
+      <p>다시 동전 던지기로 돌아가 보자. 11장에서 본 베타 사전 $\text{Beta}(\alpha, \beta)$에 베르누이 우도가 결합되면 사후가 $\text{Beta}(h + \alpha, t + \beta)$가 된다고 했다. 이 사후 분포의 최빈값(mode)이 MAP 추정값이다. 베타 분포의 최빈값을 미분으로 구하면 다음과 같다.</p>
+
+      <div class="math-block">$$ \theta_{\text{MAP}} = \frac{h + \alpha - 1}{h + t + \alpha + \beta - 2} $$</div>
+      <p class="math-note">$\alpha + \beta - 2$만큼의 "가상 관측"이 사전에서 들어온다고 해석할 수 있다. 균등 사전 $\alpha = \beta = 1$이면 분자에 $\alpha - 1 = 0$, 분모에 $\alpha + \beta - 2 = 0$이 들어가서 MAP는 MLE인 $h/(h+t)$로 환원된다.</p>
+
+      <p>구체적인 숫자를 보자. 동전을 3번 던져 모두 앞면이 나왔을 때 ($h = 3, t = 0$), 사전이 약하게 0.5에 치우친 $\text{Beta}(2, 2)$이라면 MAP는 $(3 + 2 - 1)/(3 + 0 + 2 + 2 - 2) = 4/5 = 0.8$이다. MLE의 1.0보다 0.5쪽으로 끌려간 추정. 사전을 더 강하게 잡아 $\text{Beta}(10, 10)$이면 MAP는 $(3 + 10 - 1)/(3 + 0 + 10 + 10 - 2) = 12/21 \approx 0.57$로 더 끌려간다. 사전이 강할수록 데이터의 우연한 패턴에 덜 흔들린다. 데이터가 많아지면 분자와 분모 모두 큰 값이 되어 사전의 영향이 작아진다.</p>
+
+      <h2>MAP와 MLE — 같은 식의 두 끝점</h2>
+      <p>식을 다시 정리하면 MAP는 MLE에 사전 항을 더한 것이다.</p>
+
+      <div class="math-block">$$ \underbrace{\text{NLL}(\theta)}_{\text{MLE 목적}} \;\;\xrightarrow{+\;-\log p(\theta)}\;\; \underbrace{\text{NLL}(\theta) + \text{사전 벌점}}_{\text{MAP 목적}} $$</div>
+      <p class="math-note">균등 사전이면 사전 벌점이 상수가 되어 MAP = MLE. 강한 사전이면 사전 벌점이 학습 방향을 강하게 끌어당긴다.</p>
+
+      <p>또 다른 시점에서 MAP는 완전한 베이지안의 한 끝점이다. 완전한 베이지안은 사후 분포 전체로 예측하고, MAP는 그 분포의 한 점(최빈값)만 쓴다. 사후가 한 점에 매우 집중되어 있으면 두 답이 거의 같지만, 사후가 넓게 퍼져 있으면 점추정인 MAP가 베이지안의 "예측 분산"을 잃어버린다. 즉 MAP는 베이지안 사고의 절반만 빌려 쓰는 절충이다 — 사전 정보는 가져오되 매개변수의 불확실성은 버린다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 12</span><span>같은 위젯, 다른 시점 — MAP는 사후의 최빈값</span></div>
+        <div id="bayes12"></div>
+      </div>
+      <p class="widget-cap">11장에서 본 같은 위젯이지만 이번에는 MAP에 주목한다. 실선 사후의 봉우리 위치가 정확히 MAP $\theta$ 값이다. 사전을 평평하게 두면 MAP는 점선 MLE 위치(주황 점선)와 거의 일치한다. 사전을 좁게 두면 MAP가 사전 쪽으로 끌려가고, 그 끌려가는 양이 정칙화의 강도다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>MAP의 한계 — 분포 정보를 잃는다</h2>
+      <p>MAP의 가장 큰 한계는 점추정이라는 사실 그 자체다. 사후 분포 $p(\theta \mid \mathcal{D})$가 두 봉우리(bimodal)를 가진다고 하자. 두 봉우리 중 약간 더 높은 쪽이 MAP다. 그러나 다른 봉우리도 거의 같은 높이이고 두 봉우리가 매개변수 공간에서 멀리 떨어져 있다면, MAP는 두 가능성 중 한 쪽만 답하면서 다른 쪽의 가능성을 완전히 무시한다. 베이지안 예측이라면 두 봉우리 모두를 가중치로 둬 평균하지만, MAP 예측은 한 쪽만 본다.</p>
+
+      <p>이 한계는 모델이 매우 복잡하거나 데이터가 비대칭일 때 더 심해진다. 신경망의 사후 분포는 일반적으로 매우 복잡하며 여러 봉우리를 가지는 것으로 알려져 있다. MAP는 그 중 한 봉우리에만 갇히는 점추정이다. 완전한 베이지안 신경망(Bayesian neural network) 연구는 이 한계를 극복하려는 시도이지만, 아직 실용적 표준이 아니다.</p>
+
+      <p>또 하나의 한계는 매개변수 재매개화(reparameterization)에 대한 비균등성이다. MAP는 좌표계에 따라 다른 점을 답한다. 예를 들어 표준편차 $\sigma$를 매개변수로 쓰는가, 분산 $\sigma^2$를 쓰는가, 정밀도 $1/\sigma^2$를 쓰는가에 따라 MAP 답이 다르다. 우도는 매개변수 변환에 불변하지만 사전은 변환에 따라 모양이 바뀌기 때문이다. 완전한 베이지안은 이 문제를 가지지 않는다(분포의 전체 정보를 보존한다). 시험에서는 이 정도까지 깊이 묻지 않지만, "MAP는 좌표 의존적이고 베이지안은 그렇지 않다"는 차이를 알아 두면 좋다.</p>
+
+      <h2>왜 이 장이 정칙화로 가는 다리인가</h2>
+      <p>지금까지 본 두 가지 사실을 합치면 다음이 분명해진다. 첫째, MAP의 목적 함수는 "NLL + 사전 벌점"의 형태다. 둘째, 머신러닝 표준 학습 목적은 "손실 + $\lambda$ × 정칙화 항"의 형태다. 둘이 같은 식의 다른 이름이라는 사실이 직관적으로 와닿는다. 사전이 가우시안이면 $-\log p(\theta) = \tfrac{1}{2\tau^2}\|\theta\|_2^2 + \text{상수}$가 되며, 이는 L2 정칙화의 정확한 형태다. 사전이 라플라스(Laplace)이면 $-\log p(\theta) = \tfrac{1}{b}\|\theta\|_1 + \text{상수}$가 되어 L1 정칙화가 된다.</p>
+
+      <p>이 대응은 단순한 형식적 일치가 아니라 개념적 통합이다. 정칙화를 단순히 "복잡한 모델을 벌하는 임의의 트릭"으로 이해할 수도 있고, "매개변수에 대한 사전 정보의 통계적 표현"으로 이해할 수도 있다. 후자의 시점에서는 정칙화 강도 $\lambda$가 사전의 신뢰도에 직접 대응되고, 정칙화의 모양(L2, L1, 그 외)이 사전 분포의 모양에 일대일 대응된다. 다음 장(13)에서 이 대응을 가우시안 사전 ↔ L2의 가장 흔한 사례에서 끝까지 풀어 본다.</p>
+
+      <div class="analogy">
+        MLE, MAP, 베이지안의 차이를 <b>고민의 깊이</b>에 비유해 보자. MLE는 "데이터만 보고 가장 그럴듯한 답을 한다." 빠르지만 데이터가 적을 때 흔들린다. MAP는 "데이터에 내 사전 지식을 더해 가장 그럴듯한 답을 한다." 데이터가 적을 때도 안정적이지만 여전히 한 점만 답한다. 베이지안은 "데이터에 사전 지식을 더해 가능한 모든 답을 분포로 답한다." 가장 정직하지만 계산이 무겁다. 세 가지는 점점 깊어지는 정직성의 단계이며, 머신러닝은 보통 MAP에서 멈추는 절충을 택한다. 그 절충의 결과가 정칙화라는 익숙한 도구다.
+      </div>
+
+      <h2>이 장의 한 줄</h2>
+      <p>MAP 추정은 베이지안의 사후 분포에서 최빈값 한 점만 골라 답하는 점추정이다. 식은 "MLE의 NLL + 사전 벌점"의 형태이며, 이는 정확히 "손실 + 정칙화"라는 머신러닝 표준 학습 식과 같다. 즉 정칙화는 임의의 트릭이 아니라 사전 정보의 통계적 표현이고, 정칙화 강도와 모양이 사전 분포의 신뢰도와 모양에 일대일 대응된다. 다음 장에서 가우시안 사전을 두는 가장 흔한 경우를 끝까지 풀어, L2 정칙화(weight decay)가 정확히 가우시안 MAP라는 사실을 본다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  window.addEventListener('load', () => {
+    NST.buildNav('12');
+    const t = document.getElementById('bayes12');
+    NST.onVisible(t, () => NST.bayesPosterior(t));
+  });
+</script>
+<script src="../assets/widgets.js"></script>
+<script src="widgets-ch05.js"></script>
+</body>
+</html>

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>08 · 역사 3 — 부활과 폭발 — Chapter 1</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .tl-wrap { padding: 1.4rem 1rem 1rem; }
+  .tl-line { position: relative; height: 60px; margin: 1rem 0; }
+  .tl-axis { position: absolute; top: 30px; left: 30px; right: 30px; height: 2px; background: var(--line); }
+  .tl-tick { position: absolute; top: 22px; width: 1px; height: 18px; background: var(--ink-faint); }
+  .tl-year { position: absolute; top: 44px; font-family: var(--mono); font-size: .68rem; color: var(--ink-faint); transform: translateX(-50%); }
+  .tl-mark { position: absolute; top: 26px; width: 12px; height: 12px; border-radius: 50%; background: var(--structure); transform: translateX(-50%); cursor: pointer; transition: transform .15s, box-shadow .15s; }
+  .tl-mark:hover { transform: translateX(-50%) scale(1.4); box-shadow: 0 0 0 3px rgba(45,91,122,.2); }
+  .tl-mark.s { background: var(--style); }
+  .tl-mark.y { background: var(--synth); }
+  .tl-mark.active { transform: translateX(-50%) scale(1.5); box-shadow: 0 0 0 4px rgba(45,91,122,.3); }
+  .tl-label { position: absolute; top: 8px; font-family: var(--mono); font-size: .62rem; color: var(--ink-soft); transform: translateX(-50%); white-space: nowrap; }
+  .tl-readout { max-width: var(--measure); margin: 1rem auto 0; padding: 1rem 1.4rem; background: var(--paper-2); border-radius: 8px; min-height: 6rem; }
+  .tl-readout h5 { margin: 0 0 .3rem; font-family: var(--serif); font-size: 1.05rem; color: var(--ink); }
+  .tl-readout .yr { display: inline-block; font-family: var(--mono); font-size: .72rem; color: var(--style); margin-right: .6rem; }
+  .tl-readout p { margin: 0; font-size: .92rem; color: var(--ink-soft); line-height: 1.6; }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-Chapter 08 · 세 번째 물결</span>
+      <h1>부활 (2006-)과 <span class="t-style">폭발</span> (2012-)</h1>
+      <p class="lede">2006년 Hinton의 사전훈련 논문이 두 번째 겨울의 끝을 알렸다. 2012년 AlexNet의 ImageNet 충격이 본격적인 폭발을 시작했고, 2017년 Transformer가 NLP를 같은 사다리에 올렸다. 이 sub-chapter는 그 결정적 마디들이 무엇이었고, 왜 그 시점이었는지를 본다.</p>
+    </header>
+
+    <div class="prose">
+      <p>두 번째 겨울이 가장 깊었던 2000년대 초, 신경망 연구는 학계 변두리에 있었다. 학회 논문심사에서 "신경망(neural network)"이라는 단어가 제목에 들어가면 거부될 확률이 높았다. Hinton, Bengio, LeCun을 비롯한 소수의 연구자들이 이 시기를 견디며 연구를 이어 갔다. 그들이 만들어 낸 결정적 전환점이 2006년이었다.</p>
+
+      <h2>2006년 — Hinton의 사전훈련과 "Deep Learning"이라는 이름의 등장</h2>
+
+      <p>2006년 Geoffrey Hinton과 Ruslan Salakhutdinov가 Science지에 "Reducing the Dimensionality of Data with Neural Networks"라는 논문을 발표했다. 이 논문의 핵심은 두 가지였다. 첫째, <strong>제한된 볼츠만 머신(RBM, restricted Boltzmann machine)</strong>이라는 단순한 모델을 한 층씩 차례로 학습시킨 다음, 그 가중치들을 깊은 신경망의 초기값으로 쓰면 — 이를 <em>사전훈련(pre-training)</em>이라고 한다 — 깊은 신경망을 잘 학습시킬 수 있다는 것이었다. 둘째, 이 방식으로 학습된 깊은 오토인코더가 PCA 같은 전통적 차원 축소 기법보다 훨씬 좋은 표상을 만든다는 것이었다.</p>
+
+      <p>이 결과의 진짜 의의는 단순한 성능 향상이 아니라, <strong>"깊은 신경망도 학습할 수 있다"는 증명</strong>이었다. 1990년대까지는 깊은 신경망을 무작위 초기화에서 시작하면 기울기 소실로 학습이 거의 불가능하다고 여겨졌다. Hinton의 사전훈련은 그 벽을 우회했다. 이 시기에 "deep learning"이라는 이름이 본격적으로 쓰이기 시작했다. 신경망(neural network)이라는 거부당하는 이름 대신, 새로운 정체성으로 다시 등장한 것이다.</p>
+
+      <p>2009년에는 또 하나의 결정적 변화가 일어났다. Stanford의 Fei-Fei Li가 주도한 <strong>ImageNet</strong> 데이터셋이 공개됐다. 1,400만 장의 인터넷 이미지에 사람이 손으로 1,000개 클래스 라벨을 붙인 데이터다. 이전까지 비전 데이터셋이 수만 장 수준이었던 것을 고려하면, 두세 자릿수의 점프였다. 동시에 NVIDIA의 CUDA가 등장해 GPU를 일반 계산에 쉽게 쓸 수 있게 됐다. 큰 데이터와 빠른 계산이라는 두 축이 동시에 마련된 것이다.</p>
+
+      <h2>2012년 — AlexNet의 ImageNet 충격</h2>
+
+      <p>2012년 ImageNet Large Scale Visual Recognition Challenge(ILSVRC)는 그 해의 모든 비전 학계를 뒤집어 놓았다. 이전까지 우승 모델들은 손으로 짠 특징(SIFT, HOG)을 SVM이나 부스팅(boosting)으로 분류하는 방식이었고, 가장 좋은 top-5 오차율(top-5 error rate)이 25.8%였다. 그런데 그 해 처음 출전한 깊은 CNN — Alex Krizhevsky, Ilya Sutskever, Geoffrey Hinton의 <strong>AlexNet</strong> — 이 top-5 오차율 15.3%를 기록했다. 차이가 10%포인트 이상이었다. 이전 우승 모델과 비교하면 거의 절반 가까이 오차를 줄였다.</p>
+
+      <p>AlexNet은 새로운 아이디어를 발명한 것이 아니었다. CNN, ReLU 활성화, 드롭아웃(dropout), 데이터 증강(data augmentation) 같은 요소들은 모두 이전에 알려진 것이었다. 그러나 AlexNet은 그 모든 것을 큰 데이터(ImageNet 1.2M 이미지)와 GPU(NVIDIA GTX 580 2장) 위에서 결합했고, 그 결합이 폭발적 결과를 만들었다. <strong>핵심은 새로운 알고리즘이 아니라 새로운 스케일이었다.</strong> 이 사실이 그 후 10년의 딥러닝 발전을 관통하는 한 줄짜리 교훈이 된다.</p>
+
+      <p>AlexNet 이후 ImageNet의 정확도 곡선은 매년 가파르게 올라갔다. 2014년 GoogLeNet/VGG가 약 7%, 2015년 ResNet이 약 3.6%로 인간 수준(약 5%)을 넘었다. 5년 만에 비전 분야는 완전히 다른 곳으로 옮겨 갔다.</p>
+
+      <div class="analogy">
+        <b>등산로의 정상.</b> 1990년대까지 신경망 연구자들은 안개 속에서 산을 오르고 있었다. 어디까지 올라갈 수 있는지, 어디에 정상이 있는지 보이지 않았다. 2012년 AlexNet은 안개가 걷히는 순간이었다. 그 순간 모든 사람이 "아, 정상이 저기 있구나, 그리고 우리는 생각보다 가까이 와 있구나"를 본 것이다. 그 후 등반은 가속화되었다.
+      </div>
+
+      <h2>아래 위젯 — 1940년부터 현재까지 결정적 마디</h2>
+
+      <p>아래 타임라인에서 각 마커를 클릭하면 그 해에 무슨 일이 있었는지, 왜 그것이 결정적이었는지가 표시된다. 파란 마커는 학술적 돌파(architecture, algorithm), 빨간 마커는 외부 사건(challenge result, public moment), 황토 마커는 사회적 분기점이다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 09</span><span>딥러닝 80년 타임라인 · 마커를 클릭해 보기</span></div>
+        <div class="tl-wrap">
+          <div class="tl-line" id="tl">
+            <div class="tl-axis"></div>
+          </div>
+        </div>
+        <div class="tl-readout" id="tl-read">
+          <h5>마커를 클릭해 보세요</h5>
+          <p>각 마커는 그 해의 결정적 사건과 그것이 왜 중요했는지를 보여 줍니다.</p>
+        </div>
+      </div>
+      <p class="widget-cap">파랑은 학술적 돌파, 빨강은 공개 사건, 황토는 사회적 분기점. 80년 동안 일정한 가속이 아니라, 명백한 마디들에서 도약이 일어났다는 점이 보인다.</p>
+    </div>
+
+    <div class="prose">
+      <div class="analogy">
+        <b>오랜 기다림 끝의 일격.</b> 권투에서 챔피언 자리를 노리던 도전자가 10년을 떠돌다 마침내 한 라운드의 결정타로 챔피언을 무너뜨리는 장면이 있다. 그 한 방의 위력이 갑자기 생긴 것이 아니다. 10년 동안 쌓아 온 기술과 체력이 그 한 방으로 응축된 것이다. AlexNet도 그랬다. 2012년의 결정타는 하루의 발명이 아니라, 25년 동안 묻혀 있던 모든 아이디어의 응축이었다.
+      </div>
+
+      <h2>2017년 — Transformer와 시퀀스의 통합</h2>
+
+      <p>비전 분야의 폭발은 2012년이었지만, 자연어 처리(NLP)는 한참을 따라가지 못했다. RNN과 LSTM이 있었지만 학습이 느리고 긴 문장에서 성능이 떨어졌다. 이 벽을 깬 것이 2017년 Google의 "Attention Is All You Need" 논문 — <strong>Transformer</strong>다. Transformer는 RNN을 완전히 버리고 <em>self-attention</em>이라는 새로운 메커니즘만으로 시퀀스를 처리했다.</p>
+
+      <p>Transformer의 핵심 이득은 두 가지였다. 첫째, <strong>병렬 처리</strong>가 가능했다. RNN은 한 단어씩 순차적으로 처리해야 했지만, self-attention은 모든 단어 쌍의 관계를 동시에 계산한다. 그래서 GPU 한 장에서 같은 시간에 훨씬 많은 데이터를 학습할 수 있었다. 둘째, <strong>긴 거리 의존성</strong>을 잘 다뤘다. RNN은 100단어 떨어진 단어 간의 관계를 거의 잊었지만, Transformer는 위치에 무관하게 직접 연결한다. 이 두 가지가 합쳐져 NLP가 비전과 같은 속도의 성능 향상을 시작했다.</p>
+
+      <p>2018년 BERT, 2019년 GPT-2, 2020년 GPT-3, 2022년 ChatGPT — 모두 Transformer 위에 데이터와 계산을 더 부어 키운 결과물이다. 다시 한번 새로운 알고리즘이 아니라 새로운 스케일이 폭발을 만들었다. 2023-2025년의 거대 언어 모델들까지 같은 패턴이다.</p>
+
+      <h2>왜 "지금"이 가능했는가 — 한 줄 요약</h2>
+
+      <p>딥러닝의 부흥과 폭발을 한 문장으로 정리하면 이렇다. <strong>"이론은 1980-90년대에 다 있었지만, 그 잠재력을 풀어 줄 외부 조건 — 데이터, 계산, 그리고 한 줌의 핵심 보강 (ReLU·드롭아웃·배치 정규화·attention) — 이 2006-2017년 사이에 차례로 갖춰졌다."</strong> 이 한 줄을 머리에 두면, 다음 세 sub-chapter에서 보는 데이터·계산·모델 크기의 폭발은 자연스럽게 이어진다.</p>
+
+      <div class="analogy">
+        <b>도미노의 마지막 한 줄.</b> 거대한 도미노가 천천히 쌓이는 동안에는 별다른 일이 일어나지 않는다. 그러다 마지막 한 줄이 놓이면 갑자기 모든 도미노가 한 순간에 무너진다. 1986-2012년의 26년이 도미노가 쌓이던 시기였고, 2012년 AlexNet이 그 마지막 한 줄이었다. 그 한 줄이 새로운 것이 아니라, 이전의 모든 것이 그것을 가능하게 만들었다.
+      </div>
+
+      <p>그리고 한 가지 더, 시험에 자주 나오는 질문이 있다. <em>"AlexNet은 무엇이 새로웠는가?"</em> 정답은 "새로운 아이디어가 아니라 새로운 스케일"이다. CNN도, ReLU도, 드롭아웃도 그 이전에 다 있었다. AlexNet의 진짜 기여는 그것들을 큰 데이터와 GPU 위에 결합해 "큰 신경망이 정말 작동한다"를 폭발적으로 증명한 것이다. 이 시각이 1장이 우리에게 주려는 핵심 역사관이다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+const SUBS = [
+  { no:'01', t:'표상의 문제' },
+  { no:'02', t:'AI · ML · 표상학습 · DL' },
+  { no:'03', t:'표상학습이란 무엇인가' },
+  { no:'04', t:'깊이 1 — 표상의 사다리' },
+  { no:'05', t:'깊이 2 — 합성성' },
+  { no:'06', t:'역사 1 — 사이버네틱스' },
+  { no:'07', t:'역사 2 — 연결주의' },
+  { no:'08', t:'역사 3 — 부활과 폭발' },
+  { no:'09', t:'폭발 1 — 데이터' },
+  { no:'10', t:'폭발 2 — 계산' },
+  { no:'11', t:'폭발 3 — 모델 크기' },
+  { no:'12', t:'응용 — 어디까지' },
+  { no:'13', t:'시험 대비 체크리스트' },
+];
+function buildNav(cur) {
+  const ol = document.querySelector('.ch-nav ol');
+  ol.innerHTML = SUBS.map(s =>
+    `<li><a href="${s.no}.html"${s.no===cur?' class="current"':''}>${s.t}</a></li>`).join('');
+  document.querySelector('.topbar').innerHTML =
+    `<a class="home" href="index.html">← Ch.01 표지</a><span class="ch-mini">SUB ${cur} / 13</span>`;
+  const i = SUBS.findIndex(s => s.no === cur);
+  const prev = i > 0 ? SUBS[i-1] : { no:'', t:'챕터 표지로' };
+  const next = i < SUBS.length-1 ? SUBS[i+1] : { no:'', t:'챕터 표지로' };
+  const ph = prev.no ? prev.no+'.html' : 'index.html';
+  const nh = next.no ? next.no+'.html' : 'index.html';
+  document.querySelector('.ch-foot').innerHTML =
+    `<a href="${ph}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+    `<a href="${nh}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+}
+function progressBar() {
+  const bar = document.querySelector('.scroll-progress');
+  document.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max>0 ? (h.scrollTop/max)*100 : 0) + '%';
+  }, { passive: true });
+}
+
+const EVENTS = [
+  { yr:1943, type:'b', short:'McCulloch-Pitts', title:'McCulloch-Pitts 인공 뉴런', desc:'생물학적 뉴런을 임계 함수(threshold function)로 추상화한 첫 수학 모델. AND/OR/NOT 같은 기본 논리를 뉴런 조합으로 표현할 수 있다는 사실이 처음 보였다. 다만 학습은 없었다.' },
+  { yr:1958, type:'b', short:'Perceptron', title:'Rosenblatt의 퍼셉트론', desc:'McCulloch-Pitts에 가중치 학습 규칙을 더한 첫 학습 가능 신경망. 미 해군이 자율 비행기 식별에 쓰일 것이라 발표할 정도로 흥분했다. NYT가 "퍼셉트론이 곧 의식을 가질 것"이라 보도.' },
+  { yr:1969, type:'y', short:'XOR 한계', title:'Minsky·Papert "Perceptrons"', desc:'단층 퍼셉트론은 XOR를 풀 수 없음을 수학적으로 증명. 첫 번째 인공지능 겨울의 시작. 신경망 연구비가 거의 끊김. 다층이면 풀 수 있다는 것은 알려져 있었지만, 학습 방법이 없었다.' },
+  { yr:1986, type:'b', short:'역전파', title:'Rumelhart-Hinton-Williams 역전파', desc:'Nature지에 다층 신경망에 역전파를 적용하는 방법을 정리해 발표. 분산 표상(distributed representation) 개념도 같은 시기에 정리됨. 두 번째 부흥의 시작.' },
+  { yr:1989, type:'b', short:'LeNet', title:'LeCun의 LeNet — CNN의 원형', desc:'우편번호 인식을 위한 합성곱 신경망. 합성곱, 풀링, 가중치 공유의 핵심 아이디어가 모두 자리잡음. 1998년 LeNet-5로 발전.' },
+  { yr:1997, type:'b', short:'LSTM', title:'Hochreiter-Schmidhuber LSTM', desc:'RNN의 기울기 소실 문제를 게이트 메커니즘으로 해결. 긴 시퀀스 처리의 디폴트가 됨. 2010년대 음성 인식·번역의 기반이 된다.' },
+  { yr:2006, type:'b', short:'사전훈련', title:'Hinton 사전훈련 논문', desc:'Science지에 RBM 기반 layer-wise 사전훈련 발표. 깊은 신경망도 학습 가능함을 증명. "deep learning"이라는 이름이 본격적으로 쓰이기 시작.' },
+  { yr:2009, type:'y', short:'ImageNet', title:'ImageNet 공개', desc:'Fei-Fei Li 주도로 1,400만 장의 인터넷 이미지에 1,000개 클래스 라벨을 단 데이터셋 공개. 이전 데이터셋의 100배~1000배 규모. 큰 데이터 시대의 시작.' },
+  { yr:2012, type:'s', short:'AlexNet', title:'AlexNet의 ImageNet 충격', desc:'Krizhevsky-Sutskever-Hinton의 깊은 CNN이 top-5 오차율을 25.8% → 15.3%로 끌어내림. 새로운 아이디어가 아니라 큰 데이터 + GPU의 결합이 핵심. 비전 분야의 패러다임 전환.' },
+  { yr:2015, type:'b', short:'ResNet', title:'ResNet — 인간 수준 돌파', desc:'스킵 연결(skip connection)로 152층까지 깊이를 늘림. ImageNet top-5 오차율 3.57%로 인간 수준(5%)을 넘김.' },
+  { yr:2017, type:'b', short:'Transformer', title:'Attention Is All You Need', desc:'Google의 Transformer 논문. RNN을 완전히 버리고 self-attention만으로 시퀀스 처리. 병렬화와 긴 거리 의존성의 두 마리 토끼를 잡음. NLP 폭발의 시작.' },
+  { yr:2018, type:'b', short:'BERT', title:'BERT — 사전훈련+미세조정 패러다임', desc:'마스크 언어 모델(MLM)과 NSP로 양방향 사전훈련. GLUE 벤치마크의 거의 모든 과제에서 인간 수준을 넘김. NLP의 표준 패러다임 정착.' },
+  { yr:2020, type:'b', short:'GPT-3', title:'GPT-3 — 거대 모델의 시작', desc:'1,750억 파라미터. few-shot learning(예시 몇 개로 학습)의 가능성을 보여 줌. 모델 크기의 폭발이 본격화됨.' },
+  { yr:2022, type:'s', short:'ChatGPT', title:'ChatGPT 공개', desc:'대화형 인터페이스로 LLM이 일반인에게 도달. 두 달 만에 1억 사용자. AI에 대한 사회적 인식 자체가 바뀜.' },
+];
+
+function renderTimeline() {
+  const tl = document.getElementById('tl');
+  const minY = 1940, maxY = 2030;
+  // year ticks
+  for (let y = minY; y <= maxY; y += 10) {
+    const x = ((y - minY) / (maxY - minY)) * 100;
+    const t = document.createElement('div');
+    t.className = 'tl-tick';
+    t.style.left = `calc(30px + ${x}% - ${x * 0.6}px)`;
+    tl.appendChild(t);
+    const lab = document.createElement('div');
+    lab.className = 'tl-year';
+    lab.style.left = `calc(30px + ${x}% - ${x * 0.6}px)`;
+    lab.textContent = y;
+    tl.appendChild(lab);
+  }
+  EVENTS.forEach((e, i) => {
+    const x = ((e.yr - minY) / (maxY - minY)) * 100;
+    const m = document.createElement('div');
+    m.className = 'tl-mark ' + e.type;
+    m.style.left = `calc(30px + ${x}% - ${x * 0.6}px)`;
+    m.dataset.idx = i;
+    tl.appendChild(m);
+    const lab = document.createElement('div');
+    lab.className = 'tl-label';
+    lab.style.left = `calc(30px + ${x}% - ${x * 0.6}px)`;
+    lab.textContent = e.short;
+    if (i % 2 === 1) lab.style.top = '0';
+    tl.appendChild(lab);
+    m.addEventListener('click', () => {
+      document.querySelectorAll('.tl-mark').forEach(x => x.classList.remove('active'));
+      m.classList.add('active');
+      const r = document.getElementById('tl-read');
+      r.innerHTML = `<h5><span class="yr">${e.yr}</span>${e.title}</h5><p>${e.desc}</p>`;
+    });
+  });
+}
+
+window.addEventListener('load', () => {
+  buildNav('08');
+  progressBar();
+  renderTimeline();
+});
+</script>
+</body>
+</html>

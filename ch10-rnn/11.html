@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>11 · GRU — LSTM의 축약형, 두 게이트로</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .gru-stage { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; padding: 1.4rem 1.2rem 1rem; }
+  .gru-stage > div { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 1rem; min-height: 300px; display: flex; flex-direction: column; }
+  .gru-stage h4 { margin: 0 0 .5rem; font-family: var(--serif); font-size: 1.05rem; }
+  .gru-stage .lstm h4 { color: var(--structure); }
+  .gru-stage .gru h4 { color: var(--style); }
+  .gru-stage svg { width: 100%; height: auto; flex: 1; }
+  .gru-meta { display: flex; justify-content: space-between; padding: .4rem 0; font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); border-top: 1px solid var(--line-soft); margin-top: .5rem; }
+  .gru-meta b { color: var(--ink); }
+  .gru-ctl { display: flex; flex-wrap: wrap; gap: 1.1rem; padding: 1rem 1.2rem; border-top: 1px solid var(--line-soft); background: var(--paper); font-size: .87rem; }
+  .gru-ctl label { display: flex; flex-direction: column; gap: .25rem; min-width: 200px; flex: 1; }
+  .gru-ctl label span { color: var(--ink-soft); font-family: var(--mono); font-size: .78rem; }
+  .gru-ctl input[type=range] { width: 100%; accent-color: var(--structure); }
+  @media (max-width: 720px) { .gru-stage { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar">
+  <a class="home" href="index.html">← Ch.10 표지</a>
+  <span class="ch-mini">SUB 11 / 14</span>
+</div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol id="navlist"></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-chapter 11 · LSTM의 축약형</span>
+      <h1>두 게이트로<br><span class="t-style">LSTM의 본질</span>만 남기다</h1>
+      <p class="lede">2014년 조경현(Cho) 등은 게이트 순환 유닛(Gated Recurrent Unit, GRU)을 제안했다. LSTM의 세 게이트와 두 상태(cell·hidden)를 <strong>두 게이트와 한 상태</strong>로 줄인 구조다. 같은 일을 더 적은 매개변수로 한다면, 같은 데이터로 더 빠르게 학습되고 과적합도 줄어든다. 이 장은 GRU가 무엇을 줄였고 무엇을 남겼는지, 그리고 LSTM과의 실용적 차이를 정리한다.</p>
+    </header>
+
+    <div class="prose">
+      <h2>GRU의 정의 — 두 게이트, 한 상태</h2>
+      <p>GRU의 한 단계는 다음 네 식으로 정의된다. 첫 두 식은 게이트, 셋째는 후보 상태, 넷째는 최종 상태 갱신이다.</p>
+
+      <div class="math-block">$$\begin{aligned}
+        z_t &= \sigma\!\left(W_z\,[h_{t-1}, x_t] + b_z\right) \quad &\text{(update gate)} \\
+        r_t &= \sigma\!\left(W_r\,[h_{t-1}, x_t] + b_r\right) \quad &\text{(reset gate)} \\
+        \tilde h_t &= \tanh\!\left(W\,[r_t \odot h_{t-1}, x_t] + b\right) \quad &\text{(candidate)} \\
+        h_t &= (1 - z_t) \odot h_{t-1} + z_t \odot \tilde h_t \quad &\text{(state update)}
+      \end{aligned}$$</div>
+      <p class="math-note">$z_t$가 LSTM의 forget·input 두 게이트를 묶어 대신한다. $r_t$는 후보 계산에서 이전 상태를 얼마나 참조할지 결정.</p>
+
+      <p>핵심 차이를 두 가지로 정리할 수 있다. 첫째, <strong>cell state가 사라졌다</strong>. GRU에는 hidden state $h_t$ 하나만 있다. 둘째, <strong>forget gate와 input gate가 한 개의 update gate $z_t$로 묶였다</strong>. 식의 마지막 줄을 보면 $h_t = (1-z_t) \odot h_{t-1} + z_t \odot \tilde h_t$인데, $z_t$가 1에 가까우면 새 후보를 받아들이고, 0에 가까우면 이전 상태를 그대로 유지한다. 즉 $z_t$ 하나가 "잊을지 새로 쓸지"의 결정을 동시에 한다. LSTM에서는 forget gate가 0에 가까우면서 input gate가 1에 가까울 수 있어 "잊고 동시에 새로 쓴다"가 가능했지만, GRU에서는 그 두 결정이 묶여 있다.</p>
+
+      <div class="analogy">
+        LSTM이 <b>"두 권의 노트(임시 메모, 장기 노트)와 세 명의 사서(forget·input·output)"</b>라면, GRU는 <b>"한 권의 노트와 두 명의 사서"</b>다. 사서 한 명($z_t$)은 "이번 페이지를 새로 쓸지, 이전 페이지를 그대로 유지할지"의 한 결정을 한다. 다른 사서 한 명($r_t$)은 "새 페이지의 초안을 쓸 때 이전 페이지를 얼마나 참조할지"를 결정한다. 두 사서가 같이 일하지만, 세 사서일 때보다 결정이 단순해진 만큼 가볍다.
+      </div>
+
+      <h2>왜 cell state를 없앨 수 있었는가</h2>
+      <p>LSTM의 cell state가 가지는 본질은 "장기 기억이 흐르는 고속도로"였다. 그 고속도로의 핵심 속성은 두 가지였다 — (1) 가중치 행렬이 곱해지지 않음, (2) 비선형 활성화를 통과하지 않음. GRU는 hidden state 하나로 두 속성을 모두 흉내 낸다. 네 번째 식 $h_t = (1-z_t) \odot h_{t-1} + z_t \odot \tilde h_t$를 보면, $h_{t-1}$이 가중치 행렬에 곱해지지 않고 단지 $(1-z_t)$와 원소별 곱이 곱해진 뒤 더해진다. 비선형 활성화도 통과하지 않는다. 즉 hidden state가 cell state의 역할을 동시에 한다. cell state와 hidden state를 굳이 분리할 필요가 없다는 통찰이다.</p>
+
+      <p>이것이 GRU의 첫 번째 축약이다. 두 번째 축약은 forget·input 게이트의 결합이다. LSTM은 $C_t = f_t \odot C_{t-1} + i_t \odot \tilde C_t$로 두 게이트를 독립적으로 둔다. GRU는 $h_t = (1-z_t) \odot h_{t-1} + z_t \odot \tilde h_t$로 한 게이트를 "유지 vs 갱신"의 시소(seesaw)로 묶는다. 이론적으로 두 게이트가 독립인 LSTM이 더 표현력이 높지만, 실험적으로는 그 차이가 데이터에서 잘 보이지 않는다는 사실이 GRU의 설계 근거다.</p>
+
+      <h2>매개변수 수 비교 — GRU는 LSTM의 약 3/4</h2>
+      <p>같은 차원 $d_h$의 hidden state, 같은 입력 차원 $d_x$를 가정할 때 매개변수 수를 비교하면 다음과 같다.</p>
+
+      <div class="math-block">$$N_{\text{LSTM}} = 4 \cdot d_h \cdot (d_h + d_x + 1), \quad N_{\text{GRU}} = 3 \cdot d_h \cdot (d_h + d_x + 1)$$</div>
+      <p class="math-note">LSTM은 4개의 작은 신경망(f, i, o, candidate), GRU는 3개(z, r, candidate). 비율은 3/4 = 0.75.</p>
+
+      <p>GRU는 LSTM의 약 75% 매개변수로 작동한다. 같은 메모리 예산에서 GRU는 더 큰 hidden state(약 $1/\sqrt{0.75} \approx 1.15$배)를 둘 수 있고, 같은 hidden 크기에서는 약 25% 빠르게 학습된다. 이 차이는 실시간 응용(음성, 채팅 응답)이나 임베디드 장치에서 의미가 크다.</p>
+
+      <h2>reset gate의 역할 — 후보 계산의 입력 필터</h2>
+      <p>update gate $z_t$의 역할은 비교적 명확하다(이전 vs 새 정보의 시소). reset gate $r_t$는 처음 보면 무엇을 하는지가 덜 명확하다. 그 핵심은 셋째 식에 있다 — $\tilde h_t = \tanh(W \cdot [r_t \odot h_{t-1}, x_t] + b)$. 후보 상태 $\tilde h_t$를 계산할 때, 이전 상태 $h_{t-1}$에 $r_t$를 곱해 사용한다. $r_t$가 0에 가까우면 후보가 이전 상태를 거의 무시하고 현재 입력 $x_t$만 보고 계산된다. 즉 "지금 이 순간은 새로 시작하자"라는 의미다.</p>
+
+      <p>이 reset gate는 자연어 처리에서 문장 경계나 구문 경계에서 자연스럽게 활성화된다는 보고가 있다. "오늘 학교에 갔다. 그리고 공부했다." 같은 문장에서 첫 마침표 이후 reset gate가 0에 가깝게 동작하면, 두 번째 문장은 첫 번째 문장의 hidden state를 거의 무시하고 새로 시작한다. 후보 계산 단계에서만 이 리셋이 적용되므로, 이전 상태가 완전히 없어지지는 않는다 — 다만 후보가 "백지에서 새로 쓴" 정보가 된다. 이후 update gate가 $z_t \odot \tilde h_t + (1-z_t) \odot h_{t-1}$로 어느 정도 받아들일지 결정한다.</p>
+
+      <h2>LSTM과 GRU의 실용적 비교 — 무엇을 선택할까</h2>
+      <p>2015년 그레프(Greff) 등과 2017년 멜리스(Melis) 등의 대규모 비교 연구는 흥미로운 결론을 냈다 — <strong>"LSTM과 GRU 중 일관되게 더 나은 것은 없다"</strong>. 같은 데이터셋에서도 하이퍼파라미터 튜닝의 노력 정도에 따라 어느 한쪽이 이긴다. 다만 다음과 같은 경험적 가이드라인이 자리 잡았다.</p>
+
+      <table class="symbols">
+        <tr><td>데이터가 적을 때</td><td>GRU가 약간 유리. 매개변수가 적어 과적합이 덜함</td></tr>
+        <tr><td>매우 긴 시퀀스</td><td>LSTM이 약간 유리. cell state의 명시적 분리가 장기 기억에 더 강건</td></tr>
+        <tr><td>실시간/임베디드</td><td>GRU. 25% 빠른 학습/추론, 작은 메모리</td></tr>
+        <tr><td>음성 인식, 기계 번역</td><td>역사적으로 LSTM이 표준이었으나 차이는 작음</td></tr>
+        <tr><td>새 문제, 모름</td><td>GRU로 먼저. 작동하면 충분, 안 되면 LSTM으로</td></tr>
+      </table>
+
+      <p>핵심 결론은 "구조의 차이보다 하이퍼파라미터와 정칙화의 차이가 더 크다"는 것이다. 두 구조 모두 게이트로 기울기 흐름을 통제한다는 같은 원리에 기반하며, 그 원리가 효과적이라면 정확한 게이트 수와 상태 분리 방식은 부차적이다. 이는 다음 장(<a href="12.html">SUB 12</a>)의 양방향 RNN, 그리고 다음 챕터의 어텐션으로 갈수록 "게이트의 형태"가 아닌 "정보가 어떻게 시간을 가로질러 흐르는가"라는 더 일반적인 질문으로 이동한다.</p>
+
+      <p>아래 위젯은 LSTM과 GRU의 회로를 나란히 놓고, 같은 입력 신호에 대해 두 모델의 hidden state가 어떻게 다르게 반응하는지를 보여 준다. 두 모델 모두 장기 기억은 잘 살리지만, 게이트의 결정 방식에서 미묘한 차이가 보인다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 11</span><span>LSTM vs GRU — 같은 입력에서 두 모델의 상태 비교</span></div>
+        <div class="gru-stage">
+          <div class="lstm">
+            <h4>LSTM (3 게이트, 2 상태)</h4>
+            <svg id="svgLstm" viewBox="0 0 320 240" preserveAspectRatio="xMidYMid meet"></svg>
+            <div class="gru-meta"><span>매개변수</span><b id="paramL">—</b></div>
+            <div class="gru-meta"><span>마지막 h</span><b id="hLast_L">—</b></div>
+          </div>
+          <div class="gru">
+            <h4>GRU (2 게이트, 1 상태)</h4>
+            <svg id="svgGru" viewBox="0 0 320 240" preserveAspectRatio="xMidYMid meet"></svg>
+            <div class="gru-meta"><span>매개변수</span><b id="paramG">—</b></div>
+            <div class="gru-meta"><span>마지막 h</span><b id="hLast_G">—</b></div>
+          </div>
+        </div>
+        <div class="gru-ctl">
+          <label><span>입력 진폭 <b id="lblA">0.5</b></span><input type="range" id="ctlA" min="0" max="1" step="0.01" value="0.5"></label>
+          <label><span>주기 (스파이크 간격) <b id="lblP">5</b></span><input type="range" id="ctlP" min="2" max="20" step="1" value="5"></label>
+          <label><span>hidden 차원 d_h <b id="lblDh">128</b></span><input type="range" id="ctlDh" min="32" max="512" step="32" value="128"></label>
+          <label><span>입력 차원 d_x <b id="lblDx">64</b></span><input type="range" id="ctlDx" min="16" max="256" step="16" value="64"></label>
+        </div>
+      </div>
+      <p class="widget-cap">왼쪽 LSTM은 forget gate와 input gate를 독립적으로 제어, 오른쪽 GRU는 update gate 하나로 결정. 같은 입력 스파이크에 대해 LSTM은 cell state(아래 점선)와 hidden state(실선) 두 곡선을, GRU는 hidden state 한 곡선만 보여 준다. 매개변수 수 차이도 슬라이더에 따라 갱신.</p>
+    </div>
+
+    <div class="prose">
+      <h2>핵심 정리</h2>
+      <ul class="checklist">
+        <li>GRU는 LSTM의 세 게이트(f, i, o)와 두 상태(C, h)를 두 게이트(z, r)와 한 상태(h)로 축약.</li>
+        <li>update gate $z_t$가 forget과 input을 한 시소로 묶음: $h_t = (1-z_t) \odot h_{t-1} + z_t \odot \tilde h_t$.</li>
+        <li>reset gate $r_t$는 후보 계산 단계에서 이전 상태를 얼마나 참조할지 결정.</li>
+        <li>cell state가 사라진 이유 — hidden state 자체가 가중치 곱 없이 흐르도록 식이 짜여 있어, 별도 cell이 불필요.</li>
+        <li>매개변수 수는 LSTM의 약 75%. 약 25% 빠른 학습/추론.</li>
+        <li>실용 결론: LSTM과 GRU 중 일관되게 우위는 없음. 데이터·시퀀스 길이·자원 제약에 따라 선택.</li>
+        <li>두 구조의 공통 핵심: "게이트로 통제되는 가산형 자체 루프(additive self-loop with gated control)". 이 원리가 본질.</li>
+      </ul>
+    </div>
+
+    <nav class="ch-foot" id="chfoot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    ['01','왜 시퀀스에 FC·CNN은 부족한가'],['02','RNN의 기본 아이디어'],['03','시간 펼치기'],
+    ['04','매개변수 공유'],['05','BPTT 1 — 직관'],['06','BPTT 2 — 손계산'],
+    ['07','기울기 폭발과 소실'],['08','기울기 클리핑'],['09','LSTM 1 — 세 게이트'],
+    ['10','LSTM 2 — cell state'],['11','GRU'],['12','양방향 RNN'],
+    ['13','인코더-디코더'],['14','시험 대비'],
+  ];
+  const CUR = '11';
+  const ol = document.getElementById('navlist');
+  SUBS.forEach(([n,t]) => {
+    const li = document.createElement('li');
+    li.innerHTML = `<a href="${n}.html"${n===CUR?' class="current"':''}>${t}</a>`;
+    ol.appendChild(li);
+  });
+  const i = SUBS.findIndex(s=>s[0]===CUR);
+  const prev = i>0 ? SUBS[i-1] : ['','표지로'];
+  const next = i<SUBS.length-1 ? SUBS[i+1] : ['','표지로'];
+  document.getElementById('chfoot').innerHTML =
+    `<a href="${prev[0]?prev[0]+'.html':'index.html'}"><div class="dir">← 이전</div><div class="ti">${prev[1]}</div></a>` +
+    `<a href="${next[0]?next[0]+'.html':'index.html'}" class="next"><div class="dir">다음 →</div><div class="ti">${next[1]}</div></a>`;
+  const bar = document.querySelector('.scroll-progress');
+  document.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max>0 ? (h.scrollTop/max)*100 : 0) + '%';
+  }, { passive: true });
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) renderMathInElement(document.body, {
+      delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }],
+      throwOnError: false,
+    });
+  });
+
+  // ---------- 위젯: LSTM vs GRU 시뮬레이션 ----------
+  const svgL = document.getElementById('svgLstm');
+  const svgG = document.getElementById('svgGru');
+  const paramL = document.getElementById('paramL');
+  const paramG = document.getElementById('paramG');
+  const hLast_L = document.getElementById('hLast_L');
+  const hLast_G = document.getElementById('hLast_G');
+  const ctlA = document.getElementById('ctlA');
+  const ctlP = document.getElementById('ctlP');
+  const ctlDh = document.getElementById('ctlDh');
+  const ctlDx = document.getElementById('ctlDx');
+  const lblA = document.getElementById('lblA');
+  const lblP = document.getElementById('lblP');
+  const lblDh = document.getElementById('lblDh');
+  const lblDx = document.getElementById('lblDx');
+
+  function sigmoid(x) { return 1/(1+Math.exp(-x)); }
+  function tanh(x) { return Math.tanh(x); }
+
+  function simulate() {
+    const A = parseFloat(ctlA.value);
+    const P = parseInt(ctlP.value);
+    const dh = parseInt(ctlDh.value);
+    const dx = parseInt(ctlDx.value);
+    lblA.textContent = A.toFixed(2);
+    lblP.textContent = P;
+    lblDh.textContent = dh;
+    lblDx.textContent = dx;
+
+    paramL.textContent = (4 * dh * (dh + dx + 1)).toLocaleString();
+    paramG.textContent = (3 * dh * (dh + dx + 1)).toLocaleString();
+
+    const T = 60;
+    const xs = [];
+    for (let t = 0; t < T; t++) {
+      xs.push((t % P === 0) ? A : 0);
+    }
+
+    // LSTM 1D toy
+    let C = 0, h = 0;
+    const hsL = [], CsL = [];
+    for (let t = 0; t < T; t++) {
+      const x = xs[t];
+      const f = sigmoid(2.0 * h + 0.5 - x*0.5);
+      const i = sigmoid(2.0 * x - 0.3);
+      const o = sigmoid(1.5 * h + 0.5);
+      const Ctil = tanh(1.5 * x + 0.5 * h);
+      C = f * C + i * Ctil;
+      h = o * tanh(C);
+      hsL.push(h); CsL.push(C);
+    }
+
+    // GRU 1D toy
+    let hg = 0;
+    const hsG = [];
+    for (let t = 0; t < T; t++) {
+      const x = xs[t];
+      const z = sigmoid(2.0 * x - 0.5);
+      const r = sigmoid(1.0 * hg + 0.3);
+      const htil = tanh(1.5 * x + 0.5 * r * hg);
+      hg = (1 - z) * hg + z * htil;
+      hsG.push(hg);
+    }
+
+    hLast_L.textContent = hsL[T-1].toFixed(3);
+    hLast_G.textContent = hsG[T-1].toFixed(3);
+
+    function plot(svg, series, colors, dashed) {
+      const W = 320, H = 240, M = { l: 30, r: 10, t: 20, b: 30 };
+      const PW = W - M.l - M.r, PH = H - M.t - M.b;
+      let s = `<rect width="${W}" height="${H}" fill="#fafaf6" />`;
+      s += `<line x1="${M.l}" y1="${M.t+PH/2}" x2="${M.l+PW}" y2="${M.t+PH/2}" stroke="#8E8576" stroke-dasharray="2,2" />`;
+      // input bars (top mini)
+      const mh = 24;
+      for (let t = 0; t < T; t++) {
+        if (xs[t] !== 0) {
+          const x = M.l + (t/(T-1))*PW;
+          s += `<line x1="${x}" y1="${M.t}" x2="${x}" y2="${M.t+mh*Math.abs(xs[t])}" stroke="#5A5247" stroke-width="1.5" />`;
+        }
+      }
+      series.forEach((ser, k) => {
+        let path = '';
+        for (let t = 0; t < T; t++) {
+          const xp = M.l + (t/(T-1))*PW;
+          const yp = M.t + PH/2 - ser[t] * (PH/2 - 5);
+          path += (t === 0 ? 'M' : 'L') + xp + ',' + yp + ' ';
+        }
+        s += `<path d="${path}" stroke="${colors[k]}" stroke-width="2" fill="none" ${dashed && dashed[k] ? 'stroke-dasharray="4,3"' : ''} />`;
+      });
+      svg.innerHTML = s;
+    }
+    plot(svgL, [hsL, CsL], ['#2D5B7A', '#5A5247'], [false, true]);
+    plot(svgG, [hsG], ['#C0492E']);
+  }
+  [ctlA, ctlP, ctlDh, ctlDx].forEach(el => el.addEventListener('input', simulate));
+  simulate();
+</script>
+</body>
+</html>

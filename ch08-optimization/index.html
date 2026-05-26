@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Chapter 08 · 최적화 — 학습이 실제로 어떻게 작동하나</title>
+<title>Chapter 08 · 최적화 — 손실 지형을 가로지르는 알고리즘들</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -14,7 +14,7 @@
   .home-link { display: inline-flex; align-items: center; gap: .35rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .12em; color: var(--ink-faint); text-decoration: none; padding: .35rem .6rem; margin-bottom: .9rem; border-radius: 6px; border: 1px solid var(--line-soft); transition: all .15s var(--ease); }
   .home-link:hover { color: var(--ink); border-color: var(--line); background: var(--paper-2); }
   .hero-wrap { position: relative; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: linear-gradient(180deg,#fff,var(--paper-2)); box-shadow: var(--shadow-plate); }
-  #hero { display: block; width: 100%; }
+  #hero { display: block; width: 100%; height: 420px; }
   .hero-cap { position: absolute; left: 1.2rem; bottom: 1rem; font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; color: var(--ink-faint); pointer-events: none; }
   .hero-cap b { color: var(--structure); } .hero-cap em { color: var(--style); font-style: normal; }
 
@@ -27,13 +27,13 @@
 
   .plates { max-width: var(--wide); margin: 1rem auto; padding: 2rem 1.4rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); gap: 1rem; }
   .plate { position: relative; display: flex; flex-direction: column; text-decoration: none; color: inherit; background: #fff; border: 1px solid var(--line); border-radius: 13px; padding: 1.3rem 1.3rem 1.4rem; transition: transform .2s var(--ease), border-color .2s, box-shadow .2s; overflow: hidden; }
-  .plate:hover { transform: translateY(-4px); border-color: var(--structure-lo); box-shadow: var(--shadow-plate); }
+  .plate:hover { transform: translateY(-4px); border-color: var(--style-lo); box-shadow: var(--shadow-plate); }
   .plate .pno { font-family: var(--mono); font-size: .74rem; letter-spacing: .14em; color: var(--ink-faint); }
-  .plate h3 { font-family: var(--serif); font-size: 1.32rem; margin: .5rem 0 .5rem; line-height: 1.2; }
-  .plate p { font-size: .9rem; color: var(--ink-soft); line-height: 1.5; margin: 0; }
+  .plate h3 { font-family: var(--serif); font-size: 1.26rem; margin: .5rem 0 .5rem; line-height: 1.2; }
+  .plate p { font-size: .88rem; color: var(--ink-soft); line-height: 1.5; margin: 0; }
   .plate .spectrum { display: flex; height: 4px; border-radius: 2px; overflow: hidden; margin-bottom: 1rem; }
   .plate .spectrum i { display: block; height: 100%; }
-  .plate .go { margin-top: 1rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; color: var(--structure); opacity: 0; transform: translateX(-4px); transition: .2s var(--ease); }
+  .plate .go { margin-top: 1rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; color: var(--style); opacity: 0; transform: translateX(-4px); transition: .2s var(--ease); }
   .plate:hover .go { opacity: 1; transform: translateX(0); }
 
   .section-intro { max-width: var(--measure); margin: 1rem auto 0; padding-inline: 1.4rem; }
@@ -64,30 +64,30 @@
   <a class="home-link" href="../index.html">← 기말고사 인터랙티브 복습</a>
   <div class="hero-wrap">
     <canvas id="hero"></canvas>
-    <div class="hero-cap"><b>일정한 SGD 궤적</b> ↔ <em>관성으로 안장점을 미끄러지는 Adam</em> · 마우스로 손실 표면을 회전</div>
+    <div class="hero-cap"><b>안장점 — 평탄해 보이는 함정</b> ↔ <em>SGD·모멘텀·Adam의 궤적</em> · 마우스를 끌어서 회전</div>
   </div>
 </header>
 
 <div class="title-block">
   <span class="kicker">Deep Learning Book · Chapter 08 · Optimization for Training Deep Models</span>
-  <h1>학습이란 결국,<br><em>손실 지형을 굴러 내려가는 일</em>이다</h1>
+  <h1>좋은 모델을<br><em>실제로 학습</em>시키는 법</h1>
   <div class="paper-meta">
     <span><b>딥러닝 개론</b> 기말고사 인터랙티브 복습</span>
     <span>저자 <b>Goodfellow, Bengio, Courville (2016)</b></span>
-    <span>읽는 시간 <b>약 50분</b></span>
+    <span>읽는 시간 <b>약 90분</b></span>
     <span>D-day <b>2026-06-04</b></span>
   </div>
 </div>
 
 <section class="section-intro">
   <h2>한 문장으로</h2>
-  <p>8장은 <strong>“수많은 차원이 얽힌 비볼록(non-convex) 손실 표면 위에서, 어떻게 하면 일반화 성능이 좋은 지점에 빠르게 도달할 수 있는가”</strong>에 답한다. 그 답은 더 정확한 기울기를 더 자주 계산하는 것이 아니라, <span class="t-structure">잡음을 받아들이고</span> <span class="t-style">관성을 이용하며</span> 각 파라미터마다 다른 학습률을 자동으로 조정하는 일련의 영리한 트릭들이다.</p>
-  <p>처음 읽을 때 가장 중요한 것은, 머신러닝 최적화가 <em>“훈련 손실을 0으로 만드는 게임”이 아니라는</em> 점이다. 우리가 진짜 줄이고 싶은 것은 본 적 없는 데이터에서의 오차이고, 훈련 손실은 그 대리(proxy)일 뿐이다. 8장의 모든 알고리즘은 “빠르되 멈출 줄 아는 학습”을 가능하게 하는 도구다.</p>
+  <p>8장은 <strong>"좋은 신경망 구조와 좋은 정칙화를 갖췄어도, 결국 파라미터를 어떻게 움직여 학습시키느냐가 성패를 가른다"</strong>는 질문에 답한다. 답은 단 하나의 알고리즘이 아니라, 손실 지형의 다양한 함정 — 안장점(saddle point), 평탄한 고원, 절벽 — 을 각자 다른 방식으로 우회하는 알고리즘 가족이다.</p>
+  <p>처음 읽을 때 가장 중요한 한 가지는, 머신러닝의 최적화가 <em>"순수 최적화(pure optimization)"</em>와 근본적으로 다르다는 점이다. 우리는 훈련 비용함수 $J(\theta)$를 진짜 최소화하고 싶은 게 아니다. 그건 어디까지나 우리가 본 표본 위에서의 손실일 뿐이고, 우리가 진짜 줄이고 싶은 것은 <span class="t-style">처음 보는 데이터에서의 기대 손실</span>이다. 8장의 모든 알고리즘은 이 간접 최적화를 효율적으로 수행하기 위한 도구다.</p>
 </section>
 
 <div class="twopole">
-  <div class="pole s1"><h4>순수 최적화 (pure optimization)</h4><p>비용함수 $J(\theta)$의 최솟값을 찾는 것이 목적 그 자체. 기울기가 0이면 성공. 이 사이트에서 <b>차분한 파랑</b>으로 표시된다.</p></div>
-  <div class="pole s2"><h4>머신러닝 최적화 (ML optimization)</h4><p>진짜 목표는 일반화 오차를 줄이는 것. 훈련 손실은 대리. 기울기가 남아 있어도 조기 종료가 더 나을 수 있다. 이 사이트에서 <b>웜한 주홍</b>으로 표시된다.</p></div>
+  <div class="pole s1"><h4>우리가 푸는 문제 (Empirical Risk)</h4><p>훈련셋의 $N$개 표본에 대한 평균 손실. 우리가 직접 기울기를 구해서 줄이는 양. SGD·Adam이 매 스텝 줄이는 것이 바로 이것이다. <b>차분한 파랑</b>으로 표시.</p></div>
+  <div class="pole s2"><h4>우리가 풀고 싶은 문제 (True Risk)</h4><p>데이터 분포 $p_{\text{data}}$ 전체에서의 기대 손실. 직접 계산할 수 없어 시험셋으로만 추정할 수 있다. 진짜 목표. <b>웜한 주홍</b>으로 표시.</p></div>
 </div>
 
 <section class="plates" id="plates"></section>
@@ -98,25 +98,34 @@
 </section>
 
 <footer class="colophon">
-  <p>이 해설은 Goodfellow, Bengio, Courville(2016) 8장과 최희열 교수님 수업, 그리고 Week 5 과제 회고를 함께 묶어 정리한 것이다. SGD부터 Adam까지의 진화 계보를 한 줄기로 잡고, 각 알고리즘이 “어떤 문제를 해결하기 위해 도입되었는가”를 위젯으로 직접 만져 볼 수 있게 했다.</p>
+  <p>이 해설은 Goodfellow, Bengio, Courville(2016) 8장과 5주차 선행학습 정리를 함께 묶어 정리한 것이다. 시험 직전에 빠르게 훑되, 안장점·소실/폭발 기울기·Adam의 편향 보정 같은 자주 헷갈리는 지점은 본문 위젯으로 직접 손으로 만져 보며 굳히는 것을 권장한다.</p>
   <p class="src">
     원문 · <a href="https://www.deeplearningbook.org/contents/optimization.html">deeplearningbook.org/optimization</a><br>
-    선행학습 정리 · <a href="../../../05-선행학습/Deep-Learning-Book-08-Optimization-상세해설.md">Ch.8 상세해설</a><br>
-    과제 제출본 · <a href="../../../03-과제-제출/IntroToDL_Week5_22000168.md">Week 5 요약·질문</a><br>
-    학습 계획 · <a href="../../../딥러닝 개론 CH8·CH9 학습 계획 2026-04-11.md">CH8·CH9 학습 계획</a>
+    선행학습 정리 · Ch.8 상세해설 (Vault)<br>
+    학습 계획 · CH8·CH9 학습 계획 (2026-04-11)<br>
+    과제 제출본 · Week 5 제출본 (22000168)
   </p>
 </footer>
 
 <script>
   const SUBCHAPTERS = [
-    { no:'01', t:'순수 최적화와 ML 최적화의 차이', d:'우리는 진짜 위험을 최소화하지 않는다. 경험적 위험 최소화(ERM), 대리 손실(surrogate loss), 그리고 “기울기 0”이 성공이 아닌 이유.', sp:['structure'] },
-    { no:'02', t:'학습의 진짜 장애물 — 안장점·평탄·절벽', d:'고차원에서 지역 최솟값은 드물다. 진짜 적은 안장점·고원·절벽이다. 동전 던지기 비유로 차원 저주를 직관화하고, 3D 표면 위젯으로 직접 확인한다.', sp:['structure','synth'] },
-    { no:'03', t:'미니배치 SGD — 잡음을 받아들이기', d:'왜 100배 큰 배치는 10배만 정확해지는가. $\\sigma/\\sqrt{n}$의 수확 체감이 SGD를 가능하게 만든다. 배치 크기 슬라이더로 기울기 분산을 직접 본다.', sp:['synth'] },
-    { no:'04', t:'모멘텀과 네스테로프 — 관성으로 가속·안정화', d:'기울기를 그냥 더하지 말고 누적하라. 일관된 방향은 빨라지고, 진동하는 방향은 상쇄된다. 같은 함수 위에서 SGD·모멘텀·네스테로프 궤적을 동시에 본다.', sp:['style'] },
-    { no:'05', t:'적응 학습률 — AdaGrad → RMSProp → Adam', d:'파라미터마다 다른 학습률. 누적 vs 지수 이동 평균. 모멘텀과 결합한 편향 보정. 현대 표준 옵티마이저가 어떻게 만들어졌는지 한 줄기로.', sp:['style','synth'] },
-    { no:'06', t:'초기화 — 대칭성 깨기와 분산 균형', d:'같은 값으로 시작하면 영원히 같은 함수가 된다. Xavier·He 초기화가 왜 그 형태인지, 순전파·역전파 분산을 동시에 맞추는 타협을 본다.', sp:['structure-lo'] },
-    { no:'07', t:'배치 정규화 — 층간 입력 분포 안정화', d:'20층 건물의 1층 기둥을 옮기면 20층이 흔들린다. BN은 각 층의 입력을 항상 평균 0, 분산 1로 맞춰 “기둥의 흔들림”을 차단한다. 켜기/끄기로 효과를 본다.', sp:['structure'] },
-    { no:'08', t:'시험 대비 — 알고리즘 계보 + 실전 디버깅', d:'SGD→Momentum→Nesterov→AdaGrad→RMSProp→Adam 한 줄기. 기울기 클리핑, 학습률 스케줄, 옵티마이저 선택 가이드. 시험 직전 카드.', sp:['ink'] },
+    { no:'01', t:'순수 최적화 vs ML 최적화', d:'우리는 훈련 손실을 진짜 풀고 싶은 게 아니다. ERM, 진짜 위험, 대리 손실. 왜 기울기가 0인 것이 곧 성공이 아닌가.', sp:['structure'] },
+    { no:'02', t:'학습의 진짜 장애물', d:'고차원에서 지역 최솟값은 드물다. 안장점, 평탄 고원, 절벽, 소실 및 폭발 기울기. 동전 던지기 비유로 정리.', sp:['structure','ink'] },
+    { no:'03', t:'미니배치 SGD 1 — 왜 일부만 쓰는가', d:'표준오차 σ/√n이 만드는 수확 체감. 100배 표본 → 10배 정밀도. 정확한 한 번 대신 잡음 있는 여러 번.', sp:['structure','structure-lo'] },
+    { no:'04', t:'미니배치 SGD 2 — 배치 크기·노이즈·일반화', d:'배치 크기 트레이드오프, 큰 배치의 일반화 격차, 노이즈가 안장점 탈출과 플랫 미니마를 돕는 두 가설.', sp:['structure-lo'] },
+    { no:'05', t:'학습률의 의미', d:'발산, 진동, 수렴의 균형. Σε=∞, Σε²<∞ 수렴 조건. 학습률 1D 슬라이더로 직접 갖고 놀기.', sp:['structure-lo'] },
+    { no:'06', t:'모멘텀 1 — 관성과 점성 저항', d:'하키 퍽 비유, 종말 속도 ε‖g‖/(1−α). 일관된 방향엔 가속, 진동엔 상쇄. α=0.9면 SGD의 10배 속도.', sp:['style-lo','synth'] },
+    { no:'07', t:'모멘텀 2 — 네스테로프 룩어헤드', d:'표준 모멘텀의 보정 인자. θ에서가 아니라 θ+αv에서 기울기를 구해 방향을 보정. 볼록에서 O(1/k²) 수렴.', sp:['style-lo','style'] },
+    { no:'08', t:'적응 학습률 1 — AdaGrad', d:'기울기 제곱을 모두 누적. 큰 기울기를 받은 축은 빨리 식고, 작은 축은 살아남는다. 단조 누적의 양면.', sp:['synth','synth'] },
+    { no:'09', t:'적응 학습률 2 — RMSProp', d:'AdaGrad의 단조 누적을 ρ로 감쇠 이동평균에 바꿔, 비볼록 지형에서 멈추지 않게. 실전에서 안정적.', sp:['synth','style-lo'] },
+    { no:'10', t:'적응 학습률 3 — Adam (현대 표준)', d:'모멘텀 + RMSProp + 편향 보정. 초기에 s, r이 0이라 생기는 편향을 1−ρᵗ로 나눠 보정. 기본값 (0.001, 0.9, 0.999, 10⁻⁸).', sp:['style','style-lo'] },
+    { no:'11', t:'초기화 1 — 대칭성 깨기', d:'모두 0이면 모든 유닛이 같은 함수가 된다. 무작위 초기화의 필연성. 활성값과 기울기 분산의 두 요구.', sp:['structure'] },
+    { no:'12', t:'초기화 2 — Xavier·He, 분산 균형', d:'활성값·기울기 분산을 동시에 맞추는 타협. ReLU에는 He, 다른 활성에는 Xavier. 잘못된 초기화 4종 비교.', sp:['structure','synth'] },
+    { no:'13', t:'배치 정규화 1 — 층간 분포 안정화', d:'각 층 (H−μ)/σ로 정규화 후 γ, β 곱하기. 내부 공변량 이동 해소. 평균이 한 파라미터로만 결정되는 구조.', sp:['structure-lo','style'] },
+    { no:'14', t:'배치 정규화 2 — 학습률·작은 배치 함정', d:'BN이 학습률을 키울 수 있게 하는 이유. 추론 시 평균/분산 사용. 배치 크기 1·2에서의 함정과 LayerNorm.', sp:['style','style-lo'] },
+    { no:'15', t:'학습률 스케줄 — step·cosine·warmup·cyclical', d:'일정 학습률이 아니라 시간에 따라 줄이는 이유. warmup으로 초기 불안정을 피하고, cosine으로 부드럽게 감쇠.', sp:['style-lo','ink'] },
+    { no:'16', t:'기울기 클리핑 — 절벽에서 핸들 유지', d:'크기는 줄이되 방향은 그대로. Ch.10 RNN의 폭발 기울기로 이어지는 연결고리. clip-by-norm vs clip-by-value.', sp:['style','ink'] },
+    { no:'17', t:'시험 대비 — 정의, 계보, 예상 질문 25+', d:'SGD → Momentum → Nesterov → AdaGrad → RMSProp → Adam 계보, 안장점 vs 지역최솟값 구분, BN의 진짜 효과, 자가점검 25개.', sp:['ink'] },
   ];
   const colMap = { structure:'var(--structure)', 'structure-lo':'var(--structure-lo)', style:'var(--style)', 'style-lo':'var(--style-lo)', synth:'var(--synth)', ink:'var(--ink-soft)' };
   const platesEl = document.getElementById('plates');
@@ -140,7 +149,7 @@
     if (idx < SUBCHAPTERS.length - 1) { const s = document.createElement('span'); s.className='arr'; s.textContent='→'; flowEl.appendChild(s); }
   });
 
-  // 표지 hero — 손실 표면 위의 옵티마이저 궤적 (안장점 회피)
+  // 표지 hero — 3D 안장점 표면 + 세 알고리즘 궤적
   window.addEventListener('load', () => {
     if (!window.THREE || !document.getElementById('hero')) return;
     const canvas = document.getElementById('hero');
@@ -150,170 +159,113 @@
       structure: css.getPropertyValue('--structure').trim() || '#2D5B7A',
       style: css.getPropertyValue('--style').trim() || '#C0492E',
       synth: css.getPropertyValue('--synth').trim() || '#A47B2E',
-      ink: css.getPropertyValue('--ink-faint').trim() || '#8E8576',
+      ink: css.getPropertyValue('--ink').trim() || '#26221C',
+      faint: css.getPropertyValue('--ink-faint').trim() || '#8E8576',
     };
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
     renderer.setClearColor(0xffffff, 0);
     const scene = new THREE.Scene();
-    const cam = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
+    const cam = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
 
-    // 손실 표면: 안장점이 두 개 있는 풍경
-    function loss(x, y) {
-      // 큰 안장점 + 작은 분지 + 두 개의 봉우리
-      return 0.5 * (x*x - y*y) * 0.6
-           - 1.4 * Math.exp(-((x-1.6)**2 + (y+0.9)**2) * 1.4)
-           + 0.8 * Math.exp(-((x+1.8)**2 + (y-1.1)**2) * 1.0)
-           + 0.6 * Math.exp(-((x-1.2)**2 + (y-1.6)**2) * 1.6);
+    // 안장점 표면 z = 0.6*(x^2 - y^2)
+    const seg = 80;
+    const W = 3.0;
+    const geom = new THREE.PlaneGeometry(W, W, seg, seg);
+    geom.rotateX(-Math.PI / 2);
+    const pos = geom.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i), z = pos.getZ(i);
+      const y = 0.6 * (x*x - z*z);
+      pos.setY(i, y);
     }
+    geom.computeVertexNormals();
+    scene.add(new THREE.LineSegments(
+      new THREE.WireframeGeometry(geom),
+      new THREE.LineBasicMaterial({ color: 0x26221C, transparent: true, opacity: 0.18 })
+    ));
+    scene.add(new THREE.Mesh(geom, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.15 })));
 
-    // 표면 메시
-    const SEG = 80, RANGE = 3.0;
-    const verts = [];
-    const cols = [];
-    const idx = [];
-    for (let i = 0; i <= SEG; i++) {
-      for (let j = 0; j <= SEG; j++) {
-        const x = (i / SEG - 0.5) * 2 * RANGE;
-        const y = (j / SEG - 0.5) * 2 * RANGE;
-        const z = loss(x, y);
-        verts.push(x, z * 0.7, y);
-        // 색: 높이에 따라 structure → style
-        const t = (z + 1.5) / 3.0;
-        const tc = Math.max(0, Math.min(1, t));
-        const cs = new THREE.Color(C.structure);
-        const cy = new THREE.Color(C.style);
-        cs.lerp(cy, tc);
-        cols.push(cs.r, cs.g, cs.b);
-      }
-    }
-    for (let i = 0; i < SEG; i++) {
-      for (let j = 0; j < SEG; j++) {
-        const a = i*(SEG+1) + j;
-        const b = a + 1;
-        const c = a + (SEG+1);
-        const d = c + 1;
-        idx.push(a, c, b, b, c, d);
-      }
-    }
-    const surfGeo = new THREE.BufferGeometry();
-    surfGeo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
-    surfGeo.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
-    surfGeo.setIndex(idx);
-    surfGeo.computeVertexNormals();
-    const surfMat = new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.18, side: THREE.DoubleSide });
-    const surf = new THREE.Mesh(surfGeo, surfMat);
-    scene.add(surf);
+    // 안장점 표시
+    const saddleDot = new THREE.Mesh(
+      new THREE.SphereGeometry(0.06, 16, 16),
+      new THREE.MeshBasicMaterial({ color: new THREE.Color(C.ink) })
+    );
+    saddleDot.position.set(0, 0, 0);
+    scene.add(saddleDot);
 
-    // wireframe
-    const wfGeo = new THREE.WireframeGeometry(surfGeo);
-    const wfMat = new THREE.LineBasicMaterial({ color: 0x26221C, transparent: true, opacity: 0.08 });
-    const wf = new THREE.LineSegments(wfGeo, wfMat);
-    scene.add(wf);
-
-    // 옵티마이저 궤적 시뮬레이션
-    function gradient(x, y) {
-      const eps = 0.001;
-      return [(loss(x+eps, y) - loss(x-eps, y)) / (2*eps),
-              (loss(x, y+eps) - loss(x, y-eps)) / (2*eps)];
-    }
-    function simulate(opt, x0, y0, steps) {
-      const traj = [[x0, y0]];
-      let x = x0, y = y0, vx = 0, vy = 0;
-      let rx = 0, ry = 0;
-      const lr = 0.08;
+    function trajectory(steps, init, lr, kind) {
+      let x = init[0], y = init[1];
+      let vx = 0, vy = 0;
+      let mx = 0, my = 0, sx = 0, sy = 0;
+      const pts = [];
       for (let i = 0; i < steps; i++) {
-        const [gx, gy] = gradient(x, y);
-        if (opt === 'sgd') {
+        const gx = 1.2 * x;
+        const gy = -1.2 * y;
+        if (kind === 'adam') {
+          mx = 0.9 * mx + 0.1 * gx; my = 0.9 * my + 0.1 * gy;
+          sx = 0.999 * sx + 0.001 * gx*gx; sy = 0.999 * sy + 0.001 * gy*gy;
+          x -= lr * mx / (Math.sqrt(sx) + 1e-6);
+          y -= lr * my / (Math.sqrt(sy) + 1e-6);
+        } else if (kind === 'mom') {
+          vx = 0.85 * vx - lr * gx;
+          vy = 0.85 * vy - lr * gy;
+          x += vx; y += vy;
+        } else {
           x -= lr * gx;
           y -= lr * gy;
-        } else if (opt === 'mom') {
-          vx = 0.9 * vx - lr * gx;
-          vy = 0.9 * vy - lr * gy;
-          x += vx;
-          y += vy;
-        } else if (opt === 'adam') {
-          vx = 0.9 * vx + 0.1 * gx;
-          vy = 0.9 * vy + 0.1 * gy;
-          rx = 0.999 * rx + 0.001 * gx*gx;
-          ry = 0.999 * ry + 0.001 * gy*gy;
-          const bc1 = 1 - Math.pow(0.9, i+1);
-          const bc2 = 1 - Math.pow(0.999, i+1);
-          const sx = vx / bc1, sy = vy / bc1;
-          const cx = rx / bc2, cy = ry / bc2;
-          x -= lr * sx / (Math.sqrt(cx) + 1e-8);
-          y -= lr * sy / (Math.sqrt(cy) + 1e-8);
         }
-        x = Math.max(-RANGE+0.1, Math.min(RANGE-0.1, x));
-        y = Math.max(-RANGE+0.1, Math.min(RANGE-0.1, y));
-        traj.push([x, y]);
+        const z = 0.6 * (x*x - y*y);
+        pts.push(x, z + 0.01, y);
       }
-      return traj;
+      return new Float32Array(pts);
     }
-
-    // 안장점 근처에서 시작
-    const start = [0.05, 0.02];
-    const trajSGD = simulate('sgd', start[0], start[1], 200);
-    const trajMom = simulate('mom', start[0], start[1], 200);
-    const trajAdam = simulate('adam', start[0], start[1], 200);
-
-    function makeTraj(traj, color) {
-      const pts = traj.map(([x,y]) => new THREE.Vector3(x, loss(x,y)*0.7 + 0.04, y));
-      const g = new THREE.BufferGeometry().setFromPoints(pts);
-      const m = new THREE.LineBasicMaterial({ color, linewidth: 2 });
-      return new THREE.Line(g, m);
+    function makeLine(arr, color, opacity) {
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.BufferAttribute(arr, 3));
+      return new THREE.Line(g, new THREE.LineBasicMaterial({ color: new THREE.Color(color), transparent: true, opacity }));
     }
-    const lineSGD = makeTraj(trajSGD, new THREE.Color(C.ink));
-    const lineMom = makeTraj(trajMom, new THREE.Color(C.synth));
-    const lineAdam = makeTraj(trajAdam, new THREE.Color(C.style));
-    scene.add(lineSGD); scene.add(lineMom); scene.add(lineAdam);
+    const init = [0.04, 0.12];
+    const sgdTr = trajectory(220, init, 0.012, 'sgd');
+    const momTr = trajectory(220, init, 0.012, 'mom');
+    const adaTr = trajectory(220, init, 0.04, 'adam');
+    scene.add(makeLine(sgdTr, C.structure, 0.85));
+    scene.add(makeLine(momTr, C.synth, 0.9));
+    scene.add(makeLine(adaTr, C.style, 0.95));
 
-    // 움직이는 점
-    function dot(color) {
-      const g = new THREE.SphereGeometry(0.07, 16, 16);
-      const m = new THREE.MeshBasicMaterial({ color });
-      return new THREE.Mesh(g, m);
+    function endDot(arr, color) {
+      const dot = new THREE.Mesh(new THREE.SphereGeometry(0.045, 12, 12), new THREE.MeshBasicMaterial({ color: new THREE.Color(color) }));
+      const n = arr.length;
+      dot.position.set(arr[n-3], arr[n-2], arr[n-1]);
+      scene.add(dot);
     }
-    const dSGD = dot(C.ink), dMom = dot(C.synth), dAdam = dot(C.style);
-    scene.add(dSGD); scene.add(dMom); scene.add(dAdam);
+    endDot(sgdTr, C.structure); endDot(momTr, C.synth); endDot(adaTr, C.style);
 
-    let rotY = 0.4, rotX = 0.6;
-    let drag = false, lx = 0, ly = 0;
-    canvas.addEventListener('pointerdown', e => { drag = true; lx = e.clientX; ly = e.clientY; });
-    canvas.addEventListener('pointerup', () => drag = false);
-    canvas.addEventListener('pointerleave', () => drag = false);
-    canvas.addEventListener('pointermove', e => {
+    let drag = false, lastX = 0, lastY = 0, angX = 0.35, angY = 0.55;
+    canvas.addEventListener('pointerdown', (e) => { drag = true; lastX = e.clientX; lastY = e.clientY; });
+    window.addEventListener('pointermove', (e) => {
       if (!drag) return;
-      rotY += (e.clientX - lx) * 0.005;
-      rotX += (e.clientY - ly) * 0.005;
-      rotX = Math.max(0.15, Math.min(1.2, rotX));
-      lx = e.clientX; ly = e.clientY;
+      angY += (e.clientX - lastX) * 0.006;
+      angX += (e.clientY - lastY) * 0.005;
+      angX = Math.max(-0.1, Math.min(0.9, angX));
+      lastX = e.clientX; lastY = e.clientY;
     });
+    window.addEventListener('pointerup', () => { drag = false; });
 
     function resize() {
-      const w = wrap.clientWidth, h = Math.min(window.innerWidth*0.46, 460);
+      const w = wrap.clientWidth, h = 420;
       renderer.setSize(w, h, false);
       cam.aspect = w/h; cam.updateProjectionMatrix();
     }
     window.addEventListener('resize', resize); resize();
 
-    let t0 = performance.now();
     function loop() {
-      const t = (performance.now() - t0) / 1000;
-      if (!drag) rotY += 0.0015;
-      const r = 7.5;
-      cam.position.x = Math.sin(rotY) * Math.cos(rotX) * r;
-      cam.position.z = Math.cos(rotY) * Math.cos(rotX) * r;
-      cam.position.y = Math.sin(rotX) * r;
+      if (!drag) angY += 0.0035;
+      const r = 3.4;
+      cam.position.x = r * Math.sin(angY) * Math.cos(angX);
+      cam.position.z = r * Math.cos(angY) * Math.cos(angX);
+      cam.position.y = 1.4 + r * Math.sin(angX);
       cam.lookAt(0, 0, 0);
-
-      // 점 위치 갱신 — 반복
-      const period = 200, speed = 0.5;
-      const idx2 = Math.floor((t * 30 * speed) % period);
-      const [sx, sy] = trajSGD[idx2]; dSGD.position.set(sx, loss(sx,sy)*0.7 + 0.06, sy);
-      const [mx, my] = trajMom[idx2]; dMom.position.set(mx, loss(mx,my)*0.7 + 0.06, my);
-      const [ax, ay] = trajAdam[idx2]; dAdam.position.set(ax, loss(ax,ay)*0.7 + 0.06, ay);
-
       renderer.render(scene, cam);
       requestAnimationFrame(loop);
     }

@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>11 — 인과 요소 — Ch.15</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .cf-stage { padding: 1.4rem 1.2rem 1rem; }
+  .cf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .cf-panel { border: 1px solid var(--line); border-radius: 10px; padding: 1rem; background: #fff; }
+  .cf-panel h4 { margin: 0 0 .5rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .12em; color: var(--ink-faint); }
+  .cf-panel canvas { display: block; width: 100%; height: 200px; border-radius: 6px; background: var(--paper); }
+  .cf-sliders { padding: 1rem 1.2rem; border-top: 1px solid var(--line-soft); background: var(--paper); display: flex; flex-direction: column; gap: .6rem; }
+  .cf-sliders .row { display: flex; align-items: center; gap: 1rem; }
+  .cf-sliders label { font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); min-width: 5rem; }
+  .cf-sliders input[type=range] { flex: 1; accent-color: var(--structure); }
+  .cf-sliders .val { font-family: var(--mono); font-size: .82rem; color: var(--structure); min-width: 2.5rem; text-align: right; }
+  .cf-toggle { display: flex; justify-content: center; gap: .6rem; padding: .8rem; background: var(--paper-2); border-top: 1px solid var(--line-soft); }
+  .cf-toggle button { padding: .5rem 1rem; border: 1px solid var(--line); background: #fff; font-family: var(--mono); font-size: .8rem; border-radius: 6px; cursor: pointer; color: var(--ink-soft); transition: all .15s; }
+  .cf-toggle button.on { background: var(--structure); color: #fff; border-color: var(--structure); }
+  .cf-verdict { padding: 1rem 1.2rem; border-top: 1px solid var(--line-soft); background: var(--paper); font-size: .9rem; color: var(--ink-soft); line-height: 1.55; min-height: 4rem; }
+  @media (max-width: 640px) { .cf-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 11 — 표상의 가장 야심적인 목표</span>
+      <h1>인과 요소 — 데이터의 <span class="t-style">진짜 생성 요인</span></h1>
+      <p class="lede">관측 데이터를 만든 숨은 요인이 표상의 좌표축으로 풀려 있으면 본 적 없는 조합도 다룰 수 있다. 그러나 “풀린 표상”은 어떻게 정의하고 어떻게 학습하는가. 15장의 가장 야심적이고 가장 미해결인 문제.</p>
+    </header>
+
+    <div class="prose">
+      <p>15장의 정점은 “인과 요소(causal factor)” 또는 “요인 변동(factor of variation)”이라는 개념이다. 책의 주장은 명료하다 — 모든 관측 데이터는 어떤 숨은 요인들의 조합으로 생성된다. 얼굴 사진은 “신원·표정·조명·각도·머리길이” 같은 요인의 함수이고, 음성 파형은 “화자·음소·억양·잡음”의 함수다. 좋은 표상이란 이 진짜 생성 요인들이 서로 풀려(disentangled) 있는, 즉 한 좌표축을 움직이면 한 요인만 변하는 표상이다.</p>
+      <p>이 정의가 야심적인 이유는, 풀린 표상이 “본 적 없는 조합”에 대한 일반화를 가능하게 하기 때문이다. “남자 얼굴 + 웃음”과 “여자 얼굴 + 슬픔”만 학습 데이터에 있어도, 풀린 표상은 자연스럽게 “여자 얼굴 + 웃음”과 “남자 얼굴 + 슬픔”의 표상을 합리적으로 만들어 낸다. 성별 축과 표정 축이 표상에서 독립적으로 풀려 있기 때문이다.</p>
+
+      <h2>풀린 표상이 왜 어려운가</h2>
+      <p>풀린 표상이 좋다는 데는 모두 동의하지만, 그것을 “자동으로” 학습하는 방법은 15장 시점(2016)에도 미해결이고, 책 출판 이후 10년이 흐른 지금도 완전히 풀리지 않았다. 이유는 세 가지로 정리할 수 있다.</p>
+      <p><strong>(1) 풀림의 정의가 모호하다.</strong> “한 축을 움직이면 한 요인만 변한다”라는 정의는 직관적이지만, 정량적 척도로 만들기 어렵다. 모든 요인을 어떻게 식별하나, “한 요인”의 의미는 누가 정하나. 사람이 만든 라벨에 의존하면 “라벨이 풀린 정의”가 되어 버린다.</p>
+      <p><strong>(2) 식별 가능성(identifiability) 문제.</strong> 같은 데이터를 똑같이 잘 설명하는 여러 표상이 존재하고, 그중 어느 것이 “진짜 인과 요인을 풀어낸 표상”인지 데이터만으로는 결정할 수 없다는 이론적 결과(Locatello et al., 2019)가 있다. 추가 정보(약한 지도, 보조 정보, 사전 가정) 없이는 풀림은 불가능하다.</p>
+      <p><strong>(3) 인과 vs 통계의 차이.</strong> 데이터에서 보이는 통계적 상관은 인과 관계와 다르다. “키 큰 사람의 신발이 큰” 통계 패턴이 있어도, 인과적으로는 “신발 크기 → 키”가 아니라 “유전·성장 요인 → 키 + 신발”이다. 풀린 표상이 진짜 인과 요인을 잡으려면 데이터를 만든 생성 과정 자체에 대한 가정이 필요하다.</p>
+
+      <div class="analogy">
+        <b>오케스트라 녹음에서 악기별 트랙을 분리하기.</b> 완성된 교향곡 녹음(관측 데이터)은 바이올린·첼로·플루트·팀파니 등 여러 악기의 합성이다. 듣고 “바이올린만 들리는 부분”을 만들고 싶다(특정 요인만 골라 변경하고 싶다). 그러나 합성된 녹음 한 트랙만 가지고 악기별로 분리하는 것은 거의 불가능하다 — 같은 시점에 어느 악기 소리가 얼마나 섞였는지 알려면 추가 정보(악보, 다중 마이크 녹음, 음색 모델)가 필요하다. 풀린 표상 학습도 똑같다. 관측 한 가지 신호만 가지고 “진짜 생성 요인”을 분리하는 일은, 추가 가정 없이는 풀리지 않는다.
+      </div>
+
+      <h2>풀린 표상을 향한 시도들</h2>
+      <p>완전한 답은 없어도, 책 출간 이후 여러 부분적 진전이 있었다. 대표적 방향 세 가지.</p>
+      <p><strong>$\beta$-VAE (2017).</strong> 변분 오토인코더(VAE)의 KL 발산 항에 가중치 $\beta > 1$을 곱해, 잠재 변수(latent variable)가 “더 압축된, 더 풀린” 표상을 학습하도록 압박한다. 사람이 보기에 일부 차원이 명확히 “회전 각도”, “물체 크기” 같은 단일 요인에 대응되는 결과가 보고됐다. 단, 어떤 차원이 어떤 요인에 대응될지는 학습 결과로 결정되어 통제 불가.</p>
+      <p><strong>InfoGAN (2016).</strong> GAN의 잠재 변수 일부를 “정보가 보존되어야 하는” 차원으로 정의하고, 생성된 이미지에서 그 잠재 변수를 다시 복구할 수 있도록 보조 손실을 추가. MNIST에서 “숫자 정체”와 “두께·기울기” 차원이 자동으로 분리되는 결과.</p>
+      <p><strong>약한 지도와 보조 정보 활용.</strong> Locatello et al.의 비식별 가능성 결과 이후, “완전 비지도로는 불가능하지만 약한 지도(예: ‘같은 객체의 다른 뷰’ 같은 페어 정보)만 있으면 가능하다”는 후속 연구가 이어졌다. SimCLR 같은 대조 학습이 같은 방향.</p>
+
+      <div class="widget">
+        <div class="widget-frame">
+          <div class="widget-label"><span class="lab-no">위젯 11</span><span>풀린 vs 얽힌 표상 — 같은 데이터, 다른 좌표</span></div>
+          <div class="cf-stage">
+            <div class="cf-grid">
+              <div class="cf-panel">
+                <h4>얽힌 표상 (entangled)</h4>
+                <canvas id="cf-ent" width="320" height="200"></canvas>
+              </div>
+              <div class="cf-panel">
+                <h4>풀린 표상 (disentangled)</h4>
+                <canvas id="cf-dis" width="320" height="200"></canvas>
+              </div>
+            </div>
+          </div>
+          <div class="cf-sliders">
+            <div class="row">
+              <label>축 1 (성별)</label>
+              <input type="range" id="cf-s1" min="-1" max="1" step="0.01" value="0">
+              <span class="val" id="cf-s1-v">0.00</span>
+            </div>
+            <div class="row">
+              <label>축 2 (표정)</label>
+              <input type="range" id="cf-s2" min="-1" max="1" step="0.01" value="0">
+              <span class="val" id="cf-s2-v">0.00</span>
+            </div>
+          </div>
+          <div class="cf-toggle">
+            <button class="on" id="cf-mode-dis">풀린 보기</button>
+            <button id="cf-mode-ent">얽힌 보기</button>
+          </div>
+          <div class="cf-verdict" id="cf-v">슬라이더를 움직여 보자. 풀린 표상에서는 한 슬라이더가 한 축만 움직인다 — 성별을 바꿔도 표정은 그대로. 얽힌 표상에서는 한 슬라이더가 두 축을 동시에 흔든다 — 성별을 바꾸면 표정도 따라간다.</div>
+        </div>
+        <p class="widget-cap">왼쪽은 얽힌 표상의 점 이동, 오른쪽은 풀린 표상의 점 이동. 같은 슬라이더 조작이지만 표상의 좌표가 다르면 의미적 변동도 다르다.</p>
+      </div>
+
+      <h2>책의 결론 — “모든 정칙화는 풀린 표상에 대한 가설”</h2>
+      <p>책의 15장 후반부는 풀린 표상의 “완전한 답을 가지고 있지 않다”는 점을 솔직히 인정한다. 그러나 한 줄로 정리되는 시각은 분명하다 — <strong>모든 정칙화(regularization)는 사실 “데이터를 만든 진짜 인과 요인이 어떤 모습인지”에 대한 가설이다.</strong> 평활성(smoothness) 정칙화는 “가까운 입력은 비슷한 출력을 가진다”는 가설, 희소성(sparsity) 정칙화는 “데이터는 적은 요인으로 설명된다”는 가설, 느린 변화(slow features) 정칙화는 “요인은 시간에 따라 천천히 변한다”는 가설이다.</p>
+      <p>좋은 표상 학습이란 이런 사전 가설(prior)들을 “데이터를 만든 진짜 인과 구조에 맞게” 조합하는 일이다. 어떤 사전이 맞을지는 도메인마다 다르다. 비전에서는 평활성과 매니폴드 사전이 잘 통하고, 자연어에서는 합성성과 분포 가설이 잘 통한다. 이 시각이 13절(정칙화 = 사전)으로 이어진다.</p>
+
+      <h2>인과 요인 학습이 “시험에서 어떻게 출제되는가”</h2>
+      <p>이 절은 책의 가장 추상적인 부분이지만, 시험 출제 패턴은 비교적 일정하다. 단답형으로는 “풀린 표상의 정의는?”, “식별 가능성 문제가 의미하는 바는?”, “$\beta$-VAE에서 $\beta$의 역할은?” 같은 정의·메커니즘 확인이 자주 나온다. 서술형으로는 “비지도 학습만으로 풀린 표상을 학습할 수 없는 이론적 이유는?”, “풀린 표상이 본 적 없는 조합에 일반화하는 메커니즘은?” 같은 가설-결과 연결이 자주 출제된다. 답할 때는 “인과 요인 → 풀림 → 일반화”의 세 단계 인과 사슬을 명확히 짚는 것이 채점 포인트다.</p>
+
+      <h2>핵심 어휘 정리</h2>
+      <table class="symbols">
+        <tr><td>인과 요소 (causal factor)</td><td>데이터를 실제로 만든 숨은 생성 변수. 신원·조명·각도 등.</td></tr>
+        <tr><td>요인 변동 (factor of variation)</td><td>데이터가 어떤 축을 따라 변하는지의 차원. 인과 요소와 유사하지만 더 통계적 의미.</td></tr>
+        <tr><td>풀린 표상 (disentangled representation)</td><td>한 좌표축을 움직이면 한 요인만 변하는 표상.</td></tr>
+        <tr><td>식별 가능성 (identifiability)</td><td>같은 데이터를 설명하는 여러 표상 중 “진짜”를 골라낼 수 있는가의 문제.</td></tr>
+        <tr><td>$\beta$-VAE</td><td>VAE의 KL 항에 $\beta > 1$ 가중치를 두어 풀린 표상을 유도하는 기법.</td></tr>
+      </table>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'좋은 표상이란', f:'01.html' },
+    { no:'02', t:'그리디 층별 사전훈련', f:'02.html' },
+    { no:'03', t:'비지도 사전훈련', f:'03.html' },
+    { no:'04', t:'지도 사전훈련', f:'04.html' },
+    { no:'05', t:'전이학습 1 — 도메인이 돕는 원리', f:'05.html' },
+    { no:'06', t:'전이학습 2 — 미세조정 실전', f:'06.html' },
+    { no:'07', t:'도메인 적응', f:'07.html' },
+    { no:'08', t:'분산 표상 1 — 지수적 이득', f:'08.html' },
+    { no:'09', t:'분산 표상 2 — 합성성·의미 산수', f:'09.html' },
+    { no:'10', t:'깊이의 지수적 표현력', f:'10.html' },
+    { no:'11', t:'인과 요소', f:'11.html' },
+    { no:'12', t:'반지도 학습', f:'12.html' },
+    { no:'13', t:'사전으로서의 정칙화', f:'13.html' },
+    { no:'14', t:'시험 대비', f:'14.html' },
+  ];
+  const CURRENT = '11';
+  (function buildNav() {
+    document.querySelector('.topbar').innerHTML =
+      `<a class="home" href="index.html">← Chapter 15 — 표상 학습</a>` +
+      `<span class="ch-mini">SUB ${CURRENT} / 14</span>`;
+    document.querySelector('.ch-nav ol').innerHTML = SUBS.map(s =>
+      `<li><a href="${s.f}" ${s.no === CURRENT ? 'class="current"' : ''}>${s.t}</a></li>`).join('');
+    const i = SUBS.findIndex(s => s.no === CURRENT);
+    const prev = i > 0 ? SUBS[i-1] : { f:'index.html', t:'챕터 표지', no:'' };
+    const next = i < SUBS.length-1 ? SUBS[i+1] : { f:'index.html', t:'챕터 표지', no:'' };
+    document.querySelector('.ch-foot').innerHTML =
+      `<a href="${prev.f}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+      `<a href="${next.f}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+    const bar = document.querySelector('.scroll-progress');
+    const onScroll = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    document.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+  })();
+
+  (function cfWidget() {
+    const css = getComputedStyle(document.documentElement);
+    const STRUCT = css.getPropertyValue('--structure').trim();
+    const STYLE = css.getPropertyValue('--style').trim();
+    const SYNTH = css.getPropertyValue('--synth').trim();
+    const FAINT = css.getPropertyValue('--ink-faint').trim();
+    const INK = css.getPropertyValue('--ink').trim();
+    const SOFT = css.getPropertyValue('--ink-soft').trim();
+
+    const entCanvas = document.getElementById('cf-ent');
+    const disCanvas = document.getElementById('cf-dis');
+    const s1 = document.getElementById('cf-s1'), s2 = document.getElementById('cf-s2');
+    const s1v = document.getElementById('cf-s1-v'), s2v = document.getElementById('cf-s2-v');
+    const verdict = document.getElementById('cf-v');
+    const modeDis = document.getElementById('cf-mode-dis'), modeEnt = document.getElementById('cf-mode-ent');
+    let mode = 'dis';
+
+    function drawAxes(ctx, W, H) {
+      ctx.strokeStyle = FAINT; ctx.lineWidth = 0.7; ctx.setLineDash([2, 4]);
+      ctx.beginPath(); ctx.moveTo(W / 2, 10); ctx.lineTo(W / 2, H - 10); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(10, H / 2); ctx.lineTo(W - 10, H / 2); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = FAINT; ctx.font = '9px monospace';
+      ctx.fillText('표상 축 1', W - 56, H / 2 - 5);
+      ctx.fillText('표상 축 2', W / 2 + 5, 14);
+    }
+
+    function drawEntangled(v1, v2) {
+      const ctx = entCanvas.getContext('2d');
+      const W = entCanvas.width, H = entCanvas.height;
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
+      drawAxes(ctx, W, H);
+      // 얽힌 표상: 슬라이더 1 = (x + y), 슬라이더 2 = (x - y) 형태로 좌표가 회전됨
+      const px = W / 2 + (v1 + v2) * 80;
+      const py = H / 2 - (v1 - v2) * 60;
+      // 초기 점(슬라이더 0)에서 현재 점까지 궤적
+      ctx.strokeStyle = SOFT; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+      ctx.beginPath(); ctx.moveTo(W / 2, H / 2); ctx.lineTo(px, py); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = STRUCT; ctx.beginPath(); ctx.arc(px, py, 7, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = INK; ctx.font = '10px monospace';
+      ctx.fillText('얽힘: 슬라이더 1이 두 축 모두 흔든다', 10, H - 8);
+    }
+
+    function drawDisentangled(v1, v2) {
+      const ctx = disCanvas.getContext('2d');
+      const W = disCanvas.width, H = disCanvas.height;
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
+      drawAxes(ctx, W, H);
+      // 풀린 표상: 슬라이더 1 = x 직접, 슬라이더 2 = y 직접
+      const px = W / 2 + v1 * 110;
+      const py = H / 2 - v2 * 75;
+      ctx.strokeStyle = SOFT; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+      ctx.beginPath(); ctx.moveTo(W / 2, H / 2); ctx.lineTo(px, py); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = SYNTH; ctx.beginPath(); ctx.arc(px, py, 7, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = INK; ctx.font = '10px monospace';
+      ctx.fillText('풀림: 슬라이더 1이 축 1만 흔든다', 10, H - 8);
+    }
+
+    function update() {
+      const v1 = parseFloat(s1.value);
+      const v2 = parseFloat(s2.value);
+      s1v.textContent = v1.toFixed(2);
+      s2v.textContent = v2.toFixed(2);
+      drawEntangled(v1, v2);
+      drawDisentangled(v1, v2);
+      if (mode === 'dis') {
+        verdict.innerHTML = `<b>풀린 표상.</b> 슬라이더 1(성별)을 ${v1.toFixed(2)}로 움직이면 오른쪽 점이 가로 방향만 움직인다. 슬라이더 2(표정)는 세로만. 두 축이 직교로 분리되어 있어 “성별만 바꾸기”, “표정만 바꾸기”가 가능. <b>$\\beta$-VAE 같은 정칙화가 이 상태를 유도한다.</b>`;
+      } else {
+        verdict.innerHTML = `<b>얽힌 표상.</b> 슬라이더 1(겉보기 “성별”)을 움직이면 왼쪽 점이 가로와 세로 모두 움직인다 — 두 차원이 회전되어 얽혀 있어 한 요인만 바꾸는 것이 불가능. 일반화에 약함.`;
+      }
+      if (window.renderMathInElement) renderMathInElement(verdict, { delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}], throwOnError: false });
+    }
+
+    s1.addEventListener('input', update);
+    s2.addEventListener('input', update);
+    modeDis.addEventListener('click', () => { mode = 'dis'; modeDis.classList.add('on'); modeEnt.classList.remove('on'); update(); });
+    modeEnt.addEventListener('click', () => { mode = 'ent'; modeEnt.classList.add('on'); modeDis.classList.remove('on'); update(); });
+    update();
+  })();
+
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
+        throwOnError: false,
+      });
+    }
+  });
+</script>
+</body>
+</html>

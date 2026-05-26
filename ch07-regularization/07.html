@@ -3,300 +3,135 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>07 · 시험 대비 — 핵심 정의·구분·예상 질문 체크리스트</title>
+<title>Sub 07 · 데이터 증강 — 도메인 지식의 주입 · Ch.07</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
-  .topbar { position: sticky; top: 0; z-index: 40; display: flex; align-items: center; justify-content: space-between; padding: .8rem 1.4rem; background: rgba(250,247,240,.82); backdrop-filter: blur(12px) saturate(1.3); border-bottom: 1px solid var(--line-soft); }
-  .topbar .home { font-family: var(--mono); font-size: .76rem; letter-spacing: .1em; color: var(--ink-soft); text-decoration: none; }
-  .topbar .home:hover { color: var(--ink); }
-  .topbar .ch-mini { font-family: var(--mono); font-size: .72rem; letter-spacing: .14em; color: var(--ink-faint); }
-
-  .ch-layout { display: grid; grid-template-columns: 15rem 1fr; gap: 0; max-width: 68rem; margin-inline: auto; }
-  .ch-nav { position: sticky; top: 3.4rem; align-self: start; height: calc(100vh - 3.4rem); overflow-y: auto; padding: 2rem 1.2rem; border-right: 1px solid var(--line-soft); }
-  .ch-nav ol { list-style: none; margin: 0; padding: 0; counter-reset: ch; }
-  .ch-nav li { counter-increment: ch; margin: 0; }
-  .ch-nav a { display: grid; grid-template-columns: 1.7rem 1fr; gap: .5rem; align-items: baseline; padding: .5rem .5rem; border-radius: 7px; text-decoration: none; color: var(--ink-soft); font-size: .88rem; line-height: 1.35; transition: background .15s; }
-  .ch-nav a::before { content: counter(ch, decimal-leading-zero); font-family: var(--mono); font-size: .72rem; color: var(--ink-faint); }
-  .ch-nav a:hover { background: var(--paper-2); color: var(--ink); }
-  .ch-nav a.current { background: var(--ink); color: var(--paper); }
-  .ch-nav a.current::before { color: var(--style-lo); }
-  .ch-main { min-width: 0; padding: 3rem 0 6rem; }
-  .ch-head { max-width: var(--measure); margin: 0 auto 2.4rem; padding-inline: 1.4rem; }
-  .ch-head .kicker { margin-bottom: 1rem; display: block; }
-  .ch-head h1 { font-size: clamp(2rem, 5vw, 3.3rem); margin: 0 0 .8rem; }
-  .ch-head .lede { font-family: var(--serif); font-size: 1.22rem; font-style: italic; color: var(--ink-soft); line-height: 1.5; }
-  .ch-foot { display: flex; justify-content: space-between; gap: 1rem; max-width: var(--measure); margin: 4rem auto 0; padding-inline: 1.4rem; }
-  .ch-foot a { display: block; text-decoration: none; flex: 1; padding: 1rem 1.2rem; border: 1px solid var(--line); border-radius: 10px; transition: border-color .15s, transform .15s; }
-  .ch-foot a:hover { border-color: var(--style); transform: translateY(-2px); }
-  .ch-foot .dir { font-family: var(--mono); font-size: .7rem; letter-spacing: .14em; color: var(--ink-faint); text-transform: uppercase; }
-  .ch-foot .ti { font-family: var(--serif); font-size: 1.05rem; color: var(--ink); margin-top: .2rem; }
-  .ch-foot .next { text-align: right; }
-  @media (max-width: 760px) { .ch-layout { grid-template-columns: 1fr; } .ch-nav { display: none; } }
-
-  /* 체크리스트 위젯 */
-  .check-grid { display: grid; grid-template-columns: 1fr; gap: .6rem; padding: 1rem 1.1rem .6rem; }
-  .check-card { background: #fff; border: 1px solid var(--line); border-radius: 9px; padding: 1rem 1.2rem; cursor: pointer; transition: border-color .15s, background .15s; }
-  .check-card:hover { border-color: var(--style-lo); }
-  .check-card.flip { background: var(--paper-2); border-color: var(--style); }
-  .check-card .q { font-family: var(--serif); font-size: 1.05rem; color: var(--ink); margin: 0 0 .4rem; line-height: 1.4; }
-  .check-card .a { font-size: .92rem; color: var(--ink-soft); line-height: 1.55; margin: .5rem 0 0; padding-top: .6rem; border-top: 1px dashed var(--line); display: none; }
-  .check-card.flip .a { display: block; }
-  .check-card .tap { font-family: var(--mono); font-size: .7rem; color: var(--ink-faint); letter-spacing: .08em; margin-top: .5rem; }
-  .check-card.flip .tap { color: var(--style); }
-  .check-card .tag { display: inline-block; font-family: var(--mono); font-size: .68rem; padding: .12em .55em; border-radius: 3px; color: #fff; margin-right: .4rem; }
-  .check-card .tag.def { background: var(--structure); }
-  .check-card .tag.geo { background: var(--style); }
-  .check-card .tag.math { background: var(--synth); }
-  .check-card .tag.app { background: #5A5247; }
-  .check-progress { display: flex; align-items: center; gap: .8rem; padding: .6rem 1.1rem 1rem; font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); }
-  .check-progress .bar { flex: 1; height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; }
-  .check-progress .bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--structure), var(--style)); transition: width .3s; }
-
-  .summary-table { max-width: var(--measure); margin: 1.5rem auto; padding-inline: 1.4rem; }
-  .summary-table table { width: 100%; border-collapse: collapse; font-size: .88rem; }
-  .summary-table th, .summary-table td { padding: .55rem .7rem; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
-  .summary-table th { font-family: var(--mono); font-size: .72rem; letter-spacing: .08em; color: var(--ink-faint); text-transform: uppercase; background: var(--paper-2); }
-  .summary-table tr:hover { background: var(--paper-2); }
-  .summary-table td:first-child { font-family: var(--mono); font-size: .82rem; color: var(--structure); white-space: nowrap; }
-
-  .priority-box { max-width: var(--measure); margin: 1.5rem auto; padding: 1.2rem 1.4rem; border: 1px solid var(--style); border-radius: 12px; background: var(--style-bg); }
-  .priority-box h3 { margin-top: 0; color: var(--style); font-size: 1.15rem; }
-  .priority-box ol { margin: 0; padding-left: 1.2rem; }
-  .priority-box li { margin: .4rem 0; line-height: 1.55; }
+  .aug-stage { padding: 1.2rem 1.2rem 1rem; }
+  .aug-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: .35rem; max-width: 760px; margin: 0 auto; }
+  .aug-cell { display: flex; flex-direction: column; align-items: center; gap: .25rem; }
+  .aug-cell canvas { width: 80px; height: 80px; border-radius: 6px; border: 1px solid var(--line); }
+  .aug-cell span { font-family: var(--mono); font-size: .62rem; color: var(--ink-faint); }
+  .aug-cell:first-child canvas { box-shadow: 0 0 0 2px var(--style); }
+  .aug-ctr { display: flex; flex-wrap: wrap; gap: 1rem; padding: 1rem 1.2rem; border-top: 1px solid var(--line-soft); background: var(--paper); margin-top: 1rem; }
+  .aug-read { padding: .8rem 1.4rem; font-size: .9rem; color: var(--ink-soft); line-height: 1.55; }
+  .aug-read b { color: var(--ink); }
+  .btn.on { background: var(--structure); color: #fff; border-color: var(--structure); }
+  @media (max-width: 640px) { .aug-grid { grid-template-columns: repeat(4, 1fr); } }
 </style>
 </head>
 <body>
-<div class="topbar">
-  <a class="home" href="index.html">← Ch.07 정칙화</a>
-  <span class="ch-mini">SUB 07 / 07</span>
-</div>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
 
 <div class="ch-layout">
-  <aside class="ch-nav"><nav><ol id="navlist"></ol></nav></aside>
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Sub 07 · 시험 직전 한 번 더 훑을 카드</span>
-      <h1>이걸 답할 수 있으면,<br><span class="t-style">Ch.7은 끝</span></h1>
-      <p class="lede">선행학습 노트의 자가점검 8문항과 회고에서 식별된 7개 이해 갭을 통합한 시험 대비 체크리스트.</p>
+      <span class="kicker">Sub 07 · 데이터로 흘리는 정칙화</span>
+      <h1>데이터 증강 — <span class="t-style">도메인 지식</span>의 주입</h1>
+      <p class="lede">증강은 가짜 데이터를 늘리는 꼼수가 아니라, "이 변화는 같은 의미"라는 사전지식을 모형에 강제 주입하는 일이다.</p>
     </header>
 
     <div class="prose">
-      <h2>한 페이지 요약 — 6개 기법 한눈에</h2>
+      <p>지금까지 본 정칙화(L2·L1)는 가중치 공간에서 모형을 묶었다. 이제 시점을 옮긴다. 모형은 그대로 두고 <strong>데이터를 흔든다</strong>. 이게 데이터 증강(data augmentation)이다. 이미지 한 장을 회전·반전·잘라내기·밝기 조정으로 변형해 여러 장의 변형본을 만들어 훈련시키는 방법이다.</p>
 
-      <div class="summary-table">
-        <table>
-          <thead><tr><th>기법</th><th>어디서 작동</th><th>왜 정칙화</th><th>핵심 식·결과</th></tr></thead>
-          <tbody>
-            <tr>
-              <td>L2 (Weight Decay)</td>
-              <td>가중치 공간 (원형 제약)</td>
-              <td>가중치를 0 쪽으로 부드럽게 축소, 함수 매끄럽게</td>
-              <td>w̃_i = λ_i/(λ_i+α) · w*_i</td>
-            </tr>
-            <tr>
-              <td>L1 (Lasso)</td>
-              <td>가중치 공간 (다이아몬드 제약)</td>
-              <td>꼭짓점에서 만나 sparsity 생성, 특징 선택</td>
-              <td>soft-thresholding; 작은 w*는 0으로</td>
-            </tr>
-            <tr>
-              <td>드롭아웃</td>
-              <td>네트워크 구조 (활성화 마스크)</td>
-              <td>2ⁿ개 부분망 앙상블, 분산 표상 강제</td>
-              <td>추론: W ← p · W (가중치 스케일링)</td>
-            </tr>
-            <tr>
-              <td>조기 종료</td>
-              <td>시간 (학습 epoch 제한)</td>
-              <td>가중치가 0에서 멀리 자라기 전에 멈춤</td>
-              <td>α ≈ 1/(ετ) — L2와 동치</td>
-            </tr>
-            <tr>
-              <td>데이터 증강</td>
-              <td>입력 공간 (의미보존 변형)</td>
-              <td>불변성 사전지식 주입, 표면 패턴 외움 방지</td>
-              <td>flip, rotate, crop, mixup, color jitter…</td>
-            </tr>
-            <tr>
-              <td>적대적 훈련</td>
-              <td>입력 근방 (ε-반경 최악 케이스)</td>
-              <td>결정경계를 데이터에서 멀리 밀어냄</td>
-              <td>x_adv = x + ε·sign(∇_x L), minimax</td>
-            </tr>
-          </tbody>
-        </table>
+      <p>표면적으로는 데이터를 늘리는 행위지만, 그 본질은 다르다. 데이터 증강은 모형에게 <strong>"이 변화는 모두 같은 라벨이다"</strong>라는 사전지식을 알려 주는 일이다. 이 사전지식을 책에서는 <em>불변성(invariance)</em>이라 부른다. 회전 불변성, 위치 불변성, 색상 불변성처럼.</p>
+
+      <h2>왜 이것이 정칙화인가</h2>
+
+      <p>한 식 시점으로 돌아가 보자. $\tilde J = J + \alpha\Omega$. 데이터 증강에는 명시적 페널티 Ω가 보이지 않는다. 그런데 분석해 보면 Ω가 숨어 있다. 입력 x에 변환 T(x)를 적용한 데이터로도 같은 출력을 내야 한다는 요구는 다음과 동치다.</p>
+
+      <div class="math-block">$$ \mathbb{E}_{T \sim \mathcal{T}}\bigl[L(f_\theta(T(x)),\, y)\bigr] \;\approx\; L(f_\theta(x), y) \;+\; \alpha \cdot \Omega_{\text{invar}}(\theta) $$</div>
+      <p class="math-note">T는 회전·반전 같은 변환의 집합 𝒯에서 임의로 추출. 좌변(증강된 손실)을 테일러 전개하면 원래 손실에 "함수 f가 변환에 얼마나 민감한가"라는 페널티 Ω가 추가됨을 보일 수 있다.</p>
+
+      <p>즉 데이터 증강은 <strong>"f가 변환에 민감하면 손해"</strong>라는 암묵적 페널티를 부과한다. 모형은 손실을 줄이기 위해 변환에 둔감한 표현을 학습한다. 회전된 고양이 사진도, 잘라낸 고양이 사진도 같은 라벨로 분류하려면 모형은 "고양이를 고양이로 만드는 본질적 특징"을 추출해야 한다 — 픽셀의 정확한 위치 같은 표면적 특징이 아니라.</p>
+
+      <div class="analogy">
+        <b>학생에게 같은 개념을 다양한 표현으로 가르치기</b>를 떠올려 보자. "사과 다섯 개 + 사과 세 개"와 "5 + 3"과 "5라는 묶음에 3을 더한다"가 모두 같은 8이라는 답을 만든다는 사실을 알려 주면, 학생은 표면 표현이 아니라 그 뒤의 덧셈 구조를 배운다. 같은 표현으로만 가르치면 학생은 "5와 3이 같이 있으면 8"이라는 표면 짝을 외운다. 데이터 증강이 모형에게 후자가 아니라 전자의 학습 환경을 만들어 준다.
       </div>
 
-      <h2>인터랙티브 셀프체크 — 카드를 눌러 정답 확인</h2>
+      <h2>도메인별 증강 — 무엇을 같은 것으로 볼 것인가</h2>
 
-      <p>아래 15장의 카드를 하나씩 열어보면서, 답이 입에서 바로 나오는지 확인하자. 막히는 카드는 해당 장으로 돌아가 위젯을 한 번 더 만져 보고 오는 것을 권한다.</p>
+      <p>증강은 도메인에 따라 다르다. <strong>모형이 무엇을 같은 것으로 봐야 하는가</strong>는 사람이 정해 줘야 한다. 잘못된 증강은 정칙화가 아니라 잘못된 사전지식의 주입이 된다. 예를 보자.</p>
+
+      <ul>
+        <li><strong>일반 이미지 분류</strong>: 회전, 좌우 반전, 잘라내기, 밝기/대비 조정. "고양이는 회전·반전·잘라내기 해도 고양이"라는 직관에서. 단 <em>상하 반전</em>은 보통 X — 거꾸로 된 고양이는 어색하다.</li>
+        <li><strong>의료 영상(CT, MRI)</strong>: 회전 OK, <em>좌우 반전 X</em> — 심장은 왼쪽에 있다는 해부학적 사실이 정칙화되어선 안 됨.</li>
+        <li><strong>숫자/문자 인식</strong>: 작은 회전 OK, <em>좌우 반전 X</em> — '6'을 좌우 반전하면 다른 글자가 된다.</li>
+        <li><strong>음성 인식</strong>: 시간 축 늘이기/줄이기, 작은 피치 변경, 배경 잡음 추가. 시간 역재생은 X.</li>
+        <li><strong>자연어</strong>: 동의어 교체, 작은 단어 순서 변경. 단 문법을 깨는 변형은 신중히.</li>
+      </ul>
+
+      <p>이 표가 시험에서 직접 묻힐 일은 적지만, "데이터 증강은 도메인 지식이다"라는 주장을 구체화하는 예시로 답안에 한 줄 넣어 주면 효과적이다.</p>
     </div>
 
     <div class="widget">
       <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 08</span><span>시험 대비 셀프체크 카드 · 클릭으로 정답 확인</span></div>
-        <div class="check-grid" id="cards"></div>
-        <div class="check-progress">
-          <span>진행 <b id="progNum">0</b> / 15</span>
-          <div class="bar"><i id="progBar" style="width:0%"></i></div>
-          <button class="btn ghost" id="resetCards">모두 닫기</button>
-        </div>
+        <div class="widget-label"><span class="lab-no">위젯 07</span><span>증강 미리보기 — 한 장의 '3'에서 만들어진 15가지 변형</span></div>
+        <div id="aug"></div>
       </div>
-      <p class="widget-cap">정의(파랑), 기하(주홍), 수학(황토), 응용(회색) 태그로 분류. 시험에서 자주 묻는 형식을 흉내냈다.</p>
+      <p class="widget-cap">왼쪽 위(빨간 테두리)가 원본. 나머지 15개는 회전·밝기·노이즈·반전·잘라내기를 임의 조합한 변형. 모형은 이 16장을 모두 '3'으로 분류하도록 훈련된다. 슬라이더로 변형 강도를 키워 보라 — 한 글자가 얼마나 다양한 모습일 수 있는지가 시각적으로 느껴진다.</p>
     </div>
 
     <div class="prose">
-      <h2>D-day 우선순위 — 시간이 부족하다면</h2>
+      <h2>증강이 가져오는 두 가지 다른 효과</h2>
 
-      <div class="priority-box">
-        <h3>최우선 (반드시 답할 수 있어야 함)</h3>
-        <ol>
-          <li><strong>L1 vs L2 기하학</strong> — 다이아몬드 vs 원, 왜 L1이 sparsity를 만드는지 그림과 함께 설명.</li>
-          <li><strong>조기 종료 ≈ L2 동치</strong> — α = 1/(ετ) 관계, 유도의 2차 근사 조건.</li>
-          <li><strong>드롭아웃의 앙상블 해석</strong> — 2ⁿ개 부분망의 기하 평균, weight scaling 추론.</li>
-          <li><strong>정칙화의 본질</strong> — 훈련 오차를 늘리고 일반화 오차를 줄이는 편향-분산 교환.</li>
-        </ol>
-      </div>
+      <p>증강을 적용하면 정확히 두 가지 효과가 동시에 일어난다.</p>
 
-      <div class="priority-box" style="border-color: var(--structure); background: var(--structure-bg);">
-        <h3 style="color: var(--structure);">차우선 (여유가 있다면)</h3>
-        <ol>
-          <li><strong>L2의 방향별 선택적 축소</strong> — 헤시안 고유값 분해와 w̃ = λ/(λ+α) · w*.</li>
-          <li><strong>데이터 증강의 의미</strong> — 가짜 데이터가 아니라 불변성 사전지식 주입.</li>
-          <li><strong>적대적 훈련 vs 일반 정칙화</strong> — 평균 케이스 vs 최악 케이스.</li>
-          <li><strong>L2 정칙화의 베이지안 해석</strong> — 가우시안 사전, L1은 라플라스 사전.</li>
-        </ol>
-      </div>
+      <p><strong>효과 1: 유효 표본 크기 증가.</strong> 원본 N장에서 K가지 변환을 적용하면 모형은 N×K 종류의 입력을 본 셈이 된다. 모형의 "외울 수 있는" 표본 수가 K배 늘어나므로 외우기가 어려워진다.</p>
 
-      <h2>혼동하기 쉬운 함정</h2>
+      <p><strong>효과 2: 학습된 함수의 매끄러움 강제.</strong> 입력의 작은 변화에 대해 출력이 같아야 한다는 제약이, 모형이 표현하는 함수를 매끄럽게 만든다. 이는 입력 노이즈 주입의 L2 페널티와 본질적으로 같은 효과(8sub에서 본다).</p>
+
+      <p>이 두 효과 중 어느 것이 더 강한가는 도메인과 모형에 따라 다르다. 실전에서는 두 효과 모두에서 이득을 본다.</p>
+
+      <h2>증강의 한계 — 과하게 하면 무엇이 깨지는가</h2>
+
+      <p>증강의 강도를 너무 키우면 두 가지 문제가 생긴다. 첫째, <em>정보 손실</em>. 너무 많이 잘라내면 라벨이 없는 영역만 남을 수 있다(예: 고양이 사진을 너무 작게 잘라 배경만 남음). 둘째, <em>분포 이동</em>. 너무 큰 회전·왜곡을 가하면 훈련셋의 분포가 테스트셋과 멀어진다 — 정칙화가 잡고자 한 일반화에 오히려 해가 된다.</p>
+
+      <p>실전 절차는 다음과 같다.</p>
 
       <ol>
-        <li><strong>정칙화 ≠ 모델 작게 만들기</strong>: 큰 모델을 그대로 두고 자유도만 통제. 작게 만들면 표현력 자체를 잃는다.</li>
-        <li><strong>정칙화는 훈련 오차를 줄이지 않는다</strong>: 오히려 약간 늘려서 일반화를 산다. "훈련 정확도 떨어졌으니 실패"는 잘못된 판단.</li>
-        <li><strong>드롭아웃 ≠ 단순 랜덤 삭제</strong>: 의존성 분산과 부분망 앙상블이 핵심. "벌칙"으로 이해하면 틀림.</li>
-        <li><strong>조기 종료 ≈ L2 동치는 가정에 민감</strong>: 2차 근사 + 단순 GD 조건 하에서만 엄밀. 모멘텀·Adam에선 정확한 동치 깨짐.</li>
-        <li><strong>L1과 L2 둘 다 패널티에 들어가는 α</strong>: L2는 (α/2)·||w||² 형태, L1은 α·||w||₁ 형태 (1/2 없음).</li>
-        <li><strong>증강은 도메인 의존</strong>: OCR에서 좌우 뒤집기, 의료에서 색 변경 등은 라벨을 바꾸므로 금지.</li>
+        <li>도메인에서 자연스러운 변환을 식별 (회전 ±10°, 좌우 반전 등).</li>
+        <li>변환 강도를 결정 (회전 각도 범위, 잘라내기 비율 등).</li>
+        <li>검증 손실로 강도 튜닝 — α 튜닝과 같은 절차.</li>
       </ol>
 
-      <h2>예상 서술형 질문 (회고에서 추출)</h2>
+      <h2>강력한 자동 증강 — 최근 흐름</h2>
 
-      <ol>
-        <li>L1과 L2 정칙화의 차이를 기하학적으로 설명하고, 각각 어떤 상황에 적합한지 서술하시오.</li>
-        <li>조기 종료가 왜 정칙화의 한 형태인지 수학적으로 설명하시오. (L2와의 동치성 유도)</li>
-        <li>드롭아웃이 앙상블 학습과 어떤 관계인지 설명하시오. (2ⁿ개 부분망, 기하 평균 근사)</li>
-        <li>L2 정칙화가 최적화 과정에 미치는 영향을 헤시안의 고유값을 이용하여 설명하시오. (조건수 개선)</li>
-        <li>적대적 훈련이 일반 과적합 방지와 어떻게 다른지, 그리고 FGSM이 공격과 방어 양쪽에서 어떻게 쓰이는지 설명하시오.</li>
-        <li>데이터 증강이 단순한 데이터 복제가 아니라 어떤 사전지식을 모델에 넣는 것인지 설명하시오.</li>
-        <li>큰 모델 + 강한 정칙화가 작은 모델보다 자주 더 좋은 이유를 편향-분산 분해로 설명하시오.</li>
-      </ol>
+      <p>최근에는 사람이 직접 변환을 고르는 대신 자동으로 좋은 변환을 찾는 방법(AutoAugment, RandAugment)이 발전했다. 본질은 같다 — "이 변환들 안에서 라벨이 보존된다"는 사전지식. 다만 그 변환을 사람이 아니라 알고리즘이 검색으로 찾는 차이.</p>
 
-      <h2>다음 장으로</h2>
+      <p>딥러닝 분류 모형에서 데이터 증강은 거의 모든 경우 성능을 큰 폭으로 올린다. ImageNet 분류기의 표준 파이프라인에는 RandomResizedCrop, RandomHorizontalFlip, ColorJitter가 기본으로 들어가 있고, 이를 빼면 모형 성능이 수 퍼센트 포인트 떨어진다.</p>
 
-      <p>이제 정칙화는 끝났다. 다음 장은 [[Ch.08 Optimization|Ch.08 최적화]] — 큰 모델을 어떻게 실제로 학습시키는가. SGD의 한계, 모멘텀과 Nesterov, AdaGrad → RMSProp → Adam의 진화, 배치 정규화. 정칙화와 최적화는 손잡고 가는 짝이다 — L2가 헤시안 조건수를 개선하고, 드롭아웃이 편평한 최솟값으로 유도하고, 배치 정규화가 정칙화 효과까지 부수적으로 가진다.</p>
+      <h2>한 줄 정리</h2>
 
-      <p style="text-align: center; margin: 2rem 0;">
-        <a href="../ch08-optimization/index.html" class="btn" style="display: inline-block; text-decoration: none; padding: .8rem 1.6rem; font-size: .9rem;">Ch.08 최적화로 →</a>
-      </p>
+      <p>데이터 증강은 가짜 데이터 만들기가 아니라 <strong>불변성 사전지식의 주입</strong>이다. 한 식 시점에서 보면 "변환된 입력에서도 같은 라벨을 내라"는 암묵적 페널티 Ω로, L2와는 다른 방식으로 모형의 자유도를 제한한다. 도메인 지식이 있는 영역에서는 가장 강력한 정칙화 도구다.</p>
+
+      <p>다음 sub에서는 데이터가 아닌 모형 내부의 활성에 직접 노이즈를 넣는 방법을 본다. 입력 노이즈, 은닉 노이즈, 가중치 노이즈 — 어디에 노이즈를 넣는가에 따라 효과가 다르다.</p>
     </div>
 
-    <nav class="ch-foot" id="chFoot"></nav>
+    <nav class="ch-foot"></nav>
   </main>
 </div>
 
+<script src="widgets.js"></script>
 <script>
-  const SUBS = [
-    { no:'01', t:'일반화 격차' },
-    { no:'02', t:'L1·L2 기하학' },
-    { no:'03', t:'드롭아웃 앙상블' },
-    { no:'04', t:'조기 종료 ~ L2' },
-    { no:'05', t:'데이터 증강·노이즈' },
-    { no:'06', t:'적대적 훈련' },
-    { no:'07', t:'시험 대비' },
-  ];
-  const CUR = '07';
-  const navlist = document.getElementById('navlist');
-  SUBS.forEach(s => {
-    const li = document.createElement('li');
-    li.innerHTML = `<a href="${s.no}.html"${s.no===CUR?' class="current"':''}>${s.t}</a>`;
-    navlist.appendChild(li);
-  });
-  const chFoot = document.getElementById('chFoot');
-  const idx = SUBS.findIndex(s => s.no === CUR);
-  const prev = idx > 0 ? SUBS[idx-1] : { no:'index', t:'표지로' };
-  const next = idx < SUBS.length-1 ? SUBS[idx+1] : { no:'index', t:'표지로' };
-  chFoot.innerHTML =
-    `<a href="${prev.no}.html"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
-    `<a href="${next.no}.html" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
-
-  window.addEventListener('load', () => {
-    if (window.renderMathInElement) {
-      renderMathInElement(document.body, {
-        delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
-        throwOnError: false,
-      });
-    }
-  });
-
-  // ----- 셀프체크 카드 -----
-  const CARDS = [
-    { tag:'def', q:'정칙화의 본질은 무엇인가? 한 문장으로.', a:'훈련 오차를 약간 늘리고 일반화 오차를 크게 줄이는 편향-분산 교환. 모델 크기를 줄이는 게 아니라, 큰 모델의 자유도를 통제하는 모든 기법의 통칭.' },
-    { tag:'geo', q:'L1 정칙화가 sparsity를 만드는 기하학적 이유는?', a:'제약 영역이 다이아몬드 모양이라 축 위에 날카로운 꼭짓점이 있다. 손실 등고선이 이 꼭짓점에서 만나면 w_i = 0이 된다. 고차원에서는 꼭짓점이 더 많아져 효과가 강해짐.' },
-    { tag:'geo', q:'L2 제약 영역의 모양은 무엇이고, 왜 sparsity를 만들지 않는가?', a:'원형. 모든 방향이 부드럽게 둥글어 등고선이 어느 점에서든 접선으로 만난다. 그 접점이 정확히 축 위일 확률은 매우 낮음.' },
-    { tag:'math', q:'L2 정칙화의 고유값 방향별 축소 비율은?', a:'헤시안 H = QΛQ^T 분해 후, 고유값 λ_i 방향에서 w̃_i = (λ_i / (λ_i + α)) · w*_i. 손실에 민감한(λ 큼) 방향은 보존, 둔감한(λ 작음) 방향은 강하게 축소.' },
-    { tag:'math', q:'조기 종료가 L2와 동치인 조건은 무엇인가?', a:'2차 근사(quadratic approximation) + 단순 SGD(모멘텀·Adam 제외) + 작은 학습률. 이 가정 하에 α = 1/(ετ). τ 적게→α 큼(강한 정칙화), τ 많이→α 작음(약한 정칙화).' },
-    { tag:'def', q:'드롭아웃의 두 가지 해석을 한 문장씩.', a:'(1) 분산된 표상 강제: 특정 뉴런에 책임을 몰지 못함. (2) 부분망 앙상블: 2ⁿ개 부분망을 가중치 공유로 동시 학습하고, 추론 시 가중치 스케일링(W ← p·W)으로 기하 평균 근사.' },
-    { tag:'app', q:'드롭아웃의 학습 시 동작과 추론 시 동작의 차이는?', a:'학습: 매 미니배치마다 mask 추출, 꺼진 뉴런으로 기울기 안 흐름. 추론: 모든 뉴런 사용, 가중치에 p 곱함 (또는 학습 시 1/p 곱하는 inverted dropout).' },
-    { tag:'def', q:'데이터 증강의 본질은 "가짜 데이터 만들기"가 아니라 무엇인가?', a:'불변성(invariance) 사전지식 주입. "이 변형은 라벨을 바꾸지 않는다"는 도메인 지식을 모델에 강제. 표면 패턴 외움 대신 더 일반적 규칙 학습.' },
-    { tag:'app', q:'OCR에서 좌우 뒤집기 증강은 왜 안 되는가?', a:'b ↔ d, p ↔ q처럼 라벨이 바뀌는 변형이라 모델에 잘못된 의미를 주입함. 증강은 항상 도메인 의존적이어야 함.' },
-    { tag:'math', q:'FGSM 적대적 예제의 생성 식과 그 의미는?', a:'x_adv = x + ε · sign(∇_x L(x, y; θ)). L_∞ 제약 ||η||_∞ ≤ ε 하에서 손실을 가장 크게 늘리는 1-step 공격. 입력 공간에서의 경사 상승.' },
-    { tag:'def', q:'적대적 훈련과 일반 정칙화의 차이는?', a:'일반: 평균 케이스 성능 E[L] 개선. 적대적: 최악 케이스 성능 E[max_η L] 개선. 적대적 훈련은 깨끗한 데이터 정확도를 약간 희생하고 강건성을 얻음.' },
-    { tag:'app', q:'L1과 L2 중 어느 것이 특징 선택에 적합한가? 왜?', a:'L1. 일부 가중치를 정확히 0으로 보내므로 "이 입력은 모델이 쓰지 않는다"가 명확. L2는 모두를 작게 만들 뿐 0으로 보내지는 않음.' },
-    { tag:'math', q:'L1과 L2의 베이지안 해석은?', a:'L2 = 가중치에 가우시안 사전 N(0, σ²). 0 주변이 부드러운 종 모양. L1 = 라플라스 사전. 0 주변이 뾰족한 봉우리라 가중치 0을 강하게 선호.' },
-    { tag:'app', q:'배치 정규화는 정칙화인가 최적화 기법인가?', a:'둘 다. 주 목적은 내부 공변량 이동 완화(최적화 안정화), 부수 효과로 미니배치 통계 잡음이 정칙화 역할. Ch.8 주제지만 Ch.7 정신과 연결.' },
-    { tag:'app', q:'실전에서 정칙화 우선순위 4단계는?', a:'(1) 조기 종료 — 거의 공짜, 항상 기본. (2) 드롭아웃 — FC층 표준, p=0.5. (3) 데이터 증강 — 도메인 지식 있으면 매우 효과적. (4) L2 — α 튜닝 필요하나 안정. 보통 여러 개를 함께 씀.' },
-  ];
-  const TAG_NAMES = { def: '정의', geo: '기하', math: '수학', app: '응용' };
-  const cardsEl = document.getElementById('cards');
-  const progNum = document.getElementById('progNum');
-  const progBar = document.getElementById('progBar');
-  const resetBtn = document.getElementById('resetCards');
-  let flipped = new Set();
-  CARDS.forEach((c, i) => {
-    const div = document.createElement('div');
-    div.className = 'check-card';
-    div.innerHTML = `
-      <p class="q"><span class="tag ${c.tag}">${TAG_NAMES[c.tag]}</span>${i+1}. ${c.q}</p>
-      <p class="a">${c.a}</p>
-      <p class="tap">탭하여 정답 보기 →</p>`;
-    div.addEventListener('click', () => {
-      div.classList.toggle('flip');
-      const tap = div.querySelector('.tap');
-      if (div.classList.contains('flip')) {
-        flipped.add(i);
-        tap.textContent = '← 다시 가리기';
-      } else {
-        flipped.delete(i);
-        tap.textContent = '탭하여 정답 보기 →';
-      }
-      progNum.textContent = flipped.size;
-      progBar.style.width = (flipped.size / CARDS.length * 100) + '%';
+window.addEventListener('load', () => {
+  CH7.buildNav('07');
+  if (window.renderMathInElement) {
+    renderMathInElement(document.body, {
+      delimiters: [
+        { left: '$$', right: '$$', display: true },
+        { left: '$', right: '$', display: false },
+      ],
+      throwOnError: false,
     });
-    cardsEl.appendChild(div);
-  });
-  resetBtn.addEventListener('click', () => {
-    flipped.clear();
-    document.querySelectorAll('.check-card').forEach(c => {
-      c.classList.remove('flip');
-      c.querySelector('.tap').textContent = '탭하여 정답 보기 →';
-    });
-    progNum.textContent = '0';
-    progBar.style.width = '0%';
-  });
+  }
+  CH7.onVisible(document.getElementById('aug'), () => CH7.augment(document.getElementById('aug')));
+});
 </script>
 </body>
 </html>

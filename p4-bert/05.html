@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>05 · 특수 토큰 [CLS] [SEP] [MASK]</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="assets/bert.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Chapter 05 · 세 특수 토큰의 역할</span>
+      <h1>[CLS]·[SEP]·[MASK]<br>가짜 단어 세 개가 하는 진짜 일</h1>
+      <p class="lede">BERT 의 입력에는 “단어가 아닌데 단어인 척” 자리를 차지하는 세 토큰이 있다. 이 셋은 단순한 문법 표시가 아니라 BERT 가 학습되고 사용되는 모든 단계의 핵심 부품이다.</p>
+    </header>
+
+    <div class="prose">
+      <h2>1. 왜 “가짜 단어”를 만들어 두는가</h2>
+      <p>먼저 큰 그림에서 시작하자. BERT 는 같은 모델로 분류, 추론, 질의응답, 개체명 인식 등 매우 다른 종류의 과제를 처리해야 한다. 그러려면 “이 입력은 어떤 종류의 과제를 위한 것인가”와 “이 입력 어디에서 답을 꺼내야 하는가”를 모델이 알 수 있도록 표시해야 한다. BERT 의 우아한 해법은 “특수 토큰을 입력에 끼워 넣어 표시하기”다.</p>
+
+      <p>이 발상에는 한 가지 깊은 통찰이 있다. <strong>모델은 어떤 토큰이 “진짜 단어”이고 어떤 토큰이 “표식”인지 구분하지 않는다.</strong> 모든 토큰을 똑같이 다룬다. 그래서 [CLS] 도 임베딩 테이블에 한 줄 자리를 차지하고, [SEP] 도 한 줄, [MASK] 도 한 줄이다. 학습이 진행되면서 이 세 토큰의 임베딩과 그들이 들어가는 자리의 처리 방식이 동시에 학습된다.</p>
+
+      <h2>2. [CLS] — Classification 의 자리</h2>
+      <p>[CLS] 는 “classification(분류)”의 약자다. 입력의 맨 앞 자리에 항상 들어가는 특수 토큰이다. 이 자리는 사전훈련 단계의 NSP 와 미세조정 단계의 모든 분류·NLI 작업에서 “이 입력 전체의 요약을 꺼낼 자리”로 약속되어 있다.</p>
+
+      <div class="def-box">
+        <div class="deft">[CLS] 의 약속</div>
+        <p>입력 시퀀스 맨 앞에 둔다. 인코더의 마지막 층에서 [CLS] 위치의 벡터 $C \in \mathbb{R}^H$ 를 떼어 내, 그 위에 작은 선형층(linear layer) 하나만 얹으면 문장 분류기 또는 문장 쌍 분류기가 된다.</p>
+      </div>
+
+      <p>한 가지 자연스러운 질문 — 왜 “맨 앞”이어야 하는가? 사실 위치 자체는 그렇게 중요하지 않다. 어디든 약속된 자리 한 곳이 있고 그 자리에서만 답을 꺼내면 된다. 그러나 맨 앞에 두면 두 가지 이점이 있다. 첫째, 어떤 길이의 입력이든 맨 앞 자리는 항상 존재하므로 코드가 단순해진다. 둘째, 위치 임베딩이 학습되는 과정에서 “0번 자리” 의 의미가 자연스럽게 “요약 자리”로 굳어진다.</p>
+
+      <p>중요한 한 가지 더. [CLS] 토큰의 입력 임베딩 자체는 “의미가 없다”. 그것은 단지 학습 가능한 빈 자리다. 그 자리에 어떤 정보가 모이는가는 인코더의 양방향 어텐션을 거치면서 점차 채워진다. 첫 층에서는 자기 자신밖에 보이지 않지만, 12층을 거치면 입력의 모든 토큰에서 정보를 끌어와 “이 입력 전체가 무엇인가”의 압축된 표현이 된다.</p>
+
+      <div class="analogy">
+        회의실에 모인 사람들이 차례로 의견을 말한다. 그런데 회의실 입구에 “요약 화이트보드”가 하나 있고, 회의에 참석하지 않은 비서 한 명이 그 화이트보드에 회의 내용을 정리한다. 회의가 끝나면 사장은 그 화이트보드만 본다 — 그것이 회의 전체의 요약이다. [CLS] 가 정확히 그 비서이자 화이트보드 역할이다.
+      </div>
+
+      <h2>3. [SEP] — Sentence Separator</h2>
+      <p>[SEP] 는 “separator(구분자)”다. 두 가지 자리에 들어간다. 첫째, 첫 문장과 둘째 문장 사이에 한 번. 둘째, 마지막 문장 끝(즉 입력의 맨 끝)에 한 번. 단일 문장 입력이면 [SEP] 는 맨 끝에 한 번만 들어간다.</p>
+
+      <p>[SEP] 가 하는 일은 단순하다. “문장 경계가 여기다”라고 모델에게 알려 주는 것. 4장에서 본 세그먼트 임베딩 $E_A, E_B$ 와 함께, 두 신호로 두 문장의 경계가 분명해진다. [SEP] 는 위치를 표시하고, 세그먼트 임베딩은 양쪽 토큰들이 어느 편에 속하는지 알려 준다. 둘이 짝을 이루어 작동한다.</p>
+
+      <div class="def-box mask-side">
+        <div class="deft">왜 둘 다 필요?</div>
+        <p>[SEP] 만 있으면 “경계는 어디다”는 알지만 “어느 쪽이 첫 문장이고 어느 쪽이 둘째 문장인가”는 모른다. 세그먼트 임베딩만 있으면 “어느 쪽인가”는 알지만 정확한 위치를 찾기 어렵다. 둘이 짝지을 때 두 정보가 모두 잡힌다.</p>
+      </div>
+
+      <h2>4. [MASK] — Mask 의 자리, 학습의 핵</h2>
+      <p>마지막이 [MASK] 다. 이 토큰은 사전훈련 단계의 MLM 손실의 핵이다. 2장에서 본 “일부 단어를 가린 뒤 맞히게 한다”의 “가린” 자리가 바로 이 토큰으로 표시된다.</p>
+
+      <p>MLM 학습 시, 입력 토큰의 15% 가 무작위로 선택된다. 선택된 토큰들 중</p>
+      <ul style="font-size:.95rem; color:var(--ink-soft); line-height:1.7;">
+        <li><b>80%</b> 는 [MASK] 로 교체된다. (가장 흔한 경우)</li>
+        <li><b>10%</b> 는 어휘집에서 무작위로 뽑은 다른 토큰으로 교체된다.</li>
+        <li><b>10%</b> 는 그대로 둔다.</li>
+      </ul>
+      <p>모든 경우에서 손실은 그 자리의 원래 단어를 정답으로 삼아 계산된다. 이 8:1:1 비율의 의미는 6장에서 자세히 다룬다. 일단 여기서는 “[MASK] 만 쓰지 않고 일부는 그대로 두거나 다른 단어로 바꾸기도 한다”는 사실만 기억하자.</p>
+
+      <h2>5. [MASK] 가 일으키는 한 가지 문제 — 사전훈련-미세조정 불일치</h2>
+      <p>여기서 BERT 논문이 직접 언급하는 흥미로운 문제 하나가 있다. 사전훈련 단계에서는 입력에 [MASK] 토큰이 빈번하게 등장한다(전체의 약 15% × 80% = 12%). 그러나 미세조정 단계에서는 [MASK] 토큰이 전혀 등장하지 않는다. 모델은 사전훈련 때 “[MASK] 자리에서 정답을 추론”하는 데 익숙해진 상태이지만, 실제 미세조정 시에는 [MASK] 가 없는 입력만 본다. 이 불일치를 영어로 “pretrain-finetune discrepancy”라고 부른다.</p>
+
+      <p>BERT 가 8:1:1 비율을 도입한 이유가 바로 이 불일치를 줄이기 위해서다. 가린 토큰의 10% 를 “원래 단어 그대로” 두면, 모델은 “[MASK] 자리에서만 추론”하는 것이 아니라 “모든 자리에서 정답을 확인”하는 습관을 들이게 된다. 그래서 [MASK] 없이 들어오는 미세조정 입력에도 자연스럽게 적응한다. 작은 디테일이지만 BERT 의 견고함에 의외로 중요한 부분이다.</p>
+
+      <div class="def-box synth-side">
+        <div class="deft">8:1:1 비율의 동기</div>
+        <p>[MASK] 100% 만 쓰면 사전훈련-미세조정 불일치가 크다. 그래서 가린 자리 중 10% 는 무작위 단어로(노이즈 강건성), 10% 는 원래 단어 그대로(불일치 완화) 둔다.</p>
+      </div>
+
+      <h2>6. 세 특수 토큰의 사용처를 한눈에</h2>
+      <p>지금까지 본 내용을 한 줄로 정리하면 다음과 같다.</p>
+
+      <table class="symbols">
+        <tr><td>토큰</td><td>들어가는 자리</td><td>사전훈련에서 쓰임</td><td>미세조정에서 쓰임</td></tr>
+        <tr><td>[CLS]</td><td>입력 맨 앞 (항상)</td><td>NSP 손실의 입력</td><td>분류·NLI 의 출력 추출 지점</td></tr>
+        <tr><td>[SEP]</td><td>문장 경계와 끝</td><td>두 문장 입력 표시</td><td>두 문장 입력 표시</td></tr>
+        <tr><td>[MASK]</td><td>가린 자리 (학습 시만)</td><td>MLM 의 추론 대상</td><td>등장하지 않음</td></tr>
+      </table>
+
+      <h2>7. 한 가지 더 — 다음 장으로 넘어가기 전</h2>
+      <p>여기까지 BERT 의 “모델과 입력”에 관한 모든 부품을 살펴봤다. 다음 두 장(6장 MLM, 7장 NSP)은 BERT 의 “학습 방식”을 다룬다. 두 학습 방식이 합쳐져 BERT 의 사전훈련 단계를 이룬다. 그리고 사전훈련이 끝난 가중치를 그대로 가져와 작은 분류기 하나만 더 얹는 것이 미세조정 단계다(9–11장).</p>
+
+      <p>특수 토큰 세 개의 역할이 머릿속에서 분명하지 않으면 이후 장들이 흐릿해진다. 한 번 더 짚자 — <span class="t-bidir">[CLS]</span> 는 요약 자리, <span class="t-bidir">[SEP]</span> 는 경계, <span class="t-mask">[MASK]</span> 는 가린 자리. 이 세 가지가 BERT 의 모든 단계에서 반복적으로 등장한다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script src="assets/bert.js"></script>
+<script>
+  window.addEventListener('load', () => { BERT.buildNav('05'); });
+</script>
+</body>
+</html>

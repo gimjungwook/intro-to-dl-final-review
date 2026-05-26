@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>08 · 기울기 클리핑</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .clip-stage { padding: 1.4rem 1rem 1rem; }
+  .clip-svg { display:block; width:100%; height: 260px; background: var(--paper-2); border-radius: 8px; }
+  .clip-svg .grid { stroke: var(--line-soft); stroke-width: 1; }
+  .clip-svg .surf { fill: var(--ink); opacity: .08; }
+  .clip-svg .cliff { fill: var(--style); opacity: .14; }
+  .clip-svg .path-raw { fill: none; stroke: var(--style); stroke-width: 2.4; stroke-dasharray: 4 3; }
+  .clip-svg .path-clip { fill: none; stroke: var(--structure); stroke-width: 2.4; }
+  .clip-svg .dot { fill: var(--ink); }
+  .clip-svg .tick { font-family: var(--mono); font-size: 10px; fill: var(--ink-faint); }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar">
+  <a class="home" href="index.html">← Ch.10 표지</a>
+  <span class="ch-mini">SUB 08 / 14</span>
+</div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol id="navlist"></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-chapter 08 · 폭발만 막는 처방</span>
+      <h1>방향은 그대로,<br><span class="t-structure">보폭만 줄인다</span></h1>
+      <p class="lede">기울기 클리핑은 가장 단순하고 가장 효과적인 폭발 방어다. 절벽 가까이 갈 때 보폭을 자동으로 줄이는 것과 같다.</p>
+    </header>
+
+    <div class="prose">
+      <h2>RNN의 손실 풍경에는 절벽이 있다</h2>
+      <p>일반적인 깊은 신경망의 손실 풍경(loss landscape)은 거대한 그릇 모양에 작은 굴곡들이 얹힌 형태로 자주 시각화된다. 그러나 RNN의 손실 풍경은 한 가지 결정적인 특징이 더 있다 — <strong>곳곳에 가파른 절벽(cliff)이 있다</strong>는 것이다. 절벽은 매개변수 공간의 어떤 좁은 영역에서 손실이 급격히 변하는 곳이다. SUB 07에서 본 $W$의 거듭제곱이 폭발하는 영역이 바로 이 절벽 부근이다.</p>
+
+      <p>일반 SGD나 Adam은 절벽을 한 번 만나면 곤란해진다. 절벽 위에서 기울기를 계산하면 그 크기가 어마어마하게 커진다(예: $\|\nabla L\| = 10^{10}$). 이 기울기에 학습률 $\eta$를 곱한 보폭으로 한 스텝을 가면, 매개변수가 그 방향으로 거대하게 튀어 손실이 갑자기 폭증한다. 한 번의 잘못된 스텝이 그동안 쌓아 온 학습을 무너뜨릴 수 있다.</p>
+
+      <h2>처방: 노름이 임계값을 넘으면 강제로 줄인다</h2>
+      <p>기울기 클리핑(gradient clipping)은 이 문제에 대한 가장 단순한 처방이다. 매 스텝마다 기울기 벡터 $g = \nabla L$의 노름(norm)을 측정한다. 그 노름이 미리 정해진 임계값 $\tau$(예: 5.0)를 넘으면, 기울기를 다음과 같이 축소한다.</p>
+      <div class="math-block">$$g \leftarrow \begin{cases} g & \text{if } \|g\| \le \tau \\ \dfrac{\tau}{\|g\|}\, g & \text{if } \|g\| > \tau \end{cases}$$</div>
+      <p class="math-note">노름이 $\tau$보다 작으면 그대로, 크면 노름이 정확히 $\tau$가 되도록 비례 축소.</p>
+
+      <p>이 처방의 핵심은 <strong>"방향은 유지하고 크기만 자른다"</strong>는 것이다. 기울기의 방향 $g/\|g\|$은 손실을 줄이는 방향에 대한 정보다. 그 방향 자체는 옳을 수 있으나, 절벽 위에서는 그 방향으로 너무 멀리 가는 것이 위험하다. 노름만 잘라서 보폭을 줄이면, 방향은 유지하면서 폭발만 막을 수 있다.</p>
+
+      <h2>비유: 절벽에서 작은 걸음으로</h2>
+      <div class="analogy">
+        가파른 절벽이 보이는 산길을 걷고 있다. 평지에서는 큰 보폭으로 빠르게 걷는다. 절벽이 가까워졌을 때, <b>방향을 바꾸는 것이 아니라 보폭을 줄인다</b>. 한 발에 5미터씩 걸으면 절벽 너머로 떨어지지만, 50센티미터씩 걸으면 한 걸음 더 가도 안전하다. 절벽이 끝나면 다시 큰 보폭으로 돌아간다. 기울기 클리핑은 정확히 이 행동을 자동화한다 — 기울기 노름이 클 때만 보폭을 줄이고, 작을 때는 그대로 둔다.
+      </div>
+
+      <h2>두 가지 변형 — 노름 클리핑 vs 값 클리핑</h2>
+      <p><strong>(1) 노름 클리핑(norm clipping).</strong> 위에서 본 형식. 기울기 벡터 전체의 $L_2$-노름이 $\tau$를 넘으면 비례 축소. 방향이 그대로 유지되는 것이 장점.</p>
+      <p><strong>(2) 값 클리핑(value clipping).</strong> 기울기 벡터의 각 성분을 개별적으로 $[-\tau, \tau]$ 범위로 잘라낸다. 구현이 단순하지만, 방향이 변형될 수 있다(어떤 성분만 잘리면 벡터의 방향이 그 성분 비중이 적은 쪽으로 기울어진다). 실용적으로는 노름 클리핑이 더 자주 쓰인다.</p>
+
+      <h2>임계값 $\tau$의 감각</h2>
+      <p>임계값은 보통 1.0, 5.0, 10.0 같은 작은 정수다. 일반적으로 RNN/LSTM 학습에서는 $\tau = 1.0$ 또는 $\tau = 5.0$이 자주 권장된다. $\tau$가 너무 작으면 정상적인 기울기까지 자르게 되어 학습이 느려지고, 너무 크면 클리핑이 거의 동작하지 않아 폭발 방어가 되지 않는다. 실용적으로는 훈련 초기에 기울기 노름의 분포를 모니터링하고, 평균보다 약간 큰 값을 $\tau$로 설정하는 것이 좋다.</p>
+
+      <h2>위젯: 클리핑 있음 vs 없음</h2>
+      <div class="widget">
+        <div class="widget-frame">
+          <div class="widget-label"><span class="lab-no">위젯 05</span><span>절벽 위 스텝 — 클리핑의 효과</span></div>
+          <div class="clip-stage">
+            <svg class="clip-svg" viewBox="0 0 720 260" id="clipSvg"></svg>
+          </div>
+          <div class="widget-controls">
+            <button class="btn" id="clipStep">한 걸음 진행</button>
+            <button class="btn ghost" id="clipReset">처음으로</button>
+            <div class="legend">
+              <span><i style="background:var(--style)"></i>클리핑 없음 (폭발)</span>
+              <span><i style="background:var(--structure)"></i>클리핑 있음 (안전)</span>
+            </div>
+          </div>
+        </div>
+        <p class="widget-cap">단순화된 1차원 손실 풍경. 가운데 좁은 구간은 절벽(기울기가 매우 큰 구간). "클리핑 없음"은 절벽 위에서 거대한 보폭으로 튕겨 나간다. "클리핑 있음"은 같은 위치에서 보폭이 자동으로 줄어 들면서 절벽을 천천히 내려간다.</p>
+      </div>
+
+      <h2>왜 RNN에 특히 효과적인가</h2>
+      <p>일반 깊은 신경망에서도 클리핑은 쓸 수 있지만, RNN에서 특히 중요하다. 이유는 두 가지다.</p>
+
+      <p>첫째, <strong>RNN의 손실 풍경은 폭발/소실 영역의 경계가 좁고 절벽이 흔하다</strong>. 일반 깊은 신경망의 각 층은 서로 다른 가중치를 가지므로, 한 층의 spectral radius가 1을 넘는 것과 모든 층의 spectral radius가 1을 넘는 것은 매우 다르다. RNN은 같은 $W$를 시간만큼 곱하므로, $W$의 spectral radius 하나가 모든 시점의 운명을 동시에 결정한다. 작은 가중치 변화가 절벽을 넘나들게 만든다.</p>
+
+      <p>둘째, <strong>RNN 폭발은 자주 일어난다</strong>. 시그모이드 RNN에서 가중치가 무작위로 초기화되면 spectral radius가 1 근처일 때가 잦고, 그 경계 부근에서 학습 중에도 절벽을 만난다. 클리핑이 없으면 거의 모든 RNN 학습이 어느 시점에 한 번씩 튕겨 나간다.</p>
+
+      <h2>클리핑은 소실은 풀지 못한다</h2>
+      <p>중요한 한계를 짚어 두자. 클리핑은 <strong>폭발만</strong> 막는다. 소실은 풀지 못한다. 소실은 기울기 노름이 0에 가까워지는 문제이고, 그것을 강제로 키우는 것은 잘못된 방향으로 신호를 보내는 셈이다. 소실의 처방은 구조를 바꾸는 것 — 게이트와 cell state를 도입하는 LSTM/GRU(SUB 09-11)다.</p>
+
+      <p>그래서 실용적으로는 두 처방을 함께 쓴다 — <strong>LSTM/GRU 구조 + 기울기 클리핑</strong>이 RNN 계열 학습의 표준이다. 구조가 소실을 막고, 클리핑이 폭발을 막는다.</p>
+
+      <h2>8장(Optimization)과의 연결</h2>
+      <p>기울기 클리핑은 RNN만의 처방이 아니다. 일반 최적화(8장)에서 다루는 도구지만, RNN에서 가장 결정적으로 빛난다. 다른 처방들(작은 학습률, momentum, Adam의 적응적 학습률 등)도 RNN 학습에 보조 역할을 하지만, 절벽에 대한 정면 응답은 클리핑이다.</p>
+
+      <h2>역사적 맥락 — Pascanu, Mikolov, Bengio (2013)</h2>
+      <p>기울기 클리핑이 학계의 공식적 권장이 된 것은 2013년 Pascanu, Mikolov, Bengio의 "On the difficulty of training recurrent neural networks" 논문이다. 이 논문은 RNN의 폭발/소실 문제를 동역학 시스템 관점에서 정밀하게 분석하고, 폭발에 대한 해법으로 "노름이 임계값을 넘으면 비례 축소"라는 단순한 규칙을 제시했다. 이 논문 이후 거의 모든 주요 딥러닝 프레임워크가 클리핑을 기본 API로 포함했다(PyTorch의 `torch.nn.utils.clip_grad_norm_`, TensorFlow의 `tf.clip_by_global_norm` 등).</p>
+      <p>흥미로운 점은 같은 논문이 "폭발은 클리핑으로, 소실은 LSTM이나 ESN으로"라는 명확한 분업을 제안했다는 것이다. 즉 두 문제는 본질적으로 다른 처방이 필요하며, 한 가지로 둘 다 풀려는 시도는 비효율적이라는 입장이다. 이 분업이 이후 RNN 학습의 표준 관행이 되었다.</p>
+
+      <h2>실용적인 조언 — 클리핑을 언제 어떻게 켜는가</h2>
+      <p>실무에서 클리핑을 적용할 때 두 가지를 점검하면 안전하다. 첫째, <strong>훈련 초기 몇 백 스텝의 기울기 노름 분포</strong>를 로그로 찍어 본다. 평균과 95퍼센타일 값을 보면 적절한 $\tau$가 보인다. 보통은 95퍼센타일의 1-2배 정도가 좋다. 둘째, <strong>클리핑 빈도</strong>를 추적한다. 클리핑이 매 스텝마다 발동되면 $\tau$가 너무 작다는 신호이고, 학습 내내 한 번도 발동되지 않으면 $\tau$가 너무 크다는 신호다. 보통은 학습 초기에 자주, 후기에는 드물게 발동되는 것이 건강한 신호다.</p>
+
+      <p>또 한 가지 함정 — <strong>배치 안의 기울기를 모두 더한 후 클리핑한다</strong>. 각 샘플의 기울기를 따로 클리핑하면 안 된다. 그렇게 하면 어떤 샘플이 폭발했는지 정보가 사라지고, 더 본질적으로는 클리핑이 일종의 정규화처럼 작용해 학습에 의도치 않은 영향을 준다. 표준 관행은 "배치 기울기 합산 후 한 번 클리핑"이다.</p>
+
+      <h2>한 줄로</h2>
+      <p>기울기 클리핑은 <strong>"노름이 임계값을 넘으면 방향은 그대로 두고 크기만 잘라내는"</strong> 단순한 처방이다. RNN의 폭발 절벽을 방어하는 가장 효과적인 방법이며, 모든 RNN/LSTM/GRU 학습에서 사실상 기본값으로 쓰인다. 소실은 별도의 구조적 응답(다음 장 SUB 09)이 필요하다.</p>
+    </div>
+
+    <nav class="ch-foot" id="chfoot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    ['01','왜 시퀀스에 FC·CNN은 부족한가'],['02','RNN의 기본 아이디어'],['03','시간 펼치기'],
+    ['04','매개변수 공유'],['05','BPTT 1 — 직관'],['06','BPTT 2 — 손계산'],
+    ['07','기울기 폭발과 소실'],['08','기울기 클리핑'],['09','LSTM 1 — 세 게이트'],
+    ['10','LSTM 2 — cell state'],['11','GRU'],['12','양방향 RNN'],
+    ['13','인코더-디코더'],['14','시험 대비'],
+  ];
+  const CUR = '08';
+  const ol = document.getElementById('navlist');
+  SUBS.forEach(([n,t]) => {
+    const li = document.createElement('li');
+    li.innerHTML = `<a href="${n}.html"${n===CUR?' class="current"':''}>${t}</a>`;
+    ol.appendChild(li);
+  });
+  const i = SUBS.findIndex(s=>s[0]===CUR);
+  const prev = i>0 ? SUBS[i-1] : ['','표지로'];
+  const next = i<SUBS.length-1 ? SUBS[i+1] : ['','표지로'];
+  document.getElementById('chfoot').innerHTML =
+    `<a href="${prev[0]?prev[0]+'.html':'index.html'}"><div class="dir">← 이전</div><div class="ti">${prev[1]}</div></a>` +
+    `<a href="${next[0]?next[0]+'.html':'index.html'}" class="next"><div class="dir">다음 →</div><div class="ti">${next[1]}</div></a>`;
+  const bar = document.querySelector('.scroll-progress');
+  document.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max>0 ? (h.scrollTop/max)*100 : 0) + '%';
+  }, { passive: true });
+
+  // 클리핑 위젯 — 1D 손실 풍경 + 절벽
+  const clipSvg = document.getElementById('clipSvg');
+  function lossFn(x) {
+    // 좌우 부드러운 그릇 + 가운데 절벽
+    const bowl = 0.06 * (x*x);
+    const cliffCenter = 1.5;
+    const cliff = Math.exp(-Math.pow((x - cliffCenter)*4, 2)) * 4.0; // 좁고 뾰족
+    return bowl + cliff;
+  }
+  function gradFn(x) {
+    // 수치 미분
+    const eps = 0.001;
+    return (lossFn(x+eps) - lossFn(x-eps)) / (2*eps);
+  }
+  const TAU = 1.5;
+  function clipGrad(g) { return Math.abs(g) > TAU ? Math.sign(g)*TAU : g; }
+  let pos_raw = -2.5;
+  let pos_clip = -2.5;
+  let history_raw = [pos_raw];
+  let history_clip = [pos_clip];
+
+  function render() {
+    const W = 720, H = 260;
+    const pad = { l: 40, r: 30, t: 24, b: 30 };
+    const xMin = -4, xMax = 4;
+    const yMin = 0, yMax = 5;
+    const x0 = pad.l, x1 = W - pad.r, y0 = pad.t, y1 = H - pad.b;
+    function sx(x) { return x0 + (x - xMin)/(xMax - xMin) * (x1 - x0); }
+    function sy(y) { return y1 - (y - yMin)/(yMax - yMin) * (y1 - y0); }
+    let s = '';
+    // 그리드
+    for (let g = xMin; g <= xMax; g++) {
+      s += `<line class="grid" x1="${sx(g)}" y1="${y0}" x2="${sx(g)}" y2="${y1}"/>`;
+    }
+    // 손실 곡선 (배경)
+    let curve = '';
+    for (let i = 0; i <= 200; i++) {
+      const x = xMin + (xMax - xMin) * i/200;
+      const y = lossFn(x);
+      curve += (i===0?`M`:` L`) + `${sx(x)},${sy(y)}`;
+    }
+    s += `<path class="surf" d="${curve} L${sx(xMax)},${y1} L${sx(xMin)},${y1} Z"/>`;
+    // 절벽 강조
+    s += `<rect class="cliff" x="${sx(1.0)}" y="${y0}" width="${sx(2.0)-sx(1.0)}" height="${y1-y0}"/>`;
+    // 손실 곡선 라인
+    s += `<path d="${curve}" fill="none" stroke="var(--ink-soft)" stroke-width="1.2"/>`;
+    // 경로
+    function drawPath(hist, cls) {
+      let p = '';
+      hist.forEach((x, i) => {
+        const y = lossFn(x);
+        p += (i===0?`M`:` L`) + `${sx(x)},${sy(y)}`;
+      });
+      return `<path class="${cls}" d="${p}"/>`;
+    }
+    s += drawPath(history_raw, 'path-raw');
+    s += drawPath(history_clip, 'path-clip');
+    // 현재 점
+    s += `<circle class="dot" fill="var(--style)" cx="${sx(pos_raw)}" cy="${sy(lossFn(pos_raw))}" r="5"/>`;
+    s += `<circle class="dot" fill="var(--structure)" cx="${sx(pos_clip)}" cy="${sy(lossFn(pos_clip))}" r="5"/>`;
+    // 라벨
+    s += `<text class="tick" x="${(x0+x1)/2}" y="${H-8}" text-anchor="middle">매개변수</text>`;
+    s += `<text class="tick" x="${sx(1.5)}" y="${y0+12}" text-anchor="middle" style="fill:var(--style)">절벽</text>`;
+    clipSvg.innerHTML = s;
+  }
+  const LR = 0.15;
+  document.getElementById('clipStep').onclick = () => {
+    // 한 걸음씩
+    const g_raw = gradFn(pos_raw);
+    pos_raw = pos_raw - LR * g_raw;
+    history_raw.push(pos_raw);
+    const g_clip = gradFn(pos_clip);
+    const g_clipped = clipGrad(g_clip);
+    pos_clip = pos_clip - LR * g_clipped;
+    history_clip.push(pos_clip);
+    // 범위 클램프 (시각화용)
+    pos_raw = Math.max(-5, Math.min(5, pos_raw));
+    pos_clip = Math.max(-5, Math.min(5, pos_clip));
+    render();
+  };
+  document.getElementById('clipReset').onclick = () => {
+    pos_raw = -2.5; pos_clip = -2.5;
+    history_raw = [pos_raw]; history_clip = [pos_clip];
+    render();
+  };
+  render();
+
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) renderMathInElement(document.body, {
+      delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }],
+      throwOnError: false,
+    });
+  });
+</script>
+</body>
+</html>

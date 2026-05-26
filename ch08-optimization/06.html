@@ -3,375 +3,279 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ch.8 · 06 — 초기화 (Xavier·He)</title>
+<title>06 · 모멘텀 1 — 관성과 점성 저항, 그릇 위의 공</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
-  .init-stage { padding: 1.2rem 1rem 1rem; }
-  .init-svg { display: block; width: 100%; max-width: 720px; margin: 0 auto; height: 340px; }
-  .init-ctrl { display: flex; gap: 1rem; justify-content: center; padding: .6rem 1rem 1rem; flex-wrap: wrap; align-items: center; }
-  .init-pick { display: flex; gap: .4rem; flex-wrap: wrap; justify-content: center; padding: .6rem 1rem; border-top: 1px solid var(--line-soft); }
-  .init-pick .btn.ghost.on { background: var(--style); color: #fff; border-color: var(--style); }
-  .init-legend { display: flex; gap: 1.2rem; justify-content: center; padding: .4rem 1rem .8rem; flex-wrap: wrap; font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); }
-  .init-legend span { display: inline-flex; align-items: center; gap: .35rem; }
-  .init-legend i { width: 10px; height: 10px; border-radius: 50%; }
-
-  .sym-stage { padding: 1.2rem 1rem 1rem; }
-  .sym-svg { display: block; width: 100%; max-width: 560px; margin: 0 auto; height: 280px; }
-  .sym-ctrl { display: flex; gap: 1rem; justify-content: center; padding: .6rem 1rem 1rem; flex-wrap: wrap; }
-
-  .bias-tab { max-width: var(--measure); margin: 1.6rem auto; padding-inline: 1.4rem; }
-  .bias-tab table { width: 100%; border-collapse: collapse; font-size: .92rem; }
-  .bias-tab th, .bias-tab td { padding: .55rem .8rem; text-align: left; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
-  .bias-tab th { font-family: var(--mono); font-size: .7rem; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-faint); font-weight: 500; }
-  .bias-tab .case { font-family: var(--serif); color: var(--structure); font-weight: 600; }
-  .bias-tab .val { font-family: var(--mono); color: var(--style); }
+  .mom-stage { padding: 1.4rem 1.1rem 0.6rem; }
+  #momCanvas { width: 100%; height: 440px; display: block; background: #fff; border: 1px solid var(--line); border-radius: 8px; }
+  .mom-read { display: flex; flex-wrap: wrap; gap: 1.2rem; padding: 0.4rem 1.1rem 1rem; font-family: var(--mono); font-size: .78rem; color: var(--ink-soft); }
+  .mom-read span b { color: var(--ink); font-weight: 600; }
+  .mom-legend { display: flex; gap: 1.1rem; padding: .4rem 1.1rem 0; font-family: var(--mono); font-size: .72rem; color: var(--ink-soft); }
+  .mom-legend i { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: .35rem; vertical-align: -1px; }
 </style>
 </head>
 <body>
-<div class="scroll-progress"></div>
 <div class="topbar">
-  <a class="home" href="index.html">← Chapter 08 표지</a>
-  <span class="ch-mini">SUB 06 / 08 · Optimization</span>
+  <a class="home" href="index.html">← Ch.08 최적화</a>
+  <span class="ch-mini">SUB 06 / 17</span>
 </div>
 
 <div class="ch-layout">
-  <aside class="ch-nav"><nav><ol id="nav"></ol></nav></aside>
+  <aside class="ch-nav"><nav><ol id="navlist"></ol></nav></aside>
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Sub-chapter 06 · 출발점이 학습을 결정한다</span>
-      <h1>모든 가중치를 0으로 두면<br><span class="t-style">모든 뉴런이 같은 함수</span>를 배운다</h1>
-      <p class="lede">신경망 초기화는 그냥 “랜덤 숫자 채우기”가 아니다. 대칭성을 깨야 하고, 가중치 크기는 너무 크지도 작지도 않아야 한다. Xavier·He 초기화는 순전파와 역전파의 분산을 동시에 맞추는 타협이다.</p>
+      <span class="kicker">Sub 06 · 일관된 방향엔 가속, 진동엔 상쇄</span>
+      <h1>경사가 약해져도<br><span class="t-style">관성</span>으로 미끄러진다</h1>
+      <p class="lede">모멘텀은 단순한 "가속" 트릭이 아니다. 일관된 기울기는 누적되고, 진동하는 기울기는 상쇄된다. 두 효과를 동시에 거두는 가장 직관적인 1차 알고리즘이다.</p>
     </header>
 
     <div class="prose">
-      <p>모든 옵티마이저는 “좋은 출발점이 주어졌다”고 가정한다. 그러나 신경망에서는 출발점 자체 — 가중치 초기화 — 가 학습의 성패를 좌우한다. 잘못된 초기화는 알고리즘이 아예 수렴하지 않거나, 수치적으로 폭주(NaN)하게 만든다. 이 장에서는 두 가지 원칙을 본다 — <strong>대칭성을 깬다</strong>, 그리고 <strong>가중치 크기의 분산을 맞춘다</strong>.</p>
 
-      <h2>원칙 1 — 대칭성 깨기 (symmetry breaking)</h2>
+      <p>5번 절에서 우리는 SGD의 가장 큰 약점이 학습률 하나로 모든 파라미터 방향을 다뤄야 한다는 점임을 보았다. 한 방향이 가파르고 다른 방향이 완만한 좁고 긴 골짜기에서, 가파른 방향에 맞춰 학습률을 잡으면 완만한 방향이 답답하게 느려진다. 그렇다고 학습률을 키우면 가파른 방향에서 발산한다. 이 한계는 학습률 하나로는 풀리지 않는 구조적 문제다.</p>
 
-      <p>딥러닝에서 가장 확실한 초기화 원칙 하나가 있다면 이것이다. <strong>같은 입력에 연결된 두 뉴런의 초기 가중치가 같으면, 두 뉴런은 영원히 같은 함수를 계산한다.</strong></p>
+      <p>이 문제를 가장 우아하게 푸는 알고리즘이 모멘텀(momentum)이다. 모멘텀의 아이디어는 단순하다. 매 스텝마다 기울기 방향으로 즉시 가는 대신, <strong>속도 벡터(velocity vector) $v$</strong>를 유지한다. 그 속도는 과거 기울기들의 지수 이동 평균(exponentially moving average)이다. 일관된 방향의 기울기는 누적되어 속도를 키우고, 방향이 왔다갔다하는 기울기는 서로 상쇄되어 속도를 만들지 못한다.</p>
 
-      <p>왜 그런가? 손실의 기울기는 입력과 출력의 함수다. 두 뉴런이 같은 입력을 받고 같은 가중치를 갖는다면, 둘의 활성값이 같다. 활성값이 같으면 역전파로 받는 기울기도 같다. 그래서 두 뉴런은 모든 스텝에서 같은 양만큼 같은 방향으로 업데이트되고, 가중치는 영원히 같은 채로 남는다. 결과적으로 두 뉴런은 한 뉴런과 똑같은 일을 한다.</p>
+      <p>이 절은 모멘텀의 두 줄짜리 알고리즘을 한 줄씩 풀어 본 뒤, 좁은 골짜기에서 SGD와 모멘텀이 어떻게 다른지를 위젯으로 손으로 확인한다. 다음 절에서는 모멘텀의 한 가지 약점을 해결하는 변종 — 네스테로프 모멘텀(Nesterov momentum) — 을 본다.</p>
+
+      <h2>모멘텀의 업데이트 식 — 두 줄로 끝난다</h2>
+
+      <div class="math-block">$$ v \leftarrow \alpha\, v - \varepsilon\, \hat{g} $$</div>
+      <p class="math-note">속도 업데이트. 과거 속도의 α배(점성 저항 효과)에 새 기울기를 빼서 누적.</p>
+
+      <div class="math-block">$$ \theta \leftarrow \theta + v $$</div>
+      <p class="math-note">파라미터는 기울기로 직접 가지 않고, 누적된 속도 방향으로 간다.</p>
+
+      <p>$\alpha \in [0, 1)$이 모멘텀 계수(momentum coefficient)다. $\alpha = 0$이면 첫 줄이 $v = -\varepsilon\hat{g}$가 되어 그냥 SGD가 된다. $\alpha$가 커질수록 과거 기울기의 영향이 오래 남는다. 실전에서 가장 흔한 값은 $\alpha = 0.9$이고, 더 길게 가속하고 싶을 때는 $0.99$도 쓴다.</p>
+
+      <p>왜 두 줄짜리 식이 SGD의 문제를 해결하는가? 두 가지 다른 시나리오에서 무슨 일이 일어나는지를 분리해 보자.</p>
+
+      <p><strong>시나리오 1: 좁고 긴 골짜기의 가파른 방향.</strong> 가파른 방향(폭이 좁은 방향)에서는 기울기가 매 스텝마다 부호가 바뀌어 진동한다. 한 스텝 양수, 다음 스텝 음수, 그 다음 양수…. 그 진동의 평균은 0이므로, 속도에 누적되는 항도 점차 상쇄된다. 결과적으로 가파른 방향의 진동이 줄어든다.</p>
+
+      <p><strong>시나리오 2: 같은 골짜기의 길이 방향.</strong> 골짜기 바닥을 따라가는 방향에서는 기울기가 일관되게 한쪽을 향한다. 매 스텝마다 같은 방향의 기울기가 누적되어 속도가 점점 커진다. 결과적으로 길이 방향에서는 가속이 일어난다.</p>
+
+      <p>두 효과를 합치면, 모멘텀은 좁고 긴 골짜기를 SGD보다 훨씬 빨리 통과한다. 그것이 모멘텀이 신경망 학습에서 거의 표준으로 자리잡은 이유다.</p>
 
       <div class="analogy">
-        <b>두 학생이 시험에서 정확히 같은 답을 베껴 쓰기 시작했다고 하자.</b> 두 학생이 같은 정보를 보고 같은 결정을 내린다면, 다음 문제에서도 답은 똑같다. 둘은 영원히 “같은 학생”인 셈이다. 무작위 초기화(random initialization)는 두 학생에게 처음에 약간 다른 시작 답안을 주는 일이다. 다른 출발점에서 시작했기 때문에 학습을 거치면서 서로 다른 “전문 분야”를 갖게 된다.
+        그릇 안에 놓인 하키 퍽을 상상하자. 어떤 곳에서는 빠르게 굴러 떨어지고(가파른 경사), 다른 곳에서는 거의 멈춰 있어 보인다(완만한 경사). 그릇의 가장자리에 가까울수록 가파르고, 바닥 근처에서는 완만하다. 가파른 곳에서 얻은 운동량은 완만한 곳에 와서도 계속 미끄러지게 한다. <b>모멘텀이 바로 이 관성을 구현한다. 점성 저항(αv 항)이 시럽처럼 작용해 결국 멈추긴 하지만, 그 사이에 SGD보다 훨씬 멀리 간다.</b>
       </div>
 
-      <p>이것이 모든 가중치를 0으로 초기화하지 않는 이유다. 무작위 초기화(Gaussian이든 Uniform이든)는 매우 단순하지만, 이 한 가지 일을 확실하게 해 준다.</p>
+      <h2>종말 속도 — 모멘텀이 SGD보다 얼마나 빠른가</h2>
 
-      <h2>원칙 2 — 가중치 크기의 분산 균형</h2>
+      <p>모멘텀의 가속 효과를 정량화하려면 종말 속도(terminal velocity)를 보면 된다. 기울기가 일정한 값 $g$로 유지된다고 가정하자. 그러면 속도는 시간이 지남에 따라 어떤 값에 수렴한다. 수렴한 속도를 $v_\infty$라 하면 $v_\infty = \alpha v_\infty - \varepsilon g$이므로,</p>
 
-      <p>대칭성만 깨면 끝나면 좋겠지만, 분산까지 신경 써야 한다. 가중치가 너무 크면 순전파(forward propagation)에서 활성값이 층을 지날수록 폭발한다. 역전파에서는 기울기가 폭발한다. 가중치가 너무 작으면 신호와 기울기가 층을 거치며 소실된다.</p>
+      <div class="math-block">$$ v_\infty = -\frac{\varepsilon\, g}{1-\alpha} $$</div>
+      <p class="math-note">종말 속도. 일관된 기울기에서 모멘텀이 도달하는 최대 속도. α=0.9면 SGD의 10배, α=0.99면 100배.</p>
 
-      <p>이상적인 조건은 <strong>층을 지나도 활성값과 기울기의 분산이 유지되는 것</strong>이다. 이 조건을 만족시키는 분포가 Xavier(Glorot) 초기화다.</p>
+      <p>이 식은 두 가지 함의를 갖는다. 첫째, $\alpha$가 1에 가까울수록 종말 속도가 폭발적으로 커진다. 그러나 동시에 더 많은 누적이 필요해 종말 속도에 도달하기까지 시간이 더 걸린다. 둘째, 같은 종말 속도를 SGD로 얻으려면 학습률을 $1/(1-\alpha)$배 키워야 하지만, 그러면 발산할 가능성이 커진다. 모멘텀은 발산 위험 없이 종말 속도를 얻는 안전한 방법이다.</p>
 
-      <div class="math-block">$$ W_{i,j} \;\sim\; U\!\left(-\sqrt{\frac{6}{m+n}},\; \sqrt{\frac{6}{m+n}}\right) $$</div>
-      <p class="math-note">$m$은 입력 차원(fan-in), $n$은 출력 차원(fan-out). 균등 분포에서 뽑는다. 정규 분포 버전은 $W \sim \mathcal{N}(0, 2/(m+n))$.</p>
+      <p>예를 들어 $\alpha = 0.9$이면 종말 속도가 SGD의 10배다. 즉 일관된 기울기 방향에서 모멘텀의 한 스텝 거리는 SGD의 10배다. 그러면서도 진동 방향에서는 상쇄가 일어나 더 안정적이다. 그래서 사실상 모멘텀은 "SGD를 10배 빠르게 만들되 더 안정적으로"라는 묘기를 부린다.</p>
 
-      <p>이 공식이 왜 이 형태인지는 다음의 두 목표 사이의 타협으로 이해할 수 있다.</p>
+      <h2>물리적 비유 — 뉴턴 운동 방정식과의 연결</h2>
 
-      <ul>
-        <li><strong>순전파 안정</strong> — 한 층의 출력 분산이 입력 분산과 같아지려면 $\mathrm{Var}(W) = 1/m$ 정도.</li>
-        <li><strong>역전파 안정</strong> — 한 층의 기울기 분산이 다음 층의 기울기 분산과 같아지려면 $\mathrm{Var}(W) = 1/n$ 정도.</li>
-      </ul>
+      <p>모멘텀이라는 이름은 우연이 아니다. 위 두 줄의 업데이트 식은 사실 마찰이 있는 환경에서 보존력장(conservative force field) 위를 움직이는 입자의 운동 방정식의 이산 시간 근사다. 비용 함수 $J(\theta)$의 음의 기울기 $-\nabla J$가 입자에 가해지는 힘 $F$의 역할을 한다.</p>
 
-      <p>두 조건을 동시에 만족하려면 $m = n$이어야 하지만, 실제 신경망에서는 층마다 크기가 다르다. 그래서 두 값의 조화 평균 비슷하게 타협한 것이 $\mathrm{Var}(W) = 2/(m+n)$이다. 균등 분포 $U(-a, a)$의 분산이 $a^2/3$이므로 $a = \sqrt{6/(m+n)}$이 나온다.</p>
+      <div class="math-block">$$ \frac{d^2\theta}{dt^2} = -\nabla J(\theta) - \mu\, \frac{d\theta}{dt} $$</div>
+      <p class="math-note">2차 미분 방정식. 가속도 = 위치에 의한 힘 + 속도에 의한 마찰(점성). μ가 마찰 계수.</p>
 
-      <p>이 유도는 “네트워크가 비선형성 없는 선형 행렬 곱의 연쇄”라고 가정한다. 실제 신경망은 ReLU 등 비선형을 쓰므로 가정이 깨진다. <strong>He 초기화(Kaiming initialization)</strong>는 이를 보정해 ReLU에 맞춘 변종이다.</p>
+      <p>이 미분 방정식을 시간 간격 $\Delta t = 1$로 이산화하면 정확히 모멘텀 업데이트 두 줄이 나온다. $\alpha = 1 - \mu$가 점성 저항을 표현하고, $\varepsilon$이 시간 간격과 힘의 단위를 결합한 스케일이 된다.</p>
 
-      <div class="math-block">$$ \text{He: }\quad W_{i,j} \;\sim\; \mathcal{N}\!\left(0,\; \frac{2}{m}\right) $$</div>
-      <p class="math-note">ReLU는 입력의 약 절반을 0으로 죽이므로, 분산이 절반으로 줄어든다. 이를 보상하려면 $\mathrm{Var}(W)$를 두 배인 $2/m$으로 두어야 활성값 분산이 유지된다.</p>
+      <p>이 물리적 해석은 두 가지 직관을 준다. 첫째, 모멘텀의 안정성은 마찰의 존재에 달려 있다. 마찰이 없으면 ($\alpha = 1$) 입자는 영원히 진동하면서 결코 최솟값에 안착하지 않는다. 둘째, 모멘텀은 단순한 가속 트릭이 아니라, 우리가 비용 표면 위에서 입자를 굴리는 자연스러운 동역학을 직접 시뮬레이션하는 것이다.</p>
+
+      <h2>위젯 — 좁은 골짜기에서 SGD vs 모멘텀</h2>
+
+      <p>아래 위젯은 이등방성 2차 함수 $J(x, y) = 5 x^2 + 0.5 y^2$ 위에서 SGD와 모멘텀의 궤적을 동시에 보여 준다. 한 방향(x)이 다른 방향(y)보다 10배 가파른 좁고 긴 골짜기다. 이런 함수는 신경망 학습에서 흔히 만나는 좁은 골짜기의 가장 단순한 모델이다. 모멘텀 계수 $\alpha$를 0에서 시작해 0.99까지 올려 보며, SGD가 지그재그로 천천히 내려가는 동안 모멘텀이 어떻게 다른 길을 가는지 보라.</p>
     </div>
 
     <div class="widget">
       <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 09</span><span>층 깊이에 따른 활성값 분산 — 초기화의 효과</span></div>
-        <div class="init-stage">
-          <svg class="init-svg" id="initSvg" viewBox="0 0 720 340"></svg>
+        <div class="widget-label"><span class="lab-no">위젯 06</span><span>SGD vs 모멘텀 — 좁은 골짜기에서의 궤적 비교</span></div>
+        <div class="mom-stage">
+          <canvas id="momCanvas" width="800" height="500"></canvas>
         </div>
-        <div class="init-pick">
-          <button class="btn ghost" data-init="tiny">너무 작은 가중치 ($\sigma=0.01$)</button>
-          <button class="btn ghost" data-init="big">너무 큰 가중치 ($\sigma=1.0$)</button>
-          <button class="btn ghost on" data-init="xavier">Xavier ($2/(m+n)$)</button>
-          <button class="btn ghost" data-init="he">He ($2/m$)</button>
+        <div class="mom-legend">
+          <span><i style="background:var(--structure)"></i>SGD</span>
+          <span><i style="background:var(--style)"></i>모멘텀 (α 슬라이더로 조절)</span>
+          <span><i style="background:var(--synth)"></i>등고선</span>
         </div>
-        <div class="init-legend">
-          <span><i style="background:#2D5B7A"></i> 활성값 분산</span>
-          <span style="color:var(--ink-faint)">— 30층 네트워크, ReLU 활성화 사용</span>
+        <div class="mom-read">
+          <span>α (모멘텀 계수) = <b id="readA">0.90</b></span>
+          <span>SGD 손실 = <b id="readSGD">0.000</b></span>
+          <span>모멘텀 손실 = <b id="readMom">0.000</b></span>
+          <span>속도 노름 ‖v‖ = <b id="readV">0.000</b></span>
         </div>
-      </div>
-      <p class="widget-cap">30층짜리 완전연결 ReLU 네트워크에 표준 정규 입력을 통과시킨다. 너무 작은 초기화는 활성값이 층을 지나며 소실되고, 너무 큰 초기화는 폭발한다. Xavier는 선형 가정이라 ReLU에서 조금 부족하고, He가 정확하게 분산을 유지한다.</p>
-    </div>
-
-    <div class="widget">
-      <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 10</span><span>대칭성 깨기 — 같은 초기화 vs 무작위 초기화</span></div>
-        <div class="sym-stage">
-          <svg class="sym-svg" id="symSvg" viewBox="0 0 560 280"></svg>
-        </div>
-        <div class="sym-ctrl">
-          <div class="slider"><label>학습 진행 (스텝) <b id="symStep">0</b> / 100</label>
-            <input type="range" id="symSlider" min="0" max="100" step="1" value="0">
+        <div class="widget-controls">
+          <div class="slider">
+            <label>모멘텀 계수 α <b id="aVal">0.90</b></label>
+            <input id="aSlide" type="range" min="0" max="0.99" value="0.9" step="0.01">
           </div>
+          <div class="slider">
+            <label>학습률 ε <b id="lrVal">0.04</b></label>
+            <input id="lrSlide" type="range" min="0.005" max="0.1" value="0.04" step="0.005">
+          </div>
+          <button class="btn ghost" id="restartBtn">처음부터</button>
         </div>
-        <p class="batch-read" style="text-align:center; padding: 0 1rem 1rem;" id="symRead">— 슬라이더를 우측으로 움직여 학습을 진행시켜 보세요 —</p>
       </div>
-      <p class="widget-cap">왼쪽은 모든 가중치를 같은 값으로 초기화한 네 뉴런, 오른쪽은 무작위로 초기화한 네 뉴런. 시간이 지나도 왼쪽은 네 뉴런의 가중치 값이 항상 같다 — 즉 네 개가 아닌 한 개의 뉴런으로 작동한다. 오른쪽은 각자 다른 “전문 분야”로 발달한다.</p>
+      <p class="widget-cap">SGD는 가파른 x 방향으로 좌우 진동하며 천천히 내려간다. 모멘텀은 x 진동을 상쇄하면서 y 방향으로 속도를 누적해 더 빠르게 골짜기 바닥으로 간다. α를 0.9 이상으로 올리면 차이가 극적으로 벌어진다. α=0이면 모멘텀이 정확히 SGD와 같아진다.</p>
     </div>
 
     <div class="prose">
-      <h2>편향(bias) 초기화 — 대부분 0, 예외 두 가지</h2>
 
-      <p>가중치와 달리 편향은 일반적으로 0으로 초기화한다. 편향은 “모든 입력에 같은 상수를 더하는” 항이라 대칭성 문제를 일으키지 않기 때문이다. 다만 두 가지 예외가 있다.</p>
+      <h2>모멘텀의 한계 — 같은 방향에서만 가속</h2>
+
+      <p>모멘텀이 강력하지만, 한 가지 약점이 있다. 속도 $v$는 과거 기울기의 누적이므로, 일단 어떤 방향으로 가속이 붙으면 그 방향에서 벗어나기까지 시간이 걸린다. 비용 표면이 굴곡진 곳에서는 모멘텀이 "현재 위치"보다 "과거 평균 위치"의 기울기를 더 반영하므로, 곡선을 따라가지 못하고 바깥쪽으로 튕겨 나갈 수 있다.</p>
+
+      <p>비유하면 자동차가 곡선 도로를 달릴 때 운전사가 현재 위치만 보고 핸들을 꺾는다면, 도착 지점에서 핸들이 부족해 바깥으로 미끄러진다. 좋은 운전사는 도착 예정 지점을 미리 보고 핸들을 꺾는다. 이 "미리 내다보기(look-ahead)" 직관을 그대로 알고리즘에 옮긴 것이 네스테로프 모멘텀이다.</p>
+
+      <p>다음 절에서 네스테로프 모멘텀의 정확한 식과 그것이 만드는 차이를 본다. 핵심은 단 한 줄의 차이 — 기울기를 어디서 계산하느냐 — 다.</p>
+
+      <h2>모멘텀의 실전 권장 — α 값과 학습률 조정</h2>
+
+      <p>실전에서 모멘텀 계수 $\alpha$는 0.5, 0.9, 0.99의 세 가지가 가장 흔하다. 학습 초반에는 작은 $\alpha$(0.5)로 시작해 점차 키우는 스케줄도 있지만, 학습률을 시간에 따라 줄이는 것이 더 우선이다. 모멘텀을 켰을 때 학습률을 SGD보다 약간 작게 잡는 경우가 많은데, 종말 속도가 $1/(1-\alpha)$배 크기 때문에 같은 학습률이라도 실효 스텝 크기가 더 크기 때문이다.</p>
+
+      <p>SGD + 모멘텀은 오늘날에도 가장 잘 튜닝된 옵티마이저 중 하나다. 이미지 분류의 최종 성능을 극한까지 끌어올리는 작업에서는 Adam보다 SGD + 모멘텀이 더 좋은 결과를 내는 경우가 많다. 모멘텀의 두 줄짜리 단순함이 그 자체로 강력한 도구라는 사실이 이를 뒷받침한다.</p>
+
+      <p>그래서 시험 답안에 모멘텀이 등장하면 다음 세 가지 핵심을 기억하자. 첫째, <strong>속도 벡터를 유지해 과거 기울기를 지수 이동 평균으로 누적</strong>. 둘째, <strong>일관된 방향은 가속, 진동하는 방향은 상쇄</strong>. 셋째, <strong>종말 속도가 $\varepsilon\|g\|/(1-\alpha)$로 SGD의 $1/(1-\alpha)$배</strong>. 이 세 줄이면 모멘텀의 모든 것이 담긴다.</p>
     </div>
 
-    <div class="bias-tab">
-      <table>
-        <thead><tr><th>경우</th><th>편향 초기값</th><th>이유</th></tr></thead>
-        <tbody>
-          <tr>
-            <td class="case">일반 가중치</td>
-            <td class="val">$0$</td>
-            <td>대칭성 문제 없음. 무작위 가중치가 대칭을 이미 깨 줌.</td>
-          </tr>
-          <tr>
-            <td class="case">ReLU 은닉 유닛</td>
-            <td class="val">$0.1$ 등 작은 양수</td>
-            <td>초기에 활성 상태(양수 출력)를 유지해, dead ReLU 문제 완화. 0이면 기울기도 0이라 평생 죽어 있을 수 있음.</td>
-          </tr>
-          <tr>
-            <td class="case">LSTM forget gate</td>
-            <td class="val">$1$</td>
-            <td>초기에 게이트를 열어 정보가 흐르게 함. 0으로 두면 정보가 매 스텝 사라져 학습 불가.</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="prose">
-      <h2>실전 — PyTorch/TensorFlow는 무엇을 쓰는가</h2>
-
-      <p>PyTorch는 nn.Linear의 기본 초기화로 $\mathrm{Var}(W) = 1/m$의 균등 분포($U(-1/\sqrt{m}, 1/\sqrt{m})$)를 사용한다. 이는 Xavier보다 약간 보수적이지만 일반적으로 잘 작동한다. 명시적으로 더 잘하고 싶다면 ReLU 계열에는 He, tanh 계열에는 Xavier를 적용하는 것이 안전하다.</p>
-
-      <div class="math-block">$$ \text{PyTorch nn.Linear: }\quad W \sim U\!\left(-\frac{1}{\sqrt{m}},\, \frac{1}{\sqrt{m}}\right) $$</div>
-
-      <p>최근의 매우 깊은 네트워크(수백 층의 ResNet 등)에서는 초기화만으로 분산을 완전히 유지하기 어렵다. 그래서 다음 장에서 다룰 <strong>배치 정규화(batch normalization)</strong>가 사실상 의무가 되었다. 배치 정규화는 매 층의 입력을 평균 0, 분산 1로 강제로 재정규화해, 초기화 실수도 자동으로 보정한다.</p>
-
-      <h2>다음 장으로</h2>
-      <p>좋은 초기화로 출발했어도, 학습이 진행되면서 층 사이의 분포가 흔들린다. <a href="07.html">7장</a>에서는 매 미니배치마다 층의 입력을 표준화해 “20층 건물의 1층 기둥이 흔들리는 일”을 막는 배치 정규화를 본다.</p>
-    </div>
-
-    <nav class="ch-foot" id="foot"></nav>
+    <nav class="ch-foot" id="chFoot"></nav>
   </main>
 </div>
 
 <script>
-  const SUB = [
-    { no:'01', t:'순수 최적화와 ML 최적화의 차이', f:'01.html' },
-    { no:'02', t:'학습의 진짜 장애물', f:'02.html' },
-    { no:'03', t:'미니배치 SGD — 잡음 받아들이기', f:'03.html' },
-    { no:'04', t:'모멘텀과 네스테로프', f:'04.html' },
-    { no:'05', t:'적응 학습률 — AdaGrad·RMSProp·Adam', f:'05.html' },
-    { no:'06', t:'초기화 — 대칭성과 분산 균형', f:'06.html' },
-    { no:'07', t:'배치 정규화', f:'07.html' },
-    { no:'08', t:'시험 대비 — 계보·디버깅', f:'08.html' },
+  const SUBS = [
+    { no:'01', t:'순수 vs ML 최적화' }, { no:'02', t:'학습의 장애물' }, { no:'03', t:'미니배치 SGD 1' }, { no:'04', t:'미니배치 SGD 2' },
+    { no:'05', t:'학습률의 의미' }, { no:'06', t:'모멘텀 1' }, { no:'07', t:'모멘텀 2 (네스테로프)' }, { no:'08', t:'적응 1 (AdaGrad)' },
+    { no:'09', t:'적응 2 (RMSProp)' }, { no:'10', t:'적응 3 (Adam)' }, { no:'11', t:'초기화 1 (대칭성)' }, { no:'12', t:'초기화 2 (Xavier·He)' },
+    { no:'13', t:'배치 정규화 1' }, { no:'14', t:'배치 정규화 2' }, { no:'15', t:'학습률 스케줄' }, { no:'16', t:'기울기 클리핑' },
+    { no:'17', t:'시험 대비' },
   ];
-  function buildNav(curNo) {
-    const ol = document.getElementById('nav');
-    ol.innerHTML = SUB.map(c => `<li><a href="${c.f}" ${c.no===curNo?'class="current"':''}>${c.t}</a></li>`).join('');
-    const cur = SUB.findIndex(c => c.no === curNo);
-    const prev = cur > 0 ? SUB[cur-1] : { f:'index.html', t:'표지로', no:'' };
-    const next = cur < SUB.length-1 ? SUB[cur+1] : { f:'index.html', t:'표지로', no:'' };
-    document.getElementById('foot').innerHTML =
-      `<a href="${prev.f}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
-      `<a href="${next.f}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
-  }
-  function initProgress() {
-    const bar = document.querySelector('.scroll-progress');
-    const onScroll = () => {
-      const h = document.documentElement;
-      const max = h.scrollHeight - h.clientHeight;
-      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
-    };
-    document.addEventListener('scroll', onScroll, { passive: true }); onScroll();
-  }
-
-  // 초기화 위젯 — 층 깊이에 따른 활성값 분산
-  function initWidget() {
-    const svg = document.getElementById('initSvg');
-    const W = 720, H = 340, PAD = 50;
-    const LAYERS = 30;
-    const DIM = 128;
-    const inits = {
-      tiny: { sigma: 0.01, label: '너무 작은 가중치' },
-      big: { sigma: 1.0, label: '너무 큰 가중치' },
-      xavier: { sigma: null, label: 'Xavier 2/(m+n)' },
-      he: { sigma: null, label: 'He 2/m' },
-    };
-
-    function relu(x) { return Math.max(0, x); }
-    function gaussian(sigma) {
-      const u = Math.random(), v = Math.random();
-      return Math.sqrt(-2*Math.log(u)) * Math.cos(2*Math.PI*v) * sigma;
-    }
-
-    function simulate(initKey) {
-      // 단순화: 입력 = N(0,1) DIM 차원, 각 층은 행렬 곱 + ReLU
-      let x = new Float32Array(DIM);
-      for (let i = 0; i < DIM; i++) x[i] = gaussian(1);
-      const variances = [];
-      const inMean = x.reduce((a,b)=>a+b,0)/DIM;
-      const inVar = x.reduce((a,b)=>a+(b-inMean)*(b-inMean),0)/DIM;
-      variances.push(inVar);
-      for (let l = 0; l < LAYERS; l++) {
-        let sigma;
-        if (initKey === 'tiny') sigma = 0.01;
-        else if (initKey === 'big') sigma = 1.0;
-        else if (initKey === 'xavier') sigma = Math.sqrt(2.0 / (DIM + DIM));
-        else sigma = Math.sqrt(2.0 / DIM);
-        const y = new Float32Array(DIM);
-        for (let i = 0; i < DIM; i++) {
-          let s = 0;
-          for (let j = 0; j < DIM; j++) s += gaussian(sigma) * x[j];
-          y[i] = relu(s);
-        }
-        x = y;
-        const m = x.reduce((a,b)=>a+b,0)/DIM;
-        const v = x.reduce((a,b)=>a+(b-m)*(b-m),0)/DIM;
-        variances.push(v);
-      }
-      return variances;
-    }
-
-    function render(initKey) {
-      const v = simulate(initKey);
-      // 로그 스케일
-      const logV = v.map(x => Math.log10(Math.max(x, 1e-30)));
-      const yMin = -20, yMax = 5;
-      function xPx(i) { return PAD + i / LAYERS * (W - 2*PAD); }
-      function yPx(lv) { return H - PAD - (lv - yMin) / (yMax - yMin) * (H - 2*PAD); }
-      let html = '';
-      // 축
-      html += `<line x1="${PAD}" y1="${H-PAD}" x2="${W-PAD}" y2="${H-PAD}" stroke="#8E8576" stroke-width="1"/>`;
-      html += `<line x1="${PAD}" y1="${PAD}" x2="${PAD}" y2="${H-PAD}" stroke="#8E8576" stroke-width="1"/>`;
-      // y축 grid
-      for (let lv = -20; lv <= 5; lv += 5) {
-        html += `<line x1="${PAD}" y1="${yPx(lv)}" x2="${W-PAD}" y2="${yPx(lv)}" stroke="#8E8576" stroke-width="0.5" opacity="0.3"/>`;
-        html += `<text x="${PAD-8}" y="${yPx(lv)+4}" font-family="Spline Sans Mono, monospace" font-size="10" fill="#5A5247" text-anchor="end">10^${lv}</text>`;
-      }
-      // 이상값 영역 (안정)
-      html += `<rect x="${PAD}" y="${yPx(2)}" width="${W-2*PAD}" height="${yPx(-2)-yPx(2)}" fill="#A47B2E" opacity="0.08"/>`;
-      html += `<text x="${W-PAD-5}" y="${yPx(0)+4}" font-family="Spline Sans Mono, monospace" font-size="10" fill="#A47B2E" text-anchor="end">안정 영역</text>`;
-      // 데이터
-      let p = `M ${xPx(0)},${yPx(logV[0])}`;
-      for (let i = 1; i < logV.length; i++) p += ` L ${xPx(i)},${yPx(logV[i])}`;
-      html += `<path d="${p}" stroke="#2D5B7A" stroke-width="2.2" fill="none"/>`;
-      logV.forEach((lv, i) => {
-        html += `<circle cx="${xPx(i)}" cy="${yPx(lv)}" r="2.5" fill="#2D5B7A"/>`;
-      });
-      // 라벨
-      html += `<text x="${W-PAD-5}" y="${H-PAD+22}" font-family="Spline Sans Mono, monospace" font-size="11" fill="#5A5247" text-anchor="end">층 깊이</text>`;
-      html += `<text x="${PAD+5}" y="${PAD+14}" font-family="Spline Sans Mono, monospace" font-size="11" fill="#5A5247">활성값 분산 (log10)</text>`;
-      // 현재 초기화
-      html += `<text x="${PAD+10}" y="${H-PAD-15}" font-family="Spline Sans Mono, monospace" font-size="11" fill="#C0492E" font-weight="600">${inits[initKey].label}</text>`;
-      svg.innerHTML = html;
-    }
-
-    document.querySelectorAll('.init-pick .btn').forEach(b => {
-      b.addEventListener('click', () => {
-        document.querySelectorAll('.init-pick .btn').forEach(x => x.classList.remove('on'));
-        b.classList.add('on');
-        render(b.dataset.init);
-      });
-    });
-    render('xavier');
-  }
-
-  // 대칭성 깨기 위젯
-  function symWidget() {
-    const svg = document.getElementById('symSvg');
-    const W = 560, H = 280;
-
-    const slider = document.getElementById('symSlider');
-    const stepOut = document.getElementById('symStep');
-    const readOut = document.getElementById('symRead');
-
-    // 가짜 학습 시뮬레이션 — 같은 초기화 4뉴런 vs 무작위 4뉴런 가중치 추이
-    function simSame(steps) {
-      // 모두 0.5에서 시작, 같은 기울기 -0.01
-      const traj = [];
-      for (let t = 0; t <= steps; t++) {
-        const w = 0.5 - 0.01 * t;
-        traj.push([w, w, w, w]);
-      }
-      return traj;
-    }
-    function simRandom(steps) {
-      // 무작위 초기화, 다른 기울기 패턴
-      const init = [0.3, -0.2, 0.6, -0.5];
-      const grads = [-0.005, 0.008, -0.012, 0.004];
-      const traj = [];
-      for (let t = 0; t <= steps; t++) {
-        traj.push(init.map((w, i) => w + grads[i] * t));
-      }
-      return traj;
-    }
-    const same = simSame(100);
-    const rand = simRandom(100);
-
-    function render() {
-      const step = parseInt(slider.value);
-      stepOut.textContent = step;
-      let html = '';
-      // 좌측: 같은 초기화
-      const leftCx = 140, rightCx = 420, cy = 80;
-      const r = 28;
-      html += `<text x="${leftCx}" y="30" font-family="Fraunces, serif" font-size="14" fill="#26221C" text-anchor="middle">동일 초기화 — 모두 같은 함수</text>`;
-      html += `<text x="${rightCx}" y="30" font-family="Fraunces, serif" font-size="14" fill="#26221C" text-anchor="middle">무작위 초기화 — 각자 다른 함수</text>`;
-
-      // 4 뉴런 표현
-      for (let i = 0; i < 4; i++) {
-        // 좌측: 4 뉴런 가로로
-        const lx = leftCx - 90 + i * 60;
-        const rx = rightCx - 90 + i * 60;
-        // 좌측 뉴런 (모두 같은 값)
-        const w = same[step][i];
-        const colorVal = w > 0 ? '#2D5B7A' : '#C0492E';
-        const intensity = Math.min(1, Math.abs(w) / 0.6);
-        html += `<circle cx="${lx}" cy="${cy + 80}" r="${r}" fill="${colorVal}" opacity="${0.3 + intensity*0.7}" stroke="#fff" stroke-width="2"/>`;
-        html += `<text x="${lx}" y="${cy + 85}" font-family="Spline Sans Mono, monospace" font-size="11" fill="#fff" text-anchor="middle">${w.toFixed(2)}</text>`;
-        // 우측 뉴런 (각자 다른 값)
-        const wr = rand[step][i];
-        const colorValR = wr > 0 ? '#2D5B7A' : '#C0492E';
-        const intensityR = Math.min(1, Math.abs(wr) / 0.6);
-        html += `<circle cx="${rx}" cy="${cy + 80}" r="${r}" fill="${colorValR}" opacity="${0.3 + intensityR*0.7}" stroke="#fff" stroke-width="2"/>`;
-        html += `<text x="${rx}" y="${cy + 85}" font-family="Spline Sans Mono, monospace" font-size="11" fill="#fff" text-anchor="middle">${wr.toFixed(2)}</text>`;
-      }
-      svg.innerHTML = html;
-
-      if (step === 0) {
-        readOut.innerHTML = '— 학습 시작: 양쪽 모두 가중치가 보임 —';
-      } else if (step < 30) {
-        readOut.innerHTML = `<b>스텝 ${step}</b> — 같은 초기화 쪽 네 뉴런이 여전히 같은 값을 유지한다.`;
-      } else if (step < 70) {
-        readOut.innerHTML = `<b>스텝 ${step}</b> — 무작위 초기화 쪽은 점점 다른 “전문 분야”로 발달. 같은 쪽은 영원히 한 뉴런.`;
-      } else {
-        readOut.innerHTML = `<b>스텝 ${step}</b> — 무작위 쪽이 풍부한 표현을 가진 네 뉴런으로 발달. 같은 쪽은 어떤 학습을 해도 사실상 한 뉴런이다.`;
-      }
-    }
-    slider.addEventListener('input', render);
-    render();
-  }
+  const CUR = '06';
+  const navlist = document.getElementById('navlist');
+  SUBS.forEach(s => { const li = document.createElement('li'); li.innerHTML = `<a href="${s.no}.html"${s.no===CUR?' class="current"':''}>${s.t}</a>`; navlist.appendChild(li); });
+  const chFoot = document.getElementById('chFoot');
+  const idx = SUBS.findIndex(s => s.no === CUR);
+  const prev = idx > 0 ? SUBS[idx-1] : { no:'index', t:'표지로' };
+  const next = idx < SUBS.length-1 ? SUBS[idx+1] : { no:'index', t:'표지로' };
+  chFoot.innerHTML = `<a href="${prev.no}.html"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` + `<a href="${next.no}.html" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
 
   window.addEventListener('load', () => {
-    buildNav('06');
-    initProgress();
-    initWidget();
-    symWidget();
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
+        throwOnError: false,
+      });
+    }
   });
+
+  (function() {
+    const css = getComputedStyle(document.documentElement);
+    const C = {
+      structure: css.getPropertyValue('--structure').trim() || '#2D5B7A',
+      style: css.getPropertyValue('--style').trim() || '#C0492E',
+      synth: css.getPropertyValue('--synth').trim() || '#A47B2E',
+      ink: css.getPropertyValue('--ink').trim() || '#26221C',
+      faint: css.getPropertyValue('--ink-faint').trim() || '#8E8576',
+      line: '#d8d2c4',
+    };
+    const cvs = document.getElementById('momCanvas');
+    const aSlide = document.getElementById('aSlide');
+    const lrSlide = document.getElementById('lrSlide');
+    const aVal = document.getElementById('aVal');
+    const lrVal = document.getElementById('lrVal');
+    const readA = document.getElementById('readA');
+    const readSGD = document.getElementById('readSGD');
+    const readMom = document.getElementById('readMom');
+    const readV = document.getElementById('readV');
+    const restartBtn = document.getElementById('restartBtn');
+
+    const A1 = 5, A2 = 0.5;
+    function J(x, y) { return A1*x*x + A2*y*y; }
+    function gradJ(x, y) { return [2*A1*x, 2*A2*y]; }
+
+    let sgd = { x: 0.8, y: 1.5 };
+    let mom = { x: 0.8, y: 1.5, vx: 0, vy: 0 };
+    let trajSGD = [[sgd.x, sgd.y]];
+    let trajMom = [[mom.x, mom.y]];
+
+    function reset() {
+      sgd = { x: 0.8, y: 1.5 };
+      mom = { x: 0.8, y: 1.5, vx: 0, vy: 0 };
+      trajSGD = [[sgd.x, sgd.y]];
+      trajMom = [[mom.x, mom.y]];
+    }
+
+    function tick() {
+      const lr = +lrSlide.value;
+      const a = +aSlide.value;
+      const [gxS, gyS] = gradJ(sgd.x, sgd.y);
+      sgd.x -= lr*gxS; sgd.y -= lr*gyS;
+      trajSGD.push([sgd.x, sgd.y]);
+      const [gxM, gyM] = gradJ(mom.x, mom.y);
+      mom.vx = a*mom.vx - lr*gxM;
+      mom.vy = a*mom.vy - lr*gyM;
+      mom.x += mom.vx; mom.y += mom.vy;
+      trajMom.push([mom.x, mom.y]);
+      if (trajSGD.length > 200) { trajSGD.shift(); trajMom.shift(); }
+    }
+
+    function draw() {
+      const ctx = cvs.getContext('2d');
+      const W = cvs.width, H = cvs.height;
+      ctx.clearRect(0,0,W,H);
+      ctx.strokeStyle = C.line; ctx.strokeRect(0.5,0.5,W-1,H-1);
+      const X = x => W/2 + x * (W-60)/2;
+      const Y = y => H/2 - y * (H-60)/3.6;
+      ctx.strokeStyle = C.synth; ctx.globalAlpha = 0.35;
+      for (let level = 0.2; level <= 6; level += 0.5) {
+        ctx.beginPath();
+        for (let t=0;t<=200;t++) {
+          const ang = (t/200) * Math.PI * 2;
+          const r = Math.sqrt(level);
+          const x = r / Math.sqrt(A1) * Math.cos(ang);
+          const y = r / Math.sqrt(A2) * Math.sin(ang);
+          if (t===0) ctx.moveTo(X(x), Y(y)); else ctx.lineTo(X(x), Y(y));
+        }
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1.0;
+      ctx.fillStyle = C.ink;
+      ctx.beginPath(); ctx.arc(X(0), Y(0), 4, 0, Math.PI*2); ctx.fill();
+      ctx.strokeStyle = C.structure; ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      trajSGD.forEach((p,i) => { if (i===0) ctx.moveTo(X(p[0]), Y(p[1])); else ctx.lineTo(X(p[0]), Y(p[1])); });
+      ctx.stroke();
+      ctx.fillStyle = C.structure; ctx.beginPath(); ctx.arc(X(sgd.x), Y(sgd.y), 5, 0, Math.PI*2); ctx.fill();
+      ctx.strokeStyle = C.style; ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      trajMom.forEach((p,i) => { if (i===0) ctx.moveTo(X(p[0]), Y(p[1])); else ctx.lineTo(X(p[0]), Y(p[1])); });
+      ctx.stroke();
+      ctx.fillStyle = C.style; ctx.beginPath(); ctx.arc(X(mom.x), Y(mom.y), 5, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = C.faint; ctx.font='12px monospace';
+      ctx.fillText('J(x,y) = 5x² + 0.5y² — x 방향이 10배 가파른 골짜기', 14, 18);
+    }
+
+    function loop() {
+      const a = +aSlide.value;
+      const lr = +lrSlide.value;
+      aVal.textContent = a.toFixed(2);
+      lrVal.textContent = lr.toFixed(3);
+      readA.textContent = a.toFixed(2);
+      tick();
+      readSGD.textContent = J(sgd.x, sgd.y).toFixed(4);
+      readMom.textContent = J(mom.x, mom.y).toFixed(4);
+      readV.textContent = Math.sqrt(mom.vx*mom.vx + mom.vy*mom.vy).toFixed(3);
+      draw();
+      setTimeout(()=>requestAnimationFrame(loop), 60);
+    }
+    aSlide.addEventListener('input', reset);
+    lrSlide.addEventListener('input', reset);
+    restartBtn.addEventListener('click', reset);
+    loop();
+  })();
 </script>
 </body>
 </html>

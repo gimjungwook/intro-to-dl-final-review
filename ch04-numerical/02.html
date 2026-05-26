@@ -3,25 +3,26 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ch.04 · 02 · 잘못된 조건수</title>
+<title>Ch.04 · 02 · 부동소수점 — IEEE 754의 좁은 자</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
-  .ck-stage { display: grid; grid-template-columns: 1fr 18rem; gap: 1rem; padding: 1.2rem 1.1rem 1rem; }
-  @media (max-width: 720px) { .ck-stage { grid-template-columns: 1fr; } }
-  .ck-canvas-wrap { position: relative; background: #fff; border: 1px solid var(--line-soft); border-radius: 10px; overflow: hidden; aspect-ratio: 1 / 1; }
-  .ck-canvas-wrap canvas { display: block; width: 100%; height: 100%; }
-  .ck-side { display: flex; flex-direction: column; gap: .8rem; }
-  .ck-card { background: var(--paper-2); border: 1px solid var(--line-soft); border-radius: 9px; padding: .8rem .95rem; }
-  .ck-card h5 { margin: 0 0 .35rem; font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-faint); }
-  .ck-card .val { font-family: var(--serif); font-size: 1.4rem; color: var(--ink); line-height: 1.1; }
-  .ck-card .sub { font-family: var(--mono); font-size: .72rem; color: var(--ink-soft); margin-top: .25rem; }
-  .ck-card.warn { background: var(--style-bg); }
-  .ck-card.warn .val { color: var(--style); }
-  .ck-card.good { background: var(--structure-bg); }
-  .ck-card.good .val { color: var(--structure); }
+  .fp-bits { display: grid; grid-template-columns: 1fr; gap: .8rem; padding: 1.2rem 1.1rem; }
+  .fp-row { display: flex; flex-direction: column; gap: .35rem; }
+  .fp-row > .ti { font-family: var(--mono); font-size: .72rem; color: var(--ink-faint); letter-spacing: .14em; text-transform: uppercase; }
+  .fp-bar { display: flex; height: 36px; border-radius: 7px; overflow: hidden; border: 1px solid var(--line); font-family: var(--mono); font-size: .68rem; }
+  .fp-sign { background: var(--style-bg); color: var(--style); display: flex; align-items: center; justify-content: center; font-weight: 600; }
+  .fp-exp  { background: var(--structure-bg); color: var(--structure); display: flex; align-items: center; justify-content: center; font-weight: 600; }
+  .fp-mant { background: var(--synth-bg); color: var(--synth); display: flex; align-items: center; justify-content: center; font-weight: 600; flex: 1; }
+  .fp-tag { font-family: var(--mono); font-size: .65rem; color: var(--ink-faint); display: flex; justify-content: space-between; }
+  .fp-tag b { color: var(--ink); }
+  .fp-table { width: 100%; max-width: var(--measure); margin: 1.4rem auto; border-collapse: collapse; font-size: .9rem; }
+  .fp-table th { font-family: var(--mono); font-size: .68rem; text-transform: uppercase; letter-spacing: .12em; color: var(--ink-faint); text-align: left; padding: .6rem .8rem; border-bottom: 1px solid var(--line); }
+  .fp-table td { padding: .65rem .8rem; border-bottom: 1px solid var(--line-soft); font-family: var(--mono); font-size: .82rem; vertical-align: top; }
+  .fp-table td:first-child { color: var(--structure); font-weight: 600; }
+  .fp-table tr:hover { background: var(--paper-2); }
 </style>
 </head>
 <body>
@@ -33,85 +34,99 @@
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Sub-Chapter 02 · 잘못된 조건수</span>
-      <h1>같은 손실 함수가<br><span class="t-structure">조건수</span>에 따라 다르게 어렵다</h1>
-      <p class="lede">조건수(condition number) κ는 어떤 시스템이 입력의 작은 흔들림에 얼마나 민감한지 알려주는 한 숫자다. κ가 크면 경사하강이 지그재그를 그리며 한참 헤매고, 작으면 곧바로 중심으로 떨어진다.</p>
+      <span class="kicker">Sub-Chapter 02 · IEEE 754의 해부</span>
+      <h1>좁은 자에 새겨진 <span class="t-structure">눈금</span>의 구조</h1>
+      <p class="lede">컴퓨터는 실수(real number)를 직접 저장하지 않는다. 한 비트를 부호로, 몇 비트를 지수로, 나머지를 가수로 잘라 쓴다. 이 분할 방식과 비트 수가 바로 학습이 흔들리는 자리들을 결정한다.</p>
     </header>
 
     <div class="prose">
-      <p>앞 장의 부동소수점 문제가 "한 값이 너무 크거나 작아서" 무너지는 함정이었다면, 이번 장은 한 단계 미묘하다. <strong>입력의 작은 오차가 출력의 큰 오차로 증폭되는</strong> 문제, 곧 조건수의 문제다. 이 개념은 단순한 행렬 계산을 넘어 최적화 난이도와 직결된다.</p>
+      <p>1절에서 본 격차의 출발은 컴퓨터가 무한히 많은 실수를 저장할 수 없다는 사실이었다. 그렇다면 컴퓨터는 도대체 어떤 방식으로 수를 저장하는가. 이 질문의 답이 <strong>IEEE 754</strong>라는 국제 표준이다. 1985년에 처음 채택되었고, 지금 사용하는 거의 모든 CPU와 GPU의 부동소수점 연산은 이 표준에 따라 동작한다. 이 절은 이 표준의 구조를 한 번에 외울 만한 수준까지 풀어 본다.</p>
 
-      <h2>조건수의 정의 — 가장 늘이는 비율 ÷ 가장 줄이는 비율</h2>
-      <p>실수 함수 $f(x) = A x$가 있다고 하자. 입력 $x$에 작은 변화 $\Delta x$를 주면 출력은 $A \Delta x$만큼 변한다. 그런데 $A$가 어떤 방향으로는 입력을 10배로 늘리고, 다른 방향으로는 10배로 줄이는 행렬이라면, 같은 크기의 입력 오차라도 방향에 따라 결과가 100배까지 차이날 수 있다. 이 민감성을 한 숫자로 요약한 것이 조건수다.</p>
+      <p>핵심 발상은 단순하다. 십진법으로 큰 수를 적을 때 우리는 보통 과학적 표기(scientific notation)를 쓴다. 예를 들어 빛의 속도는 $3 \times 10^{8}$ m/s이고, 전자의 질량은 $9.109 \times 10^{-31}$ kg이다. 이 표기에는 두 부분이 있다. <strong>가수(mantissa, significand)</strong>인 $3$이나 $9.109$가 의미 있는 자리를 적고, <strong>지수(exponent)</strong>인 $10^8$이나 $10^{-31}$이 자릿수를 적는다. 그리고 양수냐 음수냐는 별도의 <strong>부호(sign)</strong>로 적는다. 부동소수점은 이 발상을 이진법으로 옮긴 것이다.</p>
 
-      <div class="math-block">$$ \kappa(A) \;=\; \frac{\sigma_{\max}(A)}{\sigma_{\min}(A)} \;=\; \left\lvert \frac{\lambda_{\max}}{\lambda_{\min}} \right\rvert \quad (\text{대칭 양정치 행렬의 경우}) $$</div>
-      <p class="math-note">σ는 특잇값(SVD), λ는 고윳값. 가장 큰 늘림 / 가장 작은 늘림의 비.</p>
+      <p>구체적으로 32비트 부동소수점(float32, single precision)은 한 수를 다음과 같이 적는다.</p>
 
-      <p>왜 이 형태인가. $A$의 특이값 분해(SVD)는 $A$가 어떤 방향들을 따라 입력을 얼마나 늘리거나 줄이는지 분해해 준다. 가장 많이 늘리는 방향과 가장 적게 늘리는 방향의 비율이 클수록, $A$는 "방향에 따라 행동이 극단적으로 다른" 행렬이다. 그 극단성이 곧 수치적 민감성이다.</p>
+      <div class="math-block">$$ x = (-1)^{s} \cdot (1 + f) \cdot 2^{e - 127} $$</div>
+      <p class="math-note">s: 부호 비트 (0 또는 1). f: 가수가 만드는 0 이상 1 미만의 소수 (23비트). e: 지수 (8비트 정수). 127은 바이어스(bias).</p>
+
+      <p>이 한 줄에 들어 있는 의미를 천천히 풀어 보자. 가장 왼쪽의 1비트는 <strong>부호</strong>다. $s = 0$이면 양수, $s = 1$이면 음수다. 그 다음 8비트는 <strong>지수</strong>다. 8비트 정수는 0부터 255까지 표현할 수 있는데, 양수 지수와 음수 지수를 모두 다루기 위해 가운데를 0으로 잡는다. 그래서 실제 지수는 $e - 127$이 된다. 마지막 23비트는 <strong>가수</strong>다. 그러나 정규화된(normalized) 부동소수점에서는 가장 왼쪽 자리가 항상 1로 시작한다고 보고(즉 $1.xxxx \times 2^{e-127}$), 그 1을 생략한다. 그래서 실제로 저장되는 23비트는 소수점 아래 부분만이고, 식의 $(1 + f)$에서 1은 "숨겨진 1"이다.</p>
 
       <div class="analogy">
-        <b>다리가 다른 책상</b>을 떠올려 보자. 네 다리 길이가 모두 비슷하면 살짝 밀어도 안정적이다. 그런데 한 다리만 절반 길이라면, 같은 힘을 줘도 그 쪽으로 크게 휘청거린다. κ가 큰 행렬은 그런 책상과 같다. 어떤 방향에서는 단단하지만, 어떤 방향에서는 손가락 한 번으로 무너진다.
+        <b>자릿수의 위치를 알려 주는 깃발과, 그 자리에 적힐 정확한 숫자를 따로 적는 방식</b>이다. 큰 수와 작은 수를 같은 폭으로 적으려면, 우선 그 수가 얼마나 큰지(지수)를 깃발처럼 따로 적고, 그 다음에 정확한 모양(가수)을 적어야 한다. 지수에는 8칸의 슬롯이 있어서 $2^{-126}$부터 $2^{127}$까지의 자릿수를 표시할 수 있고, 가수에는 23칸의 슬롯이 있어서 그 자릿수 안에서 약 $2^{23} \approx 8 \times 10^6$가지의 모양을 구분할 수 있다. 그래서 부동소수점은 <em>큰 범위와 좁은 정밀도</em>를 동시에 잡으려는 타협이다.
       </div>
 
-      <h2>왜 최적화가 어려워지는가</h2>
-      <p>이차 손실 함수 $f(x) = \tfrac{1}{2} x^\top H x$를 보자. 여기서 $H$는 대칭 양정치 행렬(positive definite)이라고 가정하자. 이 함수의 등고선은 타원이고, 그 타원의 축은 $H$의 고유벡터 방향이며, 축 길이의 비율은 $\sqrt{\lambda_{\max} / \lambda_{\min}} = \sqrt{\kappa(H)}$에 비례한다.</p>
-
-      <p>조건수 $\kappa(H)$가 1에 가까우면 등고선은 거의 원이 된다. 어디서 출발하든 음의 기울기 방향이 곧 중심을 가리킨다. 한 발짝, 두 발짝이면 도착한다. 반면 $\kappa$가 크면 등고선이 가늘고 긴 타원이 되고, 경사하강은 <strong>가파른 짧은 축을 따라 좌우로 튀면서</strong> 긴 축을 따라 천천히 내려간다. 흔히 보는 <span class="t-style">지그재그 궤적</span>이다.</p>
-
-      <div class="math-block">$$ x_{k+1} \;=\; x_k \;-\; \varepsilon \nabla f(x_k) \;=\; x_k \;-\; \varepsilon H x_k \;=\; (I - \varepsilon H) x_k $$</div>
-      <p class="math-note">고유공간으로 분리하면 i번째 성분은 (1 − ελ_i)^k의 비율로 줄어든다.</p>
-
-      <p>왜 이 식이 핵심인가. 각 고유공간 성분은 $(1 - \varepsilon \lambda_i)$의 비율로 줄어든다. 수렴이 깨지지 않으려면 모든 $i$에서 $|1 - \varepsilon \lambda_i| < 1$, 곧 $\varepsilon < \tfrac{2}{\lambda_{\max}}$이어야 한다. 가장 빨리 줄어드는 성분은 $\lambda$가 적당히 큰 쪽이고, 가장 느리게 줄어드는 성분은 $\lambda_{\min}$ 쪽이다. 결국 전체 수렴 속도는 가장 느린 성분, 곧 <strong>$\kappa = \lambda_{\max}/\lambda_{\min}$의 비율에 의해 결정</strong>된다. 조건수가 큰 문제에서는 학습률을 크게 잡으면 큰 고윳값 방향에서 폭주하고, 작게 잡으면 작은 고윳값 방향에서 너무 느리다.</p>
+      <p>아래 위젯은 이 분할을 한눈에 본다. 슬라이더로 부호·지수·가수를 직접 움직이면, 그 비트들이 실제 어떤 십진수를 만드는지 즉시 나타난다. 부호 비트 하나를 뒤집으면 양수와 음수가 뒤바뀐다는 점, 지수를 1만 늘리면 값이 두 배가 된다는 점, 가수의 가장 낮은 비트를 흔들어도 값이 거의 안 바뀐다는 점을 직접 확인하기를 권한다.</p>
     </div>
 
     <div class="widget">
       <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 02</span><span>조건수와 경사하강 궤적</span></div>
-        <div class="ck-stage">
-          <div class="ck-canvas-wrap"><canvas id="ckCanvas"></canvas></div>
-          <div class="ck-side">
-            <div class="ck-card">
-              <h5>조건수 κ</h5>
-              <div class="val" id="ckKappa">1.0</div>
-              <div class="sub">λ_max / λ_min</div>
+        <div class="widget-label"><span class="lab-no">위젯 02</span><span>IEEE 754 float32 — 비트의 해부</span></div>
+        <div class="fp-bits">
+          <div class="fp-row">
+            <span class="ti">한 수의 구조 (32비트)</span>
+            <div class="fp-bar">
+              <div class="fp-sign" style="width:6%">S</div>
+              <div class="fp-exp"  style="width:25%">EXPONENT · 8 bits</div>
+              <div class="fp-mant" style="flex:1">MANTISSA · 23 bits</div>
             </div>
-            <div class="ck-card good" id="ckStepsCard">
-              <h5>수렴까지 스텝 수</h5>
-              <div class="val" id="ckSteps">—</div>
-              <div class="sub">‖x‖ &lt; 0.02 도달</div>
+            <div class="fp-tag"><span>부호 <b>1bit</b></span><span>지수 <b>8bit (bias 127)</b></span><span>가수 <b>23bit (숨은 1)</b></span></div>
+          </div>
+          <div class="fp-row">
+            <span class="ti">현재 설정</span>
+            <div class="fp-bar">
+              <div class="fp-sign" id="bSign" style="width:6%">0</div>
+              <div class="fp-exp"  id="bExp"  style="width:25%">10000010</div>
+              <div class="fp-mant" id="bMant" style="flex:1">10010010000111111011011</div>
             </div>
-            <div class="ck-card">
-              <h5>학습률 ε</h5>
-              <div class="val" id="ckLR">0.10</div>
-              <div class="sub">매 스텝 −ε∇f</div>
-            </div>
+            <div class="fp-tag"><span>실제 값 = <b id="bValue">3.14159</b></span><span id="bDecomp">= (1 + 0.5708) × 2³</span></div>
           </div>
         </div>
         <div class="widget-controls">
-          <div class="slider"><label>등고선 종횡비 (조건수 √κ) <b id="ckAspect">2.0</b></label><input type="range" id="ckA" min="10" max="200" value="20" step="1"></div>
-          <div class="slider"><label>학습률 ε <b id="ckLRLabel">0.10</b></label><input type="range" id="ckE" min="1" max="100" value="10" step="1"></div>
-          <button class="btn" id="ckRun">처음부터 다시</button>
+          <div class="slider"><label>부호 s <b id="lsign">+</b></label><input type="range" id="sSign" min="0" max="1" value="0" step="1"></div>
+          <div class="slider"><label>지수 e (실제 = e−127) <b id="lexp">130</b></label><input type="range" id="sExp" min="0" max="255" value="130" step="1"></div>
+          <div class="slider"><label>가수 f (0 ~ 1) <b id="lmant">0.5708</b></label><input type="range" id="sMant" min="0" max="8388607" value="4788188" step="1"></div>
+          <button class="btn ghost" id="bPi">π</button>
+          <button class="btn ghost" id="bTiny">10⁻³⁰</button>
+          <button class="btn ghost" id="bHuge">10³⁰</button>
         </div>
       </div>
-      <p class="widget-cap">종횡비 슬라이더를 오른쪽으로 옮길수록 등고선이 가늘어진다(κ ↑). 그러면 같은 학습률에서도 경사하강 궤적이 점점 더 지그재그가 되고 수렴 스텝 수가 늘어난다. 학습률을 너무 크게 잡으면 큰 고윳값 방향에서 발산한다.</p>
+      <p class="widget-cap">슬라이더로 비트를 직접 흔든다. 지수가 표현 가능한 범위는 약 <code>2⁻¹²⁶ ~ 2¹²⁷</code>, 즉 <code>1.18×10⁻³⁸ ~ 3.4×10³⁸</code>. 그 밖은 0(언더플로) 또는 ∞(오버플로)로 처리된다. 가수의 23비트는 한 자릿수 안에서 약 7자리의 십진 정밀도를 준다.</p>
     </div>
 
     <div class="prose">
-      <h2>딥러닝에서의 함의</h2>
-      <p>지금까지 본 것은 단순한 이차 함수다. 그러나 딥러닝의 손실 표면도 국소적으로는 이차 근사로 다룰 수 있다(테일러 전개의 2차항이 곧 헤시안). 그래서 손실 표면이 어떤 방향으로는 가파르고 다른 방향으로는 완만한 <em>골짜기 모양</em>이면, 그 지점의 헤시안 조건수가 크다는 뜻이고, 경사하강은 같은 어려움을 겪는다.</p>
+      <h2>float32 / float64 / float16 — 비트 수가 바꾸는 학습</h2>
+      <p>같은 IEEE 754 구조라도 비트 수가 달라지면 표현 범위와 정밀도가 모두 달라진다. 딥러닝에서 자주 마주치는 세 가지 형식을 표로 정리해 보자.</p>
 
-      <p>이 한계를 우회하는 다음과 같은 방법들이 등장한다.</p>
+      <table class="fp-table">
+        <thead><tr><th>형식</th><th>지수 비트</th><th>가수 비트</th><th>표현 범위</th><th>대략 십진 정밀도</th></tr></thead>
+        <tbody>
+          <tr><td>float64</td><td>11</td><td>52</td><td>약 2.2×10⁻³⁰⁸ ~ 1.8×10³⁰⁸</td><td>15-17자리</td></tr>
+          <tr><td>float32</td><td>8</td><td>23</td><td>약 1.18×10⁻³⁸ ~ 3.4×10³⁸</td><td>7자리</td></tr>
+          <tr><td>float16</td><td>5</td><td>10</td><td>약 6.1×10⁻⁵ ~ 6.5×10⁴</td><td>3-4자리</td></tr>
+          <tr><td>bfloat16</td><td>8</td><td>7</td><td>약 1.18×10⁻³⁸ ~ 3.4×10³⁸</td><td>2-3자리</td></tr>
+        </tbody>
+      </table>
 
-      <ul>
-        <li><strong>모멘텀(momentum)</strong> — 좌우 진동은 평균적으로 상쇄되고 긴 축 방향만 누적된다. 사실상 큰 고윳값 방향의 진동을 감쇠시키면서 작은 고윳값 방향의 학습을 가속한다.</li>
-        <li><strong>전처리(preconditioning) · 적응적 학습률</strong> — Adagrad, RMSProp, Adam 같은 방법은 각 좌표축마다 다른 학습률을 사용해 사실상 헤시안의 대각 성분을 보정한다. 조건수 효과를 줄이는 셈이다.</li>
-        <li><strong>배치 정규화(batch normalization)</strong> — 각 층의 활성 분포를 표준화하여 손실 표면의 조건수를 작게 만든다는 해석이 가장 자주 인용된다.</li>
-      </ul>
+      <p>이 표는 단순한 사양표가 아니라 실제 학습 결정의 근거다. 예를 들어 NVIDIA Volta 이후 GPU의 텐서 코어(tensor core)는 <strong>float16 또는 bfloat16</strong>으로 계산하면 float32보다 약 2배 빠르고 메모리를 절반만 쓴다. 그래서 큰 모델을 훈련할 때 <em>혼합 정밀도 훈련(mixed-precision training)</em>이 표준이 되었다. 그러나 float16은 표현 범위가 매우 좁다. 최대값이 약 $6.5 \times 10^4$밖에 안 되므로, 손실 값이나 기울기가 그 안에 들지 않으면 곧장 오버플로한다. 그래서 NVIDIA는 손실에 큰 상수를 곱해 두는 <em>loss scaling</em>이라는 잔재주를 도입했다. 이 잔재주의 모든 동기는 위 표의 한 줄에서 나온다.</p>
 
-      <p>모두 Chapter 8에서 깊게 다룬다. 지금 시점에서는 "조건수가 크면 단순 경사하강이 어렵다"는 <em>왜</em>를 손에 잡으면 된다.</p>
+      <p>bfloat16(Brain Floating Point)은 Google이 TPU를 위해 만든 변종이다. float16과 비트 수는 같지만, <strong>지수 8비트를 그대로 유지하고 가수만 7비트로 줄였다</strong>. 이 선택의 의도는 분명하다. 신경망 학습에서 더 중요한 것은 정밀도가 아니라 표현 범위라는 판단이다. 가수가 짧아 정밀도는 떨어지지만 float32와 같은 범위를 갖기 때문에, loss scaling 없이도 안전하게 훈련할 수 있다. 이 트레이드오프는 다음과 같이 요약된다.</p>
+
+      <div class="analogy">
+        float16은 <b>아주 좁은 자에 아주 미세한 눈금</b>을 새긴 형식이다. 자 자체가 짧아서 큰 수를 못 적지만, 자 안에서는 꽤 정확하다. bfloat16은 <b>float32와 같은 길이의 자에, 듬성듬성한 눈금</b>을 새긴 형식이다. 큰 수도 작은 수도 다 적을 수 있지만, 한 눈금 안의 디테일은 거칠다. 어느 쪽이 좋은가는 작업에 따라 다른데, 학습에서는 보통 "넓은 자"인 bfloat16이 더 안전하다.
+      </div>
+
+      <h2>기계 입실론 — 자의 가장 좁은 눈금</h2>
+      <p>가수의 정밀도를 한 숫자로 요약한 양이 <strong>기계 입실론(machine epsilon)</strong>이다. 정의는 "1보다 큰, 표현 가능한 가장 작은 수와 1의 차이"다.</p>
+
+      <div class="math-block">$$ \epsilon_{\text{machine}} = 2^{-p} $$</div>
+      <p class="math-note">p는 가수의 비트 수. float32는 p=23이므로 ε ≈ 1.19×10⁻⁷. float64는 p=52이므로 ε ≈ 2.22×10⁻¹⁶.</p>
+
+      <p>왜 이 양이 중요한가. 컴퓨터에서 두 수 $a$와 $b$를 비교할 때, $a$와 $b$의 차이가 기계 입실론보다 작으면 컴퓨터는 둘을 구분할 수 없다. 그래서 부동소수점 같음 비교 $a == b$는 위험하고, 대신 $|a - b| < \epsilon$ 같은 형태로 쓴다. 또한 0에 가까운 분모를 안전하게 처리하려고 $\frac{1}{\sigma + \epsilon}$ 같이 작은 상수를 더하는 관행도 모두 이 양에서 나온다. 배치 정규화(batch normalization)와 Adam 옵티마이저는 모두 이 트릭을 쓴다.</p>
+
+      <p>한 가지 직관적인 예를 보자. float32에서 $1 + 10^{-8}$을 계산하면 결과는 정확히 $1$이다. 왜냐하면 $10^{-8}$이 기계 입실론 $1.19 \times 10^{-7}$보다 작아서, 두 수를 더했을 때 작은 쪽이 큰 쪽의 자릿수에 흡수되어 사라지기 때문이다. 이런 현상을 <em>흡수 오차(absorption error)</em>라고 한다. 큰 수와 작은 수를 같은 식에서 더하면, 작은 수의 정보가 사라진다. 그래서 수치 알고리즘은 가능하면 비슷한 크기끼리 묶어 더하도록 설계된다.</p>
 
       <h2>다음으로</h2>
-      <p>이제 경사하강 자체를 정면으로 본다. 음의 기울기가 왜 가장 가파른 하강 방향인지, 학습률을 어떻게 잡아야 안정적인지, 그리고 평평한 고원·안장점·국소최소가 왜 모두 같은 "기울기 0" 신호를 보내는지 다음 장에서 직접 만져 본다.</p>
+      <p>지금까지는 부동소수점이 어떤 모양인지를 봤다. 다음 절에서는 이 모양 안에서 실제로 가장 자주 터지는 사고인 <strong>softmax 함수의 오버플로/언더플로</strong>를 단계별로 풀이한다. 위젯에서 입력을 $1000$, $-1000$으로 밀어보면 식이 어떻게 무너지는지 직접 볼 수 있다. 그리고 4절에서 그 사고를 막는 logsumexp 트릭이 어떻게 한 줄로 유도되는지를 본다.</p>
     </div>
 
     <nav class="ch-foot"></nav>
@@ -119,20 +134,24 @@
 </div>
 
 <script>
-  // ===== 공통 nav =====
   const SUBS = [
-    { no:'01', t:'부동소수점의 함정' },
-    { no:'02', t:'잘못된 조건수' },
-    { no:'03', t:'경사 기반 최적화' },
-    { no:'04', t:'헤시안과 2계 방법' },
-    { no:'05', t:'제약 최적화와 KKT' },
-    { no:'06', t:'시험 대비' },
+    { no:'01', t:'왜 수치 계산이 ML의 발목을 잡는가' },
+    { no:'02', t:'부동소수점 — IEEE 754의 좁은 자' },
+    { no:'03', t:'언더플로 / 오버플로 — softmax는 왜 터지는가' },
+    { no:'04', t:'logsumexp 트릭 — 안정화 수식 유도' },
+    { no:'05', t:'조건수 1 — 행렬은 답을 얼마나 흔드는가' },
+    { no:'06', t:'조건수 2 — 최적화의 지그재그' },
+    { no:'07', t:'경사하강법의 본질' },
+    { no:'08', t:'2계 방법 — 헤시안과 뉴턴법' },
+    { no:'09', t:'학습률의 의미' },
+    { no:'10', t:'제약 최적화 — 라그랑주와 KKT' },
+    { no:'11', t:'시험 대비' },
   ];
   function buildNav(current) {
     const tb = document.querySelector('.topbar');
     if (tb) tb.innerHTML =
       `<a class="home" href="index.html">← Ch.04 수치 계산</a>` +
-      `<span class="ch-mini">SUB ${current} / 06</span>`;
+      `<span class="ch-mini">SUB ${current} / 11</span>`;
     const ol = document.querySelector('.ch-nav ol');
     if (ol) ol.innerHTML = SUBS.map(s =>
       `<li><a href="${s.no}.html" ${s.no === current ? 'class="current"' : ''}>${s.t}</a></li>`).join('');
@@ -157,136 +176,61 @@
     }
   }
 
-  // ===== 위젯: 조건수와 경사하강 궤적 =====
-  const canvas = () => document.getElementById('ckCanvas');
-  let trail = [];
-  let runId = 0;
-
-  function setupCanvas() {
-    const c = canvas();
-    const rect = c.getBoundingClientRect();
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    c.width = rect.width * dpr;
-    c.height = rect.height * dpr;
-    const ctx = c.getContext('2d');
-    ctx.setTransform(dpr,0,0,dpr,0,0);
-    return { ctx, w: rect.width, h: rect.height };
+  function toBin(n, w) {
+    let s = (n >>> 0).toString(2);
+    while (s.length < w) s = '0' + s;
+    return s.slice(-w);
   }
+  function render() {
+    const s = parseInt(document.getElementById('sSign').value);
+    const e = parseInt(document.getElementById('sExp').value);
+    const m = parseInt(document.getElementById('sMant').value);
+    document.getElementById('lsign').textContent = s === 0 ? '+' : '−';
+    document.getElementById('lexp').textContent = e;
+    const f = m / 8388608;
+    document.getElementById('lmant').textContent = f.toFixed(4);
 
-  function drawContours(ctx, w, h, a) {
-    ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = '#FAF7F0'; ctx.fillRect(0, 0, w, h);
-    const cx = w/2, cy = h/2;
-    const scale = Math.min(w, h) * 0.42;
-    // 등고선 f = c (c = 0.05, 0.15, 0.3, 0.5, 0.8, 1.1)
-    const levels = [0.05, 0.15, 0.3, 0.5, 0.8, 1.1];
-    levels.forEach((c, idx) => {
-      ctx.strokeStyle = `rgba(45, 91, 122, ${0.13 + idx * 0.07})`;
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      for (let t = 0; t <= Math.PI*2 + 0.01; t += 0.04) {
-        const x = Math.sqrt(2*c) * Math.cos(t);
-        const y = Math.sqrt(2*c) * Math.sin(t) / a;
-        const px = cx + x * scale;
-        const py = cy - y * scale;
-        if (t === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
-      }
-      ctx.closePath(); ctx.stroke();
-    });
-    ctx.fillStyle = '#26221C';
-    ctx.beginPath(); ctx.arc(cx, cy, 3, 0, Math.PI*2); ctx.fill();
-    return { cx, cy, scale };
+    document.getElementById('bSign').textContent = s;
+    document.getElementById('bExp').textContent = toBin(e, 8);
+    document.getElementById('bMant').textContent = toBin(m, 23);
+
+    let val;
+    if (e === 0 && m === 0) val = 0;
+    else if (e === 255) val = m === 0 ? (s ? -Infinity : Infinity) : NaN;
+    else val = (s ? -1 : 1) * (1 + f) * Math.pow(2, e - 127);
+
+    let vStr;
+    if (Number.isNaN(val)) vStr = 'NaN';
+    else if (!isFinite(val)) vStr = (val > 0 ? '+∞' : '−∞');
+    else if (Math.abs(val) > 1e6 || (Math.abs(val) < 1e-3 && val !== 0)) vStr = val.toExponential(4);
+    else vStr = val.toFixed(6);
+    document.getElementById('bValue').textContent = vStr;
+    document.getElementById('bDecomp').textContent =
+      `= ${s ? '−' : '+'}(1 + ${f.toFixed(4)}) × 2^${e - 127}`;
   }
-
-  function runGD(a, lr) {
-    runId++;
-    const myId = runId;
-    trail = [{ x: -0.85, y: 0.4 / a }];  // 정규화된 시작점
-    const { ctx, w, h } = setupCanvas();
-    const geom = drawContours(ctx, w, h, a);
-
-    let steps = 0;
-    let diverged = false;
-
-    function step() {
-      if (myId !== runId) return;
-      const last = trail[trail.length - 1];
-      // f(x,y) = 0.5*(x^2 + a^2 y^2), ∇f = (x, a^2 y)
-      const nx = last.x - lr * last.x;
-      const ny = last.y - lr * a * a * last.y;
-      const dist = Math.hypot(nx, ny);
-      if (!isFinite(dist) || dist > 100) {
-        diverged = true;
-        renderState(a, steps, true);
-        return;
-      }
-      trail.push({ x: nx, y: ny });
-      steps++;
-
-      // redraw
-      drawContours(ctx, w, h, a);
-      // 궤적
-      ctx.strokeStyle = 'rgba(192, 73, 46, 0.75)';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      trail.forEach((p, i) => {
-        const px = geom.cx + p.x * geom.scale;
-        const py = geom.cy - p.y * geom.scale;
-        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
-      });
-      ctx.stroke();
-      // 점들
-      trail.forEach((p, i) => {
-        const px = geom.cx + p.x * geom.scale;
-        const py = geom.cy - p.y * geom.scale;
-        ctx.fillStyle = i === trail.length - 1 ? '#C0492E' : 'rgba(164, 123, 46, 0.6)';
-        ctx.beginPath(); ctx.arc(px, py, i === trail.length - 1 ? 4 : 2, 0, Math.PI*2); ctx.fill();
-      });
-      // 시작점 라벨
-      ctx.fillStyle = '#26221C';
-      ctx.font = '11px "Spline Sans Mono", monospace';
-      ctx.fillText('x₀', geom.cx + trail[0].x * geom.scale + 6, geom.cy - trail[0].y * geom.scale - 6);
-
-      if (dist < 0.02) {
-        renderState(a, steps, false);
-        return;
-      }
-      if (steps > 1000) {
-        renderState(a, steps, false, true);
-        return;
-      }
-      setTimeout(step, 30);
-    }
-    step();
-  }
-
-  function renderState(a, steps, diverged, capped) {
-    const kappa = a * a;
-    document.getElementById('ckKappa').textContent = kappa.toFixed(1);
-    document.getElementById('ckSteps').textContent = diverged ? '발산' : (capped ? '>1000' : steps);
-    const card = document.getElementById('ckStepsCard');
-    if (diverged) { card.className = 'ck-card warn'; }
-    else if (capped) { card.className = 'ck-card warn'; }
-    else if (steps <= 30) { card.className = 'ck-card good'; }
-    else { card.className = 'ck-card'; }
-  }
-
-  function go() {
-    const a = parseFloat(document.getElementById('ckA').value) / 10;
-    const lr = parseFloat(document.getElementById('ckE').value) / 100;
-    document.getElementById('ckAspect').textContent = a.toFixed(1);
-    document.getElementById('ckLRLabel').textContent = lr.toFixed(2);
-    document.getElementById('ckLR').textContent = lr.toFixed(2);
-    runGD(a, lr);
-  }
-
   window.addEventListener('load', () => {
     buildNav('02');
-    document.getElementById('ckA').addEventListener('input', go);
-    document.getElementById('ckE').addEventListener('input', go);
-    document.getElementById('ckRun').addEventListener('click', go);
-    window.addEventListener('resize', go);
-    setTimeout(go, 100);
+    ['sSign','sExp','sMant'].forEach(id =>
+      document.getElementById(id).addEventListener('input', render));
+    document.getElementById('bPi').addEventListener('click', () => {
+      document.getElementById('sSign').value = 0;
+      document.getElementById('sExp').value = 128;
+      document.getElementById('sMant').value = Math.round((Math.PI/2 - 1) * 8388608);
+      render();
+    });
+    document.getElementById('bTiny').addEventListener('click', () => {
+      document.getElementById('sSign').value = 0;
+      document.getElementById('sExp').value = 28;
+      document.getElementById('sMant').value = 0;
+      render();
+    });
+    document.getElementById('bHuge').addEventListener('click', () => {
+      document.getElementById('sSign').value = 0;
+      document.getElementById('sExp').value = 227;
+      document.getElementById('sMant').value = 0;
+      render();
+    });
+    render();
     if (window.renderMathInElement) {
       renderMathInElement(document.body, {
         delimiters: [

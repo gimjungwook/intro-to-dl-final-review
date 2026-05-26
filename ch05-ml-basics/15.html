@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>15 · 시험 대비 — Q&A 20선 + 수식·진단표</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .form-table { max-width: var(--measure); margin: 1.4rem auto; border-collapse: collapse; width: 100%; font-size: .92rem; }
+  .form-table th, .form-table td { padding: .55rem .8rem; border-bottom: 1px solid var(--line-soft); text-align: left; vertical-align: top; }
+  .form-table th { font-family: var(--mono); font-size: .72rem; color: var(--ink-faint); letter-spacing: .1em; text-transform: uppercase; background: var(--paper-2); }
+  .form-table td.eq { font-family: var(--mono); color: var(--structure); white-space: nowrap; width: 14rem; }
+  .form-table tr:hover { background: var(--paper-2); }
+
+  .diag-table { max-width: var(--measure); margin: 1.4rem auto; border-collapse: collapse; width: 100%; font-size: .9rem; }
+  .diag-table th, .diag-table td { padding: .6rem .9rem; border: 1px solid var(--line); }
+  .diag-table th { background: var(--paper-2); font-family: var(--mono); font-size: .72rem; letter-spacing: .08em; color: var(--ink-soft); text-transform: uppercase; }
+  .diag-table td b.s1 { color: var(--structure); } .diag-table td b.s2 { color: var(--style); } .diag-table td b.s3 { color: var(--synth); }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Section 15 · 시험 직전 한 번에 훑기</span>
+      <h1>예상 출제 <span class="t-structure">20문제</span> + <em>핵심 수식 9개</em> + 진단표</h1>
+      <p class="lede">시험 D-9. 이 페이지는 14개 sub-chapter의 결론을 빠르게 훑기 위한 것이다. Q&A 아코디언으로 머릿속 답을 점검하고, 수식 표로 외울 식을 한 페이지에 모았으며, 진단 체크리스트는 응용 문제 형태로 자주 출제된다.</p>
+    </header>
+
+    <h2 style="max-width: var(--measure); margin-inline: auto; padding-inline: 1.4rem">예상 출제 20문제 (Q&A)</h2>
+
+    <div class="prose">
+      <p>각 문제를 클릭하면 답이 펼쳐진다. 답을 보기 전에 30초씩 머릿속으로 답해보고 펼쳐라. 막힌 문제만 해당 sub-chapter로 돌아가서 다시 읽으면 충분하다.</p>
+    </div>
+
+    <div class="qa-list" style="max-width: var(--measure); margin: 1.4rem auto; padding-inline: 1.4rem">
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q1</span><span>학습을 T·P·E로 설명할 때, 한 축이라도 빠지면 무엇이 모호해지는가? <span class="qx">+</span></span></div>
+        <div class="qa-a"><div class="qa-a-inner">
+          <span class="rel">→ <a href="01.html">Sec.1 T·P·E 삼각형</a></span>
+          T(과업)가 빠지면 "무엇을 학습하는가"가 정의되지 않아 같은 데이터로도 분류기·회귀기·군집기 중 어느 것을 만드는지 모름. P(성능척도)가 빠지면 "잘했다"의 기준이 없어 손실 함수가 정해지지 않음. E(경험)가 빠지면 알고리즘이 무엇을 보고 학습하는지 모르고, 지도/비지도/강화 구분도 안 됨. 셋이 모두 정해져야 학습이라는 동사가 의미 있게 적용된다.
+        </div></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q2</span><span>지도·비지도·강화 학습의 결정적 차이는 라벨 유무인가? <span class="qx">+</span></span></div>
+        <div class="qa-a"><div class="qa-a-inner">
+          <span class="rel">→ <a href="02.html">Sec.2 학습의 세 갈래</a></span>
+          표면적으로는 라벨 유무지만 결정적 차이는 학습 신호의 종류와 i.i.d. 가정의 성립이다. 지도학습은 정답 라벨 $y$, 비지도학습은 입력 분포 $p(x)$의 구조 자체, 강화학습은 지연된 보상 $r$이 학습 신호다. 강화학습은 에이전트의 행동이 데이터 분포를 바꾸므로 i.i.d.가 깨진다. 자기지도학습은 입력에서 인공 라벨을 만들어 지도학습으로 푼다.
+        </div></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q3</span><span>가설 공간(hypothesis space)과 용량(capacity)의 관계는? <span class="qx">+</span></span></div>
+        <div class="qa-a"><div class="qa-a-inner">
+          <span class="rel">→ <a href="03.html">Sec.3 용량과 가설 공간</a></span>
+          가설 공간 $\mathcal{H}$는 모델이 표현할 수 있는 함수의 집합이고, 용량은 그 집합의 풍부함이다. 표현 용량(이론적)과 유효 용량(학습 알고리즘이 도달 가능한 영역)으로 나뉜다. VC 차원이 용량의 정량적 측정 도구. 가설 공간이 너무 좁으면 정답이 그 안에 없고(과소적합), 너무 넓으면 데이터에 들어맞는 후보가 많아 진짜 정답을 가리기 어렵다(과적합).
+        </div></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q4</span><span>훈련 오차가 0이지만 좋은 모델이 아닐 수 있는 이유는? <span class="qx">+</span></span></div>
+        <div class="qa-a"><div class="qa-a-inner">
+          <span class="rel">→ <a href="04.html">Sec.4 과적합·과소적합</a></span>
+          학습의 목표는 훈련 데이터 암기가 아니라 일반화. 충분한 용량의 모델은 항상 훈련 데이터를 통과시킬 수 있지만, 그 모델은 데이터의 잡음까지 외워 새 데이터에서 무너진다. 일반화 격차(시험 오차 − 훈련 오차)가 클수록 외운 모델. 시험에서 묻는 핵심은 "훈련 오차 = 0인데 일반화 격차가 크다 = 과적합"이라는 진단.
+        </div></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q5</span><span>편향-분산 분해식을 적고, 모델 용량을 키울 때 각 항이 어떻게 변하는가? <span class="qx">+</span></span></div>
+        <div class="qa-a"><div class="qa-a-inner">
+          <span class="rel">→ <a href="05.html">Sec.5 편향-분산 분해</a></span>
+          $$ \mathbb{E}_D[(y - f_D(x_0))^2] = (\bar{f}(x_0) - f^*(x_0))^2 + \mathbb{E}_D[(f_D(x_0) - \bar{f}(x_0))^2] + \sigma^2 $$
+          용량↑ → 편향² ↓ (모델이 더 다양한 함수 표현 가능) → 분산 ↑ (데이터 잡음까지 따라감) → 잡음 $\sigma^2$은 그대로. 총 오차는 U자 곡선. 최적 용량은 그 골짜기. 잡음 $\sigma^2$는 베이즈 오차(환원 불가)이며 어떤 모델로도 줄일 수 없는 하한.
+        </div></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q6</span><span>학습 곡선의 네 가지 패턴과 각 패턴의 처방은? <span class="qx">+</span></span></div>
+        <div class="qa-a"><div class="qa-a-inner">
+          <span class="rel">→ <a href="06.html">Sec.6 학습 곡선</a></span>
+          (1) 두 곡선 모두 높은 곳 수렴 = 편향 문제(과소적합) → 모델 키우거나 특징 개선. (2) 훈련 낮고 검증 높음, 큰 갭 = 분산 문제(과적합) → 데이터 추가 / 정칙화 강화 / 모델 줄이기. (3) 둘 다 낮고 만남 = 잘 학습됨, 모형 변경 또는 새 특징. (4) 훈련 손실은 줄지만 검증 손실 다시 ↑ = epoch 단위 과적합 → 조기 종료.
+        </div></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q7</span><span>검증셋(validation)과 테스트셋(test)을 왜 구분해야 하는가? 한 셋으로 둘 다 하면 무슨 문제? <span class="qx">+</span></span></div>
+        <div class="qa-a"><div class="qa-a-inner">
+          <span class="rel">→ <a href="07.html">Sec.7 분할·교차검증</a></span>
+          하이퍼파라미터(학습률, 정칙화 계수, 모델 차수)를 검증셋에서 고른다. 그 과정에서 검증셋에 대한 간접 과적합이 일어남 (선택 자체가 데이터에 맞추는 행위). 테스트셋을 검증으로 쓰면 테스트 점수가 낙관적으로 부풀려져 실제 배포 성능을 과대평가. 그래서 테스트셋은 한 번만 보고, 그 점수는 수정 불가. 데이터 쪼개기: 보통 6:2:2 또는 7:1.5:1.5.
+        </div></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q8</span><span>k-Fold 교차검증의 절차와 $k$ 선택의 트레이드오프는? <span class="qx">+</span></span></div>
+        <div class="qa-a"><div class="qa-a-inner">
+          <span class="rel">→ <a href="07.html">Sec.7 분할·교차검증</a></span>
+          데이터를 $k$개 폴드로 나누고, 한 폴드를 검증으로 뺀 뒤 나머지로 학습. 이를 $k$번 반복해 각 폴드가 한 번씩 검증이 되게 한다. $k$개 점수의 평균이 교차검증 점수. $k$ ↑ → 편향 ↓ (각 학습에 더 많은 데이터), 분산 ↑ (학습 모델들이 강하게 상관), 계산 $k$배. $k=5$ 또는 $k=10$이 실무 표준. $k=N$이면 LOOCV. 분류는 층화 $k$-폴드를 써서 클래스 비율 유지.
+        </div></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q9</span><span>경험적 위험 최소화(ERM)의 정의와 이 약속이 깨지는 두 가지 경우는? <span class="qx">+</span></span></div>
+        <div class="qa-a"><div class="qa-a-inner">
+          <span class="rel">→ <a href="08.html">Sec.8 손실·ERM</a></span>
+          ERM: $\hat{R}(\theta) = \frac{1}{N}\sum_i L(f_\theta(x_i), y_i)$를 최소화. 큰 수의 법칙으로 $\hat{R} \to R = \mathbb{E}_{p_{\text{data}}}[L]$. 약속이 깨지는 두 경우: (1) 모델 용량이 너무 크고 데이터가 적으면 $\hat{R}$만 작아지고 $R$은 커짐(과적합). (2) i.i.d. 가정이 깨지면(분포 변화) $\hat{R}$ 작아도 $R$ 같이 작다는 보장 없음. 처방은 정칙화 항 추가.
+        </div></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q10</span><span>MSE, MAE, Huber 손실의 차이와 각각 어떤 잡음 분포의 MLE인가? <span class="qx">+</span></span></div>
+        <div class="qa-a"><div class="qa-a-inner">
+          <span class="rel">→ <a href="08.html">Sec.8 손실</a> · <a href="09.html">Sec.9 MLE</a></span>
+          MSE = $(y - \hat{y})^2$. 큰 오차 강하게 벌. 이상치에 민감. 가우시안 잡음 가정의 MLE. MAE = $|y - \hat{y}|$. 모든 오차 같은 기울기. 이상치에 강건. 라플라스 잡음 가정의 MLE. Huber = 작으면 MSE, 크면 MAE. 둘의 절충. MSE는 평균 예측, MAE는 중간값 예측.
+        </div></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q11</span><span>왜 우도 $L(\theta)$ 최대화 = $-\log L(\theta)$ 최소화인가? 곱이 아닌 로그합으로 푸는 이유는? <span class="qx">+</span></span></div>
+        <div class="qa-a"><div class="qa-a-inner">
+          <span class="rel">→ <a href="09.html">Sec.9 MLE</a></span>
+          (1) 로그는 단조증가 함수이므로 $\arg\max L = \arg\max \log L$. (2) 부호를 뒤집어 최대화를 최소화로 바꾸어도 해는 같음. 로그합을 쓰는 이유: 곱 → 합 변환이 수치적으로 안정(N개 확률의 곱은 underflow 발생). 미분도 단순해짐 ($\sum$의 미분은 각 항의 미분 합). 미니배치 SGD가 가능해지는 이유.
+        </div></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q12</span><span>회귀 문제에 MSE를 쓰는 것은 어떤 분포 가정의 MLE인가? 유도를 한 줄로 적어라. <span class="qx">+</span></span></div>
+        <div class="qa-a"><div class="qa-a-inner">
+          <span class="rel">→ <a href="09.html">Sec.9 MLE</a></span>
+          출력에 평균 $f(x;\theta)$, 분산 $\sigma^2$인 <strong>가우시안 잡음</strong>을 가정한 경우의 MLE. NLL을 풀어 적으면:
+          $$ -\log p(y \mid x, \theta) = \frac{(y - f_\theta(x))^2}{2\sigma^2} + \text{상수} $$
+          $\frac{1}{2\sigma^2}$은 양의 상수이므로 $\arg\min$이 바뀌지 않음. 결국 가우시안 가정의 MLE는 MSE 최소화와 같다. 분류에서 교차 엔트로피 = 베르누이/카테고리 가정 MLE도 같은 원리.
+        </div></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q13</span><span>분류 손실 NLL이 정보 이론의 교차 엔트로피와 같은 식인 이유는? <span class="qx">+</span></span></div>
+        <div class="qa-a"><div class="qa-a-inner">
+          <span class="rel">→ <a href="10.html">Sec.10 MLE = 교차 엔트로피</a></span>
+          정답이 클래스 $c$이면 진짜 분포 $p$는 one-hot. 교차 엔트로피 $H(p, q) = -\sum_k p(y=k) \log q(y=k)$에서 $p$가 $c$에서만 1이므로 다른 항이 0으로 사라지고 $-\log q(y=c)$만 남는다. 이것이 NLL. 즉 NLL = 교차 엔트로피의 한 특수 사례. 또 $H(p,q) = H(p) + D_{\text{KL}}(p \| q)$이므로 교차 엔트로피 최소화 = KL 발산 최소화 = 모델 분포를 진짜 분포에 가깝게.
+        </div></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q14</span><span>왜 분류에서 MSE보다 교차 엔트로피를 쓰는가? <span class="qx">+</span></span></div>
+        <div class="qa-a"><div class="qa-a-inner">
+          <span class="rel">→ <a href="10.html">Sec.10 MLE = 교차 엔트로피</a></span>
+          (1) MSE는 잘못 예측한 정답에 그라디언트가 작다. 시그모이드 출력에서 $\hat{p} = 0.01$, 정답 1일 때 MSE 그라디언트 ≈ 0.02. 학습 신호 약함. 교차 엔트로피는 $\hat{p} \to 0$일 때 그라디언트가 폭발적으로 커져 강하게 끌어올림. (2) MSE는 확률 거리 정직하게 못 잼. 같은 0.1 차이도 확률 0.5 근처와 0.01 근처에서 의미 다른데 MSE는 동일. 교차 엔트로피는 로그 스케일.
+        </div></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q15</span><span>베이지안 추정이 MLE와 다른 점은? 데이터가 많아지면 두 추정은 어떻게 되는가? <span class="qx">+</span></span></div>
+        <div class="qa-a"><div class="qa-a-inner">
+          <span class="rel">→ <a href="11.html">Sec.11 베이지안</a></span>
+          MLE: $\theta$가 고정 상수, 가장 그럴듯한 한 점 추정. 베이지안: $\theta$가 확률 변수, 사후 분포 $p(\theta \mid \mathcal{D}) \propto p(\mathcal{D} \mid \theta) p(\theta)$로 답. 데이터로 사전을 사후로 갱신. 베이지안 예측은 사후 분포로 평균: $p(x_{\text{new}} \mid \mathcal{D}) = \int p(x_{\text{new}} \mid \theta) p(\theta \mid \mathcal{D}) d\theta$. 데이터가 많아지면 사후가 한 점에 모이므로 베이지안 예측이 MLE 예측에 수렴.
+        </div></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q16</span><span>베이즈 정리의 한 줄 형태와 켤레 사전(conjugate prior)의 의미는? <span class="qx">+</span></span></div>
+        <div class="qa-a"><div class="qa-a-inner">
+          <span class="rel">→ <a href="11.html">Sec.11 베이지안</a></span>
+          $p(\theta \mid \mathcal{D}) \propto p(\mathcal{D} \mid \theta) \cdot p(\theta)$. 사후 ∝ 우도 × 사전. 분모 $p(\mathcal{D})$는 정규화 상수. 켤레 사전 = 우도와 같은 가족에 속해 사후도 같은 가족이 되는 사전. 베르누이↔베타, 가우시안↔가우시안, 다항↔디리클레. 닫힌 식 사후 계산이 가능한 거의 유일한 경우.
+        </div></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q17</span><span>MAP 추정의 식을 적고, MLE와 어떻게 다른지 설명하라. <span class="qx">+</span></span></div>
+        <div class="qa-a"><div class="qa-a-inner">
+          <span class="rel">→ <a href="12.html">Sec.12 MAP</a></span>
+          $\theta_{\text{MAP}} = \arg\max_\theta p(\mathcal{D} \mid \theta) p(\theta) = \arg\min_\theta [-\log p(\mathcal{D} \mid \theta) - \log p(\theta)]$. MLE는 우도만, MAP는 우도 × 사전. 균등 사전이면 MAP = MLE. 강한 사전이면 결과가 사전 쪽으로 끌려감. MAP는 사후 분포 전체가 아닌 최빈값 한 점만 답하는 점추정 — 베이지안 사고의 절반만 빌림.
+        </div></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q18</span><span>L2 정칙화가 가우시안 사전의 MAP가 되는 이유를 유도까지 적어라. <span class="qx">+</span></span></div>
+        <div class="qa-a"><div class="qa-a-inner">
+          <span class="rel">→ <a href="13.html">Sec.13 정칙화 = 가우시안 사전</a></span>
+          가중치 $w$에 평균 0, 분산 $\tau^2$의 가우시안 사전. $p(w) \propto \exp(-\|w\|_2^2/(2\tau^2))$. 음의 로그를 취하면 $-\log p(w) = \frac{1}{2\tau^2}\|w\|_2^2 + \text{상수}$. MAP 식 = $-\log p(\mathcal{D} \mid w) - \log p(w)$. 가우시안 잡음 가정에서 첫 항은 MSE $/(2\sigma^2)$. 합치면:
+          $$ w_{\text{MAP}} = \arg\min_w \|y - f_w(x)\|_2^2 + \lambda \|w\|_2^2 \;,\quad \lambda = \frac{\sigma^2}{\tau^2} $$
+          이것이 정확히 L2 정칙화 회귀(Ridge regression). $\lambda$는 잡음 분산/사전 분산의 비율. 비슷하게 L1 = 라플라스 사전 MAP.
+        </div></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q19</span><span>5장의 가정이 신경망에서 어떻게 깨지는가? 두 가지 결정적 차이를 적어라. <span class="qx">+</span></span></div>
+        <div class="qa-a"><div class="qa-a-inner">
+          <span class="rel">→ <a href="14.html">Sec.14 그라디언트 한계</a></span>
+          (1) 비볼록 손실 풍경: 선형회귀·로지스틱 회귀는 볼록이라 어디서 출발해도 같은 전역 최소에 도달. 신경망은 비선형 활성과 가중치 곱이 들어가 비볼록. 초기화에 따라 다른 해에 도달. (2) 고차원에서 임계점의 대다수는 안장점: 헤시안의 $d$개 고유값이 모두 같은 부호일 확률이 지수적으로 작음. 매개변수 수가 많은 신경망에서 거의 모든 임계점이 안장점. 그라디언트가 거의 0이라 학습 정체. 모멘텀·SGD 잡음·학습률 스케줄링 등이 8장의 해법.
+        </div></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q20</span><span>"평탄한 최소(flat minimum)가 날카로운 최소(sharp minimum)보다 좋다"는 가설의 직관은? <span class="qx">+</span></span></div>
+        <div class="qa-a"><div class="qa-a-inner">
+          <span class="rel">→ <a href="14.html">Sec.14 그라디언트 한계</a></span>
+          평탄한 최소는 헤시안 고유값이 작아 그 점 주변에서 손실이 거의 변하지 않음. 매개변수에 작은 잡음이 끼어도 손실 변화가 작아 강건. 베이지안 시점에서는 사후가 그 영역에 넓게 퍼져 있다는 뜻 = 안정적 해의 집합. 날카로운 최소는 한 점에서만 손실이 낮아 표본 변동에 흔들리기 쉬움. SGD 잡음이 날카로운 골짜기에서 튀어 나와 평탄 영역을 찾아간다는 가설이 신경망의 신비한 일반화를 설명하는 한 후보.
+        </div></div>
+      </div>
+
+    </div>
+
+    <h2 style="max-width: var(--measure); margin-inline: auto; padding-inline: 1.4rem">핵심 수식 9개 (한 페이지 컨닝쪽지)</h2>
+
+    <table class="form-table">
+      <thead>
+        <tr><th>이름</th><th>수식</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="eq">경험적 위험 (ERM)</td>
+          <td>$\hat{R}(\theta) = \frac{1}{N}\sum_i L(f_\theta(x_i), y_i)$. 큰 수의 법칙으로 $\hat{R} \to R$.</td>
+        </tr>
+        <tr>
+          <td class="eq">일반화 격차</td>
+          <td>$E_{\text{gen}} = E_{\text{test}} - E_{\text{train}}$. 작을수록 일반화. 신경망에서는 갭이 이론적 상한보다 훨씬 작다.</td>
+        </tr>
+        <tr>
+          <td class="eq">편향-분산 분해</td>
+          <td>$\mathbb{E}_D[(y - f_D(x_0))^2] = (\bar{f} - f^*)^2 + \mathrm{Var}(f_D) + \sigma^2$</td>
+        </tr>
+        <tr>
+          <td class="eq">MLE</td>
+          <td>$\theta_{\text{MLE}} = \arg\max_\theta \prod_i p(x_i \mid \theta) = \arg\min_\theta \big[-\sum_i \log p(x_i \mid \theta)\big]$</td>
+        </tr>
+        <tr>
+          <td class="eq">MSE = 가우시안 MLE</td>
+          <td>$-\log p(y \mid x, \theta) = \frac{(y - f_\theta(x))^2}{2\sigma^2} + \text{상수}$. NLL 최소화 = MSE 최소화.</td>
+        </tr>
+        <tr>
+          <td class="eq">교차 엔트로피</td>
+          <td>$H(p, q) = -\sum_k p_k \log q_k = H(p) + D_{\text{KL}}(p \| q)$. one-hot $p$이면 $-\log q_c$ (NLL).</td>
+        </tr>
+        <tr>
+          <td class="eq">베이즈 정리</td>
+          <td>$p(\theta \mid \mathcal{D}) \propto p(\mathcal{D} \mid \theta)\, p(\theta)$. 사후 ∝ 우도 × 사전. 분모 무시.</td>
+        </tr>
+        <tr>
+          <td class="eq">MAP</td>
+          <td>$\theta_{\text{MAP}} = \arg\min_\theta [-\log p(\mathcal{D} \mid \theta) - \log p(\theta)]$. 사전 로그가 정칙화 항.</td>
+        </tr>
+        <tr>
+          <td class="eq">L2 정칙화 = 가우시안 사전</td>
+          <td>$J(w) = \mathrm{NLL}(w) + \lambda \|w\|_2^2$, $\lambda = \sigma^2/\tau^2$. L1 = 라플라스 사전, 희소 해.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 style="max-width: var(--measure); margin-inline: auto; padding-inline: 1.4rem">일반화 진단 체크리스트</h2>
+
+    <div class="prose">
+      <p>실제 학습 결과를 다음 표 한 장으로 진단할 수 있다. 시험에서도 "이런 증상이면 무엇이 문제인가, 어떻게 고치는가" 형태의 응용 문제로 자주 출제된다.</p>
+    </div>
+
+    <table class="diag-table">
+      <thead>
+        <tr><th>증상</th><th>진단</th><th>처방</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>훈련 오차 큼<br>검증 오차도 큼<br>(두 오차 비슷)</td>
+          <td><b class="s1">과소적합 (Underfitting)</b><br>편향이 크다, 모델이 너무 단순</td>
+          <td>모델 용량 ↑ (층 추가, 차원 증가)<br>특징을 더 잘 설계<br>정칙화 줄이기 ($\lambda$ ↓)<br>학습을 더 오래</td>
+        </tr>
+        <tr>
+          <td>훈련 오차 작음<br>검증 오차 큼<br>(격차 큼)</td>
+          <td><b class="s2">과적합 (Overfitting)</b><br>분산이 크다, 모델이 잡음까지 외움</td>
+          <td>데이터 더 모으기<br>정칙화 ↑ ($\lambda$, dropout)<br>모델 용량 ↓<br>조기 종료 (early stopping)<br>데이터 증강</td>
+        </tr>
+        <tr>
+          <td>훈련 오차 작음<br>검증 오차 작음<br>(둘 다 잡음 한계 근처)</td>
+          <td><b class="s3">최적 학습</b><br>베이즈 오차에 근접, 더 얻을 게 적음</td>
+          <td>모형 자체를 바꾸기<br>(예: 선형 → 신경망)<br>또는 더 좋은 특징 발굴<br>또는 잡음 줄이기</td>
+        </tr>
+        <tr>
+          <td>훈련 손실은 줄지만<br>검증 손실이 다시 ↑</td>
+          <td>훈련 중간부터 과적합 시작</td>
+          <td><b>조기 종료</b><br>검증 손실 최소 지점에서 멈춤<br>(가중치 감쇠와 같은 효과)</td>
+        </tr>
+        <tr>
+          <td>훈련 데이터 추가에도<br>검증 오차 안 줄어듦</td>
+          <td>편향(=구조적 한계)이 지배<br>또는 잡음 한계 도달</td>
+          <td>용량 ↑ 또는 새 특징<br>데이터 양은 도움 안 됨</td>
+        </tr>
+        <tr>
+          <td>학습이 한 손실 값에<br>오래 머무름 (plateau)</td>
+          <td>안장점 근처 평탄 영역<br>그라디언트 작아 정체</td>
+          <td>모멘텀 추가<br>학습률 일시 상승<br>다른 초기화로 재시작</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 style="max-width: var(--measure); margin-inline: auto; padding-inline: 1.4rem">시험 전날 30분 복습 루트</h2>
+
+    <div class="prose">
+      <ol style="padding-left: 1.4rem">
+        <li><strong>5분</strong>: 위의 핵심 수식 9개를 손으로 한 번 적어보기. 특히 편향-분산 분해, MLE 정의, MAP = NLL + 사전 벌점, L2 = 가우시안 사전의 네 식은 외울 것.</li>
+        <li><strong>5분</strong>: <a href="05.html">Sec.5 편향-분산</a> 위젯에서 모델 복잡도 슬라이더를 좌→우로 옮기며 세 항이 어떻게 변하는지 입으로 설명. U자의 골짜기가 sweet spot.</li>
+        <li><strong>5분</strong>: <a href="09.html">Sec.9 MLE</a> 위젯에서 $\mu$를 양 끝으로 옮기며 우도와 NLL 곡선이 정확히 거울상으로 움직이는지 확인. 최댓값과 최솟값이 같은 위치(데이터 평균)에서 만남.</li>
+        <li><strong>5분</strong>: <a href="11.html">Sec.11 베이지안</a> 위젯에서 사전 강도 $\alpha, \beta$를 약함 → 강함으로 옮기며 사후가 데이터를 따르는 정도가 어떻게 변하는지 관찰.</li>
+        <li><strong>5분</strong>: <a href="13.html">Sec.13 정칙화</a> 위젯에서 사전 분산을 좁힘 → 평평으로 옮기며 가중치 막대와 적합 곡선이 어떻게 변하는지 본다. 정칙화 강도와 사전의 신뢰도가 일대일 대응.</li>
+        <li><strong>5분</strong>: 위 Q&A 20문제 중 한 번 막혔던 문제만 답을 가리고 30초씩 답해보고, 막힌 문제만 다시 펼쳐 확인.</li>
+      </ol>
+
+      <p>5장은 6장 이후 모든 신경망 단원의 해석 틀이다. 이 장의 언어(편향-분산, MLE, MAP, 정칙화, 일반화 격차)로 6-15장의 모든 결정을 다시 설명할 수 있어야 한다. 시험에서 어떤 응용 문제가 나오든, 그 답은 이 14개 sub-chapter 중 어느 칸에 들어가는지 분류할 수 있어야 한다. Sec.14에서 본 비볼록·안장점은 8장의 본문이며, 5장의 단순한 그림이 6-8장에서 본격적으로 흔들리는 첫 지점이다.</p>
+
+      <p style="margin-top: 2rem; font-family: var(--mono); font-size: .8rem; color: var(--ink-faint); text-align: center;">
+        2026-06-04 (목) 기말고사 · Chapter 5 완료 · 다음은 Chapter 6 깊은 순방향 신경망 →
+      </p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script src="../assets/widgets.js"></script>
+<script src="widgets-ch05.js"></script>
+<script>
+  window.addEventListener('load', () => {
+    NST.buildNav('15');
+    // Q&A 아코디언
+    document.querySelectorAll('.qa').forEach(qa => {
+      const q = qa.querySelector('.qa-q');
+      q.addEventListener('click', () => qa.classList.toggle('open'));
+    });
+  });
+</script>
+</body>
+</html>

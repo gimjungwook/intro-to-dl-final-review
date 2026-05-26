@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>08 — 분산 표상 1 — Ch.15</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .dist-stage { padding: 1.3rem 1.2rem 1rem; }
+  .dist-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .dist-panel { border: 1px solid var(--line); border-radius: 10px; padding: 1rem; background: #fff; }
+  .dist-panel h4 { margin: 0 0 .55rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .12em; color: var(--ink-faint); }
+  .dist-grid { display: grid; gap: 3px; padding: .3rem 0; }
+  .dist-cell { width: 14px; height: 14px; border-radius: 3px; background: var(--paper-sink); transition: background .15s, transform .15s; }
+  .dist-cell.on-onehot { background: var(--structure); transform: scale(1.05); }
+  .dist-cell.on-dist { background: var(--style); transform: scale(1.05); }
+  .dist-count { margin-top: .8rem; font-family: var(--mono); font-size: .82rem; color: var(--ink-soft); }
+  .dist-count b { color: var(--ink); font-size: .95rem; }
+  .dist-slider { display: flex; align-items: center; gap: .8rem; padding: .8rem 1.2rem; border-top: 1px solid var(--line-soft); background: var(--paper); }
+  .dist-slider label { font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); min-width: 4.5rem; }
+  .dist-slider input[type=range] { flex: 1; accent-color: var(--structure); }
+  .dist-slider .n-val { font-family: var(--mono); font-size: .9rem; color: var(--structure); min-width: 2rem; text-align: right; }
+  .dist-verdict { padding: 1rem 1.2rem; border-top: 1px solid var(--line-soft); background: var(--paper); font-size: .9rem; color: var(--ink-soft); line-height: 1.55; }
+  .dist-verdict b { color: var(--ink); }
+  @media (max-width: 640px) { .dist-row { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 08 — 일등 시민, 분산 표상</span>
+      <h1>분산 표상의 힘 1 — <span class="t-structure">지수적</span> 이득</h1>
+      <p class="lede">$n$개의 켜고 끄는 특징(feature)이 만드는 구성은 몇 가지일까. 한 줄이면 $n$, 독립적으로 켜고 끄면 $2^n$. 이 한 줄의 차이가 신경망이 일반화하는 모든 비밀의 출발점이다.</p>
+    </header>
+
+    <div class="prose">
+      <p>15장의 후반부 절반은 “분산 표상(distributed representation)”이라는 단 하나의 개념을 풀어낸다. 책의 표현을 빌리면, 분산 표상은 “표상이 어떤 의미인지를 여러 단위가 함께 결정하는 방식”이다. 반대 개념은 단일 단위 표상(symbolic / one-hot representation) — 표상이 어떤 의미인지를 단 하나의 단위가 단독으로 결정하는 방식이다. 이 둘의 차이는 표면적으로는 “벡터의 모양”에 불과해 보이지만, 일반화 능력의 차이로 들어가면 지수(exponent)의 차이를 만든다.</p>
+      <p>이 점이 책 전체를 통틀어 가장 중요한 시험 포인트 중 하나다. “분산 표상이 왜 좋은가”라는 질문이 객관식·서술형 어느 형태로도 자주 나온다. 결론을 한 줄로 외울 수 있다 — <strong>같은 자원으로 표현 가능한 개념의 수가 $n$에서 $2^n$으로 늘어나기 때문</strong>이다. 이 한 줄의 의미를 정확히 풀어 보자.</p>
+
+      <h2>One-hot 표상 — 한 칸만 켠다</h2>
+      <p>가장 단순한 표상 방식은 “카테고리당 한 칸”이다. 1,000개의 단어를 표현하려면 1,000차원 벡터를 쓰고, 단어 $i$는 “$i$번째 칸만 1, 나머지는 모두 0”인 벡터로 표현한다. 이를 one-hot 인코딩이라 한다. 이 방식의 특징은 명확하다 — 모든 단어가 서로 정확히 같은 거리(유클리드 거리 $\sqrt{2}$)에 떨어져 있다. “고양이”와 “호랑이”의 거리는 “고양이”와 “자동차”의 거리와 똑같다.</p>
+      <p>One-hot의 두 가지 치명적 문제. 첫째, <strong>차원의 비효율성</strong>. $N$개의 카테고리를 표현하려면 $N$차원이 필요하다. 단어 100만 개를 표현하려면 100만 차원 벡터. 둘째, <strong>일반화 불가능</strong>. 학습 데이터에서 본 적 없는 카테고리(예: 새 단어)는 표현조차 할 수 없고, 비슷한 의미의 카테고리 사이의 관계도 코딩할 수 없다. “고양이”와 “호랑이”가 가깝다는 사실이 표상에 들어 있지 않다.</p>
+
+      <h2>분산 표상 — 여러 칸이 함께 켜진다</h2>
+      <p>분산 표상은 정반대다. $n$차원 벡터의 각 칸은 “어떤 추상적 특징(feature)이 켜져 있는지”를 나타내고, 한 입력은 여러 칸이 동시에 켜진 패턴으로 표현된다. 예를 들어 단어 임베딩이 100차원이라면, 각 차원은 “이 단어가 동물인가”, “이 단어가 사물인가”, “이 단어가 형용사적인가”, “이 단어가 추상적인가” 같은 의미 축에 (어떤 의미로든) 대응한다. “고양이”는 “동물 +1, 사물 +1, 작음 +1, 부드러움 +1, 야생적 -0.3 …”과 같은 패턴으로 표현된다.</p>
+      <p>분산 표상의 정량적 이득은 단순한 조합 계산에서 나온다. $n$개의 이진 특징이 독립적으로 켜고 꺼질 수 있다면, 가능한 구성은 $2^n$개다. $n=20$이면 100만 개가 넘고, $n=30$이면 10억 개가 넘는다. 그러면서도 사용한 자원은 단지 $n$차원 벡터 한 개. one-hot이 같은 100만 개의 카테고리를 표현하려고 100만 차원을 썼다면, 분산 표상은 20차원만으로 끝낸다.</p>
+
+      <div class="math-block">$$ \underbrace{n \text{ 차원 분산 표상}}_{\text{자원}} \quad \longrightarrow \quad \underbrace{2^n \text{ 개 구성}}_{\text{표현 가능}} $$</div>
+      <p class="math-note">왼쪽은 “자원의 양(벡터 차원)”, 오른쪽은 “표현 가능한 서로 다른 구성의 수”. 자원이 선형으로 늘 때 표현력이 지수로 는다는 것이 핵심.</p>
+
+      <h2>왜 “일반화”까지 따라오는가</h2>
+      <p>지수적 자원 효율은 그 자체로도 인상적이지만, 책이 강조하는 진짜 가치는 <strong>일반화 능력</strong>이다. one-hot 표상에서는 어떤 한 카테고리에 대한 모델의 판단이 다른 카테고리의 판단과 완전히 독립이다. 학습 데이터에 “말티즈” 100장이 있고 “비숑” 0장이 있다면, 모델은 비숑에 대해 아무 말도 할 수 없다. 두 카테고리는 표상 공간에서 무관한 두 점이기 때문이다.</p>
+      <p>분산 표상은 다르다. “말티즈”의 표상이 “작은 + 흰색 + 곱슬털 + 강아지” 같은 특징 조합으로 코딩되어 있다면, “비숑”도 같은 특징 조합 근처에 자연스럽게 자리잡는다. 모델이 말티즈에서 학습한 “작은 흰 강아지에 대한 반응”이 비숑에도 자동으로 일부 전이된다. 본 적 없는 조합에 대한 일반화가 “표상 공간의 기하학” 자체에 새겨져 있다는 것이다.</p>
+
+      <div class="analogy">
+        <b>이름과 형용사 조합의 차이.</b> 한국어 이름 “수민·지민·서연·민수 …”는 one-hot에 가깝다. 한 이름에서 다른 이름을 추론할 수 없다. 반면 “키 큰 + 빨간 옷 + 안경 + 웃는 표정”이라는 형용사 조합은 분산 표상이다. 같은 “키 큰”이 “키 큰 + 파란 옷 + 안경 + 진지함”에도 그대로 적용된다. 사람 한 명을 “이름”으로 외운다면 1억 명에 1억 차원이 필요하지만, 다섯 가지 형용사 축으로 외운다면 $2^5 = 32$ 가지 조합 안에 1억 명 가까이를 펼쳐 둘 수 있다. 신경망 내부의 분산 표상이 사람을 외우는 방식이 후자다.
+      </div>
+
+      <h2>표현의 “경제학” — 같은 자원, 다른 표현력</h2>
+      <p>책의 표 15.1은 표상 방식별 자원 대비 표현력을 요약한다. $N$개의 입력을 코딩한다고 할 때, one-hot은 $N$차원이 필요하고 구성 가능한 카테고리는 정확히 $N$개. 분산 표상은 $\log_2 N$ 차원만 있으면 같은 $N$개 카테고리를 표현할 수 있고, 그러면서도 본 적 없는 조합까지 다룰 여지를 남긴다. 자원 절약비는 $N / \log_2 N$이고, 이는 $N$이 클수록 더 극적으로 벌어진다.</p>
+      <p>이 점이 신경망이 “파라미터를 적게 쓰면서도 거대한 입력 공간을 다룰 수 있는” 근본 이유다. CNN의 한 합성곱 필터가 “수직 모서리”라는 특징을 코딩하면, 그 필터는 이미지 전체에 적용되어 모든 위치의 수직 모서리를 한꺼번에 잡아낸다. RNN의 한 은닉 단위가 “문장의 시제”라는 특징을 코딩하면, 그 단위는 어떤 문장에도 시제 정보를 코딩한다. 한 단위가 한 특징을 책임지고, 여러 단위가 여러 특징을 함께 코딩하는 분산 표상이 신경망의 자원 효율과 일반화 능력의 공통 뿌리다.</p>
+
+      <div class="widget">
+        <div class="widget-frame">
+          <div class="widget-label"><span class="lab-no">위젯 08</span><span>One-hot vs 분산 표상 — 자원 대비 표현력 (n×n vs 2^n)</span></div>
+          <div class="dist-stage">
+            <div class="dist-row">
+              <div class="dist-panel">
+                <h4>One-hot — n 차원 = n 구성</h4>
+                <div class="dist-grid" id="oh-grid"></div>
+                <div class="dist-count">표현 가능한 구성 수: <b id="oh-cap">8</b> / 자원: <b id="oh-dim">8</b>차원</div>
+              </div>
+              <div class="dist-panel">
+                <h4>분산 — n 차원 = 2^n 구성</h4>
+                <div class="dist-grid" id="dist-grid"></div>
+                <div class="dist-count">표현 가능한 구성 수: <b id="dist-cap">256</b> / 자원: <b id="dist-dim">8</b>차원</div>
+              </div>
+            </div>
+          </div>
+          <div class="dist-slider">
+            <label>차원 n</label>
+            <input type="range" id="n-slider" min="2" max="12" value="8">
+            <span class="n-val" id="n-val">8</span>
+          </div>
+          <div class="dist-verdict" id="dist-v">
+            <b>n = 8.</b> 같은 8차원 벡터를 one-hot으로 쓰면 표현 가능한 구성은 8개뿐, 분산으로 쓰면 256개. 자원이 같은데 표현력은 32배 차이.
+          </div>
+        </div>
+        <p class="widget-cap">슬라이더로 차원 $n$을 바꿔 보자. one-hot의 표현력은 $n$에 비례, 분산의 표현력은 $2^n$에 비례. $n=12$만 되어도 차이가 4,096 / 12 ≈ 340배. 이 격차가 신경망의 자원 효율과 일반화 능력의 출발점이다.</p>
+      </div>
+
+      <h2>위 한계 — 분산 표상의 “함정”</h2>
+      <p>분산 표상이 만능은 아니다. 책이 두 가지 함정을 짚는다. 첫째, <strong>해석 가능성의 손실</strong>. one-hot은 “3번 칸이 켜졌으니 이 입력은 카테고리 3이다”라고 즉시 해석된다. 분산 표상은 “100차원 벡터의 어느 칸이 무엇을 뜻하는지” 자체가 학습 결과로 결정되므로, 사람이 직접 들여다봐도 의미를 읽기 어렵다. 이 점이 딥러닝의 “블랙박스” 비판이 자주 향하는 지점이다.</p>
+      <p>둘째, <strong>특징 간 독립성이 보장되지 않는다</strong>. $2^n$ 구성을 다 표현할 수 있다는 계산은 “$n$개의 특징이 진짜로 독립적”일 때만 성립한다. 학습된 표상에서 두 특징이 강하게 상관되어 있으면(예: “큰”과 “무거운”이 함께만 켜지면), 실제로 다룰 수 있는 구성은 $2^n$보다 훨씬 적다. 풀린(disentangled) 표상이 어려운 이유가 이것이다. 11절에서 다시 본다.</p>
+
+      <h2>핵심 어휘 정리</h2>
+      <table class="symbols">
+        <tr><td>one-hot 인코딩</td><td>$N$개 카테고리를 $N$차원으로 표현, 한 칸만 1.</td></tr>
+        <tr><td>분산 표상 (distributed representation)</td><td>여러 단위가 함께 의미를 결정. $n$차원으로 $2^n$ 구성 표현 가능.</td></tr>
+        <tr><td>임베딩 (embedding)</td><td>분산 표상의 대표 사례. 단어·이미지를 저차원 벡터로 매핑.</td></tr>
+        <tr><td>일반화 (generalization)</td><td>학습 시 본 적 없는 입력에 대한 합리적 출력 능력.</td></tr>
+        <tr><td>풀린 표상 (disentangled)</td><td>표상의 특징이 서로 독립으로 변할 수 있는 상태.</td></tr>
+      </table>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'좋은 표상이란', f:'01.html' },
+    { no:'02', t:'그리디 층별 사전훈련', f:'02.html' },
+    { no:'03', t:'비지도 사전훈련', f:'03.html' },
+    { no:'04', t:'지도 사전훈련', f:'04.html' },
+    { no:'05', t:'전이학습 1 — 도메인이 돕는 원리', f:'05.html' },
+    { no:'06', t:'전이학습 2 — 미세조정 실전', f:'06.html' },
+    { no:'07', t:'도메인 적응', f:'07.html' },
+    { no:'08', t:'분산 표상 1 — 지수적 이득', f:'08.html' },
+    { no:'09', t:'분산 표상 2 — 합성성·의미 산수', f:'09.html' },
+    { no:'10', t:'깊이의 지수적 표현력', f:'10.html' },
+    { no:'11', t:'인과 요소', f:'11.html' },
+    { no:'12', t:'반지도 학습', f:'12.html' },
+    { no:'13', t:'사전으로서의 정칙화', f:'13.html' },
+    { no:'14', t:'시험 대비', f:'14.html' },
+  ];
+  const CURRENT = '08';
+  (function buildNav() {
+    document.querySelector('.topbar').innerHTML =
+      `<a class="home" href="index.html">← Chapter 15 — 표상 학습</a>` +
+      `<span class="ch-mini">SUB ${CURRENT} / 14</span>`;
+    document.querySelector('.ch-nav ol').innerHTML = SUBS.map(s =>
+      `<li><a href="${s.f}" ${s.no === CURRENT ? 'class="current"' : ''}>${s.t}</a></li>`).join('');
+    const i = SUBS.findIndex(s => s.no === CURRENT);
+    const prev = i > 0 ? SUBS[i-1] : { f:'index.html', t:'챕터 표지', no:'' };
+    const next = i < SUBS.length-1 ? SUBS[i+1] : { f:'index.html', t:'챕터 표지', no:'' };
+    document.querySelector('.ch-foot').innerHTML =
+      `<a href="${prev.f}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+      `<a href="${next.f}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+    const bar = document.querySelector('.scroll-progress');
+    const onScroll = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    document.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+  })();
+
+  (function distWidget() {
+    const ohGrid = document.getElementById('oh-grid');
+    const distGrid = document.getElementById('dist-grid');
+    const ohCap = document.getElementById('oh-cap');
+    const distCap = document.getElementById('dist-cap');
+    const ohDim = document.getElementById('oh-dim');
+    const distDim = document.getElementById('dist-dim');
+    const nSlider = document.getElementById('n-slider');
+    const nVal = document.getElementById('n-val');
+    const verdict = document.getElementById('dist-v');
+
+    function render(n) {
+      // one-hot grid: n cells in a single row, one on at a time (rotating)
+      ohGrid.style.gridTemplateColumns = `repeat(${n}, 1fr)`;
+      ohGrid.innerHTML = '';
+      const onIdx = Math.floor(Date.now() / 600) % n;
+      for (let i = 0; i < n; i++) {
+        const c = document.createElement('div');
+        c.className = 'dist-cell' + (i === onIdx ? ' on-onehot' : '');
+        ohGrid.appendChild(c);
+      }
+      // distributed grid: n cells, each independently on/off based on a binary count
+      distGrid.style.gridTemplateColumns = `repeat(${n}, 1fr)`;
+      distGrid.innerHTML = '';
+      const pattern = Math.floor(Date.now() / 600) % Math.pow(2, n);
+      for (let i = 0; i < n; i++) {
+        const c = document.createElement('div');
+        const on = (pattern >> i) & 1;
+        c.className = 'dist-cell' + (on ? ' on-dist' : '');
+        distGrid.appendChild(c);
+      }
+      const ohCapN = n;
+      const distCapN = Math.pow(2, n);
+      ohCap.textContent = ohCapN;
+      distCap.textContent = distCapN.toLocaleString();
+      ohDim.textContent = n;
+      distDim.textContent = n;
+      const ratio = Math.round(distCapN / ohCapN);
+      verdict.innerHTML = `<b>n = ${n}.</b> 같은 ${n}차원 벡터를 one-hot으로 쓰면 표현 가능한 구성은 ${ohCapN}개뿐, 분산으로 쓰면 ${distCapN.toLocaleString()}개. 자원이 같은데 표현력은 <b>${ratio.toLocaleString()}배</b> 차이.`;
+    }
+
+    let currN = parseInt(nSlider.value, 10);
+    render(currN);
+    setInterval(() => render(currN), 600);
+
+    nSlider.addEventListener('input', () => {
+      currN = parseInt(nSlider.value, 10);
+      nVal.textContent = currN;
+      render(currN);
+    });
+  })();
+
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
+        throwOnError: false,
+      });
+    }
+  });
+</script>
+</body>
+</html>

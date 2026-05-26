@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ch.09 · 13 아키텍처 2 — VGG와 Inception</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .ki-stage { display: grid; grid-template-columns: 1fr 1fr; gap: 1.1rem; padding: 1.4rem 1.4rem 1rem; }
+  .ki-cell { background: var(--paper); border: 1px solid var(--line); border-radius: 9px; padding: .85rem; }
+  .ki-cell h5 { margin: 0 0 .4rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .12em; color: var(--ink-faint); text-transform: uppercase; }
+  .ki-cell svg { width: 100%; height: 260px; display: block; background: #fff; border-radius: 6px; border: 1px solid var(--line-soft); }
+  .ki-cell .meta { font-family: var(--mono); font-size: .8rem; color: var(--ink-soft); margin-top: .5rem; line-height: 1.8; padding: .4rem .7rem; background: var(--paper-2); border-radius: 6px; }
+  .ki-cell .meta b { color: var(--ink); }
+  .ki-cell .meta .h { color: var(--style); font-weight: 600; }
+  .ki-controls { display: flex; flex-wrap: wrap; gap: 1rem; padding: .8rem 1.2rem 1rem; border-top: 1px solid var(--line-soft); background: var(--paper); font-size: .88rem; }
+  @media (max-width: 720px) { .ki-stage { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Ch.09 · Sub 13 · 아키텍처 (2/3)</span>
+      <h1>VGG와 Inception<br><span class="t-style">작은 커널</span>과 <span class="t-style">다중 가지</span></h1>
+      <p class="lede">AlexNet 다음 해, ILSVRC 2014는 두 모델이 동시에 빛났다. VGG는 "3x3 커널을 무식하게 깊이 쌓는다"는 단순한 답을, GoogLeNet/Inception은 "한 층 안에 여러 커널 크기를 병렬로"라는 화려한 답을 내놓았다.</p>
+    </header>
+
+    <div class="prose">
+      <p>2014년 ILSVRC에서 VGGNet과 GoogLeNet은 거의 동시에 등장했다. 둘은 같은 문제 — "AlexNet보다 더 깊고 더 정확한 모델을 만드는 법" — 에 정반대 답을 냈다. VGG는 "단순함을 통한 우아함"으로, Inception은 "복잡함을 통한 효율"로. 두 답은 이후 CNN 설계 철학의 두 큰 흐름이 되었다.</p>
+
+      <h2>VGGNet — 무식할 정도로 단순한 깊이</h2>
+
+      <p>옥스퍼드 Visual Geometry Group(VGG)의 Karen Simonyan과 Andrew Zisserman은 2014년 단순한 질문을 던졌다. <strong>"작은 커널(3x3)만 써서 깊이 쌓으면 어떻게 될까?"</strong> AlexNet의 11x11, 5x5 같은 큰 커널을 다 빼고, 모든 합성곱을 3x3 한 종류로 통일했다. 풀링은 2x2 max로 통일했다. 채널은 64로 시작해 깊이가 깊어질 때마다 두 배씩 늘렸다(64 → 128 → 256 → 512 → 512).</p>
+
+      <p>가장 유명한 변형이 VGG-16(16층)과 VGG-19(19층)다. 구조는 다음과 같다(VGG-16 기준).</p>
+
+      <div class="math-block">$$ \underbrace{[\text{C64}]\times 2}_{\text{block 1}} \to P \to \underbrace{[\text{C128}]\times 2}_{\text{block 2}} \to P \to \underbrace{[\text{C256}]\times 3}_{\text{block 3}} \to P \to \underbrace{[\text{C512}]\times 3}_{\text{block 4}} \to P \to \underbrace{[\text{C512}]\times 3}_{\text{block 5}} \to P \to \text{FC} \cdot 3 $$</div>
+      <p class="math-note">[C64] = 3x3 합성곱 64채널. ×2는 두 번 반복. P는 2x2 max pool. 합성곱 13층 + 완전연결 3층 = 16층.</p>
+
+      <h2>3x3 두 층 vs 5x5 한 층 — VGG의 핵심 통찰</h2>
+
+      <p>VGG의 핵심 주장은 11번에서 본 수용 영역 비교와 직결된다. 같은 5x5 수용 영역을 만드는 두 방법을 다시 정리하자.</p>
+
+      <table>
+        <thead><tr><th>구성</th><th>수용 영역</th><th>파라미터 (한 채널)</th><th>비선형성</th><th>FLOPs</th></tr></thead>
+        <tbody>
+          <tr><td>5x5 한 층</td><td>5x5</td><td>25</td><td>1번</td><td>$25 \cdot W^2$</td></tr>
+          <tr><td>3x3 두 층</td><td>5x5</td><td>9 + 9 = 18</td><td>2번</td><td>$18 \cdot W^2$</td></tr>
+          <tr><td>7x7 한 층</td><td>7x7</td><td>49</td><td>1번</td><td>$49 \cdot W^2$</td></tr>
+          <tr><td>3x3 세 층</td><td>7x7</td><td>27</td><td>3번</td><td>$27 \cdot W^2$</td></tr>
+        </tbody>
+      </table>
+
+      <p>표가 말하는 것은 분명하다. 같은 수용 영역을 만들면서 3x3을 여러 층 쌓으면 (1) 파라미터가 더 적고, (2) 비선형성(ReLU)이 더 많이 들어가고, (3) 계산량도 더 적다. 세 가지가 동시에 좋다.</p>
+
+      <p>비선형성이 많은 게 왜 좋은가. 한 비선형성을 거치면 모델이 표현할 수 있는 함수의 복잡도가 한 단계 올라간다. ReLU 같은 비선형성을 두 번 거치면 "두 단계 복잡한 함수"를 표현할 수 있다. 5x5 한 층은 비선형성 한 번만 거치므로, 3x3 두 층보다 표현력이 떨어진다. 같은 수용 영역, 더 적은 파라미터, 더 강한 표현력 — 그래서 3x3이 표준이 되었다.</p>
+
+      <h2>VGG의 단점 — 무식한 깊이의 비용</h2>
+
+      <p>VGG는 우아하지만 비싸다. VGG-16의 가중치 수는 1억 3{,}800만 개, AlexNet의 약 2.3배다. 그중 대부분(약 1억 2{,}000만)이 마지막 세 완전연결 층에 있다. 학습 시간이 길고, 저장 공간이 크고, 추론 속도가 느리다.</p>
+
+      <p>이 비효율을 해결하려는 노력이 두 갈래로 진행됐다. 한 갈래는 GoogLeNet/Inception — 같은 층 안에 여러 커널 크기를 두는 영리한 구조. 다른 갈래는 14번에서 볼 ResNet — 잔차 연결로 깊이를 늘리되 파라미터는 통제.</p>
+
+      <h2>GoogLeNet/Inception — 한 층 안에 여러 시야</h2>
+
+      <p>2014년 구글의 Christian Szegedy 등은 <strong>GoogLeNet</strong>을 발표했다. 별명은 LeNet에 대한 오마주. 핵심 아이디어가 <strong>Inception 모듈</strong>이다. "한 층에서 어떤 커널 크기를 쓸지 정하기 어렵다 — 그러면 여러 커널을 동시에 쓰고 결과를 합치자"는 발상이다.</p>
+
+      <p>Inception 모듈은 같은 입력 특징맵에 1x1, 3x3, 5x5 합성곱과 3x3 max pool을 동시에 적용하고, 출력을 채널 방향으로 이어 붙인다.</p>
+
+      <div class="math-block">$$ \text{Inception}(X) = \text{Concat}\big[\text{Conv}_{1\times1}(X),\ \text{Conv}_{3\times3}(X),\ \text{Conv}_{5\times5}(X),\ \text{MaxPool}(X)\big] $$</div>
+      <p class="math-note">X는 입력 특징맵. 네 가지 연산을 병렬로 수행한 뒤 채널 방향으로 이어 붙인다. 결과는 더 다양한 수용 영역의 특징을 한꺼번에 잡는다.</p>
+
+      <p>이 아이디어의 직관은 11번 수용 영역과 직결된다. 한 층 안에 작은 수용 영역(1x1, 3x3)과 큰 수용 영역(5x5, pool)을 동시에 두면, 그 층의 출력은 미세한 패턴부터 큰 패턴까지 다 잡은 풍부한 특징이 된다. 다음 층은 그 풍부한 특징 위에서 학습하므로 더 다양한 조합을 만들 수 있다.</p>
+
+      <h2>1x1 합성곱 — Inception이 발견한 마법의 부품</h2>
+
+      <p>Inception이 도입한 또 하나의 핵심 부품이 <strong>1x1 합성곱</strong>이다. 한 변이 1인 커널은 공간 정보를 합치지 않고, 채널 정보만 합친다. 한 픽셀의 모든 채널을 가중합해서 새 채널을 만든다. 그런데 이게 왜 중요한가.</p>
+
+      <p>이유는 두 가지다. <strong>첫째, 채널 수를 줄여 계산량을 절감한다.</strong> 입력 채널 256, 출력 채널 128로 만드는 1x1 합성곱은 256 × 128 = 32{,}768개 가중치만 쓴다. 같은 일을 3x3으로 하면 256 × 9 × 128 = 294{,}912개. 9배 절감. 이를 "병목(bottleneck)"이라 부르며, Inception과 ResNet 모두 핵심으로 쓴다.</p>
+
+      <p><strong>둘째, 채널 사이 비선형 결합을 만든다.</strong> 1x1 합성곱 + ReLU는 "한 픽셀의 채널 벡터에 작은 MLP를 적용"하는 것과 같다. 채널 사이의 복잡한 패턴(예: "이 채널과 저 채널이 동시에 강하면 새 채널을 활성화")을 학습할 수 있다.</p>
+
+      <p>1x1 합성곱은 Inception에서 처음 빛났지만, 이후 ResNet, MobileNet, EfficientNet 등 거의 모든 현대 아키텍처의 핵심 부품이다. 시험에서 "1x1 합성곱이 왜 유용한가"를 물으면, 이 두 답이 표준이다.</p>
+
+      <h2>GoogLeNet의 다른 영리한 장치들</h2>
+
+      <p>GoogLeNet은 Inception 외에도 몇 가지 영리한 장치를 더했다.</p>
+
+      <p><strong>Global Average Pooling (GAP).</strong> 마지막 합성곱 출력 전체를 채널별 평균값 하나로 줄였다. 7x7 공간을 1x1로 축소. 그 결과 완전연결 분류기가 1{,}024 → 1{,}000 한 층만 있으면 됐다. AlexNet/VGG의 4{,}096 × 4{,}096 완전연결이 만든 파라미터 폭발을 한 번에 해결.</p>
+
+      <p><strong>보조 분류기(auxiliary classifier).</strong> 깊은 네트워크의 중간에서 두 개의 보조 분류기를 두고, 학습 시 그 손실도 함께 최소화했다. 기울기가 깊은 네트워크의 앞쪽 층까지 흘러가게 돕는 장치다(이후 ResNet의 잔차 연결로 대체).</p>
+
+      <p>이 두 장치 덕에 GoogLeNet은 22층 깊이임에도 가중치가 약 600만 개 — AlexNet의 1/10, VGG-16의 1/23 수준이었다. ILSVRC 2014에서 VGG보다 약간 더 좋은 top-5 오류 6.7%로 우승.</p>
+
+      <h2>두 답의 비교 — 단순 vs 영리</h2>
+
+      <p>VGG와 Inception의 비교를 한 표로 정리하자.</p>
+
+      <table>
+        <thead><tr><th>측면</th><th>VGG-16</th><th>GoogLeNet (v1)</th></tr></thead>
+        <tbody>
+          <tr><td>깊이</td><td>16층 (Conv 13 + FC 3)</td><td>22층 (Inception 9 + Conv + FC)</td></tr>
+          <tr><td>가중치 수</td><td>1억 3{,}800만</td><td>약 600만</td></tr>
+          <tr><td>top-5 오류 (2014)</td><td>7.3% (단일)</td><td>6.7%</td></tr>
+          <tr><td>설계 철학</td><td>3x3 단일 커널, 단순 반복</td><td>여러 커널 병렬, 1x1 병목</td></tr>
+          <tr><td>구현·이해 난이도</td><td>매우 쉬움</td><td>꽤 복잡</td></tr>
+          <tr><td>오늘날 사용</td><td>벤치마크·교육용</td><td>Inception v2/v3/v4로 진화</td></tr>
+        </tbody>
+      </table>
+
+      <p>실전에서는 VGG가 더 자주 인용되고 구현된다 — 단순하고 이해하기 쉬워서 새 기법의 비교 베이스라인으로 자주 쓰인다. Inception은 후속 v2, v3, v4로 진화하며 계산 효율과 정확도가 더 좋아졌고, 모바일 추론 모델(MobileNet, EfficientNet)의 1x1 병목 설계로 이어졌다.</p>
+
+      <p>아래 위젯은 VGG 블록과 Inception 모듈을 나란히 시각화한다. 같은 입력에 어떤 구조가 가해지는지 한눈에 비교된다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 13</span><span>VGG 블록 vs Inception 모듈 — 같은 입력 다른 설계</span></div>
+        <div class="ki-stage">
+          <div class="ki-cell">
+            <h5>VGG 블록 — 3x3 단순 반복</h5>
+            <svg viewBox="0 0 320 260">
+              <rect x="120" y="10" width="80" height="22" fill="#7BA7B9" rx="3" />
+              <text x="160" y="25" text-anchor="middle" font-family="Spline Sans Mono, monospace" font-size="10" fill="#fff">입력 특징맵</text>
+
+              <line x1="160" y1="32" x2="160" y2="50" stroke="#8E8576" stroke-width="1.5" />
+              <rect x="100" y="50" width="120" height="28" fill="#C0492E" rx="3" />
+              <text x="160" y="68" text-anchor="middle" font-family="Spline Sans Mono, monospace" font-size="11" fill="#fff">3x3 Conv + ReLU</text>
+
+              <line x1="160" y1="78" x2="160" y2="96" stroke="#8E8576" stroke-width="1.5" />
+              <rect x="100" y="96" width="120" height="28" fill="#C0492E" rx="3" />
+              <text x="160" y="114" text-anchor="middle" font-family="Spline Sans Mono, monospace" font-size="11" fill="#fff">3x3 Conv + ReLU</text>
+
+              <line x1="160" y1="124" x2="160" y2="142" stroke="#8E8576" stroke-width="1.5" />
+              <rect x="100" y="142" width="120" height="28" fill="#C0492E" rx="3" />
+              <text x="160" y="160" text-anchor="middle" font-family="Spline Sans Mono, monospace" font-size="11" fill="#fff">3x3 Conv + ReLU</text>
+
+              <line x1="160" y1="170" x2="160" y2="188" stroke="#8E8576" stroke-width="1.5" />
+              <rect x="120" y="188" width="80" height="28" fill="#9C6FA8" rx="3" />
+              <text x="160" y="206" text-anchor="middle" font-family="Spline Sans Mono, monospace" font-size="10" fill="#fff">2x2 MaxPool</text>
+
+              <line x1="160" y1="216" x2="160" y2="232" stroke="#8E8576" stroke-width="1.5" />
+              <rect x="120" y="232" width="80" height="22" fill="#7BA7B9" rx="3" />
+              <text x="160" y="247" text-anchor="middle" font-family="Spline Sans Mono, monospace" font-size="10" fill="#fff">출력 특징맵</text>
+            </svg>
+            <div class="meta">3x3 합성곱을 <b>순차로</b> 2-3번, 마지막에 2x2 max pool. 한 종류 커널, 단순 반복. <span class="h">수용 영역 5x5 또는 7x7</span>이 같은 수용 영역의 5x5/7x7 한 층보다 파라미터 적고 비선형성 많음.</div>
+          </div>
+          <div class="ki-cell">
+            <h5>Inception 모듈 — 여러 커널 병렬</h5>
+            <svg viewBox="0 0 320 260">
+              <rect x="120" y="10" width="80" height="22" fill="#7BA7B9" rx="3" />
+              <text x="160" y="25" text-anchor="middle" font-family="Spline Sans Mono, monospace" font-size="10" fill="#fff">입력 특징맵</text>
+
+              <line x1="160" y1="32" x2="40" y2="60" stroke="#8E8576" stroke-width="1" />
+              <line x1="160" y1="32" x2="120" y2="60" stroke="#8E8576" stroke-width="1" />
+              <line x1="160" y1="32" x2="200" y2="60" stroke="#8E8576" stroke-width="1" />
+              <line x1="160" y1="32" x2="280" y2="60" stroke="#8E8576" stroke-width="1" />
+
+              <rect x="14" y="60" width="60" height="24" fill="#C0492E" rx="3" />
+              <text x="44" y="76" text-anchor="middle" font-family="Spline Sans Mono, monospace" font-size="10" fill="#fff">1x1 Conv</text>
+
+              <rect x="86" y="60" width="60" height="24" fill="#E89A2C" rx="3" />
+              <text x="116" y="76" text-anchor="middle" font-family="Spline Sans Mono, monospace" font-size="10" fill="#fff">1x1 (감소)</text>
+              <line x1="116" y1="84" x2="116" y2="102" stroke="#8E8576" stroke-width="1" />
+              <rect x="86" y="102" width="60" height="24" fill="#C0492E" rx="3" />
+              <text x="116" y="118" text-anchor="middle" font-family="Spline Sans Mono, monospace" font-size="10" fill="#fff">3x3 Conv</text>
+
+              <rect x="172" y="60" width="60" height="24" fill="#E89A2C" rx="3" />
+              <text x="202" y="76" text-anchor="middle" font-family="Spline Sans Mono, monospace" font-size="10" fill="#fff">1x1 (감소)</text>
+              <line x1="202" y1="84" x2="202" y2="102" stroke="#8E8576" stroke-width="1" />
+              <rect x="172" y="102" width="60" height="24" fill="#C0492E" rx="3" />
+              <text x="202" y="118" text-anchor="middle" font-family="Spline Sans Mono, monospace" font-size="10" fill="#fff">5x5 Conv</text>
+
+              <rect x="248" y="60" width="60" height="24" fill="#9C6FA8" rx="3" />
+              <text x="278" y="76" text-anchor="middle" font-family="Spline Sans Mono, monospace" font-size="10" fill="#fff">3x3 Pool</text>
+              <line x1="278" y1="84" x2="278" y2="102" stroke="#8E8576" stroke-width="1" />
+              <rect x="248" y="102" width="60" height="24" fill="#E89A2C" rx="3" />
+              <text x="278" y="118" text-anchor="middle" font-family="Spline Sans Mono, monospace" font-size="10" fill="#fff">1x1 (감소)</text>
+
+              <line x1="44" y1="84" x2="160" y2="160" stroke="#8E8576" stroke-width="1" />
+              <line x1="116" y1="126" x2="160" y2="160" stroke="#8E8576" stroke-width="1" />
+              <line x1="202" y1="126" x2="160" y2="160" stroke="#8E8576" stroke-width="1" />
+              <line x1="278" y1="126" x2="160" y2="160" stroke="#8E8576" stroke-width="1" />
+
+              <rect x="80" y="160" width="160" height="28" fill="#6F8C3A" rx="3" />
+              <text x="160" y="178" text-anchor="middle" font-family="Spline Sans Mono, monospace" font-size="11" fill="#fff">Concat (채널 방향)</text>
+
+              <line x1="160" y1="188" x2="160" y2="208" stroke="#8E8576" stroke-width="1.5" />
+              <rect x="120" y="208" width="80" height="22" fill="#7BA7B9" rx="3" />
+              <text x="160" y="223" text-anchor="middle" font-family="Spline Sans Mono, monospace" font-size="10" fill="#fff">출력 특징맵</text>
+            </svg>
+            <div class="meta">한 입력에 <b>네 가지 연산을 병렬로</b> (1x1, 3x3, 5x5, MaxPool). 3x3와 5x5 전에 <span class="h">1x1 병목</span>으로 채널 줄여 계산량 절감. 결과를 채널 방향으로 이어 붙임. <span class="h">한 층에 다양한 수용 영역</span>이 동시에.</div>
+          </div>
+        </div>
+        <div class="ki-controls">
+          <span style="font-family:var(--mono);font-size:.78rem;color:var(--ink-soft)">설계 철학 차이: VGG는 <b>단순 깊이</b>, Inception은 <b>너비와 다양성</b>.</span>
+        </div>
+      </div>
+      <p class="widget-cap">VGG는 같은 3x3을 순차로 쌓는다(왼쪽). Inception은 같은 입력에 여러 커널을 동시에 적용하고 결과를 합친다(오른쪽). 가중치 수는 Inception이 훨씬 적다 — 1x1 병목으로 채널을 미리 줄이기 때문. 그러나 Inception은 구현이 복잡해서 실험·교육에서는 VGG가 더 자주 쓰인다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>아키텍처 2 한 줄 정리</h2>
+      <ul class="checklist">
+        <li>VGG (2014): 모든 합성곱을 3x3으로 통일, 풀링 2x2 max, 채널 두 배씩 증가. 16-19층.</li>
+        <li>3x3 두 층 = 5x5 한 층 수용 영역 + 더 적은 파라미터(18 vs 25) + 더 많은 비선형성.</li>
+        <li>VGG-16 가중치 1.38억 (대부분이 완전연결 4{,}096 두 층).</li>
+        <li>GoogLeNet/Inception (2014): 한 모듈 안에 1x1, 3x3, 5x5, pool 병렬 + Concat.</li>
+        <li>1x1 합성곱: (1) 채널 줄여 계산 절감(병목), (2) 채널 사이 비선형 결합.</li>
+        <li>GAP (Global Average Pooling): 마지막 합성곱 전체를 채널별 평균으로 → 완전연결 거의 제거.</li>
+        <li>GoogLeNet 22층 가중치 약 600만 (VGG의 1/23, AlexNet의 1/10).</li>
+        <li>이후 1x1 병목 설계는 ResNet, MobileNet, EfficientNet 등 거의 모든 현대 모델의 표준.</li>
+      </ul>
+
+      <p>다음 14번에서는 깊이의 마지막 도약 — 152층 이상을 가능케 한 ResNet의 잔차 연결을 본다. 단순히 층을 쌓으면 왜 오히려 나빠지는가, 그 문제를 F(x)+x라는 한 줄이 어떻게 푸는가의 이야기다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const CHAPTERS = [
+    { no:'01', t:'완전연결의 파라미터 폭발' },
+    { no:'02', t:'합성곱이란 무엇인가' },
+    { no:'03', t:'1D 합성곱 — 시간 신호' },
+    { no:'04', t:'2D 합성곱 — 이미지 커널' },
+    { no:'05', t:'희소 상호작용' },
+    { no:'06', t:'파라미터 공유' },
+    { no:'07', t:'변환 등가성' },
+    { no:'08', t:'풀링 — max vs avg' },
+    { no:'09', t:'신경과학적 기원' },
+    { no:'10', t:'출력 크기 공식' },
+    { no:'11', t:'수용 영역' },
+    { no:'12', t:'아키텍처 1 — LeNet, AlexNet' },
+    { no:'13', t:'아키텍처 2 — VGG, Inception' },
+    { no:'14', t:'아키텍처 3 — ResNet' },
+    { no:'15', t:'시험 대비 — 30+ 질문' },
+  ];
+  const CUR = '13';
+  document.querySelector('.topbar').innerHTML = '<a class="home" href="index.html">← Ch.09 CNN 표지</a><span class="ch-mini">SUB ' + CUR + ' / 15</span>';
+  document.querySelector('.ch-nav ol').innerHTML = CHAPTERS.map(c => '<li><a href="' + c.no + '.html"' + (c.no===CUR?' class="current"':'') + '>' + c.t + '</a></li>').join('');
+  const idx = CHAPTERS.findIndex(c=>c.no===CUR);
+  const prev = idx>0 ? CHAPTERS[idx-1] : { no:'', t:'표지로', _:'index.html' };
+  const next = idx<CHAPTERS.length-1 ? CHAPTERS[idx+1] : { no:'', t:'표지로', _:'index.html' };
+  document.querySelector('.ch-foot').innerHTML =
+    '<a href="' + (prev._||prev.no+'.html') + '"><div class="dir">← 이전</div><div class="ti">' + prev.t + '</div></a>' +
+    '<a href="' + (next._||next.no+'.html') + '" class="next"><div class="dir">다음 →</div><div class="ti">' + next.t + '</div></a>';
+
+  const bar = document.querySelector('.scroll-progress');
+  document.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max > 0 ? (h.scrollTop/max)*100 : 0) + '%';
+  }, { passive: true });
+
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, { delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}], throwOnError: false });
+    }
+  });
+</script>
+</body>
+</html>

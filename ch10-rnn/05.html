@@ -3,419 +3,221 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ch.10 · 05 LSTM·GRU 게이트</title>
+<title>05 · BPTT 1 — 시간을 거슬러 가는 역전파</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
-  .scroll-progress { position: fixed; top: 0; left: 0; height: 3px; background: var(--style); width: 0; z-index: 999; transition: width .1s; }
-  .topbar { position: fixed; top: 0; left: 0; right: 0; padding: .55rem 1.2rem; background: rgba(250,247,240,.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line-soft); display: flex; justify-content: space-between; align-items: center; z-index: 100; font-family: var(--mono); font-size: .72rem; }
-  .topbar a.home { color: var(--ink-soft); text-decoration: none; letter-spacing: .1em; }
-  .topbar a.home:hover { color: var(--ink); }
-  .topbar .ch-mini { color: var(--ink-faint); letter-spacing: .14em; }
-  .ch-main { max-width: 44rem; margin: 4.5rem auto 0; padding: 2rem 0 6rem; }
-  .ch-head { max-width: var(--measure); margin: 0 auto 2.4rem; padding-inline: 1.4rem; }
-  .ch-head .kicker { display: block; margin-bottom: 1rem; }
-  .ch-head h1 { font-size: clamp(2rem, 5vw, 3.3rem); margin: 0 0 .8rem; line-height: 1.1; }
-  .ch-head .lede { font-family: var(--serif); font-size: 1.22rem; font-style: italic; color: var(--ink-soft); line-height: 1.5; }
-  .ch-foot { display: flex; justify-content: space-between; gap: 1rem; max-width: var(--measure); margin: 4rem auto 0; padding-inline: 1.4rem; }
-  .ch-foot a { display: block; text-decoration: none; flex: 1; padding: 1rem 1.2rem; border: 1px solid var(--line); border-radius: 10px; transition: border-color .15s, transform .15s; }
-  .ch-foot a:hover { border-color: var(--structure); transform: translateY(-2px); }
-  .ch-foot .dir { font-family: var(--mono); font-size: .7rem; letter-spacing: .14em; color: var(--ink-faint); text-transform: uppercase; }
-  .ch-foot .ti { font-family: var(--serif); font-size: 1.05rem; color: var(--ink); margin-top: .2rem; }
-  .ch-foot .next { text-align: right; }
-  .widget { max-width: var(--wide); margin: 2.4rem auto; padding-inline: 1.4rem; }
-  .widget-frame { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 1.4rem; box-shadow: var(--shadow-plate); }
-  .widget-label { display: flex; align-items: center; gap: .8rem; margin-bottom: 1rem; font-family: var(--mono); font-size: .78rem; color: var(--ink-soft); letter-spacing: .05em; }
-  .widget-label .lab-no { color: var(--style); font-weight: 600; letter-spacing: .14em; }
-  .widget-cap { max-width: var(--measure); margin: .8rem auto 0; font-size: .85rem; color: var(--ink-soft); line-height: 1.6; text-align: center; }
-  .controls { display: flex; align-items: center; gap: 1rem; margin-top: 1rem; flex-wrap: wrap; }
-  .controls label { font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); display: flex; align-items: center; gap: .6rem; }
-  .controls input[type=range] { width: 180px; accent-color: var(--structure); }
-  .controls .val { color: var(--style); font-weight: 600; min-width: 3em; text-align: right; }
-  canvas.viz { display: block; width: 100%; height: 420px; background: var(--paper-2); border-radius: 8px; }
-  .compare-table { max-width: var(--measure); margin: 1.4rem auto; padding-inline: 1.4rem; }
-  .compare-table table { width: 100%; border-collapse: collapse; font-size: .9rem; }
-  .compare-table th, .compare-table td { padding: .6rem .8rem; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
-  .compare-table th { font-family: var(--mono); font-size: .74rem; color: var(--ink-faint); letter-spacing: .08em; text-transform: uppercase; font-weight: 500; }
-  .compare-table th.lstm-col { color: var(--structure); }
-  .compare-table th.gru-col { color: var(--style); }
-  .compare-table tr td:first-child { font-weight: 600; color: var(--ink); width: 28%; }
+  .bptt-stage { padding: 1.4rem 1rem 1rem; }
+  .bptt-svg { display:block; width:100%; height: 260px; }
+  .bptt-svg .nodeh { fill: var(--structure-bg); stroke: var(--structure); stroke-width: 1.5; }
+  .bptt-svg .nodex { fill: var(--style-bg); stroke: var(--style); stroke-width: 1.5; }
+  .bptt-svg .nodey { fill: var(--synth-bg); stroke: var(--synth); stroke-width: 1.5; }
+  .bptt-svg .loss { fill: #fff; stroke: var(--ink); stroke-width: 2; }
+  .bptt-svg .label { font-family: var(--mono); font-size: 11px; fill: var(--ink); }
+  .bptt-svg .fwd { fill: none; stroke: var(--ink-soft); stroke-width: 1.2; opacity: .35; }
+  .bptt-svg .back { fill: none; stroke: var(--style); stroke-width: 2.4; stroke-linecap: round; }
+  .bptt-svg .fade { opacity: 0; }
 </style>
 </head>
 <body>
 <div class="scroll-progress"></div>
 <div class="topbar">
   <a class="home" href="index.html">← Ch.10 표지</a>
-  <span class="ch-mini">SUB 05 / 07 · LSTM & GRU Gated Units</span>
+  <span class="ch-mini">SUB 05 / 14</span>
 </div>
 
-<main class="ch-main">
-  <header class="ch-head">
-    <span class="kicker">Chapter 10 · Sub 05</span>
-    <h1>LSTM·GRU —<br><span class="t-structure">게이트</span>가 푸는 문제</h1>
-    <p class="lede">활성화 신호의 안정성과 기울기의 생존을 분리한다. 게이트가 결정하는 "선형 자체 루프"가 기울기의 고속도로다.</p>
-  </header>
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol id="navlist"></ol></nav></aside>
+  <main class="ch-main">
 
-  <div class="prose">
-    <p>Sub.04에서 본 딜레마를 다시 떠올리자. 신호를 안정적으로 보존하는 가중치는 기울기를 죽이고, 기울기를 살리는 가중치는 신호를 폭발시킨다. 같은 비선형 변환이 두 역할을 동시에 맡으려 하기 때문이다.</p>
+    <header class="ch-head">
+      <span class="kicker">Sub-chapter 05 · BPTT의 직관</span>
+      <h1>손실은 어디서 났고,<br><span class="t-style">책임은 어디로 흐르는가</span></h1>
+      <p class="lede">BPTT라는 이름은 거창하지만, 본질은 한 가지다 — 손실이 어느 시점에서 발생했는지를 보고, 그 책임을 시간을 거슬러 모든 시점의 가중치에 나누어 주는 일.</p>
+    </header>
 
-    <p>해결의 핵심 아이디어는 단순하지만 우아하다. <strong>활성화 신호 경로와 기울기 경로를 구조적으로 분리</strong>한다. 비선형 변환 옆에 별도의 <em>선형 자체 루프(Linear Self-Loop)</em>를 만들어, 그 길로 기울기가 죽지 않고 흘러가게 한다. 그리고 그 루프의 흐름을 <strong>게이트(Gate)</strong>가 조절한다 — 언제 정보를 더할지, 언제 잊을지, 언제 내보낼지.</p>
+    <div class="prose">
+      <h2>BPTT는 새 알고리즘이 아니다</h2>
+      <p>SUB 03에서 본 시간 펼치기는 한 가지 결정적인 사실을 보여 준다. <strong>RNN의 계산 그래프를 펼쳐 놓고 보면, 그것은 깊이가 $T$이고 모든 층이 매개변수를 공유하는 평범한 깊은 신경망이다.</strong> 그렇다면 그 위에서 미분과 역전파를 어떻게 할지는 이미 6장과 8장에서 본 그대로다. <strong>"시간을 거슬러 가는 역전파(Backpropagation Through Time, BPTT)"</strong>는 새로 발명된 알고리즘이 아니라, 펼쳐진 그래프 위에서 일반적인 역전파를 돌릴 때 붙은 별명일 뿐이다.</p>
 
-    <h2>LSTM — 가장 영향력 있는 게이트 회로</h2>
-    <p><strong>Long Short-Term Memory (LSTM)</strong>는 Hochreiter & Schmidhuber가 1997년에 제안했다. 핵심은 <strong>셀 상태(Cell State) $c^{(t)}$</strong>라는 별도의 메모리 라인을 두고, 그 라인 위에 게이트들이 정보를 넣고 빼는 구조다.</p>
+      <p>그래도 BPTT를 별도의 장으로 따로 다루는 이유는, 펼쳐진 그래프 위에서 역전파가 보여 주는 <strong>두 가지 특별한 사정</strong> 때문이다. 첫째, 같은 매개변수가 모든 시점에 공유되어 있으므로, 그 매개변수에 대한 기울기는 모든 시점에서의 기여를 합산해야 한다. 둘째, 같은 함수 $f$의 합성이 시간 축을 따라 깊이 $T$만큼 누적되므로, 그 도함수의 곱(자코비안 곱)이 폭발하거나 소실하는 일이 매우 자주 일어난다. 첫째 사정은 이 장(SUB 05·06)의 주제고, 둘째 사정은 다음 장(SUB 07)의 주제다.</p>
 
-    <p>LSTM에는 네 가지 주요 부품이 있다.</p>
-
-    <div class="math-block">$$ f^{(t)} = \sigma\!\left(W_f \cdot [h^{(t-1)}, x^{(t)}] + b_f\right) \quad \text{(forget gate)} $$</div>
-    <div class="math-block">$$ i^{(t)} = \sigma\!\left(W_i \cdot [h^{(t-1)}, x^{(t)}] + b_i\right) \quad \text{(input gate)} $$</div>
-    <div class="math-block">$$ \tilde{c}^{(t)} = \tanh\!\left(W_c \cdot [h^{(t-1)}, x^{(t)}] + b_c\right) \quad \text{(candidate cell)} $$</div>
-    <div class="math-block">$$ c^{(t)} = f^{(t)} \odot c^{(t-1)} + i^{(t)} \odot \tilde{c}^{(t)} \quad \text{(cell update)} $$</div>
-    <div class="math-block">$$ o^{(t)} = \sigma\!\left(W_o \cdot [h^{(t-1)}, x^{(t)}] + b_o\right) \quad \text{(output gate)} $$</div>
-    <div class="math-block">$$ h^{(t)} = o^{(t)} \odot \tanh\!\left(c^{(t)}\right) \quad \text{(hidden output)} $$</div>
-    <p class="math-note">σ: 시그모이드 (0-1 게이트 값). ⊙: 요소별 곱 (Hadamard). [·,·]: 벡터 결합 (concatenation).</p>
-
-    <h2>각 게이트가 하는 일</h2>
-    <p>여섯 줄의 수식을 비유로 풀자. 셀 상태 $c^{(t)}$는 <strong>장기 메모리 칠판</strong>이다.</p>
-
-    <p><strong>망각 게이트 $f^{(t)}$</strong> — "이전 메모리에서 무엇을 지울 것인가." 시그모이드 출력이 0이면 그 자리는 완전히 지우고, 1이면 그대로 보존한다. 0.5면 절반만 남긴다.</p>
-
-    <p><strong>입력 게이트 $i^{(t)}$</strong> — "새 정보 중 무엇을 메모리에 적을 것인가." 후보 셀 $\tilde{c}^{(t)}$가 "쓸 만한 새 정보"를 제안하고, 입력 게이트가 그중 어느 부분을 받아들일지 결정한다.</p>
-
-    <p><strong>출력 게이트 $o^{(t)}$</strong> — "메모리에 적힌 것 중 무엇을 지금 밖으로 내보낼 것인가." 셀 상태 전체가 매 시점 출력되는 것이 아니다. 게이트가 필터 역할을 한다.</p>
-
-    <p>왜 이렇게 분리할까. 메모리에 <em>저장된 정보</em>와 <em>지금 사용할 정보</em>가 다를 수 있기 때문이다. 책을 읽을 때 처음 페이지의 등장인물 이름을 100페이지 후반에 다시 꺼내 쓰는 식이다. 그동안에는 메모리에 들고만 있고 출력하지 않는다.</p>
-
-    <div class="analogy">
-      <b>셀 상태는 컨베이어 벨트, 게이트는 작업자들.</b> 셀 상태 $c$는 공장 한가운데를 가로지르는 컨베이어 벨트다. 망각 게이트 작업자는 벨트 위 물건 중 일부를 골라 떨어뜨린다. 입력 게이트 작업자는 새 물건을 벨트 위에 올린다. 출력 게이트 작업자는 벨트 위 물건 중 일부를 지금 검수하러 가져온다. 벨트 자체는 한 방향으로 일정하게 흐르고 — 이것이 기울기의 고속도로다.
-    </div>
-
-    <h2>왜 이 구조가 기울기 소실을 해결하는가</h2>
-    <p>핵심 식은 셀 업데이트다.</p>
-
-    <div class="math-block">$$ c^{(t)} = f^{(t)} \odot c^{(t-1)} + i^{(t)} \odot \tilde{c}^{(t)} $$</div>
-
-    <p>이 식의 첫 항 $f^{(t)} \odot c^{(t-1)}$이 <strong>선형 자체 루프</strong>다. $c^{(t-1)}$에서 $c^{(t)}$로 가는 길에는 비선형 함수가 없다 (요소별 곱만 있다). 야코비안 $\partial c^{(t)} / \partial c^{(t-1)} = \mathrm{diag}(f^{(t)})$는 망각 게이트 값들로 이루어진 대각 행렬이다.</p>
-
-    <p>이 야코비안의 곱셈 사슬은 $\prod_t \mathrm{diag}(f^{(t)})$가 된다. 만약 모델이 "지금 메모리를 유지해야 한다"고 학습했다면 $f^{(t)} \approx 1$로 두어, 이 곱은 1 근처에 머무른다 — <strong>기울기가 죽지 않는다</strong>. 반대로 "지금부터 새 일 시작이니 옛 메모리 다 잊어"라고 학습하면 $f^{(t)} \approx 0$으로 두어 적극적으로 메모리를 지운다.</p>
-
-    <p>일반 RNN의 결정적 차이는 이것이다. 일반 RNN에서는 $W$ 하나가 "보존할까 잊을까"를 시점과 무관하게 고정된 값으로 결정한다. LSTM에서는 <strong>망각 게이트가 시점마다 입력에 따라 결정</strong>한다. 학습 자체가 "언제 보존하고 언제 잊을지"를 결정하는 동적 메커니즘으로 바뀐다.</p>
-  </div>
-
-  <div class="widget">
-    <div class="widget-frame">
-      <div class="widget-label"><span class="lab-no">위젯 05</span><span>LSTM 게이트 — 4개 게이트의 활성도와 셀 상태 흐름</span></div>
-      <canvas id="vizLSTM" class="viz"></canvas>
-      <div class="controls">
-        <label>입력 신호 x <input type="range" id="xInp" min="-100" max="100" step="1" value="40"><span class="val" id="xInpVal">+0.40</span></label>
-        <label>이전 은닉 h <input type="range" id="hInp" min="-100" max="100" step="1" value="30"><span class="val" id="hInpVal">+0.30</span></label>
-        <label>이전 셀 c <input type="range" id="cInp" min="-100" max="100" step="1" value="50"><span class="val" id="cInpVal">+0.50</span></label>
+      <h2>비유: 한 사람이 4명에게 차례로 메시지를 전달한 결과</h2>
+      <div class="analogy">
+        김씨가 박씨에게 메시지를 전했고, 박씨는 그것을 이씨에게, 이씨는 다시 최씨에게, 최씨는 그 결과를 발표했다. 발표가 틀렸다. 누구의 책임인가? 가장 가까이서 발표한 최씨일 수도 있고, 처음에 메시지를 잘못 전달한 김씨일 수도 있다. <b>각 사람의 책임은 자기 자신이 한 일과, 그 다음 사람에게 끼친 영향을 곱한 만큼이다.</b> 김씨의 책임은 "박씨에게 잘못 전한 정도 × 박씨가 이씨에게 영향을 준 정도 × 이씨가 최씨에게 영향을 준 정도 × 최씨가 결과를 망친 정도"가 된다.
       </div>
+
+      <p>BPTT는 정확히 이 비유의 수식 버전이다. 손실 $L$이 마지막 시점 $T$의 출력 $\hat y^{(T)}$에서 발생했다면, 시간 $t$의 가중치 $W$에 대한 책임은 <strong>"$t$시점에서 $h^{(t)}$가 만들어진 정도 $\times$ 그 $h^{(t)}$가 다음 시점의 $h^{(t+1)}$로 전해진 정도 $\times \dots \times$ 마지막에 손실까지 미친 정도"</strong>를 모두 곱한 식이 된다. 그 곱셈의 모든 단계가 같은 함수 $f$의 도함수라는 점이 결정적이다. 같은 행렬이 시간만큼 반복 곱해진다.</p>
+
+      <h2>위젯: 손실에서 시간을 거슬러 가는 빨간 흐름</h2>
+      <div class="widget">
+        <div class="widget-frame">
+          <div class="widget-label"><span class="lab-no">위젯 03</span><span>BPTT 시각화 — 시간을 거슬러 흐르는 기울기</span></div>
+          <div class="bptt-stage">
+            <svg class="bptt-svg" viewBox="0 0 760 260" id="bpttSvg"></svg>
+          </div>
+          <div class="widget-controls">
+            <button class="btn" id="bpttPlay">▶ 역전파 재생</button>
+            <button class="btn ghost" id="bpttReset">처음으로</button>
+            <div class="legend">
+              <span><i style="background:var(--style)"></i>역전파 기울기 흐름</span>
+              <span><i style="background:var(--ink-soft);opacity:.35"></i>순전파(연한 회색)</span>
+            </div>
+          </div>
+        </div>
+        <p class="widget-cap">$T=4$ 시퀀스. 연한 회색은 순전파의 정보 흐름($x \to h \to \hat y \to L$). 빨간 화살표는 손실 $L$로부터 거슬러 흐르는 기울기. 매 시점마다 빨간 흐름이 한 칸 더 거슬러 올라가는 모습을 본다. 같은 가중치 $W$가 시점마다 등장하므로, 결국 모든 시점에서의 빨간 화살표가 $W$에 합산된다.</p>
+      </div>
+
+      <h2>BPTT의 본질을 한 식으로</h2>
+      <p>SUB 06에서 손계산으로 확인하기 전, 본질만 적어 두자. 손실 $L = \sum_t L^{(t)}$를 가중치 $W$로 미분하면 다음 형태가 된다.</p>
+      <div class="math-block">$$\frac{\partial L}{\partial W} = \sum_{t=1}^{T} \frac{\partial L^{(t)}}{\partial W}$$</div>
+      <p class="math-note">각 시점 손실의 기여가 합산된다.</p>
+      <p>그리고 한 시점 손실 $L^{(t)}$를 $W$로 미분하면, 그 손실이 $h^{(t)}, h^{(t-1)}, \dots, h^{(1)}$ 모든 단계의 $W$ 등장을 거치므로 다음과 같은 합 형태가 나온다.</p>
+      <div class="math-block">$$\frac{\partial L^{(t)}}{\partial W} = \sum_{k=1}^{t} \left(\prod_{j=k+1}^{t} \frac{\partial h^{(j)}}{\partial h^{(j-1)}}\right) \frac{\partial h^{(k)}}{\partial W}\bigg|_{\text{at step } k}$$</div>
+      <p class="math-note">긴 식이지만 구조는 단순하다. 시점 $k$에서 $W$를 사용해 $h^{(k)}$를 만들고, 그것이 시점 $t$까지 전파되며 자코비안의 곱이 누적된다.</p>
+
+      <h2>이 한 줄에 모든 RNN 학습의 비밀이 있다</h2>
+      <p>위의 합 안에 있는 <strong>야코비안 곱 $\prod_{j} \partial h^{(j)} / \partial h^{(j-1)}$</strong>이 RNN 학습의 모든 운명을 결정한다. 이 곱은 곧 "같은 행렬 $W^\top \mathrm{diag}(f'(h_j))$를 시간만큼 곱한 것"으로 정리되며, 그 곱의 노름(norm)이 1보다 크면 폭발, 1보다 작으면 0으로 사라진다. 깊이 100짜리 시간을 곱하면 작은 차이가 어마어마하게 증폭된다. 이 곱의 운명이 RNN을 살리기도 죽이기도 한다.</p>
+
+      <p>SUB 06에서는 이 식을 $T=3$짜리 짧은 시퀀스에 대해 손으로 직접 풀어 본다. 그러면 야코비안 곱의 의미가 손에 잡힌다. SUB 07에서는 그 야코비안 곱의 노름이 어떻게 폭발/소실하는지를 슬라이더로 본다.</p>
+
+      <h2>왜 RNN의 역전파만 별명이 따로 있는가</h2>
+      <p>일반적인 깊은 신경망의 역전파도 결국 자코비안의 곱이다. 그런데 그 곱에 등장하는 행렬들은 서로 다르다(각 층의 가중치가 다름). RNN의 자코비안 곱은 결정적으로 다르다 — <strong>같은 행렬 $W$가 시간만큼 반복 등장한다</strong>. 같은 행렬의 거듭제곱은 그 행렬의 고유값(eigenvalue) 분포에 따라 매우 빠르게 폭발하거나 사라진다. 이 한 가지 차이가 BPTT를 별도의 이름으로 부르게 만들고, RNN을 학습하기 어렵게 만드는 본질적 이유다.</p>
+
+      <h2>비용 — 시간과 메모리 모두 $O(T)$</h2>
+      <p>BPTT의 한 가지 실용적인 부담은 시퀀스 길이에 대한 메모리 비용이다. 역전파는 순전파의 모든 중간 활성화 값을 저장해 두어야 한다(미분의 체인 룰에서 그 값들이 곱해지므로). 시퀀스 길이가 $T$이면 모든 시점의 $h^{(t)}$를 저장해야 하므로 메모리는 $O(T)$다. 시간 비용 역시 모든 시점에 대해 한 번씩 자코비안을 계산해야 하므로 $O(T)$다. 이는 합성곱 신경망의 역전파와 같은 차수지만, 시퀀스가 매우 길면(예: 문서 한 권의 단어 수 100000) 메모리에 다 안 들어갈 수 있다.</p>
+
+      <p>이를 해결하기 위해 <strong>truncated BPTT</strong>(잘린 BPTT)라는 변형이 널리 쓰인다. 시퀀스를 일정 길이(예: 35 단어)의 블록으로 자르고, 한 블록 안에서만 BPTT를 돌린다. hidden state는 블록 사이에 그대로 유지되지만, 기울기는 블록을 넘지 않는다. 이렇게 하면 메모리는 블록 길이로 제한되지만, 학습 가능한 의존성도 블록 길이로 제한된다는 트레이드오프가 생긴다. 매우 긴 시퀀스에서는 어느 정도의 의존성 손실을 감수하는 것이 표준 관행이다.</p>
+
+      <h2>잠깐, BPTT가 실시간 적용 가능한가</h2>
+      <p>또 한 가지 자주 묻는 질문은 BPTT가 실시간(online) 학습에 쓸 수 있는가다. 답은 "기본 BPTT로는 안 된다"다. BPTT는 시퀀스 전체를 본 다음에 한 번 역전파하므로, 시점 $T$까지 다 본 후에야 시점 1의 가중치 갱신을 할 수 있다. 실시간 응용(매 시점마다 즉시 학습이 필요한 경우)에서는 부적합하다.</p>
+
+      <p>이 한계를 풀기 위한 변형으로 <strong>RTRL(Real-Time Recurrent Learning)</strong>이 있다. 매 시점마다 가중치에 대한 hidden state의 민감도($\partial h^{(t)} / \partial W$)를 점진적으로 갱신하면서, 매 시점에 즉시 기울기를 계산한다. 이론적으로 우아하지만 계산량이 $O(d_h^4)$로 매우 크다($d_h$는 hidden 차원). 보통은 truncated BPTT가 더 실용적이다. 두 알고리즘의 비교는 Williams &amp; Peng(1990)의 고전 논문이 자세하다.</p>
+
+      <p>이제 다음 장(<a href="06.html">SUB 06</a>)에서 $T=3$짜리 시퀀스의 BPTT를 손으로 풀어 보자.</p>
     </div>
-    <p class="widget-cap">슬라이더로 입력 신호를 움직이면 망각·입력·후보·출력 게이트의 활성도가 실시간으로 변한다. 셀 상태 $c$가 어떻게 흐르고 갱신되는지, 그리고 그 출력이 어떻게 새 은닉 $h$가 되는지 시각화. 선형 자체 루프(파란색 경로)가 기울기 고속도로 역할.</p>
-  </div>
 
-  <div class="prose">
-    <h2>GRU — 더 단순한 사촌</h2>
-    <p><strong>Gated Recurrent Unit (GRU)</strong>는 2014년 Cho et al.이 제안한 단순화된 변형이다. LSTM의 망각·입력 게이트를 하나의 <strong>업데이트 게이트(Update Gate) $z^{(t)}$</strong>로 합치고, 셀 상태와 은닉 상태를 합치고, 새 <strong>리셋 게이트(Reset Gate) $r^{(t)}$</strong>를 도입한다.</p>
-
-    <div class="math-block">$$ z^{(t)} = \sigma\!\left(W_z \cdot [h^{(t-1)}, x^{(t)}]\right) \quad \text{(update gate)} $$</div>
-    <div class="math-block">$$ r^{(t)} = \sigma\!\left(W_r \cdot [h^{(t-1)}, x^{(t)}]\right) \quad \text{(reset gate)} $$</div>
-    <div class="math-block">$$ \tilde{h}^{(t)} = \tanh\!\left(W \cdot [r^{(t)} \odot h^{(t-1)}, x^{(t)}]\right) \quad \text{(candidate)} $$</div>
-    <div class="math-block">$$ h^{(t)} = (1 - z^{(t)}) \odot h^{(t-1)} + z^{(t)} \odot \tilde{h}^{(t)} $$</div>
-    <p class="math-note">업데이트 게이트가 "얼마나 새 후보로 갱신할지 vs 옛것을 유지할지"를 한 번에 결정.</p>
-
-    <p>마지막 줄이 핵심이다. $z^{(t)} \approx 0$이면 옛 은닉 상태를 그대로 유지하고, $z^{(t)} \approx 1$이면 새 후보로 완전히 갈아엎는다. 두 극단 사이에서 부드럽게 보간한다. LSTM의 망각 게이트와 입력 게이트가 독립적이었던 것과 달리, GRU는 "잊는 만큼 받아들인다"는 보존 법칙 비슷한 제약을 가진다.</p>
-
-    <h2>LSTM vs GRU — 무엇을 고를까</h2>
-
-    <div class="compare-table">
-      <table>
-        <thead><tr><th>비교 축</th><th class="lstm-col">LSTM</th><th class="gru-col">GRU</th></tr></thead>
-        <tbody>
-          <tr><td>게이트 수</td><td>3개 (forget, input, output) + candidate</td><td>2개 (update, reset)</td></tr>
-          <tr><td>상태 변수</td><td>2개 (cell c, hidden h)</td><td>1개 (hidden h)</td></tr>
-          <tr><td>매개변수 수</td><td>약 4 × (n+m) × n</td><td>약 3 × (n+m) × n  (LSTM의 75%)</td></tr>
-          <tr><td>표현력</td><td>이론적으로 더 유연 (출력과 메모리 분리)</td><td>제약 있지만 충분히 표현력 있음</td></tr>
-          <tr><td>학습 속도</td><td>약간 느림</td><td>약간 빠름</td></tr>
-          <tr><td>실험적 성능</td><td>긴 시퀀스·복잡 과제에서 우위</td><td>작은 데이터셋·단순 과제에서 비슷하거나 우위</td></tr>
-          <tr><td>발표 시점</td><td>1997</td><td>2014</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <p>실제 사용에서는 둘 중 하나가 압도적으로 우월하지는 않다. Goodfellow 책의 결론도 같다 — "<em>어떤 변형도 두 가지를 명확히 능가한다고 보고되지 않았다</em>". 그래서 실용적 선택의 기준은 모델 크기, 학습 데이터 규모, 과제 복잡도에 따라 달라진다.</p>
-
-    <h2>이 절이 시험에서 묻는 것</h2>
-    <p>① "선형 자체 루프"가 왜 기울기를 살리는가 — 비선형 변환 없이 $\partial c^{(t)}/\partial c^{(t-1)} = \mathrm{diag}(f^{(t)})$이기 때문. ② LSTM의 4개 게이트(forget, input, output, candidate)가 각각 결정하는 것. ③ GRU의 update gate가 LSTM의 어느 두 게이트를 합친 것인지 — forget과 input. ④ LSTM과 GRU의 매개변수 수 차이가 어디서 오는지. ⑤ 학습이 결정하는 것은 "보존할까 잊을까"의 동적 선택이라는 점.</p>
-  </div>
-
-  <nav class="ch-foot">
-    <a href="04.html"><span class="dir">← 이전</span><div class="ti">04 · 기울기 폭발/소실</div></a>
-    <a class="next" href="06.html"><span class="dir">다음 →</span><div class="ti">06 · 양방향·인코더-디코더</div></a>
-  </nav>
-</main>
+    <nav class="ch-foot" id="chfoot"></nav>
+  </main>
+</div>
 
 <script>
-  window.addEventListener('scroll', () => {
-    const sp = document.querySelector('.scroll-progress');
-    const sc = document.documentElement.scrollTop;
-    const max = document.documentElement.scrollHeight - window.innerHeight;
-    sp.style.width = (max > 0 ? (sc / max * 100) : 0) + '%';
+  const SUBS = [
+    ['01','왜 시퀀스에 FC·CNN은 부족한가'],['02','RNN의 기본 아이디어'],['03','시간 펼치기'],
+    ['04','매개변수 공유'],['05','BPTT 1 — 직관'],['06','BPTT 2 — 손계산'],
+    ['07','기울기 폭발과 소실'],['08','기울기 클리핑'],['09','LSTM 1 — 세 게이트'],
+    ['10','LSTM 2 — cell state'],['11','GRU'],['12','양방향 RNN'],
+    ['13','인코더-디코더'],['14','시험 대비'],
+  ];
+  const CUR = '05';
+  const ol = document.getElementById('navlist');
+  SUBS.forEach(([n,t]) => {
+    const li = document.createElement('li');
+    li.innerHTML = `<a href="${n}.html"${n===CUR?' class="current"':''}>${t}</a>`;
+    ol.appendChild(li);
   });
+  const i = SUBS.findIndex(s=>s[0]===CUR);
+  const prev = i>0 ? SUBS[i-1] : ['','표지로'];
+  const next = i<SUBS.length-1 ? SUBS[i+1] : ['','표지로'];
+  document.getElementById('chfoot').innerHTML =
+    `<a href="${prev[0]?prev[0]+'.html':'index.html'}"><div class="dir">← 이전</div><div class="ti">${prev[1]}</div></a>` +
+    `<a href="${next[0]?next[0]+'.html':'index.html'}" class="next"><div class="dir">다음 →</div><div class="ti">${next[1]}</div></a>`;
+  const bar = document.querySelector('.scroll-progress');
+  document.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max>0 ? (h.scrollTop/max)*100 : 0) + '%';
+  }, { passive: true });
+
+  // BPTT 위젯
+  const svg = document.getElementById('bpttSvg');
+  const T = 4;
+  const startX = 60, dx = 160, yh = 130, yx = 210, yy = 50;
+  function buildBase() {
+    let s = '';
+    // 순전파 화살표 (회색)
+    for (let i = 0; i < T; i++) {
+      const cx = startX + i*dx;
+      // x->h
+      s += `<path class="fwd" d="M${cx},${yx-15} L${cx},${yh+22}" marker-end="url(#arr2)"/>`;
+      // h->y
+      s += `<path class="fwd" d="M${cx},${yh-22} L${cx},${yy+22}" marker-end="url(#arr2)"/>`;
+      if (i < T-1) {
+        s += `<path class="fwd" d="M${cx+22},${yh} L${cx+dx-22},${yh}" marker-end="url(#arr2)"/>`;
+      }
+    }
+    // 노드들
+    for (let i = 0; i < T; i++) {
+      const cx = startX + i*dx;
+      s += `<rect class="nodeh" x="${cx-22}" y="${yh-22}" width="44" height="44" rx="6"/>`;
+      s += `<text class="label" x="${cx}" y="${yh+4}" text-anchor="middle">h⁽${i+1}⁾</text>`;
+      s += `<rect class="nodex" x="${cx-22}" y="${yx-12}" width="44" height="26" rx="5"/>`;
+      s += `<text class="label" x="${cx}" y="${yx+4}" text-anchor="middle">x⁽${i+1}⁾</text>`;
+      s += `<circle class="nodey" cx="${cx}" cy="${yy}" r="18"/>`;
+      s += `<text class="label" x="${cx}" y="${yy+4}" text-anchor="middle">ŷ⁽${i+1}⁾</text>`;
+    }
+    // 손실 L (마지막 시점 위)
+    const lx = startX + (T-1)*dx + 60;
+    s += `<rect class="loss" x="${lx-22}" y="${yy-22}" width="44" height="44" rx="8"/>`;
+    s += `<text class="label" x="${lx}" y="${yy+4}" text-anchor="middle" style="font-weight:600">L</text>`;
+    s += `<path class="fwd" d="M${startX + (T-1)*dx + 18},${yy} L${lx-22},${yy}"/>`;
+    return s;
+  }
+  // 역전파 경로 (마지막 손실 -> y_T -> h_T -> h_{T-1} -> ... -> h_1)
+  function backPath(step) {
+    // step 0~T : 0이면 안 그림, step k이면 L->yT->hT->...->h_{T-k+1}
+    if (step <= 0) return '';
+    let s = '';
+    const lx = startX + (T-1)*dx + 60;
+    // L -> yT
+    s += `<path class="back" d="M${lx-22},${yy} L${startX + (T-1)*dx + 18},${yy}"/>`;
+    // yT -> hT
+    s += `<path class="back" d="M${startX + (T-1)*dx},${yy+18} L${startX + (T-1)*dx},${yh-22}"/>`;
+    // h_t -> h_{t-1} (시간 거슬러)
+    for (let k = 1; k < step; k++) {
+      const i = T-1-k; // 가는 인덱스
+      if (i < 0) break;
+      const cx2 = startX + (i+1)*dx;
+      const cx1 = startX + i*dx;
+      s += `<path class="back" d="M${cx2-22},${yh} L${cx1+22},${yh}"/>`;
+    }
+    return s;
+  }
+  // marker
+  function addMarkers() {
+    return `<defs>
+      <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="var(--ink-soft)" opacity=".35"/></marker>
+      <marker id="arrR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="var(--style)"/></marker>
+    </defs>`;
+  }
+  function render(step) {
+    svg.innerHTML = addMarkers() + buildBase() + backPath(step);
+  }
+  render(0);
+
+  let timer = null;
+  document.getElementById('bpttPlay').onclick = () => {
+    if (timer) return;
+    let k = 0;
+    timer = setInterval(() => {
+      k++;
+      render(k);
+      if (k > T) { clearInterval(timer); timer = null; }
+    }, 700);
+  };
+  document.getElementById('bpttReset').onclick = () => {
+    if (timer) { clearInterval(timer); timer = null; }
+    render(0);
+  };
+
   window.addEventListener('load', () => {
-    if (window.renderMathInElement) {
-      renderMathInElement(document.body, { delimiters: [
-        {left:'$$', right:'$$', display:true},
-        {left:'$', right:'$', display:false}
-      ], throwOnError:false });
-    }
+    if (window.renderMathInElement) renderMathInElement(document.body, {
+      delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }],
+      throwOnError: false,
+    });
   });
-
-  const cv = document.getElementById('vizLSTM');
-  const ctx = cv.getContext('2d');
-  const xInp = document.getElementById('xInp');
-  const hInp = document.getElementById('hInp');
-  const cInp = document.getElementById('cInp');
-  const xInpVal = document.getElementById('xInpVal');
-  const hInpVal = document.getElementById('hInpVal');
-  const cInpVal = document.getElementById('cInpVal');
-
-  function fit() {
-    const r = cv.getBoundingClientRect();
-    cv.width = r.width * devicePixelRatio;
-    cv.height = r.height * devicePixelRatio;
-    ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
-    draw();
-  }
-
-  if (!CanvasRenderingContext2D.prototype.roundRect) {
-    CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
-      this.beginPath();
-      this.moveTo(x + r, y);
-      this.arcTo(x + w, y, x + w, y + h, r);
-      this.arcTo(x + w, y + h, x, y + h, r);
-      this.arcTo(x, y + h, x, y, r);
-      this.arcTo(x, y, x + w, y, r);
-      this.closePath();
-    };
-  }
-
-  function sigmoid(x) { return 1 / (1 + Math.exp(-x)); }
-  function tanh(x) { return Math.tanh(x); }
-
-  function draw() {
-    const x = +xInp.value / 100;
-    const h = +hInp.value / 100;
-    const c_prev = +cInp.value / 100;
-    xInpVal.textContent = (x >= 0 ? '+' : '') + x.toFixed(2);
-    hInpVal.textContent = (h >= 0 ? '+' : '') + h.toFixed(2);
-    cInpVal.textContent = (c_prev >= 0 ? '+' : '') + c_prev.toFixed(2);
-
-    // 가짜 가중치 (시각화용)
-    const Wf = 1.2, Wi = 1.0, Wc = 0.9, Wo = 1.1;
-    const f_gate = sigmoid(Wf * (h + x) - 0.2);
-    const i_gate = sigmoid(Wi * (h + x) - 0.3);
-    const c_tilde = tanh(Wc * (h + x));
-    const o_gate = sigmoid(Wo * (h + x) - 0.1);
-    const c_new = f_gate * c_prev + i_gate * c_tilde;
-    const h_new = o_gate * tanh(c_new);
-
-    const W = cv.clientWidth, H = cv.clientHeight;
-    ctx.clearRect(0, 0, W, H);
-
-    // 셀 상태 라인 (위쪽 컨베이어 벨트)
-    const yCell = 60;
-    ctx.strokeStyle = '#2D5B7A';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(50, yCell);
-    ctx.lineTo(W - 50, yCell);
-    ctx.stroke();
-    // 셀 라벨
-    ctx.fillStyle = '#2D5B7A';
-    ctx.font = '500 12px Spline Sans Mono, monospace';
-    ctx.textAlign = 'left';
-    ctx.fillText('c (cell state — 선형 자체 루프, 기울기 고속도로)', 50, yCell - 12);
-    ctx.fillText('c⁽ᵗ⁻¹⁾', 18, yCell + 4);
-    ctx.fillText('c⁽ᵗ⁾', W - 38, yCell + 4);
-
-    // 입력 (왼쪽 아래)
-    const yIn = H - 60;
-    const xLab = ['x⁽ᵗ⁾', 'h⁽ᵗ⁻¹⁾'];
-    const xVals = [x, h];
-    const xCols = ['#A47B2E', '#D98E73'];
-    for (let i = 0; i < 2; i++) {
-      const px = 50 + i * 40;
-      ctx.fillStyle = xCols[i];
-      ctx.beginPath();
-      ctx.arc(px, yIn, 13, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#fff';
-      ctx.font = '600 9px Spline Sans Mono, monospace';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(xLab[i], px, yIn);
-      ctx.fillStyle = xCols[i];
-      ctx.font = '10px Spline Sans Mono, monospace';
-      ctx.fillText(xVals[i].toFixed(2), px, yIn + 22);
-    }
-
-    // 게이트 박스들 (가운데 줄)
-    const gateY = (yCell + yIn) / 2 + 20;
-    const gateBoxes = [
-      { name: 'forget', sym: 'f', val: f_gate, x: W * 0.22, color: '#C0492E', desc: '얼마나 잊을까' },
-      { name: 'input', sym: 'i', val: i_gate, x: W * 0.40, color: '#2D5B7A', desc: '얼마나 받아들일까' },
-      { name: 'candidate', sym: 'c̃', val: c_tilde, x: W * 0.58, color: '#A47B2E', desc: '새 후보 정보' },
-      { name: 'output', sym: 'o', val: o_gate, x: W * 0.78, color: '#6E97AF', desc: '얼마나 내보낼까' },
-    ];
-    for (const g of gateBoxes) {
-      // 게이트 강도에 비례한 배경 채움
-      const fillAlpha = g.name === 'candidate' ? Math.abs(g.val) : g.val;
-      // 박스
-      ctx.fillStyle = g.color + 'cc';
-      ctx.strokeStyle = g.color;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.roundRect(g.x - 35, gateY - 22, 70, 44, 8);
-      ctx.fill();
-      ctx.stroke();
-      // 게이트 활성도 막대 (안쪽)
-      ctx.fillStyle = 'rgba(255,255,255,0.3)';
-      const barH = 6;
-      const barW = 60 * fillAlpha;
-      ctx.fillRect(g.x - 30, gateY + 10, barW, barH);
-      // 라벨
-      ctx.fillStyle = '#fff';
-      ctx.font = '600 13px Spline Sans Mono, monospace';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(g.sym, g.x, gateY - 5);
-      ctx.font = '9px Spline Sans Mono, monospace';
-      ctx.fillText(g.val.toFixed(2), g.x, gateY + 7);
-      // 외부 라벨
-      ctx.fillStyle = g.color;
-      ctx.font = '500 10px Spline Sans Mono, monospace';
-      ctx.fillText(g.name, g.x, gateY - 32);
-      ctx.font = '9px Spline Sans Mono, monospace';
-      ctx.fillStyle = 'rgba(38,34,28,0.55)';
-      ctx.fillText(g.desc, g.x, gateY + 36);
-    }
-
-    // 화살표: 입력 → 게이트들
-    ctx.strokeStyle = 'rgba(38,34,28,0.2)';
-    ctx.lineWidth = 1;
-    for (const g of gateBoxes) {
-      ctx.beginPath();
-      ctx.moveTo(70, yIn - 15);
-      ctx.lineTo(g.x, gateY + 22);
-      ctx.stroke();
-    }
-
-    // 화살표: forget 게이트 → 셀 라인 (곱하기)
-    const fX = gateBoxes[0].x;
-    ctx.strokeStyle = '#C0492E';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(fX, gateY - 22);
-    ctx.lineTo(fX, yCell + 8);
-    ctx.stroke();
-    // ⊗ 기호 on cell line
-    ctx.fillStyle = '#C0492E';
-    ctx.font = '600 14px Spline Sans Mono, monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('⊗', fX, yCell + 5);
-
-    // input × candidate → 합산점 → 셀
-    const iX = gateBoxes[1].x;
-    const ctX = gateBoxes[2].x;
-    const mergeX = (iX + ctX) / 2;
-    const mergeY = gateY - 60;
-    // i, c̃ → merge
-    ctx.strokeStyle = '#2D5B7A';
-    ctx.beginPath();
-    ctx.moveTo(iX, gateY - 22);
-    ctx.lineTo(mergeX - 10, mergeY);
-    ctx.stroke();
-    ctx.strokeStyle = '#A47B2E';
-    ctx.beginPath();
-    ctx.moveTo(ctX, gateY - 22);
-    ctx.lineTo(mergeX + 10, mergeY);
-    ctx.stroke();
-    // ⊗ at merge
-    ctx.fillStyle = '#A47B2E';
-    ctx.font = '600 14px Spline Sans Mono, monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('⊗', mergeX, mergeY + 4);
-    // merge → cell line (+)
-    ctx.strokeStyle = '#A47B2E';
-    ctx.beginPath();
-    ctx.moveTo(mergeX, mergeY - 8);
-    ctx.lineTo(mergeX, yCell + 8);
-    ctx.stroke();
-    // ⊕ on cell line
-    ctx.fillStyle = '#A47B2E';
-    ctx.fillText('⊕', mergeX, yCell + 5);
-
-    // output → tanh(c) → h
-    const oX = gateBoxes[3].x;
-    // tanh(c) point
-    const tanhX = oX + 30;
-    ctx.strokeStyle = '#2D5B7A';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(W - 50, yCell);
-    ctx.lineTo(tanhX, yCell);
-    ctx.lineTo(tanhX, gateY + 8);
-    ctx.stroke();
-    // tanh box
-    ctx.fillStyle = '#6E97AF';
-    ctx.beginPath();
-    ctx.roundRect(tanhX - 18, gateY - 10, 36, 18, 4);
-    ctx.fill();
-    ctx.fillStyle = '#fff';
-    ctx.font = '600 11px Spline Sans Mono, monospace';
-    ctx.fillText('tanh', tanhX, gateY);
-    // o → tanh(c) (⊗)
-    ctx.strokeStyle = '#6E97AF';
-    ctx.beginPath();
-    ctx.moveTo(oX, gateY - 22);
-    ctx.lineTo(tanhX - 18, gateY);
-    ctx.stroke();
-
-    // h_new output
-    const hX = tanhX + 50;
-    ctx.strokeStyle = '#D98E73';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(tanhX + 18, gateY);
-    ctx.lineTo(hX - 15, gateY);
-    ctx.stroke();
-    ctx.fillStyle = '#D98E73';
-    ctx.beginPath();
-    ctx.arc(hX, gateY, 15, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#fff';
-    ctx.font = '600 10px Spline Sans Mono, monospace';
-    ctx.fillText('h⁽ᵗ⁾', hX, gateY);
-    ctx.fillStyle = '#D98E73';
-    ctx.font = '10px Spline Sans Mono, monospace';
-    ctx.fillText(h_new.toFixed(2), hX, gateY + 22);
-
-    // Cell new value
-    ctx.fillStyle = '#2D5B7A';
-    ctx.font = '500 10px Spline Sans Mono, monospace';
-    ctx.textAlign = 'left';
-    ctx.fillText(`c⁽ᵗ⁾ = ${c_new.toFixed(3)}  (= ${f_gate.toFixed(2)}·${c_prev.toFixed(2)} + ${i_gate.toFixed(2)}·${c_tilde.toFixed(2)})`, 50, H - 14);
-    ctx.fillStyle = '#D98E73';
-    ctx.fillText(`h⁽ᵗ⁾ = ${h_new.toFixed(3)}  (= ${o_gate.toFixed(2)}·tanh(${c_new.toFixed(2)}))`, 50, H - 30);
-  }
-  xInp.addEventListener('input', draw);
-  hInp.addEventListener('input', draw);
-  cInp.addEventListener('input', draw);
-  window.addEventListener('resize', fit);
-  fit();
 </script>
 </body>
 </html>

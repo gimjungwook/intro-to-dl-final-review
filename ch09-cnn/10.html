@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ch.09 · 10 출력 크기 공식 — (W-K+2P)/S+1의 의미</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .out-stage { display: flex; flex-direction: column; gap: .8rem; padding: 1.4rem 1.4rem 1rem; }
+  .out-cell { background: var(--paper); border: 1px solid var(--line); border-radius: 9px; padding: .8rem; }
+  .out-cell canvas { width: 100%; height: 240px; display: block; background: #fff; border-radius: 6px; border: 1px solid var(--line-soft); }
+  .out-cell .meta { font-family: var(--mono); font-size: .82rem; color: var(--ink-soft); margin-top: .6rem; line-height: 1.8; padding: .4rem .7rem; background: var(--paper-2); border-radius: 6px; }
+  .out-cell .meta b { color: var(--ink); }
+  .out-cell .meta .big { font-size: 1.3rem; color: var(--style); font-weight: 700; }
+  .out-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; padding: .8rem 1.2rem 1rem; border-top: 1px solid var(--line-soft); background: var(--paper); font-size: .88rem; }
+  .out-controls label { display: flex; flex-direction: column; gap: .2rem; }
+  .out-controls label span { color: var(--ink-soft); font-family: var(--mono); font-size: .78rem; }
+  .out-controls label span b { color: var(--ink); font-weight: 600; }
+  .out-controls input[type=range] { width: 100%; accent-color: var(--style); }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Ch.09 · Sub 10 · 외우지 않고 그림으로</span>
+      <h1>출력 크기 공식<br><span class="t-style">(W-K+2P)/S+1</span>의 의미</h1>
+      <p class="lede">시험에 단골로 나오는 식. 외워도 되지만, 외우면 응용이 안 된다. 한 번 그림으로 유도하면 valid·same·strided 합성곱이 한 식의 다른 모습이라는 게 보인다.</p>
+    </header>
+
+    <div class="prose">
+      <p>합성곱 한 층의 출력 크기를 정하는 식은 다음 한 줄이다. 입력 한 변 크기 $W$, 커널 한 변 $K$, 패딩(padding) $P$, 스트라이드(stride) $S$를 사용한다.</p>
+
+      <div class="math-block">$$ O = \left\lfloor \frac{W - K + 2P}{S} \right\rfloor + 1 $$</div>
+      <p class="math-note">O는 출력 한 변 크기. W는 입력 한 변. K는 커널 한 변. P는 한쪽 패딩(상하좌우 동일 가정). S는 스트라이드. 바닥 함수 ⌊·⌋은 정수로 내림.</p>
+
+      <p>이 식을 외운다고 끝이 아니다. 실전에서는 "동일 합성곱(same conv)을 만들려면 P를 얼마로 두어야 하나"처럼 식을 거꾸로 풀어야 하는 경우가 많다. 그래서 식을 한 번 손으로 유도하고, 각 항이 무엇을 세는지 분명히 잡아 두는 것이 좋다. 외우는 대신 추론할 수 있게.</p>
+
+      <h2>1D부터 — 가장 단순한 경우</h2>
+
+      <p>먼저 1D 합성곱으로 식을 유도하자. 입력이 $W = 8$, 커널이 $K = 3$, 패딩과 스트라이드 없다($P = 0, S = 1$).</p>
+
+      <p>커널의 왼쪽 끝을 입력의 0번 자리에 두면 커널이 0, 1, 2번 자리를 덮는다. 다음 위치는 1번 자리부터 1, 2, 3번을 덮는다. 이런 식으로 커널의 왼쪽 끝이 0, 1, 2, ..., 5까지 갈 수 있다. 6번에서 시작하면 커널 오른쪽 끝이 8을 넘어가 입력 밖으로 벗어난다. 그래서 가능한 시작 위치는 0부터 5까지, 총 6개. 출력 크기는 6이다.</p>
+
+      <p>일반화하면 가능한 시작 위치는 0부터 $W - K$까지, 총 $W - K + 1$개. 식으로 적으면</p>
+
+      <div class="math-block">$$ O = W - K + 1 \quad (P = 0,\ S = 1) $$</div>
+      <p class="math-note">패딩 없고 스트라이드 1인 가장 단순한 경우. 출력 크기는 입력에서 커널 길이만큼 빠진 뒤 1을 더한 값.</p>
+
+      <h2>패딩이 들어오면 — 입력을 가상으로 늘린다</h2>
+
+      <p>패딩이란, 입력 가장자리에 가짜 값을 덧붙이는 것이다. 보통 0으로 채운다(zero padding). 한쪽에 $P$만큼씩, 양쪽 합쳐서 $2P$만큼 입력이 더 길어진다. 그래서 패딩이 들어간 입력의 길이는 $W + 2P$다.</p>
+
+      <p>패딩한 입력에 같은 유도를 적용하면, 출력 크기는 $W + 2P - K + 1$이다. 즉 위 식에서 $W$를 $W + 2P$로 바꾼 셈이다.</p>
+
+      <div class="math-block">$$ O = (W + 2P) - K + 1 = W - K + 2P + 1 \quad (S = 1) $$</div>
+      <p class="math-note">패딩 P가 양쪽으로 들어가면 입력이 2P만큼 길어진다. 출력 크기는 그만큼 늘어난다. K = 3, P = 1로 두면 W = O가 되어 same convolution.</p>
+
+      <p>여기서 자주 쓰는 동일 합성곱(same convolution)의 패딩 값을 도출할 수 있다. $O = W$가 되게 하려면 $W - K + 2P + 1 = W$, 즉 $P = (K - 1)/2$. 커널이 홀수($K = 3, 5, 7, \dots$)이면 $P$가 정수다. 그래서 CNN 커널은 거의 항상 홀수다.</p>
+
+      <h2>스트라이드가 들어오면 — 한 칸씩이 아니라 S칸씩</h2>
+
+      <p>스트라이드란, 커널을 한 위치에서 다음 위치로 옮길 때 몇 칸을 건너뛰는지의 값이다. 기본 $S = 1$이면 한 칸씩, $S = 2$면 두 칸씩 건너뛴다.</p>
+
+      <p>패딩한 입력에서 시작 위치 후보는 0, $S$, $2S$, ..., 즉 마지막 가능 시작 위치는 $W + 2P - K$다. 이 마지막 위치를 $S$로 나누면 마지막 시작 위치의 번호 $\lfloor (W + 2P - K) / S \rfloor$가 나온다. 0번 시작 위치까지 포함하면 총 시작 위치 수는</p>
+
+      <div class="math-block">$$ O = \left\lfloor \frac{W + 2P - K}{S} \right\rfloor + 1 $$</div>
+      <p class="math-note">최종 일반 공식. 스트라이드가 들어오면 가능한 시작 위치 수를 S로 나누고 바닥 함수로 정수로 만든 뒤 1을 더한다. S = 1, P = 0이면 처음 식 W - K + 1로 환원.</p>
+
+      <p>바닥 함수가 들어가는 이유는, $(W + 2P - K)$가 $S$로 나누어떨어지지 않을 수 있기 때문이다. 예를 들어 $W = 8, K = 3, P = 0, S = 2$이면 $(8 - 3)/2 = 2.5$, 바닥은 2, 출력은 3. 시작 위치는 0, 2, 4 — 정확히 3개다. 6은 커널 오른쪽 끝이 9가 되어 입력 밖이라 불가능.</p>
+
+      <h2>세 가지 표준 — valid, same, strided</h2>
+
+      <p>이 공식이 만드는 세 가지 표준 모드를 정리하면 다음과 같다.</p>
+
+      <table>
+        <thead><tr><th>모드</th><th>P</th><th>S</th><th>출력 크기</th><th>쓰임</th></tr></thead>
+        <tbody>
+          <tr><td>유효(valid)</td><td>0</td><td>1</td><td>$W - K + 1$</td><td>입력보다 작아짐. 가장자리 정보 일부 손실. 옛 모델에서 흔함.</td></tr>
+          <tr><td>동일(same)</td><td>$(K-1)/2$</td><td>1</td><td>$W$</td><td>입력과 출력 같음. 깊이 쌓을 때 크기 계산 편함. 현대 CNN 표준.</td></tr>
+          <tr><td>스트라이드(strided)</td><td>$(K-1)/2$</td><td>2</td><td>$W/2$ (대략)</td><td>풀링 없이 다운샘플링. ResNet, EfficientNet 등 최근 표준.</td></tr>
+        </tbody>
+      </table>
+
+      <p>이 셋이 합성곱의 모든 표준이다. 다른 패딩 값(예: $P = K - 1$)을 쓰는 <em>full convolution</em>도 있지만, 분류 CNN에서는 거의 안 쓴다.</p>
+
+      <h2>가장 자주 등장하는 계산 예시 모음</h2>
+
+      <p>시험에서 빠르게 풀려면 자주 나오는 조합을 외워 두기보다, 위 공식으로 한 번씩 다시 풀어 보자. 예시 다섯 개를 적어 둔다.</p>
+
+      <p><strong>예시 1.</strong> $W = 32, K = 3, P = 1, S = 1$. $O = \lfloor (32 - 3 + 2)/1 \rfloor + 1 = 31 + 1 = 32$. same conv 확인.</p>
+
+      <p><strong>예시 2.</strong> $W = 32, K = 3, P = 0, S = 1$. $O = \lfloor (32 - 3)/1 \rfloor + 1 = 29 + 1 = 30$. valid conv, 2픽셀 손실.</p>
+
+      <p><strong>예시 3.</strong> $W = 32, K = 3, P = 1, S = 2$. $O = \lfloor (32 - 3 + 2)/2 \rfloor + 1 = \lfloor 15.5 \rfloor + 1 = 15 + 1 = 16$. strided same, 절반.</p>
+
+      <p><strong>예시 4.</strong> $W = 224, K = 11, P = 0, S = 4$. AlexNet 첫 층. $O = \lfloor (224 - 11)/4 \rfloor + 1 = \lfloor 53.25 \rfloor + 1 = 53 + 1 = 54$. 책 표기와 약간 다를 수 있는데, 일부 구현은 입력을 227로 가정한다.</p>
+
+      <p><strong>예시 5.</strong> $W = 224, K = 7, P = 3, S = 2$. ResNet 첫 층. $O = \lfloor (224 - 7 + 6)/2 \rfloor + 1 = \lfloor 111.5 \rfloor + 1 = 111 + 1 = 112$. 출력 절반 크기에 동일 패딩.</p>
+
+      <h2>출력 채널 수는 어떻게 결정되는가</h2>
+
+      <p>위 공식은 한 채널의 공간 크기만 다룬다. 채널(특징맵 종류) 수는 별개다. 합성곱 층의 출력 채널 수 $C_{\text{out}}$은 우리가 정하는 하이퍼파라미터다. 32, 64, 128, 256 등으로 깊이 가면서 두 배씩 늘리는 패턴이 표준이다. 그 이유는 풀링이나 strided conv로 공간 크기가 절반이 될 때마다 채널을 두 배로 늘려, 한 층의 전체 정보량(공간 × 채널)을 일정하게 유지하기 위함이다.</p>
+
+      <p>커널 가중치 수는 다음과 같다.</p>
+
+      <div class="math-block">$$ N_{\text{weights}} = C_{\text{in}} \cdot K \cdot K \cdot C_{\text{out}} + C_{\text{out}} $$</div>
+      <p class="math-note">C_in 입력 채널, K x K 커널 공간 크기, C_out 출력 채널. 마지막 + C_out은 채널별 편향(bias).</p>
+
+      <p>위 식을 보면, 공간 크기 $W$가 가중치 수에 등장하지 않는다 — 1번에서 말한 "합성곱의 파라미터 수는 공간 크기와 무관"이 여기서 다시 확인된다. 공간 크기에 비례하는 것은 곱셈 수($O \cdot O$만큼 같은 가중치를 반복 적용)이지 가중치 수가 아니다.</p>
+
+      <p>아래 위젯에서 $W, K, P, S$ 네 슬라이더로 출력 크기가 어떻게 바뀌는지 직접 본다. 각 모드(valid, same, strided)를 슬라이더로 만들어 보고, 식의 각 항이 출력 크기를 어떻게 결정하는지 한눈에 확인한다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 10</span><span>W, K, P, S 슬라이더 — 출력 크기 한눈에</span></div>
+        <div class="out-stage">
+          <div class="out-cell">
+            <canvas id="cMain"></canvas>
+            <div class="meta" id="metaMain">출력 크기: <span class="big">—</span></div>
+          </div>
+        </div>
+        <div class="out-controls">
+          <label><span>입력 한 변 W <b id="lblW">8</b></span><input type="range" id="ctlW" min="3" max="16" step="1" value="8"></label>
+          <label><span>커널 K <b id="lblK">3</b></span><input type="range" id="ctlK" min="1" max="7" step="2" value="3"></label>
+          <label><span>패딩 P <b id="lblP">0</b></span><input type="range" id="ctlP" min="0" max="3" step="1" value="0"></label>
+          <label><span>스트라이드 S <b id="lblS">1</b></span><input type="range" id="ctlS" min="1" max="4" step="1" value="1"></label>
+        </div>
+      </div>
+      <p class="widget-cap">왼쪽은 패딩이 덧붙은 입력 격자. 노란 박스가 커널 한 자리(스트라이드 S로 건너뛰며 그림). 오른쪽은 출력 격자. valid·same·strided 각 모드를 P와 S 슬라이더로 만들어 보면 같은 식이 세 가지 동작을 다 만들어 낸다는 것이 확인된다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>출력 크기 공식 한 줄 정리</h2>
+      <ul class="checklist">
+        <li>공식: $O = \lfloor (W - K + 2P) / S \rfloor + 1$.</li>
+        <li>유도: 가능한 시작 위치 수를 S로 나눈 뒤 0번 시작 위치 포함을 위해 +1.</li>
+        <li>same conv 패딩: $P = (K-1)/2$. 그래서 커널 K는 거의 항상 홀수.</li>
+        <li>strided conv(S=2): 풀링 없이 절반 다운샘플링. 최근 아키텍처 표준.</li>
+        <li>출력 채널 수 $C_{\text{out}}$은 별도 하이퍼파라미터, 보통 2배씩 증가.</li>
+        <li>가중치 수 = $C_{\text{in}} K^2 C_{\text{out}} + C_{\text{out}}$. 공간 크기 W와 무관.</li>
+        <li>외울 게 아니라 한 번 유도해 두고 거꾸로 풀 수 있어야 함.</li>
+      </ul>
+
+      <p>다음 11번에서는 같은 합성곱을 여러 층 쌓으면 깊은 층의 한 뉴런이 입력에서 얼마나 넓은 면적을 보는지 — <strong>수용 영역(receptive field)</strong>을 본다. 한 층의 좁은 시야가 여러 층을 거치며 어떻게 전체 이미지를 덮는지를 직관화한다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const CHAPTERS = [
+    { no:'01', t:'완전연결의 파라미터 폭발' },
+    { no:'02', t:'합성곱이란 무엇인가' },
+    { no:'03', t:'1D 합성곱 — 시간 신호' },
+    { no:'04', t:'2D 합성곱 — 이미지 커널' },
+    { no:'05', t:'희소 상호작용' },
+    { no:'06', t:'파라미터 공유' },
+    { no:'07', t:'변환 등가성' },
+    { no:'08', t:'풀링 — max vs avg' },
+    { no:'09', t:'신경과학적 기원' },
+    { no:'10', t:'출력 크기 공식' },
+    { no:'11', t:'수용 영역' },
+    { no:'12', t:'아키텍처 1 — LeNet, AlexNet' },
+    { no:'13', t:'아키텍처 2 — VGG, Inception' },
+    { no:'14', t:'아키텍처 3 — ResNet' },
+    { no:'15', t:'시험 대비 — 30+ 질문' },
+  ];
+  const CUR = '10';
+  document.querySelector('.topbar').innerHTML = '<a class="home" href="index.html">← Ch.09 CNN 표지</a><span class="ch-mini">SUB ' + CUR + ' / 15</span>';
+  document.querySelector('.ch-nav ol').innerHTML = CHAPTERS.map(c => '<li><a href="' + c.no + '.html"' + (c.no===CUR?' class="current"':'') + '>' + c.t + '</a></li>').join('');
+  const idx = CHAPTERS.findIndex(c=>c.no===CUR);
+  const prev = idx>0 ? CHAPTERS[idx-1] : { no:'', t:'표지로', _:'index.html' };
+  const next = idx<CHAPTERS.length-1 ? CHAPTERS[idx+1] : { no:'', t:'표지로', _:'index.html' };
+  document.querySelector('.ch-foot').innerHTML =
+    '<a href="' + (prev._||prev.no+'.html') + '"><div class="dir">← 이전</div><div class="ti">' + prev.t + '</div></a>' +
+    '<a href="' + (next._||next.no+'.html') + '" class="next"><div class="dir">다음 →</div><div class="ti">' + next.t + '</div></a>';
+
+  const bar = document.querySelector('.scroll-progress');
+  document.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max > 0 ? (h.scrollTop/max)*100 : 0) + '%';
+  }, { passive: true });
+
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, { delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}], throwOnError: false });
+    }
+  });
+
+  // 위젯
+  const cMainEl = document.getElementById('cMain');
+  const cMain = cMainEl.getContext('2d');
+  const metaMain = document.getElementById('metaMain');
+  const ctlW = document.getElementById('ctlW');
+  const ctlK = document.getElementById('ctlK');
+  const ctlP = document.getElementById('ctlP');
+  const ctlS = document.getElementById('ctlS');
+  const lblW = document.getElementById('lblW');
+  const lblK = document.getElementById('lblK');
+  const lblP = document.getElementById('lblP');
+  const lblS = document.getElementById('lblS');
+
+  function setup() {
+    const r = cMainEl.getBoundingClientRect();
+    cMainEl.width = Math.floor(r.width);
+    cMainEl.height = 240;
+  }
+
+  function draw() {
+    setup();
+    const W = +ctlW.value, K = +ctlK.value, P = +ctlP.value, S = +ctlS.value;
+    lblW.textContent = W; lblK.textContent = K; lblP.textContent = P; lblS.textContent = S;
+    const O = Math.floor((W + 2*P - K) / S) + 1;
+    const validO = O > 0 ? O : 0;
+
+    const canvas = cMainEl;
+    const ctx = cMain;
+    const Wp = W + 2*P;
+    const Cw = canvas.width;
+    const Ch = canvas.height;
+    const leftW = Math.min(Cw * 0.55, Cw - 20);
+    const cellSize = Math.min(28, leftW / Math.max(Wp, 1));
+    const cellOSize = Math.min(28, (Cw - leftW - 20) / Math.max(validO, 1));
+
+    ctx.clearRect(0, 0, Cw, Ch);
+
+    // 입력 격자 (가운데 정렬)
+    const inX = 10;
+    const inY = (Ch - cellSize) / 2;
+    for (let i = 0; i < Wp; i++) {
+      const x = inX + i * cellSize;
+      const isPad = (i < P || i >= W + P);
+      ctx.fillStyle = isPad ? '#f1ece0' : '#7BA7B9';
+      ctx.fillRect(x, inY, cellSize - 1, cellSize - 1);
+    }
+    ctx.font = '500 10px Spline Sans Mono, monospace';
+    ctx.fillStyle = '#8E8576'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('입력 (W=' + W + ', P=' + P + ' → 길이 ' + Wp + ')', inX, inY - 16);
+
+    // 모든 커널 자리 그리기
+    let starts = [];
+    for (let s = 0; s + K <= Wp; s += S) starts.push(s);
+    starts.forEach((s, idx) => {
+      const x = inX + s * cellSize;
+      const yShift = ((idx % 2 === 0) ? -1 : 1) * (10 + Math.floor(idx/2) * 4);
+      ctx.strokeStyle = '#C0492E'; ctx.lineWidth = 1.8;
+      ctx.strokeRect(x - 1, inY + yShift - 1, K * cellSize + 1, cellSize + 1);
+    });
+
+    // 출력 격자 (오른쪽)
+    const outX = inX + Wp * cellSize + 24;
+    const outY = (Ch - cellOSize) / 2;
+    for (let i = 0; i < validO; i++) {
+      const x = outX + i * cellOSize;
+      ctx.fillStyle = '#C0492E';
+      ctx.fillRect(x, outY, cellOSize - 1, cellOSize - 1);
+    }
+    ctx.fillStyle = '#8E8576';
+    ctx.fillText('출력 (길이 ' + validO + ')', outX, outY - 16);
+
+    // 화살표
+    ctx.strokeStyle = '#8E8576'; ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(inX + Wp * cellSize + 4, Ch/2);
+    ctx.lineTo(outX - 4, Ch/2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(outX - 4, Ch/2);
+    ctx.lineTo(outX - 10, Ch/2 - 4);
+    ctx.lineTo(outX - 10, Ch/2 + 4);
+    ctx.closePath();
+    ctx.fillStyle = '#8E8576'; ctx.fill();
+
+    let mode = '커스텀';
+    if (P === 0 && S === 1) mode = 'valid';
+    else if (P === Math.floor((K-1)/2) && S === 1) mode = 'same';
+    else if (P === Math.floor((K-1)/2) && S === 2) mode = 'strided same';
+
+    metaMain.innerHTML = '⌊(' + W + ' - ' + K + ' + 2·' + P + ') / ' + S + '⌋ + 1 = <span class="big">' + validO + '</span> · 모드 <b>' + mode + '</b>';
+  }
+
+  [ctlW, ctlK, ctlP, ctlS].forEach(el => el.addEventListener('input', draw));
+  window.addEventListener('resize', draw);
+  draw();
+</script>
+</body>
+</html>

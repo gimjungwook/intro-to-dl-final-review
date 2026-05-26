@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>09 · LSTM 1 — 세 게이트의 역할</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .lstm-stage { display: grid; grid-template-columns: 1.1fr 1fr; gap: 1.2rem; padding: 1.4rem 1.2rem 1rem; align-items: stretch; }
+  .lstm-stage svg { width: 100%; height: auto; background: #fff; border: 1px solid var(--line); border-radius: 10px; display: block; }
+  .lstm-info { font-family: var(--mono); font-size: .82rem; line-height: 1.7; padding: 1rem 1.1rem; background: var(--paper-2); border-radius: 8px; }
+  .lstm-info .row { display: flex; justify-content: space-between; padding: .35rem 0; border-bottom: 1px dashed var(--line-soft); }
+  .lstm-info .row:last-child { border-bottom: none; }
+  .lstm-info .row b { color: var(--ink); font-weight: 600; }
+  .lstm-info .row .bar { display: inline-block; height: 8px; background: var(--structure); border-radius: 4px; vertical-align: middle; margin-left: .4rem; transition: width .12s var(--ease); }
+  .lstm-info .row.gate-i .bar { background: var(--style); }
+  .lstm-info .row.gate-f .bar { background: var(--structure); }
+  .lstm-info .row.gate-o .bar { background: var(--synth); }
+  .lstm-info .row.cell  .bar { background: var(--ink); }
+  .lstm-ctl { display: flex; flex-wrap: wrap; gap: 1.1rem; padding: 1rem 1.2rem; border-top: 1px solid var(--line-soft); background: var(--paper); font-size: .87rem; }
+  .lstm-ctl label { display: flex; flex-direction: column; gap: .25rem; min-width: 180px; flex: 1; }
+  .lstm-ctl label span { color: var(--ink-soft); font-family: var(--mono); font-size: .78rem; }
+  .lstm-ctl label span b { color: var(--ink); font-weight: 600; }
+  .lstm-ctl input[type=range] { width: 100%; accent-color: var(--structure); }
+  @media (max-width: 720px) { .lstm-stage { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar">
+  <a class="home" href="index.html">← Ch.10 표지</a>
+  <span class="ch-mini">SUB 09 / 14</span>
+</div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol id="navlist"></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-chapter 09 · LSTM의 첫 그림</span>
+      <h1>세 개의 <span class="t-synth">게이트</span>가<br>기억을 통제한다</h1>
+      <p class="lede">기본 순환 신경망(Recurrent Neural Network, RNN)은 같은 가중치를 시간만큼 곱하다가 무너졌다. 길이가 20만 넘어가도 학습이 어렵다. 1997년 호크라이터(Hochreiter)와 슈미트후버(Schmidhuber)가 제안한 장단기 메모리(Long Short-Term Memory, LSTM)는 이 문제를 정면으로 푼 첫 구조다. 그 핵심은 단 한 줄로 요약된다 — <strong>"세 개의 작은 신경망(게이트)이, 한 개의 정보 고속도로(cell state)에 무엇을 더할지, 무엇을 지울지, 무엇을 내보낼지를 결정한다"</strong>. 이 장은 그 세 게이트 각각이 무엇을 결정하는지를 회로 그림과 위젯으로 푼다.</p>
+    </header>
+
+    <div class="prose">
+      <h2>왜 게이트가 필요한가 — 기본 RNN이 못한 일</h2>
+      <p>앞 장(<a href="07.html">SUB 07</a>)에서 본 것처럼, 기본 RNN의 은닉 상태 갱신은 $h_t = \tanh(Wh_{t-1} + Ux_t + b)$다. 이 한 줄은 매 시간 단계마다 "이전 상태를 가중치 $W$에 통과시킨 뒤 비선형으로 짓이긴다"는 한 가지 동작만 한다. 이전 정보를 그대로 유지하려면 $W$가 항등 행렬에 가까워야 하고, 새 정보를 받아들이려면 $W$가 변형 행렬이어야 한다. 두 요구가 같은 가중치 위에서 동시에 일어날 수 없으므로, 기본 RNN은 어느 한쪽에서 무너진다.</p>
+
+      <p>더 결정적으로, 같은 비선형(예: $\tanh$)을 매 단계 통과시키면 도함수가 매번 1보다 작아져서, 100 단계 전의 신호가 현재까지 도달하기 어렵다. 100 단계 전의 단어를 지금 단어가 참조해야 하는 자연어 문제(예: 문장 첫 단어의 주어와 끝 단어의 동사 일치)에서 기본 RNN은 사실상 무력하다.</p>
+
+      <div class="analogy">
+        한 학생이 책을 읽으며 노트 한 권에 모든 것을 그때그때 덮어쓴다고 하자. 새 페이지를 쓸 때마다 이전 페이지의 잉크가 살짝 번지고, 100페이지를 쓰고 나면 첫 페이지는 거의 보이지 않는다. <b>기본 RNN이 바로 이 학생이다</b>. 반면 LSTM의 학생은 두 권의 노트를 들고 다닌다. 한 권은 <b>"이번 페이지에만 쓸 임시 메모"</b>($h_t$), 다른 한 권은 <b>"꼭 기억해야 할 핵심만 따로 적어 둔 장기 노트"</b>($C_t$). 그리고 그 사이에 <b>세 개의 작은 게이트</b>가 있어, 임시 메모에서 무엇을 장기 노트로 옮길지(input), 장기 노트에서 무엇을 지울지(forget), 장기 노트에서 무엇을 다음 페이지로 꺼낼지(output)를 매번 결정한다.
+      </div>
+
+      <p>LSTM의 위대함은, 이 "두 권의 노트와 세 개의 게이트"라는 직관을 미분 가능한(differentiable) 작은 신경망 조합으로 깔끔하게 구현한 데 있다. 세 개의 게이트는 모두 입력 $x_t$와 이전 은닉 상태 $h_{t-1}$로부터 0과 1 사이의 벡터를 만드는 단순한 시그모이드(sigmoid) 층이다. 세 게이트의 출력값이 1이면 "통과", 0이면 "차단"의 의미를 가진다. 그리고 그 값을 핵심 정보 흐름(cell state)에 원소별 곱(element-wise multiplication)으로 적용한다.</p>
+
+      <h2>세 게이트의 정의 — 각각 무엇을 결정하는가</h2>
+      <p>LSTM의 한 단계는 다음 네 식으로 정의된다. 각 식의 $\sigma$는 시그모이드(0-1 출력), $\tanh$는 하이퍼볼릭 탄젠트(-1에서 1 출력)다.</p>
+
+      <div class="math-block">$$\begin{aligned}
+        f_t &= \sigma\!\left(W_f\,[h_{t-1}, x_t] + b_f\right) \quad &\text{(forget gate)} \\
+        i_t &= \sigma\!\left(W_i\,[h_{t-1}, x_t] + b_i\right) \quad &\text{(input gate)} \\
+        o_t &= \sigma\!\left(W_o\,[h_{t-1}, x_t] + b_o\right) \quad &\text{(output gate)} \\
+        \tilde C_t &= \tanh\!\left(W_C\,[h_{t-1}, x_t] + b_C\right) \quad &\text{(candidate cell)}
+      \end{aligned}$$</div>
+      <p class="math-note">$[h_{t-1}, x_t]$는 두 벡터의 이어 붙임(concatenation). $f_t, i_t, o_t$는 모두 같은 크기의 게이팅 벡터로, 0이면 차단, 1이면 통과의 의미.</p>
+
+      <p><strong>1. Forget gate ($f_t$).</strong> "이전 cell state $C_{t-1}$의 각 원소를 얼마나 유지할 것인가"를 결정한다. $f_t$의 어떤 원소가 0.95라면 그 위치의 기억은 거의 그대로 유지되고, 0.05라면 거의 잊힌다. 이 게이트가 LSTM의 가장 결정적인 부품이다. 1999년 게르스(Gers) 등이 원래 LSTM에 추가로 도입한 forget gate가 없었다면, LSTM도 결국 영원히 누적된 쓰레기 정보로 무너졌을 것이다. 매 단계마다 "더 이상 필요 없는 기억"을 일부 비워야 새 정보를 위한 공간이 생긴다.</p>
+
+      <p><strong>2. Input gate ($i_t$).</strong> "후보 cell $\tilde C_t$의 각 원소를 얼마나 cell state에 더할 것인가"를 결정한다. 후보 cell $\tilde C_t$는 $\tanh$로 만든 "쓸 수도 있는 새 정보"이고, input gate가 그 중 어느 차원을 실제로 쓸지 선별한다. 새 단어 'cat'을 읽었을 때, 그 단어가 cell state의 모든 차원에 쓰일 필요는 없다. 'cat'이 주어임을 기록하는 차원에는 강하게 쓰고, 시제와 무관한 차원에는 약하게 쓰는 식의 선택성이 input gate에서 나온다.</p>
+
+      <p><strong>3. Output gate ($o_t$).</strong> "이번 시점에 cell state $C_t$의 각 원소를 hidden state $h_t$로 얼마나 꺼낼 것인가"를 결정한다. cell state는 "장기 기억의 전체 사본"이고, hidden state는 "지금 이 순간 외부에 보여 줄 작업 메모리"다. 외부 출력은 hidden state에서 계산되므로, output gate는 "지금 이 순간 어떤 기억을 활용할까"의 결정에 해당한다. 같은 cell state라도 시점에 따라 다른 측면을 노출할 수 있는 유연성이 여기서 나온다.</p>
+
+      <h2>cell state와 hidden state의 결합</h2>
+      <p>세 게이트가 결정되면, 실제 상태 갱신은 다음 두 식으로 끝난다. 이 두 식이 LSTM의 정체성이다.</p>
+
+      <div class="math-block">$$C_t = f_t \odot C_{t-1} + i_t \odot \tilde C_t$$</div>
+      <div class="math-block">$$h_t = o_t \odot \tanh(C_t)$$</div>
+      <p class="math-note">$\odot$는 원소별 곱(Hadamard product). 첫 식이 cell state 갱신, 둘째 식이 hidden state 갱신.</p>
+
+      <p>첫 식을 천천히 보자. $C_t = f_t \odot C_{t-1} + i_t \odot \tilde C_t$. 왼쪽 항은 "이전 기억을 forget gate로 일부 지운다"이고, 오른쪽 항은 "후보 새 기억을 input gate로 일부 받아들인다"이다. 이 두 항을 더해 새 cell state를 만든다. 결정적으로 이 식에는 <strong>가중치 행렬을 통과하는 곱셈이 없다</strong>. 단지 원소별 곱과 덧셈이 있을 뿐이다. 다음 장(<a href="10.html">SUB 10</a>)에서 보겠지만, 이 단순한 형태가 BPTT의 곱셈 지옥을 회피하는 결정적인 트릭이다.</p>
+
+      <p>둘째 식은 더 단순하다. cell state를 $\tanh$로 한 번 짓이긴 뒤(값을 $-1$에서 $1$로 정규화), output gate로 일부만 통과시켜 hidden state를 만든다. 외부에서 보이는 출력 $\hat y_t$는 이 $h_t$로부터 계산된다. 즉, cell state는 모델의 "내장 메모리"이고, hidden state는 그 메모리에서 이번 시점에 노출하기로 결정한 "공개 메모리"다.</p>
+
+      <h2>매개변수 수 — 기본 RNN의 약 4배</h2>
+      <p>LSTM 한 셀에는 forget·input·output·candidate 네 개의 작은 신경망이 들어 있다. 각각이 $h_{t-1}$과 $x_t$를 입력으로 받고 같은 크기의 벡터를 출력하므로, 매개변수 수는 다음과 같다.</p>
+
+      <div class="math-block">$$N_{\text{LSTM}} = 4 \times \bigl[(d_h + d_x) \cdot d_h + d_h\bigr] = 4 \cdot d_h \cdot (d_h + d_x + 1)$$</div>
+      <p class="math-note">$d_h$는 hidden state의 차원, $d_x$는 입력의 차원. 같은 크기의 기본 RNN은 $d_h \cdot (d_h + d_x + 1)$이므로 LSTM은 약 4배.</p>
+
+      <p>약 4배의 매개변수가 약 4배의 표현력으로 곧장 이어지지는 않는다. 하지만 4배의 매개변수가 "장기 기억을 안정적으로 운반할 수 있다"는 자격을 얻는 데는 충분하다. 실제로 LSTM은 2010년대 초중반의 거의 모든 시퀀스 과제(음성 인식, 기계 번역, 손글씨 인식)에서 기본 RNN을 압도했고, Transformer가 등장하기 전까지 사실상 표준 시퀀스 모델의 자리를 지켰다.</p>
+
+      <p>아래 위젯은 세 게이트 각각의 활성도를 슬라이더로 직접 바꾸면서, cell state와 hidden state가 어떻게 변하는지 한 시간 단계의 회로 위에서 보여 준다. forget gate가 0에 가까우면 이전 기억이 사라지고, input gate가 0에 가까우면 새 정보가 들어오지 않으며, output gate가 0에 가까우면 hidden state가 0으로 수렴한다. 세 게이트를 모두 1로 두면 LSTM이 사실상 기본 RNN처럼 동작한다. 세 게이트가 함께 작동할 때만 LSTM이 진가를 발휘한다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 09-A</span><span>LSTM 한 셀의 네 게이트 회로 — 게이트 활성도로 cell·hidden 변화</span></div>
+        <div class="lstm-stage">
+          <svg id="lstmSvg" viewBox="0 0 540 360" preserveAspectRatio="xMidYMid meet"></svg>
+          <div class="lstm-info" id="lstmInfo"></div>
+        </div>
+        <div class="lstm-ctl">
+          <label><span>이전 cell state $C_{t-1}$ <b id="lblCprev">0.50</b></span><input type="range" id="ctlCprev" min="-1" max="1" step="0.01" value="0.5"></label>
+          <label><span>후보 cell $\tilde C_t$ <b id="lblCtil">0.80</b></span><input type="range" id="ctlCtil" min="-1" max="1" step="0.01" value="0.8"></label>
+          <label><span>forget $f_t$ <b id="lblF">0.90</b></span><input type="range" id="ctlF" min="0" max="1" step="0.01" value="0.9"></label>
+          <label><span>input $i_t$ <b id="lblI">0.60</b></span><input type="range" id="ctlI" min="0" max="1" step="0.01" value="0.6"></label>
+          <label><span>output $o_t$ <b id="lblO">0.70</b></span><input type="range" id="ctlO" min="0" max="1" step="0.01" value="0.7"></label>
+        </div>
+      </div>
+      <p class="widget-cap">forget을 0으로 내리면 이전 기억이 즉시 사라지고, 1로 올리면 거의 그대로 유지된다. input을 0으로 내리면 새 후보가 들어오지 못하므로 cell state가 이전 값으로 굳는다. output을 0으로 내리면 cell state는 살아 있지만 외부 hidden state는 0이 되어 다음 출력이 무력화된다. 세 게이트는 독립이며 각자 다른 일을 한다 — 이 분업이 LSTM의 핵심.</p>
+    </div>
+
+    <div class="prose">
+      <h2>왜 시그모이드인가 — 0과 1 사이의 결정</h2>
+      <p>세 게이트는 모두 시그모이드를 쓴다. 시그모이드의 출력은 항상 0과 1 사이다. 이 범위가 "차단"부터 "통과"까지의 부드러운 결정을 자연스럽게 표현한다. 만약 게이트에 $\tanh$를 썼다면 출력이 $-1$에서 $1$이 되어, 게이트가 음수가 되는 경우 cell state가 반전되는 이상한 동작이 생긴다. 게이트가 명확하게 "얼마나 통과시킬까"를 의미하려면 0과 1 사이가 자연스럽다.</p>
+
+      <p>한편 후보 cell $\tilde C_t$는 $\tanh$를 쓴다. 후보는 "더할 수도 있는 새 정보"이므로 양수와 음수가 모두 의미가 있다(어떤 차원은 cell state를 키우고 어떤 차원은 줄이고 싶다). $-1$에서 $1$의 범위가 적절하다. 마지막으로 $C_t$를 hidden state로 내보낼 때도 $\tanh$를 한 번 더 씌운다. 이는 cell state가 시간이 지나며 누적되어 매우 큰 값이 될 수 있기 때문에, 출력 직전에 안정적인 범위로 다시 짓이기는 안전장치다.</p>
+
+      <h2>peephole, coupled gate 같은 변형들</h2>
+      <p>표준 LSTM 이후 수많은 변형이 제안되었다. 게르스 등이 2000년에 추가한 <strong>peephole connection</strong>은 세 게이트의 계산에 cell state도 입력으로 넣는다(원래는 $h_{t-1}$과 $x_t$만 입력). cell state를 직접 보고 게이트를 결정할 수 있게 된 셈이지만, 실험적으로 큰 차이를 만들지는 않았다. <strong>coupled forget-input gate</strong>는 $i_t = 1 - f_t$로 묶어 매개변수를 줄이는 변형이다. 가장 영향력 있는 변형은 다음 장(<a href="11.html">SUB 11</a>)의 GRU로, 게이트를 세 개에서 두 개로 줄이고 cell state와 hidden state를 합쳐 더 단순한 구조를 만든다.</p>
+
+      <p>2015년 그레프(Greff) 등의 대규모 비교 연구는 여러 변형을 같은 데이터에 적용했을 때, "표준 LSTM 대비 일관되게 더 나은 변형은 없다"는 결론을 내렸다. LSTM의 본질은 게이트의 정확한 형태가 아니라, <strong>"선형 자체 루프 + 게이트로 조절되는 곱셈"</strong>이라는 더 깊은 원리에 있음을 시사한다. 그 원리가 BPTT를 어떻게 살리는지가 다음 장의 주제다.</p>
+
+      <h2>핵심 정리</h2>
+      <ul class="checklist">
+        <li>LSTM은 hidden state $h_t$ 외에 별도의 <strong>cell state $C_t$</strong>를 가진다. cell state가 장기 기억의 통로다.</li>
+        <li>세 개의 게이트 $f_t, i_t, o_t$는 모두 $\sigma([h_{t-1}, x_t])$ 형태의 작은 시그모이드 신경망이고, 출력은 0과 1 사이의 게이팅 벡터.</li>
+        <li>cell state 갱신: $C_t = f_t \odot C_{t-1} + i_t \odot \tilde C_t$. 가중치 곱셈 없음, 원소별 곱과 덧셈만.</li>
+        <li>hidden state 갱신: $h_t = o_t \odot \tanh(C_t)$. cell state를 한 번 짓이긴 뒤 output gate로 일부만 노출.</li>
+        <li>forget gate가 LSTM의 가장 결정적인 부품. 없으면 cell state가 무한히 누적되어 무너진다.</li>
+        <li>매개변수 수는 기본 RNN의 약 4배. 그 4배의 자원으로 장기 기억을 안정적으로 운반할 자격을 얻는다.</li>
+        <li>왜 BPTT의 곱셈 지옥을 피하는가는 다음 장(<a href="10.html">SUB 10</a>)에서 본다.</li>
+      </ul>
+    </div>
+
+    <nav class="ch-foot" id="chfoot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    ['01','왜 시퀀스에 FC·CNN은 부족한가'],['02','RNN의 기본 아이디어'],['03','시간 펼치기'],
+    ['04','매개변수 공유'],['05','BPTT 1 — 직관'],['06','BPTT 2 — 손계산'],
+    ['07','기울기 폭발과 소실'],['08','기울기 클리핑'],['09','LSTM 1 — 세 게이트'],
+    ['10','LSTM 2 — cell state'],['11','GRU'],['12','양방향 RNN'],
+    ['13','인코더-디코더'],['14','시험 대비'],
+  ];
+  const CUR = '09';
+  const ol = document.getElementById('navlist');
+  SUBS.forEach(([n,t]) => {
+    const li = document.createElement('li');
+    li.innerHTML = `<a href="${n}.html"${n===CUR?' class="current"':''}>${t}</a>`;
+    ol.appendChild(li);
+  });
+  const i = SUBS.findIndex(s=>s[0]===CUR);
+  const prev = i>0 ? SUBS[i-1] : ['','표지로'];
+  const next = i<SUBS.length-1 ? SUBS[i+1] : ['','표지로'];
+  document.getElementById('chfoot').innerHTML =
+    `<a href="${prev[0]?prev[0]+'.html':'index.html'}"><div class="dir">← 이전</div><div class="ti">${prev[1]}</div></a>` +
+    `<a href="${next[0]?next[0]+'.html':'index.html'}" class="next"><div class="dir">다음 →</div><div class="ti">${next[1]}</div></a>`;
+  const bar = document.querySelector('.scroll-progress');
+  document.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max>0 ? (h.scrollTop/max)*100 : 0) + '%';
+  }, { passive: true });
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) renderMathInElement(document.body, {
+      delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }],
+      throwOnError: false,
+    });
+  });
+
+  // ---------- 위젯: LSTM 4-게이트 회로 ----------
+  const svg = document.getElementById('lstmSvg');
+  const info = document.getElementById('lstmInfo');
+  const ctlCprev = document.getElementById('ctlCprev');
+  const ctlCtil = document.getElementById('ctlCtil');
+  const ctlF = document.getElementById('ctlF');
+  const ctlI = document.getElementById('ctlI');
+  const ctlO = document.getElementById('ctlO');
+  const lblCprev = document.getElementById('lblCprev');
+  const lblCtil = document.getElementById('lblCtil');
+  const lblF = document.getElementById('lblF');
+  const lblI = document.getElementById('lblI');
+  const lblO = document.getElementById('lblO');
+
+  function drawLSTM() {
+    const Cprev = parseFloat(ctlCprev.value);
+    const Ctil  = parseFloat(ctlCtil.value);
+    const F = parseFloat(ctlF.value);
+    const I = parseFloat(ctlI.value);
+    const O = parseFloat(ctlO.value);
+    lblCprev.textContent = Cprev.toFixed(2);
+    lblCtil.textContent = Ctil.toFixed(2);
+    lblF.textContent = F.toFixed(2);
+    lblI.textContent = I.toFixed(2);
+    lblO.textContent = O.toFixed(2);
+
+    const Cnew = F * Cprev + I * Ctil;
+    const Hnew = O * Math.tanh(Cnew);
+
+    // build SVG
+    const C_TXT = '#26221C';
+    const C_STR = '#2D5B7A';
+    const C_STY = '#C0492E';
+    const C_SYN = '#A47B2E';
+    const C_DIM = '#8E8576';
+    const lineOp = (v) => Math.max(0.15, Math.min(1, v));
+    function pipe(x1,y1,x2,y2,col,op,thick) {
+      return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${col}" stroke-width="${thick||3}" stroke-opacity="${op}" />`;
+    }
+    function lab(x,y,t,col,sz) { return `<text x="${x}" y="${y}" fill="${col||C_TXT}" font-family="Spline Sans Mono, monospace" font-size="${sz||13}" text-anchor="middle">${t}</text>`; }
+    function gateBox(x,y,w,h,col,op,name,val) {
+      return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="6" fill="${col}" fill-opacity="${0.12+op*0.4}" stroke="${col}" stroke-width="1.5" />`
+        + `<text x="${x+w/2}" y="${y+h/2+5}" fill="${col}" font-family="Spline Sans Mono, monospace" font-size="13" text-anchor="middle">${name} ${val.toFixed(2)}</text>`;
+    }
+
+    let s = `<rect width="540" height="360" fill="#fff" />`;
+    // labels
+    s += lab(50, 50, 'C(t-1)', C_DIM, 12);
+    s += `<text x="50" y="70" fill="${C_TXT}" font-family="Spline Sans Mono, monospace" font-size="15" text-anchor="middle">${Cprev.toFixed(2)}</text>`;
+    s += lab(50, 320, 'h(t-1), x(t)', C_DIM, 12);
+
+    // cell highway (top)
+    s += pipe(80, 60, 460, 60, C_TXT, 0.85, 4);
+    s += lab(490, 65, 'C(t)', C_DIM, 12);
+    s += `<text x="490" y="85" fill="${C_TXT}" font-family="Spline Sans Mono, monospace" font-size="15" text-anchor="middle">${Cnew.toFixed(2)}</text>`;
+
+    // forget gate
+    s += gateBox(150, 100, 80, 36, C_STR, F, 'f', F);
+    s += pipe(190, 100, 190, 64, C_STR, lineOp(F), 2.5);
+    s += `<circle cx="190" cy="60" r="6" fill="#fff" stroke="${C_STR}" stroke-width="2" />`;
+    s += lab(190, 64, '×', C_STR, 11);
+
+    // input gate
+    s += gateBox(250, 100, 80, 36, C_STY, I, 'i', I);
+    s += pipe(290, 100, 290, 64, C_STY, lineOp(I), 2.5);
+    s += `<circle cx="290" cy="60" r="6" fill="#fff" stroke="${C_STY}" stroke-width="2" />`;
+    s += lab(290, 64, '×', C_STY, 11);
+
+    // candidate tilde C
+    s += gateBox(345, 100, 80, 36, '#5A5247', Math.abs(Ctil), '~C', Ctil);
+    s += pipe(385, 100, 385, 64, '#5A5247', 0.7, 2.5);
+    s += pipe(385, 64, 295, 64, '#5A5247', 0.5, 1.8);
+    // adder on cell highway between forget(×) and input(×)? input ⊕ goes back to highway
+    s += `<circle cx="290" cy="60" r="8" fill="none" stroke="${C_STY}" stroke-width="1.5" stroke-dasharray="2,2" />`;
+
+    // output gate
+    s += gateBox(370, 220, 80, 36, C_SYN, O, 'o', O);
+    s += pipe(440, 220, 440, 130, C_SYN, lineOp(O), 2.5);
+    // pipe from C(t) down to tanh
+    s += pipe(460, 70, 460, 200, C_TXT, 0.6, 2);
+    s += `<rect x="430" y="195" width="60" height="26" rx="5" fill="${C_DIM}" fill-opacity="0.12" stroke="${C_DIM}" />`;
+    s += lab(460, 213, 'tanh', C_DIM, 12);
+    // multiply o × tanh(C) → h(t)
+    s += `<circle cx="440" cy="245" r="7" fill="#fff" stroke="${C_SYN}" stroke-width="2" />`;
+    s += lab(440, 249, '×', C_SYN, 11);
+    s += pipe(440, 252, 440, 300, C_SYN, lineOp(O*Math.abs(Hnew)), 3);
+    s += lab(440, 318, 'h(t)', C_DIM, 12);
+    s += `<text x="440" y="338" fill="${C_TXT}" font-family="Spline Sans Mono, monospace" font-size="15" text-anchor="middle">${Hnew.toFixed(2)}</text>`;
+
+    // inputs flow into gate boxes
+    [150, 250, 345, 370].forEach((x, k) => {
+      const cols = [C_STR, C_STY, '#5A5247', C_SYN];
+      s += pipe(x+40, 200, x+40, 136, cols[k], 0.45, 1.6);
+    });
+    s += pipe(50, 290, 50, 215, C_DIM, 0.6, 2);
+    s += pipe(50, 215, 410, 215, C_DIM, 0.4, 1.4);
+
+    // legend hint
+    s += `<text x="270" y="345" fill="${C_DIM}" font-family="Spline Sans Mono, monospace" font-size="11" text-anchor="middle">선의 진하기 = 그 경로로 흐르는 정보의 양</text>`;
+
+    svg.innerHTML = s;
+
+    info.innerHTML =
+      `<div class="row"><span>이전 cell C(t-1)</span><b>${Cprev.toFixed(2)}</b></div>` +
+      `<div class="row gate-f"><span>forget × C(t-1)</span><b>${(F*Cprev).toFixed(2)} <i class="bar" style="width:${Math.abs(F*Cprev)*80}px"></i></b></div>` +
+      `<div class="row gate-i"><span>input × ~C</span><b>${(I*Ctil).toFixed(2)} <i class="bar" style="width:${Math.abs(I*Ctil)*80}px"></i></b></div>` +
+      `<div class="row cell"><span>새 cell C(t)</span><b>${Cnew.toFixed(2)} <i class="bar" style="width:${Math.abs(Cnew)*60}px"></i></b></div>` +
+      `<div class="row gate-o"><span>output × tanh(C)</span><b>${Hnew.toFixed(2)} <i class="bar" style="width:${Math.abs(Hnew)*60}px"></i></b></div>` +
+      `<div class="row"><span>외부 출력 h(t)</span><b style="color:var(--synth)">${Hnew.toFixed(2)}</b></div>`;
+  }
+  [ctlCprev, ctlCtil, ctlF, ctlI, ctlO].forEach(el => el.addEventListener('input', drawLSTM));
+  drawLSTM();
+</script>
+</body>
+</html>

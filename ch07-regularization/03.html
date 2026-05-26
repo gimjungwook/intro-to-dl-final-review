@@ -3,413 +3,125 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>03 · 드롭아웃 — 무작위 서브넷 앙상블</title>
+<title>Sub 03 · L2 정칙화 — 가우시안 사전과 가중치 감쇠 · Ch.07</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
-  .topbar { position: sticky; top: 0; z-index: 40; display: flex; align-items: center; justify-content: space-between; padding: .8rem 1.4rem; background: rgba(250,247,240,.82); backdrop-filter: blur(12px) saturate(1.3); border-bottom: 1px solid var(--line-soft); }
-  .topbar .home { font-family: var(--mono); font-size: .76rem; letter-spacing: .1em; color: var(--ink-soft); text-decoration: none; }
-  .topbar .home:hover { color: var(--ink); }
-  .topbar .ch-mini { font-family: var(--mono); font-size: .72rem; letter-spacing: .14em; color: var(--ink-faint); }
-
-  .ch-layout { display: grid; grid-template-columns: 15rem 1fr; gap: 0; max-width: 68rem; margin-inline: auto; }
-  .ch-nav { position: sticky; top: 3.4rem; align-self: start; height: calc(100vh - 3.4rem); overflow-y: auto; padding: 2rem 1.2rem; border-right: 1px solid var(--line-soft); }
-  .ch-nav ol { list-style: none; margin: 0; padding: 0; counter-reset: ch; }
-  .ch-nav li { counter-increment: ch; margin: 0; }
-  .ch-nav a { display: grid; grid-template-columns: 1.7rem 1fr; gap: .5rem; align-items: baseline; padding: .5rem .5rem; border-radius: 7px; text-decoration: none; color: var(--ink-soft); font-size: .88rem; line-height: 1.35; transition: background .15s; }
-  .ch-nav a::before { content: counter(ch, decimal-leading-zero); font-family: var(--mono); font-size: .72rem; color: var(--ink-faint); }
-  .ch-nav a:hover { background: var(--paper-2); color: var(--ink); }
-  .ch-nav a.current { background: var(--ink); color: var(--paper); }
-  .ch-nav a.current::before { color: var(--style-lo); }
-  .ch-main { min-width: 0; padding: 3rem 0 6rem; }
-  .ch-head { max-width: var(--measure); margin: 0 auto 2.4rem; padding-inline: 1.4rem; }
-  .ch-head .kicker { margin-bottom: 1rem; display: block; }
-  .ch-head h1 { font-size: clamp(2rem, 5vw, 3.3rem); margin: 0 0 .8rem; }
-  .ch-head .lede { font-family: var(--serif); font-size: 1.22rem; font-style: italic; color: var(--ink-soft); line-height: 1.5; }
-  .ch-foot { display: flex; justify-content: space-between; gap: 1rem; max-width: var(--measure); margin: 4rem auto 0; padding-inline: 1.4rem; }
-  .ch-foot a { display: block; text-decoration: none; flex: 1; padding: 1rem 1.2rem; border: 1px solid var(--line); border-radius: 10px; transition: border-color .15s, transform .15s; }
-  .ch-foot a:hover { border-color: var(--style); transform: translateY(-2px); }
-  .ch-foot .dir { font-family: var(--mono); font-size: .7rem; letter-spacing: .14em; color: var(--ink-faint); text-transform: uppercase; }
-  .ch-foot .ti { font-family: var(--serif); font-size: 1.05rem; color: var(--ink); margin-top: .2rem; }
-  .ch-foot .next { text-align: right; }
-  @media (max-width: 760px) { .ch-layout { grid-template-columns: 1fr; } .ch-nav { display: none; } }
-
-  /* 드롭아웃 위젯 */
-  .drop-stage { display: grid; grid-template-columns: 1fr; gap: .6rem; padding: 1.2rem 1.1rem .8rem; }
-  .drop-cell { background: var(--paper); border: 1px solid var(--line); border-radius: 9px; padding: .6rem; }
-  .drop-cell h5 { margin: 0 0 .4rem; font-family: var(--mono); font-size: .7rem; letter-spacing: .12em; color: var(--ink-faint); text-transform: uppercase; }
-  .drop-cell canvas { width: 100%; height: 280px; display: block; border-radius: 6px; background: #fff; }
-  .drop-readout { display: flex; gap: 1rem; flex-wrap: wrap; padding: 0.4rem 1.1rem 1rem; font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); }
-  .drop-readout span b { color: var(--ink); font-weight: 600; }
+  .deriv { max-width: var(--measure); margin: 1.4rem auto; padding: 1.1rem 1.4rem; background: var(--paper-2); border: 1px solid var(--line-soft); border-radius: 9px; }
+  .deriv .lbl { font-family: var(--mono); font-size: .7rem; letter-spacing: .12em; color: var(--style); margin-bottom: .35rem; }
+  .deriv .why { font-size: .88rem; color: var(--ink-soft); line-height: 1.6; margin-top: .35rem; }
 </style>
 </head>
 <body>
-<div class="topbar">
-  <a class="home" href="index.html">← Ch.07 정칙화</a>
-  <span class="ch-mini">SUB 03 / 07</span>
-</div>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
 
 <div class="ch-layout">
-  <aside class="ch-nav"><nav><ol id="navlist"></ol></nav></aside>
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Sub 03 · 한 망이 곧 2ⁿ개의 망</span>
-      <h1>드롭아웃은 결국,<br><span class="t-style">2ⁿ개</span>의 망을 한 망에 담는다</h1>
-      <p class="lede">학습 중 뉴런을 무작위로 끄는 것은 단순한 잡음이 아니다. 지수적으로 많은 부분모델을 동시에 훈련시키는 효율적인 앙상블이다.</p>
+      <span class="kicker">Sub 03 · 시험 1순위 — L2의 세 얼굴</span>
+      <h1>L2 정칙화 — <span class="t-style">가우시안 사전</span>과 가중치 감쇠</h1>
+      <p class="lede">제곱 합 페널티 한 줄이 어떻게 SGD에서 가중치 감쇠로, 베이지안 시점에서 가우시안 사전(Gaussian prior)으로 동시에 해석되는가.</p>
     </header>
 
     <div class="prose">
-      <p>드롭아웃(Dropout)은 [[드롭아웃은-여러-부분모델-평균효과를-근사한다|Srivastava et al. 2014]]가 제안한 정칙화 기법이다. 학습 중 각 미니배치마다 은닉 뉴런의 일부를 확률 $1-p$로 무작위로 꺼 버린다. 추론 시에는 모든 뉴런을 켜고 가중치에 $p$를 곱한다 (또는 학습 시 활성화에 $1/p$를 곱하는 "inverted dropout" 방식).</p>
+      <p>L2 정칙화는 7장에서 가장 자주 나오는 도구다. 식은 단순하다.</p>
 
-      <p>처음 보면 이상하다. 학습 중에 일부러 정보를 버리고, 추론 때는 다시 켠다? 이게 왜 작동하는가? 이 질문이 7장에서 가장 깊이 있는 부분이다.</p>
+      <div class="math-block">$$ \tilde{J}(\theta) \;=\; J(\theta) \;+\; \frac{\alpha}{2}\,\|\theta\|_2^2 \;=\; J(\theta) \;+\; \frac{\alpha}{2}\sum_i \theta_i^2 $$</div>
+      <p class="math-note">‖θ‖₂는 L2 노름(2-norm) — 가중치 벡터의 유클리드 길이. 제곱이 들어가 있다는 점이 핵심.</p>
 
-      <h2>관점 1 — 분산된 책임 강제</h2>
+      <p>이 한 식이 세 가지 시점에서 동시에 의미를 갖는다. 첫째, 손실 표면 시점 — 큰 가중치를 부드럽게 줄인다. 둘째, 최적화 시점 — SGD가 매 스텝마다 가중치를 0 쪽으로 끌어당긴다(가중치 감쇠). 셋째, 확률 시점 — 가중치에 가우시안 사전을 두고 MAP(maximum a posteriori) 추정을 한 것과 정확히 같다. 시험에서 자주 묻는 형태가 이 세 시점의 등가성이다.</p>
 
-      <p>가장 직관적인 설명부터 시작하자. 드롭아웃이 없으면, 망은 종종 특정 뉴런의 활성화에 과도하게 의존한다. 예를 들어 "이 뉴런이 활성화되면 무조건 고양이"라는 식의 단축 경로를 만든다. 이 단축 경로는 훈련셋의 우연한 상관관계에 의존하므로, 시험에서는 무너지기 쉽다.</p>
+      <h2>1. 손실 표면 시점 — 왜 큰 가중치를 벌하는가</h2>
 
-      <p>드롭아웃은 매 스텝마다 그 뉴런이 꺼질 수 있음을 망에게 알려준다. 그 결과 망은 어느 한 뉴런에 모든 책임을 몰지 못하고, 같은 정보를 여러 뉴런이 함께 표현하도록(분산 표상, distributed representation) 학습한다.</p>
+      <p>먼저 가장 직관적인 시점부터 보자. L2 페널티는 ‖θ‖²이므로, 각 가중치 $\theta_i$의 절댓값이 클수록 페널티가 빠르게 커진다(2차 함수). 따라서 모형은 큰 가중치를 쓰는 것을 점점 더 강하게 꺼려한다. 그렇다면 왜 "큰 가중치를 쓰는 것"이 나쁜가? 그 답이 일반화와 연결된다.</p>
+
+      <p>신경망의 출력은 가중치 곱셈으로 만들어진다. 예를 들어 한 층의 출력이 $z = w^\top x$라면, 입력 x에 작은 흔들림 δ가 있을 때 출력의 흔들림은 $w^\top \delta$다. 즉 <strong>가중치의 크기가 곧 입력 변화에 대한 출력의 민감도</strong>다. 큰 가중치를 가진 모형은 입력의 작은 잡음에도 출력이 크게 흔들린다. 반대로 가중치를 작게 유지하면 함수가 더 부드러워지고, 잡음에 덜 민감해진다.</p>
 
       <div class="analogy">
-        한 팀에서 에이스 한 명에게 모든 일을 맡기면, 그가 빠지는 날 팀이 멈춘다. 매일 무작위로 누군가가 결근하는 회사를 운영하면, 모두가 서로의 일을 어느 정도 알게 되고 결과적으로 한 사람이 빠져도 회사가 굴러간다. <b>드롭아웃은 매 스텝마다 결근자를 무작위로 정해, 망이 분산된 책임 구조를 학습하게 강제한다.</b>
+        <b>볼륨을 너무 크게 키운 스피커</b>는 음악의 미세한 흔들림(잡음)까지 같이 크게 증폭해서 듣기 거북하다. 적당한 볼륨에서는 멜로디는 들리되 잡음은 묻힌다. L2가 모형의 "볼륨"을 적당히 낮추는 일이다.
       </div>
 
-      <h2>관점 2 — 지수적으로 많은 부분모델의 앙상블</h2>
+      <h2>2. 최적화 시점 — 가중치 감쇠가 자연스럽게 나온다</h2>
 
-      <p>이게 시험에 자주 나오는 깊은 해석이다. $n$개의 뉴런이 있는 망에서, 각 뉴런은 켜짐/꺼짐 두 상태를 가진다. 그러면 가능한 부분 망(sub-network)의 수는 $2^n$개다. 100개의 뉴런만 있어도 $2^{100} \approx 10^{30}$이라는, 우주의 모든 원자 수보다 큰 수다.</p>
+      <p>L2 페널티가 SGD 업데이트에 어떻게 들어가는지 직접 계산해 보자.</p>
 
-      <p>이 어마어마한 수의 부분 망 모두를 따로따로 학습시킨 뒤 평균을 내면, 그게 가장 강력한 앙상블이다. 하지만 실제로는 불가능하다 — 메모리도 계산도 폭발한다. 드롭아웃의 천재성은 <strong>가중치를 공유한 채로 매 스텝마다 부분 망 하나를 무작위 추출해 학습</strong>한다는 점이다. 모든 부분 망이 같은 가중치 풀(pool)을 공유하므로, 한 부분 망의 학습은 다른 부분 망들에게도 간접적으로 도움이 된다.</p>
-
-      <p>학습이 끝난 뒤에는 모든 부분 망의 예측을 평균 내야 하지만, 그것도 $2^n$번을 다시 돌릴 수는 없다. 대신 다음 근사를 쓴다.</p>
-
-      <div class="math-block">$$ p_{\text{ensemble}}(y \mid x) \approx \tilde{p}(y \mid x; W \cdot p) $$</div>
-      <p class="math-note">"모든 부분 망의 평균 예측 ≈ 가중치에 p를 곱한 단일 망의 예측" — 이것이 **가중치 스케일링(weight scaling) 추론 규칙**.</p>
-
-      <p>왜 이 근사가 작동하는가? 정확히 따지면 이것은 모든 부분 모델 예측의 <em>기하 평균(geometric mean)</em>에 대한 근사다. 선형 망에서는 이 근사가 정확하고(공식 7.55 유도), 비선형 망에서도 실험적으로 잘 작동한다. 그래서 학습 시간은 단일 망 학습과 같지만, 추론 시 효과는 거대한 앙상블에 가깝다.</p>
-
-      <h2>위젯 — 같은 망에서 mask를 뽑으면 어떤 분류기가 나오는가</h2>
-
-      <p>아래 위젯은 작은 망(은닉 8개)을 2D 분류 문제에 학습시킨 다음, <strong>드롭아웃 마스크(mask)를 무작위로 뽑아 부분 망 4개를 추출</strong>한다. 각 부분 망이 만드는 결정경계와, 그 4개를 평균한 경계(=드롭아웃 앙상블)가 동시에 보인다. 같은 가중치인데 mask만 다르게 뽑아도 결정경계가 얼마나 다른지, 그리고 평균하면 얼마나 부드러워지는지가 직접 보인다.</p>
-    </div>
-
-    <div class="widget">
-      <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 03</span><span>드롭아웃 마스크 = 부분망 추출 · 4개 마스크 + 앙상블</span></div>
-        <div class="drop-stage">
-          <div class="drop-cell">
-            <h5>부분망 4개와 앙상블 결정경계</h5>
-            <canvas id="dropCanvas" width="800" height="400"></canvas>
-          </div>
-        </div>
-        <div class="drop-readout">
-          <span>유지 확률 p = <b id="pVal">0.5</b></span>
-          <span>은닉 뉴런 = <b>8</b></span>
-          <span>꺼진 뉴런 평균 ≈ <b id="offCnt">4</b></span>
-          <span>가능한 부분망 수 = 2⁸ = <b>256</b></span>
-        </div>
-        <div class="widget-controls">
-          <div class="slider">
-            <label>유지 확률 p (1.0 = 드롭아웃 없음) <b id="pLab">0.5</b></label>
-            <input id="pSlide" type="range" min="0.2" max="1.0" value="0.5" step="0.05">
-          </div>
-          <button class="btn ghost" id="newMaskBtn">새 마스크 뽑기</button>
-          <button class="btn ghost" id="retrainBtn">새 데이터 + 재학습</button>
-        </div>
+      <div class="deriv">
+        <span class="lbl">유도 1 · 페널티 → 가중치 감쇠</span>
+        <div class="math-block">$$ \nabla_\theta \tilde{J}(\theta) \;=\; \nabla_\theta J(\theta) \;+\; \alpha\,\theta $$</div>
+        <p class="why">‖θ‖²/2를 θ로 미분하면 그냥 θ가 된다(이게 1/2를 붙인 이유). 따라서 정칙화된 손실의 기울기는 원래 기울기에 α·θ가 추가될 뿐이다.</p>
       </div>
-      <p class="widget-cap">왼쪽 네 칸: mask 4개로 추출한 부분 망의 결정경계. 같은 가중치인데도 mask가 다르면 경계가 흔들린다. 가장 오른쪽 칸: 네 부분 망의 예측을 평균한 결과 — 개별 망의 우연한 흔들림이 상쇄되어 더 부드럽고 안정적이다. p를 낮출수록(더 많이 끔) 변동이 커진다.</p>
+
+      <div class="deriv">
+        <span class="lbl">유도 2 · SGD 한 스텝</span>
+        <div class="math-block">$$ \theta_{t+1} \;=\; \theta_t \;-\; \varepsilon\,\bigl[\nabla_\theta J(\theta_t) + \alpha\,\theta_t\bigr] \;=\; (1-\varepsilon\alpha)\,\theta_t \;-\; \varepsilon\,\nabla_\theta J(\theta_t) $$</div>
+        <p class="why">결과를 정리하면, 매 스텝 시작 시 θ에 <strong>(1 − εα)라는 1보다 작은 수가 곱해진다</strong>. 즉 가중치는 매 스텝 일정 비율로 0 쪽으로 줄어든다 → "weight decay"라는 이름의 직접적인 출처.</p>
+      </div>
+
+      <p>이 유도가 중요한 이유는, L2 정칙화가 단순히 손실에 항을 더하는 수학적 장식이 아니라 <strong>실제 최적화 과정에서 매 스텝마다 가중치를 깎아내는 작용</strong>임을 보여 주기 때문이다. 그래서 PyTorch나 TensorFlow에서 옵티마이저에 `weight_decay=1e-4`를 옵션으로 넣을 수 있는 것이다. 이는 손실에 항을 추가하는 대신 업데이트 식에 직접 (1−εα)를 곱하는 형태로 구현되어 있다.</p>
+
+      <p>여기서 한 가지 미묘한 주의점이 있다. 어댑티브 옵티마이저(Adam 등)에서는 "손실에 α‖θ‖²/2를 더하기"와 "업데이트에 (1−ε'α)를 곱하기"가 미묘하게 다르게 동작한다 — Adam의 적응적 학습률이 두 항에 다르게 작용하기 때문이다. AdamW는 이 차이를 일부러 분리한 변형이다. 시험에서는 깊이 들어가지 않더라도, "weight decay와 L2 페널티가 어댑티브 옵티마이저에서 같지 않을 수 있다"는 사실 한 줄을 기억해 두면 좋다.</p>
+
+      <h2>3. 베이지안 시점 — 가우시안 사전과 MAP</h2>
+
+      <p>이게 7장에서 가장 우아한 결과다. L2 정칙화는 "임의로 더한 페널티"가 아니라, 가중치에 <strong>가우시안 사전(Gaussian prior)</strong>을 두고 MAP 추정을 했을 때 자연스럽게 떨어지는 항이다.</p>
+
+      <p>베이지안 시점에서 학습은 사후확률 $p(\theta \mid \text{data})$를 최대화하는 일이다. 베이즈 정리에 의해</p>
+
+      <div class="math-block">$$ p(\theta \mid \text{data}) \;\propto\; p(\text{data} \mid \theta)\, p(\theta) $$</div>
+
+      <p>여기서 $p(\theta)$가 <em>사전(prior)</em>이다. 가중치에 대해 우리가 학습 전부터 가진 믿음을 표현한다. L2 정칙화가 사용하는 사전은 평균 0, 표준편차 σ인 가우시안이다.</p>
+
+      <div class="math-block">$$ p(\theta) \;=\; \prod_i \frac{1}{\sqrt{2\pi}\,\sigma}\exp\!\left(-\frac{\theta_i^2}{2\sigma^2}\right) $$</div>
+
+      <p>"우리는 학습 전부터 가중치가 0 근처에 있을 가능성이 크다고 생각한다"는 믿음을 표현한 분포다. 이제 사후확률에 로그를 취하고 부호를 바꿔서 최소화 문제로 만들면:</p>
+
+      <div class="deriv">
+        <span class="lbl">유도 3 · 가우시안 사전 → L2</span>
+        <div class="math-block">$$ -\log p(\theta \mid \text{data}) \;=\; -\log p(\text{data} \mid \theta) \;-\; \log p(\theta) \;+\; \text{const} $$</div>
+        <div class="math-block">$$ -\log p(\theta) \;=\; \sum_i \frac{\theta_i^2}{2\sigma^2} \;+\; \text{const} \;=\; \frac{1}{2\sigma^2}\|\theta\|^2 \;+\; \text{const} $$</div>
+        <p class="why">즉 음의 로그 사후확률 = 음의 로그 우도(이게 J(θ)) + ‖θ‖²/(2σ²) + 상수. 이는 정확히 <strong>J(θ) + α‖θ‖²/2</strong>의 형태다 (α = 1/σ²). 사전 가우시안의 분산이 작을수록 → σ²가 작을수록 → α가 크다 → 정칙화가 강하다.</p>
+      </div>
+
+      <p>이 결과의 의미를 풀어 보자. L2 정칙화는 "가중치는 작아야 한다는 임의의 페널티"가 아니라, "<strong>가중치가 0 주위의 가우시안 분포에서 나왔다는 사전 믿음</strong>"을 모형에 박는 일이다. 데이터가 많으면 사전의 영향이 작아져서 α가 효과적으로 작아지고, 데이터가 적으면 사전이 크게 작용해서 α의 영향이 커진다. 베이지안 직관이 정확히 정칙화의 강도를 설명한다.</p>
+
+      <div class="analogy">
+        <b>새 직원을 뽑을 때의 사전 믿음</b>을 떠올려 보자. 면접에서 "특기가 다섯 개 있습니다" 하고 모든 영역에서 강함을 주장하는 사람을 보면 회의적이다(사람의 능력은 보통 정규분포처럼 평균 근처에 모인다는 사전 믿음). 그래서 우리는 면접관 노트의 점수를 적당히 깎는다(가우시안 사전으로 가중치를 0 쪽으로 끌어당김). 정말 능력이 비범한 사람이라면(데이터가 강하게 그렇게 말하면) 그 사전 믿음을 이기고 높은 점수가 남는다.
+      </div>
+
+      <h2>세 시점을 한 표로</h2>
+
+      <table class="symbols">
+        <tr><td><b>손실 시점</b></td><td>큰 가중치 → 입력 변화에 큰 민감도 → 잡음에 약하다. α‖θ‖²로 큰 가중치 벌점.</td></tr>
+        <tr><td><b>SGD 시점</b></td><td>업데이트가 θ ← (1−εα)θ − ε∇J. 매 스텝 가중치가 일정 비율로 깎임 = weight decay.</td></tr>
+        <tr><td><b>베이지안 시점</b></td><td>가중치에 N(0, σ²) 사전. MAP 추정의 음의 로그가 정확히 L2. α = 1/σ². 사전 분산이 좁을수록 정칙화 강함.</td></tr>
+      </table>
+
+      <p>다음 sub에서는 이 L2 페널티가 손실 표면 위에서 <em>방향별로 다르게</em> 작용한다는 점, 즉 헤시안 고유값 분해를 통한 선택적 축소를 본다. "L2가 모든 가중치를 똑같이 줄인다"는 흔한 오해가 거기서 깨진다.</p>
     </div>
 
-    <div class="prose">
-      <h2>드롭아웃의 수식적 정의</h2>
-
-      <p>은닉층 $\mathbf{h}$에 드롭아웃을 적용하면, 매 미니배치마다 다음 마스크 벡터 $\boldsymbol{\mu}$를 뽑는다.</p>
-
-      <div class="math-block">$$ \mu_i \sim \text{Bernoulli}(p), \quad \tilde{h}_i = \mu_i \cdot h_i $$</div>
-      <p class="math-note">μ_i는 0 또는 1. p는 유지 확률(보통 0.5-0.8). 0이면 그 뉴런이 꺼짐.</p>
-
-      <p>학습 시 손실은 보통의 역전파로 계산되지만, 꺼진 뉴런으로는 기울기가 흐르지 않는다 — 마치 그 뉴런이 그 스텝에서는 존재하지 않는 것처럼 동작한다.</p>
-
-      <p>추론 시에는 두 방식 중 하나를 쓴다.</p>
-
-      <ul>
-        <li><strong>Weight scaling (원논문)</strong>: 학습 시는 그대로 두고, 추론 시 가중치에 $p$를 곱한다. $W_{\text{infer}} = p \cdot W_{\text{train}}$.</li>
-        <li><strong>Inverted dropout (실전 표준)</strong>: 학습 시 활성화를 $1/p$로 나눠 보상한다. $\tilde{h}_i = \mu_i \cdot h_i / p$. 추론 시는 그대로. 구현이 더 간단해서 PyTorch/TF가 기본 채택.</li>
-      </ul>
-
-      <p>두 방식 모두 같은 기댓값을 만든다 — 학습 시 $\mathbb{E}[\tilde{h}_i] = p \cdot h_i$이므로, 추론 시 $W$에 $p$를 곱하거나 학습 시 $1/p$를 곱하나 결과는 같다.</p>
-
-      <h2>드롭아웃 ≈ L2 in 선형 회귀</h2>
-
-      <p>흥미로운 사실 하나. 선형 회귀에서 입력에 드롭아웃을 적용하면, 그것은 정확히 L2 정칙화와 동치다. 입력 $x_i$를 확률 $1-p$로 끄는 것은, 각 입력의 분산을 늘리는 효과와 같고, 이는 가중치를 작게 유지하라는 압력으로 나타난다.</p>
-
-      <p>비선형 망에서는 정확한 동치는 깨지지만, "가중치 크기를 간접적으로 줄이는 압력"은 여전히 존재한다. 그래서 드롭아웃은 L2와 <em>같은 방향</em>으로 작동하되, 추가로 <em>분산된 표상</em>이라는 효과까지 가진다.</p>
-
-      <h2>드롭아웃을 어디에 적용하는가</h2>
-
-      <ul>
-        <li><strong>완전 연결층(FC layer)</strong>: 가장 표준적. 보통 $p=0.5$.</li>
-        <li><strong>입력층</strong>: 흔치 않음. 적용한다면 $p=0.8\sim0.9$ (적게만).</li>
-        <li><strong>CNN의 합성곱층</strong>: 픽셀 단위 드롭아웃은 거의 효과가 없다(이웃 픽셀이 정보를 채움). 대신 <em>spatial dropout</em>(채널 전체를 끔)이 쓰인다.</li>
-        <li><strong>RNN</strong>: 시간 축에서의 드롭아웃은 신중해야 한다. 같은 mask를 모든 시간 스텝에서 쓰는 <em>variational dropout</em>이 권장.</li>
-        <li><strong>배치 정규화와 함께</strong>: 충돌이 보고됨. 둘을 같이 쓸 때는 신중히. 보통 BatchNorm 후에 드롭아웃을 둔다.</li>
-      </ul>
-
-      <h2>왜 시험에서 자주 묻는가</h2>
-
-      <p>드롭아웃은 "딥러닝다운" 정칙화의 대표라서 시험에서 빠지지 않는다. 자주 묻는 형식:</p>
-
-      <ol>
-        <li>드롭아웃이 왜 정칙화인가 — 답: 분산된 표상 + 부분망 앙상블 효과</li>
-        <li>학습과 추론의 차이 — 답: 학습 시 mask 적용, 추론 시 가중치 스케일링 (또는 inverted dropout)</li>
-        <li>$2^n$개 부분망이 어떻게 가능한가 — 답: 가중치 공유로 학습은 효율, 추론은 기하 평균 근사</li>
-        <li>L2와의 관계 — 답: 선형 회귀에서 동치, 비선형에서 유사 효과 + 추가로 분산 표상</li>
-      </ol>
-
-      <p>다음 장에서는 또 다른 신기한 정칙화 — 학습 시간 자체를 제한하는 <strong>조기 종료</strong>가 어떻게 수학적으로 L2와 동치가 되는지를 본다.</p>
-    </div>
-
-    <nav class="ch-foot" id="chFoot"></nav>
+    <nav class="ch-foot"></nav>
   </main>
 </div>
 
+<script src="widgets.js"></script>
 <script>
-  const SUBS = [
-    { no:'01', t:'일반화 격차' },
-    { no:'02', t:'L1·L2 기하학' },
-    { no:'03', t:'드롭아웃 앙상블' },
-    { no:'04', t:'조기 종료 ~ L2' },
-    { no:'05', t:'데이터 증강·노이즈' },
-    { no:'06', t:'적대적 훈련' },
-    { no:'07', t:'시험 대비' },
-  ];
-  const CUR = '03';
-  const navlist = document.getElementById('navlist');
-  SUBS.forEach(s => {
-    const li = document.createElement('li');
-    li.innerHTML = `<a href="${s.no}.html"${s.no===CUR?' class="current"':''}>${s.t}</a>`;
-    navlist.appendChild(li);
-  });
-  const chFoot = document.getElementById('chFoot');
-  const idx = SUBS.findIndex(s => s.no === CUR);
-  const prev = idx > 0 ? SUBS[idx-1] : { no:'index', t:'표지로' };
-  const next = idx < SUBS.length-1 ? SUBS[idx+1] : { no:'index', t:'표지로' };
-  chFoot.innerHTML =
-    `<a href="${prev.no}.html"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
-    `<a href="${next.no}.html" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
-
-  window.addEventListener('load', () => {
-    if (window.renderMathInElement) {
-      renderMathInElement(document.body, {
-        delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
-        throwOnError: false,
-      });
-    }
-  });
-
-  // ----- 위젯: 작은 망 학습 + 드롭아웃 마스크 4개 + 앙상블 -----
-  (function () {
-    const css = getComputedStyle(document.documentElement);
-    const C = {
-      structure: css.getPropertyValue('--structure').trim() || '#2D5B7A',
-      style: css.getPropertyValue('--style').trim() || '#C0492E',
-      synth: css.getPropertyValue('--synth').trim() || '#A47B2E',
-      ink: css.getPropertyValue('--ink').trim() || '#26221C',
-      faint: css.getPropertyValue('--ink-faint').trim() || '#8E8576',
-    };
-    const dropC = document.getElementById('dropCanvas');
-    const pSlide = document.getElementById('pSlide');
-    const pVal = document.getElementById('pVal');
-    const pLab = document.getElementById('pLab');
-    const offCnt = document.getElementById('offCnt');
-    const newMaskBtn = document.getElementById('newMaskBtn');
-    const retrainBtn = document.getElementById('retrainBtn');
-
-    let seed = 7;
-    function rng() { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; }
-    function randn() { let s=0; for (let i=0;i<6;i++) s+=rng(); return (s-3)/1.225; }
-
-    // 2D 두 부분 데이터: 두 개의 반달 (two moons)
-    function genMoons() {
-      const N = 70;
-      const pts = [];
-      for (let i = 0; i < N; i++) {
-        const t = rng() * Math.PI;
-        const x = Math.cos(t) + randn() * 0.1;
-        const y = Math.sin(t) + randn() * 0.1;
-        pts.push({ x, y, c: 0 });
-      }
-      for (let i = 0; i < N; i++) {
-        const t = rng() * Math.PI;
-        const x = 1 - Math.cos(t) + randn() * 0.1;
-        const y = -Math.sin(t) + 0.5 + randn() * 0.1;
-        pts.push({ x, y, c: 1 });
-      }
-      return pts;
-    }
-    let DATA = genMoons();
-
-    // 작은 망: 2 -> 8 -> 1 (tanh hidden, sigmoid output)
-    const H = 8;
-    let W1, b1, W2, b2;
-    function initNet() {
-      W1 = []; b1 = [];
-      for (let i = 0; i < H; i++) {
-        W1.push([randn()*0.8, randn()*0.8]);
-        b1.push(randn()*0.4);
-      }
-      W2 = []; b2 = randn()*0.2;
-      for (let i = 0; i < H; i++) W2.push(randn()*0.6);
-    }
-    function tanh(z) { return Math.tanh(z); }
-    function sig(z) { return 1/(1+Math.exp(-z)); }
-    function forward(x, y, mask) {
-      // mask: 길이 H의 0/1 배열 (1=유지, 0=드롭)
-      const h = new Array(H);
-      for (let i = 0; i < H; i++) {
-        h[i] = tanh(W1[i][0]*x + W1[i][1]*y + b1[i]) * (mask ? mask[i] : 1);
-      }
-      let z = b2;
-      for (let i = 0; i < H; i++) z += W2[i] * h[i];
-      return { p: sig(z), h };
-    }
-
-    function train(epochs = 250, lr = 0.08, dropP = 0.5) {
-      for (let ep = 0; ep < epochs; ep++) {
-        // 매 스텝마다 mask 추출 (학습 시 드롭아웃)
-        const mask = new Array(H);
-        for (let i = 0; i < H; i++) mask[i] = (rng() < dropP) ? 1 : 0;
-        // 미니배치 = 전체
-        const gW1 = Array.from({length:H}, () => [0, 0]);
-        const gb1 = new Array(H).fill(0);
-        const gW2 = new Array(H).fill(0);
-        let gb2 = 0;
-        for (const d of DATA) {
-          const out = forward(d.x, d.y, mask);
-          const dL = (out.p - d.c); // BCE 미분 = p - c (with logits)
-          gb2 += dL;
-          for (let i = 0; i < H; i++) {
-            gW2[i] += dL * out.h[i];
-            // 역전파: h_i = tanh(z_i) * mask_i
-            const sech2 = 1 - Math.tanh(W1[i][0]*d.x + W1[i][1]*d.y + b1[i])**2;
-            const dh = dL * W2[i] * mask[i] * sech2;
-            gW1[i][0] += dh * d.x;
-            gW1[i][1] += dh * d.y;
-            gb1[i] += dh;
-          }
-        }
-        const N = DATA.length;
-        for (let i = 0; i < H; i++) {
-          W1[i][0] -= lr * gW1[i][0] / N;
-          W1[i][1] -= lr * gW1[i][1] / N;
-          b1[i] -= lr * gb1[i] / N;
-          W2[i] -= lr * gW2[i] / N;
-        }
-        b2 -= lr * gb2 / N;
-      }
-    }
-    function genMasks(count, dropP) {
-      const masks = [];
-      for (let m = 0; m < count; m++) {
-        const mask = new Array(H);
-        for (let i = 0; i < H; i++) mask[i] = (rng() < dropP) ? 1 : 0;
-        // 모두 0인 경우 한 개는 살림 (싱귤러 방지)
-        if (mask.every(x => x === 0)) mask[0] = 1;
-        masks.push(mask);
-      }
-      return masks;
-    }
-
-    // 시각화
-    function draw(masks, dropP) {
-      const ctx = dropC.getContext('2d');
-      const W = dropC.width, H_c = dropC.height;
-      ctx.clearRect(0, 0, W, H_c);
-      // 5개 칸 (mask 1-4 + 앙상블)
-      const pad = 8;
-      const cellW = (W - pad * 6) / 5;
-      const cellH = H_c - 36;
-      const titles = ['Mask 1', 'Mask 2', 'Mask 3', 'Mask 4', '4개 평균 (Ensemble)'];
-      for (let cell = 0; cell < 5; cell++) {
-        const ox = pad + cell * (cellW + pad);
-        const oy = 24;
-        // 박스
-        ctx.strokeStyle = cell === 4 ? C.ink : '#ddd'; ctx.lineWidth = cell === 4 ? 1.5 : 1;
-        ctx.fillStyle = '#fff'; ctx.fillRect(ox, oy, cellW, cellH); ctx.strokeRect(ox + 0.5, oy + 0.5, cellW - 1, cellH - 1);
-        // 결정경계: 격자 평가
-        const RES = 30;
-        const stepX = cellW / RES, stepY = cellH / RES;
-        // 좌표: 캔버스 (ox, oy) ~ (ox+cellW, oy+cellH) → 입력 (-2, -2) ~ (3, 3)
-        function ix(px) { return -2 + (px - ox) / cellW * 5; }
-        function iy(py) { return -2 + (1 - (py - oy) / cellH) * 5; }
-        for (let i = 0; i < RES; i++) for (let j = 0; j < RES; j++) {
-          const cx_ = ox + i * stepX + stepX/2;
-          const cy_ = oy + j * stepY + stepY/2;
-          const xx = ix(cx_), yy = iy(cy_);
-          let p;
-          if (cell < 4) {
-            const r = forward(xx, yy, masks[cell]);
-            p = r.p / Math.max(0.01, dropP); // weight scaling 대응: 실제 추론은 W*p지만 여기선 mask*1/p 보상
-          } else {
-            // 앙상블: 4개 평균
-            let sumP = 0;
-            for (let m = 0; m < 4; m++) sumP += forward(xx, yy, masks[m]).p;
-            p = (sumP / 4) / Math.max(0.01, dropP);
-          }
-          // 색: p<0.5 → 파랑, >0.5 → 주홍
-          const alpha = 0.22;
-          if (p < 0.5) ctx.fillStyle = `rgba(45, 91, 122, ${alpha + (0.5-p)*alpha})`;
-          else ctx.fillStyle = `rgba(192, 73, 46, ${alpha + (p-0.5)*alpha})`;
-          ctx.fillRect(cx_ - stepX/2, cy_ - stepY/2, stepX + 1, stepY + 1);
-        }
-        // 데이터 점
-        for (const d of DATA) {
-          const xpx = ox + (d.x + 2) / 5 * cellW;
-          const ypx = oy + (1 - (d.y + 2) / 5) * cellH;
-          if (xpx < ox || xpx > ox + cellW || ypx < oy || ypx > oy + cellH) continue;
-          ctx.fillStyle = d.c === 0 ? C.structure : C.style;
-          ctx.beginPath(); ctx.arc(xpx, ypx, 2.4, 0, Math.PI*2); ctx.fill();
-        }
-        // 제목
-        ctx.fillStyle = cell === 4 ? C.ink : C.faint;
-        ctx.font = (cell === 4 ? 'bold ' : '') + '11px monospace';
-        ctx.fillText(titles[cell], ox + 4, oy - 6);
-        // mask 인디케이터 (8개 점)
-        if (cell < 4) {
-          for (let i = 0; i < H; i++) {
-            ctx.fillStyle = masks[cell][i] ? C.structure : '#ddd';
-            ctx.beginPath(); ctx.arc(ox + 6 + i * 7, oy + cellH + 12, 2.4, 0, Math.PI*2); ctx.fill();
-          }
-        }
-      }
-    }
-
-    let currentMasks = [];
-    function rebuild(dropP) {
-      currentMasks = genMasks(4, dropP);
-      draw(currentMasks, dropP);
-      const offTotal = currentMasks.reduce((s, m) => s + m.filter(x => !x).length, 0);
-      offCnt.textContent = (offTotal / 4).toFixed(1);
-    }
-
-    function freshTrain(dropP) {
-      DATA = genMoons();
-      initNet();
-      train(300, 0.1, dropP);
-      rebuild(dropP);
-    }
-
-    pSlide.addEventListener('input', () => {
-      const p = +pSlide.value;
-      pVal.textContent = p.toFixed(2); pLab.textContent = p.toFixed(2);
-      rebuild(p);
+window.addEventListener('load', () => {
+  CH7.buildNav('03');
+  if (window.renderMathInElement) {
+    renderMathInElement(document.body, {
+      delimiters: [
+        { left: '$$', right: '$$', display: true },
+        { left: '$', right: '$', display: false },
+      ],
+      throwOnError: false,
     });
-    newMaskBtn.addEventListener('click', () => rebuild(+pSlide.value));
-    retrainBtn.addEventListener('click', () => freshTrain(+pSlide.value));
-    // 초기
-    freshTrain(0.5);
-  })();
+  }
+});
 </script>
 </body>
 </html>

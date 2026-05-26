@@ -3,11 +3,23 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>09 / 03 / CNN의 3대 핵심 속성</title>
+<title>Ch.09 · 03 1D 합성곱 — 시간 신호로 먼저 익히기</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .sig-stage { padding: 1.4rem 1.4rem 1rem; display: flex; flex-direction: column; gap: .8rem; }
+  .sig-stage canvas { display: block; width: 100%; max-width: 920px; height: 380px; border-radius: 8px; border: 1px solid var(--line); background: #fff; margin: 0 auto; }
+  .sig-controls { display: flex; flex-wrap: wrap; gap: 1.2rem; padding: 1rem 1.2rem; border-top: 1px solid var(--line-soft); background: var(--paper); font-size: .88rem; }
+  .sig-controls label { display: flex; flex-direction: column; gap: .25rem; min-width: 160px; flex: 1; }
+  .sig-controls label span { color: var(--ink-soft); font-family: var(--mono); font-size: .78rem; }
+  .sig-controls label span b { color: var(--ink); }
+  .sig-controls input[type=range] { width: 100%; accent-color: var(--style); }
+  .sig-controls .kbtns { display: flex; gap: .4rem; flex-wrap: wrap; }
+  .sig-controls .kbtns button { padding: .35rem .7rem; font-family: var(--mono); font-size: .78rem; border: 1px solid var(--line); background: #fff; border-radius: 6px; cursor: pointer; transition: .12s; }
+  .sig-controls .kbtns button.on { background: var(--style); color: #fff; border-color: var(--style); }
+</style>
 </head>
 <body>
 <div class="scroll-progress"></div>
@@ -18,94 +30,95 @@
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Sub-chapter 03 / 세 가지 사전(prior)</span>
-      <h1>CNN의 3대 핵심 속성 —<br><span class="t-style">희소 / 공유 / 등가</span></h1>
-      <p class="lede">합성곱이 효율적인 이유를 한 줄로 적기는 어렵다. 그 한 줄은 사실 세 줄로 갈라진다 — 희소 상호작용, 파라미터 공유, 변환 등가성. 이 셋이 어떻게 한 가지 가정에서 갈라져 나오는지 본다.</p>
+      <span class="kicker">Ch.09 · Sub 03 · 차원 하나 줄여서 시작</span>
+      <h1>1차원 합성곱<br><span class="t-style">시간 신호</span>로 먼저 익히기</h1>
+      <p class="lede">2D 이미지에 곧장 들어가면 합성곱은 늘 복잡해 보인다. 차원을 하나 줄여 시간축 위 1D 신호로 먼저 익혀 두면, 같은 슬라이드·곱·합이 2D, 3D, 다채널까지 자연스럽게 확장된다. 주식 가격, 심전도, 소리 — 1D 합성곱이 사는 곳들이다.</p>
     </header>
 
     <div class="prose">
-      <p>9장이 가장 자주 인용되는 표현은 “CNN의 세 가지 핵심 아이디어”다. 시험에서도 거의 빠지지 않는다. 그러나 이 셋을 외워서 나열하는 것과 “왜 셋이 결국 한 뿌리에서 나오는가”를 이해하는 것은 다른 일이다. 이 sub-chapter는 셋을 각각 시각화하고, 셋이 어떻게 “자연 이미지에 강한 사전(prior)을 건다”는 단일한 줄거리로 묶이는지 보인다.</p>
+      <p>합성곱은 본디 1차원 신호처리(signal processing)에서 태어났다. 시간에 따라 변하는 값을 한 줄로 적은 신호 $x(t)$를, 또 다른 신호 $w(t)$로 "필터링"하는 행동이 바로 합성곱이다. 라디오 잡음 제거, 심전도(ECG) 잡파 검출, 음악 신호의 베이스 추출이 모두 1D 합성곱의 응용이다. 딥러닝에서도 음성 인식, 시계열 예측, 텍스트 분류에서 1D 합성곱이 직접 쓰인다.</p>
 
-      <h2>1. 희소 상호작용(Sparse Interactions)</h2>
+      <h2>1D 합성곱의 정의 — 다시 한 번</h2>
+      <p>지난 sub-chapter에서 본 정의를 다시 들고 오자. 교차상관(딥러닝 구현) 기준으로 1D 합성곱은 다음과 같다.</p>
 
-      <p>완전연결 층에서는 모든 입력 뉴런이 모든 출력 뉴런에 영향을 준다. $m$개 입력과 $n$개 출력이 있다면 가중치는 $m \times n$개다. 256×256 이미지라면 한 출력 픽셀이 약 65,536개 입력 픽셀과 모두 연결된다.</p>
+      <div class="math-block">$$ s(t) = \sum_{a=0}^{k-1} x(t + a) \cdot w(a) $$</div>
+      <p class="math-note">s(t)는 출력의 t번째 값. x(t+a)는 입력의 t부터 시작한 a번째 값. w(a)는 길이 k 커널의 a번째 가중치. 합은 a=0부터 k-1까지.</p>
 
-      <p>합성곱 층에서는 한 출력이 입력의 작은 창에만 의존한다. 3×3 커널이면 단 9개 입력에만 연결된다. 한 출력의 입장에서 “관계 있는 입력”은 65,536개가 아니라 9개로 줄어든다. 이 제한이 <strong>희소 상호작용(sparse interactions)</strong>이고, 다른 말로는 <strong>희소 연결(sparse connectivity)</strong>이다.</p>
+      <p>식을 한국말로 옮기면 이렇다. "시점 $t$의 출력 값은, 시점 $t$부터 시작해 $k$칸의 입력값을 가중치 $w$로 더한 결과다." 가중치 $w$가 어떤 모양이냐에 따라 이 합이 무엇을 측정하는지가 달라진다. 모든 자리에 $1/k$를 두면 이동 평균(moving average)이고, $[-1, 0, 1]$을 두면 변화율(에지) 검출이고, $[1, -2, 1]$을 두면 2차 미분(곡률) 검출이다.</p>
+
+      <h2>이동 평균과의 결정적 차이</h2>
+      <p>주식 데이터에 익숙한 사람은 합성곱을 "이동 평균"으로 곧장 연결한다. 절반은 맞고 절반은 틀리다. 이동 평균은 합성곱의 가장 단순한 한 가지 경우다. 그러나 합성곱의 본질은 <em>"가중치가 자유롭다"</em>는 데 있다.</p>
+
+      <p>다음 두 식을 비교해 보자. 위는 5일 단순 이동 평균, 아래는 같은 길이의 학습 가능한 합성곱이다.</p>
+
+      <div class="math-block">$$ \mathrm{MA}_5(t) = \frac{1}{5}\bigl(x(t) + x(t+1) + x(t+2) + x(t+3) + x(t+4)\bigr) $$</div>
+
+      <div class="math-block">$$ s_{\mathrm{conv}}(t) = w_0 x(t) + w_1 x(t+1) + w_2 x(t+2) + w_3 x(t+3) + w_4 x(t+4) $$</div>
+      <p class="math-note">위는 가중치가 1/5로 고정. 아래는 w₀…w₄가 모두 학습 가능한 파라미터. 손실 함수를 줄이는 방향으로 학습이 가중치를 정한다.</p>
+
+      <p>1차 합성곱이 가질 수 있는 동작 폭은 이동 평균보다 훨씬 넓다. 가령 학습 결과 $w = [-0.5, -0.2, 0, 0.2, 0.5]$로 수렴하면, 이 커널은 "5일 동안의 상승 추세(추세 강도)"를 한 수로 요약한다. $w = [1, -2, 1, 0, 0]$이면 "급격한 변곡점"을 잡는다. 같은 신호에서 동시에 여러 커널을 학습하면, 각 커널이 서로 다른 측면을 잡아 출력 채널로 쌓인다. 이것이 1D 합성곱 신경망의 핵심 매력이다.</p>
 
       <div class="analogy">
-        신문 사설을 읽을 때, 같은 페이지 모든 기사를 동시에 참고하면서 한 단어의 의미를 해석하는 사람은 없다. 우리는 <b>현재 문단 주변</b>만 본다. 같은 페이지 끝쪽에 있는 광고는 그 단어의 의미와 거의 무관하다. 자연 이미지에서 한 픽셀의 의미도 마찬가지다. 멀리 떨어진 픽셀보다 주변 픽셀과의 관계에서 더 많이 결정된다. 희소 상호작용은 “주변만 보고도 충분하다”는 자연 이미지의 통계적 사실을 모델 구조에 박은 것이다.
+        이동 평균이 <b>"평균만 그릴 줄 아는 한 가지 색 붓"</b>이라면, 합성곱은 <b>"붓의 모양을 학습으로 바꿔 가는 자유 붓"</b>이다. 데이터가 알려 주는 대로 붓이 점점 더 적합한 모양이 된다. 같은 그림을 평균 붓으로 그리면 흐릿하지만, 자유 붓으로 그리면 윤곽이 살아난다.
       </div>
 
-      <p>희소 상호작용은 정보 손실처럼 보일 수도 있다. 멀리 떨어진 픽셀과의 관계는 영영 못 보지 않나? 그 답은 <strong>“여러 층을 쌓으면 간접적으로 본다”</strong>이다. 한 층의 출력은 입력 3×3만 보지만, 그 출력을 다시 다음 층의 입력으로 넣으면 다음 층의 한 출력은 처음 입력의 5×5 영역에 간접적으로 의존한다. 이렇게 층이 깊어질수록 <span class="t-structure">수용 영역(receptive field)</span>이 확대된다. 자세한 시각화는 sub-chapter 06에서 출력 크기 공식과 함께 다룬다.</p>
+      <h2>1D 합성곱이 잡는 시간 패턴</h2>
+      <p>1D 합성곱이 실제로 잘 잡는 시간 패턴이 무엇인지 구체적으로 그려 보자. 첫째는 <strong>국소적 추세</strong>다. 길이 5 커널이라면 5칸 안의 상승 추세 또는 하강 추세를 한 수로 요약한다. 둘째는 <strong>주기적 패턴</strong>이다. 사인파(sine wave) 모양 커널을 학습하면 그 주기에 가까운 신호 구간에서 큰 출력이 난다. 음악에서 베이스 라인이나 비트(beat) 검출이 이 원리로 작동한다. 셋째는 <strong>충격(impulse) 또는 스파이크 검출</strong>이다. $[1, -2, 1]$ 같은 커널은 짧은 시간 동안 큰 변화가 있는 자리를 강조한다. 심전도에서 QRS 복합파(QRS complex) 검출이 대표적이다.</p>
+
+      <p>이런 1D 합성곱을 여러 층 쌓으면, 얕은 층은 단순한 추세나 변화율을 잡고, 깊은 층은 그 단순 패턴들의 조합인 더 긴 시간 구조(예: 음악의 한 구절, 문장의 한 어구)를 잡는다. 이는 11장에서 보는 2D 이미지의 계층적 특징 추출과 정확히 같은 원리다.</p>
+
+      <h2>1D에서 2D로 — 차원 하나만 더 추가하면 된다</h2>
+      <p>1D 합성곱을 익히면 2D 합성곱은 거의 거저로 따라온다. 정의에서 합 기호 하나만 더 붙으면 된다.</p>
+
+      <div class="math-block">$$ s(t) = \sum_{a} x(t+a)\,w(a) \quad \longrightarrow \quad S(i,j) = \sum_{m}\sum_{n} I(i+m, j+n)\,K(m,n) $$</div>
+      <p class="math-note">왼쪽: 1D. 출력은 시간축 위의 한 값. 오른쪽: 2D. 출력은 (i,j) 격자 위의 한 값. 합 기호 하나만 추가됐다.</p>
+
+      <p>이 식이 말해 주는 것은 두 가지다. 첫째, 동작의 본질은 차원과 무관하다. 1D든 2D든 3D든 "커널을 입력 위에 미끄러뜨리며 가중합을 적는다"는 동작은 그대로다. 둘째, 차원이 늘면 합의 축이 늘 뿐이다. 2D는 $m, n$, 3D(영상이나 의료 단층 사진처럼)는 $m, n, p$. 따라서 1D 합성곱의 직관이 단단하면 2D, 3D는 추가 차원의 기하학을 머리에 그리는 일만 남는다.</p>
+
+      <p>아래 위젯은 1D 신호 위에 다양한 커널을 슬라이드한다. 신호는 잡음(noise) 섞인 사인파(sine wave)이며, 커널을 평균·1차 미분·2차 미분·사용자 정의로 토글해 같은 신호의 어떤 면을 다르게 잡는지 본다. 출력 신호의 모양이 커널에 따라 어떻게 갈라지는지가 관전 포인트다.</p>
     </div>
 
     <div class="widget">
       <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 03</span><span>희소 상호작용 — 완전연결의 거미줄 vs 합성곱의 작은 창</span></div>
-        <div id="sparse"></div>
+        <div class="widget-label"><span class="lab-no">위젯 03</span><span>1D 합성곱 — 사인파 + 잡음 위에 커널 슬라이드</span></div>
+        <div class="sig-stage">
+          <canvas id="sigCanvas" width="1400" height="600"></canvas>
+        </div>
+        <div class="sig-controls">
+          <div class="kbtns">
+            <button data-k="avg" class="on">5점 평균</button>
+            <button data-k="d1">1차 미분 [-1,0,1]</button>
+            <button data-k="d2">2차 미분 [1,-2,1]</button>
+            <button data-k="gauss">가우시안 평활</button>
+            <button data-k="impulse">충격 검출</button>
+          </div>
+          <label><span>잡음 강도 <b id="lblNoise">0.3</b></span><input type="range" id="ctlNoise" min="0" max="1" step="0.05" value="0.3"></label>
+        </div>
       </div>
-      <p class="widget-cap">왼쪽은 완전연결 — 한 출력 뉴런(빨갛게)이 모든 입력 뉴런에 연결된다. 오른쪽은 합성곱 — 같은 출력 뉴런이 작은 창(3개) 안에만 연결된다. 어느 출력을 하이라이트할지 슬라이더로 옮기면, 완전연결은 거미줄이 그대로지만 합성곱은 창도 같이 옮겨간다. 이것이 다음 절의 “파라미터 공유”와 직결된다.</p>
+      <p class="widget-cap">파란 선은 원본 신호, 주황 선은 합성곱 출력이다. 평균 커널은 신호를 매끄럽게 만들고, 1차 미분 커널은 기울기가 큰 자리를 강조한다. 2차 미분은 변곡점을, 충격 검출 커널은 짧은 스파이크만 골라낸다. 같은 신호에서 무엇을 보고 싶은지에 따라 커널만 바꾸면 된다.</p>
     </div>
 
     <div class="prose">
-      <h2>2. 파라미터 공유(Parameter Sharing)</h2>
+      <h2>1D 합성곱이 실제 딥러닝에서 쓰이는 곳</h2>
+      <p>1D 합성곱은 단지 "2D를 익히기 위한 디딤돌"이 아니다. 실제로 다음 분야에서 직접 쓰인다.</p>
 
-      <p>희소 상호작용만으로는 효율의 절반밖에 얻지 못한다. 한 출력이 작은 창에만 연결된다 해도, 위치마다 별도의 가중치를 학습해야 한다면 가중치 수는 여전히 $\text{(출력 위치 수)} \times \text{(커널 크기)}$가 된다. 256×256 출력이라면 약 65,536 × 9 ≈ 59만 개다. 합성곱 9개와는 비교가 안 된다.</p>
+      <p>첫째는 <strong>음성 인식과 음악 분석</strong>이다. 원시 파형(raw waveform)이나 멜 스펙트로그램(mel spectrogram)에 1D 합성곱을 적용해 음소(phoneme), 음의 높낮이(pitch), 비트를 잡는다. WaveNet, SoundStream 같은 모델이 1D 합성곱 위에 세워졌다. 둘째는 <strong>심전도, 뇌파 같은 의료 시계열</strong>이다. 1D 합성곱이 QRS 복합파, 발작 파형(seizure waveform)을 검출하는 데 사용된다. 사람이 수작업으로 설계하던 필터를 데이터로부터 자동 학습한다는 점이 의료 영역에서 큰 발전이었다. 셋째는 <strong>텍스트 분류</strong>다. 단어 임베딩(word embedding) 위에 1D 합성곱을 슬라이드하면 길이 $k$의 어구(phrase) 패턴을 잡는다. Kim, 2014의 텍스트 CNN 논문이 이 접근의 대표 사례다.</p>
 
-      <p>합성곱의 두 번째 무기는 <strong>파라미터 공유(parameter sharing)</strong> 또는 <strong>가중치 공유</strong>다. <em>이미지의 모든 위치에서 같은 커널을 쓴다.</em> 한 커널이 학습되면 그것이 입력의 왼쪽 위에서도 쓰이고, 오른쪽 아래에서도 쓰이고, 한가운데에서도 쓰인다. 그래서 256×256 입력이든 1024×1024 입력이든 한 채널 합성곱 1개 층의 파라미터는 항상 9개다(3×3 커널 기준).</p>
+      <h2>이산 합성곱과 연속 합성곱</h2>
+      <p>책에는 연속 합성곱($x * w (t) = \int x(a) w(t-a) da$) 형태도 등장한다. 우리가 다루는 디지털 신호와 이미지는 모두 이산이므로 적분이 합으로 바뀐다. 그러나 연속 정의를 한 번 봐 두면, 합성곱이 푸리에 변환(Fourier transform)과 어떻게 자연스럽게 연결되는지가 보인다. 푸리에 영역에서 합성곱은 단순한 원소별 곱이 된다. 이것이 큰 커널 합성곱을 빠르게 계산하는 FFT 합성곱(FFT convolution)의 원리이며, 이 단순한 사실 덕에 1980년대 음성처리 분야가 합성곱을 적극적으로 활용할 수 있었다.</p>
 
-      <div class="analogy">
-        파라미터 공유는 <b>“하나의 자(ruler)를 들고 여기저기 재고 다니는 것”</b>과 같다. 자 모양은 한 번만 만들면 되고, 그것을 들고 어디서든 같은 방식으로 잰다. 위치마다 다른 자를 새로 만들 필요가 없다. 이 발상이 가능한 이유는 명확하다 — 자연 이미지에서 “수직 에지”는 왼쪽 위에서도 수직 에지이고 오른쪽 아래에서도 수직 에지이기 때문이다. 위치에 무관하게 같은 패턴은 같은 자로 잴 수 있다.
-      </div>
+      <h3>핵심 정리 — 이것만은 기억하자</h3>
+      <ul class="checklist">
+        <li>1D 합성곱 = 길이 $k$ 커널을 시간축 위에 미끄러뜨리며 가중합을 적는 연산.</li>
+        <li>이동 평균은 1D 합성곱의 특수한 경우(가중치가 모두 $1/k$). 합성곱은 가중치를 학습한다.</li>
+        <li>커널 모양에 따라 평균, 1차 미분(에지), 2차 미분(변곡), 충격 검출 등 다양한 동작.</li>
+        <li>여러 커널을 두면 여러 출력 채널이 만들어진다. 다층으로 쌓으면 계층적 시간 패턴 학습.</li>
+        <li>1D → 2D는 합 기호 하나 추가하는 것뿐. 동작 본질은 같다.</li>
+        <li>실제로 음성, 의료 시계열, 텍스트 분류에서 직접 쓰임.</li>
+        <li>푸리에 영역에서 합성곱은 원소별 곱. FFT 합성곱이 빠른 이유.</li>
+      </ul>
 
-      <p>파라미터 공유는 두 가지 면에서 결정적이다. 첫째, 가중치 수가 입력 크기와 무관해진다. 1024×1024 이미지에 합성곱을 적용해도 학습할 가중치 수는 그대로 9개다. 둘째, 학습된 패턴 감지기가 <strong>자동으로 위치 전체에 일반화</strong>된다. 데이터셋에 “왼쪽 위의 수직 에지” 예시만 있어도, 학습된 커널은 오른쪽 아래의 수직 에지도 똑같이 감지한다. 완전연결 층은 각 위치마다 따로 학습해야 하므로, 한쪽에서만 본 패턴은 다른 쪽에서 다시 만나도 알아보지 못한다.</p>
-
-      <h2>3. 변환 등가성(Equivariance to Translation)</h2>
-
-      <p>파라미터 공유의 직접적 결과로 세 번째 속성이 자동으로 따라온다. <strong>변환 등가성(equivariance to translation)</strong>이다. 함수 $f$가 입력의 이동에 등가라는 것은 다음을 말한다.</p>
-
-      <div class="math-block">$$ f(\text{Shift}(x)) \;=\; \text{Shift}(f(x)) $$</div>
-      <p class="math-note">“입력을 옮긴 뒤 함수를 적용한 것” = “함수를 적용한 뒤 출력을 옮긴 것”.</p>
-
-      <p>합성곱은 정확히 이 성질을 만족한다. 고양이가 이미지 왼쪽에 있을 때 합성곱이 만든 특징맵에서 “고양이의 눈” 위치가 어디든 강하게 활성화된다면, 같은 고양이를 오른쪽으로 30픽셀 옮긴 이미지를 합성곱에 넣으면 그 활성화도 오른쪽으로 정확히 30픽셀 옮겨 나타난다. 이는 같은 커널을 모든 위치에서 쓰기 때문에 자연스럽게 보장된다.</p>
-
-      <div class="analogy">
-        등가성(equivariance)을 “움직임을 따라가는” 카메라로 생각하면 쉽다. 피사체가 움직이면 카메라도 같이 움직여 화면 안에서는 피사체가 늘 같은 자리에 있게 된다. 합성곱이 만든 특징맵은 정확히 그런 카메라다. 입력이 옮겨지면 출력의 활성화도 같은 방향, 같은 거리만큼 옮겨진다.
-      </div>
-
-      <p>여기서 가장 자주 헷갈리는 구분이 등장한다. <strong>등가성(equivariance)</strong>은 “입력이 움직이면 출력도 움직인다”이고, <strong>불변성(invariance)</strong>은 “입력이 움직여도 출력이 변하지 않는다”이다. 두 개념은 정반대처럼 보이지만, 실제로 CNN의 최종 분류기는 둘 다 필요로 한다 — 합성곱 층은 등가성을 제공하고, 그 위에 풀링이 추가될 때 비로소 근사적 불변성이 만들어진다. 불변성에 대해서는 다음 sub-chapter 04에서 풀링과 함께 자세히 다룬다.</p>
-    </div>
-
-    <div class="widget">
-      <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 03b</span><span>변환 등가성 — 입력을 옮기면 출력도 옮긴다</span></div>
-        <div id="equiv"></div>
-      </div>
-      <p class="widget-cap">위쪽 입력에 모양 하나(✚)를 좌우로 슬라이드해 보라. 같은 커널을 적용한 아래 특징맵에서 활성화 자리도 정확히 같은 거리만큼 옮겨가는 것이 등가성이다. 입력 위치 변화와 출력 위치 변화가 완벽히 동기화된다.</p>
-    </div>
-
-    <div class="prose">
-      <h2>셋이 어떻게 한 줄로 묶이나</h2>
-
-      <p>여기까지 본 세 속성을 한 표로 정리하면 다음과 같다.</p>
-
-      <div class="symbols"><tbody>
-        <tr><td>희소 상호작용</td><td>한 출력은 입력의 작은 창만 본다. 자연 이미지의 “주변만 관계 있다”라는 사실을 반영.</td></tr>
-        <tr><td>파라미터 공유</td><td>같은 커널을 모든 위치에서 쓴다. 자연 이미지의 “같은 패턴은 어디에 있든 같다”라는 사실을 반영.</td></tr>
-        <tr><td>변환 등가성</td><td>입력이 옮겨지면 출력도 옮겨진다. 파라미터 공유의 자동 결과.</td></tr>
-      </tbody></div>
-
-      <p>9장의 가장 중요한 관점은 이 셋을 분리된 세 개의 트릭으로 보지 않고, <strong>한 가지 사전 분포(prior distribution)</strong>가 모델에 새겨진 결과로 보는 것이다. 그 사전은 두 조건만 요구한다 — (1) 학습된 함수는 국소적 상호작용에만 의존하고, (2) 이동에 대해 등가여야 한다. 희소 상호작용은 (1)의 직접 표현이고, 파라미터 공유는 (2)를 만족시키기 위한 메커니즘이며, 변환 등가성은 (2)의 자동 결과다. 결국 셋은 같은 사전의 세 얼굴이다.</p>
-
-      <p>이 사전이 무한히 강한 이유는, 그것을 위반하는 가중치 배치를 모델이 표현조차 할 수 없기 때문이다. 7장의 L2 정칙화는 “큰 가중치가 있을 수는 있지만 비용을 비싸게 매긴다”는 약한 사전이다. CNN의 구조적 제약은 “국소적이지 않거나 이동에 등가가 아닌 가중치 배치는 표현 불가”라는 강한 사전이다. 무한히 강하다는 표현은 이런 의미다.</p>
-
-      <div class="analogy">
-        7장의 정칙화가 <b>“운전할 때 안전벨트는 매면 좋다”</b>는 권고라면, CNN의 구조적 제약은 <b>“차에 안전벨트 없이는 시동이 안 걸린다”</b>는 설계다. 전자는 위반 가능하되 비싸고, 후자는 위반 자체가 불가능하다. 사전이 데이터에 잘 맞을 때(자연 이미지가 그 경우다), 후자가 훨씬 빠르고 안정적이다.
-      </div>
-
-      <p>이 사전의 강한 만큼 위험도 분명하다. 사전이 데이터에 맞지 않으면 모델이 표현할 수 없는 패턴은 영영 학습되지 않는다. 표 형식 데이터(각 칼럼이 의미가 무관)나 그래프 구조 데이터(이웃의 정의가 평면 격자와 다름)에 CNN을 그대로 적용하면 오히려 성능이 떨어지는 경우가 흔하다. 이 위험은 sub-chapter 08의 시험 대비에서 다시 정리한다.</p>
-
-      <p>다음 sub-chapter 04는 풀링을 다룬다. 합성곱 자체는 등가성만 제공하므로, “고양이가 왼쪽에 있든 오른쪽에 있든 고양이”라는 분류기 수준의 판단을 하려면 등가성을 <em>근사적 불변성</em>으로 바꾸어 줄 장치가 필요하다. 그 장치가 풀링이다.</p>
+      <p>다음 sub-chapter에서는 차원을 하나 더 추가해 2D 합성곱으로 본격 진입한다. 이미지에서 커널 슬라이드가 어떤 모양으로 일어나며, 에지 검출 커널·블러 커널·샤프닝 커널이 어떻게 다른 특징맵을 만드는지를 직접 본다.</p>
     </div>
 
     <nav class="ch-foot"></nav>
@@ -113,212 +126,184 @@
 </div>
 
 <script>
-  const SUBS = [
-    { no: '01', t: '왜 완전연결은 안 되는가' },
-    { no: '02', t: '합성곱의 정의' },
-    { no: '03', t: 'CNN의 3대 핵심 속성' },
-    { no: '04', t: '풀링 — 평행이동 불변성' },
-    { no: '05', t: '신경과학적 기원' },
-    { no: '06', t: '출력 크기, 스트라이드, 패딩' },
-    { no: '07', t: '대표 아키텍처 계보' },
-    { no: '08', t: '시험 대비' },
+  const CHAPTERS = [
+    { no:'01', t:'완전연결의 파라미터 폭발' },
+    { no:'02', t:'합성곱이란 무엇인가' },
+    { no:'03', t:'1D 합성곱 — 시간 신호' },
+    { no:'04', t:'2D 합성곱 — 이미지 커널' },
+    { no:'05', t:'희소 상호작용' },
+    { no:'06', t:'파라미터 공유' },
+    { no:'07', t:'변환 등가성' },
+    { no:'08', t:'풀링 — max vs avg' },
+    { no:'09', t:'신경과학적 기원' },
+    { no:'10', t:'출력 크기 공식' },
+    { no:'11', t:'수용 영역' },
+    { no:'12', t:'아키텍처 1 — LeNet, AlexNet' },
+    { no:'13', t:'아키텍처 2 — VGG, Inception' },
+    { no:'14', t:'아키텍처 3 — ResNet' },
+    { no:'15', t:'시험 대비 — 30+ 질문' },
   ];
-  function buildNav(cur) {
-    const tb = document.querySelector('.topbar');
-    if (tb) tb.innerHTML =
-      '<a class="home" href="index.html">← Chapter 09 / 합성곱 신경망</a>' +
-      '<span class="ch-mini">SUB ' + cur + ' / 08</span>';
-    const ol = document.querySelector('.ch-nav ol');
-    if (ol) ol.innerHTML = SUBS.map(c =>
-      '<li><a href="' + c.no + '.html"' + (c.no === cur ? ' class="current"' : '') + '>' + c.t + '</a></li>').join('');
-    const foot = document.querySelector('.ch-foot');
-    if (foot) {
-      const i = SUBS.findIndex(c => c.no === cur);
-      const prev = i > 0 ? SUBS[i - 1] : { no: '', t: '표지로', _href: 'index.html' };
-      const next = i < SUBS.length - 1 ? SUBS[i + 1] : { no: '', t: '표지로', _href: 'index.html' };
-      const hp = prev._href || (prev.no + '.html');
-      const hn = next._href || (next.no + '.html');
-      foot.innerHTML =
-        '<a href="' + hp + '"><div class="dir">← 이전</div><div class="ti">' + prev.t + '</div></a>' +
-        '<a href="' + hn + '" class="next"><div class="dir">다음 →</div><div class="ti">' + next.t + '</div></a>';
+  const CUR = '03';
+  document.querySelector('.topbar').innerHTML = '<a class="home" href="index.html">← Ch.09 CNN 표지</a><span class="ch-mini">SUB ' + CUR + ' / 15</span>';
+  document.querySelector('.ch-nav ol').innerHTML = CHAPTERS.map(c => '<li><a href="' + c.no + '.html"' + (c.no===CUR?' class="current"':'') + '>' + c.t + '</a></li>').join('');
+  const idx = CHAPTERS.findIndex(c=>c.no===CUR);
+  const prev = idx>0 ? CHAPTERS[idx-1] : { no:'', t:'표지로', _:'index.html' };
+  const next = idx<CHAPTERS.length-1 ? CHAPTERS[idx+1] : { no:'', t:'표지로', _:'index.html' };
+  document.querySelector('.ch-foot').innerHTML = '<a href="' + (prev._ || prev.no+'.html') + '"><div class="dir">← 이전</div><div class="ti">' + prev.t + '</div></a><a href="' + (next._ || next.no+'.html') + '" class="next"><div class="dir">다음 →</div><div class="ti">' + next.t + '</div></a>';
+  const bar = document.querySelector('.scroll-progress');
+  document.addEventListener('scroll', () => { const h = document.documentElement; const max = h.scrollHeight - h.clientHeight; bar.style.width = (max > 0 ? (h.scrollTop/max)*100 : 0) + '%'; }, { passive: true });
+  window.addEventListener('load', () => { if (window.renderMathInElement) { renderMathInElement(document.body, { delimiters: [{ left:'$$', right:'$$', display:true }, { left:'$', right:'$', display:false }], throwOnError: false }); } });
+
+  // ---------- 위젯: 1D 합성곱 ----------
+  const cvs = document.getElementById('sigCanvas');
+  const ctx = cvs.getContext('2d');
+  const N = 100;
+  const KERNELS = {
+    avg: [0.2, 0.2, 0.2, 0.2, 0.2],
+    d1: [-1, 0, 1],
+    d2: [1, -2, 1],
+    gauss: [0.06, 0.24, 0.40, 0.24, 0.06],
+    impulse: [-0.5, -0.5, 2, -0.5, -0.5],
+  };
+  const KNAMES = {
+    avg: '5점 평균 — 신호 매끈하게',
+    d1: '1차 미분 — 변화율 검출',
+    d2: '2차 미분 — 변곡점 검출',
+    gauss: '가우시안 평활 — 잡음 제거',
+    impulse: '충격 검출 — 스파이크만',
+  };
+  let curK = 'avg';
+  let noise = 0.3;
+
+  // 시드 노이즈
+  function seedNoise(seed) {
+    const arr = [];
+    let s = seed;
+    for (let i = 0; i < N; i++) {
+      s = (s * 9301 + 49297) % 233280;
+      arr.push((s / 233280) - 0.5);
     }
+    return arr;
   }
-  function initScroll() {
-    const bar = document.querySelector('.scroll-progress');
-    if (!bar) return;
-    const on = () => {
-      const h = document.documentElement;
-      const max = h.scrollHeight - h.clientHeight;
-      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
-    };
-    document.addEventListener('scroll', on, { passive: true }); on();
-  }
+  const baseNoise = seedNoise(42);
 
-  // ─── 위젯 03a: 희소 상호작용 SVG ─────────────────────
-  function sparseWidget(host) {
-    const css = getComputedStyle(document.documentElement);
-    const COL = {
-      structure: css.getPropertyValue('--structure').trim() || '#2D5B7A',
-      style: css.getPropertyValue('--style').trim() || '#C0492E',
-      ink: css.getPropertyValue('--ink-soft').trim() || '#5A5247',
-      faint: css.getPropertyValue('--ink-faint').trim() || '#8E8576',
-    };
-    const N_IN = 9, N_OUT = 9;
-    let cur = 4; // 가운데 출력 뉴런
-    const K = 3; // 합성곱 창 크기
-
-    function nodes(x, n) {
-      const r = [];
-      for (let i = 0; i < n; i++) r.push({ x, y: 30 + i * 28 });
-      return r;
+  function makeSignal() {
+    const sig = [];
+    for (let i = 0; i < N; i++) {
+      const t = i / N;
+      const base = Math.sin(t * Math.PI * 4) * 0.7 + Math.sin(t * Math.PI * 12) * 0.2;
+      sig.push(base + baseNoise[i] * noise * 2);
     }
-
-    host.innerHTML =
-      '<div style="padding:1.4rem 1rem 1.2rem;background:#fff;">' +
-      '<div style="display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;">' +
-      '<div id="svgFC"></div>' +
-      '<div id="svgCV"></div>' +
-      '</div>' +
-      '<div style="margin-top:1.2rem;padding-top:1rem;border-top:1px solid var(--line-soft);display:flex;align-items:center;gap:.8rem;font-family:var(--mono);font-size:.74rem;">' +
-      '  <span style="color:' + COL.ink + ';flex-shrink:0;">하이라이트할 출력 뉴런</span>' +
-      '  <input type="range" id="curOut" min="0" max="8" value="4" style="flex:1;">' +
-      '  <span id="curLabel" style="color:' + COL.style + ';font-weight:600;flex-shrink:0;">y₅</span>' +
-      '</div>' +
-      '<div style="display:flex;gap:1rem;justify-content:center;margin-top:.6rem;font-family:var(--mono);font-size:.7rem;">' +
-      '  <span style="color:' + COL.style + ';">완전연결: 한 출력 ↔ 9개 입력 모두</span>' +
-      '  <span style="color:' + COL.structure + ';">합성곱: 한 출력 ↔ 3개 입력 (창)</span>' +
-      '</div>' +
-      '</div>';
-
-    function render() {
-      const inN = nodes(40, N_IN), outN = nodes(220, N_OUT);
-      const w = 280, h = 290;
-      const dotIn = (n, i) => '<circle cx="' + n.x + '" cy="' + n.y + '" r="6" fill="#fff" stroke="' + COL.ink + '" stroke-width="1.2"/>' +
-        '<text x="' + (n.x - 12) + '" y="' + (n.y + 4) + '" font-family="monospace" font-size="10" fill="' + COL.faint + '" text-anchor="end">x' + (i+1) + '</text>';
-      const dotOut = (n, i, hi) => '<circle cx="' + n.x + '" cy="' + n.y + '" r="' + (hi ? 8 : 6) + '" fill="' + (hi ? COL.style : '#fff') + '" stroke="' + (hi ? COL.style : COL.ink) + '" stroke-width="1.4"/>' +
-        '<text x="' + (n.x + 12) + '" y="' + (n.y + 4) + '" font-family="monospace" font-size="10" fill="' + (hi ? COL.style : COL.faint) + '" text-anchor="start">y' + (i+1) + '</text>';
-
-      // FC: 모든 입력 ↔ cur 출력 연결
-      let fcLines = '';
-      for (let i = 0; i < N_IN; i++) {
-        fcLines += '<line x1="' + inN[i].x + '" y1="' + inN[i].y + '" x2="' + outN[cur].x + '" y2="' + outN[cur].y + '" stroke="' + COL.style + '" stroke-width="1.1" opacity="0.55"/>';
-      }
-      // FC: 나머지 출력은 연결 없이 (단순화)
-      let fcInputs = ''; for (let i = 0; i < N_IN; i++) fcInputs += dotIn(inN[i], i);
-      let fcOuts = ''; for (let i = 0; i < N_OUT; i++) fcOuts += dotOut(outN[i], i, i === cur);
-
-      const fcSVG = '<div style="text-align:center;"><div style="font-family:var(--mono);font-size:.72rem;color:' + COL.style + ';margin-bottom:.3rem;">완전연결</div>' +
-        '<svg width="' + w + '" height="' + h + '" style="background:#fff;border:1px solid var(--line-soft);border-radius:6px;">' +
-        fcLines + fcInputs + fcOuts +
-        '</svg></div>';
-
-      // CV: cur 출력에 대응하는 입력 창은 (cur-1, cur, cur+1)
-      let cvLines = '';
-      for (let d = -1; d <= 1; d++) {
-        const idx = cur + d;
-        if (idx >= 0 && idx < N_IN) {
-          cvLines += '<line x1="' + inN[idx].x + '" y1="' + inN[idx].y + '" x2="' + outN[cur].x + '" y2="' + outN[cur].y + '" stroke="' + COL.structure + '" stroke-width="1.6" opacity="0.85"/>';
-        }
-      }
-      let cvInputs = ''; for (let i = 0; i < N_IN; i++) {
-        const inWin = Math.abs(i - cur) <= 1;
-        cvInputs += '<circle cx="' + inN[i].x + '" cy="' + inN[i].y + '" r="' + (inWin ? 7 : 6) + '" fill="' + (inWin ? COL.structure : '#fff') + '" stroke="' + COL.ink + '" stroke-width="1.2"/>' +
-          '<text x="' + (inN[i].x - 12) + '" y="' + (inN[i].y + 4) + '" font-family="monospace" font-size="10" fill="' + COL.faint + '" text-anchor="end">x' + (i+1) + '</text>';
-      }
-      let cvOuts = ''; for (let i = 0; i < N_OUT; i++) cvOuts += dotOut(outN[i], i, i === cur);
-
-      const cvSVG = '<div style="text-align:center;"><div style="font-family:var(--mono);font-size:.72rem;color:' + COL.structure + ';margin-bottom:.3rem;">합성곱 (창 = 3)</div>' +
-        '<svg width="' + w + '" height="' + h + '" style="background:#fff;border:1px solid var(--line-soft);border-radius:6px;">' +
-        cvLines + cvInputs + cvOuts +
-        '</svg></div>';
-
-      host.querySelector('#svgFC').outerHTML = fcSVG.replace('<div', '<div id="svgFC"');
-      host.querySelector('#svgCV').outerHTML = cvSVG.replace('<div', '<div id="svgCV"');
-      host.querySelector('#curLabel').textContent = 'y' + (cur + 1);
-    }
-    document.getElementById('curOut').addEventListener('input', (e) => { cur = +e.target.value; render(); });
-    render();
+    // 60-65에 스파이크 추가
+    sig[62] += 1.5; sig[63] += 1.2;
+    return sig;
   }
 
-  // ─── 위젯 03b: 변환 등가성 ─────────────────────
-  function equivWidget(host) {
-    const css = getComputedStyle(document.documentElement);
-    const COL = {
-      structure: css.getPropertyValue('--structure').trim() || '#2D5B7A',
-      style: css.getPropertyValue('--style').trim() || '#C0492E',
-      ink: css.getPropertyValue('--ink-soft').trim() || '#5A5247',
-      faint: css.getPropertyValue('--ink-faint').trim() || '#8E8576',
-    };
-    const W = 11; // 입력 가로
-    let pos = 5;  // 모양 위치 (0..10)
-
-    function shape(idx) {
-      // ✚ 모양: (idx, *) 십자
-      const arr = new Array(W).fill(0);
-      arr[idx] = 1;
-      return arr;
+  function conv1d(x, w) {
+    const k = w.length;
+    const out = [];
+    for (let i = 0; i <= x.length - k; i++) {
+      let s = 0;
+      for (let j = 0; j < k; j++) s += x[i + j] * w[j];
+      out.push(s);
     }
-    // 커널: 1D 에지 디텍터 [1, -2, 1]
-    const K = [1, -2, 1];
-    function conv1d(input) {
-      const out = new Array(W).fill(0);
-      for (let i = 1; i < W - 1; i++) {
-        out[i] = input[i-1]*K[0] + input[i]*K[1] + input[i+1]*K[2];
-      }
-      return out;
-    }
-
-    host.innerHTML =
-      '<div style="padding:1.4rem 1rem 1.2rem;background:#fff;">' +
-      '<div id="equivBoard"></div>' +
-      '<div style="margin-top:1.2rem;padding-top:1rem;border-top:1px solid var(--line-soft);display:flex;align-items:center;gap:.8rem;font-family:var(--mono);font-size:.74rem;">' +
-      '  <span style="color:' + COL.ink + ';flex-shrink:0;">입력 모양 위치</span>' +
-      '  <input type="range" id="shPos" min="0" max="10" value="5" style="flex:1;">' +
-      '  <span id="shLabel" style="color:' + COL.style + ';font-weight:600;flex-shrink:0;">x = 5</span>' +
-      '</div>' +
-      '</div>';
-
-    function render() {
-      const inp = shape(pos);
-      const out = conv1d(inp);
-
-      function row(arr, color, label) {
-        const max = Math.max(...arr.map(Math.abs)) || 1;
-        let html = '<tr><td style="font-family:var(--mono);font-size:.7rem;color:' + COL.faint + ';padding-right:.6rem;text-align:right;width:80px;">' + label + '</td>';
-        for (let i = 0; i < W; i++) {
-          const v = arr[i];
-          const a = Math.abs(v) / max;
-          let bg = 'rgba(0,0,0,0.05)';
-          if (v > 0) bg = 'rgba(' + (color === 'structure' ? '45,91,122' : '192,73,46') + ',' + (a * 0.85 + 0.05) + ')';
-          else if (v < 0) bg = 'rgba(192,73,46,' + (a * 0.85 + 0.05) + ')';
-          const tc = a > 0.5 ? '#fff' : COL.ink;
-          html += '<td style="width:34px;height:34px;border:1px solid rgba(38,34,28,0.1);text-align:center;background:' + bg + ';font-family:var(--mono);font-size:.66rem;color:' + tc + ';">' + (Math.abs(v) < 0.01 ? '0' : v.toFixed(1)) + '</td>';
-        }
-        html += '</tr>';
-        return html;
-      }
-
-      const html = '<table style="border-collapse:collapse;margin:0 auto;">' +
-        row(inp, 'structure', '입력 x') +
-        row(out, 'style', '출력 (x∗K)') +
-        '</table>' +
-        '<div style="font-family:var(--mono);font-size:.7rem;color:' + COL.faint + ';text-align:center;margin-top:.6rem;">' +
-        '커널 K = [+1, &minus;2, +1] (라플라시안 1D)' +
-        '</div>';
-      host.querySelector('#equivBoard').innerHTML = html;
-      host.querySelector('#shLabel').textContent = 'x = ' + pos;
-    }
-    document.getElementById('shPos').addEventListener('input', (e) => { pos = +e.target.value; render(); });
-    render();
+    return out;
   }
 
-  window.addEventListener('load', () => {
-    buildNav('03'); initScroll();
-    const s = document.getElementById('sparse');
-    if (s) sparseWidget(s);
-    const e = document.getElementById('equiv');
-    if (e) equivWidget(e);
+  function drawPlot(arr, x0, y0, w, h, color, title, range) {
+    // 축
+    ctx.strokeStyle = '#8E8576'; ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x0, y0); ctx.lineTo(x0, y0+h); ctx.lineTo(x0+w, y0+h);
+    ctx.stroke();
+    // 영점선
+    ctx.strokeStyle = 'rgba(38,34,28,0.08)'; ctx.lineWidth = 1;
+    const yMid = y0 + h/2;
+    ctx.beginPath(); ctx.moveTo(x0, yMid); ctx.lineTo(x0+w, yMid); ctx.stroke();
+
+    let vMin, vMax;
+    if (range) { vMin = range[0]; vMax = range[1]; }
+    else {
+      vMin = Math.min(...arr); vMax = Math.max(...arr);
+      const pad = (vMax - vMin) * 0.1 || 0.1;
+      vMin -= pad; vMax += pad;
+    }
+    const span = vMax - vMin;
+    const step = w / (arr.length - 1);
+
+    ctx.strokeStyle = color; ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = 0; i < arr.length; i++) {
+      const x = x0 + i * step;
+      const t = (arr[i] - vMin) / span;
+      const y = y0 + h - t * h;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    ctx.font = '600 13px Spline Sans Mono, monospace'; ctx.fillStyle = '#26221C';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText(title, x0, y0 - 22);
+  }
+
+  function drawKernel(w, x0, y0, kw, kh) {
+    const k = w.length;
+    const cw = kw / k;
+    const vMax = Math.max(...w.map(Math.abs));
+    for (let i = 0; i < k; i++) {
+      const v = w[i];
+      const t = vMax === 0 ? 0 : Math.abs(v) / vMax;
+      const fill = v > 0 ? 'rgba(192,73,46,' + (0.3 + t*0.6) + ')'
+                         : v < 0 ? 'rgba(45,91,122,' + (0.3 + t*0.6) + ')'
+                         : '#F3EEE3';
+      ctx.fillStyle = fill;
+      ctx.fillRect(x0 + i*cw, y0, cw - 2, kh);
+      ctx.strokeStyle = '#8E8576'; ctx.lineWidth = 1;
+      ctx.strokeRect(x0 + i*cw, y0, cw - 2, kh);
+      ctx.fillStyle = '#26221C';
+      ctx.font = '600 12px Spline Sans Mono, monospace';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      const lbl = Math.abs(v) < 0.5 ? v.toFixed(2) : v.toFixed(1);
+      ctx.fillText(lbl, x0 + (i + 0.5)*cw, y0 + kh/2);
+    }
+    ctx.font = '600 12px Spline Sans Mono, monospace'; ctx.fillStyle = '#5A5247';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('커널 w (길이 ' + k + ')', x0, y0 - 22);
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, cvs.width, cvs.height);
+    const sig = makeSignal();
+    const w = KERNELS[curK];
+    const out = conv1d(sig, w);
+
+    // 입력 신호 (상단)
+    drawPlot(sig, 60, 60, 1200, 150, '#2D5B7A', '입력 신호 x(t) — 잡음 섞인 합성 사인파');
+
+    // 커널 (중앙)
+    drawKernel(w, 60, 290, Math.min(600, w.length * 80), 36);
+
+    // 커널 설명
+    ctx.font = '500 12px Spline Sans Mono, monospace'; ctx.fillStyle = '#5A5247';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText(KNAMES[curK], 60 + Math.min(600, w.length * 80) + 24, 304);
+
+    // 출력 신호 (하단)
+    drawPlot(out, 60, 400, 1200, 150, '#C0492E', '출력 s(t) = (x * w)(t)');
+  }
+
+  document.querySelectorAll('.kbtns button').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('.kbtns button').forEach(x => x.classList.remove('on'));
+      b.classList.add('on'); curK = b.dataset.k; draw();
+    });
   });
+  document.getElementById('ctlNoise').addEventListener('input', e => {
+    noise = +e.target.value;
+    document.getElementById('lblNoise').textContent = noise.toFixed(2);
+    draw();
+  });
+  draw();
 </script>
 </body>
 </html>

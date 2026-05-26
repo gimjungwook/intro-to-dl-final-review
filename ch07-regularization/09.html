@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sub 09 · 라벨 스무딩 — 100 퍼센트 자신감의 위험 · Ch.07</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .ls-stage { padding: 1.2rem 1.2rem 1rem; }
+  .ls-cv { display: block; max-width: 100%; border-radius: 8px; border: 1px solid var(--line); background: var(--paper); margin: 0 auto; }
+  .ls-ctr { display: flex; gap: 1rem; flex-wrap: wrap; padding: .9rem 1.1rem; border-top: 1px solid var(--line-soft); background: var(--paper); }
+  .ls-read { padding: .8rem 1.4rem; font-size: .9rem; color: var(--ink-soft); line-height: 1.55; }
+  .ls-read b { color: var(--ink); }
+  .deriv { max-width: var(--measure); margin: 1.4rem auto; padding: 1.1rem 1.4rem; background: var(--paper-2); border: 1px solid var(--line-soft); border-radius: 9px; }
+  .deriv .lbl { font-family: var(--mono); font-size: .7rem; letter-spacing: .12em; color: var(--style); margin-bottom: .35rem; }
+  .deriv .why { font-size: .88rem; color: var(--ink-soft); line-height: 1.6; margin-top: .35rem; }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 09 · 라벨 분포에 숨은 정칙화</span>
+      <h1>라벨 스무딩 — <span class="t-style">100 퍼센트 자신감</span>의 위험</h1>
+      <p class="lede">정답을 1, 오답을 0으로 두면 모형은 무한히 큰 로짓으로 가야만 손실이 0이 된다. 부드러운 분포가 정칙화가 되는 이유.</p>
+    </header>
+
+    <div class="prose">
+      <p>분류 문제에서 모형의 출력은 보통 소프트맥스(softmax)를 거친 확률 분포다. 그리고 학습의 타깃은 정답 클래스에 1, 나머지에 0을 주는 원핫 벡터(one-hot vector)다. 예를 들어 10개 클래스 중 세 번째가 정답이면 $y = [0, 0, 1, 0, 0, 0, 0, 0, 0, 0]$. 이 자연스러워 보이는 설정에 깊은 문제가 숨어 있다.</p>
+
+      <p>크로스 엔트로피 손실은 모형이 정답 클래스에 1, 다른 클래스에 0의 확률을 줄수록 작아진다. 그런데 소프트맥스는 정확히 1이나 정확히 0의 확률을 줄 수 없다 — 출력 확률 $p_i = \exp(z_i) / \sum_j \exp(z_j)$가 1이 되려면 $z_i \to +\infty$가 되어야 하고, 0이 되려면 다른 모든 $z_j \to -\infty$가 되어야 한다. 즉 <strong>원핫 라벨로 손실을 0으로 만들려면 모형의 로짓(logit)이 무한대로 발산해야 한다</strong>.</p>
+
+      <h2>1. 가중치가 폭주하는 메커니즘</h2>
+
+      <p>모형은 손실을 줄이기 위해 로짓의 절댓값을 키우려 한다. 그런데 로짓은 마지막 층 가중치의 선형 결합이므로, 로짓이 커지려면 가중치도 함께 커져야 한다. 결국 모형은 <strong>가중치를 끝없이 키우는 방향</strong>으로 학습된다. 이게 두 가지 문제를 만든다.</p>
+
+      <p><strong>문제 1: 과도확신(overconfidence).</strong> 모형이 "이건 100 퍼센트 고양이다"라고 출력해 버리면, 실제로 애매한 입력(고양이와 비슷한 살쾡이, 흐릿한 사진)에 대해서도 100 퍼센트의 자신감으로 틀린 답을 낸다. 모형의 출력 확률이 더 이상 진짜 불확실성을 반영하지 못한다.</p>
+
+      <p><strong>문제 2: 학습 불안정성.</strong> 가중치가 폭주하면 그라디언트도 폭주하고, 학습이 발산하거나 매우 불안정해진다. L2 정칙화가 이 문제의 일부를 잡아 주지만, 손실 자체에서 발생하는 무한대 압력을 완전히 제거하지는 못한다.</p>
+
+      <div class="analogy">
+        <b>시험 답안에 "확신함" 표시를 무조건 100 퍼센트로 적는 학생</b>을 상상해 보자. 정답을 안 학생은 좋지만, 잘 모르는 문제에서도 100 퍼센트를 적으면 그 학생의 자기평가가 무의미해진다. 시험 채점자는 학생의 "내가 얼마나 확신하는가"라는 정보를 잃는다. 그뿐 아니라 그런 학생을 만들기 위해 우리는 학생에게 "조금도 의심하지 마"라고 가르쳐야 한다 — 이게 가중치가 무한대로 가는 압력의 비유다.
+      </div>
+
+      <h2>2. 라벨 스무딩의 식</h2>
+
+      <p>해결책은 단순하다. 정답에 1을 주는 대신 $1 - \epsilon$을, 나머지 모든 오답에 0을 주는 대신 $\epsilon / (K-1)$을 준다(K = 클래스 수). 보통 $\epsilon = 0.1$.</p>
+
+      <div class="math-block">$$ y'_i \;=\; \begin{cases} 1 - \epsilon & i = \text{정답 클래스} \\ \dfrac{\epsilon}{K-1} & \text{그 외} \end{cases} $$</div>
+      <p class="math-note">K=10, ε=0.1이면 정답은 0.9, 오답은 각각 0.0111. 합은 여전히 1.</p>
+
+      <p>이게 어떻게 작동하는지 보자. 모형이 정답에 0.9, 오답들에 합계 0.1을 분산시켜 주면 크로스 엔트로피가 정확히 0(이론적 최솟값)을 달성할 수 있다. 즉 <strong>유한한 로짓으로도 손실을 최소화할 수 있다</strong>. 가중치가 무한대로 갈 압력이 사라진다.</p>
+
+      <div class="deriv">
+        <span class="lbl">유도 1 · 라벨 스무딩 손실의 최솟값</span>
+        <div class="math-block">$$ L_{\text{LS}}(p) \;=\; -\sum_i y'_i \log p_i \;=\; -(1-\epsilon)\log p_{\text{정답}} \;-\; \sum_{i \ne \text{정답}} \frac{\epsilon}{K-1}\log p_i $$</div>
+        <p class="why">이 손실의 최솟값은 모형이 라벨 분포를 정확히 재현할 때(즉 $p = y'$일 때) 달성된다. 그때 로짓은 유한한 값으로 충분 — 정답 로짓이 다른 로짓보다 일정 폭만 크면 된다. 무한대로 갈 필요가 없다.</p>
+      </div>
+
+      <h2>3. 왜 이것이 정칙화인가</h2>
+
+      <p>이게 한 식 시점에서 보면 어떻게 페널티가 되는가? 라벨 스무딩 손실은 다음과 같이 쪼갤 수 있다.</p>
+
+      <div class="math-block">$$ L_{\text{LS}} \;=\; (1-\epsilon)\,L_{\text{CE}}(p, y) \;+\; \epsilon\,L_{\text{CE}}(p, u) $$</div>
+      <p class="math-note">$y$는 원핫 라벨, $u$는 균등 분포 $u_i = 1/K$.</p>
+
+      <p>첫 항은 원래의 크로스 엔트로피, 두 번째 항은 모형 분포 $p$를 균등 분포 $u$에 가까워지게 끌어당기는 항이다. 이를 KL 발산으로 다시 쓰면</p>
+
+      <div class="deriv">
+        <span class="lbl">유도 2 · 라벨 스무딩 = CE + KL 페널티</span>
+        <div class="math-block">$$ L_{\text{LS}} \;=\; (1-\epsilon)\,L_{\text{CE}}(p, y) \;+\; \epsilon\bigl[\mathrm{KL}(u \,\|\, p) + H(u)\bigr] $$</div>
+        <p class="why">$H(u)$는 상수이므로 무시. 결국 페널티는 $\epsilon \cdot \mathrm{KL}(u \| p)$ — 모형 분포가 균등 분포에서 멀어질수록 큰 페널티. 이는 정확히 $J + \alpha\Omega$ 형태로, $\alpha = \epsilon$, $\Omega = \mathrm{KL}(u \| p)$다.</p>
+      </div>
+
+      <p>즉 라벨 스무딩은 "모형이 너무 한 클래스에 확신하지 못하게"라는 명시적 페널티를 부과하는 정칙화다. L2가 가중치 공간에서, 데이터 증강이 입력 공간에서, 노이즈 주입이 활성 공간에서 작동했다면 라벨 스무딩은 출력 분포 공간에서 작동한다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 09</span><span>라벨 분포 비교 — 원핫 vs 라벨 스무딩</span></div>
+        <div id="ls"></div>
+      </div>
+      <p class="widget-cap">10개 클래스의 라벨 분포를 비교. 왼쪽: 원핫(정답 1.0, 나머지 0). 오른쪽: 라벨 스무딩(ε=0.1)을 적용한 분포(정답 0.9, 나머지 각 0.0111). 슬라이더로 ε을 조정. ε=0이면 원핫과 동일. ε이 너무 크면(예: 0.5) 모형이 정답도 확신 못해서 학습이 약해짐.</p>
+    </div>
+
+    <div class="prose">
+      <h2>실전 효과 — 왜 ImageNet 분류기마다 쓰는가</h2>
+
+      <p>라벨 스무딩의 효과는 단순한 정확도 향상만이 아니다. 실험적으로 다음 세 가지가 보고된다.</p>
+
+      <p><strong>효과 1: 정확도의 작은 향상.</strong> ImageNet 같은 대규모 분류에서 보통 0.5에서 1 퍼센트 포인트 정확도 향상. 큰 모형일수록 효과 큼.</p>
+
+      <p><strong>효과 2: 캘리브레이션 개선.</strong> 캘리브레이션(calibration)이란 "모형이 90 퍼센트 확신한다고 말한 예측이 실제로 90 퍼센트 정확한가"의 문제다. 원핫으로 학습한 모형은 보통 과도확신해서 캘리브레이션이 나쁘다. 라벨 스무딩이 이를 크게 개선한다.</p>
+
+      <p><strong>효과 3: 적대적 강건성 약간 증가.</strong> 모형이 한 클래스에 무한히 확신하지 않으므로, 입력의 작은 교란으로 결정 경계를 넘는 일이 줄어든다.</p>
+
+      <h2>주의 — 라벨 스무딩이 항상 좋은 것은 아니다</h2>
+
+      <p>최근 연구에서 라벨 스무딩이 모형의 표현 학습에 미묘한 부정적 영향을 줄 수 있다는 결과가 있다. 특히 모형 증류(model distillation) 같은 작업에서, 학생 모형이 교사 모형의 미묘한 확률 차이를 배워야 할 때 라벨 스무딩이 그 미묘한 정보를 흐리게 만든다. 이런 경우 라벨 스무딩을 빼는 것이 좋다.</p>
+
+      <p>그러나 일반적인 분류 작업, 특히 라벨 노이즈가 있을 가능성이 있는 대규모 데이터셋(ImageNet, JFT-300M 등)에서는 라벨 스무딩이 사실상 표준이다. 손실 한 줄을 바꾸는 것만으로 정칙화 효과를 얻을 수 있다는 점에서 가성비가 매우 높다.</p>
+
+      <h2>온도 스케일링과의 관계</h2>
+
+      <p>라벨 스무딩과 비슷한 효과를 학습 후에 적용하는 방법도 있다 — <strong>온도 스케일링(temperature scaling)</strong>. 학습이 끝난 모형의 로짓 $z$를 $z / T$로 나눠 사용한다($T > 1$이면 분포가 부드러워짐). 이는 학습된 모형의 캘리브레이션만 개선하고, 정확도는 거의 안 바뀐다.</p>
+
+      <p>라벨 스무딩은 학습 자체를 바꿔서 더 좋은 표현을 얻으려는 시도고, 온도 스케일링은 이미 학습된 표현의 출력만 조정하는 사후 처리다. 두 방법을 함께 쓰는 경우도 많다.</p>
+
+      <h2>한 줄 정리</h2>
+
+      <p>라벨 스무딩의 본질은 "정답에 100 퍼센트, 오답에 0 퍼센트"라는 극단적 라벨이 모형 가중치를 무한대로 밀어내는 압력을 완화하는 것이다. 한 식 시점에서는 "$\epsilon \cdot \mathrm{KL}(u \| p)$" 페널티로, 모형이 균등 분포에서 너무 멀어지지 않게 잡아 준다. 가중치 폭주 방지, 캘리브레이션 개선, 적대적 강건성 모두에 약하지만 일관된 도움을 준다. 시험에서는 "왜 라벨 스무딩이 정칙화인가"를 위 KL 페널티 식 한 줄로 답할 수 있다.</p>
+
+      <p>다음 sub에서는 또 다른 형태의 정칙화 — 다중 작업 학습(multi-task learning)으로 넘어간다. 여러 작업을 같은 모형으로 학습할 때, 공유된 표상이 어떻게 정칙화 역할을 하는가가 다음 주제다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script src="widgets.js"></script>
+<script>
+window.addEventListener('load', () => {
+  CH7.buildNav('09');
+  if (window.renderMathInElement) {
+    renderMathInElement(document.body, {
+      delimiters: [
+        { left: '$$', right: '$$', display: true },
+        { left: '$', right: '$', display: false },
+      ],
+      throwOnError: false,
+    });
+  }
+  CH7.onVisible(document.getElementById('ls'), () => CH7.labelsmooth(document.getElementById('ls')));
+});
+</script>
+</body>
+</html>

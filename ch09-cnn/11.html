@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ch.09 · 11 수용 영역 — 깊은 층이 보는 입력 면적</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .rf-stage { padding: 1.4rem 1.4rem 1rem; display: flex; flex-direction: column; gap: .8rem; }
+  .rf-cell { background: var(--paper); border: 1px solid var(--line); border-radius: 9px; padding: .8rem; }
+  .rf-cell canvas { width: 100%; height: 360px; display: block; background: #fff; border-radius: 6px; border: 1px solid var(--line-soft); }
+  .rf-cell .meta { font-family: var(--mono); font-size: .82rem; color: var(--ink-soft); margin-top: .6rem; line-height: 1.8; padding: .5rem .8rem; background: var(--paper-2); border-radius: 6px; }
+  .rf-cell .meta b { color: var(--ink); }
+  .rf-cell .meta .big { font-size: 1.2rem; color: var(--style); font-weight: 700; }
+  .rf-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; padding: .8rem 1.2rem 1rem; border-top: 1px solid var(--line-soft); background: var(--paper); font-size: .88rem; }
+  .rf-controls label { display: flex; flex-direction: column; gap: .2rem; }
+  .rf-controls label span { color: var(--ink-soft); font-family: var(--mono); font-size: .78rem; }
+  .rf-controls label span b { color: var(--ink); font-weight: 600; }
+  .rf-controls input[type=range] { width: 100%; accent-color: var(--style); }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Ch.09 · Sub 11 · 한 뉴런의 시야</span>
+      <h1>수용 영역<br>깊은 층이 보는 <span class="t-style">입력 면적</span></h1>
+      <p class="lede">한 합성곱 층의 뉴런은 입력의 작은 창만 본다. 두 층을 쌓으면 그보다 넓은 창, 세 층이면 더 넓은 창. 수용 영역(receptive field)이 깊이를 따라 어떻게 커지는지가 CNN의 계층적 추상화를 가능하게 한다.</p>
+    </header>
+
+    <div class="prose">
+      <p>5번에서 본 희소 상호작용은 한 가지 의심을 남겼다. 한 합성곱 층의 뉴런이 입력의 작은 영역만 본다면, 멀리 떨어진 픽셀 사이 관계는 영원히 못 배우는 것 아닌가. 답은 "한 층에서는 그렇지만, 깊이를 쌓으면 점점 넓은 영역을 본다"였다. 그 "점점 넓은 영역"을 정확히 표현하는 개념이 <strong>수용 영역(receptive field)</strong>이다.</p>
+
+      <h2>수용 영역의 정의</h2>
+
+      <p>층 $L$의 한 뉴런의 <strong>수용 영역</strong>이란, 그 뉴런의 값을 결정하는 데 영향을 줄 수 있는 입력(층 0)의 픽셀 영역이다. 직접 닿는 픽셀뿐 아니라, 중간 층들을 거쳐 간접적으로 영향을 줄 수 있는 모든 픽셀까지 포함한다.</p>
+
+      <p>3x3 커널, 패딩 1, 스트라이드 1의 동일 합성곱(same conv)을 가정하고 한 줄씩 따져 보자.</p>
+
+      <p><strong>1층 뉴런의 수용 영역</strong>: 입력의 3x3 영역 (직접 보는 만큼). 면적 = 9 픽셀.</p>
+
+      <p><strong>2층 뉴런의 수용 영역</strong>: 1층의 3x3 영역을 본다. 1층의 한 자리는 입력의 3x3을 보므로, 1층의 3x3 영역은 입력의 5x5 영역에 의존한다(이웃 영역이 한 칸씩 겹친다). 면적 = 25 픽셀.</p>
+
+      <p><strong>3층 뉴런의 수용 영역</strong>: 2층의 3x3 영역. 2층의 한 자리는 입력의 5x5을 보므로, 2층의 3x3 영역은 입력의 7x7에 의존. 면적 = 49 픽셀.</p>
+
+      <p>일반화하면, $K = 3$의 동일 합성곱을 $L$개 층 쌓으면 마지막 층 뉴런의 수용 영역은 다음과 같다.</p>
+
+      <div class="math-block">$$ R = 1 + L \cdot (K - 1) = 1 + 2L \quad (K = 3) $$</div>
+      <p class="math-note">R은 수용 영역 한 변 크기. 한 층마다 K-1만큼 늘어남(3x3이면 2씩). L = 1, 2, 3이면 R = 3, 5, 7.</p>
+
+      <h2>스트라이드와 풀링이 들어오면 — 폭발적 확장</h2>
+
+      <p>위 식은 스트라이드 1만 가정한 결과다. 스트라이드 2의 합성곱이나 2-pool이 들어오면 수용 영역이 더 빠르게 자란다. 이유는 stride 2 한 번이 들어가면 그 뒤의 모든 층에서 1픽셀 이동이 입력 기준 2픽셀 이동으로 환산되기 때문이다.</p>
+
+      <div class="math-block">$$ R = R_{\text{prev}} + (K - 1) \cdot J_{\text{prev}} $$</div>
+      <p class="math-note">R은 현재 층 수용 영역, R_prev는 이전 층 수용 영역. J_prev는 현재 층의 한 픽셀 이동이 입력에서 몇 픽셀에 해당하는지의 누적 곱(jump). J는 layer마다 J ← J × S.</p>
+
+      <p>구체적으로 예를 들어 보자. 3x3, stride 1 (R=3, J=1) → 2x2 pool stride 2 (R=4, J=2) → 3x3, stride 1 (R=8, J=2) → 2x2 pool stride 2 (R=10, J=4) → 3x3, stride 1 (R=18, J=4). 다섯 층 만에 수용 영역이 18이다.</p>
+
+      <p>그래서 VGG-16의 마지막 합성곱 층은 224x224 입력에서 수용 영역이 196에 가깝다(전체 이미지의 거의 전부). ResNet-50의 깊은 층은 수용 영역이 명목상 1024 이상이라 — 입력 이미지 전체를 한 뉴런이 본다.</p>
+
+      <h2>이론적 수용 영역 vs 효과적 수용 영역</h2>
+
+      <p>위 식은 "이론적 수용 영역(theoretical receptive field)"이다. 즉 "이 픽셀이 영향을 줄 수 있다"의 최대 영역이다. 그러나 실제로 그 영역 안 모든 픽셀이 비슷한 영향력을 갖는 것은 아니다.</p>
+
+      <p>2017년 Luo 등의 연구는 <strong>효과적 수용 영역(effective receptive field, ERF)</strong>이라는 개념을 제시했다. 한 뉴런의 출력 미분을 입력 픽셀별로 측정하면, 수용 영역 중심부 픽셀의 영향력이 압도적으로 크고, 가장자리는 거의 0에 가깝다. 분포가 가우시안(Gaussian)에 가깝다.</p>
+
+      <p>그래서 이론적 수용 영역이 224라도, 실제로 의미 있는 영역은 그 중심부 70-90 정도다. 이 차이가 중요한 이유는, 깊이를 무한정 늘려도 ERF가 같은 속도로 커지지는 않는다는 것이다. 깊이를 늘리는 것보다 dilated convolution 같은 기법이 ERF를 더 효율적으로 키운다 — 객체 검출, 분할 모델이 그런 기법을 자주 쓰는 이유다.</p>
+
+      <div class="analogy">
+        수용 영역을 <b>줌 카메라</b>로 비유하자. 1층은 매크로 렌즈 — 손바닥 면적 정도를 본다. 깊은 층은 망원 렌즈 — 한 건물 전체를 본다. 그러나 망원 렌즈도 사실은 가운데가 가장 선명하고 가장자리는 점점 흐릿하다. 이론 수용 영역은 "렌즈가 잡는 모든 화각", ERF는 "선명하게 잡히는 중앙부"다.
+      </div>
+
+      <h2>왜 작은 커널 여러 층이 큰 커널 한 층보다 좋은가</h2>
+
+      <p>같은 수용 영역을 만드는 두 가지 방법이 있다. 5x5 커널 한 층, 또는 3x3 커널 두 층. 둘 다 수용 영역이 5x5이지만, 다음 표처럼 차이가 있다.</p>
+
+      <table>
+        <thead><tr><th>구성</th><th>수용 영역</th><th>파라미터 수 (한 채널 가정)</th><th>비선형성 횟수</th></tr></thead>
+        <tbody>
+          <tr><td>5x5 한 층</td><td>5x5</td><td>25</td><td>1</td></tr>
+          <tr><td>3x3 두 층</td><td>5x5</td><td>9 + 9 = 18</td><td>2</td></tr>
+          <tr><td>7x7 한 층</td><td>7x7</td><td>49</td><td>1</td></tr>
+          <tr><td>3x3 세 층</td><td>7x7</td><td>9 + 9 + 9 = 27</td><td>3</td></tr>
+        </tbody>
+      </table>
+
+      <p>같은 수용 영역에 작은 커널을 여러 층 쌓으면, 파라미터는 더 적고 비선형성(ReLU)은 더 많이 들어간다. 이 두 가지 차이가 13번 VGG의 핵심 통찰이다. 파라미터가 적으면 일반화에 유리하고, 비선형성이 많으면 더 복잡한 함수를 표현할 수 있다.</p>
+
+      <p>그래서 현대 CNN은 거의 대부분 3x3 커널을 표준으로 쓴다. 5x5나 7x7은 첫 층(입력에 가까운 한 층)에서 가끔 쓰이는 정도다. ResNet은 첫 층에 7x7을 쓰는데, 이는 입력 224x224에서 빠르게 큰 수용 영역을 확보하려는 의도다.</p>
+
+      <h2>수용 영역이 모자라면 — 멀리 떨어진 정보 결합 불가</h2>
+
+      <p>수용 영역의 크기가 과제에 충분한지가 중요하다. 분류 과제에서 마지막 층의 수용 영역이 객체 전체를 덮을 만큼 충분하지 않으면, 모델은 "객체 전체 모양"을 보지 못하고 부분만 본다. 그래서 작은 CNN(LeNet 5층 같은)은 큰 이미지의 큰 객체 분류에 약하다.</p>
+
+      <p>분할(segmentation) 과제는 더 까다롭다. 각 픽셀의 라벨을 정할 때, 그 픽셀 주변의 충분히 넓은 영역을 본 정보가 필요하다. 그래서 U-Net 같은 분할 모델은 깊은 층까지 한 번 내려갔다가 다시 올라오는 인코더-디코더 구조로 충분한 수용 영역과 정확한 위치를 동시에 확보한다.</p>
+
+      <p>아래 위젯에서 층 수 슬라이더를 1부터 8까지 옮기며 수용 영역이 어떻게 자라는지 본다. 같은 슬라이더에서 stride 2 풀링을 켜고 끄면 수용 영역의 자라는 속도가 어떻게 다른지도 확인한다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 11</span><span>층 슬라이더 — 수용 영역의 성장</span></div>
+        <div class="rf-stage">
+          <div class="rf-cell">
+            <canvas id="cRF"></canvas>
+            <div class="meta" id="metaRF">수용 영역: <span class="big">—</span></div>
+          </div>
+        </div>
+        <div class="rf-controls">
+          <label><span>층 수 L <b id="lblL">3</b></span><input type="range" id="ctlL" min="1" max="8" step="1" value="3"></label>
+          <label><span>커널 크기 K <b id="lblK">3</b></span><input type="range" id="ctlK" min="3" max="7" step="2" value="3"></label>
+          <label><span>2층마다 stride 2 <b id="lblD">꺼짐</b></span><input type="range" id="ctlD" min="0" max="1" step="1" value="0"></label>
+        </div>
+      </div>
+      <p class="widget-cap">왼쪽은 입력 격자(파랑), 오른쪽은 깊이별 수용 영역(주홍 사각형)의 성장. 층이 늘수록 수용 영역이 자란다. stride 2를 켜면 자라는 속도가 폭발적으로 빨라진다. 작은 커널(K=3)이라도 깊이가 깊어지면 입력 전체를 덮을 수 있다 — 이것이 VGG, ResNet의 핵심 전략이다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>수용 영역 한 줄 정리</h2>
+      <ul class="checklist">
+        <li>수용 영역 = 한 뉴런의 값을 결정할 수 있는 입력 픽셀 영역.</li>
+        <li>3x3, stride 1 L층 쌓으면 R = 1 + 2L. 3층 = 7x7, 5층 = 11x11.</li>
+        <li>stride 2 한 번이 들어가면 그 뒤 모든 층의 jump가 2배. 수용 영역 폭발적 증가.</li>
+        <li>이론적 RF ≠ 효과적 RF (ERF). ERF는 중심부에 가우시안 분포로 집중.</li>
+        <li>같은 수용 영역에서 작은 커널 여러 층이 큰 커널 한 층보다 파라미터 적고 비선형성 많음.</li>
+        <li>그래서 현대 CNN은 3x3 표준. 5x5, 7x7은 첫 층에서나 가끔 쓰임.</li>
+        <li>분할 모델은 수용 영역과 정확한 위치 둘 다 필요해서 U-Net 같은 인코더-디코더 구조.</li>
+      </ul>
+
+      <p>다음 12번부터는 이 모든 원리가 실제 모델로 결정화된 — CNN 아키텍처의 발전사를 본다. LeNet에서 AlexNet으로의 도약(2012)부터 시작한다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const CHAPTERS = [
+    { no:'01', t:'완전연결의 파라미터 폭발' },
+    { no:'02', t:'합성곱이란 무엇인가' },
+    { no:'03', t:'1D 합성곱 — 시간 신호' },
+    { no:'04', t:'2D 합성곱 — 이미지 커널' },
+    { no:'05', t:'희소 상호작용' },
+    { no:'06', t:'파라미터 공유' },
+    { no:'07', t:'변환 등가성' },
+    { no:'08', t:'풀링 — max vs avg' },
+    { no:'09', t:'신경과학적 기원' },
+    { no:'10', t:'출력 크기 공식' },
+    { no:'11', t:'수용 영역' },
+    { no:'12', t:'아키텍처 1 — LeNet, AlexNet' },
+    { no:'13', t:'아키텍처 2 — VGG, Inception' },
+    { no:'14', t:'아키텍처 3 — ResNet' },
+    { no:'15', t:'시험 대비 — 30+ 질문' },
+  ];
+  const CUR = '11';
+  document.querySelector('.topbar').innerHTML = '<a class="home" href="index.html">← Ch.09 CNN 표지</a><span class="ch-mini">SUB ' + CUR + ' / 15</span>';
+  document.querySelector('.ch-nav ol').innerHTML = CHAPTERS.map(c => '<li><a href="' + c.no + '.html"' + (c.no===CUR?' class="current"':'') + '>' + c.t + '</a></li>').join('');
+  const idx = CHAPTERS.findIndex(c=>c.no===CUR);
+  const prev = idx>0 ? CHAPTERS[idx-1] : { no:'', t:'표지로', _:'index.html' };
+  const next = idx<CHAPTERS.length-1 ? CHAPTERS[idx+1] : { no:'', t:'표지로', _:'index.html' };
+  document.querySelector('.ch-foot').innerHTML =
+    '<a href="' + (prev._||prev.no+'.html') + '"><div class="dir">← 이전</div><div class="ti">' + prev.t + '</div></a>' +
+    '<a href="' + (next._||next.no+'.html') + '" class="next"><div class="dir">다음 →</div><div class="ti">' + next.t + '</div></a>';
+
+  const bar = document.querySelector('.scroll-progress');
+  document.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max > 0 ? (h.scrollTop/max)*100 : 0) + '%';
+  }, { passive: true });
+
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, { delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}], throwOnError: false });
+    }
+  });
+
+  // 위젯
+  const cRFEl = document.getElementById('cRF');
+  const cRF = cRFEl.getContext('2d');
+  const metaRF = document.getElementById('metaRF');
+  const ctlL = document.getElementById('ctlL');
+  const ctlK = document.getElementById('ctlK');
+  const ctlD = document.getElementById('ctlD');
+  const lblL = document.getElementById('lblL');
+  const lblK = document.getElementById('lblK');
+  const lblD = document.getElementById('lblD');
+
+  function setup() {
+    const r = cRFEl.getBoundingClientRect();
+    cRFEl.width = Math.floor(r.width);
+    cRFEl.height = 360;
+  }
+
+  function draw() {
+    setup();
+    const L = +ctlL.value, K = +ctlK.value, downsample = +ctlD.value;
+    lblL.textContent = L;
+    lblK.textContent = K;
+    lblD.textContent = downsample ? '켜짐' : '꺼짐';
+
+    // 수용 영역 계산
+    let R = 1, J = 1;
+    const Rs = [R];
+    for (let l = 1; l <= L; l++) {
+      const s = (downsample && l % 2 === 0) ? 2 : 1;
+      R = R + (K - 1) * J;
+      J = J * s;
+      Rs.push(R);
+    }
+
+    const Cw = cRFEl.width, Ch = cRFEl.height;
+    cRF.clearRect(0, 0, Cw, Ch);
+
+    // 입력 격자 (64x64 표시)
+    const inputSize = 64;
+    const gridX = 30, gridY = 50;
+    const gridSize = Math.min(Ch - 100, Cw * 0.45);
+    const cell = gridSize / inputSize;
+    cRF.fillStyle = '#7BA7B9';
+    cRF.fillRect(gridX, gridY, gridSize, gridSize);
+
+    // 수용 영역들
+    const colors = ['#C0492E', '#E89A2C', '#9C6FA8', '#6F8C3A', '#7BA7B9', '#B05A6B', '#2D5B7A', '#8E8576'];
+    const cx = gridX + gridSize / 2;
+    const cy = gridY + gridSize / 2;
+    Rs.forEach((r, l) => {
+      if (l === 0) return;
+      const half = Math.min(r / 2, inputSize / 2);
+      const sz = half * 2 * cell;
+      const col = colors[(l - 1) % colors.length];
+      cRF.strokeStyle = col;
+      cRF.lineWidth = 2 - l * 0.15;
+      if (cRF.lineWidth < 0.8) cRF.lineWidth = 0.8;
+      cRF.strokeRect(cx - sz/2, cy - sz/2, sz, sz);
+    });
+
+    cRF.font = '500 11px Spline Sans Mono, monospace';
+    cRF.fillStyle = '#8E8576'; cRF.textAlign = 'left';
+    cRF.fillText('입력 ' + inputSize + 'x' + inputSize, gridX, gridY - 8);
+    cRF.fillText('각 층의 한 뉴런이 보는 수용 영역(중심)', gridX, gridY + gridSize + 14);
+
+    // 오른쪽: 층별 수용 영역 표
+    const tx = gridX + gridSize + 30;
+    cRF.fillStyle = '#26221C'; cRF.font = '600 13px Spline Sans Mono, monospace';
+    cRF.fillText('Layer', tx, 50);
+    cRF.fillText('RF', tx + 70, 50);
+    cRF.fillText('Jump', tx + 130, 50);
+    cRF.strokeStyle = '#d8d2c4';
+    cRF.beginPath(); cRF.moveTo(tx, 56); cRF.lineTo(tx + 180, 56); cRF.stroke();
+
+    cRF.font = '500 12px Spline Sans Mono, monospace';
+    let J2 = 1;
+    Rs.forEach((r, l) => {
+      if (l === 0) {
+        cRF.fillStyle = '#8E8576';
+        cRF.fillText('input', tx, 76);
+        cRF.fillText('1', tx + 70, 76);
+        cRF.fillText('1', tx + 130, 76);
+      } else {
+        const s = (downsample && l % 2 === 0) ? 2 : 1;
+        J2 = J2 * s;
+        const col = colors[(l - 1) % colors.length];
+        cRF.fillStyle = col;
+        cRF.fillRect(tx - 16, 70 + l * 22, 10, 10);
+        cRF.fillStyle = '#26221C';
+        cRF.fillText('L' + l + (s === 2 ? ' ↓2' : ''), tx, 80 + l * 22);
+        cRF.fillText(r + 'x' + r, tx + 70, 80 + l * 22);
+        cRF.fillText('×' + J2, tx + 130, 80 + l * 22);
+      }
+    });
+
+    metaRF.innerHTML = '최종 수용 영역: <span class="big">' + R + ' × ' + R + '</span> · L=' + L + ', K=' + K + ', stride2 ' + (downsample ? '켜짐' : '꺼짐');
+  }
+
+  [ctlL, ctlK, ctlD].forEach(el => el.addEventListener('input', draw));
+  window.addEventListener('resize', draw);
+  draw();
+</script>
+</body>
+</html>

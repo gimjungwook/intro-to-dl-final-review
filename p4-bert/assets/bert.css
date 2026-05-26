@@ -1,0 +1,200 @@
+/* ============================================================
+   BERT 해설 — "Atelier" 디자인 P2 계승 + P4 색 토큰 재해석
+   양방향성(쿨 청록) ↔ 마스킹(웜 자홍) ↔ 미세조정(황토)
+   ============================================================ */
+
+:root {
+  /* P4 전용 2극 의미색 — 양방향성과 마스킹의 이중성 */
+  --bidir:        #1F6F7A;   /* 양방향 · 인코더 · 청록 */
+  --bidir-lo:     #67A3AC;
+  --bidir-bg:     rgba(31, 111, 122, 0.08);
+  --mask:         #B23A6F;   /* 마스킹 · MLM · 자홍 */
+  --mask-lo:      #D687A7;
+  --mask-bg:      rgba(178, 58, 111, 0.08);
+  /* --synth, --paper 등은 ../assets/site.css 의 토큰을 그대로 계승 */
+}
+
+/* 의미색 토큰 인라인 */
+.t-bidir { color: var(--bidir); font-weight: 640; }
+.t-mask  { color: var(--mask);  font-weight: 640; }
+
+/* P2 의 .t-structure / .t-style 도 P4 색으로 강제 재매핑
+   (참고용 옛 코드 호환이 필요하면 사용) */
+.t-structure { color: var(--bidir); }
+.t-style     { color: var(--mask); }
+
+/* 스크롤 진행 바 색을 P4 톤으로 */
+.scroll-progress {
+  background: linear-gradient(90deg, var(--bidir), var(--mask));
+}
+
+/* ::selection 도 P4 톤으로 */
+::selection { background: var(--mask-bg); color: var(--mask); }
+
+/* ============================================================
+   P4 위젯 셸 — 토큰·문장 표시 공통
+   ============================================================ */
+
+/* 토큰 칩(공통). chip 안 글자에 spans 색이 묻으면 시각이 깨끗하지 않아
+   배경·테두리는 단색, 라벨은 위에 mono 로 얹는다. */
+.tok-row { display: flex; flex-wrap: wrap; gap: .35rem; padding: 1rem 1.2rem; }
+.tok {
+  display: inline-flex; flex-direction: column; align-items: center;
+  min-width: 3rem; padding: .4rem .55rem .35rem;
+  border-radius: 7px; border: 1px solid var(--line);
+  background: #fff; font-family: var(--mono); font-size: .85rem;
+  color: var(--ink); transition: transform .15s var(--ease), background .2s, border-color .2s;
+  cursor: default;
+}
+.tok .ti { font-family: var(--mono); font-size: .58rem; color: var(--ink-faint); margin-top: .15rem; letter-spacing: .04em; }
+.tok.special { background: var(--bidir-bg); border-color: var(--bidir-lo); color: var(--bidir); }
+.tok.masked  { background: var(--mask-bg); border-color: var(--mask-lo); color: var(--mask); position: relative; }
+.tok.masked::after {
+  content: ""; position: absolute; inset: 0;
+  background: repeating-linear-gradient(45deg, transparent 0 4px, rgba(178,58,111,.18) 4px 8px);
+  border-radius: 7px; pointer-events: none;
+}
+.tok.replaced { background: var(--paper-2); border-color: var(--style-lo); color: var(--style); }
+.tok.kept     { background: #fff; border-style: dashed; border-color: var(--bidir-lo); color: var(--bidir); }
+.tok.target   { box-shadow: 0 0 0 2px var(--mask); }
+
+/* 두 문장 구분 라인 */
+.seg-line { display: flex; align-items: stretch; gap: .25rem; }
+.seg { padding: .35rem .7rem; border-radius: 6px; font-family: var(--mono); font-size: .72rem; letter-spacing: .06em; }
+.seg.a { background: var(--bidir-bg); color: var(--bidir); }
+.seg.b { background: var(--mask-bg); color: var(--mask); }
+
+/* 어텐션 매트릭스 (양방향 vs 단방향) */
+.attn-grid { display: grid; gap: 2px; padding: 1rem 1.2rem; justify-content: center; }
+.attn-grid .cell {
+  width: 22px; height: 22px; border-radius: 3px;
+  background: var(--paper-2); border: 1px solid var(--line-soft);
+  transition: background .25s var(--ease);
+}
+.attn-grid .cell.allow {
+  background: var(--bidir);
+  border-color: var(--bidir);
+}
+.attn-grid .cell.allow.mask-side { background: var(--mask); border-color: var(--mask); }
+.attn-grid .label { font-family: var(--mono); font-size: .62rem; color: var(--ink-faint); display: flex; align-items: center; justify-content: center; }
+.attn-stage { display: flex; gap: 2rem; justify-content: center; flex-wrap: wrap; padding-bottom: 1rem; }
+.attn-stage .col { text-align: center; }
+.attn-stage .col h5 { margin: 0 0 .5rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .14em; color: var(--ink-soft); text-transform: uppercase; }
+
+/* 3단 임베딩 합 시각화 */
+.emb-stack { padding: 1.2rem 1.2rem .6rem; display: flex; flex-direction: column; gap: .45rem; }
+.emb-row { display: grid; grid-template-columns: 7.5rem 1fr; align-items: center; gap: .6rem; }
+.emb-row .name { font-family: var(--mono); font-size: .72rem; color: var(--ink-soft); }
+.emb-row .name b { color: var(--ink); }
+.emb-cells { display: flex; gap: .25rem; flex-wrap: wrap; }
+.emb-cell {
+  width: 2.2rem; padding: .25rem .35rem; border-radius: 5px;
+  font-family: var(--mono); font-size: .68rem; text-align: center;
+  border: 1px solid var(--line-soft);
+}
+.emb-cell.tk { background: var(--paper-2); color: var(--ink); }
+.emb-cell.sg.a { background: var(--bidir-bg); color: var(--bidir); }
+.emb-cell.sg.b { background: var(--mask-bg); color: var(--mask); }
+.emb-cell.ps { background: var(--synth-bg); color: var(--synth); }
+.emb-cell.sum { background: #fff; color: var(--ink); border-color: var(--ink); font-weight: 600; }
+.emb-plus { text-align: center; font-family: var(--mono); font-size: .9rem; color: var(--ink-faint); padding: .1rem 0; }
+
+/* MLM 예측 결과 */
+.mlm-out { padding: .6rem 1.2rem 1.2rem; max-width: var(--measure); margin-inline: auto; }
+.mlm-out .label { font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; color: var(--ink-faint); text-transform: uppercase; margin-bottom: .35rem; }
+.mlm-bar { display: grid; grid-template-columns: 4.5rem 1fr 3rem; gap: .6rem; align-items: center; padding: .25rem 0; font-size: .88rem; }
+.mlm-bar .w { font-family: var(--mono); color: var(--ink); }
+.mlm-bar .bar { height: 7px; background: var(--paper-sink); border-radius: 4px; overflow: hidden; }
+.mlm-bar .bar i { display: block; height: 100%; background: var(--mask); border-radius: 4px; transition: width .3s var(--ease); }
+.mlm-bar .pct { font-family: var(--mono); font-size: .72rem; color: var(--ink-soft); text-align: right; }
+.mlm-bar.gold .w { color: var(--mask); font-weight: 600; }
+
+/* NSP 토글 */
+.nsp-card { padding: 1rem 1.2rem; }
+.nsp-sent { display: grid; grid-template-columns: 5rem 1fr; gap: .5rem; align-items: baseline; padding: .35rem 0; }
+.nsp-sent .lab { font-family: var(--mono); font-size: .68rem; letter-spacing: .12em; color: var(--ink-faint); }
+.nsp-sent .lab.a { color: var(--bidir); } .nsp-sent .lab.b { color: var(--mask); }
+.nsp-sent .body { font-size: .95rem; color: var(--ink); line-height: 1.5; }
+.nsp-verdict { margin-top: .7rem; padding: .7rem .9rem; border-radius: 8px; font-family: var(--mono); font-size: .85rem; }
+.nsp-verdict.isnext   { background: var(--bidir-bg); color: var(--bidir); }
+.nsp-verdict.notnext  { background: var(--mask-bg); color: var(--mask); }
+
+/* GLUE 막대 그래프 */
+.glue-grid { padding: 1rem 1.2rem; display: grid; gap: .35rem; }
+.glue-row { display: grid; grid-template-columns: 5rem 1fr 5rem 1fr 3.2rem; gap: .6rem; align-items: center; font-size: .82rem; }
+.glue-row .task { font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); }
+.glue-row .bar { height: 9px; background: var(--paper-sink); border-radius: 5px; overflow: hidden; }
+.glue-row .bar i { display: block; height: 100%; border-radius: 5px; transition: width .5s var(--ease); }
+.glue-row .bar.prev i  { background: var(--ink-faint); }
+.glue-row .bar.bert i  { background: var(--bidir); }
+.glue-row .pct { font-family: var(--mono); font-size: .72rem; color: var(--ink); text-align: right; }
+
+/* 세 모델 비교 카드 (BERT vs GPT vs T5) */
+.tri { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: .8rem; max-width: var(--measure); margin: 1.6rem auto; padding-inline: 1.4rem; }
+.tri .card { padding: 1rem 1.1rem; border-radius: 11px; border: 1px solid var(--line); background: #fff; }
+.tri .card.bert { border-top: 3px solid var(--bidir); }
+.tri .card.gpt  { border-top: 3px solid var(--mask); }
+.tri .card.t5   { border-top: 3px solid var(--synth); }
+.tri .card h4 { margin: 0 0 .5rem; font-family: var(--serif); font-size: 1.05rem; }
+.tri .card.bert h4 { color: var(--bidir); }
+.tri .card.gpt h4  { color: var(--mask); }
+.tri .card.t5 h4   { color: var(--synth); }
+.tri .card ul { margin: 0; padding-left: 1.1rem; font-size: .85rem; color: var(--ink-soft); line-height: 1.55; }
+.tri .card .arch { font-family: var(--mono); font-size: .68rem; letter-spacing: .08em; color: var(--ink-faint); display: block; margin-bottom: .35rem; }
+@media (max-width: 680px) { .tri { grid-template-columns: 1fr; } }
+
+/* 미세조정 freeze/unfreeze 다이얼 */
+.ft-stage { padding: 1.2rem 1.2rem .8rem; }
+.ft-row { display: grid; grid-template-columns: 8.5rem 1fr; gap: .6rem; align-items: center; padding: .35rem 0; }
+.ft-row .l { font-family: var(--mono); font-size: .72rem; color: var(--ink-soft); }
+.ft-bar { display: flex; gap: 2px; }
+.ft-block { flex: 1; height: 13px; background: var(--paper-sink); border-radius: 3px; transition: background .25s var(--ease); }
+.ft-block.train { background: var(--bidir); }
+.ft-block.frozen { background: var(--ink-faint); opacity: .35; }
+.ft-toggle { display: flex; gap: .5rem; padding: .8rem 1.2rem 0; }
+.ft-toggle .btn.on { background: var(--bidir); color: #fff; border-color: var(--bidir); }
+
+/* 시험 대비 — Q&A 강조 */
+.qa.exam .qa-q .qn { color: var(--bidir); }
+
+/* 핵심 정의 박스 */
+.def-box {
+  max-width: var(--measure); margin: 1.4rem auto;
+  padding: 1rem 1.2rem; border-radius: 10px;
+  background: linear-gradient(180deg, #fff, var(--paper-2));
+  border: 1px solid var(--line); border-left: 3px solid var(--bidir);
+}
+.def-box .deft { font-family: var(--mono); font-size: .7rem; letter-spacing: .14em; color: var(--bidir); margin-bottom: .35rem; text-transform: uppercase; }
+.def-box p { margin: 0; font-size: .96rem; line-height: 1.6; color: var(--ink); }
+.def-box.mask-side { border-left-color: var(--mask); }
+.def-box.mask-side .deft { color: var(--mask); }
+.def-box.synth-side { border-left-color: var(--synth); }
+.def-box.synth-side .deft { color: var(--synth); }
+
+/* 인코더 스택 아키텍처 */
+.enc-stack { max-width: var(--measure); margin: 1.6rem auto; padding: 1.4rem 1.2rem; background: linear-gradient(180deg,#fff,var(--paper-2)); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow-plate); }
+.enc-layer { display: grid; grid-template-columns: 4rem 1fr 5rem; align-items: center; gap: .5rem; padding: .25rem 0; }
+.enc-layer .ln { font-family: var(--mono); font-size: .68rem; color: var(--ink-faint); }
+.enc-layer .blk { height: 18px; background: var(--bidir-bg); border: 1px solid var(--bidir-lo); border-radius: 4px; position: relative; overflow: hidden; }
+.enc-layer .blk::after { content: ""; position: absolute; inset: 2px; background: linear-gradient(90deg, transparent, var(--bidir), transparent); opacity: .35; }
+.enc-layer .heads { font-family: var(--mono); font-size: .62rem; color: var(--ink-faint); text-align: right; }
+.enc-foot { font-family: var(--mono); font-size: .68rem; color: var(--ink-faint); text-align: center; margin-top: .6rem; }
+
+/* 입력 → 출력 화살표 다이어그램(데이터 흐름) */
+.flow { max-width: var(--measure); margin: 1.6rem auto; padding-inline: 1.4rem; display: flex; flex-direction: column; gap: .5rem; }
+.flow-card { padding: .75rem 1rem; border: 1px solid var(--line); border-left-width: 3px; border-radius: 8px; background: #fff; }
+.flow-card.input  { border-left-color: var(--bidir); }
+.flow-card.layer  { border-left-color: var(--ink-soft); }
+.flow-card.head   { border-left-color: var(--mask); }
+.flow-card.loss   { border-left-color: var(--synth); background: var(--paper-2); }
+.flow-sym { font-family: var(--mono); font-size: .85rem; color: var(--ink); }
+.flow-txt { font-size: .88rem; color: var(--ink-soft); line-height: 1.5; }
+.flow-arrow { text-align: center; color: var(--ink-faint); font-size: .9rem; }
+
+/* 답안 카드(시험 대비 챕터) */
+.ans-card { max-width: var(--measure); margin: 1rem auto; padding: 1rem 1.2rem; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+.ans-card .qhead { font-family: var(--serif); font-size: 1.05rem; color: var(--ink); margin-bottom: .5rem; }
+.ans-card .qhead .qn { font-family: var(--mono); font-size: .78rem; color: var(--bidir); margin-right: .5rem; letter-spacing: .08em; }
+.ans-card .alabel { font-family: var(--mono); font-size: .66rem; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: .25rem; }
+.ans-card .abody { font-size: .92rem; color: var(--ink-soft); line-height: 1.6; }
+.ans-card .abody b { color: var(--ink); }

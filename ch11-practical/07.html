@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>11.07 · 하이퍼파라미터 2 — 베이지안 최적화</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .bo-stage { background: #fff; border: 1px solid var(--line); border-radius: 9px; margin: 1.2rem 1.2rem 0; padding: .8rem; }
+  .bo-stage canvas { display: block; width: 100%; height: 280px; }
+  .bo-controls { display: flex; gap: .7rem; padding: .9rem 1.2rem 1.1rem; align-items: center; flex-wrap: wrap; font-family: var(--mono); font-size: .82rem; color: var(--ink-soft); }
+  .bo-step { padding: 1rem 1.2rem; background: var(--paper-2); border-top: 1px solid var(--line-soft); font-size: .9rem; color: var(--ink-soft); line-height: 1.6; }
+  .bo-step h6 { margin: 0 0 .4rem; font-family: var(--serif); font-size: 1.02rem; color: var(--style); }
+  .bo-step b { color: var(--ink); }
+
+  .method-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .7rem; max-width: var(--measure); margin: 1.4rem auto; padding-inline: 1.4rem; }
+  .method-card { padding: .9rem 1rem; background: #fff; border: 1px solid var(--line); border-radius: 10px; }
+  .method-card h6 { margin: 0 0 .3rem; font-family: var(--serif); font-size: 1rem; color: var(--ink); }
+  .method-card .lib { font-family: var(--mono); font-size: .72rem; color: var(--style); letter-spacing: .04em; margin-bottom: .35rem; }
+  .method-card p { margin: 0; font-size: .85rem; color: var(--ink-soft); line-height: 1.55; }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-chapter 07 · 무작위보다 똑똑하게</span>
+      <h1>지금까지 본 결과로,<br><span class="t-style">다음에 무엇을</span> 시험할지 모델로 정한다</h1>
+      <p class="lede">학습 한 번이 비쌀 때 — 며칠씩 걸리는 큰 모델 — random search조차 사치다. 베이지안 최적화는 지금까지 관찰한 결과를 모델로 표현해 "가장 유망한 다음 점"을 골라 준다.</p>
+    </header>
+
+    <div class="prose">
+      <p>06 sub에서 random search가 grid search를 거의 항상 이긴다는 사실을 봤다. 그런데 random에도 한계가 있다 — <strong>지금까지 본 결과를 다음 표본추출에 반영하지 않는다.</strong> 100번의 학습 중 첫 30번에서 "학습률 $10^{-3}$ 근처가 좋다"는 신호가 보였더라도, 나머지 70번은 그 정보를 무시하고 똑같이 균등 분포에서 뽑는다. 30번의 정보가 사실상 버려진다.</p>
+
+      <p>책 11.4.5절이 소개하는 <strong>베이지안 최적화(Bayesian optimization)</strong>는 이 정보 낭비를 막는다. 핵심 아이디어는 단순하다 — 지금까지의 관찰(하이퍼파라미터 → 검증 손실)을 <em>대리 모델(surrogate model)</em>로 표현하고, 그 모델로 "어디를 다음에 시험하면 가장 정보가 많을지"를 결정한다. 학습 한 번이 며칠씩 걸리면, 다음 한 점을 신중히 고르는 데 몇 분이 들어도 전체적으로 큰 절약이 된다.</p>
+
+      <h2>대리 모델 — Gaussian Process</h2>
+      <p>대리 모델의 표준 선택은 <strong>가우시안 과정(Gaussian Process, GP)</strong>이다. GP는 "지금까지 본 점들"이 주어졌을 때, 안 본 점에서의 함수 값이 어떤 분포를 따를지 예측한다. 두 가지 정보를 동시에 준다 — <em>평균 예측값</em>과 <em>불확실성</em>.</p>
+
+      <p>예를 들어 학습률 $10^{-4}, 10^{-3}, 10^{-2}$ 세 점을 시험했고 검증 손실이 각각 0.3, 0.15, 0.4였다고 하자. GP는 이 세 점 사이의 손실 곡선이 어떤 모양일지 부드러운 곡선으로 예측한다. 시험한 점에서는 불확실성이 거의 0(이미 알고 있다), 시험하지 않은 점에서는 불확실성이 크다 — 시험한 점에서 멀수록 더 크다.</p>
+
+      <div class="math-block">$$ p(f(\mathbf{x}) | \mathcal{D}) = \mathcal{N}(\mu(\mathbf{x}), \sigma^2(\mathbf{x})) $$</div>
+      <p class="math-note">$\mathcal{D}$는 지금까지의 관찰. 각 점 $\mathbf{x}$에서 평균 $\mu$와 분산 $\sigma^2$ 둘 다 GP가 알려준다.</p>
+
+      <h2>획득 함수 — "어디를 다음에 시험할까"</h2>
+      <p>GP가 모든 점의 예측값과 불확실성을 준다면, 다음에 시험할 점은 어떻게 정하나. 단순히 "예측값이 가장 좋은 곳"을 고르면 — 이미 본 점 근처만 보다가 멀리 있는 더 좋은 영역을 놓친다(<strong>exploitation</strong> only). 반대로 "불확실성이 가장 큰 곳"만 고르면 — 어디든 안 본 곳만 본다(<strong>exploration</strong> only).</p>
+
+      <p>실전 알고리즘은 두 가지를 결합한 <strong>획득 함수(acquisition function)</strong>를 쓴다. 가장 일반적인 것은 <strong>Expected Improvement(EI)</strong>로, "이 점에서 현재 최고를 얼마나 개선할 것으로 기대되는가"를 평균과 불확실성을 모두 사용해 계산한다.</p>
+
+      <div class="math-block">$$ \mathrm{EI}(\mathbf{x}) = \mathbb{E}\big[\max(0, f^* - f(\mathbf{x}))\big] $$</div>
+      <p class="math-note">$f^*$는 지금까지 본 최저 손실. EI가 가장 큰 점이 다음 시험 후보. 불확실성이 큰 곳에서도 EI가 클 수 있다(개선 가능성이 크니까).</p>
+
+      <p>아래 위젯은 1차원 학습률 탐색에서 베이지안 최적화가 어떻게 작동하는지 보여 준다. "다음 점 추가" 버튼을 누를 때마다 EI가 가장 큰 곳에 다음 시험점이 찍히고, GP의 예측이 갱신된다. 처음엔 무작위 같지만 5-6회 후엔 최저점 근처로 점들이 모이는 게 보인다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 07</span><span>1차원 베이지안 최적화 · 학습률 탐색의 시뮬레이션</span></div>
+        <div class="bo-stage"><canvas id="boCanvas"></canvas></div>
+        <div class="bo-controls">
+          <button class="btn ghost" id="addBtn">다음 점 추가 (EI 최대)</button>
+          <button class="btn ghost" id="resetBtn">초기화</button>
+          <span style="margin-left:auto">관찰 수 <b id="nObs">3</b></span>
+        </div>
+        <div class="bo-step" id="boStep">초기 3개의 무작위 점에서 시작. 회색 영역이 GP의 불확실성, 파란 선이 평균 예측. 빨간 점은 다음 시험 후보(EI 최대).</div>
+      </div>
+      <p class="widget-cap">학습 한 번이 며칠 걸리는 큰 모델에서, 다음 점을 신중히 고르는 데 몇 분이 들어도 전체 시간은 크게 줄어든다. <b>관찰이 쌓일수록 GP가 점점 더 정확해지고 다음 점도 점점 더 좋은 곳으로</b> 간다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>왜 베이지안이 random을 이기는가</h2>
+      <p>핵심은 단순하다 — <strong>지금까지의 관찰을 다음 결정에 반영</strong>한다. Random은 100번의 시험이 서로 독립이라 30번 시험한 뒤에도 다음 점을 똑같은 분포에서 뽑는다. 베이지안은 첫 5-10점에서 "이 영역이 유망하다"는 신호가 잡히면 그 영역을 더 자세히 살피기 시작한다.</p>
+
+      <p>실험적 비교가 이를 뒷받침한다. 학습 한 번이 1시간 이내면 random search가 비슷한 결과를 더 단순하게 만든다. 학습 한 번이 하루 이상이면 베이지안의 우위가 확실해진다 — 같은 점수에 도달하는 데 random의 절반 이하의 시험으로 충분한 경우가 많다.</p>
+
+      <h2>책이 언급한 세 가지 도구</h2>
+      <p>책 11.4.5절은 세 가지 베이지안 최적화 라이브러리/방법을 명시적으로 언급한다.</p>
+
+      <div class="method-grid">
+        <div class="method-card"><div class="lib">SPEARMINT</div><h6>GP 기반 표준</h6><p>가우시안 과정 + Expected Improvement. <b>가장 표준적</b>인 베이지안 최적화. 연속형 하이퍼파라미터에 강하다. 단점: 범주형이나 이산형 변수 처리에 한계.</p></div>
+        <div class="method-card"><div class="lib">TPE</div><h6>Tree-structured Parzen Estimator</h6><p>GP 대신 두 개의 KDE(kernel density estimate)를 사용. 좋은 점들의 분포 $\ell(x)$와 나쁜 점들의 분포 $g(x)$를 따로 학습해, 비율 $\ell(x)/g(x)$가 큰 곳을 다음 시험점으로 고른다. <b>범주형·이산형</b>도 잘 다룬다. Hyperopt 라이브러리의 디폴트.</p></div>
+        <div class="method-card"><div class="lib">SMAC</div><h6>Random Forest 기반</h6><p>대리 모델로 GP 대신 Random Forest를 사용. <b>이산·범주형 변수가 많을 때</b> GP보다 견고. AutoML 시스템(Auto-WEKA, Auto-sklearn)에서 핵심 엔진.</p></div>
+      </div>
+
+      <h2>실전에서 베이지안이 가장 유리한 영역</h2>
+      <p>모든 상황에서 베이지안이 좋은 건 아니다. 다음 조건이 모두 맞을 때 베이지안의 진가가 나온다.</p>
+
+      <ul>
+        <li><strong>학습 한 번이 비쌈</strong> — 큰 모델, 큰 데이터셋. 학습 한 번이 1시간 미만이면 random이 더 단순한 선택.</li>
+        <li><strong>병렬화가 제한적</strong> — GPU가 1-2개. 100대 GPU 클러스터에서는 random이 다 병렬로 동시 시험되어 베이지안의 순차적 이점이 사라진다.</li>
+        <li><strong>하이퍼파라미터가 연속형이 다수</strong> — 학습률, 정칙화 강도, momentum 같은 연속 변수. 범주형이 많으면 TPE나 SMAC.</li>
+        <li><strong>예산이 중간</strong> — 시험 10-100회 정도. 시험이 5회 이하면 베이지안이 데이터 부족으로 안 통하고, 1000회 이상이면 random이 거의 다 커버.</li>
+      </ul>
+
+      <h2>현대적 확장 — Hyperband, BOHB</h2>
+      <p>책 이후의 흐름도 짧게 짚자. <strong>Hyperband</strong>(2017)는 "초기에 많은 후보를 짧게 학습시키고 좋은 것만 더 길게 학습"이라는 전략으로 random보다 훨씬 빠르다. <strong>BOHB</strong>(2018)는 Hyperband의 효율 + 베이지안의 똑똑한 점 선택을 결합한 것으로 현재 실무에서 자주 쓰인다. Ray Tune, Optuna 같은 라이브러리가 이런 현대적 알고리즘을 모두 지원한다.</p>
+
+      <p>한 줄 요약 — 학습 한 번이 비싸고 예산이 제한적이면 베이지안, 그 외 대부분에서는 random이 충분하다. 하이퍼파라미터 탐색이 끝나고도 모델이 안 되면 다음 단계는 디버깅이다 — 08-09 sub의 주제다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUB = [
+    { no:'01', t:'절차가 알고리즘보다 중요한 이유' },
+    { no:'02', t:'성능 지표 선택' },
+    { no:'03', t:'정밀도·재현율·F1·AUC' },
+    { no:'04', t:'기본 베이스라인' },
+    { no:'05', t:'데이터 vs 모델 키우기' },
+    { no:'06', t:'하이퍼파라미터 1 — grid vs random' },
+    { no:'07', t:'하이퍼파라미터 2 — 베이지안' },
+    { no:'08', t:'디버깅 결정 트리' },
+    { no:'09', t:'실패 모드 분류' },
+    { no:'10', t:'실전 워크플로우' },
+    { no:'11', t:'시험 대비' },
+  ];
+  const CUR = '07';
+
+  document.querySelector('.topbar').innerHTML =
+    `<a class="home" href="index.html">← Ch.11 실용적 방법론</a>` +
+    `<span class="ch-mini">SUB ${CUR} / ${SUB.length}</span>`;
+  document.querySelector('.ch-nav ol').innerHTML = SUB.map(c =>
+    `<li><a href="${c.no}.html" ${c.no === CUR ? 'class="current"' : ''}>${c.t}</a></li>`).join('');
+  const i = SUB.findIndex(c => c.no === CUR);
+  const prev = i > 0 ? SUB[i-1] : { no:'', t:'챕터 표지로' };
+  const next = i < SUB.length-1 ? SUB[i+1] : { no:'', t:'챕터 표지로' };
+  document.querySelector('.ch-foot').innerHTML =
+    `<a href="${prev.no ? prev.no + '.html' : 'index.html'}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+    `<a href="${next.no ? next.no + '.html' : 'index.html'}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+
+  const bar = document.querySelector('.scroll-progress');
+  window.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max > 0 ? (h.scrollTop/max)*100 : 0) + '%';
+  }, { passive: true });
+
+  // 1차원 베이지안 최적화 시뮬레이션
+  // 학습률 log scale [-5, -1]에 정의된 손실 함수 f(x) = true objective
+  // 진짜 함수: 두 개의 최저점이 있는 형태
+  function trueLoss(x) {
+    // x in [-5, -1], 가짜 학습률 → 손실
+    const a = -3.2, b = -1.7;
+    return 0.10 + 0.45 * Math.exp(-2.5 * (x - a)*(x - a)) * (-1) * 0.7
+                 + 0.40 * Math.exp(-3.5 * (x - b)*(x - b)) * (-1) * 0.4
+                 + 0.50;
+    // 실제로는 단순화: 두 가우시안의 음의 합 + offset
+  }
+  function trueLossSimple(x) {
+    const v = 0.55 - 0.40 * Math.exp(-1.8 * Math.pow(x - (-3.0), 2)) - 0.25 * Math.exp(-3.0 * Math.pow(x - (-1.5), 2));
+    return Math.max(0.05, v);
+  }
+
+  const X_MIN = -5, X_MAX = -1;
+  const RES = 200;
+  const xs = [];
+  for (let i = 0; i < RES; i++) xs.push(X_MIN + (X_MAX - X_MIN) * (i / (RES - 1)));
+  const trueY = xs.map(trueLossSimple);
+
+  // GP 단순 구현 (RBF 커널)
+  function rbfK(x1, x2, l = 0.6, sf = 0.35) { return sf * sf * Math.exp(-0.5 * Math.pow((x1 - x2)/l, 2)); }
+
+  // simple matrix inversion for small n (Gauss-Jordan)
+  function invMat(A) {
+    const n = A.length;
+    const M = A.map((r, i) => r.concat(Array.from({length:n}, (_,j) => i===j?1:0)));
+    for (let i = 0; i < n; i++) {
+      let p = M[i][i]; let pi = i;
+      for (let r = i+1; r < n; r++) if (Math.abs(M[r][i]) > Math.abs(p)) { p = M[r][i]; pi = r; }
+      [M[i], M[pi]] = [M[pi], M[i]];
+      const piv = M[i][i];
+      for (let j = 0; j < 2*n; j++) M[i][j] /= piv;
+      for (let r = 0; r < n; r++) if (r !== i) {
+        const f = M[r][i];
+        for (let j = 0; j < 2*n; j++) M[r][j] -= f * M[i][j];
+      }
+    }
+    return M.map(r => r.slice(n));
+  }
+
+  function gpPredict(Xobs, Yobs, Xstar, noise = 1e-4) {
+    const n = Xobs.length;
+    if (n === 0) return Xstar.map(x => ({ mu: 0.5, sigma: 0.35 }));
+    const K = [];
+    for (let i = 0; i < n; i++) { const row = []; for (let j = 0; j < n; j++) row.push(rbfK(Xobs[i], Xobs[j]) + (i===j ? noise : 0)); K.push(row); }
+    const Kinv = invMat(K);
+    const alpha = Array.from({length:n}, (_, i) => {
+      let s = 0; for (let j = 0; j < n; j++) s += Kinv[i][j] * Yobs[j]; return s;
+    });
+    return Xstar.map(x => {
+      const ks = Xobs.map(xi => rbfK(xi, x));
+      const mu = ks.reduce((s, k, i) => s + k * alpha[i], 0);
+      // variance: k(x,x) - ks^T Kinv ks
+      const kss = rbfK(x, x);
+      let v = 0;
+      for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) v += ks[i] * Kinv[i][j] * ks[j];
+      const sigma2 = Math.max(0, kss - v);
+      return { mu: mu + 0.4, sigma: Math.sqrt(sigma2) };
+    });
+  }
+
+  // EI
+  function eiAt(mu, sigma, fStar, eps = 0.01) {
+    if (sigma < 1e-6) return 0;
+    const improvement = fStar - mu - eps;
+    const z = improvement / sigma;
+    // 표준정규 CDF·PDF
+    const phi = Math.exp(-0.5 * z * z) / Math.sqrt(2 * Math.PI);
+    function erfApprox(x) {
+      const sign = x < 0 ? -1 : 1; x = Math.abs(x);
+      const t = 1 / (1 + 0.3275911 * x);
+      const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x*x);
+      return sign * y;
+    }
+    const Phi = 0.5 * (1 + erfApprox(z / Math.sqrt(2)));
+    return improvement * Phi + sigma * phi;
+  }
+
+  // 초기 관찰
+  let Xobs = [], Yobs = [];
+  function reset() {
+    Xobs = [-4.5, -2.5, -1.2];
+    Yobs = Xobs.map(trueLossSimple);
+    render();
+  }
+
+  const canvas = document.getElementById('boCanvas');
+  const ctx = canvas.getContext('2d');
+  function setupCv() {
+    const w = canvas.parentElement.clientWidth - 16;
+    canvas.width = w * (window.devicePixelRatio || 1);
+    canvas.height = 280 * (window.devicePixelRatio || 1);
+    canvas.style.width = w + 'px';
+    canvas.style.height = '280px';
+    ctx.setTransform(window.devicePixelRatio || 1, 0, 0, window.devicePixelRatio || 1, 0, 0);
+  }
+
+  const PAD_L = 38, PAD_R = 12, PAD_T = 20, PAD_B = 32;
+  const Y_MIN = 0, Y_MAX = 0.6;
+
+  function render() {
+    setupCv();
+    const W = canvas.width / (window.devicePixelRatio || 1), H = canvas.height / (window.devicePixelRatio || 1);
+    ctx.clearRect(0, 0, W, H);
+    const pw = W - PAD_L - PAD_R, ph = H - PAD_T - PAD_B;
+    ctx.strokeStyle = '#e7e3d8'; ctx.lineWidth = 1;
+    for (let y = 0; y <= 4; y++) {
+      const yy = PAD_T + (y/4) * ph;
+      ctx.beginPath(); ctx.moveTo(PAD_L, yy); ctx.lineTo(W - PAD_R, yy); ctx.stroke();
+    }
+    ctx.fillStyle = '#9b948a'; ctx.font = '10px monospace';
+    ['0.6','0.45','0.3','0.15','0.0'].forEach((s, idx) => ctx.fillText(s, 4, PAD_T + (idx/4)*ph + 4));
+    ['-5','-4','-3','-2','-1'].forEach((s, idx) => {
+      const xx = PAD_L + (idx/4)*pw;
+      ctx.fillText('10^' + s, xx - 14, H - 12);
+    });
+    ctx.fillStyle = '#6f6960';
+    ctx.fillText('학습률 (log scale)', W/2 - 50, H - 1);
+    ctx.fillText('검증 손실', 4, PAD_T - 6);
+
+    // true loss (faded)
+    ctx.strokeStyle = 'rgba(60,55,50,0.18)'; ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    xs.forEach((x, idx) => {
+      const px = PAD_L + ((x - X_MIN) / (X_MAX - X_MIN)) * pw;
+      const py = PAD_T + (1 - (trueY[idx] - Y_MIN) / (Y_MAX - Y_MIN)) * ph;
+      if (idx === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    });
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // GP prediction
+    const pred = gpPredict(Xobs, Yobs, xs);
+    // 불확실성 영역
+    ctx.fillStyle = 'rgba(45,91,122,0.12)';
+    ctx.beginPath();
+    pred.forEach((p, idx) => {
+      const px = PAD_L + ((xs[idx] - X_MIN) / (X_MAX - X_MIN)) * pw;
+      const py = PAD_T + (1 - (p.mu - 1.96 * p.sigma - Y_MIN) / (Y_MAX - Y_MIN)) * ph;
+      if (idx === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    });
+    for (let idx = pred.length - 1; idx >= 0; idx--) {
+      const px = PAD_L + ((xs[idx] - X_MIN) / (X_MAX - X_MIN)) * pw;
+      const py = PAD_T + (1 - (pred[idx].mu + 1.96 * pred[idx].sigma - Y_MIN) / (Y_MAX - Y_MIN)) * ph;
+      ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fill();
+
+    // GP 평균
+    ctx.strokeStyle = '#2D5B7A'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    pred.forEach((p, idx) => {
+      const px = PAD_L + ((xs[idx] - X_MIN) / (X_MAX - X_MIN)) * pw;
+      const py = PAD_T + (1 - (p.mu - Y_MIN) / (Y_MAX - Y_MIN)) * ph;
+      if (idx === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    });
+    ctx.stroke();
+
+    // 관찰 점
+    Xobs.forEach((x, idx) => {
+      const px = PAD_L + ((x - X_MIN) / (X_MAX - X_MIN)) * pw;
+      const py = PAD_T + (1 - (Yobs[idx] - Y_MIN) / (Y_MAX - Y_MIN)) * ph;
+      ctx.fillStyle = '#3a3530';
+      ctx.beginPath(); ctx.arc(px, py, 4.5, 0, Math.PI*2); ctx.fill();
+    });
+
+    // 다음 시험점 후보 (EI 최대)
+    const fStar = Math.min(...Yobs);
+    let bestEI = -Infinity, bestX = xs[0];
+    xs.forEach((x, idx) => {
+      const v = eiAt(pred[idx].mu, pred[idx].sigma, fStar);
+      if (v > bestEI) { bestEI = v; bestX = x; }
+    });
+    const bpx = PAD_L + ((bestX - X_MIN) / (X_MAX - X_MIN)) * pw;
+    ctx.strokeStyle = '#C0492E'; ctx.lineWidth = 2;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(bpx, PAD_T); ctx.lineTo(bpx, H - PAD_B); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#C0492E';
+    ctx.beginPath(); ctx.arc(bpx, PAD_T + 8, 4, 0, Math.PI*2); ctx.fill();
+    ctx.font = '10px monospace';
+    ctx.fillText('다음 후보', bpx + 6, PAD_T + 12);
+
+    // 범례
+    ctx.font = '11px monospace';
+    ctx.fillStyle = '#3a3530'; ctx.fillText('● 관찰', PAD_L + 6, PAD_T + 12);
+    ctx.fillStyle = '#2D5B7A'; ctx.fillText('— GP 평균', PAD_L + 56, PAD_T + 12);
+    ctx.fillStyle = 'rgba(45,91,122,0.5)'; ctx.fillText('■ 95% 신뢰', PAD_L + 132, PAD_T + 12);
+
+    document.getElementById('nObs').textContent = Xobs.length;
+    const step = document.getElementById('boStep');
+    if (Xobs.length <= 3) step.innerHTML = '초기 3개의 무작위 점. 회색 점선이 <b>실제 손실 곡선</b>(우리는 모름), 파란 선이 GP가 추정한 평균. <b>관찰이 적어 불확실성(파란 영역)이 크다</b>.';
+    else if (Xobs.length <= 5) step.innerHTML = '몇 점 더 추가. <b>관찰 주변에서는 불확실성이 작아진다</b>. 멀리 떨어진 영역은 여전히 불확실. 다음 후보(빨간 선)는 EI가 가장 큰 곳.';
+    else if (Xobs.length <= 8) step.innerHTML = '점들이 점점 최저점 근처로 모인다. <b>GP 평균이 실제 함수에 점점 가까워진다</b>. 베이지안은 좋은 영역을 알아내고 그곳을 집중 탐색하기 시작.';
+    else step.innerHTML = '<b>수렴 단계</b>. 베이지안 최적화의 진가 — 같은 수의 시험으로 random보다 훨씬 빨리 최저점에 도달. 학습 한 번이 비싼 상황에서는 이 차이가 시간·비용을 크게 절약.';
+  }
+
+  document.getElementById('addBtn').addEventListener('click', () => {
+    const pred = gpPredict(Xobs, Yobs, xs);
+    const fStar = Math.min(...Yobs);
+    let bestEI = -Infinity, bestX = xs[0];
+    xs.forEach((x, idx) => {
+      const v = eiAt(pred[idx].mu, pred[idx].sigma, fStar);
+      if (v > bestEI) { bestEI = v; bestX = x; }
+    });
+    Xobs.push(bestX);
+    Yobs.push(trueLossSimple(bestX));
+    render();
+  });
+  document.getElementById('resetBtn').addEventListener('click', reset);
+  window.addEventListener('resize', render);
+  reset();
+
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) renderMathInElement(document.body, {
+      delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}], throwOnError:false
+    });
+  });
+</script>
+</body>
+</html>

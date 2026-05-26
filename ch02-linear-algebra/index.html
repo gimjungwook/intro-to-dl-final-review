@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ch.02 선형대수 — 데이터의 기하학</title>
-<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="./assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -66,7 +66,7 @@
 <header class="masthead">
   <div class="hero-wrap">
     <canvas id="hero"></canvas>
-    <div class="hero-cap"><b>단위 사각형</b> ↔ <em>행렬 A가 비틀어 만든 평행사변형</em> · 마우스 드래그로 변환 강도</div>
+    <div class="hero-cap"><b>단위 사각형</b> ↔ <em>행렬 A가 비틀어 만든 평행사변형</em> · 행렬 = 공간을 비트는 도구</div>
   </div>
 </header>
 
@@ -76,20 +76,20 @@
   <div class="paper-meta">
     <span><b>딥러닝 개론</b> 기말고사 복습 · Ch.02</span>
     <span>저본 <b>Goodfellow, Bengio, Courville (2016) Ch.2</b></span>
-    <span>읽는 시간 <b>약 35분</b></span>
-    <span>구성 <b>7 sub-chapter · 5 위젯</b></span>
+    <span>읽는 시간 <b>약 70분</b></span>
+    <span>구성 <b>13 sub-chapter · 8 위젯</b></span>
   </div>
 </div>
 
 <section class="section-intro">
   <h2>한 문장으로</h2>
-  <p>이 장은 <strong>“신경망의 한 층(layer)이 실제로 무엇을 하는가”</strong>라는 질문에, 모든 층은 결국 <span class="t-structure">선형 변환(Linear Transformation)</span>과 비선형 함수의 조합이므로, 행렬이 공간을 회전·확대·압축하는 도구라는 기하학적 직관을 가져야 한다고 답한다.</p>
-  <p>처음 읽을 때 가장 중요한 점은, 이 장이 <em>“수학 배경 챕터”가 아니라는 것이다</em>. 가중치 행렬(Weight Matrix)이 무엇을 회전시키고 무엇을 늘리는지를 보지 못하면, 뒤에 나오는 역전파(Backpropagation)·정칙화(Regularization)·주성분 분석(PCA)·합성곱(Convolution)은 모두 <strong>“기호 덩어리”</strong>로만 보인다. 이 사이트는 그 기하학적 직관을 손가락으로 만져 보게 하는 것이 목적이다.</p>
+  <p>이 장은 “행렬은 숫자를 정리해 둔 표가 아니라, <strong>공간을 비트는 도구</strong>다”라는 한 문장을 풀어 쓴 것이다. 신경망의 한 층(layer)은 거의 모두 <span class="t-structure">행렬 곱(matrix multiplication) + 편향(bias) + 비선형 함수(nonlinearity)</span>의 모양을 띠는데, 이 식을 단순 계산 규칙으로만 외우면 코드는 돌릴 수 있어도 “왜”는 보이지 않는다.</p>
+  <p>처음 읽을 때 가장 중요한 점은, 이 장이 <em>“수학 배경”</em>이 아니라 <strong>딥러닝 수업 전체의 문법</strong>이라는 것이다. 뒤에 나오는 손실 함수, 정칙화, 차원 축소, 역전파, 어텐션은 모두 이 장의 기호 위에 세워진다. 그래서 이 장을 한 번 더 천천히 짚어 두면 나머지 모든 장이 한결 가벼워진다.</p>
 </section>
 
 <div class="twopole">
-  <div class="pole s1"><h4>대수(Algebra) 관점</h4><p>벡터를 숫자의 목록, 행렬을 숫자판으로 본다. 계산은 빠르지만 의미를 놓치기 쉽다. 이 사이트에서 <b>쿨한 파랑</b>으로 표시된다.</p></div>
-  <div class="pole s2"><h4>기하(Geometry) 관점</h4><p>벡터를 공간의 화살표, 행렬을 그 공간을 변형하는 변환으로 본다. 직관은 깊지만 계산은 무겁다. 이 사이트에서 <b>웜한 주홍</b>으로 표시된다.</p></div>
+  <div class="pole s1"><h4>표현 (그릇)</h4><p>스칼라·벡터·행렬·텐서. 데이터를 담는 4단계 그릇. 이 장의 첫 절반은 “무엇을 어디에 담을 것인가”에 대한 이야기다.</p></div>
+  <div class="pole s2"><h4>변환 (도구)</h4><p>행렬 곱, 고유분해, 특이값분해(SVD). 같은 데이터를 다른 좌표계로 옮겨, 문제를 쉬운 형태로 바꿔 주는 도구. 이 장의 두 번째 절반.</p></div>
 </div>
 
 <section class="plates" id="plates"></section>
@@ -100,147 +100,147 @@
 </section>
 
 <footer class="colophon">
-  <p>이 해설은 Goodfellow et al.(2016) Chapter 2의 흐름을 따르되, 정의 나열 대신 <strong>“왜 그 형태인가”</strong>를 늘 함께 설명한다. 모든 수식 뒤에는 산문과 기하학적 비유가 따라붙고, 인터랙티브 위젯은 그 직관을 손으로 검증할 수 있게 한다.</p>
+  <p>이 해설은 Deep Learning Book(Goodfellow, Bengio, Courville, 2016) Chapter 2를 바텀업으로 다시 쓴 것이다. 정의에서 출발해 기하학적 직관, 신경망 적용까지 한 줄도 비약 없이 쌓아 올린다. 모든 수식은 “왜 그 형태인가”를 함께 설명한다.</p>
   <p class="src">
-    원서 · <a href="https://www.deeplearningbook.org/contents/linear_algebra.html">deeplearningbook.org / Chapter 2</a><br>
-    선행학습 상세해설 · <a href="../../../05-선행학습/Deep-Learning-Book-02-Linear-Algebra-상세해설.md">Deep-Learning-Book-02-Linear-Algebra-상세해설.md</a><br>
-    학습 가이드 · <a href="../../../05-선행학습/Deep-Learning-Book-1-5장-학습-가이드.md">Deep-Learning-Book-1-5장-학습-가이드.md</a>
+    저본 · Goodfellow, Bengio, Courville (2016) <i>Deep Learning</i>, MIT Press, Ch.2<br>
+    공개판 · <a href="https://www.deeplearningbook.org/contents/linear_algebra.html">deeplearningbook.org/contents/linear_algebra.html</a>
   </p>
 </footer>
 
 <script>
   const SUBS = [
-    { no:'01', t:'스칼라·벡터·행렬·텐서', d:'데이터를 어느 그릇에 담을까. 차원이 늘어난다는 것은 더 많은 구조를 한 번에 표현한다는 뜻이다. 이미지가 왜 텐서인지부터.', sp:['structure-lo','structure'] },
-    { no:'02', t:'행렬 곱과 선형 변환', d:'2D 행렬을 직접 조작해 단위 사각형을 비틀어 본다. 신경망의 가중치 행렬이 실제로 하는 일을 손가락으로 확인.', sp:['structure','synth'] },
-    { no:'03', t:'노름과 거리 — L1·L2·L∞의 기하학', d:'왜 여러 노름이 필요한가. 슬라이더로 p값을 바꾸면 단위구 모양이 변한다. 정칙화(Ch.7)의 기하학적 뿌리.', sp:['style','style-lo'] },
-    { no:'04', t:'특수 행렬과 직교성', d:'대각·대칭·직교 행렬. 길이와 각도를 보존하는 변환이 왜 학습 안정성에 중요한가.', sp:['structure-lo','structure'] },
-    { no:'05', t:'고유분해 — 회전이 보존하는 방향', d:'행렬을 곱해도 방향이 바뀌지 않는 특별한 벡터. 클릭으로 직접 찾아본다. 주성분 분석(Ch.13)의 뿌리.', sp:['structure','style'] },
-    { no:'06', t:'SVD — 모든 행렬의 분해', d:'특이값분해로 데이터의 중요한 방향과 덜 중요한 방향을 본다. 슬라이더로 σᵢ를 줄여 저랭크 근사를 만들어 본다.', sp:['style','synth'] },
-    { no:'07', t:'시험 대비 — 핵심 정리와 예상 질문', d:'7장의 모든 수식을 한 쪽에. 기하학적 직관 체크리스트와 시험 예상 질문 8개.', sp:['ink-soft','ink'] },
+    { no:'01', t:'왜 선형대수가 필요한가', d:'신경망 한 층을 한 줄로 적으면 결국 행렬 곱이다. 이 사실이 왜 중요한지부터.', sp:['structure'] },
+    { no:'02', t:'스칼라·벡터·행렬·텐서', d:'4단계 그릇. 차원이 늘어난다는 것은 복잡해진다는 뜻이 아니라 더 많은 구조를 한 번에 담는다는 뜻.', sp:['structure','structure-lo'] },
+    { no:'03', t:'점 곱 — 두 벡터의 닮음', d:'점 곱(dot product)을 “닮음 점수”로 읽는 방법. 신경망의 가중합이 이 한 가지 연산을 묶어 쓴 것임을 본다.', sp:['structure'] },
+    { no:'04', t:'행렬 곱 — 선형 변환', d:'행렬 = 공간을 회전·스케일·전단으로 비트는 함수. 단위 사각형이 평행사변형으로 바뀌는 모습을 직접 만져 본다.', sp:['style','structure'] },
+    { no:'05', t:'노름과 거리', d:'벡터의 크기를 재는 방법은 여럿이다. L1·L2·L∞ 단위구의 모양과 정칙화(Ch.7)의 예고.', sp:['style'] },
+    { no:'06', t:'특수 행렬', d:'대각·대칭·직교·단위행렬. 각각이 무엇을 보존하고 무엇을 바꾸는가.', sp:['structure-lo'] },
+    { no:'07', t:'선형 의존·랭크·4가지 부분공간', d:'행렬이 정보를 얼마나 담는가. 행공간·열공간·영공간·좌영공간으로 행렬 한 장을 해부한다.', sp:['structure','synth'] },
+    { no:'08', t:'고유분해 1 — 회전이 보존하는 방향', d:'고유벡터(eigenvector)는 변환을 거쳐도 방향이 바뀌지 않는 특별한 축이다. 정의와 기하학적 직관.', sp:['style','structure-lo'] },
+    { no:'09', t:'고유분해 2 — 대칭 행렬과 PCA', d:'대칭 행렬은 왜 특별한가. 데이터의 “주축(main axis)”을 찾는 도구로서 PCA(Ch.13)의 뿌리.', sp:['style','synth'] },
+    { no:'10', t:'SVD 1 — 모든 행렬의 분해', d:'특이값분해(SVD)는 “직사각형 행렬에도 적용되는 고유분해”다. 회전 → 스케일 → 회전의 3단계로 본다.', sp:['structure','style'] },
+    { no:'11', t:'SVD 2 — 저랭크 근사와 의사역행렬', d:'σ를 큰 순서로 잘라 내는 것이 데이터 압축의 본질. 이미지에서 직접 보고, 의사역행렬도 같은 도구로 푼다.', sp:['synth','style'] },
+    { no:'12', t:'행렬 미적분 — 역전파의 다리', d:'자코비안(Jacobian)·헤시안(Hessian)이 무엇이고, 신경망의 역전파(Ch.6)와 어떻게 이어지는가.', sp:['structure','synth'] },
+    { no:'13', t:'시험 대비 체크리스트', d:'핵심 수식, 기하학적 직관, 예상 질문 20개+. 시험 직전 30분이면 한 바퀴.', sp:['ink'] },
   ];
-  const colMap = { structure:'var(--structure)', 'structure-lo':'var(--structure-lo)', style:'var(--style)', 'style-lo':'var(--style-lo)', synth:'var(--synth)', ink:'var(--ink)', 'ink-soft':'var(--ink-soft)' };
-
+  const colMap = { structure:'var(--structure)', 'structure-lo':'var(--structure-lo)', style:'var(--style)', 'style-lo':'var(--style-lo)', synth:'var(--synth)', ink:'var(--ink-soft)' };
   const platesEl = document.getElementById('plates');
   const flowEl = document.getElementById('pathflow');
-  SUBS.forEach((c, idx) => {
-    const sp = c.sp.length === 1 ? [c.sp[0], c.sp[0]] : c.sp;
+  SUBS.forEach((s, idx) => {
+    const sp = s.sp.length === 1 ? [s.sp[0], s.sp[0]] : s.sp;
     const a = document.createElement('a');
-    a.className = 'plate'; a.href = c.no + '.html';
+    a.className = 'plate'; a.href = s.no + '.html';
     a.innerHTML = `
-      <div class="spectrum">${sp.map(s=>`<i style="flex:1;background:${colMap[s]}"></i>`).join('')}</div>
-      <span class="pno">SUB ${c.no}</span>
-      <h3>${c.t}</h3>
-      <p>${c.d}</p>
+      <div class="spectrum">${sp.map(x=>`<i style="flex:1;background:${colMap[x]}"></i>`).join('')}</div>
+      <span class="pno">SUB ${s.no}</span>
+      <h3>${s.t}</h3>
+      <p>${s.d}</p>
       <span class="go">읽기 →</span>`;
     platesEl.appendChild(a);
 
-    const f = document.createElement('a'); f.href = c.no + '.html';
-    f.innerHTML = `<b>${c.no}</b> ${c.t.split('—')[0].slice(0,14)}`;
+    const f = document.createElement('a'); f.href = s.no + '.html';
+    f.innerHTML = `<b>${s.no}</b> ${s.t.split('—')[0].slice(0,14)}`;
     flowEl.appendChild(f);
-    if (idx < SUBS.length - 1) { const s = document.createElement('span'); s.className='arr'; s.textContent='→'; flowEl.appendChild(s); }
+    if (idx < SUBS.length - 1) { const sp2 = document.createElement('span'); sp2.className='arr'; sp2.textContent='→'; flowEl.appendChild(sp2); }
   });
 
-  // 표지 히어로 — 2D 격자 → 행렬 A로 변환된 격자 모핑
+  /* ====== HERO — 단위 사각형이 행렬 A에 의해 평행사변형으로 변하는 애니메이션 ====== */
   window.addEventListener('load', () => {
-    const canvas = document.getElementById('hero');
-    if (!canvas || !window.THREE) return;
-    const wrap = canvas.parentElement;
-    const w = wrap.clientWidth;
-    const h = 340;
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(45, w/h, 0.1, 100);
-    camera.position.set(0, 0, 8);
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-    renderer.setPixelRatio(Math.min(2, devicePixelRatio));
-    renderer.setSize(w, h, false);
-    renderer.setClearColor(0xffffff, 0);
-
-    // 단위 사각형 위 격자점 — 32×32
-    const N = 32;
-    const total = N * N;
-    const geo = new THREE.BufferGeometry();
-    const positions = new Float32Array(total * 3);
-    const colors = new Float32Array(total * 3);
-    const orig = new Float32Array(total * 3);
-    let p = 0;
-    for (let i = 0; i < N; i++) {
-      for (let j = 0; j < N; j++, p++) {
-        const x = (i / (N-1) - .5) * 4;
-        const y = (j / (N-1) - .5) * 4;
-        orig[p*3] = x; orig[p*3+1] = y; orig[p*3+2] = 0;
-        positions[p*3] = x; positions[p*3+1] = y; positions[p*3+2] = 0;
-        // 격자 위치 → 파랑→주홍 그라데이션
-        const t = (i + j) / (2*N);
-        const r = .18 + t * .57;
-        const g = .35 - t * .15;
-        const b = .48 - t * .35;
-        colors[p*3] = r; colors[p*3+1] = g; colors[p*3+2] = b;
-      }
+    const cv = document.getElementById('hero');
+    const ctx = cv.getContext('2d');
+    function resize() {
+      const r = cv.getBoundingClientRect();
+      cv.width = r.width * devicePixelRatio;
+      cv.height = 340 * devicePixelRatio;
+      ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
     }
-    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-    const mat = new THREE.PointsMaterial({ size: 0.08, vertexColors: true, transparent: true, opacity: .9 });
-    const pts = new THREE.Points(geo, mat);
-    scene.add(pts);
+    resize(); window.addEventListener('resize', resize);
 
-    // 단위 사각형 외곽선 두 개 (원본/변환된)
-    const outlineGeo = new THREE.BufferGeometry();
-    const outlinePos = new Float32Array(5 * 3);
-    outlineGeo.setAttribute('position', new THREE.BufferAttribute(outlinePos, 3));
-    const outlineMat = new THREE.LineBasicMaterial({ color: 0xC0492E, transparent: true, opacity: .55 });
-    const outline = new THREE.Line(outlineGeo, outlineMat);
-    scene.add(outline);
+    let t0 = performance.now();
+    function frame(now) {
+      const t = (now - t0) / 1000;
+      const w = cv.width / devicePixelRatio;
+      const h = 340;
+      ctx.clearRect(0,0,w,h);
+      // 종이 결
+      ctx.fillStyle = '#FAF7F0';
+      ctx.fillRect(0,0,w,h);
 
-    let t = 0;
-    let target = 0.5;
-    let drag = false, dragX = 0, sx = 0;
-    canvas.addEventListener('pointerdown', (e) => { drag = true; dragX = e.clientX; sx = target; });
-    window.addEventListener('pointermove', (e) => { if (!drag) return; target = Math.max(0, Math.min(1, sx + (e.clientX - dragX) / canvas.clientWidth)); });
-    window.addEventListener('pointerup', () => { drag = false; });
-
-    function tick() {
-      t += 0.005;
-      if (!drag) target = 0.5 + 0.45 * Math.sin(t);
-      // 행렬 A = [[1+t*0.6, t*0.8], [t*-0.3, 1-t*0.4]] (회전+전단+스케일)
-      const m = target;
-      const ang = m * 0.7;
-      const ca = Math.cos(ang), sa = Math.sin(ang);
-      const sxv = 1 + m * 0.5;
-      const syv = 1 - m * 0.3;
-      const sh = m * 0.5;
-      // 합성: R(ang) * Shear(sh) * Scale(sxv, syv)
-      const a00 = ca * sxv - sa * sh * sxv;
-      const a01 = ca * sh * syv - sa * syv;
-      const a10 = sa * sxv + ca * sh * sxv;
-      const a11 = sa * sh * syv + ca * syv;
-      const pos = pts.geometry.attributes.position.array;
-      for (let k = 0; k < total; k++) {
-        const ox = orig[k*3], oy = orig[k*3+1];
-        pos[k*3]   = a00 * ox + a01 * oy;
-        pos[k*3+1] = a10 * ox + a11 * oy;
-        pos[k*3+2] = 0;
+      // 좌표 그리드 (옅게)
+      ctx.strokeStyle = 'rgba(38,34,28,0.06)';
+      ctx.lineWidth = 1;
+      const cx = w/2, cy = h/2, S = 60;
+      for (let i = -10; i <= 10; i++) {
+        ctx.beginPath();
+        ctx.moveTo(cx + i*S, 0); ctx.lineTo(cx + i*S, h);
+        ctx.moveTo(0, cy + i*S); ctx.lineTo(w, cy + i*S);
+        ctx.stroke();
       }
-      pts.geometry.attributes.position.needsUpdate = true;
-      // 외곽: 단위 사각형 (1,1) (1,-1) (-1,-1) (-1,1) (1,1)을 행렬로 변환
-      const corners = [[2,2],[2,-2],[-2,-2],[-2,2],[2,2]];
-      for (let k = 0; k < 5; k++) {
-        const ox = corners[k][0], oy = corners[k][1];
-        outlinePos[k*3]   = a00 * ox + a01 * oy;
-        outlinePos[k*3+1] = a10 * ox + a11 * oy;
-        outlinePos[k*3+2] = 0;
+      // 원점 축
+      ctx.strokeStyle = 'rgba(38,34,28,0.18)';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(0, cy); ctx.lineTo(w, cy);
+      ctx.moveTo(cx, 0); ctx.lineTo(cx, h);
+      ctx.stroke();
+
+      // 시간 가중치
+      const k = 0.5 - 0.5*Math.cos(t*0.45);
+      // 회전 + 스케일 + 전단을 천천히 합성한 행렬 A
+      const theta = k * 0.65;
+      const sx = 1 + k*0.7, sy = 1 - k*0.25;
+      const shear = k * 0.5;
+      const a11 = Math.cos(theta) * sx + shear * Math.sin(theta);
+      const a12 = -Math.sin(theta) * sy + shear * Math.cos(theta);
+      const a21 = Math.sin(theta) * sx;
+      const a22 = Math.cos(theta) * sy;
+
+      // 원래 단위 사각형 (옅은 파랑)
+      ctx.strokeStyle = 'rgba(45,91,122,0.35)';
+      ctx.lineWidth = 1.8;
+      ctx.setLineDash([4,4]);
+      ctx.beginPath();
+      ctx.rect(cx, cy - S, S, S);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // 변환된 사각형 (주홍)
+      const v = [[0,0],[1,0],[1,1],[0,1]];
+      const tx = v.map(([x,y]) => [cx + (a11*x + a12*y)*S, cy - (a21*x + a22*y)*S]);
+      ctx.fillStyle = 'rgba(192,73,46,0.12)';
+      ctx.strokeStyle = '#C0492E';
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.moveTo(tx[0][0], tx[0][1]);
+      for (let i = 1; i < 4; i++) ctx.lineTo(tx[i][0], tx[i][1]);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+
+      // 기저 벡터 (Ae1, Ae2) 화살표
+      function arr(x1,y1,x2,y2,col) {
+        ctx.strokeStyle = col; ctx.fillStyle = col;
+        ctx.lineWidth = 2.4;
+        ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+        const ang = Math.atan2(y2-y1, x2-x1);
+        ctx.beginPath();
+        ctx.moveTo(x2,y2);
+        ctx.lineTo(x2 - 9*Math.cos(ang - 0.4), y2 - 9*Math.sin(ang - 0.4));
+        ctx.lineTo(x2 - 9*Math.cos(ang + 0.4), y2 - 9*Math.sin(ang + 0.4));
+        ctx.closePath(); ctx.fill();
       }
-      outlineGeo.attributes.position.needsUpdate = true;
-      renderer.render(scene, camera);
-      requestAnimationFrame(tick);
+      arr(cx, cy, tx[1][0], tx[1][1], '#2D5B7A');
+      arr(cx, cy, tx[3][0], tx[3][1], '#C0492E');
+
+      // 레이블
+      ctx.font = '12px "Spline Sans Mono", monospace';
+      ctx.fillStyle = '#2D5B7A';
+      ctx.fillText('Ae₁', tx[1][0] + 6, tx[1][1] + 4);
+      ctx.fillStyle = '#C0492E';
+      ctx.fillText('Ae₂', tx[3][0] + 6, tx[3][1] + 4);
+
+      requestAnimationFrame(frame);
     }
-    tick();
-
-    window.addEventListener('resize', () => {
-      const w2 = wrap.clientWidth;
-      renderer.setSize(w2, h, false);
-      camera.aspect = w2 / h;
-      camera.updateProjectionMatrix();
-    });
+    requestAnimationFrame(frame);
   });
 </script>
 </body>

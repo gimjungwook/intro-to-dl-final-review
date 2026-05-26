@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Transformer — 인터랙티브 해설</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .masthead { position: relative; max-width: var(--wide); margin: 0 auto; padding: 1.5rem 1.4rem 0; }
+  .hero-wrap { position: relative; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: linear-gradient(180deg,#fff,var(--paper-2)); box-shadow: var(--shadow-plate); }
+  .hero-cap { position: absolute; left: 1.2rem; bottom: 1rem; font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; color: var(--ink-faint); pointer-events: none; }
+  .hero-cap b { color: var(--structure); } .hero-cap em { color: var(--style); font-style: normal; }
+  .hero-svg { display: block; width: 100%; height: auto; }
+
+  .title-block { max-width: var(--wide); margin: 2.4rem auto 0; padding-inline: 1.4rem; }
+  .title-block .kicker { display: block; margin-bottom: 1rem; }
+  .title-block h1 { font-size: clamp(2.6rem, 7vw, 5rem); margin: 0; }
+  .title-block h1 em { color: var(--style); }
+  .paper-meta { display: flex; flex-wrap: wrap; gap: .5rem 1.6rem; margin-top: 1.4rem; font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); letter-spacing: .02em; }
+  .paper-meta span b { color: var(--ink); font-weight: 500; }
+
+  .plates { max-width: var(--wide); margin: 1rem auto; padding: 2rem 1.4rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); gap: 1rem; }
+  .plate { position: relative; display: flex; flex-direction: column; text-decoration: none; color: inherit; background: #fff; border: 1px solid var(--line); border-radius: 13px; padding: 1.3rem 1.3rem 1.4rem; transition: transform .2s var(--ease), border-color .2s, box-shadow .2s; overflow: hidden; }
+  .plate:hover { transform: translateY(-4px); border-color: var(--structure-lo); box-shadow: var(--shadow-plate); }
+  .plate .pno { font-family: var(--mono); font-size: .74rem; letter-spacing: .14em; color: var(--ink-faint); }
+  .plate h3 { font-family: var(--serif); font-size: 1.22rem; margin: .5rem 0 .5rem; line-height: 1.2; }
+  .plate p { font-size: .88rem; color: var(--ink-soft); line-height: 1.5; margin: 0; }
+  .plate .spectrum { display: flex; height: 4px; border-radius: 2px; overflow: hidden; margin-bottom: 1rem; }
+  .plate .spectrum i { display: block; height: 100%; }
+  .plate .go { margin-top: 1rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; color: var(--structure); opacity: 0; transform: translateX(-4px); transition: .2s var(--ease); }
+  .plate:hover .go { opacity: 1; transform: translateX(0); }
+
+  .section-intro { max-width: var(--measure); margin: 1rem auto 0; padding-inline: 1.4rem; }
+  .section-intro h2 { margin-top: 1rem; }
+  .threepole { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; max-width: var(--measure); margin: 1.6rem auto; padding-inline: 1.4rem; }
+  .pole { padding: 1.1rem 1.2rem; border-radius: 11px; }
+  .pole.q { background: var(--synth-bg); } .pole.k { background: var(--structure-bg); } .pole.v { background: var(--style-bg); }
+  .pole h4 { margin: 0 0 .4rem; font-family: var(--serif); font-size: 1.05rem; }
+  .pole.q h4 { color: var(--synth); } .pole.k h4 { color: var(--structure); } .pole.v h4 { color: var(--style); }
+  .pole p { margin: 0; font-size: .88rem; color: var(--ink-soft); line-height: 1.5; }
+  @media (max-width: 720px){ .threepole{ grid-template-columns: 1fr; } }
+
+  .path { max-width: var(--wide); margin: 2rem auto; padding: 1.6rem 1.4rem; }
+  .path-flow { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; font-family: var(--mono); font-size: .78rem; }
+  .path-flow a { display: inline-flex; align-items: center; gap: .4rem; text-decoration: none; color: var(--ink-soft); padding: .35rem .6rem; border: 1px solid var(--line); border-radius: 20px; transition: .15s; }
+  .path-flow a:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .path-flow a b { color: var(--style); } .path-flow a:hover b { color: var(--style-lo); }
+  .path-flow .arr { color: var(--ink-faint); }
+
+  footer.colophon { max-width: var(--measure); margin: 3rem auto 4rem; padding: 2rem 1.4rem 0; border-top: 1px solid var(--line); font-size: .85rem; color: var(--ink-soft); }
+  footer.colophon a { color: var(--structure); }
+  footer.colophon .src { font-family: var(--mono); font-size: .76rem; line-height: 1.8; }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="hero-wrap">
+    <svg class="hero-svg" viewBox="0 0 1200 500" preserveAspectRatio="xMidYMid slice">
+      <defs>
+        <linearGradient id="g1" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0%" stop-color="#FAF7F0"/>
+          <stop offset="100%" stop-color="#F3EEE3"/>
+        </linearGradient>
+        <linearGradient id="qline" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#A47B2E" stop-opacity="0.15"/>
+          <stop offset="100%" stop-color="#A47B2E" stop-opacity="0.8"/>
+        </linearGradient>
+      </defs>
+      <rect width="1200" height="500" fill="url(#g1)"/>
+      <!-- 8개 토큰을 양쪽에 배치 -->
+      <g font-family="ui-monospace, Spline Sans Mono, monospace" font-size="14">
+        <g id="left" fill="#2D5B7A">
+          <text x="120" y="80">The</text>
+          <text x="120" y="140">cat</text>
+          <text x="120" y="200">sat</text>
+          <text x="120" y="260">on</text>
+          <text x="120" y="320">the</text>
+          <text x="120" y="380">mat</text>
+        </g>
+        <g id="right" fill="#C0492E">
+          <text x="1040" y="80">The</text>
+          <text x="1040" y="140">cat</text>
+          <text x="1040" y="200">sat</text>
+          <text x="1040" y="260">on</text>
+          <text x="1040" y="320">the</text>
+          <text x="1040" y="380">mat</text>
+        </g>
+      </g>
+      <!-- attention 곡선 (모두에서 모두로) -->
+      <g stroke="#A47B2E" fill="none" stroke-opacity="0.18">
+        <path d="M 160 76 C 600 76, 600 76, 1030 76" stroke-width="2"/>
+        <path d="M 160 76 C 600 130, 600 130, 1030 136" stroke-width="1.5"/>
+        <path d="M 160 76 C 600 200, 600 200, 1030 196" stroke-width="1"/>
+        <path d="M 160 136 C 600 130, 600 130, 1030 76" stroke-width="1"/>
+        <path d="M 160 136 C 600 136, 600 136, 1030 136" stroke-width="2.6"/>
+        <path d="M 160 136 C 600 200, 600 200, 1030 196" stroke-width="2"/>
+        <path d="M 160 136 C 600 376, 600 376, 1030 376" stroke-width="2.4"/>
+        <path d="M 160 196 C 600 200, 600 200, 1030 196" stroke-width="2"/>
+        <path d="M 160 196 C 600 136, 600 136, 1030 136" stroke-width="1.5"/>
+        <path d="M 160 256 C 600 256, 600 256, 1030 256" stroke-width="2"/>
+        <path d="M 160 316 C 600 76, 600 76, 1030 76" stroke-width="1.6"/>
+        <path d="M 160 316 C 600 316, 600 316, 1030 316" stroke-width="2"/>
+        <path d="M 160 376 C 600 136, 600 136, 1030 136" stroke-width="2"/>
+        <path d="M 160 376 C 600 376, 600 376, 1030 376" stroke-width="2.4"/>
+      </g>
+      <!-- 중앙 라벨 -->
+      <g font-family="ui-monospace, monospace" fill="#A47B2E">
+        <text x="600" y="40" text-anchor="middle" font-size="13" letter-spacing="3">SELF-ATTENTION — 모든 토큰이 모든 토큰을 본다</text>
+      </g>
+      <g font-family="ui-monospace, monospace" font-size="11">
+        <text x="120" y="50" fill="#2D5B7A" letter-spacing="2">QUERY 쪽</text>
+        <text x="1040" y="50" fill="#C0492E" letter-spacing="2">KEY · VALUE 쪽</text>
+      </g>
+    </svg>
+    <div class="hero-cap"><b>왼쪽 — 누가 묻는가 (Query)</b> ↔ <em>오른쪽 — 무엇을 참고하는가 (Key·Value)</em></div>
+  </div>
+</header>
+
+<div class="title-block">
+  <span class="kicker">Attention Is All You Need · Vaswani et al. · 2017</span>
+  <h1>순환을 버리고,<br><em>주의(Attention)</em>만으로</h1>
+  <div class="paper-meta">
+    <span><b>딥러닝 개론</b> P3 논문</span>
+    <span>학번 <b>22000168</b> 김정욱</span>
+    <span>arXiv <b>1706.03762</b></span>
+    <span>읽는 시간 <b>약 70분</b></span>
+    <span>기말고사 <b>2026-06-04</b></span>
+  </div>
+</div>
+
+<section class="section-intro">
+  <h2>이 사이트의 약속</h2>
+  <p>이 해설은 <strong>“Attention Is All You Need”</strong> 한 편의 논문을 처음 읽는 사람의 눈높이로 다시 쓴 것이다. 트랜스포머(Transformer)는 BERT, GPT, 챗봇, 번역기 등 오늘날 거의 모든 대형 언어 모델(LLM)의 뼈대이지만, 막상 원문을 펼치면 첫 페이지부터 Q, K, V, multi-head, scaled dot-product, positional encoding 같은 용어가 한꺼번에 쏟아진다. 단어 하나를 이해하지 못해 다음 단어로 못 넘어가는 일이 자주 일어난다.</p>
+  <p>그래서 이 사이트는 한 가지 원칙을 끝까지 지킨다. <strong>“처음 듣는 사람도 막히지 않게.”</strong> 어떤 용어도 “당연히 안다”고 가정하지 않는다. 모든 기호는 풀어 쓰고, 모든 수식은 “왜 그 형태인가”를 함께 설명한다. 가능한 한 일상 비유로 먼저 가져온 뒤에야 수식으로 들어간다.</p>
+  <p>16개의 작은 장으로 나누었고, 각 장은 본문 글 + 위젯 + 비유 + 수식의 네 박자로 구성된다. 위에서 아래로 순서대로 읽기를 권한다. 다만 어느 장에서 막혀도 좌측 사이드바로 이전 장으로 자유롭게 돌아갈 수 있다.</p>
+</section>
+
+<div class="threepole">
+  <div class="pole q"><h4>Query — 묻는 자</h4><p>“나는 누구를 봐야 하는가?” 현재 토큰이 가진 질문. 이 사이트에선 황토색.</p></div>
+  <div class="pole k"><h4>Key — 표지</h4><p>“나는 이런 역할을 하는 토큰이다.” 다른 토큰들이 자기를 알리는 표지. 쿨한 파랑.</p></div>
+  <div class="pole v"><h4>Value — 본문</h4><p>“내가 실제로 전달하는 정보.” 주의가 가닿았을 때 가져가는 실제 내용. 웜한 주홍.</p></div>
+</div>
+
+<section class="plates" id="plates"></section>
+
+<section class="path">
+  <span class="kicker">권장 읽기 순서</span>
+  <div class="path-flow" id="pathflow"></div>
+</section>
+
+<footer class="colophon">
+  <p>이 해설은 Vaswani et al.(2017)의 원문을 바텀업으로 다시 쓴 것이다. RNN의 한계에서 출발해 Q·K·V, multi-head, positional encoding, encoder-decoder 블록, 학습과 추론, 그리고 시험 대비 핵심 질문까지 단계적으로 쌓아 올린다. 모든 수식은 “왜 그 형태인가”를 함께 설명하고, 모든 위젯은 한 번에 한 가지 의문만 풀도록 설계되었다.</p>
+  <p class="src">
+    원문 · <a href="https://arxiv.org/abs/1706.03762">arXiv:1706.03762</a><br>
+    HTML 렌더 · <a href="https://ar5iv.labs.arxiv.org/html/1706.03762">ar5iv.labs.arxiv.org</a><br>
+    Deep Learning Book · Chapter 10 (Sequence Modeling) · Chapter 15 (Representation Learning)
+  </p>
+</footer>
+
+<script>
+  const CHAPTERS = [
+    { no:'01', t:'RNN의 한계 — 왜 새 구조가 필요했나', d:'순차 처리, 장거리 의존, 병렬화 불가. Attention만으로 가는 첫 동기.', sp:['key'] },
+    { no:'02', t:'Attention의 직관 1 — 모두를 동등하게 보지 않기', d:'한 단어를 이해할 때 우리는 문장의 어디를 더 본다. 그 감각을 수식 이전에 짚는다.', sp:['query'] },
+    { no:'03', t:'Attention의 직관 2 — 가중 평균이라는 정답', d:'"어디를 얼마나 볼까"는 결국 확률 가중 평균이다. softmax가 등장하는 자리.', sp:['query','value'] },
+    { no:'04', t:'Q·K·V 1 — 도서관 검색 비유', d:'책을 찾는 사람=Query, 책 표지=Key, 책 본문=Value. 수식 이전에 그림으로 잡는다.', sp:['query','key'] },
+    { no:'05', t:'Q·K·V 2 — 수식 정의와 의미', d:'Q = XW_Q, K = XW_K, V = XW_V. 왜 같은 X에서 세 개를 따로 뽑는가.', sp:['key','value'] },
+    { no:'06', t:'Scaled Dot-Product Attention — 한 줄 분해', d:'softmax(QK^⊤/√d_k)V. 네 번의 연산을 차례로 풀어 쓴다.', sp:['value'] },
+    { no:'07', t:'왜 √d_k로 나누는가 — 분산 폭발', d:'d_k가 크면 dot-product 분산이 d_k에 비례. 안 나누면 softmax가 한 점으로 쏠린다.', sp:['key'] },
+    { no:'08', t:'Self-Attention — 같은 시퀀스에서 세 가지를', d:'Q·K·V를 모두 같은 입력에서 뽑는다. 한 토큰이 같은 문장의 모든 토큰을 본다.', sp:['query','value'] },
+    { no:'09', t:'Multi-Head 1 — 왜 여러 헤드인가', d:'한 헤드면 한 가지 관계만 평균낸다. 여러 헤드는 여러 시각의 앙상블이다.', sp:['key','value'] },
+    { no:'10', t:'Multi-Head 2 — 분기·병렬·결합', d:'d_model을 h등분, 헤드별로 attention, 다시 합치고 W^O로 섞기.', sp:['value'] },
+    { no:'11', t:'Positional Encoding 1 — Attention은 순서를 모른다', d:'Set 연산의 본질적 한계. 토큰 순서가 출력에 영향을 안 미치는 위험.', sp:['key'] },
+    { no:'12', t:'Positional Encoding 2 — 사인·코사인 PE', d:'PE(pos, 2i) = sin(pos/10000^(2i/d)). 왜 사인인가, 왜 분모가 그 형태인가.', sp:['query'] },
+    { no:'13', t:'Encoder 블록 — MHA + FFN + 잔차 + LayerNorm', d:'한 블록의 안을 해부. 잔차 연결과 LayerNorm이 왜 둘 다 필요한가.', sp:['key','value'] },
+    { no:'14', t:'Decoder 블록 — masked self-attn + cross-attn', d:'미래를 못 보게 막는 마스크, 그리고 인코더 출력을 끌어오는 cross-attention.', sp:['value','query'] },
+    { no:'15', t:'학습과 추론 — teacher forcing, 자기회귀', d:'학습 때는 정답을 알려주고, 추론 때는 자기 출력을 다시 입력으로. 차이의 이유.', sp:['query'] },
+    { no:'16', t:'시험 대비 — 핵심 정의·수식·예상 질문 25+', d:'한 페이지로 압축. 정의·수식·왜·예시·반례·자주 묻는 함정.', sp:['value','key'] },
+  ];
+  const colMap = { key:'var(--structure)', value:'var(--style)', query:'var(--synth)' };
+  const platesEl = document.getElementById('plates');
+  const flowEl = document.getElementById('pathflow');
+  CHAPTERS.forEach((c, idx) => {
+    const sp = c.sp.length === 1 ? [c.sp[0], c.sp[0]] : c.sp;
+    const a = document.createElement('a');
+    a.className = 'plate'; a.href = c.no + '.html';
+    a.innerHTML = `
+      <div class="spectrum">${sp.map(s=>`<i style="flex:1;background:${colMap[s]}"></i>`).join('')}</div>
+      <span class="pno">CHAPTER ${c.no}</span>
+      <h3>${c.t}</h3>
+      <p>${c.d}</p>
+      <span class="go">읽기 →</span>`;
+    platesEl.appendChild(a);
+
+    const f = document.createElement('a'); f.href = c.no + '.html';
+    const short = c.t.split('—')[0].trim().slice(0, 14);
+    f.innerHTML = `<b>${c.no}</b> ${short}`;
+    flowEl.appendChild(f);
+    if (idx < CHAPTERS.length - 1) { const s = document.createElement('span'); s.className='arr'; s.textContent='→'; flowEl.appendChild(s); }
+  });
+</script>
+<script src="assets/widgets.js"></script>
+</body>
+</html>

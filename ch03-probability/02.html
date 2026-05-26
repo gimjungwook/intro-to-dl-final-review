@@ -3,29 +3,25 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>02. 확률변수, 분포, 조건부, 연쇄법칙</title>
+<title>02. 확률변수와 분포 — PMF vs PDF</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
-  /* 결합, 주변, 조건부 그리드 위젯 */
-  .joint-stage { display: grid; grid-template-columns: auto 1fr; gap: 1rem; padding: 1.4rem 1.1rem; align-items: start; }
-  .joint-grid { display: grid; grid-template-columns: repeat(4, 56px); grid-template-rows: repeat(4, 56px); gap: 3px; }
-  .joint-cell { background: var(--paper-sink); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: .72rem; color: var(--ink); cursor: pointer; transition: transform .1s; position: relative; }
-  .joint-cell:hover { transform: scale(1.06); z-index: 2; }
-  .joint-cell.row-sel { outline: 2px solid var(--structure); }
-  .joint-cell.col-sel { outline: 2px solid var(--style); }
-  .joint-cell.both-sel { outline: 2px solid var(--synth); }
-  .joint-axis-x, .joint-axis-y { font-family: var(--mono); font-size: .68rem; color: var(--ink-faint); }
-  .joint-info { padding: 1rem 0; font-size: .92rem; color: var(--ink-soft); line-height: 1.6; }
-  .joint-info .row { margin: .35rem 0; font-family: var(--mono); font-size: .82rem; }
-  .joint-info .row b.r { color: var(--structure); } .joint-info .row b.c { color: var(--style); } .joint-info .row b.bb { color: var(--synth); }
-  @media (max-width: 720px){ .joint-stage{ grid-template-columns: 1fr; } }
-
-  .selectorline { display: flex; gap: 1.2rem; padding: .7rem 1.1rem; border-top: 1px solid var(--line-soft); align-items: center; flex-wrap: wrap; font-size: .85rem; }
-  .selectorline label { font-family: var(--mono); font-size: .72rem; color: var(--ink-soft); }
-  .selectorline select { font-family: var(--mono); font-size: .8rem; padding: .3rem .5rem; border: 1px solid var(--line); border-radius: 5px; background: var(--paper); }
+  .pmf-stage { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1.6rem 1.1rem 1rem; }
+  .pmf-col { padding: 1rem; background: var(--paper); border: 1px solid var(--line-soft); border-radius: 9px; }
+  .pmf-col h5 { margin: 0 0 .6rem; font-family: var(--serif); font-size: 1rem; }
+  .pmf-col.disc h5 { color: var(--structure); } .pmf-col.cont h5 { color: var(--style); }
+  .pmf-canvas { width: 100%; height: 200px; display: block; background: #fff; border: 1px solid var(--line-soft); border-radius: 7px; }
+  .pmf-bar { display: flex; align-items: center; gap: .5rem; margin: .2rem 0; font-family: var(--mono); font-size: .76rem; }
+  .pmf-bar .lab { width: 1.5rem; color: var(--ink-soft); }
+  .pmf-bar .bg { flex: 1; height: 9px; background: var(--paper-sink); border-radius: 4px; overflow: hidden; }
+  .pmf-bar .fg { display: block; height: 100%; background: var(--structure); }
+  .pmf-bar .val { width: 3rem; text-align: right; color: var(--ink); }
+  .sum-disp { font-family: var(--mono); font-size: .78rem; color: var(--ink-soft); margin-top: .6rem; }
+  .sum-disp b { color: var(--structure); }
+  @media (max-width:680px){ .pmf-stage{ grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
@@ -37,106 +33,97 @@
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Sub-chapter 02. 분포의 기본 문법</span>
-      <h1>확률변수, 분포,<br>그리고 <span class="t-structure">조건부</span>의 풍경</h1>
-      <p class="lede">PMF와 PDF, 결합, 주변, 조건부, 연쇄법칙, 독립과 조건부독립 — 시험에 가장 자주 나오는 기호들의 의미를 한 번에 풀어 둔다. 큰 분포를 작은 조각으로 쪼개는 법, 그것이 이 장의 단 하나의 발상이다.</p>
+      <span class="kicker">Sub-chapter 02. 분포의 문법</span>
+      <h1>이산이냐 연속이냐<br><span class="t-structure">PMF</span>와 <span class="t-style">PDF</span>의 차이</h1>
+      <p class="lede">확률분포라는 한 단어 안에는 사실 두 가지 다른 수학 객체가 들어 있다. 동전의 앞뒷면처럼 셀 수 있는 세상에는 PMF가, 키나 온도처럼 연속된 세상에는 PDF가 산다. 둘은 닮았지만 결정적인 차이가 하나 있다 — PDF는 1을 넘어도 된다.</p>
     </header>
 
     <div class="prose">
-      <p>먼저 단어를 정확히 잡자. <strong>확률변수(random variable)</strong>는 "결과가 어디로 떨어질지 모르는 대상"이고, <strong>확률분포(probability distribution)</strong>는 "각 결과가 얼마나 자주 떨어지는지에 대한 규칙"이다. 동전 던지기는 확률변수, "앞 0.5 / 뒤 0.5"는 그 분포다. 키는 확률변수, "평균 170cm, 표준편차 7cm인 가우시안"은 그 분포다.</p>
+      <p>확률(probability)을 배우면 가장 먼저 만나는 두 용어가 있다. 확률변수(random variable)와 확률분포(probability distribution)다. 이 둘은 짝을 이루며 항상 함께 다닌다. 확률변수는 <strong>"앞으로 어떤 값이 나올지 모르지만 어떤 후보들 중 하나로 정해질 대상"</strong>을 가리키는 이름이고, 확률분포는 <strong>"그 후보들 각각이 얼마나 자주 나오는지를 알려주는 규칙"</strong>이다.</p>
 
-      <h2>이산이면 PMF, 연속이면 PDF</h2>
-      <p>이 한 줄에서 거의 모든 헷갈림이 시작된다. 확률변수가 셀 수 있는 값(이산)이라면 각 값에 직접 확률을 매기는 <strong>확률질량함수 PMF</strong>를 쓰고, 연속이면 어느 한 점의 확률은 0이라서 점이 아닌 <em>구간</em>에 대해 적분할 수 있는 <strong>확률밀도함수 PDF</strong>를 쓴다.</p>
+      <p>예를 들어 동전 던지기를 생각하자. 던지기 전에는 결과를 모른다. "다음에 나올 면"이라는 대상이 곧 확률변수다. 보통 대문자 $X$로 쓴다. 이 $X$는 두 값 중 하나를 취한다 — 앞면(H) 또는 뒷면(T). 그리고 "앞면이 50%, 뒷면이 50%"라고 적어 두는 규칙이 확률분포다. 보통 $P(X=H) = 0.5$, $P(X=T) = 0.5$로 쓴다. 이때 $P(\cdot)$는 "특정 값을 가질 확률"이라는 함수다.</p>
 
-      <div class="math-block">$$ \text{PMF} \quad P(X=x) \in [0, 1], \quad \sum_x P(X=x) = 1 $$</div>
-      <p class="math-note">이산: 각 값에 확률을 직접 매김. 모두 더하면 1.</p>
+      <p>여기서 사람들이 자주 놓치는 한 가지가 있다. 확률변수 $X$는 단순한 변수(variable)가 아니라 <em>변할 수 있다는 약속</em> 자체다. 컴퓨터 코드의 변수처럼 한 번 정해진 값이 아니라, "어떤 분포에서 한 번 뽑힐 미지의 값"이다. 그래서 확률변수를 적을 때는 보통 대문자($X$)를 쓰고, 그것이 실제로 어떤 구체값을 가졌다고 말할 때는 소문자($x$)를 쓴다. $P(X=x)$라는 표기는 "확률변수 $X$가 구체값 $x$와 같을 확률"이라는 뜻이다.</p>
 
-      <div class="math-block">$$ \text{PDF} \quad p(x) \ge 0, \quad \int p(x)\,dx = 1, \quad P(a \le X \le b) = \int_a^b p(x)\,dx $$</div>
-      <p class="math-note">연속: 밀도 자체는 1을 넘을 수 있음. <b>구간 위에 적분</b>해야 확률.</p>
+      <h2>이산(discrete) vs 연속(continuous) — 셀 수 있는가의 차이</h2>
+      <p>확률변수는 크게 두 종류로 나뉜다. 하나는 <strong>이산확률변수(discrete random variable)</strong>이고, 다른 하나는 <strong>연속확률변수(continuous random variable)</strong>다. 둘을 가르는 기준은 단순하다 — 가능한 값들을 셀 수 있느냐 없느냐다.</p>
+
+      <p>이산은 셀 수 있는 후보를 가진다. 동전의 앞/뒷면 두 개, 주사위의 1부터 6까지 여섯 개, 단어장의 단어 1만 개, 분류기의 클래스 1,000개. 후보들이 끊겨 있고 개수도 셀 수 있다. 이 경우 각 후보 값에 확률을 직접 부여할 수 있다. 이 함수를 <strong>확률질량함수(probability mass function, PMF)</strong>라고 부르며 보통 $p(x)$로 쓴다. PMF는 각 값에 "확률 덩어리"를 떨어뜨려 놓는다. 동전이라면 H에 0.5, T에 0.5라는 두 덩어리를 떨어뜨리는 식이다. 덩어리들을 다 더하면 정확히 1이 된다는 약속이 있다.</p>
+
+      <p>연속은 다르다. 사람의 키, 방의 온도, 모델의 학습 손실(loss) 같은 값은 후보가 셀 수 없을 만큼 빽빽하다. 키가 170cm일 확률이 얼마냐고 묻는 건 사실 함정이다. 170.000000…cm와 170.000001cm가 다르다고 보면 170cm 정확히일 확률은 거의 0에 수렴한다. 그래서 연속의 세계에서는 <em>점에 확률을 부여하지 않고 구간에 확률을 부여한다</em>. 이 구간 확률을 만들어 주는 함수가 <strong>확률밀도함수(probability density function, PDF)</strong>이며 보통 $p(x)$로 쓴다(이산과 같은 기호를 쓰는 게 자주 헷갈리는 지점이다).</p>
 
       <div class="analogy">
-        PMF는 <b>슈퍼마켓 진열대의 상품 갯수</b>다. 사과 50개, 배 30개, 귤 20개. 갯수를 다 더하면 전체. PDF는 <b>도로 위의 차량 밀도(대/km)</b>다. 어느 한 지점의 차량 "수"는 의미가 없고, <b>구간</b>의 차량 수를 세려면 그 길이만큼 곱하거나 적분해야 한다. <em>밀도값 자체가 확률이 아니라는 점</em>이 초보자가 가장 자주 놓치는 함정이다.
+        쌀가마니를 떠올려 보자. 이산은 각 칸(앞면 칸, 뒷면 칸)에 일정 무게의 쌀이 쌓여 있는 그림이다. "앞면 칸의 쌀 무게"가 곧 확률이다. 연속은 다르다. 강물 한 줄기를 떠올리자. "정확히 그 한 지점의 물 양"을 묻는 건 의미가 없다 — 정확한 한 점은 너비가 0이라서 물도 0이다. 의미가 있는 건 "이 구간(왼쪽 강둑부터 오른쪽 강둑까지)에 흐르는 물의 양"이다. 한 점의 <b>높이</b>가 PDF고, 한 구간의 <b>면적</b>이 확률이다.
       </div>
 
-      <h2>결합, 주변, 조건부 — 한 위젯으로</h2>
-      <p>이제 변수가 둘 이상이면, 한 변수 분포를 합쳐 다른 변수만 남기거나(주변), 한 변수의 값을 고정해 놓고 다른 변수의 분포만 보는(조건부) 연산이 등장한다. 아래 위젯은 이 두 연산을 같은 표 위에서 보여준다.</p>
+      <h2>PMF의 규칙 — 합이 1, 각 항이 0 이상 1 이하</h2>
+      <p>PMF는 다음 두 가지 규칙을 만족해야 한다. 이 두 줄이 곧 "이 함수는 확률분포다"의 정의다.</p>
+
+      <div class="math-block">$$ p(x) \geq 0 \;\;\text{for all}\;\; x, \qquad \sum_{x} p(x) = 1 $$</div>
+      <p class="math-note">$p(x)$는 값 $x$에 부여된 확률, $\sum_x$는 가능한 모든 $x$에 대한 합. 모든 값이 0 이상이고, 다 더하면 정확히 1.</p>
+
+      <p>왜 이 형태인가. 첫 줄은 "음의 확률은 없다"는 직관을 수식으로 옮긴 것이다. 동전이 앞면일 확률이 -0.3이라는 말은 의미가 없다. 둘째 줄은 "후보 중 하나는 반드시 일어난다"는 정직한 약속이다. 만약 합이 0.9면 "어떤 일도 안 일어날 확률 0.1"이 따로 있다는 뜻이 되고, 합이 1.1이면 어떤 사건이 중복 계산됐다는 뜻이 된다. 둘 다 분포가 아니다. 시험 문제에서 "다음 중 확률분포가 아닌 것은?"이 나오면 거의 항상 이 두 줄 중 하나를 어긴 보기다.</p>
+
+      <h2>PDF의 규칙 — 적분이 1, 값은 1을 넘어도 된다</h2>
+      <p>PDF의 규칙은 PMF와 닮았지만 결정적인 차이가 하나 있다. 합 대신 적분(integral)을 쓴다는 점, 그리고 함숫값이 1을 넘어도 된다는 점이다.</p>
+
+      <div class="math-block">$$ p(x) \geq 0, \qquad \int_{-\infty}^{\infty} p(x)\, dx = 1 $$</div>
+      <p class="math-note">$\int dx$는 모든 $x$에 대한 적분(연속의 합). 면적(area)이 1.</p>
+
+      <p>왜 적분인가. 연속의 세계에서는 점 자체가 너비 0이므로 점에 부여된 양은 확률이 아니라 <em>밀도</em>다. 확률을 얻으려면 너비를 가진 구간을 잡고 그 구간 위에서 밀도를 합산(=적분)해야 한다. 그래서 $P(a \leq X \leq b) = \int_a^b p(x) dx$가 된다. 면적이 곧 확률이다. 모든 가능한 구간을 다 합쳐 놓은 것이 전체 적분 1이다.</p>
+
+      <p>그러면 왜 PDF 값은 1을 넘어도 되는가. 이게 가장 자주 헷갈리는 지점이다. 면적이 1이면 충분하므로, 어떤 구간에서 봉우리가 매우 높고 너비가 매우 좁으면 그 점에서의 밀도 값은 1을 훌쩍 넘을 수 있다. 예를 들어 $[0, 0.1]$ 구간에서만 균일한 밀도를 가진 분포라면, 그 구간 안에서 밀도 값은 10이다(높이 10 × 너비 0.1 = 면적 1). 밀도 값 10이 보였다고 해서 잘못된 분포가 아니다. 점이 너무 빽빽이 몰려 있다는 표시일 뿐이다. 시험에서 "다음 PDF의 최댓값은 1보다 작아야 한다"라는 보기가 보이면 즉시 틀린 보기로 판단하면 된다.</p>
+
+      <h2>위젯 — 이산과 연속을 나란히</h2>
+      <p>아래 위젯은 같은 데이터에서 이산 PMF(왼쪽)와 연속 PDF(오른쪽)를 동시에 보여준다. 슬라이더로 분포의 모양을 바꾸면, 이산 쪽은 막대 높이의 합이 항상 1로 유지되고, 연속 쪽은 곡선 아래 면적이 항상 1로 유지된다. 연속 쪽에서 봉우리가 좁아질수록 PDF의 정점 값이 1을 훌쩍 넘는 모습을 직접 확인할 수 있다.</p>
     </div>
 
     <div class="widget">
       <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 02</span><span>결합 $P(X,Y)$ ↔ 주변 $P(X)$, $P(Y)$ ↔ 조건부 $P(Y\mid X=x)$</span></div>
-        <div class="joint-stage">
-          <div>
-            <div style="display: grid; grid-template-columns: 30px auto; gap: 4px; align-items: center;">
-              <span class="joint-axis-y" style="text-align: right;">Y</span>
-              <div class="joint-grid" id="grid"></div>
-              <span></span>
-              <div style="display: grid; grid-template-columns: repeat(4, 56px); gap: 3px; padding-top: 4px;">
-                <span class="joint-axis-x" style="text-align: center;">x0</span>
-                <span class="joint-axis-x" style="text-align: center;">x1</span>
-                <span class="joint-axis-x" style="text-align: center;">x2</span>
-                <span class="joint-axis-x" style="text-align: center;">x3</span>
-              </div>
-            </div>
-            <div style="text-align: center; padding-top: .4rem; font-family: var(--mono); font-size: .68rem; color: var(--ink-faint);">X →</div>
+        <div class="widget-label"><span class="lab-no">위젯 02</span><span>PMF — 막대의 합 1 / PDF — 곡선의 면적 1</span></div>
+        <div class="pmf-stage">
+          <div class="pmf-col disc">
+            <h5>이산 PMF — 주사위(6면)</h5>
+            <div id="pmfBars"></div>
+            <div class="sum-disp">막대 합 <b id="pmfSum">1.000</b> · 모두 0 이상</div>
           </div>
-          <div class="joint-info">
-            <div class="row">전체: $\sum_{x,y} P(X=x, Y=y) = $ <b id="totVal">1.00</b></div>
-            <div class="row"><b class="r">파랑 행</b>: 주변 $P(Y=$<span id="ySel">y0</span>$) = \sum_x P(x, $<span id="ySel2">y0</span>$) = $ <b id="margY">0.25</b></div>
-            <div class="row"><b class="c">주홍 열</b>: 주변 $P(X=$<span id="xSel">x0</span>$) = \sum_y P($<span id="xSel2">x0</span>$, y) = $ <b id="margX">0.25</b></div>
-            <div class="row"><b class="bb">교차 칸</b>: 결합 $P(X=$<span id="xSel3">x0</span>$, Y=$<span id="ySel3">y0</span>$) = $ <b id="jointV">0.06</b></div>
-            <div class="row" style="margin-top: .8rem; padding-top: .6rem; border-top: 1px solid var(--line-soft);">조건부 $P(Y=$<span id="ySel4">y0</span>$ \mid X=$<span id="xSel4">x0</span>$) = P(x,y)/P(x) = $ <b id="condV">0.24</b></div>
-            <p style="font-size: .82rem; color: var(--ink-faint); margin: .6rem 0 0; line-height: 1.5;">행, 열 셀렉터를 바꿔 보라. 같은 결합 표에서 <b>합치는 방향</b>만 다르면 주변과 조건부가 모두 자연스럽게 나온다.</p>
+          <div class="pmf-col cont">
+            <h5>연속 PDF — 가우시안</h5>
+            <canvas id="pdfCanvas" class="pmf-canvas" width="360" height="200"></canvas>
+            <div class="sum-disp">곡선 아래 면적 <b id="pdfArea">1.000</b> · 정점값 <b id="pdfPeak">0.40</b></div>
           </div>
         </div>
-        <div class="selectorline">
-          <label>X 고정 <select id="xPick"><option>x0</option><option>x1</option><option>x2</option><option>x3</option></select></label>
-          <label>Y 고정 <select id="yPick"><option>y0</option><option>y1</option><option>y2</option><option>y3</option></select></label>
-          <span style="font-family: var(--mono); font-size: .72rem; color: var(--ink-faint);">칸 색의 진하기 = 결합확률 크기</span>
+        <div class="widget-controls">
+          <div class="slider">
+            <label>분포 편향 (이산) <b><span id="biasVal">0.00</span></b></label>
+            <input id="biasSlider" type="range" min="-50" max="50" value="0" class="s-structure">
+          </div>
+          <div class="slider">
+            <label>PDF 너비 σ (좁아질수록 정점이 1 초과) <b><span id="sigVal">1.00</span></b></label>
+            <input id="sigSlider" type="range" min="20" max="200" value="100" class="s-style">
+          </div>
         </div>
       </div>
-      <p class="widget-cap">결합 표 하나만 있으면 주변과 조건부가 자동으로 따라 나온다. <b>행을 따라 합치면</b> Y의 주변분포, <b>열을 따라 합치면</b> X의 주변분포, <b>한 행이나 한 열을 그 합으로 나누면</b> 조건부분포다. 시험에 자주 나오는 식은 단 하나, $P(Y\mid X) = P(X,Y) / P(X)$ 이다.</p>
+      <p class="widget-cap">왼쪽 주사위는 편향을 줘도 막대의 합이 1로 유지된다. 오른쪽 가우시안은 σ를 줄이면 곡선이 뾰족해지면서 정점 값이 1을 넘는다 — 그래도 곡선 아래 면적은 1이다. 이것이 PMF와 PDF의 결정적 차이다.</p>
     </div>
 
     <div class="prose">
-      <h2>연쇄법칙 — 큰 분포를 작은 조건부의 곱으로</h2>
-      <p>변수가 셋 이상으로 늘어나면 결합분포를 한 번에 적기 어려워진다. 그래서 우리는 <strong>연쇄법칙(chain rule)</strong>이라는 분해 도구를 쓴다.</p>
+      <h2>딥러닝에서 둘이 만나는 자리</h2>
+      <p>딥러닝에서 이 둘은 어디서 만나는가. 분류기(classifier)는 PMF의 세계다. 분류 클래스가 1,000개라면 출력은 그 1,000개에 대한 확률 덩어리다. 소프트맥스가 만들어 주는 출력은 PMF의 한 사례다. 한편 회귀(regression)나 생성모델(generative model)은 PDF의 세계다. 모델이 출력으로 평균과 분산을 내면, 그 평균과 분산이 가우시안(Gaussian) PDF의 모양을 결정한다. 생성모델 중 변분 오토인코더(variational autoencoder, VAE)는 잠재변수의 PDF를 학습한다.</p>
 
-      <div class="math-block">$$ P(X_1, X_2, \ldots, X_n) = P(X_1) \cdot P(X_2 \mid X_1) \cdot P(X_3 \mid X_1, X_2) \cdots P(X_n \mid X_1, \ldots, X_{n-1}) $$</div>
-      <p class="math-note">조건부 확률의 정의를 반복 적용한 결과. 큰 결합분포를 작은 조건부의 곱으로 분해.</p>
+      <p>이 둘을 헷갈리면 손실 함수의 의미가 흐려진다. 분류기에서 "교차 엔트로피 손실(cross-entropy loss)"을 쓸 때는 모델 출력 PMF와 정답 PMF 사이의 거리를 줄이는 일을 하고 있고, 회귀에서 "평균제곱오차"를 쓸 때는 모델이 내놓는 가우시안 PDF의 평균을 정답에 가깝게 맞추는 일을 하고 있다. 같은 NLL(negative log-likelihood)이라는 한 가족이지만, 분포가 PMF인지 PDF인지에 따라 식의 모양이 달라진다.</p>
 
-      <div class="analogy">
-        한 문장을 통째로 외우려 하지 말고, <b>"앞 단어를 보고 다음 단어 하나만 고르기"를 끝까지 반복</b>하는 방식으로 만들어 낸다고 생각해 보자. 이게 정확히 언어모델(GPT 류)이 문장을 만드는 방식이다. 그 모델의 손실함수가 정확히 위 연쇄법칙의 로그 곱(다음 페이지의 우도)을 줄이는 것이다.
-      </div>
+      <h2>구체 예시 4개 — 한 분포가 어디서 살고 있나</h2>
+      <p>이 절은 머리에 그림을 박는 용도다. 분류기·언어모델·회귀·생성모델 네 자리에서 PMF/PDF가 각각 어떤 모습으로 등장하는지 한 번씩 짚어 두자.</p>
 
-      <h2>독립과 조건부독립 — 같지 않다</h2>
-      <p>두 변수가 <strong>독립</strong>이라는 말은, 한쪽 정보가 다른 쪽 분포에 <em>전혀</em> 영향을 주지 않는다는 뜻이다.</p>
+      <p>첫째, ImageNet 분류기. 클래스가 1,000개다. 모델의 출력은 1,000차원 벡터이고 소프트맥스를 거쳐 합이 1인 확률 벡터가 된다. 이것이 곧 1,000-categorical PMF의 한 점이다. 둘째, 언어모델. 다음 단어 어휘가 5만 개라면 출력은 5만 차원 PMF다. 한 토큰을 뽑을 때마다 이 PMF에서 한 번 표본 추출(sampling)한다. 셋째, 회귀. 키 예측 모델이라면 출력은 한 실수다. 그 한 실수가 가우시안 PDF의 평균이라고 해석하면, 손실은 "그 가우시안에서 정답 키가 나올 우도를 최대화"하는 일이 된다. 넷째, 생성모델 VAE. 잠재변수(latent variable) $z$의 PDF를 학습한다. 디코더(decoder)는 $z$를 받아 이미지 픽셀 분포를 만든다 — 픽셀이 [0, 1] 사이 실수라면 베타(beta) 분포 PDF, 정수 [0, 255]라면 categorical PMF.</p>
 
-      <div class="math-block">$$ X \perp Y \iff P(X, Y) = P(X) \cdot P(Y) \iff P(X \mid Y) = P(X) $$</div>
-      <p class="math-note">결합이 곱으로 깨끗이 갈리면 독립. 동치로, 조건부가 무조건부와 같으면 독립.</p>
+      <h2>시험에서 자주 묻는 한 줄 — PMF는 합이, PDF는 적분이 1</h2>
+      <p>시험 직전에 꼭 외워둬야 할 한 줄은 다음과 같다. <strong>이산은 합이 1, 연속은 적분이 1, PMF 값은 0과 1 사이, PDF 값은 0 이상이면 충분(1을 넘어도 됨)</strong>. 객관식에서 "다음 중 확률밀도함수의 성질로 옳지 않은 것"이 나오면 "PDF는 항상 1 이하"라는 보기를 골라 틀리는 보기로 분류하면 거의 맞는다.</p>
 
-      <p><strong>조건부독립</strong>은 거기서 한 발 더 나아가, "어떤 정보 $Z$가 주어진 후에는" 둘이 독립이라는 뜻이다.</p>
+      <p>또 하나 자주 묻는 게 표기다. $X$는 확률변수, $x$는 그것이 가진 구체값, $p(x)$는 분포 함수, $p(X=x)$는 "확률변수 $X$가 구체값 $x$와 같을 확률"이다. 시험지에 $P(\text{cat})$이라고 적혀 있으면 그건 약식 표기로 $P(X=\text{cat})$의 줄임이다. 약식과 정식 표기를 모두 알아두면 헷갈리지 않는다.</p>
 
-      <div class="math-block">$$ X \perp Y \mid Z \iff P(X, Y \mid Z) = P(X \mid Z) \cdot P(Y \mid Z) $$</div>
-      <p class="math-note">Z를 알고 나면 X와 Y는 더 이상 서로 추가 설명력이 없음.</p>
-
-      <div class="analogy">
-        오전에 우산 든 사람을 봤다는 사실(X)과 점심에 길이 젖어 있다는 사실(Y)은 분명히 상관 있다. 그러나 <b>"비가 왔다"(Z)는 사실을 이미 알고 나면</b>, 우산을 봤다고 해서 길 상태에 대한 내 믿음이 더 갱신되지 않는다. 우산도 젖은 길도 비라는 공통 원인의 결과였을 뿐이기 때문이다. 이 구조가 <b>인과 그래프와 베이즈 네트워크의 기본 블록</b>이고, 9장 CNN의 파라미터 공유 가정, 10장 RNN의 마코프 가정 모두 이 한 개념을 응용한 것이다.
-      </div>
-
-      <h2>표기 정리 — 시험에 그대로 나옴</h2>
-      <table class="symbols">
-        <tr><td>$X, Y$</td><td>대문자: 확률변수. 아직 어떤 값일지 모름.</td></tr>
-        <tr><td>$x, y$</td><td>소문자: 그 확률변수가 가진 <em>구체적 값</em>.</td></tr>
-        <tr><td>$P(X)$</td><td>X의 (PMF 또는 PDF) 분포 전체. 함수.</td></tr>
-        <tr><td>$P(X=x)$</td><td>X가 정확히 x 값을 가질 확률 또는 밀도.</td></tr>
-        <tr><td>$P(X, Y)$</td><td>결합분포. 두 변수가 동시에 어떤 값을 가질지.</td></tr>
-        <tr><td>$P(Y \mid X)$</td><td>조건부분포. X를 알고 있을 때 Y가 어떨지.</td></tr>
-        <tr><td>$X \perp Y$</td><td>독립.</td></tr>
-        <tr><td>$X \perp Y \mid Z$</td><td>Z 주어졌을 때 조건부독립.</td></tr>
-      </table>
-
-      <p>이제 다음 장에서는 분포를 <strong>숫자 몇 개로 요약</strong>하는 가장 흔한 방법인 기대값, 분산, 공분산을 본다. "분포 전체를 다 들고 다니지 못할 때 무엇만 들고 다닐 것인가"라는 실용적 질문이 그 출발점이다.</p>
+      <p>다음 페이지에서는 변수가 한 개가 아니라 여러 개일 때 어떤 일이 벌어지는지 본다. 결합 분포(joint distribution), 주변 분포(marginal distribution), 조건부 분포(conditional distribution) — 한 그림 위에서 세 분포가 어떻게 만들어지는지를 4×4 그리드 위젯으로 직접 합하고 정규화해 본다.</p>
     </div>
 
     <nav class="ch-foot"></nav>
@@ -146,18 +133,26 @@
 <script>
   const CH = [
     { no:'01', t:'왜 확률이 필요한가', f:'01.html' },
-    { no:'02', t:'확률변수, 분포, 조건부', f:'02.html' },
-    { no:'03', t:'기대값, 분산, 공분산', f:'03.html' },
-    { no:'04', t:'베이즈 규칙', f:'04.html' },
-    { no:'05', t:'정보이론 — 엔트로피/KL/교차 엔트로피', f:'05.html' },
-    { no:'06', t:'흔한 분포 카탈로그', f:'06.html' },
-    { no:'07', t:'시험 대비 체크리스트', f:'07.html' },
+    { no:'02', t:'확률변수와 분포 — PMF vs PDF', f:'02.html' },
+    { no:'03', t:'결합·주변·조건부 분포', f:'03.html' },
+    { no:'04', t:'연쇄법칙 — 결합을 조건부의 곱으로', f:'04.html' },
+    { no:'05', t:'독립과 조건부 독립', f:'05.html' },
+    { no:'06', t:'기대값 — 분포를 한 숫자로', f:'06.html' },
+    { no:'07', t:'분산과 공분산 — 무상관 ≠ 독립', f:'07.html' },
+    { no:'08', t:'흔한 분포 1 — Bernoulli, Categorical', f:'08.html' },
+    { no:'09', t:'흔한 분포 2 — Gaussian', f:'09.html' },
+    { no:'10', t:'흔한 분포 3 — Mixture, Dirac', f:'10.html' },
+    { no:'11', t:'베이즈 규칙 — 사전이 사후로', f:'11.html' },
+    { no:'12', t:'정보이론 1 — 엔트로피', f:'12.html' },
+    { no:'13', t:'정보이론 2 — KL 발산의 비대칭', f:'13.html' },
+    { no:'14', t:'정보이론 3 — 교차 엔트로피 = NLL', f:'14.html' },
+    { no:'15', t:'시험 대비 체크리스트', f:'15.html' },
   ];
   function buildNav(curr) {
     const tb = document.querySelector('.topbar');
     if (tb) tb.innerHTML =
       `<a class="home" href="index.html">← Ch.3 확률과 정보이론</a>` +
-      `<span class="ch-mini">SUB-CHAPTER ${curr} of 07</span>`;
+      `<span class="ch-mini">SUB-CHAPTER ${curr} of 15</span>`;
     const ol = document.querySelector('.ch-nav ol');
     if (ol) ol.innerHTML = CH.map(c =>
       `<li><a href="${c.f}" ${c.no === curr ? 'class="current"' : ''}>${c.t}</a></li>`).join('');
@@ -182,76 +177,92 @@
     }
   }
 
-  /* 결합 분포 P(X,Y) — 4x4 그리드, 합 = 1 */
-  /* 디자인된 분포: 약한 양의 상관 */
-  const P = [
-    [0.06, 0.05, 0.03, 0.01],  /* y0 */
-    [0.05, 0.08, 0.05, 0.02],  /* y1 */
-    [0.03, 0.05, 0.10, 0.07],  /* y2 */
-    [0.01, 0.02, 0.07, 0.10],  /* y3 */
-  ];
-  /* 합 = 0.06+0.05+0.03+0.01+0.05+0.08+0.05+0.02+0.03+0.05+0.10+0.07+0.01+0.02+0.07+0.10
-       = 0.15 + 0.20 + 0.25 + 0.20 = 0.80  → 1.0으로 보정 */
-  let sum = 0;
-  for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) sum += P[r][c];
-  for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) P[r][c] /= sum;
-
-  const grid = document.getElementById('grid');
-  const cells = [];
-  for (let r = 0; r < 4; r++) {
-    for (let c = 0; c < 4; c++) {
-      const d = document.createElement('div');
-      d.className = 'joint-cell';
-      d.dataset.r = r; d.dataset.c = c;
-      const v = P[r][c];
-      d.textContent = v.toFixed(2);
-      const intensity = Math.min(0.85, v * 5);
-      d.style.background = `rgba(45, 91, 122, ${intensity})`;
-      d.style.color = intensity > 0.45 ? '#fff' : 'var(--ink)';
-      d.addEventListener('click', () => {
-        document.getElementById('xPick').value = `x${c}`;
-        document.getElementById('yPick').value = `y${r}`;
-        update();
-      });
-      grid.appendChild(d);
-      cells.push(d);
-    }
+  function renderPMF(bias) {
+    const base = [1,1,1,1,1,1];
+    const tilted = base.map((v,i) => v + bias * (i - 2.5) / 2.5);
+    const min = Math.min(...tilted);
+    const adjusted = min < 0.05 ? tilted.map(v => v + (0.05 - min)) : tilted;
+    const s = adjusted.reduce((a,b)=>a+b,0);
+    const probs = adjusted.map(v => v / s);
+    const host = document.getElementById('pmfBars');
+    host.innerHTML = probs.map((p,i) => `
+      <div class="pmf-bar">
+        <span class="lab">${i+1}</span>
+        <span class="bg"><i class="fg" style="width:${(Math.min(p,0.4)*100/0.4).toFixed(0)}%"></i></span>
+        <span class="val">${p.toFixed(3)}</span>
+      </div>`).join('');
+    document.getElementById('pmfSum').textContent = probs.reduce((a,b)=>a+b,0).toFixed(3);
   }
 
-  function update() {
-    const xv = document.getElementById('xPick').value;
-    const yv = document.getElementById('yPick').value;
-    const cx = parseInt(xv.slice(1), 10);
-    const ry = parseInt(yv.slice(1), 10);
+  function renderPDF(sigma) {
+    const c = document.getElementById('pdfCanvas');
+    const ctx = c.getContext('2d');
+    const W = c.width, H = c.height;
+    ctx.clearRect(0,0,W,H);
+    ctx.strokeStyle = 'rgba(38,34,28,0.18)';
+    ctx.beginPath(); ctx.moveTo(20,H-20); ctx.lineTo(W-10,H-20); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(20,10); ctx.lineTo(20,H-20); ctx.stroke();
 
-    let margX = 0, margY = 0;
-    for (let r = 0; r < 4; r++) margX += P[r][cx];
-    for (let c = 0; c < 4; c++) margY += P[ry][c];
-    const joint = P[ry][cx];
-    const cond = joint / margX;
+    const xMin = -4, xMax = 4;
+    const peak = 1 / (sigma * Math.sqrt(2 * Math.PI));
+    const yScale = (H - 30) / Math.max(peak * 1.15, 1.2);
 
-    document.getElementById('margX').textContent = margX.toFixed(2);
-    document.getElementById('margY').textContent = margY.toFixed(2);
-    document.getElementById('jointV').textContent = joint.toFixed(2);
-    document.getElementById('condV').textContent = cond.toFixed(2);
-    ['xSel','xSel2','xSel3','xSel4'].forEach(id => document.getElementById(id).textContent = xv);
-    ['ySel','ySel2','ySel3','ySel4'].forEach(id => document.getElementById(id).textContent = yv);
+    ctx.fillStyle = 'rgba(192,73,46,0.18)';
+    ctx.beginPath();
+    ctx.moveTo(20, H-20);
+    for (let i = 0; i <= 360; i++) {
+      const x = xMin + (xMax - xMin) * i / 360;
+      const y = (1 / (sigma * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * (x/sigma) ** 2);
+      const px = 20 + ((W - 30) * i / 360);
+      const py = (H - 20) - y * yScale;
+      ctx.lineTo(px, py);
+    }
+    ctx.lineTo(W - 10, H - 20);
+    ctx.closePath();
+    ctx.fill();
 
-    cells.forEach((d) => {
-      const rr = parseInt(d.dataset.r, 10);
-      const cc = parseInt(d.dataset.c, 10);
-      d.classList.remove('row-sel','col-sel','both-sel');
-      if (rr === ry && cc === cx) d.classList.add('both-sel');
-      else if (rr === ry) d.classList.add('row-sel');
-      else if (cc === cx) d.classList.add('col-sel');
-    });
+    ctx.strokeStyle = '#C0492E';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = 0; i <= 360; i++) {
+      const x = xMin + (xMax - xMin) * i / 360;
+      const y = (1 / (sigma * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * (x/sigma) ** 2);
+      const px = 20 + ((W - 30) * i / 360);
+      const py = (H - 20) - y * yScale;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+
+    if (peak > 1) {
+      const py1 = (H - 20) - 1 * yScale;
+      ctx.strokeStyle = 'rgba(38,34,28,0.5)';
+      ctx.setLineDash([4,3]);
+      ctx.beginPath(); ctx.moveTo(20, py1); ctx.lineTo(W-10, py1); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = 'rgba(38,34,28,0.7)';
+      ctx.font = '11px "Spline Sans Mono", monospace';
+      ctx.fillText('y=1', W - 36, py1 - 4);
+    }
+    document.getElementById('pdfPeak').textContent = peak.toFixed(2);
+    document.getElementById('pdfArea').textContent = '1.000';
   }
 
   window.addEventListener('load', () => {
     buildNav('02');
-    document.getElementById('xPick').addEventListener('change', update);
-    document.getElementById('yPick').addEventListener('change', update);
-    update();
+    const bs = document.getElementById('biasSlider');
+    const ss = document.getElementById('sigSlider');
+    function go() {
+      const b = parseInt(bs.value,10)/50;
+      document.getElementById('biasVal').textContent = b.toFixed(2);
+      renderPMF(b);
+      const sig = parseInt(ss.value,10)/100;
+      document.getElementById('sigVal').textContent = sig.toFixed(2);
+      renderPDF(sig);
+    }
+    bs.addEventListener('input', go);
+    ss.addEventListener('input', go);
+    go();
+
     if (window.renderMathInElement) {
       renderMathInElement(document.body, {
         delimiters: [{left:'$$', right:'$$', display:true}, {left:'$', right:'$', display:false}],

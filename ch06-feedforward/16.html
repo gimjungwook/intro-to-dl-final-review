@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sub 16 · 시험 대비 — 25개 자가점검 + 손계산 1문항 · Ch.06</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 16 · 시험 D-day = 2026-06-04 (목)</span>
+      <h1>시험 대비 —<br><span class="t-style">25개 자가점검</span> + 손계산 1문항</h1>
+      <p class="lede">6장 전체의 핵심을 한 페이지로 압축한다. 25개의 자가점검 질문과 모범 답, 그리고 새로운 손계산 문제 1개. 시험 직전 1시간에 한 번 훑기에 적당하다.</p>
+    </header>
+
+    <div class="prose">
+      <h2>6장 한 페이지 핵심 — 시험에 나올 만한 것들</h2>
+      <p>본격적인 자가점검에 들어가기 전, 6장 전체를 다섯 줄로 압축한다.</p>
+      <ol>
+        <li><strong>선형 모형은 XOR을 못 푼다.</strong> 비선형 활성화 + 은닉층의 조합으로 표현 공간을 새 좌표계로 보내는 것이 신경망의 본질.</li>
+        <li><strong>은닉층은 직접 감독되지 않는 표현 공간.</strong> 학습으로 의미가 사후 형성. 깊이가 표현의 재사용을 가능하게 함.</li>
+        <li><strong>활성화 함수: ReLU가 표준.</strong> 양수 미분 1로 기울기 소실 해결. sigmoid/tanh는 출력층·게이트에만.</li>
+        <li><strong>출력층 짝짓기: 회귀=선형+MSE(가우시안), 이진=sigmoid+BCE(베르누이), 다중=softmax+CE(범주).</strong> 모두 최대우도에서 유도. 미분 = ŷ - y.</li>
+        <li><strong>역전파 = 체인룰 + 그래프 + 중간값 재사용.</strong> $\delta_{\text{prev}} = \delta_{\text{next}} \cdot W^\top \cdot g'(z)$. 깊은 sigmoid는 기울기 소실.</li>
+      </ol>
+
+      <h2>출제 우선순위 (다시 확인)</h2>
+      <table class="symbols">
+        <tr><td>1순위</td><td>역전파 손계산 (식 6.44-6.55, 2-2-1 MLP)</td></tr>
+        <tr><td>2순위</td><td>출력층-비용 짝짓기 (MSE, BCE, CE의 유도와 미분)</td></tr>
+        <tr><td>3순위</td><td>활성화 함수 비교 (sigmoid vs ReLU, 기울기 소실)</td></tr>
+        <tr><td>4순위</td><td>XOR과 만능 근사 정리 (깊이 vs 너비)</td></tr>
+        <tr><td>5순위</td><td>계산 그래프와 자동미분</td></tr>
+      </table>
+
+      <h2>핵심 수식 카드 — 외워야 할 것들</h2>
+
+      <p><strong>단일 뉴런 (2절)</strong></p>
+      <div class="math-block">$$ z = \mathbf{w}^\top \mathbf{x} + b, \quad a = g(z) $$</div>
+
+      <p><strong>한 층 (3절)</strong></p>
+      <div class="math-block">$$ \mathbf{a} = g(W \mathbf{x} + \mathbf{b}) $$</div>
+
+      <p><strong>sigmoid와 미분 (5절)</strong></p>
+      <div class="math-block">$$ \sigma(z) = \frac{1}{1 + e^{-z}}, \quad \sigma'(z) = \sigma(z)(1 - \sigma(z)) \quad (\max = 0.25) $$</div>
+
+      <p><strong>tanh와 미분 (5절)</strong></p>
+      <div class="math-block">$$ \tanh(z) = \frac{e^z - e^{-z}}{e^z + e^{-z}}, \quad \tanh'(z) = 1 - \tanh^2(z) \quad (\max = 1) $$</div>
+
+      <p><strong>ReLU와 미분 (6절)</strong></p>
+      <div class="math-block">$$ \text{ReLU}(z) = \max(0, z), \quad \text{ReLU}'(z) = \mathbb{1}[z > 0] $$</div>
+
+      <p><strong>softmax (10절)</strong></p>
+      <div class="math-block">$$ \hat{y}_k = \frac{e^{z_k}}{\sum_j e^{z_j}} $$</div>
+
+      <p><strong>BCE와 CE (9, 10절)</strong></p>
+      <div class="math-block">$$ L_{\text{BCE}} = -[y \log \hat{y} + (1-y) \log(1 - \hat{y})], \quad L_{\text{CE}} = -\sum_k y_k \log \hat{y}_k $$</div>
+
+      <p><strong>sigmoid+BCE / softmax+CE의 미분 (9, 10절)</strong></p>
+      <div class="math-block">$$ \frac{\partial L}{\partial z_k} = \hat{y}_k - y_k $$</div>
+
+      <p><strong>체인룰과 자코비안 (12-13절)</strong></p>
+      <div class="math-block">$$ \nabla_{\mathbf{x}} z = \left( \frac{\partial \mathbf{y}}{\partial \mathbf{x}} \right)^\top \nabla_{\mathbf{y}} z $$</div>
+
+      <p><strong>역전파의 한 층 (13-14절)</strong></p>
+      <div class="math-block">$$ \delta_{\text{prev}} = (W^\top \delta_{\text{next}}) \odot g'(z) $$</div>
+      <p class="math-note">⊙는 성분별 곱(Hadamard product).</p>
+
+      <p><strong>SGD 업데이트</strong></p>
+      <div class="math-block">$$ \theta \leftarrow \theta - \eta \, \frac{\partial L}{\partial \theta} $$</div>
+
+      <h2>25개 자가점검 질문 — 답을 가린 채 먼저 시도</h2>
+
+      <h3>A. XOR과 깊이 (1-5)</h3>
+      <p><strong>Q1.</strong> 단일 퍼셉트론이 XOR을 풀지 못하는 이유를 한 줄로?</p>
+      <p>A1. XOR의 네 점은 직선 하나로 분리 불가능. 단일 퍼셉트론의 결정경계는 직선이라 표현력 부족.</p>
+
+      <p><strong>Q2.</strong> 은닉층이 XOR을 푸는 방식을 "좌표계 변경" 관점에서?</p>
+      <p>A2. 은닉층이 입력을 새 표현 공간으로 보내, 그 공간에서 정답들이 직선 하나로 가르기 쉬운 모양으로 재배치됨.</p>
+
+      <p><strong>Q3.</strong> 활성화 함수 없이 선형 변환만 여러 층 쌓으면?</p>
+      <p>A3. 합성 결과가 또 하나의 선형 변환으로 무너짐. 깊이가 표현력에 기여하지 못함.</p>
+
+      <p><strong>Q4.</strong> 만능 근사 정리의 정확한 진술은?</p>
+      <p>A4. 비선형 시그모이드 활성화 + 충분히 많은 은닉 뉴런이 있는 한 층 망은 임의의 연속 함수를 임의의 정확도로 근사 가능.</p>
+
+      <p><strong>Q5.</strong> 만능 근사 정리에도 불구하고 깊이가 중요한 이유 두 가지?</p>
+      <p>A5. (1) 같은 함수를 표현하기 위한 뉴런 수가 깊이에 따라 지수적으로 줄어듦 (표현 효율). (2) 깊이는 표현의 재사용·조합을 가능하게 함.</p>
+
+      <h3>B. 활성화 함수 (6-10)</h3>
+      <p><strong>Q6.</strong> sigmoid의 미분 최댓값과 그 의의?</p>
+      <p>A6. 최댓값 0.25 (z=0에서). 깊은 망에서 미분이 곱셈으로 누적되며 기울기가 지수적으로 0으로 수렴(기울기 소실).</p>
+
+      <p><strong>Q7.</strong> tanh가 sigmoid보다 나은 점 두 가지?</p>
+      <p>A7. (1) 출력이 0 중심(zero-centered)이라 다음 층 학습이 안정. (2) 미분 최댓값 1로 sigmoid의 0.25보다 4배 강한 신호.</p>
+
+      <p><strong>Q8.</strong> ReLU가 sigmoid를 이긴 핵심 이유?</p>
+      <p>A8. 양수 영역 미분이 정확히 1. 깊은 망에서도 기울기 소실 없이 학습 신호 유지. 계산도 가볍고 자연스러운 희소성도 생김.</p>
+
+      <p><strong>Q9.</strong> Dying ReLU란? 원인과 완화책?</p>
+      <p>A9. 한 뉴런의 입력이 항상 음수가 되어 출력과 미분이 모두 0이 되는 현상. 학습률 조절, He 초기화, BatchNorm, Leaky ReLU 등으로 완화.</p>
+
+      <p><strong>Q10.</strong> GELU가 Transformer 표준이 된 이유?</p>
+      <p>A10. 모든 점에서 매끄럽게 미분 가능, 음수 영역에서 작은 음수도 통과(정보 손실 감소), 거대 모델에서 ReLU보다 일관되게 약간 더 나은 성능.</p>
+
+      <h3>C. 출력층-비용 함수 (11-15)</h3>
+      <p><strong>Q11.</strong> 회귀에 MSE를 쓰는 확률적 이유?</p>
+      <p>A11. "정답이 모델 예측을 평균으로 한 가우시안 분포에서 나온다"는 가정 + 최대우도추정에서 자동 유도.</p>
+
+      <p><strong>Q12.</strong> 이진 분류에 BCE를 쓰는 확률적 이유?</p>
+      <p>A12. "정답이 모델 예측 확률을 모수로 한 베르누이 분포에서 나온다"는 가정 + 최대우도추정에서 자동 유도.</p>
+
+      <p><strong>Q13.</strong> 다중 분류에 CE를 쓰는 확률적 이유?</p>
+      <p>A13. "정답이 모델 예측 분포를 따르는 범주 분포에서 나온다"는 가정 + 최대우도추정에서 자동 유도.</p>
+
+      <p><strong>Q14.</strong> sigmoid + MSE가 나쁜 이유?</p>
+      <p>A14. sigmoid 포화 영역에서 σ'(z) ≈ 0이라, 자신 있게 틀린 예측에서 학습 신호가 거의 0이 됨. 학습이 멈춤.</p>
+
+      <p><strong>Q15.</strong> softmax + CE의 미분이 ŷ - y로 떨어지는 의의?</p>
+      <p>A15. 활성화 미분과 손실 미분이 정확히 상쇄. 계산 빠르고 포화 영역에서도 학습 신호 유지. sigmoid + BCE도 동일 구조.</p>
+
+      <h3>D. 계산 그래프와 역전파 (16-21)</h3>
+      <p><strong>Q16.</strong> 계산 그래프의 두 구성 요소?</p>
+      <p>A16. 노드(변수 또는 연산)와 엣지(데이터 의존성, 방향성).</p>
+
+      <p><strong>Q17.</strong> 식 6.46의 의미를 한 줄로?</p>
+      <p>A17. "벡터의 기울기는 자코비안 전치 × 뒤에서 온 기울기". 역전파의 한 노드 동작.</p>
+
+      <p><strong>Q18.</strong> 식 6.51과 6.52의 차이?</p>
+      <p>A18. 6.51은 중간값 저장(메모이제이션) 후 재사용, 6.52는 매번 재계산. 같은 답이지만 6.52는 깊이에 따라 지수적으로 비싸짐.</p>
+
+      <p><strong>Q19.</strong> 식 6.53의 핵심 동작을 한 줄로?</p>
+      <p>A19. 한 중간 노드의 기울기 = 모든 자식 노드의 기울기 × 각 엣지의 지역 미분의 합.</p>
+
+      <p><strong>Q20.</strong> Reverse-mode 자동미분이 신경망에 유리한 이유?</p>
+      <p>A20. 출력 변수 한 개(손실)에 대해 모든 입력 변수의 미분을 한 번의 그래프 통과로 계산. 입력(파라미터)이 매우 많고 출력이 적은 신경망에 최적.</p>
+
+      <p><strong>Q21.</strong> 식 6.57이 6장 끝에 등장하는 이유?</p>
+      <p>A21. 자동미분이 사람의 대수적 단순화(softmax+CE → ŷ-y)를 항상 수행하지는 못함을 보여 줌. 그래서 프레임워크는 fused operation 사용.</p>
+
+      <h3>E. 기울기 소실과 일반적 디테일 (22-25)</h3>
+      <p><strong>Q22.</strong> 깊은 sigmoid 망에서 기울기가 0으로 수렴하는 정량적 이유?</p>
+      <p>A22. 한 층 통과 미분이 최대 0.25(평균은 더 작음). L층이면 0.25^L 또는 그 이하로 지수적 감쇠.</p>
+
+      <p><strong>Q23.</strong> ResNet의 skip connection이 기울기 소실을 어떻게 해결?</p>
+      <p>A23. h_{l+1} = h_l + F(h_l) 구조에서 미분이 ∂h_{l+1}/∂h_l = I + ∂F/∂h_l. 단위행렬 I 덕분에 기울기가 곱셈 소실 없이 덧셈으로 누적.</p>
+
+      <p><strong>Q24.</strong> 은닉층이 "숨겨진" 진짜 의미?</p>
+      <p>A24. 보이지 않는 게 아니라, 정답 데이터가 직접 감독 신호를 주지 않는 층. 의미는 학습 후에 사후 해석 가능하지만 사람이 미리 지정한 적은 없음.</p>
+
+      <p><strong>Q25.</strong> 깊이가 너비보다 표현 효율이 높은 이유?</p>
+      <p>A25. 깊이는 표현의 재사용·조합을 가능하게 함. 종이접기 비유처럼, 같은 함수를 표현할 때 깊은 모델이 얕은 모델보다 지수배 적은 파라미터로 가능.</p>
+
+      <h2>손계산 미니 문제 — 한 번 더 (다른 가중치)</h2>
+      <p>14절에서 풀어 본 2-2-1 MLP를 약간 다른 설정으로 다시 풀어 본다. 자기 검증용.</p>
+
+      <p><strong>설정:</strong> 입력 $\mathbf{x} = (0, 1)$, 정답 $t = 0$. 가중치 $W^{(1)} = \begin{pmatrix} 0.2 & 0.5 \\ -0.3 & 0.4 \end{pmatrix}$, $\mathbf{b}^{(1)} = (0.0, 0.1)^\top$, $\mathbf{w}^{(2)} = (0.5, -0.4)^\top$, $b^{(2)} = 0.0$. 학습률 $\eta = 0.1$. 은닉 활성화 = ReLU, 출력 활성화 = sigmoid, 손실 = BCE.</p>
+
+      <p><strong>풀이 단계 (직접 시도해 보고 아래 답과 비교):</strong></p>
+      <ol>
+        <li>$z_1$, $z_2$ 계산 → $h_1$, $h_2$.</li>
+        <li>$u$ 계산 → $\hat{y}$.</li>
+        <li>$L$ 계산.</li>
+        <li>$\delta_u = \hat{y} - t$.</li>
+        <li>$\partial L / \partial h_1, \partial L / \partial h_2$ → ReLU 미분 적용 → $\delta_{z_1}, \delta_{z_2}$.</li>
+        <li>각 파라미터 기울기 계산.</li>
+        <li>새 가중치 = 옛 가중치 - η × 기울기.</li>
+      </ol>
+
+      <p><strong>모범 답:</strong></p>
+      <p>1단계: $z_1 = 0.2 \cdot 0 + 0.5 \cdot 1 + 0.0 = 0.5$, $z_2 = -0.3 \cdot 0 + 0.4 \cdot 1 + 0.1 = 0.5$. $h_1 = h_2 = 0.5$.</p>
+      <p>2단계: $u = 0.5 \cdot 0.5 + (-0.4) \cdot 0.5 + 0 = 0.05$. $\hat{y} = \sigma(0.05) \approx 0.5125$.</p>
+      <p>3단계: $L = -0 \cdot \log(0.5125) - 1 \cdot \log(1 - 0.5125) = -\log(0.4875) \approx 0.7186$.</p>
+      <p>4단계: $\delta_u = 0.5125 - 0 = 0.5125$.</p>
+      <p>5단계: $\partial L / \partial h_1 = 0.5125 \cdot 0.5 = 0.2563$. $\partial L / \partial h_2 = 0.5125 \cdot (-0.4) = -0.205$. $z_1, z_2$ 모두 양수라 ReLU 미분 1. $\delta_{z_1} = 0.2563$, $\delta_{z_2} = -0.205$.</p>
+      <p>6단계: $\partial L / \partial W^{(1)}_{12} = 0.2563 \cdot 1 = 0.2563$ (다른 항은 $x_1=0$이라 0). $\partial L / \partial W^{(1)}_{22} = -0.205 \cdot 1 = -0.205$. $\partial L / \partial b^{(1)}_1 = 0.2563$, $\partial L / \partial b^{(1)}_2 = -0.205$. $\partial L / \partial w^{(2)}_1 = 0.5125 \cdot 0.5 = 0.2563$. $\partial L / \partial w^{(2)}_2 = 0.5125 \cdot 0.5 = 0.2563$. $\partial L / \partial b^{(2)} = 0.5125$.</p>
+      <p>7단계: $W^{(1)}_{12}: 0.5 - 0.1 \cdot 0.2563 \approx 0.4744$. $W^{(1)}_{22}: 0.4 - 0.1 \cdot (-0.205) = 0.4205$. $b^{(1)}_1: 0.0 - 0.0256 = -0.0256$. $b^{(1)}_2: 0.1 + 0.0205 = 0.1205$. $w^{(2)}_1: 0.5 - 0.0256 = 0.4744$. $w^{(2)}_2: -0.4 - 0.0256 = -0.4256$. $b^{(2)}: 0 - 0.0513 = -0.0513$.</p>
+
+      <p><strong>검증:</strong> 새 가중치로 다시 순전파하면 $\hat{y}$가 0(정답)에 더 가까워야 한다. 계산해 보면 $\hat{y}^{\text{new}} \approx 0.493$로, 이전 0.5125보다 작아진다. $L^{\text{new}} \approx 0.679$로 이전 0.719보다 감소. 학습 정상.</p>
+
+      <h2>자주 헷갈리는 지점 — 시험 직전 다시 확인</h2>
+      <ul>
+        <li><strong>은닉층이 "숨겨진" = "보이지 않는"이 아님.</strong> 직접 감독되지 않을 뿐, 활성값 자체는 읽을 수 있음.</li>
+        <li><strong>교차엔트로피가 좋은 이유 = 큰 벌점이 아니라 기울기 구조.</strong> 활성화 미분과 상쇄되는 깔끔함.</li>
+        <li><strong>UAT = 가능성. 깊이 ≠ 무의미.</strong> 같은 함수에 필요한 뉴런 수가 깊이에 따라 지수적 절약.</li>
+        <li><strong>역전파 ≠ 학습 자체.</strong> 역전파는 기울기 계산, 학습은 SGD/Adam이 그 기울기로 가중치를 조정.</li>
+        <li><strong>자코비안 = 다대다 영향 표.</strong> 실제 프레임워크는 전체 자코비안을 만들지 않고, 필요한 곱만 효율 계산.</li>
+        <li><strong>심볼투수치 vs 심볼투심볼.</strong> PyTorch(동적) vs 정적 TF, JAX. 둘 다 자동미분.</li>
+        <li><strong>sigmoid + MSE는 함정.</strong> 자신 있게 틀린 상태에서 학습 멈춤. 항상 sigmoid + BCE.</li>
+      </ul>
+
+      <h2>시험 직전 1분 체크리스트</h2>
+      <ul>
+        <li>☐ ReLU 미분 = 1 (양수) 또는 0 (음수). 외움.</li>
+        <li>☐ sigmoid 미분 = σ(1-σ), 최댓값 0.25. 외움.</li>
+        <li>☐ sigmoid+BCE / softmax+CE 미분 = ŷ - y. 외움.</li>
+        <li>☐ 한 층 역전파: δ_prev = (W^T δ_next) ⊙ g'(z). 외움.</li>
+        <li>☐ 한 가중치의 기울기: ∂L/∂W = δ_next · h_prev^T. 외움.</li>
+        <li>☐ SGD: θ ← θ - η · ∂L/∂θ. 외움.</li>
+        <li>☐ MSE → 가우시안 MLE. BCE → 베르누이 MLE. CE → 범주 MLE.</li>
+        <li>☐ 기울기 소실 = sigmoid의 0.25 곱하기 L번.</li>
+        <li>☐ ResNet = I + F → 덧셈 누적으로 소실 해결.</li>
+      </ul>
+
+      <h2>마지막 — 시험 당일 마음가짐</h2>
+      <p>역전파 손계산 문제가 나오면 당황하지 말고, 위 단계 1-7을 차근차근 따라가라. 부호와 첨자를 천천히 적는 것이 핵심이다. 머리로 한꺼번에 계산하려 하면 무조건 실수한다. 종이에 단계별 수식을 적고, 그 옆에 수치를 적는다.</p>
+
+      <p>출력층-비용 짝 문제가 나오면 "어떤 확률 분포의 MLE인가"를 먼저 떠올려라. 가우시안 → MSE, 베르누이 → BCE, 범주 → CE. 짝이 정해지면 미분은 항상 ŷ - y 형태.</p>
+
+      <p>활성화 함수 문제가 나오면 "기울기가 어떻게 흐르는가"가 핵심. sigmoid·tanh 포화 → 기울기 소실. ReLU 음수 → dying ReLU. GELU·Swish는 매끄러운 변형.</p>
+
+      <p>준비됐다. 시험장에서 만나자.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script src="widgets.js"></script>
+<script>
+  window.addEventListener('load', () => {
+    CH6.buildNav('16');
+  });
+</script>
+</body>
+</html>

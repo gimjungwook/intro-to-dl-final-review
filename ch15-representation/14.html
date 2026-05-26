@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>14 — 시험 대비 — Ch.15</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .ex-panel { border: 1px solid var(--line); border-radius: 10px; background: #fff; margin: 1.4rem 0; overflow: hidden; }
+  .ex-panel h3 { margin: 0; padding: 1rem 1.2rem; background: var(--paper-2); font-family: var(--mono); font-size: .82rem; letter-spacing: .14em; color: var(--ink-soft); text-transform: uppercase; border-bottom: 1px solid var(--line-soft); }
+  .ex-panel .body { padding: 1rem 1.2rem; font-size: .94rem; line-height: 1.65; }
+  .q-list { counter-reset: q; padding: 0; margin: 0; list-style: none; }
+  .q-list li { counter-increment: q; padding: .85rem 0; border-bottom: 1px solid var(--line-soft); font-size: .92rem; }
+  .q-list li:last-child { border-bottom: none; }
+  .q-list li::before { content: counter(q, decimal-leading-zero); font-family: var(--mono); font-size: .72rem; color: var(--style); letter-spacing: .12em; margin-right: .8rem; font-weight: 600; }
+  .q-list li b { color: var(--ink); }
+  .q-list li .ans { display: block; margin-top: .4rem; padding: .6rem .9rem; background: var(--paper); border-left: 2px solid var(--structure); font-size: .88rem; color: var(--ink-soft); border-radius: 0 4px 4px 0; }
+  .q-list li .ans b { color: var(--structure); }
+  .pair-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+  .pair-table th { text-align: left; padding: .55rem .6rem; background: var(--paper-2); font-family: var(--mono); font-size: .7rem; letter-spacing: .12em; color: var(--ink-faint); text-transform: uppercase; border-bottom: 1px solid var(--line); }
+  .pair-table td { padding: .6rem; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+  .pair-table td:first-child { font-family: var(--mono); font-size: .82rem; color: var(--structure); font-weight: 600; width: 26%; }
+  .pair-table td:nth-child(2) { color: var(--ink-soft); }
+  .def-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: .7rem; }
+  .def-item { padding: .7rem .9rem; background: var(--paper); border-left: 2px solid var(--synth); border-radius: 0 4px 4px 0; font-size: .86rem; }
+  .def-item b { display: block; color: var(--ink); font-family: var(--mono); font-size: .76rem; letter-spacing: .04em; margin-bottom: .25rem; }
+  .map-flow { padding: 1rem; background: var(--paper); border-radius: 8px; font-family: var(--mono); font-size: .82rem; line-height: 1.7; }
+  .map-flow b { color: var(--structure); }
+  .map-flow em { color: var(--style); font-style: normal; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 14 — 마지막 챕터, 마지막 점검</span>
+      <h1>시험 <span class="t-style">대비</span> — Ch.15 통합 체크리스트</h1>
+      <p class="lede">시험 직전 한 번에 훑을 수 있도록 25개 핵심 정의, 8쌍의 자주 혼동되는 개념, 22개의 예상 문제(서술형·단답형), P1·P2 응용 연결을 정리한다. 출제 비중이 큰 장이니, 정의→가설→처방의 순서로 외운다.</p>
+    </header>
+
+    <div class="prose">
+      <p>15장은 강의 마지막 챕터이자 시험 출제 비중이 큰 장이다. 책의 흐름이 “좋은 표상의 정의 → 표상을 만드는 처방(사전훈련·전이) → 분산 표상의 이론적 이득 → 인과 요인·정칙화의 사전 시각”으로 흘러간다. 이 단원은 시험 직전 한 번에 훑을 수 있도록 모든 sub의 핵심을 한 페이지에 모은 점검표다.</p>
+      <p>준비 순서 추천 — (1) 먼저 “Ch.15 한 페이지 개념 지도”를 보고 전체 흐름을 머리에 다시 새긴다. (2) 핵심 정의 25개를 빠르게 훑는다. (3) 자주 혼동되는 개념 쌍 8개를 명확히 가른다. (4) 예상 문제 22개를 답을 가리고 풀어 본다. (5) 마지막으로 P1·P2 응용 연결 문항을 점검한다.</p>
+
+      <h2>Ch.15 한 페이지 개념 지도</h2>
+      <div class="map-flow">
+        <b>좋은 표상</b>(1)<br>
+        ├─ 정의 1 — 부류 분리(선형 프로브)<br>
+        ├─ 정의 2 — 매니폴드 평탄화(라벨 무관)<br>
+        └─ 정의 3 — 인과 요인 풀기(가장 강한 요구)<br><br>
+        <b>표상을 만드는 처방</b>(2-7)<br>
+        ├─ 그리디 층별 사전훈련(2): 역사적, 발상은 살아남음<br>
+        ├─ 비지도 사전훈련(3): <em>p(x) → p(y|x)</em><br>
+        ├─ 지도 사전훈련(4): ImageNet 백본<br>
+        ├─ 전이학습 1(5): 도메인 공유 요인이 클수록 강함<br>
+        ├─ 전이학습 2(6): freeze/unfreeze · 학습률·데이터·도메인 거리<br>
+        └─ 도메인 적응(7): 공변량·라벨·개념 변동 · DANN · 의사라벨링<br><br>
+        <b>분산 표상의 이론적 이득</b>(8-10)<br>
+        ├─ 분산 1(8): $n$차원 = $2^n$구성, 일반화<br>
+        ├─ 분산 2(9): 합성성, king−man+woman≈queen<br>
+        └─ 깊이(10): 합성에 의한 지수적 표현력<br><br>
+        <b>인과·반지도·정칙화</b>(11-13)<br>
+        ├─ 인과 요인(11): 풀린 표상 = 가장 야심적, 미해결<br>
+        ├─ 반지도(12): $p(x)$가 $p(y|x)$ 학습을 돕는다(세 가정)<br>
+        └─ 정칙화(13): 모든 정칙화 = 사전 가설. P2의 Gram도 사전
+      </div>
+
+      <h2>핵심 정의 25개</h2>
+      <div class="def-list">
+        <div class="def-item"><b>표상 (representation)</b>모델 내부에서 입력을 다시 써 놓은 벡터 $h(x)$.</div>
+        <div class="def-item"><b>선형 프로브 (linear probe)</b>표상을 동결한 채 선형 분류기를 얹어 정확도를 잼.</div>
+        <div class="def-item"><b>매니폴드 (manifold)</b>고차원 공간 속 휘어진 저차원 면.</div>
+        <div class="def-item"><b>인과 요인 (causal factor)</b>데이터를 실제로 만든 숨은 요인.</div>
+        <div class="def-item"><b>풀린 표상 (disentangled)</b>한 축을 움직이면 한 요인만 변하는 표상.</div>
+        <div class="def-item"><b>그리디 사전훈련</b>한 층씩 비지도로 학습 후 미세조정.</div>
+        <div class="def-item"><b>RBM</b>제한된 볼츠만 머신. 그리디 사전훈련의 단위 학습기.</div>
+        <div class="def-item"><b>비지도 사전훈련</b>라벨 없이 $p(x)$로 가중치 학습 후 본 과제로 미세조정.</div>
+        <div class="def-item"><b>자기지도 학습</b>라벨 없는 데이터에서 인공 과제로 학습 신호 생성.</div>
+        <div class="def-item"><b>지도 사전훈련</b>다른 분류 과제(예: ImageNet)로 학습한 백본 활용.</div>
+        <div class="def-item"><b>전이학습</b>다른 과제·도메인에서 학습한 표상을 본 과제로 이식.</div>
+        <div class="def-item"><b>미세조정</b>사전훈련 가중치를 출발점으로 본 과제로 다시 학습.</div>
+        <div class="def-item"><b>치명적 망각</b>새 학습이 사전훈련 표상을 무작위로 흩는 현상.</div>
+        <div class="def-item"><b>도메인 적응</b>같은 과제, 다른 분포 사이의 학습 이식.</div>
+        <div class="def-item"><b>공변량 변동</b>$p(x)$만 변함. 가장 다루기 쉬움.</div>
+        <div class="def-item"><b>DANN</b>도메인 적대 학습. 표상이 도메인 정보 잃도록 적대 게임.</div>
+        <div class="def-item"><b>의사라벨링</b>높은 신뢰도 예측을 라벨로 채택해 자기학습.</div>
+        <div class="def-item"><b>분산 표상</b>여러 단위가 함께 의미를 결정. $n$차원 = $2^n$구성.</div>
+        <div class="def-item"><b>합성성</b>전체 의미가 부분 의미의 조합으로 결정.</div>
+        <div class="def-item"><b>의미 산수</b>임베딩 벡터의 산술이 의미 관계 보존.</div>
+        <div class="def-item"><b>보편 근사 정리</b>충분히 넓은 한 층 망이 임의 연속 함수 근사 가능.</div>
+        <div class="def-item"><b>선형 영역</b>ReLU 망이 입력 공간을 나눈 조각. 함수 복잡도 지표.</div>
+        <div class="def-item"><b>반지도 학습</b>라벨 있는 + 없는 데이터를 동시 활용.</div>
+        <div class="def-item"><b>평활성 사전</b>가까운 입력은 비슷한 출력.</div>
+        <div class="def-item"><b>희소성 사전</b>대부분 차원이 거의 0인 표상.</div>
+      </div>
+
+      <h2>자주 혼동되는 개념 쌍 8개</h2>
+      <div class="ex-panel">
+        <h3>혼동 쌍 정리</h3>
+        <div class="body">
+          <table class="pair-table">
+            <tr><th>쌍</th><th>가르는 한 줄</th></tr>
+            <tr><td>전이학습 vs 도메인 적응</td><td>전이학습은 “다른 과제(라벨 셋이 다름)”, 도메인 적응은 “같은 과제, 다른 분포”.</td></tr>
+            <tr><td>비지도 vs 자기지도</td><td>둘 다 라벨 없음. 자기지도는 인공 라벨을 “스스로” 만든다는 점에서 비지도의 현대적 부분집합.</td></tr>
+            <tr><td>선형 프로브 vs 미세조정</td><td>선형 프로브는 표상 동결, 미세조정은 표상까지 갱신. 데이터 적을 때 프로브 선호.</td></tr>
+            <tr><td>분산 표상 vs 분산 학습</td><td>완전히 다른 개념. 분산 표상 = 한 의미를 여러 단위로 코딩, 분산 학습 = 여러 기계에 학습 부담 나누기.</td></tr>
+            <tr><td>합성성 vs 모듈성</td><td>합성성은 “부분의 산수로 전체 의미가 결정”, 모듈성은 “기능별로 구획이 나뉨”. 합성성이 더 강한 요구.</td></tr>
+            <tr><td>풀린 표상 vs 희소 표상</td><td>풀린은 “한 축 = 한 요인”, 희소는 “대부분 축이 0”. 풀린 표상이 자주 희소하지만 역은 아님.</td></tr>
+            <tr><td>공변량 변동 vs 개념 변동</td><td>공변량은 $p(x)$만, 개념은 $p(y \mid x)$ 자체. 처방 완전히 다름(표상 적응 vs 지속 재학습).</td></tr>
+            <tr><td>매니폴드 가정 vs 클러스터 가정</td><td>매니폴드는 “데이터가 휘어진 면 위”, 클러스터는 “데이터가 여러 군집”. 반지도에서 둘 다 흔히 가정.</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <h2>예상 문제 22개 (서술형 · 단답형 혼합)</h2>
+      <div class="ex-panel">
+        <h3>Part A — 좋은 표상 · 사전훈련 (1-7번)</h3>
+        <div class="body">
+          <ol class="q-list">
+            <li><b>좋은 표상의 세 가지 정의를 쓰고, 각 정의의 측정 방법을 설명하라.</b>
+              <span class="ans"><b>답:</b> (1) 부류 분리 — 선형 프로브 정확도. (2) 매니폴드 평탄화 — 재구성 손실, 가까운 점들의 출력 거리. (3) 인과 요인 풀기 — 한 차원을 변경했을 때 한 요인만 변하는가의 측정(예: $\beta$-VAE 평가 지표).</span>
+            </li>
+            <li><b>그리디 층별 사전훈련이 2006년에 효과적이었던 메커니즘 세 가지를 설명하라.</b>
+              <span class="ans"><b>답:</b> (1) 각 단계가 얕은 최적화 문제로 줄어 기울기 소실 회피. (2) 라벨 없는 데이터로 사전훈련 가능, 라벨 부족 보완. (3) 사전훈련 결과 초기화가 정칙화로 기능.</span>
+            </li>
+            <li><b>비지도 사전훈련이 본 과제 정확도를 오히려 떨어뜨릴 수 있는 조건은?</b>
+              <span class="ans"><b>답:</b> 사전훈련 목표가 본 과제와 무관한 요인을 과도하게 보존할 때(예: 배경·노이즈 등을 코딩하느라 분류에 필요한 표상 용량을 잃는 경우).</span>
+            </li>
+            <li><b>지도 사전훈련의 대표 예와, 그것이 다른 비전 과제로 잘 전이되는 이유를 설명하라.</b>
+              <span class="ans"><b>답:</b> ImageNet 분류로 학습한 ResNet/VGG 백본. 분류라는 강한 라벨이 모서리·텍스처·객체 부품 같은 일반적 시각 특징을 학습시키고, 이 특징들이 거의 모든 비전 다운스트림 과제의 출발점이 된다.</span>
+            </li>
+            <li><b>전이학습의 강도는 무엇에 의해 결정되는가?</b>
+              <span class="ans"><b>답:</b> 두 과제가 공유하는 “생성 요인(factor of variation)”의 양과 종류. 공유 요인이 클수록 강한 전이, 작으면 음의 전이(negative transfer) 위험.</span>
+            </li>
+            <li><b>본 과제 라벨이 100장일 때 부분 미세조정 대신 선형 프로브를 권장하는 이유는?</b>
+              <span class="ans"><b>답:</b> 100장으로 표상까지 풀면 사전훈련 가중치가 무작위 방향으로 흩어져 치명적 망각이 일어난다. 선형 프로브는 표상을 보존하면서 새 헤드만 학습.</span>
+            </li>
+            <li><b>도메인 적응의 세 종류 분포 변동을 쓰고 각각의 처방을 짧게 설명하라.</b>
+              <span class="ans"><b>답:</b> (1) 공변량 변동($p(x)$ 변화) — 도메인 불변 표상(DANN). (2) 라벨 변동($p(y)$ 변화) — 베이즈 빈도 보정. (3) 개념 변동($p(y \mid x)$ 변화) — 지속적 재학습(online).</span>
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="ex-panel">
+        <h3>Part B — 분산 표상 · 깊이 (8-14번)</h3>
+        <div class="body">
+          <ol class="q-list" start="8">
+            <li><b>$n$차원 분산 표상과 $n$차원 one-hot 표상의 표현력 차이를 정량적으로 설명하라.</b>
+              <span class="ans"><b>답:</b> One-hot은 정확히 $n$개의 구성(한 칸씩 켜기)만 표현 가능. 분산은 각 칸이 독립적으로 켜고 끄면 $2^n$개 구성 표현 가능. 자원이 같은데 표현력은 $2^n / n$ 배 차이, $n$이 클수록 지수적으로 벌어짐.</span>
+            </li>
+            <li><b>“king − man + woman ≈ queen”이 성립하는 메커니즘을 임베딩 공간의 기하 관점에서 설명하라.</b>
+              <span class="ans"><b>답:</b> 임베딩 공간에서 “왕족” 축과 “성별” 축이 거의 직교 방향으로 풀려 있어, “(왕족 +) − (남성 +) + (여성 +) = (왕족 +)(여성 +)”의 산술이 의미를 보존한다. 단어 공기 통계로 학습된 결과 분포가 이런 직교 분리를 자연스럽게 만든다.</span>
+            </li>
+            <li><b>“보편 근사 정리가 있는데도 깊이가 왜 필요한가?”에 답하라.</b>
+              <span class="ans"><b>답:</b> 보편 근사는 “충분히 넓다면” 한 층으로 표현 가능하다는 정리. 그러나 “충분히 넓다”의 너비가 어떤 함수에 대해서는 지수적이다. 깊이는 같은 함수를 다항 너비로 표현하게 해 준다. 깊이의 이득은 표현력의 자원 효율이지 표현 자체의 가능성이 아님.</span>
+            </li>
+            <li><b>Montufar et al. (2014)의 정리에서, 깊이가 늘 때 선형 영역 수가 어떻게 증가하는가?</b>
+              <span class="ans"><b>답:</b> 깊이 $L$, 너비 $n$의 ReLU 망은 최대 $O(\binom{n}{d}^{L-1} n^d)$개의 선형 영역을 만든다 — $L$에 대해 지수적. 같은 파라미터를 너비에 투자하면 $O(N^d)$로 다항만 증가.</span>
+            </li>
+            <li><b>분산 표상이 “본 적 없는 조합”에 일반화할 수 있는 이유를 한 줄로 설명하라.</b>
+              <span class="ans"><b>답:</b> 한 입력이 여러 특징의 조합으로 코딩되어, 학습 시 본 일부 특징들이 새 조합에서도 부분적으로 활성화되어 합리적 출력을 만들 수 있기 때문.</span>
+            </li>
+            <li><b>합성성이 부분적으로만 성립하는 의미 관계의 예를 들고, 그것이 무엇을 시사하는지 설명하라.</b>
+              <span class="ans"><b>답:</b> 추상 명사(예: “자유” − “의무”), 비유 표현 등은 의미 산수가 잘 통하지 않음. 이는 해당 차원이 임베딩 공간에서 충분히 풀려 있지 않음을 시사 — 합성성의 정도가 “인과 요인 풀림”의 척도로 쓰일 수 있다.</span>
+            </li>
+            <li><b>같은 파라미터 예산을 깊이 vs 너비에 투자할 때 어느 쪽이 더 좋은가? 답에 단서를 붙이라.</b>
+              <span class="ans"><b>답:</b> 일반적으로 깊이가 표현력 효율이 더 좋다(지수 vs 다항). 단서 — 깊이가 늘면 학습 안정성 문제(기울기 소실/폭발)가 따라오므로, 잔차 연결·정규화 같은 학습 가능성 장치가 함께 있어야 이득이 실현된다.</span>
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="ex-panel">
+        <h3>Part C — 인과 · 반지도 · 정칙화 (15-20번)</h3>
+        <div class="body">
+          <ol class="q-list" start="15">
+            <li><b>풀린 표상을 “비지도로 완전히” 학습할 수 없다는 이론적 결과는 무엇이고, 그 의미는?</b>
+              <span class="ans"><b>답:</b> Locatello et al. (2019) — 추가 정보(약한 지도, 사전 가정) 없이는 같은 데이터를 설명하는 여러 표상 중 “진짜 인과 요인을 풀어낸 표상”을 식별할 수 없음. 의미: 풀린 표상 학습에는 약한 지도 또는 도메인 사전이 본질적으로 필요.</span>
+            </li>
+            <li><b>$\beta$-VAE의 “$\beta$”가 무엇을 조절하고, 그 효과가 무엇인지 설명하라.</b>
+              <span class="ans"><b>답:</b> $\beta > 1$은 VAE의 KL 발산 항에 더 큰 가중치를 부여해, 잠재 변수가 더 압축되고 차원 간 독립성이 강해지도록 유도. 결과로 일부 차원이 명확한 단일 요인(회전, 크기 등)에 대응되는 풀린 표상이 학습.</span>
+            </li>
+            <li><b>반지도 학습이 성립하는 세 가지 가정을 쓰고, 각각이 어떤 알고리즘으로 구현되는지 짝지으라.</b>
+              <span class="ans"><b>답:</b> (1) 클러스터 가정 → 의사라벨링. (2) 매니폴드 가정 → 엔트로피 최소화(저밀도 경계). (3) 평활성 가정 → 일관성 정칙화(FixMatch).</span>
+            </li>
+            <li><b>반지도 학습이 정확도를 떨어뜨릴 수 있는 시나리오 두 가지를 들라.</b>
+              <span class="ans"><b>답:</b> (1) $p(x)$의 클러스터가 라벨과 어긋남 — 같은 라벨이 여러 군집에 걸쳐 있을 때 의사라벨링이 잘못된 분리를 강제. (2) 라벨 없는 데이터의 도메인이 본 과제 도메인과 크게 다를 때(도메인 시프트).</span>
+            </li>
+            <li><b>책은 모든 정칙화가 “세상에 대한 가설”이라고 주장한다. 평활성 정칙화가 어떤 가설을 표현하는가?</b>
+              <span class="ans"><b>답:</b> “가까운 두 입력은 비슷한 출력을 가진다”는 가설. 자연 데이터의 거의 모든 영역에서 성립하는 가장 일반적 사전. $L^2$ 정칙화, 데이터 증강, 적대적 학습이 모두 평활성의 다른 강도 구현.</span>
+            </li>
+            <li><b>희소성 정칙화가 풀린 표상과 어떻게 연결되는가?</b>
+              <span class="ans"><b>답:</b> 희소성은 “한 입력은 가용한 모든 특징 중 소수만 사용한다”는 사전. 이는 각 특징이 독립적·해석 가능한 단일 의미를 가지도록 학습을 유도해, 결과적으로 풀린 표상(한 차원 = 한 요인)에 가까워진다.</span>
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="ex-panel">
+        <h3>Part D — P1·P2 응용 연결 (21-22번)</h3>
+        <div class="body">
+          <ol class="q-list" start="21">
+            <li><b>P1 (적대 예제, Goodfellow 2015)을 표상 학습의 “정칙화 = 사전” 시각에서 다시 해석하라.</b>
+              <span class="ans"><b>답:</b> P1은 “신경망이 매니폴드 외부에서 선형 외삽을 한다”는 진단을 내린다. 적대 학습(FGSM 예제로 함께 학습)은 “매니폴드 외부에서도 함수가 평활해야 한다”는 강한 평활성 사전의 직접 구현이다. 즉 P1은 평활성 정칙화의 매우 정교한 형태이고, 표상 학습의 “모든 정칙화는 사전 가설” 시각에 정확히 들어맞는 응용 사례.</span>
+            </li>
+            <li><b>P2 (신경 스타일 전이, Gatys 2015)에서 Gram 행렬이 어떤 사전 가설을 표현하는지 설명하라.</b>
+              <span class="ans"><b>답:</b> Gram 행렬은 “스타일이란 위치에 무관한 특징 간 공기 통계”라는 강한 사전을 표현. 위치 정보를 버리고 공기 통계만 남김으로써, 같은 화가의 다른 그림이 같은 Gram 통계를 가진다는 가정이 작동. 이 사전이 데이터(같은 화가의 화풍)에 맞기 때문에 P2가 작동. 사전이 달랐다면(예: “스타일 = 색상만”) 알고리즘이 무너졌을 것. 정칙화/사전의 선택이 결과를 좌우한다는 책 주장의 모범 사례.</span>
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <h2>마지막 점검 — “세 줄 요약 가능한가”</h2>
+      <p>시험 직전 마지막 점검 — 다음 세 줄을 종이에 안 보고 쓸 수 있다면 Ch.15 준비는 충분하다.</p>
+      <p><strong>한 줄 1.</strong> 좋은 표상은 “미래의 과제가 무엇이 되든 단순한 규칙으로 풀 수 있도록 입력을 다시 써 놓은 것”이고, 그 정의는 부류 분리·매니폴드 평탄화·인과 요인 풀기의 셋으로 나뉜다.</p>
+      <p><strong>한 줄 2.</strong> 분산 표상의 두 가지 이득(지수적 자원 효율 + 합성성)과 깊이의 지수적 표현력은 모두 “함수의 합성을 통한 표현력 효율”이라는 한 메커니즘의 다른 얼굴이다.</p>
+      <p><strong>한 줄 3.</strong> 표상 학습은 결국 “데이터에 어떤 사전 가설(정칙화)을 곱해 좋은 표상을 만들지 결정하는 일”이고, 어떤 사전이 맞을지는 데이터의 진짜 인과 구조에 달려 있다.</p>
+
+      <h2>학습 자료 — 출처와 보충 읽을거리</h2>
+      <table class="symbols">
+        <tr><td>교재 원전</td><td>Goodfellow, Bengio, Courville. <em>Deep Learning</em>. MIT Press, 2016. Chapter 15.</td></tr>
+        <tr><td>강의 자료</td><td>딥러닝 개론, Week 10 — Chapter 15 요약 노트 (IntroToDL_Week10_22000168.md).</td></tr>
+        <tr><td>P1 응용</td><td>Goodfellow, Shlens, Szegedy. “Explaining and Harnessing Adversarial Examples”. ICLR 2015.</td></tr>
+        <tr><td>P2 응용</td><td>Gatys, Ecker, Bethge. “A Neural Algorithm of Artistic Style”. arXiv 2015.</td></tr>
+        <tr><td>풀린 표상 후속</td><td>Locatello et al. “Challenging Common Assumptions in the Unsupervised Learning of Disentangled Representations”. ICML 2019.</td></tr>
+        <tr><td>깊이의 정리</td><td>Montufar, Pascanu, Cho, Bengio. “On the Number of Linear Regions of Deep Neural Networks”. NIPS 2014.</td></tr>
+        <tr><td>의미 산수</td><td>Mikolov, Sutskever, Chen, Corrado, Dean. “Distributed Representations of Words and Phrases and their Compositionality”. NIPS 2013.</td></tr>
+      </table>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'좋은 표상이란', f:'01.html' },
+    { no:'02', t:'그리디 층별 사전훈련', f:'02.html' },
+    { no:'03', t:'비지도 사전훈련', f:'03.html' },
+    { no:'04', t:'지도 사전훈련', f:'04.html' },
+    { no:'05', t:'전이학습 1 — 도메인이 돕는 원리', f:'05.html' },
+    { no:'06', t:'전이학습 2 — 미세조정 실전', f:'06.html' },
+    { no:'07', t:'도메인 적응', f:'07.html' },
+    { no:'08', t:'분산 표상 1 — 지수적 이득', f:'08.html' },
+    { no:'09', t:'분산 표상 2 — 합성성·의미 산수', f:'09.html' },
+    { no:'10', t:'깊이의 지수적 표현력', f:'10.html' },
+    { no:'11', t:'인과 요소', f:'11.html' },
+    { no:'12', t:'반지도 학습', f:'12.html' },
+    { no:'13', t:'사전으로서의 정칙화', f:'13.html' },
+    { no:'14', t:'시험 대비', f:'14.html' },
+  ];
+  const CURRENT = '14';
+  (function buildNav() {
+    document.querySelector('.topbar').innerHTML =
+      `<a class="home" href="index.html">← Chapter 15 — 표상 학습</a>` +
+      `<span class="ch-mini">SUB ${CURRENT} / 14</span>`;
+    document.querySelector('.ch-nav ol').innerHTML = SUBS.map(s =>
+      `<li><a href="${s.f}" ${s.no === CURRENT ? 'class="current"' : ''}>${s.t}</a></li>`).join('');
+    const i = SUBS.findIndex(s => s.no === CURRENT);
+    const prev = i > 0 ? SUBS[i-1] : { f:'index.html', t:'챕터 표지', no:'' };
+    const next = i < SUBS.length-1 ? SUBS[i+1] : { f:'index.html', t:'챕터 표지', no:'' };
+    document.querySelector('.ch-foot').innerHTML =
+      `<a href="${prev.f}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+      `<a href="${next.f}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+    const bar = document.querySelector('.scroll-progress');
+    const onScroll = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    document.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+  })();
+
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
+        throwOnError: false,
+      });
+    }
+  });
+</script>
+</body>
+</html>

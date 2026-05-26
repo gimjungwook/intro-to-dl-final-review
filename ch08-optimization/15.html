@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>15 · 학습률 스케줄 — step, cosine, warmup, cyclical</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="topbar">
+  <a class="home" href="index.html">← Ch.08 최적화</a>
+  <span class="ch-mini">SUB 15 / 17</span>
+</div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol id="navlist"></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 15 · 학습 도중에 학습률을 시간에 따라 바꾼다</span>
+      <h1>초반엔 크게, 후반엔 작게,<br><span class="t-style">중간에 부드럽게</span> 바꿔라</h1>
+      <p class="lede">학습률을 처음부터 끝까지 같은 값으로 두는 것은 거의 항상 차선이다. 학습 단계에 맞춰 학습률을 자동으로 조정하는 스케줄들이 현대 딥러닝의 표준이다.</p>
+    </header>
+
+    <div class="prose">
+
+      <p>5번 절에서 학습률 하나가 발산·진동·수렴을 결정한다고 봤다. 그리고 SGD의 수렴 보장을 위해 $\sum \varepsilon_k = \infty$, $\sum \varepsilon_k^2 < \infty$의 두 조건이 필요하다고 했다. 이 둘을 만족하려면 학습률을 시간에 따라 줄여야 한다. 그 줄이는 방식 — 학습률 스케줄(learning rate schedule) — 이 이 절의 주제다.</p>
+
+      <p>학습률 스케줄은 단지 수렴 보장만이 아니다. 학습 초반에 큰 학습률은 손실 지형의 좋은 영역을 탐색하는 데 유리하고, 학습 후반에 작은 학습률은 좋은 해 근처에서 정밀하게 정착하는 데 유리하다. 그래서 모든 단계에서 같은 학습률을 쓰는 것은 거의 항상 차선이다.</p>
+
+      <p>이 절은 네 가지 표준 스케줄을 본다. step decay, cosine annealing, warmup, cyclical. 각각의 모양과 어느 상황에 적합한지를 본다.</p>
+
+      <h2>① Step Decay — 가장 단순한 계단형 감쇠</h2>
+
+      <p>step decay는 일정 기간마다 학습률을 일정 비율로 줄이는 가장 단순한 스케줄이다.</p>
+
+      <div class="math-block">$$ \varepsilon_t = \varepsilon_0 \cdot \gamma^{\lfloor t/T \rfloor} $$</div>
+      <p class="math-note">step decay. T 스텝마다 학습률을 γ배 줄임. 예: T=30 에폭, γ=0.1이면 30에폭마다 10배 줄임.</p>
+
+      <p>예를 들어 ImageNet ResNet 학습의 고전적 스케줄은 30, 60, 90 에폭에 학습률을 10배씩 줄이는 step decay다. 초반엔 0.1, 30 에폭 후 0.01, 60 에폭 후 0.001 식이다. 이 단순한 스케줄이 오랫동안 표준이었다.</p>
+
+      <p>step decay의 장점은 직관적이고 구현이 간단하다. 단점은 갑작스러운 학습률 변화가 손실 곡선에 큰 단차를 만든다. 이는 학습이 불안정해질 수 있고, 손실 곡선을 봤을 때 어색하게 보인다.</p>
+
+      <h2>② Cosine Annealing — 부드러운 감쇠</h2>
+
+      <p>cosine annealing은 학습률을 cosine 함수 형태로 부드럽게 줄인다.</p>
+
+      <div class="math-block">$$ \varepsilon_t = \varepsilon_{\min} + \frac{1}{2}(\varepsilon_0 - \varepsilon_{\min})\left(1 + \cos\frac{t\pi}{T}\right) $$</div>
+      <p class="math-note">cosine annealing. $t=0$에서 $\varepsilon_0$, $t=T$에서 $\varepsilon_{\min}$까지 cosine 곡선으로 부드럽게 감소.</p>
+
+      <p>cosine 곡선은 시작과 끝에서 변화율이 0이라 매끄럽다. step decay의 단차 문제가 없다. 그리고 한 가지 미묘한 이점이 있다 — 학습 중반에 학습률이 적절히 크다. 중반은 학습이 가장 활발한 시기이므로, 큰 학습률이 도움이 된다.</p>
+
+      <p>cosine annealing은 2017년 이후 사실상 표준이 되었다. ImageNet, GPT, BERT 같은 모델들이 대부분 이를 쓴다. 변형으로 cosine annealing with warm restarts(주기적으로 학습률을 다시 올리는 것)도 있다.</p>
+
+      <h2>③ Warmup — 학습 초반의 안전벨트</h2>
+
+      <p>warmup은 학습 초반에 학습률을 작게 시작해 점진적으로 키운다.</p>
+
+      <div class="math-block">$$ \varepsilon_t = \varepsilon_0 \cdot \frac{t}{T_{\text{warm}}}, \quad t < T_{\text{warm}} $$</div>
+      <p class="math-note">linear warmup. 처음 $T_{\text{warm}}$ 스텝 동안 0에서 $\varepsilon_0$까지 선형 증가.</p>
+
+      <p>왜 warmup이 필요한가? 학습 초반에는 가중치가 무작위 초기값에서 시작하므로 손실 지형의 어디에 있는지 모른다. 그 자리에서 갑자기 큰 학습률로 움직이면, 잘못된 방향으로 크게 이동해 발산할 수 있다. warmup은 처음 몇 백~몇 천 스텝 동안 작은 학습률로 "지도를 그리는" 시간을 준다.</p>
+
+      <p>특히 큰 배치 학습(4번 절의 선형 스케일링)에서는 warmup이 필수다. 큰 배치는 큰 학습률을 요구하지만, 큰 학습률을 갑자기 키우면 발산. 그래서 warmup으로 학습률을 점진적으로 올린 뒤 cosine annealing으로 내린다. 이 "warmup + cosine" 조합이 현대 트랜스포머 학습의 표준이다.</p>
+
+      <h2>④ Cyclical — 학습률을 주기적으로 오르내림</h2>
+
+      <p>cyclical learning rate(CLR)은 학습률을 한 방향이 아니라 주기적으로 위아래로 움직이는 스케줄이다.</p>
+
+      <p>왜 이런 이상한 일을 하는가? 두 가지 이유다. 첫째, 학습률을 주기적으로 키우면 모델이 한 골짜기에 머물지 않고 더 좋은 골짜기를 탐색한다. 둘째, 학습률 튜닝 시간을 줄인다 — 최적의 학습률을 정확히 찾을 필요 없이, 적당한 범위에서 오르내리면 된다.</p>
+
+      <p>CLR의 변형으로 "1cycle policy"가 있다. 한 사이클 안에서 학습률을 작게 시작해 크게 키운 뒤 다시 매우 작게 줄인다. 일반적인 SGD보다 훨씬 빠른 수렴을 보고한 논문들이 있다.</p>
+
+      <h2>위젯 — 네 스케줄의 모양 비교</h2>
+
+      <p>아래 위젯은 같은 200 에폭 학습 동안 네 스케줄이 만드는 학습률 곡선을 동시에 보여 준다. 각 스케줄이 어떤 모양인지, 어디서 학습률이 가장 크고 작은지를 한눈에 보라.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 15</span><span>네 학습률 스케줄의 모양 — step, cosine, warmup+cosine, cyclical</span></div>
+        <div style="padding: 1.2rem 1.1rem;">
+          <canvas id="schCanvas" width="800" height="380" style="width: 100%; height: 380px; display: block; background: #fff; border: 1px solid var(--line); border-radius: 8px;"></canvas>
+        </div>
+      </div>
+      <p class="widget-cap">파랑 = step decay (계단형). 황토 = cosine (부드러운 곡선). 주황 = warmup + cosine (현대 표준). 회색 = cyclical (주기적 오르내림). 학습률을 0.1로 시작, 200 에폭에서 0.001로 줄이는 경우.</p>
+    </div>
+
+    <div class="prose">
+
+      <h2>학습률 스케줄의 수학적 직관 — 왜 시간에 따라 줄여야 하는가</h2>
+
+      <p>학습률을 시간에 따라 줄여야 하는 이론적 이유는 미니배치 SGD의 노이즈에서 온다. 미니배치 기울기는 노이즈를 포함하므로, 최솟값 근처에 도달해도 진동을 멈추지 않는다. 학습률이 일정하면 그 진동의 크기도 일정하다 — 최솟값 근처에서 영원히 진동한다. 학습률을 줄이면 진동의 크기도 줄어들어 최솟값에 점점 가까이 안착한다.</p>
+
+      <p>이 직관은 5번 절에서 본 로빈스-먼로(Robbins-Monro) 조건과 정확히 연결된다. $\sum \varepsilon_k = \infty$ 조건이 "충분히 멀리 갈 수 있어야 한다"는 의미였다면, $\sum \varepsilon_k^2 < \infty$ 조건이 "잡음이 결국 사라져야 한다"는 의미였다. 두 조건을 모두 만족시키려면 학습률을 시간에 따라 줄여야 한다 — 단, 너무 빨리 줄이면 안 된다.</p>
+
+      <p>한 가지 흥미로운 관점은 학습률 스케줄을 "온도(temperature)"로 보는 것이다. 통계 물리학의 시뮬레이티드 어닐링(simulated annealing)이 이 직관을 빌려준다. 학습 초기에는 온도가 높아 다양한 영역을 탐색하고, 후반에는 온도가 낮아져 안정된 해에 자리잡는다. 학습률은 신경망의 온도라고 봐도 무방하다.</p>
+
+      <h2>실전 권장 — 어떤 스케줄을 쓸까</h2>
+
+      <p>실전에서 첫 선택은 다음과 같다.</p>
+
+      <ul>
+        <li><strong>일반 분류 (ResNet, EfficientNet 등):</strong> cosine annealing.</li>
+        <li><strong>트랜스포머 (BERT, GPT 등):</strong> warmup + cosine annealing.</li>
+        <li><strong>큰 배치 학습 (4번 절의 1k+ 배치):</strong> warmup 필수.</li>
+        <li><strong>탐색 단계:</strong> 1cycle 또는 CLR로 빠르게 결과 확인.</li>
+      </ul>
+
+      <p>Adam 같은 적응 학습률 옵티마이저는 스스로 학습률을 어느 정도 조정하므로 스케줄의 효과가 SGD만큼 크지 않다. 그래도 Adam + warmup + cosine 조합이 트랜스포머에서 표준이다. 적응 학습률과 외부 스케줄은 보완적이다.</p>
+
+      <h2>시험 답안 핵심</h2>
+
+      <p>학습률 스케줄이 시험에 나오면 다음 세 가지를 적자. 첫째, <strong>고정 학습률은 거의 항상 차선 — 시간에 따라 줄여야 함</strong>. 둘째, <strong>네 가지 표준: step decay, cosine annealing, warmup, cyclical</strong>. 셋째, <strong>현대 트랜스포머 표준 = warmup + cosine</strong>. 수렴 조건 $\sum\varepsilon = \infty$, $\sum\varepsilon^2 < \infty$의 의미와 함께.</p>
+    </div>
+
+    <nav class="ch-foot" id="chFoot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'순수 vs ML 최적화' }, { no:'02', t:'학습의 장애물' }, { no:'03', t:'미니배치 SGD 1' }, { no:'04', t:'미니배치 SGD 2' },
+    { no:'05', t:'학습률의 의미' }, { no:'06', t:'모멘텀 1' }, { no:'07', t:'모멘텀 2 (네스테로프)' }, { no:'08', t:'적응 1 (AdaGrad)' },
+    { no:'09', t:'적응 2 (RMSProp)' }, { no:'10', t:'적응 3 (Adam)' }, { no:'11', t:'초기화 1 (대칭성)' }, { no:'12', t:'초기화 2 (Xavier·He)' },
+    { no:'13', t:'배치 정규화 1' }, { no:'14', t:'배치 정규화 2' }, { no:'15', t:'학습률 스케줄' }, { no:'16', t:'기울기 클리핑' },
+    { no:'17', t:'시험 대비' },
+  ];
+  const CUR = '15';
+  const navlist = document.getElementById('navlist');
+  SUBS.forEach(s => { const li = document.createElement('li'); li.innerHTML = `<a href="${s.no}.html"${s.no===CUR?' class="current"':''}>${s.t}</a>`; navlist.appendChild(li); });
+  const chFoot = document.getElementById('chFoot');
+  const idx = SUBS.findIndex(s => s.no === CUR);
+  const prev = idx > 0 ? SUBS[idx-1] : { no:'index', t:'표지로' };
+  const next = idx < SUBS.length-1 ? SUBS[idx+1] : { no:'index', t:'표지로' };
+  chFoot.innerHTML = `<a href="${prev.no}.html"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` + `<a href="${next.no}.html" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
+        throwOnError: false,
+      });
+    }
+  });
+
+  (function() {
+    const css = getComputedStyle(document.documentElement);
+    const C = {
+      structure: css.getPropertyValue('--structure').trim() || '#2D5B7A',
+      style: css.getPropertyValue('--style').trim() || '#C0492E',
+      synth: css.getPropertyValue('--synth').trim() || '#A47B2E',
+      faint: css.getPropertyValue('--ink-faint').trim() || '#8E8576',
+      line: '#d8d2c4',
+    };
+    const cvs = document.getElementById('schCanvas');
+    const ctx = cvs.getContext('2d');
+    const W = cvs.width, H = cvs.height;
+    ctx.clearRect(0,0,W,H);
+    ctx.strokeStyle = C.line; ctx.strokeRect(0.5,0.5,W-1,H-1);
+    const N = 200;
+    const lr0 = 0.1;
+    const lrMin = 0.001;
+    function step(t) { return lr0 * Math.pow(0.1, Math.floor(t/60)); }
+    function cosine(t) { return lrMin + 0.5*(lr0-lrMin)*(1+Math.cos(t*Math.PI/N)); }
+    function warmupCos(t) {
+      const W = 20;
+      if (t < W) return lr0 * t / W;
+      return lrMin + 0.5*(lr0-lrMin)*(1+Math.cos((t-W)*Math.PI/(N-W)));
+    }
+    function cyclical(t) {
+      const T = 40;
+      const phase = (t % T) / T;
+      const tri = phase < 0.5 ? phase*2 : (1-phase)*2;
+      return lrMin + tri * (lr0 - lrMin);
+    }
+    const X = i => 40 + i/(N-1) * (W-60);
+    const Y = lr => H - 40 - lr / lr0 * (H-60);
+    // grid
+    ctx.strokeStyle = C.line; ctx.globalAlpha = 0.5;
+    for (let lv = 0; lv <= 1; lv += 0.2) {
+      ctx.beginPath(); ctx.moveTo(40, Y(lv*lr0)); ctx.lineTo(W-20, Y(lv*lr0)); ctx.stroke();
+      ctx.fillStyle = C.faint; ctx.font='10px monospace';
+      ctx.fillText((lv*lr0).toFixed(3), 8, Y(lv*lr0)+3);
+    }
+    ctx.globalAlpha = 1.0;
+    function plot(fn, color, lw) {
+      ctx.strokeStyle = color; ctx.lineWidth = lw;
+      ctx.beginPath();
+      for (let i=0;i<N;i++) {
+        const lr = fn(i);
+        if (i===0) ctx.moveTo(X(i), Y(lr));
+        else ctx.lineTo(X(i), Y(lr));
+      }
+      ctx.stroke();
+    }
+    plot(step, C.structure, 1.6);
+    plot(cosine, C.synth, 1.6);
+    plot(warmupCos, C.style, 2.2);
+    plot(cyclical, C.faint, 1.4);
+    ctx.fillStyle = C.faint; ctx.font='12px monospace';
+    ctx.fillText('파랑 = step | 황토 = cosine | 주황 = warmup+cosine | 회색 = cyclical', 50, 22);
+    ctx.fillText('y = 학습률, x = 에폭', 50, 40);
+  })();
+</script>
+</body>
+</html>

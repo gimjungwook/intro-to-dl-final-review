@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>09 · 적응 학습률 2 — RMSProp 지수 평균</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .rm-stage { padding: 1.2rem 1.1rem 0.6rem; }
+  #rmCanvas { width: 100%; height: 420px; display: block; background: #fff; border: 1px solid var(--line); border-radius: 8px; }
+  .rm-read { display: flex; flex-wrap: wrap; gap: 1.2rem; padding: 0.4rem 1.1rem 1rem; font-family: var(--mono); font-size: .78rem; color: var(--ink-soft); }
+  .rm-read span b { color: var(--ink); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a class="home" href="index.html">← Ch.08 최적화</a>
+  <span class="ch-mini">SUB 09 / 17</span>
+</div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol id="navlist"></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 09 · 누적이 아니라 망각 — AdaGrad의 단조 감쇠 해결</span>
+      <h1>먼 과거는 잊고,<br><span class="t-style">최근 곡률에 적응</span>한다</h1>
+      <p class="lede">RMSProp은 AdaGrad의 두 줄 식에서 단 한 글자를 바꾼다. 그 변화 하나가 누적의 단조 증가 문제를 풀고, 비볼록 신경망에서 실용적으로 작동하는 첫 적응 알고리즘을 만든다.</p>
+    </header>
+
+    <div class="prose">
+
+      <p>8번 절에서 AdaGrad가 가진 우아한 아이디어와 치명적 약점을 봤다. 아이디어는 "파라미터별로 다른 학습률"이라는 통찰이었고, 약점은 기울기 제곱의 단조 누적 때문에 학습률이 결국 0으로 가라앉는다는 점이었다. 이 약점은 볼록 최적화에서는 오히려 수렴 보장에 좋은 성질이지만, 비볼록 신경망에서는 학습을 너무 일찍 멈추게 만든다.</p>
+
+      <p>RMSProp(Root Mean Square Propagation, Geoffrey Hinton의 2012년 강의 노트에서 처음 제안)은 이 약점을 매우 단순하게 해결한다. AdaGrad의 누적 식 $r \leftarrow r + g^2$을 <strong>지수 이동 평균(exponentially decaying moving average)</strong> $r \leftarrow \rho r + (1-\rho) g^2$로 바꾸기만 한다. 한 줄의 변화로 학습률이 끝없이 줄어드는 문제가 사라진다.</p>
+
+      <h2>RMSProp의 업데이트 식 — AdaGrad에서 한 글자 차이</h2>
+
+      <div class="math-block">$$ r \leftarrow \rho\, r + (1-\rho)\, \hat{g} \odot \hat{g} $$</div>
+      <p class="math-note">지수 감쇠 이동 평균. ρ는 감쇠율(decay rate), 보통 0.9. 먼 과거의 기울기는 점차 잊고, 최근 기울기의 영향이 크다.</p>
+
+      <div class="math-block">$$ \theta \leftarrow \theta - \frac{\varepsilon}{\sqrt{\delta + r}} \odot \hat{g} $$</div>
+      <p class="math-note">파라미터 업데이트. AdaGrad와 같은 형태 — 다만 r이 이제는 단조 증가하지 않는다.</p>
+
+      <p>$\rho \in [0, 1)$이 감쇠율이다. $\rho = 0$이면 $r = g^2$이 되어 매 스텝의 기울기 제곱만 보고, $\rho = 1$이면 $r$이 갱신되지 않는다(고정). 실전에서 가장 흔한 값은 $\rho = 0.9$이고, $r$의 효과적 윈도우 크기는 $1/(1-\rho) = 10$ 정도다. 즉 최근 10 스텝 정도의 기울기 제곱 평균을 보는 셈이다.</p>
+
+      <h2>왜 한 글자 차이가 모든 것을 바꾸는가</h2>
+
+      <p>AdaGrad의 누적 $r = \sum g^2$은 시간이 지나면서 무한대로 발산한다. 그래서 학습률 $\varepsilon/\sqrt{r}$도 결국 0으로 간다. 반면 RMSProp의 지수 평균은 기울기 분포가 평형 상태에 도달하면 $r$도 그 평형값에 수렴한다.</p>
+
+      <div class="math-block">$$ \text{평형: }\quad r^* = \langle g^2 \rangle \quad\text{(기울기 제곱의 시간 평균)} $$</div>
+      <p class="math-note">평형 상태에서 r은 그 시점의 기울기 제곱 평균. 시간이 지나도 평형값 부근에서 머문다. 학습률이 사라지지 않는다.</p>
+
+      <p>이 차이가 실전에서 큰 의미를 갖는다. 학습 초기에 잘못된 영역에서 큰 기울기를 만나도, 그 영향은 시간이 지나면서 잊혀진다. 학습이 안정 상태에 들어가면 $r$도 그 상태의 기울기 크기에 맞춰 정착한다. <strong>AdaGrad가 과거를 영원히 기억하는 반면, RMSProp은 적당한 망각을 한다.</strong></p>
+
+      <div class="analogy">
+        AdaGrad가 평생 모든 시험 성적을 기억하며 자신감을 조절하는 학생이라면, RMSProp은 최근 10번 시험의 평균만 기억하는 학생이다. <b>한 번의 실수가 영원히 영향을 미치지 않으므로 회복이 가능하다.</b> 그리고 환경이 변할 때 — 예를 들어 과목이 바뀌면 — 새 환경에 빠르게 적응한다. AdaGrad는 과거 과목의 성적까지 끌고 와 자신감을 왜곡한다.
+      </div>
+
+      <h2>RMSProp의 실전 성능 — 비볼록에서 단단한 베이스라인</h2>
+
+      <p>RMSProp은 발표 당시(2012) 비볼록 신경망 학습에서 사실상 표준이 되었다. 이유는 단순함과 안정성이다. AdaGrad의 우아한 아이디어를 보존하면서 약점만 제거했고, 모멘텀과도 자연스럽게 결합 가능하다. 책에서는 "실전에서 효과적이고 실용적인 최적화 알고리즘으로 널리 쓰인다"고 평한다.</p>
+
+      <p>2014년 Adam이 등장하면서 RMSProp의 위상은 약간 줄었지만, 여전히 좋은 베이스라인이다. 특히 RNN 학습에서는 RMSProp + 모멘텀이 Adam보다 더 안정적이라는 보고가 있다. RNN의 기울기는 시간 방향으로 변동이 큰데, RMSProp의 단순함이 오히려 그 변동에 잘 대처하기 때문이다.</p>
+
+      <h2>RMSProp + 모멘텀</h2>
+
+      <p>RMSProp은 모멘텀과 자연스럽게 결합 가능하다. 두 가지 방식이 있다.</p>
+
+      <p><strong>1) 표준 결합</strong>: RMSProp이 조정한 기울기를 모멘텀의 속도에 누적.</p>
+
+      <div class="math-block">$$ v \leftarrow \alpha v - \frac{\varepsilon}{\sqrt{r}} \odot \hat{g}, \quad \theta \leftarrow \theta + v $$</div>
+
+      <p><strong>2) Adam 방식</strong>: 모멘텀과 RMSProp의 두 이동 평균을 별도로 유지하고 편향 보정까지 더한다. 다음 절에서 본다.</p>
+
+      <h2>위젯 — AdaGrad vs RMSProp 시간 추이</h2>
+
+      <p>아래 위젯은 같은 좁은 골짜기에서 AdaGrad와 RMSProp의 누적 $r$이 어떻게 다르게 자라는지 보여 준다. AdaGrad의 $r$은 단조 증가해 영원히 커지지만, RMSProp의 $r$은 평형값에 수렴한다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 09</span><span>AdaGrad의 단조 증가 vs RMSProp의 평형 수렴</span></div>
+        <div class="rm-stage">
+          <canvas id="rmCanvas" width="800" height="460"></canvas>
+        </div>
+        <div class="rm-read">
+          <span>ρ (RMSProp 감쇠율) = <b id="readRho">0.90</b></span>
+          <span>AdaGrad r_x = <b id="readAGr">0.00</b></span>
+          <span>RMSProp r_x = <b id="readRMr">0.00</b></span>
+        </div>
+        <div class="widget-controls">
+          <div class="slider">
+            <label>RMSProp 감쇠율 ρ <b id="rhoVal">0.90</b></label>
+            <input id="rhoSlide" type="range" min="0.5" max="0.999" value="0.9" step="0.01">
+          </div>
+          <button class="btn ghost" id="restartBtn">처음부터</button>
+        </div>
+      </div>
+      <p class="widget-cap">파랑 = AdaGrad의 r_x (단조 증가, 영원히 커진다). 주홍 = RMSProp의 r_x (평형값에서 진동). ρ가 클수록 윈도우가 길어 평형값이 안정. ρ=0.99면 윈도우 100스텝, ρ=0.9면 윈도우 10스텝.</p>
+    </div>
+
+    <div class="prose">
+
+      <h2>RMSProp의 윈도우 길이 — ρ가 결정하는 적응 시간</h2>
+
+      <p>RMSProp의 핵심 손잡이는 감쇠율 $\rho$다. 이 값이 결정하는 것은 "얼마나 먼 과거까지 기억하는가"이다. 효과적 윈도우 크기는 $1/(1-\rho)$로 근사할 수 있다.</p>
+
+      <p>$\rho = 0.9$이면 윈도우가 약 10스텝, $\rho = 0.99$이면 약 100스텝, $\rho = 0.999$이면 약 1000스텝이다. 이 값을 어떻게 선택해야 하는가? 답은 비용 함수의 곡률이 얼마나 빨리 변하는가에 달려 있다. 곡률이 빠르게 변하는 영역에서는 작은 윈도우(짧은 기억)가 좋고, 천천히 변하는 영역에서는 큰 윈도우(긴 기억)가 좋다. 실전에서 $\rho = 0.9$가 기본값으로 자리잡은 이유는 대부분의 신경망 학습에서 곡률 변화 속도가 그 정도이기 때문이다.</p>
+
+      <p>이 윈도우 개념은 모멘텀의 $\alpha$와 같은 직관에서 나온다. 모멘텀의 $\alpha$가 "기울기 방향의 기억 길이"라면, RMSProp의 $\rho$는 "기울기 크기의 기억 길이"다. 둘은 서로 독립적인 통제 손잡이이고, Adam에서는 둘 다 동시에 사용한다. Adam의 $\rho_1 = 0.9$(모멘텀)와 $\rho_2 = 0.999$(RMSProp)가 서로 다른 윈도우 길이를 갖는 이유가 이것이다. 방향의 기억은 짧게, 크기의 기억은 길게.</p>
+
+      <h2>RMSProp의 한계와 Adam의 등장</h2>
+
+      <p>RMSProp이 AdaGrad의 약점을 해결했지만, 한 가지 미묘한 문제가 남아 있다. <strong>학습 초기의 편향(bias) 문제</strong>다. RMSProp의 $r$은 0으로 초기화되므로, 첫 몇 스텝 동안 $r$이 진짜 평형값보다 작다. 그러면 분모 $\sqrt{r}$도 작아 학습률이 비정상적으로 크다. 학습 초기에 불안정한 큰 스텝이 일어날 수 있다.</p>
+
+      <p>이 문제를 정면으로 푸는 알고리즘이 Adam이다. Adam은 RMSProp에 모멘텀을 결합하고, 두 이동 평균 모두에 편향 보정(bias correction)을 적용한다. 그 결과 학습 초기와 후기 모두 안정적이고, 하이퍼파라미터 튜닝에도 강건(robust)하다. 다음 절에서 자세히 본다.</p>
+
+      <h2>시험 답안 핵심</h2>
+
+      <p>RMSProp이 시험에 나오면 다음 세 가지를 정확히 적자. 첫째, <strong>$r \leftarrow \rho r + (1-\rho) g^2$의 지수 감쇠 이동 평균</strong>. 둘째, <strong>AdaGrad의 단조 누적 문제 해결, 평형 상태로 수렴</strong>. 셋째, <strong>비볼록 신경망에서 학습률이 0으로 사라지지 않음</strong>. ρ=0.9가 표준 기본값이라는 것도 함께 기억하자.</p>
+    </div>
+
+    <nav class="ch-foot" id="chFoot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'순수 vs ML 최적화' }, { no:'02', t:'학습의 장애물' }, { no:'03', t:'미니배치 SGD 1' }, { no:'04', t:'미니배치 SGD 2' },
+    { no:'05', t:'학습률의 의미' }, { no:'06', t:'모멘텀 1' }, { no:'07', t:'모멘텀 2 (네스테로프)' }, { no:'08', t:'적응 1 (AdaGrad)' },
+    { no:'09', t:'적응 2 (RMSProp)' }, { no:'10', t:'적응 3 (Adam)' }, { no:'11', t:'초기화 1 (대칭성)' }, { no:'12', t:'초기화 2 (Xavier·He)' },
+    { no:'13', t:'배치 정규화 1' }, { no:'14', t:'배치 정규화 2' }, { no:'15', t:'학습률 스케줄' }, { no:'16', t:'기울기 클리핑' },
+    { no:'17', t:'시험 대비' },
+  ];
+  const CUR = '09';
+  const navlist = document.getElementById('navlist');
+  SUBS.forEach(s => { const li = document.createElement('li'); li.innerHTML = `<a href="${s.no}.html"${s.no===CUR?' class="current"':''}>${s.t}</a>`; navlist.appendChild(li); });
+  const chFoot = document.getElementById('chFoot');
+  const idx = SUBS.findIndex(s => s.no === CUR);
+  const prev = idx > 0 ? SUBS[idx-1] : { no:'index', t:'표지로' };
+  const next = idx < SUBS.length-1 ? SUBS[idx+1] : { no:'index', t:'표지로' };
+  chFoot.innerHTML = `<a href="${prev.no}.html"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` + `<a href="${next.no}.html" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
+        throwOnError: false,
+      });
+    }
+  });
+
+  (function() {
+    const css = getComputedStyle(document.documentElement);
+    const C = {
+      structure: css.getPropertyValue('--structure').trim() || '#2D5B7A',
+      style: css.getPropertyValue('--style').trim() || '#C0492E',
+      faint: css.getPropertyValue('--ink-faint').trim() || '#8E8576',
+      line: '#d8d2c4',
+    };
+    const cvs = document.getElementById('rmCanvas');
+    const rhoSlide = document.getElementById('rhoSlide');
+    const rhoVal = document.getElementById('rhoVal');
+    const readRho = document.getElementById('readRho');
+    const readAGr = document.getElementById('readAGr');
+    const readRMr = document.getElementById('readRMr');
+    const restartBtn = document.getElementById('restartBtn');
+
+    let ag_r = 0;
+    let rm_r = 0;
+    let agHist = [], rmHist = [];
+    let step = 0;
+    function reset() { ag_r = 0; rm_r = 0; agHist = []; rmHist = []; step = 0; }
+    reset();
+
+    function tick() {
+      const rho = +rhoSlide.value;
+      // 기울기 시뮬레이션: 평균 0.7 분산 0.1
+      const g = 0.7 + (Math.random()-0.5) * 0.3;
+      const g2 = g*g;
+      ag_r += g2;
+      rm_r = rho * rm_r + (1 - rho) * g2;
+      agHist.push(ag_r);
+      rmHist.push(rm_r);
+      step++;
+      if (agHist.length > 500) { agHist.shift(); rmHist.shift(); }
+    }
+
+    function draw() {
+      const ctx = cvs.getContext('2d');
+      const W = cvs.width, H = cvs.height;
+      ctx.clearRect(0,0,W,H);
+      ctx.strokeStyle = C.line; ctx.strokeRect(0.5,0.5,W-1,H-1);
+      const N = agHist.length;
+      const maxAG = Math.max(1, ...agHist);
+      const X = i => 50 + (i/(Math.max(1,N-1)))*(W-70);
+      const Y = r => H - 40 - (Math.log10(Math.max(r, 1e-3) + 1) / Math.log10(maxAG + 1)) * (H-60);
+      ctx.strokeStyle = C.line; ctx.globalAlpha = 0.5;
+      for (let i = 0; i <= Math.ceil(Math.log10(maxAG+1)); i++) {
+        ctx.beginPath();
+        ctx.moveTo(50, Y(Math.pow(10, i) - 1));
+        ctx.lineTo(W-20, Y(Math.pow(10, i) - 1));
+        ctx.stroke();
+        ctx.fillStyle = C.faint; ctx.font='10px monospace';
+        ctx.fillText('10^'+i, 6, Y(Math.pow(10, i) - 1)+3);
+      }
+      ctx.globalAlpha = 1.0;
+      // AdaGrad
+      ctx.strokeStyle = C.structure; ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      agHist.forEach((r, i) => { if (i===0) ctx.moveTo(X(i), Y(r)); else ctx.lineTo(X(i), Y(r)); });
+      ctx.stroke();
+      // RMSProp
+      ctx.strokeStyle = C.style; ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      rmHist.forEach((r, i) => { if (i===0) ctx.moveTo(X(i), Y(r)); else ctx.lineTo(X(i), Y(r)); });
+      ctx.stroke();
+      ctx.fillStyle = C.faint; ctx.font='12px monospace';
+      ctx.fillText('파랑 = AdaGrad r (단조 증가)', 14, 20);
+      ctx.fillText('주홍 = RMSProp r (평형 수렴)', 14, 38);
+      ctx.fillText('x = 스텝, y = log10(r+1)', 14, 56);
+    }
+
+    function loop() {
+      tick();
+      const rho = +rhoSlide.value;
+      rhoVal.textContent = rho.toFixed(2);
+      readRho.textContent = rho.toFixed(2);
+      readAGr.textContent = ag_r.toFixed(2);
+      readRMr.textContent = rm_r.toFixed(3);
+      draw();
+      setTimeout(()=>requestAnimationFrame(loop), 30);
+    }
+    rhoSlide.addEventListener('input', reset);
+    restartBtn.addEventListener('click', reset);
+    loop();
+  })();
+</script>
+</body>
+</html>

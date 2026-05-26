@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sub 13 · 역전파 2 — 식 6.44-6.57 한 줄씩 · Ch.06</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 13 · 시험 1순위 · 식별 풀이</span>
+      <h1>역전파 2 —<br><span class="t-style">식 6.44 - 6.57</span> 한 줄씩</h1>
+      <p class="lede">이 절은 시험에서 가장 자주 묻는 형태다. 식 6.44부터 6.57까지를 한 식씩 분해하면서, 기호가 무엇을 의미하는지, 왜 이런 형태가 되었는지, 신경망 학습에서 무슨 역할을 하는지를 한 줄씩 짚는다.</p>
+    </header>
+
+    <div class="prose">
+      <p>12절에서 체인룰의 직관을 다졌다. 이 절은 그 직관을 Goodfellow et al.의 정확한 수식 표기 — 6.44부터 6.57까지로 풀어낸다. 큰 흐름은 네 덩어리다.</p>
+      <ol>
+        <li><strong>연쇄법칙</strong>: 식 6.44 - 6.47 (스칼라 → 벡터 → 텐서)</li>
+        <li><strong>역전파의 재귀 구조</strong>: 식 6.48 - 6.55</li>
+        <li><strong>MLP에서의 실제 기울기</strong>: 식 6.56</li>
+        <li><strong>자동미분의 한계</strong>: 식 6.57 (softmax)</li>
+      </ol>
+
+      <h2>덩어리 1: 연쇄법칙의 정확한 표기 (식 6.44 - 6.47)</h2>
+
+      <h3>식 6.44 — 스칼라 체인룰</h3>
+      <div class="math-block">$$ \frac{dz}{dx} = \frac{dz}{dy} \cdot \frac{dy}{dx} $$</div>
+      <p class="math-note">변수의 흐름이 x → y → z일 때. 두 단계 변화율의 곱.</p>
+
+      <p>12절에서 보았다. $x$의 작은 변화가 $y$를 통해 $z$로 전달될 때, 그 영향은 두 단계 미분의 곱이다. 가장 기본 형태이고, 다음 식들의 출발점이다.</p>
+
+      <h3>식 6.45 — 벡터 입력의 체인룰</h3>
+      <div class="math-block">$$ \frac{\partial z}{\partial x_i} = \sum_{j} \frac{\partial z}{\partial y_j} \cdot \frac{\partial y_j}{\partial x_i} $$</div>
+      <p class="math-note">x_i가 여러 y_j를 통해 z에 영향을 줄 때. 가능한 모든 경로의 영향을 합산.</p>
+
+      <p>이 식의 핵심은 시그마 $\sum_j$다. 스칼라 체인룰에서는 경로가 하나라 곱만 하면 됐지만, 벡터에서는 $x_i$가 여러 $y_j$에 동시에 영향을 줄 수 있어 모든 경로의 기여를 더해야 한다. 신경망에서는 한 가중치가 여러 뉴런으로 신호를 보내고, 여러 가중치가 한 뉴런으로 모이므로, 이 합 구조가 자연스럽게 나타난다.</p>
+
+      <h3>식 6.46 — 행렬 형태 (자코비안 사용)</h3>
+      <div class="math-block">$$ \nabla_{\mathbf{x}} z = \left( \frac{\partial \mathbf{y}}{\partial \mathbf{x}} \right)^\top \nabla_{\mathbf{y}} z $$</div>
+      <p class="math-note">식 6.45의 m개 식을 한 줄의 행렬 곱으로 압축. 자코비안의 전치 × 출력 기울기.</p>
+
+      <p>여기서 $\partial \mathbf{y}/\partial \mathbf{x}$는 자코비안 행렬이다. 12절에서 본 "역전파의 한 노드 = 자코비안 전치 × 뒤에서 온 기울기"가 정확히 이 식이다. 모든 신경망의 모든 층이 이 동작을 한다.</p>
+
+      <h3>식 6.47 — 텐서 일반화</h3>
+      <div class="math-block">$$ \nabla_{\mathsf{X}} z = \sum_{j} (\nabla_{\mathsf{X}} \mathsf{Y}_j) \cdot \frac{\partial z}{\partial \mathsf{Y}_j} $$</div>
+      <p class="math-note">벡터를 넘어 텐서일 때. 인덱스가 더 늘어날 뿐 원리는 동일.</p>
+
+      <p>CNN의 활성값 텐서(batch × channel × height × width)나 RNN의 시계열 텐서처럼, 신경망에는 종종 다차원 텐서가 등장한다. 그래도 체인룰의 원리는 같다. 텐서를 펼치면 결국 벡터고, 벡터의 체인룰을 그대로 적용한다.</p>
+
+      <h2>덩어리 2: 역전파의 재귀 구조 (식 6.48 - 6.55)</h2>
+
+      <h3>식 6.48 — 계산 그래프의 일반 노드</h3>
+      <div class="math-block">$$ u^{(i)} = f^{(i)}(\mathbb{A}^{(i)}) $$</div>
+      <p class="math-note">i번째 노드의 값. f(i)는 그 노드의 연산. A(i)는 그 노드의 부모 노드들의 값 집합.</p>
+
+      <p>이 식은 특별한 수학이 아니라, 계산 그래프를 일반적으로 표기하는 문법이다. 11절에서 본 계산 그래프의 한 노드를 일반 식으로 적었다. 모든 노드가 이 형식을 따른다.</p>
+
+      <h3>식 6.49 - 6.52 — 같은 미분의 두 가지 적기</h3>
+      <p>그림 6.9의 단순 체인 $w \to x \to y \to z$를 예로, 같은 미분 $\partial z / \partial w$를 두 가지 방식으로 적을 수 있다는 것을 보여 준다.</p>
+
+      <div class="math-block">$$ \text{식 6.49: } \quad \frac{\partial z}{\partial w} $$</div>
+      <p class="math-note">우리가 궁금한 목표. w의 변화가 z에 미치는 영향.</p>
+
+      <div class="math-block">$$ \text{식 6.50: } \quad \frac{\partial z}{\partial w} = \frac{\partial z}{\partial y} \cdot \frac{\partial y}{\partial x} \cdot \frac{\partial x}{\partial w} $$</div>
+      <p class="math-note">체인룰을 정직하게 적용한 형태. 경로가 하나라 모든 중간 미분을 곱한다.</p>
+
+      <div class="math-block">$$ \text{식 6.51: } \quad = f'(y) \cdot f'(x) \cdot f'(w) $$</div>
+      <p class="math-note">각 단계가 같은 함수 f라 가정한 형태. 중간값 x, y를 메모리에 저장해 둔 채 쓴다.</p>
+
+      <div class="math-block">$$ \text{식 6.52: } \quad = f'(f(f(w))) \cdot f'(f(w)) \cdot f'(w) $$</div>
+      <p class="math-note">중간값을 저장하지 않고 매번 다시 펼쳐 적은 형태. 수학적으론 맞지만 계산적으론 비효율.</p>
+
+      <p>식 6.51과 6.52의 대비가 이 부분의 핵심이다. <strong>같은 미분이지만 계산 방식이 다르다.</strong> 6.51처럼 중간값을 저장해 두면 한 번 계산한 값을 재사용할 수 있다. 6.52처럼 매번 다시 계산하면 $f(w)$를 두 번, $f(f(w))$를 한 번 계산해야 한다. 깊이가 깊을수록 그 차이는 지수적으로 커진다. <strong>역전파는 단순한 미분 공식이 아니라, 중간 결과를 재사용해서 중복 계산을 피하는 계산 전략이다.</strong></p>
+
+      <h3>식 6.53 — 역전파의 핵심 재귀식</h3>
+      <div class="math-block">$$ \frac{\partial u^{(n)}}{\partial u^{(j)}} = \sum_{i : j \in \text{Pa}(u^{(i)})} \frac{\partial u^{(n)}}{\partial u^{(i)}} \cdot \frac{\partial u^{(i)}}{\partial u^{(j)}} $$</div>
+      <p class="math-note">u(n)은 최종 손실, u(j)는 지금 기울기를 계산할 중간 노드, u(i)는 u(j)의 자식 노드.</p>
+
+      <p>이 식이 역전파의 심장이다. 한 줄씩 풀어 보자.</p>
+
+      <ul>
+        <li>왼쪽 $\partial u^{(n)} / \partial u^{(j)}$: 우리가 지금 구하려는 미분. "중간 노드 $u^{(j)}$가 최종 손실 $u^{(n)}$에 미치는 영향".</li>
+        <li>합 기호 $\sum_{i : j \in \text{Pa}(u^{(i)})}$: $u^{(j)}$를 부모로 가진 모든 자식 노드 $u^{(i)}$에 대해 합.</li>
+        <li>첫 번째 곱항 $\partial u^{(n)} / \partial u^{(i)}$: 자식 노드가 이미 가지고 있는 "뒤에서 온 기울기".</li>
+        <li>두 번째 곱항 $\partial u^{(i)} / \partial u^{(j)}$: 현재 엣지 $j \to i$의 지역 미분.</li>
+      </ul>
+
+      <p>즉 "<strong>중간 노드의 기울기 = 모든 자식 노드의 기울기에 각 엣지의 지역 미분을 곱해 합한 것</strong>". 이게 역전파의 모든 동작이다. 그래프의 모든 노드에서 이 한 식을 역위상정렬 순으로 한 번씩 수행하면, 모든 중간 노드와 입력 노드의 기울기가 한 번에 얻어진다.</p>
+
+      <h3>식 6.54 — 각 연산의 backprop 규칙</h3>
+      <div class="math-block">$$ \text{op.bprop}(\text{inputs}, X, G) = \sum_{i} (\nabla_X \text{op.f}(\text{inputs})_i) \cdot G_i $$</div>
+      <p class="math-note">각 연산이 자기 backprop 규칙을 어떻게 구현해야 하는지의 일반 형식.</p>
+
+      <p>역전파 알고리즘 자체는 매우 일반적이지만, 실제 미분 규칙은 각 연산이 자기 책임으로 제공한다. 행렬 곱 노드의 backprop, ReLU 노드의 backprop, softmax 노드의 backprop이 각각 별도로 정의된다. PyTorch에서 `register_backward` 같은 메커니즘이 정확히 이 일을 한다. 이 식의 의미는 "역전파 알고리즘은 어떤 연산의 backprop 규칙도 받아들일 수 있는 일반 프레임워크"라는 점이다.</p>
+
+      <h3>식 6.55 — 모든 경로 합 (naïve 표현)</h3>
+      <div class="math-block">$$ \frac{\partial u^{(n)}}{\partial u^{(j)}} = \sum_{\text{all paths } j \to n} \prod_k \frac{\partial u^{(\pi_k)}}{\partial u^{(\pi_{k-1})}} $$</div>
+      <p class="math-note">식 6.53을 재귀적으로 끝까지 펼친 형태. 모든 경로에 대한 미분 곱의 합.</p>
+
+      <p>식 6.53을 자식 노드까지 재귀적으로 다 펼치면 결국 이 형태가 된다. 수학적으로 맞지만 <strong>계산적으로는 매우 비효율적</strong>이다. 경로 수가 깊이에 대해 지수적으로 늘어나기 때문이다. 그래서 실제로는 식 6.53 형태로 중간 기울기를 메모리에 저장하며 누적한다. 식 6.55는 "왜 순진한 방법이 비싼가"를 보여 주고, 식 6.53은 "왜 역전파가 효율적인가"를 보여 준다. 둘은 같은 답을 가리키지만 계산 비용이 천양지차다.</p>
+
+      <h2>덩어리 3: MLP에서의 실제 기울기 (식 6.56)</h2>
+
+      <h3>식 6.56 — 총 비용 = 데이터 손실 + 가중치 감쇠</h3>
+      <div class="math-block">$$ J = J_{\text{MLE}} + \lambda \left( \sum_{i,j} (W^{(1)}_{i,j})^2 + \sum_{i,j} (W^{(2)}_{i,j})^2 \right) $$</div>
+      <p class="math-note">두 층 MLP의 총 비용. J_MLE = cross-entropy. 두 제곱합 = L2 정규화. λ = 정규화 강도.</p>
+
+      <p>실제 학습에서는 훈련 데이터를 잘 맞추는 것만으로 부족하다. 가중치가 너무 커지면 과적합(overfitting)으로 빠지기 쉽다. 그래서 비용 함수는 보통 두 부분의 합이다.</p>
+      <ol>
+        <li><strong>데이터 적합 항 ($J_{\text{MLE}}$)</strong>: 정답을 잘 맞히려는 항. 보통 cross-entropy.</li>
+        <li><strong>가중치 감쇠 항 ($\lambda \sum W^2$)</strong>: 가중치를 작게 유지하려는 항. L2 정규화 또는 weight decay.</li>
+      </ol>
+
+      <p>역전파 관점에서 이 식이 중요한 이유는 <strong>한 파라미터의 기울기가 두 갈래로 갈라진다</strong>는 점이다. 한 가중치 $W^{(l)}_{i,j}$가 cross-entropy 손실에도 참여하고 정규화 항에도 참여한다. 그래서 역전파에서 이 가중치의 기울기는 두 기여의 합이 된다.</p>
+
+      <div class="math-block">$$ \frac{\partial J}{\partial W^{(l)}_{i,j}} = \underbrace{\frac{\partial J_{\text{MLE}}}{\partial W^{(l)}_{i,j}}}_{\text{역전파로 계산}} + \underbrace{2 \lambda W^{(l)}_{i,j}}_{\text{정규화 항의 미분}} $$</div>
+      <p class="math-note">두 항의 합. 정규화 항은 자기 자신에 비례하는 보정.</p>
+
+      <p>이게 정확히 weight decay라 부르는 메커니즘이다. 매 업데이트마다 가중치가 자기 자신에 비례하는 만큼씩 줄어든다. 6장 후반의 정규화는 7장에서 더 자세히 다뤄진다.</p>
+
+      <h2>덩어리 4: 자동미분의 한계 (식 6.57)</h2>
+
+      <h3>식 6.57 — softmax의 정의 재확인</h3>
+      <div class="math-block">$$ q_i = \frac{e^{z_i}}{\sum_j e^{z_j}} $$</div>
+      <p class="math-note">10절에서 본 softmax. q는 출력 확률, z는 logit.</p>
+
+      <p>이 식 자체는 새로운 것이 아니다. 그런데 왜 6.57로 등장하는가? 교재의 의도는 자동미분의 한 한계를 보여 주는 데 있다. softmax + cross-entropy의 미분이 깔끔하게 $q - p$ 형태로 떨어진다는 것을 사람은 쉽게 본다(10절에서 유도). 그러나 일반적인 역전파 알고리즘은 원래 그래프에 있는 $e^z$, $\sum$, 나눗셈, $\log$ 노드들을 따라가며 미분한다. 그 결과 수학적으로는 같은 답이지만, 중간 계산이 훨씬 길고 수치 안정성도 떨어진다.</p>
+
+      <p>이 식이 6장 끝에 등장하는 이유는 두 가지다.</p>
+      <ol>
+        <li><strong>역전파는 실용적이지만 항상 최적의 대수적 단순화는 아니다</strong>. 자동미분이 사람만큼 똑똑하지는 못하다.</li>
+        <li><strong>그래서 프레임워크는 추가적인 단순화 휴리스틱을 사용한다</strong>. PyTorch의 `log_softmax + nll_loss`, TensorFlow의 `softmax_cross_entropy_with_logits` 같은 fused operation이 정확히 사람의 단순화를 미리 적용한 함수다.</li>
+      </ol>
+
+      <h2>덩어리들 사이의 연결 — 한 번 더 정리</h2>
+      <p>이제 전체 흐름을 짧게 다시 보면 이렇다.</p>
+      <table class="symbols">
+        <tr><td>식 번호</td><td>내용</td></tr>
+        <tr><td>6.44</td><td>스칼라 체인룰 (가장 기본)</td></tr>
+        <tr><td>6.45</td><td>벡터로 일반화 — 여러 경로 합</td></tr>
+        <tr><td>6.46</td><td>자코비안 행렬 표기 (역전파의 한 노드 동작)</td></tr>
+        <tr><td>6.47</td><td>텐서로 일반화 (CNN, RNN 등)</td></tr>
+        <tr><td>6.48</td><td>계산 그래프의 일반 노드 정의</td></tr>
+        <tr><td>6.49-6.52</td><td>같은 미분의 두 가지 적기 — 메모이제이션의 가치</td></tr>
+        <tr><td>6.53</td><td>역전파의 핵심 재귀식</td></tr>
+        <tr><td>6.54</td><td>각 연산의 backprop 규칙 일반 형식</td></tr>
+        <tr><td>6.55</td><td>모든 경로 합 (왜 naïve 방식이 비싼가)</td></tr>
+        <tr><td>6.56</td><td>MLP 비용 = 데이터 손실 + 가중치 감쇠</td></tr>
+        <tr><td>6.57</td><td>softmax — 자동미분의 한계 예시</td></tr>
+      </table>
+
+      <h2>지금 잡아 둘 그림</h2>
+      <ol>
+        <li><strong>6.44-6.47 = 연쇄법칙의 수학적 원리.</strong> 스칼라 → 벡터 → 텐서.</li>
+        <li><strong>6.48-6.55 = 그 원리를 그래프에 재귀적으로 적용 = 역전파.</strong> 중간값 저장이 효율의 핵심.</li>
+        <li><strong>6.56 = 실제 MLP 비용 함수.</strong> 데이터 적합 + 정규화의 합.</li>
+        <li><strong>6.57 = 자동미분의 한계 — softmax 단순화는 사람이 더 잘한다.</strong></li>
+        <li><strong>딥러닝 학습 전체는 거대한 미분 문제이지만, 계산 그래프와 동적계획법 덕분에 실제로 계산 가능하다.</strong></li>
+      </ol>
+      <p>다음 절은 이 모든 식을 매우 작은 망(2-2-1 MLP)에서 손으로 한 번 풀어 본다. 시험에서 가장 자주 나오는 형태가 이 손계산이다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script src="widgets.js"></script>
+<script>
+  window.addEventListener('load', () => {
+    CH6.buildNav('13');
+  });
+</script>
+</body>
+</html>

@@ -3,37 +3,30 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>06 — 시험 대비 체크리스트 — Ch.1</title>
+<title>06 · 역사 1 — 사이버네틱스 — Chapter 1</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
-  .defcard { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: .8rem; max-width: var(--measure); margin: 1.6rem auto; padding-inline: 1.4rem; }
-  .defcard .card { padding: 1rem 1.1rem; background: #fff; border: 1px solid var(--line); border-top: 3px solid var(--structure); border-radius: 9px; }
-  .defcard .card.style-top { border-top-color: var(--style); }
-  .defcard .card.synth-top { border-top-color: var(--synth); }
-  .defcard .card.ink-top { border-top-color: var(--ink-soft); }
-  .defcard .card .ct { font-family: var(--mono); font-size: .7rem; letter-spacing: .12em; color: var(--ink-faint); text-transform: uppercase; margin-bottom: .35rem; }
-  .defcard .card h4 { margin: 0 0 .35rem; font-family: var(--serif); font-size: 1.05rem; color: var(--ink); }
-  .defcard .card p { margin: 0; font-size: .85rem; color: var(--ink-soft); line-height: 1.5; }
-
-  .matchgame { max-width: var(--measure); margin: 1.4rem auto; padding-inline: 1.4rem; display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; }
-  .matchcol h5 { margin: 0 0 .5rem; font-family: var(--mono); font-size: .75rem; letter-spacing: .12em; color: var(--ink-faint); text-transform: uppercase; }
-  .mitem { padding: .6rem .8rem; background: #fff; border: 1px solid var(--line); border-radius: 7px; margin-bottom: .35rem; cursor: pointer; font-size: .88rem; color: var(--ink-soft); transition: all .15s var(--ease); }
-  .mitem:hover { border-color: var(--structure-lo); transform: translateX(2px); }
-  .mitem.selected { background: var(--ink); color: var(--paper); border-color: var(--ink); }
-  .mitem.correct { background: rgba(45,91,122,0.1); border-color: var(--structure); color: var(--structure); }
-  .mitem.wrong { background: rgba(192,73,46,0.1); border-color: var(--style); color: var(--style); }
-  .match-status { max-width: var(--measure); margin: .5rem auto 1rem; padding-inline: 1.4rem; text-align: center; font-family: var(--mono); font-size: .82rem; color: var(--ink-soft); }
-  .match-status b { color: var(--ink); }
-  .match-reset { font-family: var(--mono); font-size: .72rem; padding: .3rem .7rem; background: transparent; color: var(--ink-soft); border: 1px solid var(--line); border-radius: 5px; cursor: pointer; margin-left: .5rem; }
-  .match-reset:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
-
-  .finalbox { max-width: var(--measure); margin: 2.4rem auto 1rem; padding: 1.6rem 1.4rem; background: linear-gradient(180deg, var(--paper-2), #fff); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow-plate); }
-  .finalbox h3 { margin-top: 0; font-family: var(--serif); font-size: 1.3rem; color: var(--ink); }
-  .finalbox p { font-size: .92rem; color: var(--ink-soft); line-height: 1.6; margin: 0 0 .8rem; }
-  .finalbox p:last-child { margin-bottom: 0; }
+  .tl-svg { display: block; width: 100%; max-width: 720px; margin: 0 auto; }
+  .tl-stage { padding: 1.4rem 1rem 1rem; }
+  .tl-readout { max-width: var(--measure); margin: 0 auto; padding: 1rem 1.4rem; min-height: 7rem; }
+  .tl-readout h5 { margin: 0 0 .35rem; font-family: var(--serif); font-size: 1.1rem; color: var(--ink); }
+  .tl-readout .yr { display: inline-block; font-family: var(--mono); font-size: .7rem; color: var(--style); margin-right: .6rem; letter-spacing: .1em; }
+  .tl-readout p { margin: 0; font-size: .92rem; color: var(--ink-soft); line-height: 1.6; }
+  .mark { cursor: pointer; transition: r .15s, fill .15s; }
+  .mark:hover { r: 8; }
+  .mark.active { r: 10; }
+  .mark-label { font-family: var(--mono); font-size: 9px; fill: var(--ink-faint); pointer-events: none; }
+  .xor-stage { padding: 1.4rem 1rem 1rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .xor-card { background: #fff; border: 1px solid var(--line-soft); border-radius: 9px; padding: .8rem; }
+  .xor-card h5 { margin: 0 0 .4rem; font-family: var(--serif); font-size: .98rem; }
+  .xor-card canvas { display: block; width: 100%; max-width: 240px; height: 240px; margin: 0 auto; }
+  .xor-card .verdict { display: block; text-align: center; font-family: var(--mono); font-size: .72rem; margin-top: .4rem; }
+  .xor-card.fail .verdict { color: var(--style); }
+  .xor-card.ok .verdict { color: var(--structure); }
+  @media (max-width: 640px) { .xor-stage { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
@@ -45,155 +38,92 @@
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Sub 06 — 시험 직전 한 번 더 훑을 카드</span>
-      <h1>시험 대비 — 핵심 <span class="t-structure">정의</span>, <span class="t-style">구분</span>, 예상 질문</h1>
-      <p class="lede">이 절은 새 내용을 더하지 않는다. 1-5절의 결론을 카드로 압축하고, 시험에서 묻기 좋은 형태의 질문 7개를 아코디언으로 펼친다. 시험 30분 전 한 번 더 훑기 좋다.</p>
+      <span class="kicker">Sub-Chapter 06 · 역사의 첫 번째 물결</span>
+      <h1>사이버네틱스 (1940-1960s)와<br><span class="t-style">첫 번째 겨울</span></h1>
+      <p class="lede">신경망의 첫 번째 부흥은 1940년대 McCulloch-Pitts 모델에서 시작해 1960년대 퍼셉트론으로 정점을 찍었다. 그러나 단층 퍼셉트론의 표현력 한계 — 가장 단순한 XOR 함수조차 풀지 못한다는 사실 — 가 폭로되면서 첫 번째 인공지능 겨울이 시작된다. 그 한계의 정체와, 그것이 왜 결정적이었는지를 본다.</p>
     </header>
 
     <div class="prose">
-      <h2>핵심 정의 5장 — 한 줄씩</h2>
-      <p>다음 다섯 카드의 정의는 시험에 그대로 답안에 옮겨 적을 수 있을 정도로 다듬었다. 한 카드씩 손으로 한 번 적어 보면 외워진다.</p>
-    </div>
+      <p>딥러닝의 역사는 흔히 "2012년 AlexNet으로 폭발했다"는 짧은 이야기로 압축된다. 하지만 그 이야기 전에 무려 70년의 시도가 있었다. 그 70년 동안 신경망은 세 번 부흥했고 두 번 겨울을 맞았다. 그 흐름을 모르고 현대 딥러닝을 공부하면, "왜 1980년대에 멈췄다가 2010년대에 다시 살아났는가"라는 질문에 답할 수 없다. 그리고 그 답을 모르면, 지금의 유행이 일시적인 것인지 본질적인 것인지를 분별할 안목이 생기지 않는다.</p>
 
-    <div class="defcard">
-      <div class="card">
-        <p class="ct">Card 01</p>
-        <h4>AI (Artificial Intelligence)</h4>
-        <p>“지능적으로 보이는” 컴퓨터 행동의 가장 넓은 우산. 학습 없이 규칙만으로 짠 시스템도 포함된다.</p>
-      </div>
-      <div class="card">
-        <p class="ct">Card 02</p>
-        <h4>ML (Machine Learning)</h4>
-        <p>데이터에서 입력↔출력 함수를 학습한다. 좋은 특징(feature)은 여전히 사람이 설계한다.</p>
-      </div>
-      <div class="card style-top">
-        <p class="ct">Card 03</p>
-        <h4>표상학습(representation learning)</h4>
-        <p>특징까지 모델이 데이터에서 뽑게 한다. 사람이 특징을 적기 어려운 음성, 이미지, 자연어에서 핵심.</p>
-      </div>
-      <div class="card synth-top">
-        <p class="ct">Card 04</p>
-        <h4>딥러닝(deep learning)</h4>
-        <p>표상학습을 다층으로 쌓아, 단순 표상에서 복잡 표상까지 단계적으로 합성한다. 깊이는 층 수가 아니라 합성의 깊이.</p>
-      </div>
-      <div class="card ink-top">
-        <p class="ct">Card 05</p>
-        <h4>깊이(depth)의 두 정의</h4>
-        <p>(1) 계산 그래프의 가장 긴 경로 (2) 복잡한 개념을 단순 개념들의 몇 단계 합성으로 만드는가.</p>
-      </div>
-    </div>
+      <p>이 sub-chapter는 첫 번째 물결을 다룬다. 1940년대 McCulloch와 Pitts의 인공 뉴런(artificial neuron) 모델에서 시작해, 1958년 Rosenblatt의 퍼셉트론(perceptron), 1960년대의 짧은 호황, 그리고 1969년 Minsky와 Papert의 "Perceptrons" 책 출간으로 시작된 첫 번째 겨울까지. 이 흐름의 핵심은 한 줄이다. <strong>"신경망의 첫 번째 부흥은 표현력의 한계 때문에 멈췄다."</strong></p>
 
-    <div class="prose">
-      <h2>구분이 자주 헷갈리는 짝 — 매칭 게임으로 확인</h2>
-      <p>왼쪽 항목을 클릭한 뒤 오른쪽에서 짝이 되는 항목을 클릭하자. 모두 맞히면 “Ch.1의 핵심 분류는 손에 잡힌 것”이다.</p>
+      <h2>1943년 — McCulloch-Pitts 뉴런: 생물학적 영감과 수학적 추상화</h2>
+
+      <p>1943년 신경생리학자 Warren McCulloch와 논리학자 Walter Pitts가 한 편의 논문을 발표했다. 제목은 "A Logical Calculus of the Ideas Immanent in Nervous Activity"였다. 이 논문은 생물학적 뉴런이 하는 일을 매우 단순한 수학 모델로 추상화했다. 그들의 뉴런은 여러 입력을 받아 각각에 가중치를 곱하고, 그 합이 어떤 문턱(threshold)을 넘으면 1을, 넘지 못하면 0을 출력한다. 즉, 가장 단순한 형태의 임계 함수(step function)다.</p>
+
+      <div class="math-block">$$ y = \begin{cases} 1 & \text{if } \sum_{i} w_i x_i \geq \theta \\ 0 & \text{otherwise} \end{cases} $$</div>
+      <p class="math-note">x_i는 i번째 입력. w_i는 그 입력의 가중치. θ는 발화 문턱(firing threshold). 출력 y는 0 또는 1. 입력들의 가중 합이 문턱을 넘으면 뉴런이 "발화"한다.</p>
+
+      <p>이 수식이 왜 이 형태인가? McCulloch-Pitts는 생물학적 뉴런이 "여러 시냅스 입력을 받아, 그 합이 어떤 임계값을 넘으면 활동전위(action potential)를 일으킨다"는 생리학적 사실을 추상화한 것이다. 가중치 $w_i$는 시냅스 강도에, 문턱 $\theta$는 발화 임계값에 대응한다. 두 사람이 이 모델로 보인 가장 중요한 결과는, <em>"이런 단순한 뉴런들을 충분히 많이 연결하면 어떤 논리 함수든 만들 수 있다"</em>는 사실이었다. AND, OR, NOT 같은 기본 논리 게이트를 뉴런으로 표현할 수 있고, 그것들을 조합하면 컴퓨터가 할 수 있는 모든 계산이 가능하다. <strong>이 사실 하나가 "뇌가 곧 컴퓨터일 수 있다"는 발상의 시작이었다.</strong></p>
+
+      <p>그러나 McCulloch-Pitts 모델에는 결정적 한계가 있었다. <em>가중치를 배울 방법이 없었다.</em> 모든 가중치는 사람이 설계해서 손으로 넣어야 했다. "어떤 가중치 조합이 어떤 논리를 만든다"를 사람이 분석해야 했다. 학습은 없었다. 그래서 이 모델은 신경망이라기보다는 "신경 회로의 수학적 모형"에 더 가까웠다.</p>
+
+      <h2>1958년 — Rosenblatt의 퍼셉트론: 학습이 가능한 첫 신경망</h2>
+
+      <p>15년 후, 코넬 항공 연구소의 Frank Rosenblatt가 퍼셉트론(perceptron)을 발표했다. 퍼셉트론은 McCulloch-Pitts 뉴런에 <strong>학습 규칙</strong>을 추가한 것이다. 핵심 아이디어는 단순했다. "예측이 틀리면 가중치를 조금 조정한다." 구체적으로는, 정답이 1인데 예측이 0이면 가중치를 입력 방향으로 증가시키고, 정답이 0인데 예측이 1이면 가중치를 입력 방향으로 감소시킨다. 이 규칙을 반복하면, 충분히 많은 예시 후에 가중치가 정답을 잘 맞추는 방향으로 수렴한다.</p>
+
+      <div class="math-block">$$ w_i^{(t+1)} = w_i^{(t)} + \eta (y^* - \hat{y}) x_i $$</div>
+      <p class="math-note">w_i^(t)는 t번째 단계의 가중치. η는 학습률(learning rate, 0과 1 사이). y*는 정답. ŷ는 예측. x_i는 입력. 정답과 예측이 다를 때만 가중치가 움직인다.</p>
+
+      <div class="analogy">
+        <b>활쏘기 연습.</b> 처음 활을 쏘는 사람은 화살이 목표보다 위로 가면 다음 번엔 살짝 아래를 겨눈다. 아래로 가면 위를. 그 조정을 100번 반복하면 활쏘기 솜씨가 안정적으로 늘어난다. 퍼셉트론의 가중치 학습도 정확히 같다. 예측이 정답보다 크면 가중치를 줄이고, 작으면 키운다. 이 단순한 피드백 루프가 신경망 학습의 출발이었다.
+      </div>
+
+      <p>이 규칙이 만든 충격은 컸다. 1958년 New York Times는 <em>"퍼셉트론이 곧 걷고, 말하고, 자신을 의식할 것이다"</em>라고 보도했다. 미 해군은 이 기술이 비행기를 자율적으로 식별하는 데 쓰일 것이라고 발표했다. 이 흥분은 이후 10여 년간 이어졌다. 1960년대 초까지 인공지능 연구의 큰 부분이 퍼셉트론 계열이었다.</p>
+
+      <div class="analogy">
+        <b>온도 조절기와 학습.</b> 온도 조절기(thermostat)는 정해진 규칙을 따른다 — "온도가 22도 아래면 난방을 켠다." McCulloch-Pitts가 여기에 해당한다. 퍼셉트론은 한 발 더 나아간다. "온도가 추워도 사람들이 만족했다면 그 임계값을 한 칸 낮추고, 사람들이 불평했다면 한 칸 올린다." 사용자의 반응(정답)을 보고 규칙(가중치)을 조정한다. 이 차이가 곧 학습의 차이다.
+      </div>
+
+      <h2>1969년 — Minsky와 Papert의 "Perceptrons": XOR 문제와 첫 겨울</h2>
+
+      <p>그러나 1969년, MIT의 Marvin Minsky와 Seymour Papert가 "Perceptrons"라는 책을 출간했다. 이 책은 단층 퍼셉트론의 표현력 한계를 수학적으로 증명했다. 가장 유명한 증명이 <strong>XOR 문제</strong>다. XOR(exclusive OR, 배타적 논리합)는 "두 입력이 다르면 1, 같으면 0"이라는 매우 단순한 논리 함수다. (0,0)→0, (0,1)→1, (1,0)→1, (1,1)→0. 그런데 단층 퍼셉트론은 이 함수를 학습할 수 없다.</p>
+
+      <p>왜 못하는가? 퍼셉트론은 본질적으로 <em>선형 분류기(linear classifier)</em>다. 즉, 입력 공간을 한 개의 직선(또는 고차원에서는 초평면)으로 둘로 가르는 모델이다. XOR의 네 점을 평면 위에 그려 보자. (0,0)과 (1,1)이 0(파랑)이고, (0,1)과 (1,0)이 1(빨강)이다. 이 네 점을 한 개의 직선으로 가를 방법이 없다. 빨강 두 점이 대각선으로 놓여 있고 파랑 두 점도 대각선으로 놓여 있어, 어떤 직선을 그어도 같은 색 점이 항상 양쪽에 흩어진다.</p>
+
+      <p>아래 위젯에서 직접 확인할 수 있다. 왼쪽은 AND 함수 — 단층 퍼셉트론이 풀 수 있다. 오른쪽은 XOR 함수 — 어떤 직선으로도 풀 수 없다. 슬라이더로 분리선의 기울기와 절편을 움직여 보면, AND에서는 깔끔하게 나눠지는 선을 찾을 수 있지만 XOR에서는 결코 찾을 수 없다는 사실이 손에 잡힌다.</p>
     </div>
 
     <div class="widget">
       <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 06</span><span>인물/기여 매칭 — 짝을 맞춰 보자</span></div>
-        <div class="matchgame">
-          <div class="matchcol">
-            <h5>← 인물 / 시점</h5>
-            <div class="mitem" data-side="L" data-id="A">McCulloch &amp; Pitts (1943)</div>
-            <div class="mitem" data-side="L" data-id="B">Rosenblatt (1958)</div>
-            <div class="mitem" data-side="L" data-id="C">Minsky &amp; Papert (1969)</div>
-            <div class="mitem" data-side="L" data-id="D">Rumelhart 외 (1986)</div>
-            <div class="mitem" data-side="L" data-id="E">Krizhevsky 외 (2012)</div>
-            <div class="mitem" data-side="L" data-id="F">Vaswani 외 (2017)</div>
+        <div class="widget-label"><span class="lab-no">위젯 06</span><span>AND vs XOR · 단층 퍼셉트론의 한계</span></div>
+        <div class="xor-stage">
+          <div class="xor-card ok">
+            <h5>AND — 단층 퍼셉트론으로 풀림</h5>
+            <canvas id="and-cv" width="240" height="240"></canvas>
+            <span class="verdict">한 직선으로 분리 가능</span>
           </div>
-          <div class="matchcol">
-            <h5>핵심 기여 →</h5>
-            <div class="mitem" data-side="R" data-id="D">역전파(backpropagation) 표준화 → 연결주의 부활</div>
-            <div class="mitem" data-side="R" data-id="C">단층 퍼셉트론의 한계 증명 → 1차 AI 겨울 촉발</div>
-            <div class="mitem" data-side="R" data-id="F">Transformer 제안 → LLM 시대의 기반 구조</div>
-            <div class="mitem" data-side="R" data-id="A">인공 뉴런의 첫 수학 모델 — “뇌를 수식으로”</div>
-            <div class="mitem" data-side="R" data-id="E">AlexNet, ImageNet 우승 → 딥러닝 3차 물결의 결정적 순간</div>
-            <div class="mitem" data-side="R" data-id="B">학습 가능한 첫 신경망(Perceptron) — Mark I 머신</div>
+          <div class="xor-card fail">
+            <h5>XOR — 단층 퍼셉트론이 못 푼다</h5>
+            <canvas id="xor-cv" width="240" height="240"></canvas>
+            <span class="verdict">어떤 직선으로도 불가능</span>
           </div>
-        </div>
-        <div class="match-status">
-          <span id="ms-text">왼쪽 항목 하나를 클릭하세요</span>
-          <button class="match-reset" id="ms-reset">리셋</button>
         </div>
       </div>
-      <p class="widget-cap">시험에서 “이 인물의 핵심 기여는?” 또는 “이 사건이 어느 시대를 끝냈는가?”라는 문항이 나올 수 있다. 6쌍 모두 맞히면 Ch.1 역사 파트는 통과.</p>
+      <p class="widget-cap">파랑 = 0, 빨강 = 1. AND는 한쪽 구석에만 빨강이 있어서 직선으로 갈라진다. XOR는 빨강이 대각선으로 놓여 있어서 어떤 직선도 같은 색을 한쪽에 모을 수 없다. 이것이 단층 퍼셉트론의 본질적 한계다.</p>
     </div>
 
     <div class="prose">
-      <h2>예상 질문 7개 — 클릭해서 모범 답안 확인</h2>
-      <p>아래 일곱 질문은 1장 본문, 강의노트 1-2주차, 그리고 시험 출제 패턴을 종합해 만든 것이다. 먼저 머릿속으로 답을 정리한 뒤 펼쳐 보는 것을 권한다.</p>
-    </div>
+      <p>Minsky와 Papert는 이 한계가 단순히 XOR에만 국한된 것이 아니라, <em>선형 분리 불가능한 모든 문제</em>에 적용된다는 점을 보였다. 자연 세계의 거의 모든 흥미로운 문제는 비선형이다. 즉, 단층 퍼셉트론은 자연 세계의 흥미로운 문제 거의 어디에도 쓸 수 없다는 결론이었다. 이 책의 출간은 신경망 연구에 대한 신뢰를 무너뜨렸다. 1970년대 내내 신경망 연구는 거의 자금을 받지 못했다. 이 시기가 <strong>첫 번째 인공지능 겨울(first AI winter)</strong>이다.</p>
 
-    <div class="widget">
-      <div class="widget-frame" style="background: var(--paper);">
-        <div class="widget-label"><span class="lab-no">예상 질문</span><span>클릭으로 펼쳐서 모범 답안 확인 (총 7개)</span></div>
-        <div style="padding: 1rem 1rem 1.4rem;">
+      <p>여기서 한 가지 역설적인 사실이 있다. <em>여러 층을 쌓으면 XOR도 해결할 수 있다</em>는 것은 이미 알려져 있었다. 두 개의 은닉층 뉴런 — 하나는 OR을 계산하고, 하나는 NAND(NOT AND)를 계산하는 — 의 출력을 AND로 합치면 XOR가 된다. 즉, 다층 퍼셉트론(multi-layer perceptron, MLP)이라면 풀 수 있는 문제였다. 그런데 왜 그 길로 가지 않았는가? <strong>다층 퍼셉트론의 가중치를 학습시킬 방법이 없었기 때문이다.</strong> 퍼셉트론의 학습 규칙은 출력층에서 정답과 비교해 가중치를 조정하는 것이었다. 은닉층은 정답이 없으니 무엇을 기준으로 조정할지 알 수 없었다. 이 문제 — 은닉층까지 손실을 전파하는 방법 — 는 1980년대에 역전파(backpropagation)가 재발견되면서 풀린다.</p>
 
-          <div class="qa">
-            <div class="qa-q"><span class="qn">Q1</span><span>왜 규칙기반 접근(rule-based approach)은 체스에는 강하지만 얼굴 인식에는 약한가?</span><span class="qx">+</span></div>
-            <div class="qa-a"><div class="qa-a-inner">
-              <span class="rel">관련: Sub 01 — 표상의 문제</span>
-              체스는 규칙이 닫혀 있고 상태가 명시적이다(말의 위치만 알면 다음 수의 후보가 결정된다). 반면 얼굴 인식은 입력이 픽셀이라는 날것이고, 조명/각도/표정/가림 같은 변형이 무한히 가능하다. 모든 변형을 사람이 규칙으로 적는 것은 사실상 불가능하다. 그래서 “데이터에서 표상을 배우는” 방식이 필요해진다.
-            </div></div>
-          </div>
-
-          <div class="qa">
-            <div class="qa-q"><span class="qn">Q2</span><span>특징(feature)을 사람이 설계하는 방식과 표상(representation)을 모델이 학습하는 방식은 무엇이 다른가?</span><span class="qx">+</span></div>
-            <div class="qa-a"><div class="qa-a-inner">
-              <span class="rel">관련: Sub 01 — Sub 02</span>
-              사람이 설계할 때는 “나이/혈압/기존 진단명”처럼 도메인 지식이 있는 항목에서는 강하지만, 음성/이미지/자연어처럼 무엇이 중요한지 미리 알기 어려운 도메인에서는 무력해진다. 표상학습은 모델이 데이터에서 어떤 특징이 유용한지 알아서 뽑게 한다. 이 위임의 폭이 클수록 동심원의 안쪽(딥러닝)으로 들어간다.
-            </div></div>
-          </div>
-
-          <div class="qa">
-            <div class="qa-q"><span class="qn">Q3</span><span>딥러닝에서 깊이(depth)는 단순히 층이 많다는 뜻이 아니라 어떤 의미를 가지는가?</span><span class="qx">+</span></div>
-            <div class="qa-a"><div class="qa-a-inner">
-              <span class="rel">관련: Sub 03</span>
-              깊이는 두 가지로 정의된다. (1) 계산 그래프에서 입력에서 출력까지의 가장 긴 경로. (2) 복잡한 개념이 단순 개념들의 몇 단계 합성으로 만들어지는가. 같은 함수를 한 층으로 표현하려면 지수적으로 많은 유닛이 필요한 반면, 여러 층으로 합성하면 다항적인 유닛만으로 충분한 경우가 많다. 즉 깊이는 표현력의 차이가 아니라 효율의 차이를 만든다.
-            </div></div>
-          </div>
-
-          <div class="qa">
-            <div class="qa-q"><span class="qn">Q4</span><span>딥러닝이 1980년대에도 아이디어가 있었는데 왜 2010년대에 폭발했는가? 세 가지 이유를 들어라.</span><span class="qx">+</span></div>
-            <div class="qa-a"><div class="qa-a-inner">
-              <span class="rel">관련: Sub 04 — Sub 05</span>
-              세 가지 환경 요인의 결합이다. (1) 대규모 레이블 데이터 — ImageNet(2009, 1,400만 장)을 비롯한 빅데이터. (2) GPU 가속 — NVIDIA CUDA로 행렬 연산이 수십 배 빨라짐. (3) 알고리즘 개선 — ReLU, dropout, batch normalization, 더 나은 초기화 등이 깊은 네트워크를 안정적으로 학습시킬 수 있게 했다. 셋 중 어느 하나라도 약했다면 폭발은 일어나지 않았을 것이다.
-            </div></div>
-          </div>
-
-          <div class="qa">
-            <div class="qa-q"><span class="qn">Q5</span><span>AI, ML, 표상학습, 딥러닝의 포함 관계를 한 문장으로 설명하라.</span><span class="qx">+</span></div>
-            <div class="qa-a"><div class="qa-a-inner">
-              <span class="rel">관련: Sub 02</span>
-              AI ⊃ ML ⊃ 표상학습 ⊃ 딥러닝. 안쪽으로 갈수록 “사람이 손으로 정해야 하는 부분”이 줄어든다. AI는 학습이 필수가 아니지만, ML은 학습이 필수이고, 표상학습은 특징까지 학습하며, 딥러닝은 그 표상학습을 다층으로 쌓는다.
-            </div></div>
-          </div>
-
-          <div class="qa">
-            <div class="qa-q"><span class="qn">Q6</span><span>1차 AI 겨울과 2차 AI 겨울의 원인은 각각 무엇이었는가?</span><span class="qx">+</span></div>
-            <div class="qa-a"><div class="qa-a-inner">
-              <span class="rel">관련: Sub 04</span>
-              1차(1969 - 1980)는 Minsky &amp; Papert가 단층 퍼셉트론으로는 XOR도 풀 수 없음을 증명한 것이 직접 도화선이었다. 신경망의 표현력 자체에 대한 회의가 자금 회수를 불렀다. 2차(1990 - 2006)는 SVM 같은 통계학 기반 “더 깔끔한” 방법론이 등장한 데다, 신경망 자체는 데이터/계산이 부족해 학습이 불안정했다. 두 겨울의 공통점은 “아이디어가 틀려서가 아니라 환경이 부족해서”라는 점이다.
-            </div></div>
-          </div>
-
-          <div class="qa">
-            <div class="qa-q"><span class="qn">Q7</span><span>AlexNet(2012)이 왜 그토록 결정적인 사건으로 평가되는가?</span><span class="qx">+</span></div>
-            <div class="qa-a"><div class="qa-a-inner">
-              <span class="rel">관련: Sub 04 — Sub 05</span>
-              세 가지 이유에서다. (1) ImageNet Top-5 오류율을 26%(전년 우승 모델)에서 16%로 단번에 떨어뜨렸다 — 점진적 개선이 아니라 단절적 변화. (2) GPU(GTX 580 두 장)로 학습 가능함을 증명해 “더 큰 모델 + 더 많은 데이터”의 길을 열었다. (3) 이 한 사건이 학계의 무게중심을 SVM/특징공학에서 딥러닝으로 통째로 옮겼다. 이후 매년 등장한 우승 모델은 모두 더 깊은 CNN이었다.
-            </div></div>
-          </div>
-
-        </div>
+      <div class="analogy">
+        <b>학교 시험의 부분 점수.</b> 객관식 시험에서 학생의 최종 답이 틀렸을 때 점수만 깎으면 되지만, 서술형에서는 풀이 과정 중 어디서 틀렸는지를 알아야 부분 점수를 줄 수 있다. 단층 퍼셉트론은 객관식만 채점할 수 있었다. 다층 퍼셉트론을 채점하려면 풀이 과정의 각 단계를 거꾸로 짚어 가며 책임을 분배해야 한다. 그 방법이 역전파다. 1960년대에는 이 채점법이 없었다.
       </div>
-      <p class="widget-cap">시험 30분 전 한 번 더 펼쳐 보자. 7개 질문에 한 줄씩 답할 수 있다면 Ch.1은 완벽히 잡혔다고 봐도 좋다.</p>
-    </div>
 
-    <div class="finalbox">
-      <h3>Chapter 01의 한 줄 요약</h3>
-      <p><strong>딥러닝은 “많은 층을 쌓는 모델”이 아니라 “데이터로부터 좋은 표상을 단계적으로 배우는 방법론”이다.</strong> 이 인식론적 전환이 1장의 핵심이고, 2장 이후의 모든 수학/구조/알고리즘이 결국 “좋은 표상을 어떻게 학습할 것인가”라는 한 질문을 풀어 가는 도구라는 점을 기억하면, 시험 문항이 어떻게 변형되어도 흔들리지 않는다.</p>
-      <p>다음 챕터(<a href="../ch02-linear-algebra/index.html">Ch.02 선형대수</a>)에서는 그 “표상”을 다룰 수학 언어, 즉 벡터/행렬/텐서로 들어간다.</p>
+      <div class="analogy">
+        <b>1차원 줄긋기.</b> 학생들을 키 순서로 한 줄로 세우는 일은 쉽다. "키가 165cm보다 크면 오른쪽, 작으면 왼쪽" 한 줄로 끝난다. 그러나 학생들을 "성격 외향형이면서도 분석력이 있는 사람"으로 골라내려고 하면, 한 줄로는 안 된다. 두 축의 조합이 필요하다. 단층 퍼셉트론은 1차원 줄긋기만 할 수 있는 도구였고, XOR는 2차원 조합이 필요한 문제였다.
+      </div>
+
+      <h2>이 시기의 역사적 교훈</h2>
+
+      <p>첫 번째 겨울의 가장 큰 교훈은 <strong>"표현력의 한계는 학습 알고리즘의 한계로 가려질 수 있다"</strong>는 것이다. 단층 퍼셉트론의 진짜 문제는 학습 알고리즘이 약해서가 아니라, 그 구조가 표현할 수 있는 함수의 범위가 좁아서였다. 그래서 더 좋은 학습 알고리즘을 찾아도 같은 한계에 부딪혔다. 한계를 넘으려면 구조 자체를 바꿔야 했다 — 단층에서 다층으로.</p>
+
+      <p>또 한 가지 교훈은 <strong>"기술 낙관론(hype)이 너무 빨리 부풀면 그만큼 강하게 무너진다"</strong>는 점이다. 1958년 New York Times의 보도는 명백히 과장이었다. 퍼셉트론이 곧 의식을 가질 것이라는 약속은 지켜질 수 없었다. 약속과 현실의 격차가 크면 클수록, 그 후의 신뢰 회복은 더 오래 걸린다. 이 패턴은 1960년대에만 일어난 것이 아니라, 1980년대 두 번째 겨울에도, 어쩌면 2020년대에도 반복될 수 있는 패턴이다.</p>
+
+      <p>다음 sub-chapter에서는 두 번째 물결 — 1980년대의 연결주의(connectionism)와 역전파의 재발견 — 을 본다. 그 물결이 어떻게 XOR의 벽을 넘었고, 왜 그럼에도 두 번째 겨울을 맞았는지가 다음 이야기다.</p>
     </div>
 
     <nav class="ch-foot"></nav>
@@ -201,102 +131,115 @@
 </div>
 
 <script>
-  const SUBS = [
-    { no:'01', t:'표상의 문제', f:'01.html' },
-    { no:'02', t:'AI/ML/RL/DL 동심원', f:'02.html' },
-    { no:'03', t:'깊이가 만드는 것', f:'03.html' },
-    { no:'04', t:'역사적 굴곡', f:'04.html' },
-    { no:'05', t:'데이터/모델/계산 삼각형', f:'05.html' },
-    { no:'06', t:'시험 대비 체크리스트', f:'06.html' },
+const SUBS = [
+  { no:'01', t:'표상의 문제' },
+  { no:'02', t:'AI · ML · 표상학습 · DL' },
+  { no:'03', t:'표상학습이란 무엇인가' },
+  { no:'04', t:'깊이 1 — 표상의 사다리' },
+  { no:'05', t:'깊이 2 — 합성성' },
+  { no:'06', t:'역사 1 — 사이버네틱스' },
+  { no:'07', t:'역사 2 — 연결주의' },
+  { no:'08', t:'역사 3 — 부활과 폭발' },
+  { no:'09', t:'폭발 1 — 데이터' },
+  { no:'10', t:'폭발 2 — 계산' },
+  { no:'11', t:'폭발 3 — 모델 크기' },
+  { no:'12', t:'응용 — 어디까지' },
+  { no:'13', t:'시험 대비 체크리스트' },
+];
+function buildNav(cur) {
+  const ol = document.querySelector('.ch-nav ol');
+  ol.innerHTML = SUBS.map(s =>
+    `<li><a href="${s.no}.html"${s.no===cur?' class="current"':''}>${s.t}</a></li>`).join('');
+  document.querySelector('.topbar').innerHTML =
+    `<a class="home" href="index.html">← Ch.01 표지</a><span class="ch-mini">SUB ${cur} / 13</span>`;
+  const i = SUBS.findIndex(s => s.no === cur);
+  const prev = i > 0 ? SUBS[i-1] : { no:'', t:'챕터 표지로' };
+  const next = i < SUBS.length-1 ? SUBS[i+1] : { no:'', t:'챕터 표지로' };
+  const ph = prev.no ? prev.no+'.html' : 'index.html';
+  const nh = next.no ? next.no+'.html' : 'index.html';
+  document.querySelector('.ch-foot').innerHTML =
+    `<a href="${ph}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+    `<a href="${nh}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+}
+function progressBar() {
+  const bar = document.querySelector('.scroll-progress');
+  document.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max>0 ? (h.scrollTop/max)*100 : 0) + '%';
+  }, { passive: true });
+}
+
+function drawLogic(cv, mode) {
+  const ctx = cv.getContext('2d');
+  const W = cv.width = cv.clientWidth;
+  const H = cv.height = cv.clientHeight;
+  ctx.clearRect(0,0,W,H);
+  ctx.strokeStyle = 'rgba(38,34,28,.12)';
+  ctx.lineWidth = 1;
+  // grid axes
+  for (let i = 0; i <= 1; i++) {
+    const px = 30 + i * (W-60);
+    const py = H - 30 - i * (H-60);
+    ctx.beginPath(); ctx.moveTo(30, py); ctx.lineTo(W-30, py); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(px, 30); ctx.lineTo(px, H-30); ctx.stroke();
+  }
+  // points
+  const pts = [
+    { x:0, y:0, and:0, xor:0 },
+    { x:0, y:1, and:0, xor:1 },
+    { x:1, y:0, and:0, xor:1 },
+    { x:1, y:1, and:1, xor:0 },
   ];
-  const CURRENT = '06';
-  (function buildNav() {
-    document.querySelector('.topbar').innerHTML =
-      `<a class="home" href="index.html">← Chapter 01 — 딥러닝이란 무엇인가</a>` +
-      `<span class="ch-mini">SUB ${CURRENT} / 06</span>`;
-    document.querySelector('.ch-nav ol').innerHTML = SUBS.map(s =>
-      `<li><a href="${s.f}" ${s.no === CURRENT ? 'class="current"' : ''}>${s.t}</a></li>`).join('');
-    const i = SUBS.findIndex(s => s.no === CURRENT);
-    const prev = i > 0 ? SUBS[i-1] : { f:'index.html', t:'챕터 표지', no:'' };
-    const next = i < SUBS.length-1 ? SUBS[i+1] : { f:'index.html', t:'챕터 표지', no:'' };
-    document.querySelector('.ch-foot').innerHTML =
-      `<a href="${prev.f}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
-      `<a href="${next.f}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
-    const bar = document.querySelector('.scroll-progress');
-    const onScroll = () => {
-      const h = document.documentElement;
-      const max = h.scrollHeight - h.clientHeight;
-      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
-    };
-    document.addEventListener('scroll', onScroll, { passive: true }); onScroll();
-  })();
+  // 분리선
+  const blue = getComputedStyle(document.documentElement).getPropertyValue('--structure').trim();
+  const red = getComputedStyle(document.documentElement).getPropertyValue('--style').trim();
+  ctx.strokeStyle = 'rgba(45,91,122,.5)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([5,3]);
+  if (mode === 'and') {
+    // y = -x + 1.5 → x + y = 1.5
+    ctx.beginPath();
+    ctx.moveTo(30 + (W-60)*0.75, 30);
+    ctx.lineTo(W-30, H - 30 - (H-60)*0.75);
+    ctx.stroke();
+  } else {
+    // XOR — 어떤 직선도 실패. 시도 직선 표시
+    ctx.strokeStyle = 'rgba(192,73,46,.5)';
+    ctx.beginPath();
+    ctx.moveTo(30, H-30 - (H-60)*0.5);
+    ctx.lineTo(W-30, 30 + (H-60)*0.5);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(192,73,46,.85)';
+    ctx.font = '10px monospace';
+    ctx.fillText('이 선도 실패 →', W-110, H-30 - (H-60)*0.45);
+  }
+  ctx.setLineDash([]);
+  // 점 그리기
+  for (const p of pts) {
+    const cx = 30 + p.x * (W-60);
+    const cy = H - 30 - p.y * (H-60);
+    const v = (mode === 'and') ? p.and : p.xor;
+    ctx.fillStyle = v ? red : blue;
+    ctx.beginPath(); ctx.arc(cx, cy, 9, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 10px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(v, cx, cy+3.5);
+  }
+  ctx.textAlign = 'start';
+  ctx.fillStyle = 'rgba(94,82,71,.7)';
+  ctx.font = '10px monospace';
+  ctx.fillText('(0,0)', 8, H-32);
+  ctx.fillText('(1,1)', W-40, 18);
+}
 
-  // Q&A 아코디언
-  document.querySelectorAll('.qa-q').forEach(q => {
-    q.addEventListener('click', () => q.parentElement.classList.toggle('open'));
-  });
-
-  // 매칭 게임
-  (function match() {
-    let leftSel = null;
-    let matched = 0;
-    const total = 6;
-    const status = document.getElementById('ms-text');
-    const items = document.querySelectorAll('.mitem');
-
-    function setText(t) { status.innerHTML = t; }
-
-    items.forEach(it => {
-      it.addEventListener('click', () => {
-        if (it.classList.contains('correct')) return;
-        if (it.dataset.side === 'L') {
-          if (leftSel) leftSel.classList.remove('selected');
-          leftSel = it;
-          it.classList.add('selected');
-          setText('이제 오른쪽에서 짝이 되는 항목을 클릭하세요');
-        } else if (it.dataset.side === 'R') {
-          if (!leftSel) {
-            setText('먼저 왼쪽에서 인물/시점을 선택하세요');
-            return;
-          }
-          if (leftSel.dataset.id === it.dataset.id) {
-            leftSel.classList.remove('selected');
-            leftSel.classList.add('correct');
-            it.classList.add('correct');
-            matched++;
-            leftSel = null;
-            if (matched === total) {
-              setText(`<b>완벽 — ${matched}/${total} 모두 맞췄습니다.</b> Ch.1 역사 파트는 통과.`);
-            } else {
-              setText(`정답! <b>${matched}/${total}</b>`);
-            }
-          } else {
-            it.classList.add('wrong');
-            setTimeout(() => it.classList.remove('wrong'), 600);
-            leftSel.classList.remove('selected');
-            leftSel = null;
-            setText('틀렸습니다. 다시 시도해 보세요');
-          }
-        }
-      });
-    });
-
-    document.getElementById('ms-reset').addEventListener('click', () => {
-      items.forEach(it => it.classList.remove('selected', 'correct', 'wrong'));
-      leftSel = null;
-      matched = 0;
-      setText('왼쪽 항목 하나를 클릭하세요');
-    });
-  })();
-
-  window.addEventListener('load', () => {
-    if (window.renderMathInElement) {
-      renderMathInElement(document.body, {
-        delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
-        throwOnError: false,
-      });
-    }
-  });
+window.addEventListener('load', () => {
+  buildNav('06');
+  progressBar();
+  drawLogic(document.getElementById('and-cv'), 'and');
+  drawLogic(document.getElementById('xor-cv'), 'xor');
+});
 </script>
 </body>
 </html>

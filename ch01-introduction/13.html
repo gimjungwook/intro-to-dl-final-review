@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>13 · 시험 대비 체크리스트 — Chapter 1</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .defs { max-width: var(--measure); margin: 1.4rem auto; padding: 0 1.4rem; }
+  .defs .row { display: grid; grid-template-columns: 10rem 1fr; gap: 1rem; padding: .65rem 0; border-bottom: 1px solid var(--line-soft); align-items: baseline; }
+  .defs .row b { font-family: var(--mono); color: var(--structure); font-size: .9rem; }
+  .defs .row span { font-size: .92rem; color: var(--ink-soft); line-height: 1.55; }
+  .pairs { max-width: var(--measure); margin: 1.4rem auto; padding: 0 1.4rem; }
+  .pair { padding: .9rem 1.1rem; border: 1px solid var(--line); border-radius: 9px; margin: .6rem 0; background: #fff; }
+  .pair h5 { margin: 0 0 .4rem; font-family: var(--serif); font-size: 1rem; }
+  .pair h5 .a { color: var(--structure); }
+  .pair h5 .b { color: var(--style); }
+  .pair p { margin: 0; font-size: .88rem; color: var(--ink-soft); line-height: 1.55; }
+  .qa-list { max-width: var(--measure); margin: 1.4rem auto; padding: 0 1.4rem; }
+  .qa { border: 1px solid var(--line); border-radius: 9px; margin: .5rem 0; background: #fff; overflow: hidden; }
+  .qa-q { padding: .9rem 1.1rem; cursor: pointer; display: grid; grid-template-columns: 2.4rem 1fr 1.4rem; gap: .6rem; align-items: baseline; font-family: var(--serif); font-size: .98rem; transition: background .15s; }
+  .qa-q:hover { background: var(--paper-2); }
+  .qa-q .qn { font-family: var(--mono); font-size: .76rem; color: var(--style); }
+  .qa-q .qx { text-align: center; color: var(--ink-faint); transition: transform .2s var(--ease); }
+  .qa.open .qa-q .qx { transform: rotate(45deg); }
+  .qa-a { max-height: 0; overflow: hidden; transition: max-height .35s var(--ease); }
+  .qa.open .qa-a { max-height: 30rem; }
+  .qa-a-inner { padding: 0 1.1rem 1rem 1.1rem; font-size: .9rem; color: var(--ink-soft); line-height: 1.65; border-top: 1px solid var(--line-soft); padding-top: .8rem; }
+  .qa-a-inner b { color: var(--ink); }
+  .qa.type-def .qa-q .qn { color: var(--structure); }
+  .qa.type-app .qa-q .qn { color: var(--synth); }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-Chapter 13 · 시험 D-day 전 마지막 점검</span>
+      <h1>시험 대비 체크리스트 —<br><span class="t-style">정의·구분·예상 질문</span></h1>
+      <p class="lede">1장의 13개 sub-chapter를 모두 통과한 뒤 시험 직전에 펴는 마지막 페이지. 핵심 정의 20개, 자주 혼동되는 개념 짝 7개, 예상 질문 15개 (단답형·서술형). 답을 보지 않고 먼저 머릿속으로 답해 본 다음 펴서 확인하기.</p>
+    </header>
+
+    <div class="prose">
+      <p>이 페이지의 사용법은 단순하다. 정의 부분에서는 단어를 보고 그 옆 설명을 가리지 않고 한 번에 적어 본다. 짝 부분에서는 두 개념의 차이를 말로 풀어 설명할 수 있는지 확인한다. 질문 부분에서는 클릭하기 전에 머릿속으로 답을 짜 본 다음에 답을 펴서 비교한다. 이 세 가지를 모두 한 번씩 끝내면 1장의 핵심은 거의 모두 손에 잡힌다.</p>
+
+      <div class="analogy">
+        <b>책장 정리.</b> 책장 한 칸의 책을 두 번 정리할 수 있다. 한 번은 책을 다 꺼내서 분류하고 다시 꽂는 정리, 다른 한 번은 "이 책이 어디 있는지" 머릿속으로 떠올려 보는 점검이다. 시험 직전 복습은 후자다. 모르는 것을 새로 외우기보다, 이미 아는 것이 정말 손에 있는지 점검하는 시간이다.
+      </div>
+
+      <h2>1. 핵심 정의 20개</h2>
+      <p>한 줄로 답할 수 있어야 한다. 시험에서 단답형으로 가장 자주 나오는 형태다. 정의를 외울 때 핵심 한 단어만 외우지 말고, 그 정의가 왜 그런 모양인지를 함께 떠올리면 응용형 질문에도 답할 수 있다.</p>
+
+      <div class="analogy">
+        <b>구두로 설명하는 연습.</b> 시험에서 어려운 문제를 만났을 때 답이 안 떠오르는 경우의 절반은, 그 개념을 한 번도 자기 입으로 설명해 본 적이 없는 경우다. 친구에게, 또는 거울 앞에서, 또는 빈 방에서 30초씩 각 정의를 입으로 설명해 보자. 글로만 본 개념과 입으로 한 번 풀어 본 개념은 시험장에서의 회상 속도가 다르다.
+      </div>
+    </div>
+
+    <div class="defs">
+      <div class="row"><b>표상(representation)</b><span>컴퓨터가 데이터를 일할 때 그것을 적어 두는 좌표·숫자 묶음. 같은 정보도 표상에 따라 알고리즘의 난이도가 달라진다.</span></div>
+      <div class="row"><b>인공지능(AI)</b><span>사람이 했을 때 지능적이라고 부를 만한 일을 컴퓨터가 하게 만드는 모든 시도. 학습은 본질 조건이 아님.</span></div>
+      <div class="row"><b>머신러닝(ML)</b><span>명시적 규칙 대신 데이터에서 패턴을 추출해 행동을 결정. 특징(feature)은 사람이 결정.</span></div>
+      <div class="row"><b>표상학습</b><span>특징 자체도 학습으로 얻는 머신러닝. 원본 데이터에서 좋은 표상을 모델이 찾아냄.</span></div>
+      <div class="row"><b>딥러닝(DL)</b><span>표상을 여러 층으로 합성해 단계적으로 만들어 가는 표상학습.</span></div>
+      <div class="row"><b>특징(feature)</b><span>원본 데이터를 더 적은 숫자로 요약해 문제 해결에 유용하게 만든 값.</span></div>
+      <div class="row"><b>오토인코더</b><span>입력을 좁은 중간 층으로 압축했다가 다시 펴서 원본을 복원하도록 학습되는 신경망. 표상학습의 가장 단순한 형태.</span></div>
+      <div class="row"><b>분산 표상</b><span>한 개념을 여러 차원이 함께 표현하는 방식. 국소(one-hot)의 반대.</span></div>
+      <div class="row"><b>합성성</b><span>복잡한 것을 더 단순한 부속의 조합으로 표현할 수 있는 성질. 깊이가 효율적인 이유.</span></div>
+      <div class="row"><b>지수적 이득</b><span>깊이가 1씩 늘 때 표현력이 곱셈으로 증가하는 현상. 깊은 모델이 본질적으로 효율적인 이유.</span></div>
+      <div class="row"><b>McCulloch-Pitts 뉴런</b><span>1943년 발표된 첫 인공 뉴런. 입력의 가중 합이 문턱을 넘으면 1, 아니면 0. 학습은 없음.</span></div>
+      <div class="row"><b>퍼셉트론</b><span>1958년 Rosenblatt이 발표한 학습 규칙을 가진 첫 신경망. 단층은 XOR을 못 풀음.</span></div>
+      <div class="row"><b>역전파</b><span>다층 신경망의 가중치 학습 알고리즘. 출력 손실의 기울기를 출력에서 입력 방향으로 거꾸로 흘림.</span></div>
+      <div class="row"><b>연결주의</b><span>1980년대 인지과학 패러다임. "인간 지능은 기호 처리가 아니라 단순 유닛의 병렬 연결에서 나온다".</span></div>
+      <div class="row"><b>사전훈련</b><span>2006년 Hinton이 정리. RBM 등으로 한 층씩 학습한 가중치를 깊은 신경망의 초기값으로 사용.</span></div>
+      <div class="row"><b>AlexNet</b><span>2012년 ImageNet 우승 깊은 CNN. top-5 오차율 25.8% → 15.3%. 새 아이디어보다 큰 데이터 + GPU의 결합이 핵심.</span></div>
+      <div class="row"><b>Chinchilla 법칙</b><span>"같은 계산 자원이라면 모델과 데이터를 같은 비율로 늘려야 한다". GPT-3는 모델만 너무 컸음.</span></div>
+      <div class="row"><b>창발적 능력</b><span>모델 크기가 임계를 넘으면 갑자기 나타나는 능력. 산수·다단계 추론·코드 생성 등.</span></div>
+      <div class="row"><b>환각(hallucination)</b><span>LLM이 그럴듯하지만 사실이 아닌 정보를 자신감 있게 생성하는 문제.</span></div>
+      <div class="row"><b>전이학습</b><span>한 과제(보통 데이터 풍부)에서 학습한 표상을 다른 과제(보통 데이터 부족)에 옮기는 기법.</span></div>
+    </div>
+
+    <div class="prose">
+      <h2>2. 자주 혼동되는 개념 짝 7개</h2>
+      <p>차이가 분명한지 한 번씩 머릿속에 확인하자. 시험 문제 중 가장 함정이 많은 영역이 "비슷한 두 개념을 구분하라"는 형태다. 두 개념의 공통점과 차이점을 한 문장씩 정리할 수 있으면 그 함정에 빠지지 않는다.</p>
+
+      <div class="analogy">
+        <b>쌍둥이의 구분.</b> 처음 본 사람에게는 쌍둥이가 똑같아 보인다. 그러나 매일 보는 가족에게는 두 사람의 차이가 명확하다. 비슷한 개념도 같다. 처음에는 "표상학습"과 "딥러닝"이 같아 보이지만, 깊이 들여다보면 한 쪽이 다른 쪽을 포함하는 관계임을 알 수 있다. 시험에서는 그 미세한 차이를 묻는다.
+      </div>
+    </div>
+
+    <div class="pairs">
+      <div class="pair">
+        <h5><span class="a">머신러닝</span> vs <span class="b">표상학습</span></h5>
+        <p>둘 다 데이터로 학습. 차이는 "특징을 누가 결정하는가". 머신러닝은 사람이 특징을 결정. 표상학습은 모델이 특징도 학습.</p>
+      </div>
+      <div class="pair">
+        <h5><span class="a">표상학습</span> vs <span class="b">딥러닝</span></h5>
+        <p>딥러닝은 표상학습의 특수 형태. 표상을 한 번에 학습하지 않고 여러 층으로 합성. 얕은 오토인코더는 표상학습이지만 딥러닝은 아님.</p>
+      </div>
+      <div class="pair">
+        <h5><span class="a">McCulloch-Pitts</span> vs <span class="b">퍼셉트론</span></h5>
+        <p>둘 다 단순한 임계 뉴런. 차이는 학습 규칙의 유무. McCulloch-Pitts(1943)는 가중치를 사람이 설정. 퍼셉트론(1958)은 데이터로 가중치 학습.</p>
+      </div>
+      <div class="pair">
+        <h5><span class="a">국소 표상</span> vs <span class="b">분산 표상</span></h5>
+        <p>국소: 한 개념 = 한 차원 (one-hot). 분산: 한 개념 = 여러 차원의 패턴. 분산은 새 개념 추가 시 차원을 늘리지 않아도 됨.</p>
+      </div>
+      <div class="pair">
+        <h5><span class="a">표현력</span> vs <span class="b">일반화</span></h5>
+        <p>표현력: 모델이 훈련 데이터에 얼마나 잘 맞출 수 있는가. 일반화: 그 맞춘 것이 새 데이터로 얼마나 옮겨지는가. 둘은 다른 처방을 요구.</p>
+      </div>
+      <div class="pair">
+        <h5><span class="a">사전훈련</span> vs <span class="b">미세조정</span></h5>
+        <p>사전훈련: 큰 데이터셋에서 일반적인 표상을 학습. 미세조정: 그 가중치를 초기값으로 작은 데이터셋의 과제에 맞게 조정. 둘은 순차적.</p>
+      </div>
+      <div class="pair">
+        <h5><span class="a">알고리즘 개선</span> vs <span class="b">스케일 증가</span></h5>
+        <p>알고리즘: 모델 구조나 학습 방법의 개선. 스케일: 데이터·계산·모델 크기의 증가. Rich Sutton의 Bitter Lesson은 스케일이 알고리즘을 종종 추월한다고 봄.</p>
+      </div>
+    </div>
+
+    <div class="prose">
+      <h2>3. 예상 질문 15개</h2>
+      <p>아래는 시험에 나올 가능성이 있는 단답·서술형 질문 15개. 답을 보기 전에 먼저 머릿속으로 답해 본 다음, 클릭해 확인.</p>
+    </div>
+
+    <div class="qa-list" id="qa-list"></div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+const SUBS = [
+  { no:'01', t:'표상의 문제' },
+  { no:'02', t:'AI · ML · 표상학습 · DL' },
+  { no:'03', t:'표상학습이란 무엇인가' },
+  { no:'04', t:'깊이 1 — 표상의 사다리' },
+  { no:'05', t:'깊이 2 — 합성성' },
+  { no:'06', t:'역사 1 — 사이버네틱스' },
+  { no:'07', t:'역사 2 — 연결주의' },
+  { no:'08', t:'역사 3 — 부활과 폭발' },
+  { no:'09', t:'폭발 1 — 데이터' },
+  { no:'10', t:'폭발 2 — 계산' },
+  { no:'11', t:'폭발 3 — 모델 크기' },
+  { no:'12', t:'응용 — 어디까지' },
+  { no:'13', t:'시험 대비 체크리스트' },
+];
+function buildNav(cur) {
+  const ol = document.querySelector('.ch-nav ol');
+  ol.innerHTML = SUBS.map(s =>
+    `<li><a href="${s.no}.html"${s.no===cur?' class="current"':''}>${s.t}</a></li>`).join('');
+  document.querySelector('.topbar').innerHTML =
+    `<a class="home" href="index.html">← Ch.01 표지</a><span class="ch-mini">SUB ${cur} / 13</span>`;
+  const i = SUBS.findIndex(s => s.no === cur);
+  const prev = i > 0 ? SUBS[i-1] : { no:'', t:'챕터 표지로' };
+  const next = i < SUBS.length-1 ? SUBS[i+1] : { no:'', t:'챕터 표지로' };
+  const ph = prev.no ? prev.no+'.html' : 'index.html';
+  const nh = next.no ? next.no+'.html' : 'index.html';
+  document.querySelector('.ch-foot').innerHTML =
+    `<a href="${ph}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+    `<a href="${nh}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+}
+function progressBar() {
+  const bar = document.querySelector('.scroll-progress');
+  document.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max>0 ? (h.scrollTop/max)*100 : 0) + '%';
+  }, { passive: true });
+}
+
+const QA = [
+  { type:'def', q:'딥러닝의 본질은 무엇인가? 한 문장으로 답하라.',
+    a:'<b>표상을 여러 층으로 합성해 데이터로부터 직접 학습하는 머신러닝의 한 형태</b>. 단순히 "층이 많은 신경망"이 아니다. 핵심은 사람이 손으로 짠 특징이 아니라, 학습된 표상을 단계적으로 쌓는다는 점.' },
+  { type:'def', q:'AI, ML, 표상학습, DL의 포함 관계를 적어라.',
+    a:'<b>AI ⊃ ML ⊃ 표상학습 ⊃ DL</b>. 안쪽으로 갈수록 자동화되는 인간의 결정이 한 단계씩 늘어남: AI는 규칙도 사람이 짤 수 있음 → ML은 데이터로 학습 → 표상학습은 특징도 학습 → DL은 표상을 여러 층으로 합성.' },
+  { type:'def', q:'데카르트 좌표와 극좌표가 분류 문제에서 다른 결과를 내는 이유는 무엇인가?',
+    a:'두 좌표는 정보량이 같지만, 같은 정보를 다른 축에 배치한다. 데이터의 진짜 구조가 "원점에서 거리"에 있다면 극좌표가, "화면의 위치"에 있다면 데카르트가 좋다. <b>좋은 표상이란 데이터의 진짜 구조에 가까운 표상</b>이다.' },
+  { type:'def', q:'단층 퍼셉트론이 XOR을 못 푸는 이유는 무엇인가?',
+    a:'단층 퍼셉트론은 본질적으로 선형 분류기다. 입력 공간을 한 개의 직선(또는 초평면)으로 둘로 가른다. XOR의 네 점은 대각선으로 같은 색이 놓여 있어 어떤 직선으로도 같은 색을 한쪽에 모을 수 없다. <b>구조적 한계</b>이지 학습 알고리즘의 문제가 아니다.' },
+  { type:'def', q:'역전파(backpropagation)의 핵심 아이디어를 한 문장으로 설명하라.',
+    a:'<b>연쇄 법칙(chain rule)을 출력에서 입력 방향으로 거꾸로 적용해, 모든 층의 가중치에 대한 손실의 기울기를 한 번의 패스로 계산하는 알고리즘</b>. 1986년 Rumelhart-Hinton-Williams 논문에서 정리됨.' },
+  { type:'def', q:'분산 표상(distributed representation)이 국소 표상(one-hot)보다 좋은 이유는?',
+    a:'세 가지. <b>(1) 짧다</b> — 한 개념을 한 차원이 아니라 여러 차원이 분산해서 표현하므로 같은 정보가 더 짧은 벡터에 들어감. <b>(2) 새 개념 추가 시 차원을 안 늘려도 됨</b> — 기존 차원의 조합으로 표현. <b>(3) 의미 유사성이 자동으로 표현됨</b> — 비슷한 개념이 표상 공간에서 가까워짐.' },
+  { type:'def', q:'깊이의 "지수적 이득"이란 무엇이고 왜 그런가?',
+    a:'깊이가 1씩 늘 때 표현력이 곱셈으로 증가하는 현상. 한 층의 폭이 k일 때, 깊이 L의 표현력은 k^L에 비례. 같은 표현력을 얕은 모델로 흉내내려면 폭이 지수적으로 커져야 한다. 이유는 신경망의 각 층이 입력 공간을 비선형 변환으로 접거나(folding) 분할하는데, 그 분할 수가 깊이에 따라 곱셈으로 늘기 때문.' },
+  { type:'app', q:'1980-90년대에 신경망 이론이 이미 있었는데 왜 폭발하지 못했는가?',
+    a:'두 가지가 부족했다. <b>데이터</b>(1990년대 가장 큰 데이터셋이 MNIST 6만 장)와 <b>계산</b>(CPU 기반, GPU 일반화 전). 이 두 외부 조건이 갖춰진 후에야 같은 아이디어가 실제로 작동하기 시작했다. AlexNet (2012)이 그 결정적 증명.' },
+  { type:'app', q:'AlexNet은 무엇이 새로웠는가?',
+    a:'<b>새로운 아이디어가 아니라 새로운 스케일</b>이 새로웠다. CNN, ReLU, 드롭아웃, 데이터 증강은 모두 이전에 알려져 있었다. AlexNet은 그것들을 ImageNet 1.2M 이미지와 GTX 580 GPU 2장 위에서 결합해 "큰 신경망이 정말 작동한다"를 폭발적으로 증명했다.' },
+  { type:'app', q:'Chinchilla 법칙의 핵심 결론은 무엇인가?',
+    a:'<b>"같은 계산 자원이라면 모델 크기와 데이터 크기를 같은 비율로 함께 늘려야 한다"</b>. N (파라미터)과 D (토큰) 모두 계산량 C의 제곱근에 비례하는 것이 최적. GPT-3는 사실 모델만 너무 컸고 (데이터 부족 = undertrained), 같은 자원으로 더 작은 모델을 더 많은 데이터로 학습시키는 편이 나았다.' },
+  { type:'app', q:'표상의 사다리(픽셀 → 모서리 → 부위 → 객체 → 개념)에서 각 층이 무엇을 잡는지 설명하라.',
+    a:'<b>픽셀</b>: 원본 RGB 강도. <b>모서리</b>: 가로/세로/대각 방향 밝기 변화 (V1과 유사). <b>무늬</b>: 모서리의 조합 — 코너, 줄무늬, 곡선 일부. <b>부위</b>: 눈, 귀, 바퀴 등 사람이 이름 붙일 수 있는 단위. <b>객체</b>: 고양이, 자동차 전체에 위치 · 자세 무관하게 반응. <b>개념</b>: 분류 분포 — 의미가 확률로 정리됨.' },
+  { type:'app', q:'표상학습의 다섯 가지 좋은 기준을 적어라.',
+    a:'<b>(1) 저차원성</b>: 원본보다 짧다. <b>(2) 분산 표상</b>: 한 개념을 여러 차원이 함께 표현. <b>(3) 위계성</b>: 낮은 층의 표상이 높은 층의 재료. <b>(4) 매니폴드 가까움</b>: 의미가 비슷한 입력은 표상 공간에서도 가까움. <b>(5) 전이 가능성</b>: 한 과제에서 배운 표상이 다른 과제에서도 쓸모.' },
+  { type:'app', q:'세 번의 부흥과 두 번의 겨울을 시기와 함께 정리하라.',
+    a:'<b>1차 부흥 (1940-60s)</b>: McCulloch-Pitts, 퍼셉트론. <b>1차 겨울 (1970s)</b>: Minsky-Papert XOR 문제. <b>2차 부흥 (1980-90s)</b>: 역전파 재발견, 분산 표상, CNN/RNN 원형. <b>2차 겨울 (1990s 말 - 2000s 초)</b>: SVM 등 경쟁 모델 부상, 데이터·계산 부족. <b>3차 부흥 (2006-)</b>: Hinton 사전훈련, ImageNet, AlexNet, Transformer.' },
+  { type:'app', q:'데이터·계산·모델 크기 셋 중 하나만 키우면 무슨 일이 생기는가?',
+    a:'<b>데이터만 큼</b>: 모델이 풍부함을 못 흡수, 추가 데이터의 한계 효용이 0. <b>계산만 큼</b>: 같은 모델을 더 오래 학습하지만 곧 과적합. <b>모델만 큼</b>: 추가 파라미터가 학습되지 못한 채 남음 (undertrained, GPT-3 상태). 셋이 균형 있게 함께 자라야 효과가 누적된다.' },
+  { type:'app', q:'딥러닝이 어디서 인간을 넘었고 어디는 멀었는가?',
+    a:'<b>넘은 곳</b>: 좁고 명확한 정답이 있는 과제 — ImageNet 분류, GLUE NLP 평균, LibriSpeech 음성, Go ELO, CASP 단백질 구조. <b>아직 먼 곳</b>: 새로운 상황 일반화 (자율주행 비정형 상황), 외부 사실 정확성 (LLM 환각), 인과 추론, 새 가설 세우기 (과학). 패턴: 데이터 풍부 + 정답 명확한 좁은 과제에서는 인간 압도, 분포 밖과 추론에서는 인간 우월.' },
+];
+
+window.addEventListener('load', () => {
+  buildNav('13');
+  progressBar();
+  const list = document.getElementById('qa-list');
+  QA.forEach((qa, i) => {
+    const el = document.createElement('div');
+    el.className = 'qa type-' + qa.type;
+    el.innerHTML = `
+      <div class="qa-q">
+        <span class="qn">Q${String(i+1).padStart(2,'0')}</span>
+        <span>${qa.q}</span>
+        <span class="qx">+</span>
+      </div>
+      <div class="qa-a"><div class="qa-a-inner">${qa.a}</div></div>`;
+    el.querySelector('.qa-q').addEventListener('click', () => el.classList.toggle('open'));
+    list.appendChild(el);
+  });
+});
+</script>
+</body>
+</html>

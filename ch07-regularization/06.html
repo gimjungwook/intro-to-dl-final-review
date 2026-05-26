@@ -3,441 +3,142 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>06 · 적대적 훈련 — 정칙화의 또 다른 얼굴 (P1 FGSM 연결)</title>
+<title>Sub 06 · L1 vs L2 — 모서리 vs 구 · Ch.07</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
-  .topbar { position: sticky; top: 0; z-index: 40; display: flex; align-items: center; justify-content: space-between; padding: .8rem 1.4rem; background: rgba(250,247,240,.82); backdrop-filter: blur(12px) saturate(1.3); border-bottom: 1px solid var(--line-soft); }
-  .topbar .home { font-family: var(--mono); font-size: .76rem; letter-spacing: .1em; color: var(--ink-soft); text-decoration: none; }
-  .topbar .home:hover { color: var(--ink); }
-  .topbar .ch-mini { font-family: var(--mono); font-size: .72rem; letter-spacing: .14em; color: var(--ink-faint); }
-
-  .ch-layout { display: grid; grid-template-columns: 15rem 1fr; gap: 0; max-width: 68rem; margin-inline: auto; }
-  .ch-nav { position: sticky; top: 3.4rem; align-self: start; height: calc(100vh - 3.4rem); overflow-y: auto; padding: 2rem 1.2rem; border-right: 1px solid var(--line-soft); }
-  .ch-nav ol { list-style: none; margin: 0; padding: 0; counter-reset: ch; }
-  .ch-nav li { counter-increment: ch; margin: 0; }
-  .ch-nav a { display: grid; grid-template-columns: 1.7rem 1fr; gap: .5rem; align-items: baseline; padding: .5rem .5rem; border-radius: 7px; text-decoration: none; color: var(--ink-soft); font-size: .88rem; line-height: 1.35; transition: background .15s; }
-  .ch-nav a::before { content: counter(ch, decimal-leading-zero); font-family: var(--mono); font-size: .72rem; color: var(--ink-faint); }
-  .ch-nav a:hover { background: var(--paper-2); color: var(--ink); }
-  .ch-nav a.current { background: var(--ink); color: var(--paper); }
-  .ch-nav a.current::before { color: var(--style-lo); }
-  .ch-main { min-width: 0; padding: 3rem 0 6rem; }
-  .ch-head { max-width: var(--measure); margin: 0 auto 2.4rem; padding-inline: 1.4rem; }
-  .ch-head .kicker { margin-bottom: 1rem; display: block; }
-  .ch-head h1 { font-size: clamp(2rem, 5vw, 3.3rem); margin: 0 0 .8rem; }
-  .ch-head .lede { font-family: var(--serif); font-size: 1.22rem; font-style: italic; color: var(--ink-soft); line-height: 1.5; }
-  .ch-foot { display: flex; justify-content: space-between; gap: 1rem; max-width: var(--measure); margin: 4rem auto 0; padding-inline: 1.4rem; }
-  .ch-foot a { display: block; text-decoration: none; flex: 1; padding: 1rem 1.2rem; border: 1px solid var(--line); border-radius: 10px; transition: border-color .15s, transform .15s; }
-  .ch-foot a:hover { border-color: var(--style); transform: translateY(-2px); }
-  .ch-foot .dir { font-family: var(--mono); font-size: .7rem; letter-spacing: .14em; color: var(--ink-faint); text-transform: uppercase; }
-  .ch-foot .ti { font-family: var(--serif); font-size: 1.05rem; color: var(--ink); margin-top: .2rem; }
-  .ch-foot .next { text-align: right; }
-  @media (max-width: 760px) { .ch-layout { grid-template-columns: 1fr; } .ch-nav { display: none; } }
-
-  .adv-stage { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1.2rem 1.1rem .8rem; }
-  @media (max-width: 720px) { .adv-stage { grid-template-columns: 1fr; } }
-  .adv-cell { background: var(--paper); border: 1px solid var(--line); border-radius: 9px; padding: .6rem; }
-  .adv-cell h5 { margin: 0 0 .4rem; font-family: var(--mono); font-size: .7rem; letter-spacing: .12em; color: var(--ink-faint); text-transform: uppercase; }
-  .adv-cell canvas { width: 100%; height: 320px; display: block; border-radius: 6px; background: #fff; }
-  .adv-readout { display: flex; gap: 1rem; flex-wrap: wrap; padding: 0.4rem 1.1rem 1rem; font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); }
-  .adv-readout span b { color: var(--ink); font-weight: 600; }
+  .l1l2-stage { display: grid; grid-template-columns: auto 1fr; gap: 1.2rem; padding: 1.2rem 1.2rem .8rem; align-items: start; }
+  .l1l2-cv { display: block; border-radius: 8px; border: 1px solid var(--line); max-width: 100%; background: var(--paper); }
+  .l1l2-side { min-width: 220px; }
+  .l1l2-ctr { display: flex; flex-direction: column; gap: .8rem; padding: .9rem 1rem; background: var(--paper-2); border-radius: 9px; margin-bottom: .8rem; }
+  .l1l2-read { font-size: .85rem; color: var(--ink-soft); line-height: 1.5; padding: .8rem 1rem; background: #fff; border: 1px solid var(--line-soft); border-radius: 8px; }
+  .l1l2-read b { color: var(--ink); }
+  .ll-line { padding: .25rem 0; font-family: var(--mono); font-size: .82rem; }
+  .ll-tip { margin-top: .5rem; font-size: .82rem; line-height: 1.5; color: var(--ink-soft); font-family: var(--sans); }
+  .ll-tip em { color: var(--style); font-style: normal; }
+  @media (max-width: 780px) { .l1l2-stage { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
-<div class="topbar">
-  <a class="home" href="index.html">← Ch.07 정칙화</a>
-  <span class="ch-mini">SUB 06 / 07</span>
-</div>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
 
 <div class="ch-layout">
-  <aside class="ch-nav"><nav><ol id="navlist"></ol></nav></aside>
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Sub 06 · 입력의 작은 근방을 채점한다</span>
-      <h1>사람 눈에 안 보이는 <span class="t-style">ε 교란</span>이,<br>분류기를 무너뜨린다</h1>
-      <p class="lede">적대적 훈련은 정칙화의 가장 공격적인 변종이다. 입력에 의도적으로 망가뜨리는 교란을 찾아내고, 그걸 학습에 포함시켜 모델을 더 강건하게 만든다.</p>
+      <span class="kicker">Sub 06 · 시험 1순위 — 한 화면 비교</span>
+      <h1>L1 vs L2 — <span class="t-style">모서리</span> vs <span class="t-structure">구</span></h1>
+      <p class="lede">같은 손실 표면 위에서 두 정칙화가 만드는 해를 한 화면에서 본다. 언제 어느 것을 쓸 것인가의 결정 기준.</p>
     </header>
 
     <div class="prose">
-      <p>7장의 마지막 큰 주제는 <strong>적대적 훈련(adversarial training)</strong>이다. 이 기법은 [[Deep-Learning-Book-07-Regularization-상세해설|책 7.13절]]에서 다루며, P1 발표에서 다뤘던 FGSM(Fast Gradient Sign Method)과 직접 연결된다.</p>
+      <p>3-5sub에서 L2와 L1을 각각 본 다음, 이 sub에서는 둘을 한 화면에 겹쳐 본다. 이 한 화면이 시험 답안에서 가장 효과적인 그림이다. "L1과 L2의 차이를 설명하시오"라는 문제가 나오면 이 그림을 손으로 그리고 시작하면 그 자체로 절반의 점수를 가져간다.</p>
 
-      <p>먼저 문제부터 정의하자. 잘 학습된 신경망 분류기가 있다. 강아지 사진에 대해 정확히 "강아지"라고 예측한다. 그런데 사람 눈에는 거의 같아 보이는 <em>아주 작은 픽셀 변화</em>를 더했더니, 같은 분류기가 "타조"라고 답한다. 이런 교란된 입력을 <strong>적대적 예제(adversarial example)</strong>라 부른다.</p>
+      <h2>제약 영역의 모양 — 한 줄로</h2>
 
-      <p>Szegedy et al.(2013), Goodfellow et al.(2014)이 보였듯이 이는 단순한 우연한 결함이 아니다. 거의 모든 딥 분류기가 이런 취약점을 가진다. 그리고 더 놀랍게도, 한 모델을 무너뜨리는 적대적 예제가 다른 모델도 자주 무너뜨린다(transferability).</p>
+      <p>2차원 가중치 공간 $(w_1, w_2)$에서, 두 정칙화의 제약 영역은 모양이 다르다.</p>
 
-      <h2>왜 적대적 예제가 존재하는가</h2>
+      <div class="math-block">$$ \text{L2 제약: } w_1^2 + w_2^2 \le k \quad\Longrightarrow\quad \text{원(circle)} $$</div>
+      <div class="math-block">$$ \text{L1 제약: } |w_1| + |w_2| \le k \quad\Longrightarrow\quad \text{다이아몬드(diamond)} $$</div>
 
-      <p>직관적 답: 신경망의 결정경계가 <em>고차원에서 매우 가파르고 선형적</em>이기 때문이다. Goodfellow et al.은 이를 <strong>"선형성 가설(linearity hypothesis)"</strong>로 설명한다.</p>
-
-      <p>고차원 입력 $\mathbf{x} \in \mathbb{R}^d$에서 작은 교란 $\boldsymbol{\eta}$를 더하면, 선형 분류기의 출력 변화는</p>
-
-      <div class="math-block">$$ \Delta(\mathbf{w}^\top \mathbf{x}) = \mathbf{w}^\top \boldsymbol{\eta} $$</div>
-
-      <p>이다. $\|\boldsymbol{\eta}\|_\infty \leq \epsilon$(각 픽셀이 ε 이내로만 변할 수 있다)이라는 매우 작은 제약을 두어도, 만약 $\boldsymbol{\eta} = \epsilon \cdot \text{sign}(\mathbf{w})$로 잡으면 출력 변화는 $\epsilon \sum_i |w_i| = \epsilon \|\mathbf{w}\|_1$이 된다. 차원 $d$가 크고 $\|\mathbf{w}\|_1$이 크면, 픽셀당 변화가 매우 작아도(눈에 안 보여도) 전체 출력 변화는 분류를 뒤집을 만큼 커진다.</p>
-
-      <div class="analogy">
-        한 사람이 100명에게서 매일 1원씩 받는다고 하자. 한 사람당 1원은 누구도 느끼지 못한다. 그런데 100명에서 모이면 한 달에 3,000원이다. 고차원 입력의 적대적 교란이 정확히 이 원리다 — <b>각 픽셀에는 사람 눈으로 구분할 수 없는 작은 변화가, 모이면 모델의 결정을 뒤집을 만큼 커진다.</b>
-      </div>
-
-      <h2>FGSM — 가장 빠른 적대적 예제 생성</h2>
-
-      <p>Goodfellow et al.(2014)의 <strong>FGSM(Fast Gradient Sign Method)</strong>은 가장 단순하고 빠른 적대적 예제 생성법이다. 입력 $\mathbf{x}$, 라벨 $y$, 손실 $L$이 있을 때,</p>
-
-      <div class="math-block">$$ \mathbf{x}_{\text{adv}} = \mathbf{x} + \epsilon \cdot \text{sign}\big(\nabla_{\mathbf{x}} L(\mathbf{x}, y; \boldsymbol{\theta})\big) $$</div>
-      <p class="math-note">입력에 대한 손실의 기울기 부호 방향으로 ε만큼 한 걸음. 모든 픽셀이 ε 이내로만 변함.</p>
-
-      <p>왜 이 형태인가? 손실의 기울기는 "어느 방향으로 입력을 움직이면 손실이 가장 빠르게 증가하는가"를 알려준다. 그 부호만 취하고 모든 성분에 같은 크기로 한 걸음을 가면, $L_\infty$ 노름(픽셀별 최대 변화) 제약 하에서 손실을 가장 크게 늘리는 방향이 된다. 한 번의 기울기 계산으로 적대적 예제를 만들 수 있어 빠르다.</p>
-
-      <p>여기서 핵심 통찰. <strong>적대적 예제를 찾는 것은 본질적으로 "입력 공간에서의 경사 상승(gradient ascent)"</strong>이다. 학습이 "파라미터 공간에서의 경사 하강(loss를 줄임)"이라면, FGSM은 "입력 공간에서의 경사 상승(loss를 늘림)"이다. 이 두 과정을 결합하는 것이 적대적 훈련이다.</p>
-
-      <h2>위젯 — FGSM이 결정경계 근처를 어떻게 무너뜨리는가</h2>
-
-      <p>아래 위젯에서 2D 분류 데이터를 보자. 모든 데이터 점에 대해 FGSM 교란을 적용했을 때, 어느 점이 잘못 분류되는지가 표시된다. ε 슬라이더로 교란 크기를 늘리면, 결정경계 근처의 점부터 차례로 무너지는 것이 보인다.</p>
+      <p>그리고 손실 J(θ)의 등고선이 이 제약 영역과 처음 닿는 점이 정칙화된 해다. 이 한 줄이 모든 차이의 출처다.</p>
     </div>
 
     <div class="widget">
       <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 07</span><span>FGSM 교란 ε · 결정경계 근처 점이 무너지는 모습</span></div>
-        <div class="adv-stage">
-          <div class="adv-cell">
-            <h5>원본 데이터 — 모두 정분류</h5>
-            <canvas id="advOrig" width="500" height="400"></canvas>
-          </div>
-          <div class="adv-cell">
-            <h5>FGSM 교란 (ε = <span id="epsCur">0.15</span>)</h5>
-            <canvas id="advFGSM" width="500" height="400"></canvas>
-          </div>
-        </div>
-        <div class="adv-readout">
-          <span>원본 정확도 = <b id="origAcc">100%</b></span>
-          <span>FGSM 후 정확도 = <b id="advAcc">0%</b></span>
-          <span>오분류된 점 수 = <b id="failCnt">0</b> / <b id="totCnt">0</b></span>
-        </div>
-        <div class="widget-controls">
-          <div class="slider">
-            <label>교란 크기 ε (L∞) <b id="epsLab">0.15</b></label>
-            <input id="epsSlide" type="range" min="0" max="0.5" value="0.15" step="0.01">
-          </div>
-          <button class="btn ghost" id="advTrainBtn">적대적 훈련 켜기 (FGSM-AT)</button>
-          <button class="btn ghost" id="resetAdvBtn">초기화 (일반 학습)</button>
-        </div>
+        <div class="widget-label"><span class="lab-no">위젯 06</span><span>L1 vs L2 등고선 — 손실 타원이 제약 영역에 닿는 곳</span></div>
+        <div id="ll"></div>
       </div>
-      <p class="widget-cap">왼쪽: 원본 데이터에서 학습된 분류기. 거의 모든 점을 맞춘다. 오른쪽: 같은 점에 FGSM 교란을 더한 후의 분류. ε이 작아도 결정경계 근처 점들이 무너진다. "적대적 훈련 켜기"를 누르면 학습 시 FGSM 예제도 같이 학습 — 같은 ε에서 무너지는 점이 크게 줄어든다.</p>
+      <p class="widget-cap">파란 타원이 손실 등고선(중심 θ*는 정칙화 없을 때 해). 파란 원 = L2 제약 영역, 빨간 다이아몬드 = L1 제약 영역. 슬라이더로 제약 크기 k, 손실 표면 회전, 타원도(이방성)를 조정하면서 두 정칙화의 해 위치(점)가 어떻게 다른지 보라. L1 해는 자주 축 위에 닿는다 — 희소!</p>
     </div>
 
     <div class="prose">
-      <h2>적대적 훈련의 손실</h2>
+      <h2>두 해가 다른 이유를 한 그림으로</h2>
 
-      <p>적대적 훈련은 위 FGSM 같은 공격 방법으로 매 학습 스텝마다 적대적 예제를 만든 다음, <strong>원본과 적대적 예제 모두에 대한 손실</strong>을 최소화한다.</p>
+      <p>위 위젯에서 "겹쳐 보기" 모드로 두 영역을 함께 켜면, 빨간 다이아몬드 꼭짓점이 파란 원의 표면보다 더 멀리 손실 최저점 쪽으로 "튀어나와" 있는 것을 볼 수 있다. 즉 손실 등고선이 두 영역과 처음 만나는 위치가 다르다.</p>
 
-      <div class="math-block">$$ \tilde{L}(\mathbf{x}, y; \boldsymbol{\theta}) = \alpha \cdot L(\mathbf{x}, y; \boldsymbol{\theta}) + (1 - \alpha) \cdot L(\mathbf{x}_{\text{adv}}, y; \boldsymbol{\theta}) $$</div>
-      <p class="math-note">두 손실의 가중합. α=0.5가 흔한 선택. ε이 학습 중 변하는 PGD-AT 변종도 있음.</p>
+      <p>일반적으로, 손실 등고선이 다이아몬드의 <strong>꼭짓점</strong>(축 위)에서 만나면 L1 해는 한 좌표가 0인 희소해가 된다. 다이아몬드의 <strong>면(edge)</strong>에서 만나면 두 좌표 모두 0이 아닐 수도 있다. 하지만 손실 표면이 회전되어 있거나(축에 정렬되지 않거나) 차원이 높으면 꼭짓점에서 만날 가능성이 매우 높아진다.</p>
 
-      <p>또는 더 깔끔하게 minimax 문제로 적기도 한다.</p>
+      <p>반면 원은 어떤 방향에서 봐도 부드럽다. 등고선이 어느 점에서 만나든 그 점은 거의 항상 두 좌표 모두 0이 아닌 점이다 — L2는 "작게 만들지만 정확히 0으로는 안 보낸다"의 기하학적 근거.</p>
 
-      <div class="math-block">$$ \min_{\boldsymbol{\theta}} \mathbb{E}_{(x, y)} \left[ \max_{\|\boldsymbol{\eta}\|_\infty \leq \epsilon} L(\mathbf{x} + \boldsymbol{\eta}, y; \boldsymbol{\theta}) \right] $$</div>
-      <p class="math-note">내부 max: 입력 공간에서 최악의 교란을 찾음. 외부 min: 그 최악 케이스에 대한 손실을 최소화. Madry et al.(2018) PGD-AT의 정식 형태.</p>
+      <h2>표 한 장 — 다섯 시점에서 본 비교</h2>
 
-      <p>이 식이 왜 정칙화인가? 모델이 단지 "데이터 점에서의 손실"을 최소화하는 것이 아니라, "데이터 점 주변 ε-반경 안의 최악의 점에서의 손실"까지 최소화하도록 강제된다. 즉 결정경계가 데이터 근방을 우회해서 멀리 떨어져야 한다 — <strong>이게 결국 더 매끄럽고 더 일반화 잘되는 분류기를 만든다.</strong></p>
+      <table class="symbols">
+        <tr><td><b>식</b></td><td>L1: ∑|θᵢ|  /  L2: ∑θᵢ²·(1/2)</td></tr>
+        <tr><td><b>SGD 기울기</b></td><td>L1: α·sign(θ) (크기 무관)  /  L2: α·θ (크기 비례)</td></tr>
+        <tr><td><b>결과 가중치</b></td><td>L1: 다수가 정확히 0 (희소)  /  L2: 모두 작지만 0은 아님 (부드러움)</td></tr>
+        <tr><td><b>제약 영역</b></td><td>L1: 다이아몬드(꼭짓점 있음)  /  L2: 원(매끄러움)</td></tr>
+        <tr><td><b>베이지안 사전</b></td><td>L1: 라플라스 (0에서 뾰족)  /  L2: 가우시안 (0에서 부드러움)</td></tr>
+        <tr><td><b>미분 가능성</b></td><td>L1: θ=0에서 미분 불가 (subgradient 필요)  /  L2: 모든 점에서 매끄러움</td></tr>
+        <tr><td><b>해의 닫힌 형식 (직교 H 가정)</b></td><td>L1: sign(θ*)·max(|θ*|-α, 0) — soft threshold  /  L2: λ/(λ+α)·θ* — 비례 축소</td></tr>
+      </table>
 
-      <h2>적대적 훈련 ≠ 일반 과적합 방지</h2>
+      <h2>언제 어느 것을 쓸 것인가</h2>
 
-      <p>중요한 구별. 일반적인 과적합 방지(L2, 드롭아웃 등)는 "평균 케이스 성능"을 개선한다. 적대적 훈련은 "최악 케이스 성능"을 개선한다. 이 둘은 다른 목표다.</p>
+      <p>실전 결정은 다음 세 가지 질문으로 압축된다.</p>
 
-      <ul>
-        <li>일반 정칙화 — $\mathbb{E}_{x \sim p_{\text{data}}}[L]$를 줄임. 평균이 좋아짐.</li>
-        <li>적대적 훈련 — $\mathbb{E}_{x}[\max_\eta L]$를 줄임. 평균이 약간 나빠질 수 있지만 최악이 크게 좋아짐.</li>
-      </ul>
+      <div class="math-block" style="background:#fff;">
+        <p style="margin:0;font-family:var(--mono);font-size:.86rem;line-height:1.7;color:var(--ink-soft);">
+        Q1. <b>특징 선택이 목적인가?</b><br>→ 그렇다(예: 유전자 수천 개 중 의미 있는 것만 골라야).<br>&nbsp;&nbsp;&nbsp;⇒ <b style="color:var(--style);">L1</b><br>→ 아니다(모든 입력이 다 의미 있을 것 같다).<br>&nbsp;&nbsp;&nbsp;⇒ <b style="color:var(--structure);">L2</b>
+        </p>
+      </div>
 
-      <p>그래서 적대적 훈련은 자주 깨끗한 데이터에 대한 정확도를 약간 희생한다(예: ImageNet에서 1-2%). 대신 적대적 예제 앞에서는 비교할 수 없을 만큼 더 강건해진다.</p>
+      <div class="math-block" style="background:#fff;">
+        <p style="margin:0;font-family:var(--mono);font-size:.86rem;line-height:1.7;color:var(--ink-soft);">
+        Q2. <b>모형이 거대한 신경망인가?</b><br>→ 그렇다(파라미터 수백만 개).<br>&nbsp;&nbsp;&nbsp;⇒ <b style="color:var(--structure);">L2</b> 가 거의 항상 더 안정적<br>→ 아니다(작은 선형 모형).<br>&nbsp;&nbsp;&nbsp;⇒ 두 가지 모두 시도해 검증 손실로 선택
+        </p>
+      </div>
 
-      <h2>P1 발표와의 직접 연결</h2>
+      <div class="math-block" style="background:#fff;">
+        <p style="margin:0;font-family:var(--mono);font-size:.86rem;line-height:1.7;color:var(--ink-soft);">
+        Q3. <b>해석 가능성이 중요한가?</b><br>→ 그렇다(어떤 입력이 결과에 기여하는지 보고하고 싶다).<br>&nbsp;&nbsp;&nbsp;⇒ <b style="color:var(--style);">L1</b> — 살아남은 가중치만 보면 됨<br>→ 아니다(예측 성능이 우선).<br>&nbsp;&nbsp;&nbsp;⇒ <b style="color:var(--structure);">L2</b>
+        </p>
+      </div>
 
-      <p>P1 발표(<a href="../../../05-선행학습/Deep-Learning-Book-07-Regularization-상세해설.md">상세해설 참조</a>)에서 다뤘던 FGSM 공격이 곧 적대적 훈련의 원자료다. 정확히 같은 알고리즘이 두 방향으로 쓰인다.</p>
+      <p>딥러닝에서 가장 자주 쓰이는 것은 <strong>L2(weight decay)</strong>다. 이유는 (1) 거의 모든 옵티마이저에 통합되어 있고, (2) 미분이 매끄러워 SGD가 안정적이며, (3) 신경망에서는 보통 모든 가중치가 어떤 식으로든 기여하므로 희소성이 직접적으로 도움이 안 되는 경우가 많기 때문이다. L1은 입력 특징 수가 많고 그중 일부만 의미 있다고 믿을 때(예: 텍스트의 bag-of-words, 유전체 데이터, 추천 시스템의 사용자-아이템 매트릭스) 주로 쓰인다.</p>
 
-      <ul>
-        <li><strong>공격(attack)</strong>: 학습된 모델을 무너뜨리려고 FGSM 예제를 만든다.</li>
-        <li><strong>방어(defense)</strong>: 학습 중에 FGSM 예제를 만들어 같이 학습시켜 모델을 강화한다.</li>
-      </ul>
+      <div class="analogy">
+        <b>예산 절감 방식</b>으로 비유해 보자. L2는 "전 부서 예산을 일정 비율로 깎되, 핵심 부서는 살리고 비핵심 부서를 더 많이 깎는다" — 모든 부서가 살아남는다. L1은 "효과가 미미한 부서는 아예 폐쇄하고, 살아남은 부서에 예산을 집중시킨다" — 일부 부서는 사라진다. 회사 상황에 따라 어느 쪽이 더 합리적인지 다르다.
+      </div>
 
-      <p>적대적 훈련은 <em>방어가 곧 강한 공격을 한 사이클 미리 돌리는 것</em>이라는 멋진 대칭을 가진다. 시험에서 "적대적 훈련과 FGSM의 관계"를 물으면, 이 대칭을 짚어주면 좋다.</p>
+      <h2>둘을 함께 쓰는 ElasticNet</h2>
 
-      <h2>적대적 훈련의 한계</h2>
+      <p>현실에는 두 가지를 조합한 것도 있다.</p>
 
-      <p>완전한 해법은 아니다.</p>
+      <div class="math-block">$$ \Omega_{\text{ElasticNet}}(\theta) \;=\; \alpha_1\,\|\theta\|_1 \;+\; \frac{\alpha_2}{2}\,\|\theta\|_2^2 $$</div>
 
-      <ul>
-        <li><strong>계산 비용 증가</strong>: 매 스텝마다 추가 forward+backward (FGSM은 1회, PGD는 k회). 학습이 2배 ~ 10배 느려짐.</li>
-        <li><strong>강한 공격에는 여전히 취약</strong>: FGSM으로만 훈련하면 PGD 공격에 약함. PGD-AT (Madry 2018)가 더 강력하지만 비용도 더 큼.</li>
-        <li><strong>특정 공격 모델에 종속</strong>: $L_\infty$로 훈련하면 $L_2$ 공격에는 여전히 취약할 수 있음.</li>
-        <li><strong>일반 정확도 희생</strong>: 깨끗한 데이터 성능이 떨어짐. 강건성-정확도 trade-off.</li>
-      </ul>
+      <p>L1의 희소화와 L2의 안정성을 함께 얻으려는 시도다. 두 손잡이 $\alpha_1, \alpha_2$를 모두 검증셋으로 튜닝한다. 시험 범위는 아니지만, "L1과 L2 중 하나만 골라야 하나?"라는 질문에 대한 자연스러운 답이 "꼭 그렇지는 않다"임을 알아 두면 좋다.</p>
 
-      <h2>한 문장 정리</h2>
+      <h2>한 줄 정리</h2>
 
-      <p>적대적 훈련은 정칙화를 가장 극단까지 밀어붙인 형태다. "데이터 점에서 잘하기" 대신 "데이터 점 주변 작은 근방 모두에서 잘하기"를 요구한다. 결과적으로 결정경계가 데이터에서 멀어지고, 모델이 더 부드럽고 강건해진다. 이게 보통 일반화 성능 향상으로도 이어진다는 것이 적대적 훈련을 정칙화 기법으로 부르는 이유다.</p>
+      <p>L1과 L2의 본질적 차이는 페널티 함수의 <strong>지수</strong>가 아니라 그것이 만드는 <strong>제약 영역의 모양</strong>이다. L1의 다이아몬드는 축 위에 꼭짓점을 가져 희소해를 만들고, L2의 원은 매끄러워 부드러운 축소를 만든다. 시험에서 "왜"를 묻는 답은 이 기하학에서 시작해야 한다.</p>
 
-      <p>다음 장에서는 지금까지 본 모든 기법을 한 장으로 묶은 <strong>시험 대비 체크리스트</strong>를 만든다. 시험 직전 한 번 더 훑을 자료.</p>
+      <p>다음 sub부터는 페널티가 아닌 다른 형태의 정칙화로 넘어간다. 데이터 자체를 흔드는 정칙화(데이터 증강), 신경망 활성을 흔드는 정칙화(노이즈, 드롭아웃), 시간을 자르는 정칙화(조기 종료) — 모두 한 식 J + αΩ의 다른 모습이라는 점은 변하지 않는다.</p>
     </div>
 
-    <nav class="ch-foot" id="chFoot"></nav>
+    <nav class="ch-foot"></nav>
   </main>
 </div>
 
+<script src="widgets.js"></script>
 <script>
-  const SUBS = [
-    { no:'01', t:'일반화 격차' },
-    { no:'02', t:'L1·L2 기하학' },
-    { no:'03', t:'드롭아웃 앙상블' },
-    { no:'04', t:'조기 종료 ~ L2' },
-    { no:'05', t:'데이터 증강·노이즈' },
-    { no:'06', t:'적대적 훈련' },
-    { no:'07', t:'시험 대비' },
-  ];
-  const CUR = '06';
-  const navlist = document.getElementById('navlist');
-  SUBS.forEach(s => {
-    const li = document.createElement('li');
-    li.innerHTML = `<a href="${s.no}.html"${s.no===CUR?' class="current"':''}>${s.t}</a>`;
-    navlist.appendChild(li);
-  });
-  const chFoot = document.getElementById('chFoot');
-  const idx = SUBS.findIndex(s => s.no === CUR);
-  const prev = idx > 0 ? SUBS[idx-1] : { no:'index', t:'표지로' };
-  const next = idx < SUBS.length-1 ? SUBS[idx+1] : { no:'index', t:'표지로' };
-  chFoot.innerHTML =
-    `<a href="${prev.no}.html"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
-    `<a href="${next.no}.html" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
-
-  window.addEventListener('load', () => {
-    if (window.renderMathInElement) {
-      renderMathInElement(document.body, {
-        delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
-        throwOnError: false,
-      });
-    }
-  });
-
-  // ----- 위젯: FGSM 시연 -----
-  (function () {
-    const css = getComputedStyle(document.documentElement);
-    const C = {
-      structure: css.getPropertyValue('--structure').trim() || '#2D5B7A',
-      style: css.getPropertyValue('--style').trim() || '#C0492E',
-      ink: css.getPropertyValue('--ink').trim() || '#26221C',
-      faint: css.getPropertyValue('--ink-faint').trim() || '#8E8576',
-    };
-    const advOrig = document.getElementById('advOrig');
-    const advFGSM = document.getElementById('advFGSM');
-    const epsSlide = document.getElementById('epsSlide');
-    const epsLab = document.getElementById('epsLab');
-    const epsCur = document.getElementById('epsCur');
-    const origAcc = document.getElementById('origAcc');
-    const advAcc = document.getElementById('advAcc');
-    const failCnt = document.getElementById('failCnt');
-    const totCnt = document.getElementById('totCnt');
-    const advTrainBtn = document.getElementById('advTrainBtn');
-    const resetAdvBtn = document.getElementById('resetAdvBtn');
-
-    let SEED = 99;
-    function rng() { SEED = (SEED * 9301 + 49297) % 233280; return SEED / 233280; }
-    function randn() { let s=0; for (let i=0;i<6;i++) s+=rng(); return (s-3)/1.225; }
-    function genMoons() {
-      const N = 50;
-      const pts = [];
-      for (let i = 0; i < N; i++) {
-        const t = rng() * Math.PI;
-        pts.push({ x: Math.cos(t) + randn()*0.12, y: Math.sin(t) + randn()*0.12, c: 0 });
-      }
-      for (let i = 0; i < N; i++) {
-        const t = rng() * Math.PI;
-        pts.push({ x: 1 - Math.cos(t) + randn()*0.12, y: -Math.sin(t) + 0.5 + randn()*0.12, c: 1 });
-      }
-      return pts;
-    }
-    const H = 12;
-    function newNet() {
-      const W1 = [], b1 = [];
-      for (let i = 0; i < H; i++) { W1.push([randn()*0.6, randn()*0.6]); b1.push(randn()*0.3); }
-      const W2 = [];
-      for (let i = 0; i < H; i++) W2.push(randn()*0.5);
-      return { W1, b1, W2, b2: randn()*0.2 };
-    }
-    function forward(net, x, y) {
-      const h = new Array(H), z = new Array(H);
-      for (let i = 0; i < H; i++) {
-        z[i] = net.W1[i][0]*x + net.W1[i][1]*y + net.b1[i];
-        h[i] = Math.tanh(z[i]);
-      }
-      let zo = net.b2;
-      for (let i = 0; i < H; i++) zo += net.W2[i] * h[i];
-      return { p: 1/(1+Math.exp(-zo)), h, z };
-    }
-    // 입력에 대한 손실의 기울기 (BCE)
-    // dL/dx = (p - c) * sum_i W2[i] * (1 - tanh(z_i)^2) * W1[i][0]
-    function inputGrad(net, x, y, c) {
-      const out = forward(net, x, y);
-      const dL = out.p - c;
-      let gx = 0, gy = 0;
-      for (let i = 0; i < H; i++) {
-        const sech2 = 1 - out.h[i]*out.h[i];
-        gx += dL * net.W2[i] * sech2 * net.W1[i][0];
-        gy += dL * net.W2[i] * sech2 * net.W1[i][1];
-      }
-      return [gx, gy];
-    }
-    function fgsm(net, d, eps) {
-      const [gx, gy] = inputGrad(net, d.x, d.y, d.c);
-      return {
-        x: d.x + eps * Math.sign(gx),
-        y: d.y + eps * Math.sign(gy),
-        c: d.c,
-      };
-    }
-    function trainStd(net, data, epochs, lr) {
-      for (let ep = 0; ep < epochs; ep++) {
-        const gW1 = Array.from({length:H}, () => [0,0]);
-        const gb1 = new Array(H).fill(0);
-        const gW2 = new Array(H).fill(0);
-        let gb2 = 0;
-        for (const d of data) {
-          const out = forward(net, d.x, d.y);
-          const dL = out.p - d.c;
-          gb2 += dL;
-          for (let i = 0; i < H; i++) {
-            gW2[i] += dL * out.h[i];
-            const sech2 = 1 - out.h[i]*out.h[i];
-            const dh = dL * net.W2[i] * sech2;
-            gW1[i][0] += dh * d.x;
-            gW1[i][1] += dh * d.y;
-            gb1[i] += dh;
-          }
-        }
-        const N = data.length;
-        for (let i = 0; i < H; i++) {
-          net.W1[i][0] -= lr * gW1[i][0] / N;
-          net.W1[i][1] -= lr * gW1[i][1] / N;
-          net.b1[i] -= lr * gb1[i] / N;
-          net.W2[i] -= lr * gW2[i] / N;
-        }
-        net.b2 -= lr * gb2 / N;
-      }
-    }
-    function trainAdv(net, data, epochs, lr, eps) {
-      for (let ep = 0; ep < epochs; ep++) {
-        // 원본 + FGSM 모두에 대해 학습
-        for (let pass = 0; pass < 2; pass++) {
-          const useData = pass === 0 ? data : data.map(d => fgsm(net, d, eps));
-          const gW1 = Array.from({length:H}, () => [0,0]);
-          const gb1 = new Array(H).fill(0);
-          const gW2 = new Array(H).fill(0);
-          let gb2 = 0;
-          for (const d of useData) {
-            const out = forward(net, d.x, d.y);
-            const dL = out.p - d.c;
-            gb2 += dL;
-            for (let i = 0; i < H; i++) {
-              gW2[i] += dL * out.h[i];
-              const sech2 = 1 - out.h[i]*out.h[i];
-              const dh = dL * net.W2[i] * sech2;
-              gW1[i][0] += dh * d.x;
-              gW1[i][1] += dh * d.y;
-              gb1[i] += dh;
-            }
-          }
-          const N = useData.length;
-          const wp = pass === 0 ? 0.5 : 0.5;  // α = 0.5
-          for (let i = 0; i < H; i++) {
-            net.W1[i][0] -= lr * wp * gW1[i][0] / N;
-            net.W1[i][1] -= lr * wp * gW1[i][1] / N;
-            net.b1[i] -= lr * wp * gb1[i] / N;
-            net.W2[i] -= lr * wp * gW2[i] / N;
-          }
-          net.b2 -= lr * wp * gb2 / N;
-        }
-      }
-    }
-
-    let DATA, MODEL;
-    function reset() {
-      SEED = 7; DATA = genMoons();
-      SEED = 21; MODEL = newNet();
-      trainStd(MODEL, DATA, 400, 0.1);
-      run();
-    }
-    function advTrain() {
-      const eps = +epsSlide.value;
-      SEED = 21; MODEL = newNet();
-      trainAdv(MODEL, DATA, 350, 0.1, eps);
-      run();
-    }
-
-    function drawNet(canvas, net, points) {
-      const ctx = canvas.getContext('2d');
-      const W = canvas.width, H_ = canvas.height;
-      ctx.clearRect(0, 0, W, H_);
-      const RES = 36;
-      const stepX = W / RES, stepY = H_ / RES;
-      function ix(px) { return -2 + px / W * 5; }
-      function iy(py) { return -2 + (1 - py / H_) * 5; }
-      for (let i = 0; i < RES; i++) for (let j = 0; j < RES; j++) {
-        const cx = i * stepX + stepX/2, cy = j * stepY + stepY/2;
-        const r = forward(net, ix(cx), iy(cy));
-        const p = r.p;
-        ctx.fillStyle = p < 0.5 ? `rgba(45, 91, 122, ${0.18 + (0.5-p)*0.32})` : `rgba(192, 73, 46, ${0.18 + (p-0.5)*0.32})`;
-        ctx.fillRect(cx - stepX/2, cy - stepY/2, stepX + 1, stepY + 1);
-      }
-      // 점들
-      for (const d of points) {
-        const xpx = (d.x + 2) / 5 * W;
-        const ypx = (1 - (d.y + 2) / 5) * H_;
-        if (xpx < 0 || xpx > W || ypx < 0 || ypx > H_) continue;
-        const pred = forward(net, d.x, d.y).p > 0.5 ? 1 : 0;
-        const correct = pred === d.c;
-        // 색
-        ctx.fillStyle = d.c === 0 ? C.structure : C.style;
-        ctx.beginPath(); ctx.arc(xpx, ypx, correct ? 2.8 : 5.5, 0, Math.PI*2); ctx.fill();
-        // 오분류는 X 표시
-        if (!correct) {
-          ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5;
-          ctx.beginPath();
-          ctx.moveTo(xpx - 3, ypx - 3); ctx.lineTo(xpx + 3, ypx + 3);
-          ctx.moveTo(xpx - 3, ypx + 3); ctx.lineTo(xpx + 3, ypx - 3);
-          ctx.stroke();
-        }
-      }
-    }
-    function testAcc(net, data) {
-      let ok = 0;
-      for (const d of data) {
-        const yhat = forward(net, d.x, d.y).p > 0.5 ? 1 : 0;
-        if (yhat === d.c) ok++;
-      }
-      return ok / data.length;
-    }
-    function run() {
-      const eps = +epsSlide.value;
-      epsLab.textContent = eps.toFixed(2); epsCur.textContent = eps.toFixed(2);
-      // 원본 정확도
-      const accO = testAcc(MODEL, DATA);
-      origAcc.textContent = (accO * 100).toFixed(0) + '%';
-      drawNet(advOrig, MODEL, DATA);
-      // FGSM 데이터
-      const ADV = DATA.map(d => fgsm(MODEL, d, eps));
-      const accA = testAcc(MODEL, ADV);
-      advAcc.textContent = (accA * 100).toFixed(0) + '%';
-      const failed = ADV.filter(d => (forward(MODEL, d.x, d.y).p > 0.5 ? 1 : 0) !== d.c).length;
-      failCnt.textContent = failed; totCnt.textContent = ADV.length;
-      drawNet(advFGSM, MODEL, ADV);
-    }
-    epsSlide.addEventListener('input', run);
-    advTrainBtn.addEventListener('click', advTrain);
-    resetAdvBtn.addEventListener('click', reset);
-    reset();
-  })();
+window.addEventListener('load', () => {
+  CH7.buildNav('06');
+  if (window.renderMathInElement) {
+    renderMathInElement(document.body, {
+      delimiters: [
+        { left: '$$', right: '$$', display: true },
+        { left: '$', right: '$', display: false },
+      ],
+      throwOnError: false,
+    });
+  }
+  CH7.onVisible(document.getElementById('ll'), () => CH7.l1l2(document.getElementById('ll')));
+});
 </script>
 </body>
 </html>

@@ -3,189 +3,358 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>12.06 · 시험 대비 — 한 장 요약과 예상 문제</title>
+<title>12 / 06 / NLP 2 — 분포 가설·임베딩 산수</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
-  .summary-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: .55rem; max-width: var(--measure); margin: 1.6rem auto; padding-inline: 1.4rem; }
-  @media (max-width: 720px) { .summary-grid { grid-template-columns: 1fr 1fr; } }
-  .sum-card { padding: .9rem .85rem; border: 1px solid var(--line); border-radius: 9px; background: #fff; border-top: 3px solid var(--structure); display: flex; flex-direction: column; gap: .35rem; }
-  .sum-card.s2 { border-top-color: var(--style); }
-  .sum-card.s3 { border-top-color: var(--synth); }
-  .sum-card.s4 { border-top-color: var(--structure-lo); }
-  .sum-card.s5 { border-top-color: var(--style-lo); }
-  .sum-card .sc-title { font-family: var(--serif); font-size: 1rem; color: var(--ink); }
-  .sum-card .sc-body { font-size: .76rem; color: var(--ink-soft); line-height: 1.55; }
-  .sum-card .sc-body b { color: var(--ink); font-weight: 600; }
-  .sum-card .sc-key { font-family: var(--mono); font-size: .64rem; color: var(--ink-faint); letter-spacing: .04em; margin-top: .3rem; }
-
-  .compare-table { max-width: var(--measure); margin: 1.6rem auto; padding-inline: 1.4rem; }
-  .compare-table table { width: 100%; border-collapse: collapse; font-size: .88rem; }
-  .compare-table th { text-align: left; padding: .7rem .8rem; background: var(--paper-2); font-family: var(--serif); font-size: .95rem; color: var(--ink); border-bottom: 2px solid var(--line); }
-  .compare-table td { padding: .65rem .8rem; border-bottom: 1px solid var(--line-soft); vertical-align: top; color: var(--ink-soft); line-height: 1.5; }
-  .compare-table td:first-child { font-family: var(--mono); font-size: .82rem; color: var(--structure); white-space: nowrap; font-weight: 600; }
-  .compare-table tr:hover td { background: var(--paper); }
-
-  .qa { border: 1px solid var(--line); border-radius: 11px; margin: .7rem auto; max-width: var(--measure); overflow: hidden; background: #fff; }
-  .qa-q { display: flex; gap: .8rem; align-items: baseline; padding: 1rem 1.2rem; cursor: pointer; font-family: var(--serif); font-size: 1.06rem; color: var(--ink); transition: background .15s; }
-  .qa-q:hover { background: var(--paper-2); }
-  .qa-q .qn { font-family: var(--mono); font-size: .8rem; color: var(--style); flex: none; }
-  .qa-q .qx { margin-left: auto; color: var(--ink-faint); transition: transform .2s var(--ease); flex: none; }
-  .qa.open .qa-q .qx { transform: rotate(45deg); }
-  .qa-a { max-height: 0; overflow: hidden; transition: max-height .4s var(--ease); }
-  .qa.open .qa-a { max-height: 80rem; }
-  .qa-a-inner { padding: 0 1.2rem 1.3rem; font-size: .95rem; color: var(--ink-soft); line-height: 1.65; }
-  .qa-a-inner .rel { font-family: var(--mono); font-size: .7rem; color: var(--ink-faint); display: block; margin-bottom: .5rem; }
-  .qa-a-inner b { color: var(--ink); }
-  .qa-a-inner code { font-family: var(--mono); font-size: .85em; background: var(--paper-sink); padding: .1em .3em; border-radius: 3px; }
-
-  .checklist { max-width: var(--measure); margin: 1.4rem auto; padding-inline: 1.4rem; list-style: none; }
-  .checklist li { position: relative; padding: .5rem 0 .5rem 1.9rem; border-bottom: 1px solid var(--line-soft); font-size: .92rem; color: var(--ink-soft); }
-  .checklist li::before { content: "✓"; position: absolute; left: 0; top: .5rem; width: 1.3rem; height: 1.3rem; line-height: 1.3rem; text-align: center; border-radius: 50%; background: var(--synth-bg); color: var(--synth); font-size: .8rem; font-weight: 700; }
-  .checklist li b { color: var(--ink); }
+  .arith-stage { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1.4rem 1.2rem 1rem; }
+  @media (max-width: 760px) { .arith-stage { grid-template-columns: 1fr; } }
+  .arith-canvas-wrap { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: .8rem; }
+  .arith-canvas-wrap canvas { display: block; width: 100%; height: 360px; border-radius: 6px; background: #fff; }
+  .arith-controls { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 1rem 1.1rem; display: flex; flex-direction: column; gap: .9rem; }
+  .arith-row { display: flex; align-items: center; gap: .55rem; font-family: var(--mono); font-size: .82rem; color: var(--ink-soft); flex-wrap: wrap; }
+  .arith-row select { font-family: var(--mono); font-size: .82rem; padding: .35rem .55rem; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); color: var(--ink); }
+  .arith-row .op { color: var(--style); font-weight: 600; font-size: 1rem; }
+  .arith-row .eq { color: var(--ink-faint); }
+  .arith-result { padding: .8rem .9rem; border-radius: 8px; background: var(--style-bg); border: 1px solid var(--style-lo); }
+  .arith-result .lab { font-family: var(--mono); font-size: .72rem; color: var(--style); letter-spacing: .08em; }
+  .arith-result .word { font-family: var(--serif); font-size: 1.35rem; color: var(--ink); margin-top: .25rem; }
+  .arith-result .dist { font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); margin-top: .2rem; }
+  .arith-presets { display: flex; gap: .4rem; flex-wrap: wrap; }
+  .arith-presets button { font-family: var(--mono); font-size: .72rem; padding: .35rem .65rem; border-radius: 6px; background: var(--paper-2); color: var(--ink-soft); border: 1px solid var(--line); cursor: pointer; transition: .15s; }
+  .arith-presets button:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .arith-axis { font-family: var(--mono); font-size: .68rem; color: var(--ink-faint); margin-top: .3rem; text-align: center; }
 </style>
 </head>
 <body>
 <div class="scroll-progress"></div>
-<div class="topbar">
-  <a class="home" href="index.html">← Chapter 12 표지</a>
-  <span class="ch-mini">12.06 · 시험 대비</span>
-</div>
+<div class="topbar"></div>
 
 <div class="ch-layout">
-  <aside class="ch-nav"><nav><ol id="navlist"></ol></nav></aside>
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Sub-chapter 06 · 마지막 한 시간</span>
-      <h1>시험 대비 —<br><span class="t-style">한 장</span>으로 정리한 응용 챕터</h1>
-      <p class="lede">D-day 직전에 다시 펼쳐 보기 위한 페이지. 다섯 도메인의 한 줄 정답, 도메인 비교 표, 예상 문제 7개의 모범 답안, 그리고 시험장에서 꼭 끌어내야 할 키워드 체크리스트.</p>
+      <span class="kicker">Sub-chapter 06 / NLP 2</span>
+      <h1>분포 가설과<br><span class="t-style">임베딩 산수</span></h1>
+      <p class="lede">앞 sub에서 본 단어 임베딩(word embedding)은 어떻게 학습되며, 왜 학습이 끝난 임베딩 공간에서 <code>king − man + woman ≈ queen</code> 같은 등식이 성립하는가. 이 sub는 분포 가설(distributional hypothesis)의 정확한 진술에서 출발해, 그것이 임베딩 산수로 귀결되는 인과 사슬을 한 줄씩 펼친다.</p>
     </header>
 
     <div class="prose">
-      <h2>다섯 도메인 — 카드 한 장 요약</h2>
-      <p>각 도메인의 “본체 + 핵심 트릭 + 시험 단골 키워드”를 한 카드에 담았다. 한 카드를 5초 안에 머릿속에 떠올릴 수 있어야 한다.</p>
-    </div>
+      <p>앞 sub에서 우리는 단어를 100-300차원 밀집 벡터(dense vector)로 옮기면 차원의 저주가 풀리고, 한 단어에 대한 학습이 의미가 가까운 모든 단어로 일반화된다는 큰 그림을 봤다. 이 sub의 질문은 더 구체적이다. <strong>그 임베딩 좌표는 정확히 어떤 학습 신호에서 만들어지는가, 그리고 왜 학습이 끝난 좌표 위에서 단어를 더하고 빼는 산수가 의미 있는 결과를 내는가.</strong> 이 두 질문의 답은 같은 한 가지 가정에서 나온다. 분포 가설이다.</p>
 
-    <div class="summary-grid">
-      <div class="sum-card s1">
-        <div class="sc-title">Vision</div>
-        <div class="sc-body"><b>CNN + softmax + NLL</b>. ImageNet 사전훈련 가중치 사용. 표준화·증강·국소 대비 정규화로 “외울 필요 없는 변이”를 미리 제거.</div>
-        <div class="sc-key">사전학습 · 증강 · 정규화</div>
+      <h2>분포 가설 — 한 줄짜리 의미 이론</h2>
+
+      <p>분포 가설은 언어학자 Zellig Harris가 1954년에 정식화하고, John Firth가 "You shall know a word by the company it keeps"라는 유명한 한 줄로 요약한 명제다. 정확한 진술은 다음과 같다. <em>“두 단어가 같은 문맥(context)에 자주 등장하면, 두 단어의 의미는 가깝다.”</em> 여기서 문맥이란 보통 “주변 5단어”처럼 윈도우 크기로 정의한다.</p>
+
+      <p>이 가설이 의미 이론으로서 매력적인 이유는, 의미라는 추상적 대상을 <strong>관찰 가능한 통계량</strong>으로 환원하기 때문이다. 사전을 뒤져 단어의 뜻을 정의할 필요 없이, 충분히 큰 말뭉치(corpus)에서 “어떤 단어가 어떤 단어 옆에 얼마나 자주 등장하는가”만 세어도 의미 가까움을 측정할 수 있다. 이것이 word2vec, GloVe(Global Vectors), fastText 같은 모든 현대적 단어 임베딩 알고리즘의 출발점이다.</p>
+
+      <div class="analogy">
+        분포 가설은 <b>“사람을 안 만나도, 그 사람이 누구랑 자주 어울리는지를 보면 어떤 사람인지 안다”</b>는 명제의 단어판이다. 친구 다섯 명이 모두 의사면 그 사람도 의사일 가능성이 높고, 친구 다섯 명이 모두 음악가면 그 사람도 음악가 쪽에 가깝다. 단어도 마찬가지 — “king”의 문맥에 “queen, royal, throne, kingdom, prince”가 자주 등장한다면, “king”의 좌표는 그 단어들의 좌표 근처에 놓여야 한다는 것이 분포 가설의 정확한 함의다.
       </div>
-      <div class="sum-card s2">
-        <div class="sc-title">Speech</div>
-        <div class="sc-body"><b>스펙트로그램 + RNN/Transformer + CTC</b>. 파형은 너무 길어 STFT로 압축. 정렬 문제를 CTC가 자동으로 학습.</div>
-        <div class="sc-key">STFT · CTC · end-to-end</div>
-      </div>
-      <div class="sum-card s3">
-        <div class="sc-title">NLP</div>
-        <div class="sc-body"><b>임베딩 + 인코더-디코더 + 어텐션</b>. 차원의 저주를 분산 표상으로 해소. 큰 어휘 softmax는 hierarchical·NCE·sampling.</div>
-        <div class="sc-key">임베딩 · 어텐션 · NCE</div>
-      </div>
-      <div class="sum-card s4">
-        <div class="sc-title">RecSys</div>
-        <div class="sc-body"><b>행렬 분해 = 임베딩 내적</b>. 관찰된 칸만 손실에 부과. 콜드 스타트 + 탐험-착취 충돌이 RL로 이어짐.</div>
-        <div class="sc-key">잠재 인자 · 콜드 스타트</div>
-      </div>
-      <div class="sum-card s5">
-        <div class="sc-title">RL</div>
-        <div class="sc-body"><b>정책/가치 신경망 + 누적 할인 보상</b>. ε-greedy로 탐험-착취 균형. DQN(가치 기반) vs REINFORCE(정책 기반).</div>
-        <div class="sc-key">벨만 · DQN · ε-greedy</div>
-      </div>
-    </div>
 
-    <div class="prose">
-      <h2>도메인 비교 표 — 같은 골격, 다른 옷</h2>
-      <p>응용 챕터의 모든 시험 문제는 결국 이 표로 환원된다. 도메인이 다르면 무엇이 바뀌고 무엇이 그대로인가.</p>
-    </div>
+      <h2>학습 목적 — 이웃을 잘 예측하는 임베딩</h2>
 
-    <div class="compare-table">
-      <table>
-        <thead>
-          <tr><th>도메인</th><th>입력 모양</th><th>본체</th><th>출력 손실</th><th>핵심 트릭</th></tr>
-        </thead>
-        <tbody>
-          <tr><td>Vision</td><td>H×W×3 텐서</td><td>CNN</td><td>softmax + NLL</td><td>증강 · 사전훈련</td></tr>
-          <tr><td>Speech</td><td>1D 파형 → 2D 스펙트로그램</td><td>2D conv + RNN/Transformer</td><td>CTC</td><td>STFT · 정렬 학습</td></tr>
-          <tr><td>NLP</td><td>이산 토큰열</td><td>임베딩 + Enc-Dec + Attention</td><td>(큰 어휘) softmax + NLL</td><td>분산 표상 · NCE</td></tr>
-          <tr><td>RecSys</td><td>희소 (user, item, rating) 쌍</td><td>임베딩 행렬</td><td>관찰값 MSE + L2</td><td>잠재 인자 · 콜드 스타트</td></tr>
-          <tr><td>RL</td><td>(s, a, r, s′) 시계열</td><td>정책/가치 신경망</td><td>벨만 / 정책 경사</td><td>탐험-착취 · 할인</td></tr>
-        </tbody>
-      </table>
-    </div>
+      <p>분포 가설을 학습 알고리즘으로 옮기는 방법은 두 갈래다. 첫째는 word2vec의 Skip-gram이다. 중심 단어(target) <code>w_t</code>가 주어졌을 때 주변 단어(context) <code>w_{t+j}</code>를 예측하도록 학습한다. 둘째는 word2vec의 CBOW(Continuous Bag-of-Words)다. 주변 단어들이 주어졌을 때 중심 단어를 예측하도록 학습한다. 두 방법 모두 같은 가정에서 출발한다 — “좋은 임베딩이라면 중심 단어와 그 이웃 사이의 관계를 잘 예측해야 한다.”</p>
 
-    <div class="prose">
-      <h2>예상 문제 7개 — 클릭하면 모범 답안</h2>
-      <p>아래는 본 챕터의 LMS 질문 2개를 포함해, 응용 챕터에서 “출제자가 묻고 싶어할” 질문 7개의 모범 답안이다. 시험 직전 30분에 펼쳐서 답이 자동으로 나오는지 확인해 보면 된다.</p>
-    </div>
+      <p>Skip-gram의 학습 목적은 다음과 같이 쓰인다. <code>v_w</code>는 단어 <code>w</code>의 임베딩, <code>v'_w</code>는 같은 단어의 “문맥 임베딩(context embedding)”이다. 이 둘을 별도로 두는 이유는 곧 설명한다.</p>
 
-    <div id="qaHost"></div>
+      <div class="math-block">$$ \mathcal{L}_{\text{SG}} = -\sum_{t=1}^{T}\sum_{-c \le j \le c, j \ne 0} \log p(w_{t+j} \mid w_t) $$</div>
+      <p class="math-note">$T$는 말뭉치 길이, $c$는 윈도우 크기(보통 5-10). 안쪽 합은 윈도우 안의 모든 이웃에 대한 로그우도.</p>
 
-    <div class="prose">
-      <h2>시험장에서 꼭 끌어내야 할 키워드 체크리스트</h2>
-      <p>답안에 다음 키워드들이 들어가면 점수가 안정된다. 답안을 한 줄 쓰고 “이 키워드 중 두 개가 들어갔는가?”를 자문하라.</p>
-    </div>
+      <div class="math-block">$$ p(w_O \mid w_I) = \frac{\exp(v'_{w_O}{}^\top v_{w_I})}{\sum_{w=1}^{V} \exp(v'_w{}^\top v_{w_I})} $$</div>
+      <p class="math-note">중심 단어 <code>w_I</code>가 주변 단어 <code>w_O</code>를 “예측”할 확률은 두 임베딩의 내적을 softmax로 정규화한 형태. 어휘 크기 $V$가 수십만이면 분모 계산이 폭발한다.</p>
 
-    <ul class="checklist">
-      <li><b>비전 분류 워크플로</b>를 묻는 문제 → <code>표준화</code>·<code>증강</code>·<code>사전훈련(transfer learning)</code>·<code>softmax</code>·<code>음의 로그우도(NLL)</code>·<code>국소 대비 정규화</code></li>
-      <li><b>음성 인식 진화</b>를 묻는 문제 → <code>GMM-HMM</code>·<code>DNN-HMM</code>·<code>CTC</code>·<code>end-to-end LSTM</code>·<code>2D conv on spectrogram</code>·<code>17.7%</code></li>
-      <li><b>왜 임베딩</b>이냐를 묻는 문제 → <code>차원의 저주</code>·<code>one-hot 등거리 문제</code>·<code>분포 가설</code>·<code>분산 표상</code>·<code>의미적 방향(king-man+woman)</code></li>
-      <li><b>왜 어텐션</b>이냐를 묻는 문제 → <code>고정 요약 벡터 한계</code>·<code>긴 시퀀스 정보 손실</code>·<code>soft alignment</code>·<code>미분 가능한 정렬 학습</code>·<code>NMT가 첫 등장 도메인</code></li>
-      <li><b>큰 어휘 softmax</b>를 묻는 문제 → <code>hierarchical softmax</code>·<code>NCE</code>·<code>importance sampling</code>·<code>negative sampling</code>·<code>O(N) → O(log N)</code></li>
-      <li><b>행렬 분해 추천</b>을 묻는 문제 → <code>희소성</code>·<code>R ≈ UVᵀ</code>·<code>관찰값에만 손실</code>·<code>L2 정칙화</code>·<code>잠재 인자(latent factor)</code>·<code>콜드 스타트</code></li>
-      <li><b>RL의 본질적 어려움</b>을 묻는 문제 → <code>탐험-착취 trade-off</code>·<code>지연 보상(credit assignment)</code>·<code>닫힌 루프 데이터</code>·<code>분포 이동</code>·<code>ε-greedy</code></li>
-      <li><b>도메인 비교</b>를 묻는 문제 → <code>입력 모양</code>·<code>본체(CNN/RNN/임베딩)</code>·<code>손실 함수(NLL/CTC/MSE/벨만)</code>·<code>도메인 고유 증강</code></li>
-    </ul>
+      <p>이 손실의 핵심은 <strong>내적 <code>v'_{w_O}^\top v_{w_I}</code></strong>이다. 두 단어의 임베딩 내적이 크면 그 둘이 “이웃이 될 확률”이 높다고 모델은 본다. SGD가 이 손실을 줄이려면, 자주 함께 등장하는 단어 쌍의 임베딩 내적이 커지도록, 거의 함께 등장하지 않는 쌍의 내적이 작아지도록 좌표를 움직여야 한다. 학습이 끝나면 자연스럽게 “문맥이 비슷한 단어 = 임베딩 좌표가 가까운 단어”라는 분포 가설의 함의가 좌표상에 새겨진다.</p>
 
-    <div class="prose">
-      <h2>다음으로 — 13-15장과의 연결</h2>
-      <p>응용 챕터는 책의 Part II(현대적 실천)의 마지막 장이다. 여기서 보인 임베딩과 표상이라는 키워드는 곧장 Part III의 큰 주제로 이어진다.</p>
+      <h2>왜 두 종류 임베딩이 필요한가</h2>
+
+      <p>위 식에서 <code>v_w</code>와 <code>v'_w</code>를 분리한 이유는 비대칭 학습 신호 때문이다. 만약 한 단어가 한 종류의 벡터만 가진다면, 모델은 “단어가 자기 자신의 이웃이 될 확률”을 키워야 하는 부담을 안는다 — 같은 단어가 한 문장에 두 번 나오는 경우가 적기 때문이다. 두 벡터를 분리하면 “중심으로서의 단어”와 “문맥으로서의 단어”가 별도 좌표를 가지므로, 자기 자신과의 내적이 자동으로 0에 끌리는 문제를 피할 수 있다. 실전에서는 두 벡터의 평균이나 합을 “최종 임베딩”으로 쓰는 경우가 많다.</p>
+
+      <h2>큰 어휘 softmax — 분모를 어떻게 피할까</h2>
+
+      <p>위 softmax는 분모에 어휘 전체에 대한 합이 들어가므로, 매 학습 단계마다 <code>O(V)</code>의 비용이 든다. <code>V = 50만</code>이면 한 단어당 50만 번의 지수와 50만 번의 덧셈이다. 큰 말뭉치에서는 이 비용이 학습 시간 대부분을 차지한다. 12장은 이 분모를 회피하는 세 가지 표준 처방을 짚는다.</p>
+
       <ul>
-        <li><a href="../ch13-linear-factor/index.html">13장 선형 요소 모델</a> → PCA·ICA·희소 코딩. 비지도로 분산 표상을 잡는 가장 단순한 방법들. 추천 시스템의 행렬 분해가 PCA의 사촌.</li>
-        <li><a href="../ch14-autoencoder/index.html">14장 자기부호화기</a> → 입력을 재구성하도록 학습하면 가운데 층에 “저차원 표상”이 자동으로 잡힌다. 단어 임베딩의 일반화.</li>
-        <li><a href="../ch15-representation/index.html">15장 표상 학습</a> → 사전훈련·전이학습·매니폴드 가정·인과 요소. 응용 챕터의 “사전학습”이 왜 작동하는지의 이론적 뼈대.</li>
+        <li><b>계층적 소프트맥스(hierarchical softmax).</b> 어휘를 이진 트리(binary tree)로 배치하고, 단어 예측을 “이 단어가 트리의 어느 잎(leaf)에 있는가”의 일련의 이진 결정으로 분해한다. 한 단어를 예측하는 데 필요한 결정 수는 <code>log_2 V</code>이므로, 비용이 <code>O(V) → O(log V)</code>로 떨어진다.</li>
+        <li><b>노이즈 대조 추정(noise-contrastive estimation, NCE).</b> 정답 단어 한 개를 “양성 예”로, 어휘에서 무작위로 뽑은 단어 <code>k</code>개를 “음성 예”로 두고, 이 둘을 구분하는 이진 분류로 문제를 바꾼다. 분모의 어휘 합을 <code>k</code>개의 무작위 표본으로 대체하는 셈이다.</li>
+        <li><b>중요도 표집(importance sampling).</b> NCE와 비슷하지만, 음성 표본을 단어 빈도에 비례해 뽑은 뒤 가중치 보정을 한다. word2vec의 “negative sampling”도 이 계열의 변형이다.</li>
       </ul>
 
-      <p>시험 D-9에서 가장 시간 대비 효과가 좋은 복습 경로는 <strong>Ch.9(CNN) → Ch.10(RNN) → Ch.12(응용)</strong>의 삼각형이다. Ch.12는 단독으로 외울 게 많지 않다 — Ch.9·10의 부품이 어떻게 도메인별로 조립되는지의 카탈로그라는 점만 기억하면, 단답형이든 서술형이든 안정적으로 답이 나온다.</p>
+      <p>세 처방 모두 같은 한 가지 통찰을 공유한다 — <em>큰 분모는 모든 단어를 똑같이 다뤄야 한다는 “과민한 정규화”에서 온다. 모델이 정답 한 개를 잘 키우고 무작위 한 줌을 잘 누르는 것만 잘 해도 의미적 임베딩은 충분히 배워진다.</em></p>
+
+      <h2>임베딩 산수가 작동하는 이유 — 직접 만져 보기</h2>
+
+      <p>이렇게 학습된 임베딩 공간에서 가장 유명한 현상은 단어 산수다. <code>king − man + woman</code>의 결과 벡터가 <code>queen</code>에 가장 가깝고, <code>Paris − France + Italy</code>가 <code>Rome</code>에 가깝다. 이 등식은 우연이 아니라, 분포 가설이 “의미 차원”을 좌표 방향으로 박는다는 사실의 시각화다.</p>
+
+      <p>아래 위젯에서 동작 단어와 피연산자를 바꾸며 직접 만져 보라. 임베딩이 정말로 “성별”, “수도-국가”, “시제” 같은 의미 축을 좌표 위에 펼쳐 놓는지를 2D 투영으로 확인할 수 있다.</p>
     </div>
 
-    <nav class="ch-foot">
-      <a href="05.html"><span class="dir">← Prev</span><div class="ti">05 · 강화학습</div></a>
-      <a href="index.html" class="next"><span class="dir">↑ Up</span><div class="ti">Chapter 12 표지</div></a>
-    </nav>
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 03</span><span>임베딩 산수 king − man + woman ≈ ?</span></div>
+        <div class="arith-stage">
+          <div class="arith-canvas-wrap">
+            <canvas id="arithCanvas"></canvas>
+            <div class="arith-axis">2D PCA 투영 / 가로축: 성별 / 세로축: 왕족 vs 평민</div>
+          </div>
+          <div class="arith-controls">
+            <div class="arith-row">
+              <select id="aw1"></select>
+              <span class="op">−</span>
+              <select id="aw2"></select>
+              <span class="op">+</span>
+              <select id="aw3"></select>
+              <span class="eq">=</span>
+            </div>
+            <div class="arith-result">
+              <div class="lab">가장 가까운 단어</div>
+              <div class="word" id="aResult">queen</div>
+              <div class="dist" id="aDist">cos 유사도 0.973</div>
+            </div>
+            <div>
+              <div style="font-family:var(--mono); font-size:.7rem; color:var(--ink-faint); margin-bottom:.4rem;">PRESETS</div>
+              <div class="arith-presets" id="aPresets"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="widget-cap">좌측 캔버스는 20개 단어를 2D로 투영한 임베딩 공간. 우측 셀렉터에서 두 단어를 빼고 한 단어를 더하면, 결과 벡터에 가장 가까운 단어가 즉시 강조된다. 프리셋 버튼은 책과 word2vec 논문에 등장하는 대표 예시 — 성별(king/queen), 수도-국가(Paris/France), 단·복수(boy/boys), 시제(walk/walked) — 를 한 번에 시연한다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>왜 “공짜”가 아닌가 — 임베딩 산수의 한계</h2>
+
+      <p>임베딩 산수는 인상적이지만 무조건 작동하는 마법이 아니다. 몇 가지 “공짜가 아닌” 측면이 시험에서 자주 묻힌다.</p>
+
+      <p>첫째, <strong>고빈도 단어에만 잘 작동한다.</strong> 분포 통계로 학습된 임베딩이므로, 말뭉치에 50번 미만 등장한 단어는 좌표가 노이즈에 가깝다. 희귀한 인명, 신조어, 전문 용어는 산수가 거의 무작위 결과를 낸다.</p>
+
+      <p>둘째, <strong>2D 시각화는 진짜 임베딩 공간이 아니다.</strong> 실제 임베딩은 100-300차원이고, 그 공간에서의 거리 관계가 PCA나 t-SNE로 2D에 투영되면 일부 정보가 깨진다. 위의 시연도 2D에서는 보이지만 원본 300차원에서는 다른 결과가 나올 수 있다. 책이 word2vec 논문의 예시를 인용할 때 항상 300차원 임베딩의 결과임을 명시한다.</p>
+
+      <p>셋째, <strong>의미 축이 학습 데이터의 편향을 그대로 새긴다.</strong> 가장 유명한 사례는 <code>doctor − man + woman ≈ nurse</code>다. 이것은 임베딩이 “여성=간호사, 남성=의사”라는 편향을 학습 말뭉치에서 통계적으로 흡수한 결과다. 분포 가설의 강점이자 약점 — 사람이 쓰는 말의 통계를 그대로 좌표에 새기므로, 그 말 속에 있던 편향도 함께 따라온다. 12장 본문은 이 윤리적 함의를 직접 짚지는 않지만, 사후 연구에서 매우 중요한 주제가 됐다.</p>
+
+      <h2>한 줄 결론</h2>
+
+      <p>임베딩 산수는 분포 가설이 좌표에 새긴 의미 축의 가시화다. 같은 문맥에 자주 등장하는 단어 쌍의 내적을 크게, 그렇지 않은 쌍을 작게 학습하는 단순한 SGD가, 끝나면 자동으로 “성별 방향”, “수도-국가 방향”, “시제 방향”을 좌표축에 만들어 낸다. 그 좌표 위의 더하기와 빼기가 의미적 연산처럼 보이는 것은 그 결과다. 다음 sub에서는 이 임베딩 위에 “다음 단어 예측”이라는 한 가지 과제만 얹어서 만들어지는 언어 모델(language model)과 신경 기계 번역(neural machine translation)의 어텐션 메커니즘을 본다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
   </main>
 </div>
 
 <script>
   const SUBS = [
-    ['01','대규모 비전 분류'],
-    ['02','음성 인식'],
-    ['03','자연어 처리'],
-    ['04','추천 시스템'],
-    ['05','강화학습 응용'],
-    ['06','시험 대비'],
+    { no: '01', t: '응용 챕터의 의미' },
+    { no: '02', t: '대규모 비전 분류 1 — ImageNet' },
+    { no: '03', t: '대규모 비전 분류 2 — 증강·전이학습' },
+    { no: '04', t: '음성 인식 — 파형 → 스펙트로그램' },
+    { no: '05', t: 'NLP 1 — 단어 임베딩' },
+    { no: '06', t: 'NLP 2 — 분포 가설·임베딩 산수' },
+    { no: '07', t: 'NLP 3 — 언어 모델·번역·어텐션' },
+    { no: '08', t: '추천 시스템 — 협업 필터링' },
+    { no: '09', t: '강화학습 — agent-environment 루프' },
+    { no: '10', t: '공통 교훈 — 표상 위의 단순 산수' },
+    { no: '11', t: '시험 대비' },
   ];
-  const here = '06';
-  const navlist = document.getElementById('navlist');
-  SUBS.forEach(([no, t]) => {
-    const li = document.createElement('li');
-    const a = document.createElement('a');
-    a.href = no + '.html';
-    a.textContent = t;
-    if (no === here) a.classList.add('current');
-    li.appendChild(a); navlist.appendChild(li);
-  });
+  function buildNav(cur) {
+    const tb = document.querySelector('.topbar');
+    if (tb) tb.innerHTML =
+      '<a class="home" href="index.html">← Chapter 12 / 응용</a>' +
+      '<span class="ch-mini">SUB ' + cur + ' / 11</span>';
+    const ol = document.querySelector('.ch-nav ol');
+    if (ol) ol.innerHTML = SUBS.map(c =>
+      '<li><a href="' + c.no + '.html"' + (c.no === cur ? ' class="current"' : '') + '>' + c.t + '</a></li>').join('');
+    const foot = document.querySelector('.ch-foot');
+    if (foot) {
+      const i = SUBS.findIndex(c => c.no === cur);
+      const prev = i > 0 ? SUBS[i - 1] : { no: '', t: '표지로', _href: 'index.html' };
+      const next = i < SUBS.length - 1 ? SUBS[i + 1] : { no: '', t: '표지로', _href: 'index.html' };
+      const hp = prev._href || (prev.no + '.html');
+      const hn = next._href || (next.no + '.html');
+      foot.innerHTML =
+        '<a href="' + hp + '"><div class="dir">← 이전</div><div class="ti">' + prev.t + '</div></a>' +
+        '<a href="' + hn + '" class="next"><div class="dir">다음 →</div><div class="ti">' + next.t + '</div></a>';
+    }
+  }
+  function initScroll() {
+    const bar = document.querySelector('.scroll-progress');
+    if (!bar) return;
+    const on = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    document.addEventListener('scroll', on, { passive: true }); on();
+  }
 
-  const prog = document.querySelector('.scroll-progress');
-  window.addEventListener('scroll', () => {
-    const h = document.documentElement;
-    prog.style.width = (h.scrollTop / (h.scrollHeight - h.clientHeight) * 100) + '%';
-  });
+  // ─── 위젯 03: 임베딩 산수 ───
+  // 의미 축이 명시적으로 박힌 20개 단어의 2D 임베딩.
+  // x축: 성별(- 남성, + 여성), y축: 신분(- 평민, + 왕족), z축(시각 안 함): 동물성·시제 등.
+  // 실제 word2vec 결과를 모방한 prefab 좌표.
+  const EMB = {
+    'king':     { x:-1.0, y: 1.0, k:'royal' },
+    'queen':    { x: 1.0, y: 1.0, k:'royal' },
+    'prince':   { x:-0.9, y: 0.6, k:'royal' },
+    'princess': { x: 0.9, y: 0.6, k:'royal' },
+    'man':      { x:-1.0, y:-1.0, k:'commoner' },
+    'woman':    { x: 1.0, y:-1.0, k:'commoner' },
+    'boy':      { x:-0.9, y:-0.6, k:'commoner' },
+    'girl':     { x: 0.9, y:-0.6, k:'commoner' },
+    'father':   { x:-1.0, y:-0.4, k:'family' },
+    'mother':   { x: 1.0, y:-0.4, k:'family' },
+    'son':      { x:-0.8, y:-0.7, k:'family' },
+    'daughter': { x: 0.8, y:-0.7, k:'family' },
+    'uncle':    { x:-1.0, y:-0.2, k:'family' },
+    'aunt':     { x: 1.0, y:-0.2, k:'family' },
+    'actor':    { x:-0.7, y: 0.3, k:'role' },
+    'actress':  { x: 0.7, y: 0.3, k:'role' },
+    'lord':     { x:-1.0, y: 0.8, k:'royal' },
+    'lady':     { x: 1.0, y: 0.8, k:'royal' },
+    'monk':     { x:-0.8, y: 0.5, k:'role' },
+    'nun':      { x: 0.8, y: 0.5, k:'role' },
+  };
+  const WORDS = Object.keys(EMB);
+
+  function setupSelect(el, def) {
+    el.innerHTML = WORDS.map(w => '<option' + (w === def ? ' selected' : '') + '>' + w + '</option>').join('');
+  }
+  function arithWidget() {
+    const cv = document.getElementById('arithCanvas');
+    const ctx = cv.getContext('2d');
+    const aw1 = document.getElementById('aw1'), aw2 = document.getElementById('aw2'), aw3 = document.getElementById('aw3');
+    const aResult = document.getElementById('aResult'), aDist = document.getElementById('aDist');
+    setupSelect(aw1, 'king'); setupSelect(aw2, 'man'); setupSelect(aw3, 'woman');
+
+    const PRESETS = [
+      { a:'king',    b:'man',    c:'woman',   note:'성별' },
+      { a:'lord',    b:'man',    c:'woman',   note:'성별·신분' },
+      { a:'father',  b:'man',    c:'woman',   note:'가족' },
+      { a:'actor',   b:'man',    c:'woman',   note:'직업' },
+      { a:'queen',   b:'woman',  c:'man',     note:'역방향' },
+    ];
+    const presEl = document.getElementById('aPresets');
+    presEl.innerHTML = PRESETS.map((p, i) =>
+      '<button data-i="' + i + '">' + p.a + ' − ' + p.b + ' + ' + p.c + ' <span style="color:var(--style)">(' + p.note + ')</span></button>'
+    ).join('');
+    presEl.addEventListener('click', e => {
+      const b = e.target.closest('button'); if (!b) return;
+      const p = PRESETS[+b.dataset.i];
+      aw1.value = p.a; aw2.value = p.b; aw3.value = p.c;
+      compute();
+    });
+
+    function fit() {
+      const r = cv.parentElement.getBoundingClientRect();
+      cv.width = r.width * devicePixelRatio;
+      cv.height = 360 * devicePixelRatio;
+      ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+    }
+
+    function toScreen(x, y, W, H) {
+      const px = 32 + ((x + 1.3) / 2.6) * (W - 64);
+      const py = H - 32 - ((y + 1.3) / 2.6) * (H - 64);
+      return [px, py];
+    }
+    function drawAxes(W, H) {
+      ctx.clearRect(0, 0, W, H);
+      // grid
+      ctx.strokeStyle = 'rgba(38,34,28,0.05)'; ctx.lineWidth = 1;
+      for (let i = -1; i <= 1; i += 0.5) {
+        const [_, py] = toScreen(0, i, W, H);
+        ctx.beginPath(); ctx.moveTo(20, py); ctx.lineTo(W-10, py); ctx.stroke();
+        const [px, __] = toScreen(i, 0, W, H);
+        ctx.beginPath(); ctx.moveTo(px, 20); ctx.lineTo(px, H-10); ctx.stroke();
+      }
+      // axes
+      const [cx0, cy0] = toScreen(-1.3, 0, W, H);
+      const [cx1, cy1] = toScreen( 1.3, 0, W, H);
+      ctx.strokeStyle = 'rgba(38,34,28,0.25)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(cx0, cy0); ctx.lineTo(cx1, cy1); ctx.stroke();
+      const [cx2, cy2] = toScreen(0, -1.3, W, H);
+      const [cx3, cy3] = toScreen(0,  1.3, W, H);
+      ctx.beginPath(); ctx.moveTo(cx2, cy2); ctx.lineTo(cx3, cy3); ctx.stroke();
+      ctx.font = '10px monospace'; ctx.fillStyle = 'rgba(38,34,28,0.45)';
+      ctx.fillText('← male  ·  female →', W/2 - 50, H - 4);
+      ctx.save();
+      ctx.translate(8, H/2); ctx.rotate(-Math.PI/2);
+      ctx.fillText('← commoner  ·  royal →', -60, 0);
+      ctx.restore();
+    }
+    function plot(W, H, highlight) {
+      WORDS.forEach(w => {
+        const e = EMB[w];
+        const [px, py] = toScreen(e.x, e.y, W, H);
+        const isH = highlight && highlight.indexOf(w) >= 0;
+        ctx.fillStyle = isH ? '#C0492E' : 'rgba(45,91,122,0.55)';
+        ctx.beginPath(); ctx.arc(px, py, isH ? 5 : 3, 0, Math.PI*2); ctx.fill();
+        ctx.font = (isH ? 'bold ' : '') + '11px monospace';
+        ctx.fillStyle = isH ? '#C0492E' : 'rgba(38,34,28,0.6)';
+        ctx.fillText(w, px + 7, py + 4);
+      });
+    }
+    function drawArrow(W, H, from, to, mid) {
+      ctx.strokeStyle = 'rgba(192,73,46,0.65)'; ctx.lineWidth = 1.5; ctx.setLineDash([4,3]);
+      const [fx, fy] = toScreen(from.x, from.y, W, H);
+      const [mx, my] = toScreen(mid.x, mid.y, W, H);
+      const [tx, ty] = toScreen(to.x, to.y, W, H);
+      ctx.beginPath(); ctx.moveTo(fx, fy); ctx.lineTo(mx, my); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(mx, my); ctx.lineTo(tx, ty); ctx.stroke();
+      ctx.setLineDash([]);
+      // arrowhead at tx,ty
+      const ang = Math.atan2(ty-my, tx-mx);
+      ctx.fillStyle = 'rgba(192,73,46,0.85)';
+      ctx.beginPath();
+      ctx.moveTo(tx, ty);
+      ctx.lineTo(tx - 8*Math.cos(ang-0.4), ty - 8*Math.sin(ang-0.4));
+      ctx.lineTo(tx - 8*Math.cos(ang+0.4), ty - 8*Math.sin(ang+0.4));
+      ctx.closePath(); ctx.fill();
+    }
+
+    function compute() {
+      const w1 = aw1.value, w2 = aw2.value, w3 = aw3.value;
+      const v1 = EMB[w1], v2 = EMB[w2], v3 = EMB[w3];
+      const rx = v1.x - v2.x + v3.x;
+      const ry = v1.y - v2.y + v3.y;
+      // 결과 좌표와 가장 가까운 단어 (입력 단어 제외)
+      let best = null, bd = 1e9;
+      for (const w of WORDS) {
+        if (w === w1 || w === w2 || w === w3) continue;
+        const e = EMB[w];
+        const d = (e.x - rx)**2 + (e.y - ry)**2;
+        if (d < bd) { bd = d; best = w; }
+      }
+      // cos sim
+      const lenR = Math.hypot(rx, ry);
+      const e = EMB[best];
+      const lenE = Math.hypot(e.x, e.y);
+      const cos = (rx*e.x + ry*e.y) / (lenR*lenE + 1e-9);
+      aResult.textContent = best;
+      aDist.textContent = 'cos 유사도 ' + cos.toFixed(3) + '  ·  유클리드 거리 ' + Math.sqrt(bd).toFixed(3);
+      // draw
+      fit();
+      const W = cv.width / devicePixelRatio, H = cv.height / devicePixelRatio;
+      drawAxes(W, H);
+      plot(W, H, [w1, w2, w3, best]);
+      // arrow: v1 → v1-v2 → v1-v2+v3 → best
+      const mid = { x: v1.x - v2.x, y: v1.y - v2.y };
+      const res = { x: rx, y: ry };
+      drawArrow(W, H, v1, res, mid);
+      // 결과 좌표 점
+      const [rxs, rys] = toScreen(rx, ry, W, H);
+      ctx.fillStyle = 'rgba(192,73,46,0.25)';
+      ctx.beginPath(); ctx.arc(rxs, rys, 9, 0, Math.PI*2); ctx.fill();
+      ctx.strokeStyle = '#C0492E'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(rxs, rys, 9, 0, Math.PI*2); ctx.stroke();
+    }
+    [aw1, aw2, aw3].forEach(el => el.addEventListener('change', compute));
+    window.addEventListener('resize', compute);
+    compute();
+  }
 
   window.addEventListener('load', () => {
+    buildNav('06'); initScroll();
     if (window.renderMathInElement) {
       renderMathInElement(document.body, {
         delimiters: [
@@ -195,60 +364,7 @@
         throwOnError: false,
       });
     }
-  });
-
-  // Q&A 카드
-  const QAS = [
-    {
-      q: '비전 분류 파이프라인의 다섯 단계를 차례로 말하고, 각 단계가 왜 필요한지 한 문장씩 설명하라.',
-      rel: '12.01 · 12.06 표',
-      a: `<b>① 원본 입력</b>(H×W×3 텐서) → <b>② 표준화·정규화</b>(채널별 평균 0, 분산 1로 맞춰 활성화 함수가 잘 작동하는 영역으로 입력을 모음) → <b>③ 데이터 증강</b>(좌우 반전·작은 평행 이동·색조 흔들기로 가짜 변이를 주입해 강건성 확보) → <b>④ CNN 본체</b>(합성곱·풀링으로 위치 정보를 점차 버리고 의미 정보를 압축, ImageNet 사전훈련 가중치로 초기화) → <b>⑤ softmax + 음의 로그우도</b>(점수를 합 1 확률로 압축하고 정답 분포와의 거리를 측정 = MLE). 어느 한 단계도 단독으로 충분하지 않다 — 워크플로 전체가 모델이다.`,
-    },
-    {
-      q: 'CTC(Connectionist Temporal Classification)가 왜 음성 인식에 필요한가? 식의 형태와 함께 설명하라.',
-      rel: '12.02',
-      a: `음성은 <b>가변 길이 입력 → 가변 길이 출력</b>이고, 어느 프레임이 어느 글자에 대응하는지의 정렬이 라벨에 적혀 있지 않다. CTC는 “빈 토큰(blank, ϕ)”을 알파벳에 추가한 뒤, 모든 가능한 프레임-글자 정렬 경로의 확률을 더해 정답 시퀀스의 확률을 정의한다: <code>p(y|X) = Σ_{π ∈ 𝓑⁻¹(y)} Π_t p(π_t|X)</code>. 𝓑는 blank 제거+중복 병합 함수. 이렇게 하면 모델이 “어느 정렬이 맞는가”를 추측할 필요 없이, <b>모든 정렬을 동시에 고려해</b> 정답 시퀀스의 우도를 최대화할 수 있다. 동적 계획법(HMM forward 알고리즘)으로 효율적으로 계산된다.`,
-    },
-    {
-      q: '왜 어텐션은 NLP(특히 신경 기계번역)에서 먼저 등장하고 채택되었는가? 비전·음성과 비교해서 답하라.',
-      rel: '12.03 · LMS Q1',
-      a: `NLP에서 어텐션이 먼저 채택된 이유는 두 가지다. (1) <b>출력이 정확한 위치 정보를 요구</b>한다 — 번역에서 한국어 단어 하나는 영어 원문의 특정 위치 단어와 짝지어진다. 비전 분류의 출력은 한 클래스, 음성 인식의 출력은 정렬되지 않은 글자열로, 이런 명시적 “시점별 매핑” 요구가 약하다. (2) <b>고정 요약 벡터의 병목이 가장 극심</b>했다 — 50단어 문장을 300차원 벡터에 다 욱여넣어야 했던 NMT에서 손실이 가장 컸다. 비전은 처음부터 CNN이 공간 정보를 통째로 들고 있었고, 음성은 CTC로 정렬을 다른 방식으로 풀고 있었다. NLP에 어텐션이 들어간 뒤, 그 가치가 입증되자 ViT(비전), Conformer(음성)로 역수출되었다.`,
-    },
-    {
-      q: '데이터 증강의 의미가 비전과 NLP/음성에서 본질적으로 어떻게 다른가?',
-      rel: '12.01 · 12.02 · LMS Q2',
-      a: `<b>비전</b>의 증강은 <b>공간적 대칭성</b>을 이용한다 — 좌우 반전, 작은 평행 이동, 작은 회전, 색조·채도 흔들기. 이미지의 라벨이 이런 변환에 불변이라는 도메인 지식의 직접 적용이다. <b>음성</b>은 좌우 반전이 불가능(거꾸로 재생하면 다른 단어)하므로 대신 <b>속도 변화·소음 추가·SpecAugment</b>(스펙트로그램 시간/주파수 마스킹)를 쓴다. <b>NLP</b>는 더 어렵다 — 단어 치환은 문법·의미를 깨기 쉽다. 흔히 쓰는 처방은 <b>back-translation</b>(번역→역번역), <b>synonym replacement</b>, <b>word dropout</b>. 핵심 차이: 비전은 “라벨이 절대 안 바뀌는 변환”을 풍부하게 가지지만, 언어는 변환 대부분이 라벨을 미묘하게 바꾼다. 그래서 NLP 증강은 “라벨이 거의 안 바뀌는” 약한 변형으로 한정되고, 효과가 비전만큼 강력하지 않다.`,
-    },
-    {
-      q: 'word2vec 같은 단어 임베딩이 one-hot 표현보다 왜 강력한가? "차원의 저주"와 연결해서 설명하라.',
-      rel: '12.03',
-      a: `One-hot 표현에서는 어휘 V 안의 <b>모든 단어 쌍의 거리가 같다</b>. 결과적으로 “cat이 들어간 문장에서 배운 패턴”이 “dog이 들어간 문장”으로 전혀 일반화되지 않는다 — 학습 데이터의 정보가 단어 단위로 고립된다. 이것이 <b>NLP판 차원의 저주</b>다. 임베딩은 단어를 100-300차원 실수 벡터로 옮기되, <b>분포 가설</b>(같은 문맥에 등장하는 단어는 비슷한 의미)에 따라 의미 가까운 단어를 좌표상으로도 가깝게 놓는다. 그 결과 (1) 한 단어에 대한 학습이 의미적으로 가까운 모든 단어로 일반화되고, (2) 의미가 좌표 방향으로 구조화되어 <code>king − man + woman ≈ queen</code> 같은 벡터 산수가 의미 산수처럼 작동한다.`,
-    },
-    {
-      q: '추천 시스템의 행렬 분해에서, 왜 손실 함수에 “관찰된 칸만” 넣는가? 빈칸을 0으로 보면 어떤 일이 생기는가?',
-      rel: '12.04',
-      a: `평점 행렬은 99% 이상이 빈칸이다. <b>빈칸을 0으로 간주해 손실에 넣으면</b>, 모델은 “모든 칸을 0으로 예측”하는 자명한 해에 끌려간다 — 그것이 거의 모든 칸에서 정답이 되니까. 빈칸은 “0”이 아니라 “모름(unknown)”이다. 그래서 손실은 <code>Σ_{(u,i)∈Ω} (R_ui − u_u·v_i)²</code>처럼 <b>관찰된 쌍 Ω에만</b> 정의하고, 빈칸은 <b>예측 대상</b>으로 따로 떼어 둔다. 학습된 임베딩이 관찰된 패턴을 잘 설명하면, 같은 임베딩이 빈칸에서도 합리적인 예측을 내놓을 것이라는 베팅이다. L2 정칙화 <code>λ(||U||²+||V||²)</code>는 임베딩이 관찰값에 과적합하는 것을 막아 이 베팅이 무너지지 않게 한다.`,
-    },
-    {
-      q: '강화학습의 탐험-착취 충돌을 추천 시스템의 콜드 스타트 문제와 연결해서 설명하라.',
-      rel: '12.04 · 12.05',
-      a: `둘은 같은 구조의 다른 이름이다. RL agent가 ε=0(완전 착취)으로 굳으면, 한 번 “좋아 보인” arm만 반복해 당겨 진짜 최적 arm을 영원히 못 찾을 수 있다. 추천 시스템도 마찬가지 — 한 번 사용자에게 “액션 좋아함”이라고 추정하면 액션만 추천하게 되고, 사용자는 액션만 보게 되고, 데이터는 액션으로만 쌓이며, 모델은 이 추정을 영원히 강화한다. 사용자가 사실은 다큐멘터리도 좋아했을 가능성은 데이터에 들어오지 않는다. 양쪽 다 해법은 같다 — <b>ε-greedy 같은 의도적 탐험</b>으로 “지금 추정 최적이 아닌 선택”을 가끔 강제해야 한다. 더 본질적으로, 두 문제 모두 <b>“모델의 행동이 다음 학습 데이터를 결정한다”</b>는 폐쇄 루프 구조 때문에 발생하고, 그래서 추천 시스템은 점차 contextual bandit / RL 프레임워크로 재정의되어 왔다.`,
-    },
-  ];
-  const host = document.getElementById('qaHost');
-  QAS.forEach((qa, i) => {
-    const d = document.createElement('div');
-    d.className = 'qa';
-    d.innerHTML = `
-      <div class="qa-q">
-        <span class="qn">Q${String(i+1).padStart(2,'0')}</span>
-        <span>${qa.q}</span>
-        <span class="qx">+</span>
-      </div>
-      <div class="qa-a"><div class="qa-a-inner"><span class="rel">관련: ${qa.rel}</span>${qa.a}</div></div>
-    `;
-    d.querySelector('.qa-q').addEventListener('click', () => d.classList.toggle('open'));
-    host.appendChild(d);
+    arithWidget();
   });
 </script>
 </body>

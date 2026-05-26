@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>12 / 07 / NLP 3 — 언어 모델·번역·어텐션</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .nmt-stage { padding: 1.2rem 1.2rem 1rem; background: #fff; border-radius: 10px; }
+  .nmt-row { display: grid; grid-template-columns: auto 1fr; gap: .5rem; align-items: center; margin: .4rem 0; font-family: var(--mono); font-size: .82rem; }
+  .nmt-row .lab { color: var(--ink-faint); white-space: nowrap; font-size: .72rem; letter-spacing: .08em; }
+  .nmt-tokens { display: flex; gap: .25rem; flex-wrap: wrap; }
+  .nmt-tok { padding: .3rem .55rem; background: var(--paper-2); border: 1px solid var(--line); border-radius: 5px; font-size: .8rem; color: var(--ink-soft); cursor: pointer; transition: .15s; }
+  .nmt-tok.src { border-left: 3px solid var(--structure); }
+  .nmt-tok.tgt { border-left: 3px solid var(--style); }
+  .nmt-tok.active { background: var(--style-bg); border-color: var(--style); color: var(--ink); }
+  .nmt-attn-grid { margin-top: .9rem; padding: .9rem; background: var(--paper); border: 1px solid var(--line-soft); border-radius: 8px; overflow-x: auto; }
+  .nmt-attn-grid table { border-collapse: collapse; font-family: var(--mono); font-size: .72rem; }
+  .nmt-attn-grid td, .nmt-attn-grid th { padding: .35rem .45rem; text-align: center; min-width: 2.4rem; }
+  .nmt-attn-grid th { color: var(--structure); font-weight: 500; border-bottom: 1px solid var(--line); }
+  .nmt-attn-grid td:first-child { color: var(--style); font-weight: 500; border-right: 1px solid var(--line); text-align: right; }
+  .nmt-cap { padding: .8rem 1rem; background: var(--paper-2); border-left: 3px solid var(--style); margin-top: .8rem; font-size: .88rem; color: var(--ink-soft); line-height: 1.55; border-radius: 4px; }
+  .nmt-cap b { color: var(--ink); }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-chapter 07 / NLP 3</span>
+      <h1>언어 모델, 번역,<br><span class="t-style">어텐션</span></h1>
+      <p class="lede">단어 임베딩을 깔아 두면 그 위에 “다음 단어 예측”이라는 한 가지 과제만 얹어도 언어 모델(language model)이 만들어진다. 그 언어 모델을 두 개 이어 붙이면 신경 기계 번역(neural machine translation, NMT)이 되고, NMT의 병목을 풀기 위해 등장한 어텐션(attention)은 결국 모든 도메인의 부품이 됐다.</p>
+    </header>
+
+    <div class="prose">
+      <p>앞의 두 sub에서 우리는 단어를 임베딩으로 옮기고, 그 임베딩이 분포 가설로부터 의미 축을 가진다는 사실을 봤다. 그런데 임베딩 자체는 의미의 좌표일 뿐, 문장을 이해하거나 생성하지는 못한다. NLP 응용이 본격적으로 시작되려면 한 가지 과제가 더 필요하다. 바로 <strong>“이전 단어들이 주어졌을 때 다음 단어가 무엇일지 예측”</strong>하는 과제, 곧 언어 모델이다.</p>
+
+      <h2>언어 모델 — 단 하나의 과제로 충분한 이유</h2>
+
+      <p>언어 모델은 문장 <code>w_1, w_2, ..., w_T</code>가 주어졌을 때 그 문장의 확률을 부여하는 모델이다. 확률의 사슬 법칙(chain rule of probability)에 따라 이 합동 확률은 조건부 확률의 곱으로 분해된다.</p>
+
+      <div class="math-block">$$ p(w_1, w_2, \ldots, w_T) = \prod_{t=1}^{T} p(w_t \mid w_1, w_2, \ldots, w_{t-1}) $$</div>
+      <p class="math-note">문장의 확률을 “단어를 한 개씩 추가할 때마다 그 단어가 등장할 확률”의 곱으로 풀어 쓴 것. 모든 언어 모델 아키텍처는 결국 우변의 조건부 확률 한 개를 어떻게 모델링하느냐의 변주다.</p>
+
+      <p>이 분해가 의미하는 바는 강력하다. <em>“다음 단어 예측”이라는 한 가지 과제만 잘 풀면, 문장의 확률, 단어의 의미, 문법, 사실 지식까지 부수적으로 학습된다.</em> 다음 단어를 잘 맞히려면 모델은 문법을 알아야 하고(<code>The cat is ___</code> 다음에 <code>"are"</code>가 아니라 <code>"on"</code>이 와야 한다는 것), 의미를 알아야 하고(<code>The cat is on the ___</code> 다음에 <code>"sky"</code>보다 <code>"mat"</code>이 더 그럴듯해야 한다), 세상 지식을 알아야 한다(<code>The capital of France is ___</code> 다음에 <code>"Paris"</code>가 와야 한다). 한 과제가 만 가지 능력을 흡수한다.</p>
+
+      <p>이것이 GPT(Generative Pre-trained Transformer) 같은 현대 대형 언어 모델(large language model, LLM)의 사전훈련 과제가 “인터넷 텍스트의 다음 단어 예측” 단 하나로 끝나는 이유다. 12장이 책의 마지막 수업이 끝난 2016년 시점에는 이 “단 하나의 과제” 패러다임이 막 가시화되고 있었고, 2017년 Transformer 논문 이후 본격 표준이 됐다.</p>
+
+      <h2>신경 언어 모델의 구조</h2>
+
+      <p>2003년 Bengio가 제안한 신경 언어 모델(neural language model)은 위의 조건부 확률을 다음과 같이 풀었다. 이전 <code>n−1</code>개 단어의 임베딩을 이어 붙이고, 그 위에 다층 퍼셉트론(multilayer perceptron, MLP)을 얹어 다음 단어의 확률 분포를 softmax로 낸다.</p>
+
+      <div class="math-block">$$ p(w_t \mid w_{t-n+1}, \ldots, w_{t-1}) = \text{softmax}(W \cdot \tanh(U \cdot [v_{w_{t-n+1}}; \ldots; v_{w_{t-1}}] + b_h) + b_o) $$</div>
+      <p class="math-note">$v_w$가 학습 가능한 단어 임베딩, $[\cdot;\cdot]$이 벡터 연결(concatenation). 이 단순한 구조가 n-gram 모델의 차원의 저주를 깬 결정적 사건이었다.</p>
+
+      <p>n-gram 카운트 모델과 비교하면 차이가 또렷하다. n-gram은 “문맥 단어 조합 자체”를 키로 쓰므로, <code>"the cat sat"</code>이라는 정확한 3-gram을 데이터에서 본 적 없으면 <code>p("on" | "the cat sat")</code>를 추정할 수 없다. 신경 언어 모델은 단어를 임베딩으로 옮긴 뒤 그 위에서 합성하므로, <code>"the cat sat"</code>의 의미가 <code>"the dog sat"</code>의 의미와 가까움을 임베딩 공간에서 자연스럽게 활용한다. 한 문장에서 배운 패턴이 의미적으로 가까운 다른 문장으로 자동 전이된다.</p>
+
+      <p>이후 RNN(recurrent neural network)이 등장하면서 “고정된 n개의 이전 단어”라는 제약이 풀렸다. RNN 언어 모델은 시간 축을 따라 숨은 상태(hidden state) <code>h_t</code>를 누적하면서, 매 시각의 <code>h_t</code>를 “지금까지 본 모든 단어의 요약”으로 사용한다. 다음 단어 분포는 <code>p(w_t | h_{t-1})</code>로 적힌다. 10장에서 다룬 LSTM/GRU가 이 RNN 언어 모델의 표준 부품이 됐다.</p>
+
+      <h2>신경 기계 번역 — 언어 모델 두 개의 결합</h2>
+
+      <p>언어 모델을 두 개 이어 붙이면 신경 기계 번역이 된다. 이 구조를 encoder-decoder 또는 sequence-to-sequence(seq2seq)라 부른다. Encoder는 원문(source)을 한 단어씩 읽으면서 그 의미를 하나의 “요약 벡터(context vector)” <code>c</code>로 압축하고, decoder는 그 요약 벡터를 출발점으로 삼아 번역문(target)을 한 단어씩 생성한다.</p>
+
+      <div class="math-block">$$ c = f_{\text{enc}}(x_1, \ldots, x_{T_x}) \qquad p(y_t \mid y_{<t}, x) = f_{\text{dec}}(y_{t-1}, h^{\text{dec}}_{t-1}, c) $$</div>
+      <p class="math-note">encoder가 만든 단일 벡터 $c$가 두 언어를 잇는 다리. decoder는 매 시각 이 $c$와 자기 자신의 직전 상태를 보고 다음 단어를 예측한다.</p>
+
+      <p>2014년 Sutskever 등의 seq2seq 논문이 영어-프랑스어 번역에서 통계적 기계 번역(statistical machine translation, SMT)을 처음으로 따라잡으면서 NMT의 시대가 열렸다. 그러나 이 “단일 요약 벡터” 구조에는 곧장 한계가 드러났다.</p>
+
+      <h2>고정 요약 벡터의 병목 — 어텐션이 등장한 이유</h2>
+
+      <p>50단어짜리 영어 문장을 한국어로 옮기는 작업을 상상해 보자. 위 식은 “50단어의 모든 의미를 300차원 벡터 <code>c</code> 하나에 욱여넣은 뒤, 그 벡터만으로 50단어짜리 한국어 번역을 다 생성해야 한다”고 요구한다. 사람이 통역할 때를 떠올려 보면 이상하다 — 통역사는 원문 한 줄을 다 듣고 잊은 뒤 번역하는 게 아니라, 번역하는 동안에도 원문을 계속 참조하면서 “지금 출력할 단어는 원문의 어디에 대응되는가”를 그때그때 본다.</p>
+
+      <p>2015년 Bahdanau 등이 제안한 어텐션 메커니즘은 이 “계속 참조한다”는 동작을 미분 가능한 형태로 모델에 박은 것이다. 단일 요약 벡터 <code>c</code> 대신, encoder가 만든 단어별 숨은 상태 <code>h^{\text{enc}}_1, ..., h^{\text{enc}}_{T_x}</code>를 모두 보관해 둔다. Decoder는 매 시각 <code>t</code>마다 “지금 어느 원문 위치를 봐야 하는가”를 가중치 <code>α_{t,j}</code>로 계산하고, 그 가중치로 encoder 상태들을 가중합한 “시점별 문맥 벡터(context vector) <code>c_t</code>”를 새로 만든다.</p>
+
+      <div class="math-block">$$ e_{t,j} = a(h^{\text{dec}}_{t-1}, h^{\text{enc}}_j), \quad \alpha_{t,j} = \frac{\exp(e_{t,j})}{\sum_{k=1}^{T_x}\exp(e_{t,k})}, \quad c_t = \sum_{j=1}^{T_x} \alpha_{t,j} h^{\text{enc}}_j $$</div>
+      <p class="math-note">정렬 점수 $e_{t,j}$를 softmax로 정규화해 가중치 $\alpha_{t,j}$를 만들고, 그 가중치로 encoder 상태를 가중합해 매 시각의 문맥 벡터를 새로 합성. $\alpha_{t,j}$가 부드러운 정렬(soft alignment) 자체다.</p>
+
+      <h2>NMT 어텐션 — 직접 만져 보기</h2>
+
+      <p>아래는 영어 문장 “the cat sat on the mat”을 한국어 “고양이 가 매트 위에 앉았다”로 번역할 때의 어텐션 가중치 패턴이다. 한국어 단어를 클릭하면 그 단어를 생성할 때 모델이 어느 원문 단어를 가장 강하게 참조했는지가 강조된다. 어순이 다른 두 언어 사이에서 어텐션이 자동으로 정렬을 학습한다는 점에 주목하자.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 04</span><span>NMT 어텐션 시연 — 영-한 번역</span></div>
+        <div class="nmt-stage">
+          <div class="nmt-row">
+            <span class="lab">SOURCE</span>
+            <div class="nmt-tokens" id="srcTokens"></div>
+          </div>
+          <div class="nmt-row">
+            <span class="lab">TARGET</span>
+            <div class="nmt-tokens" id="tgtTokens"></div>
+          </div>
+          <div class="nmt-attn-grid" id="attnGrid"></div>
+          <div class="nmt-cap" id="nmtCap">한국어 단어를 클릭하면 그 단어를 생성할 때의 어텐션 가중치가 위 표와 SOURCE 토큰에 표시됩니다.</div>
+        </div>
+      </div>
+      <p class="widget-cap">어텐션 가중치는 “지금 출력할 한국어 단어가 영어 원문의 어느 위치에 가장 강하게 정렬되는가”를 0-1 사이의 확률로 표시한다. 영어 원문과 한국어 번역의 어순이 달라도 어텐션이 자동으로 정렬을 학습한다 — 이 학습된 정렬은 학습 시 명시적 라벨로 주어지지 않으며, “번역을 잘 하라”는 단일 손실에서 자연 발생한다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>어텐션이 일반 부품이 된 이유</h2>
+
+      <p>어텐션은 처음에 NMT의 병목을 풀기 위한 특수 기법으로 등장했지만, 곧 거의 모든 시퀀스 모델의 기본 부품이 됐다. 2017년 Vaswani 등의 “Attention Is All You Need” 논문이 RNN을 완전히 제거하고 어텐션만으로 시퀀스 처리를 한 Transformer를 제안했고, 이 구조가 곧장 NLP의 표준이 됐다.</p>
+
+      <p>어텐션이 왜 그렇게 강력한 일반 부품이 됐는가. 답은 세 가지다.</p>
+
+      <ul>
+        <li><b>전역 문맥 접근.</b> RNN은 멀리 떨어진 단어 사이의 의존성을 학습하기 어렵다 — 신호가 시간 축을 따라 흘러야 하고, LSTM이 도와줘도 50단어 이상에서는 정보가 희석된다. 어텐션은 첫 단어와 마지막 단어를 직접 한 번의 내적으로 연결한다. 거리 의존성이 사라진다.</li>
+        <li><b>병렬화.</b> RNN은 시간 축이 순차적이라 병렬화가 어렵다. Transformer의 self-attention은 모든 위치 쌍의 점수를 한 번의 행렬 곱으로 계산하므로 GPU에서 완전히 병렬화된다. 학습 속도가 RNN 대비 수십 배 빨라진다.</li>
+        <li><b>해석 가능성.</b> 어텐션 가중치 <code>α_{t,j}</code>가 그대로 “모델이 어디를 봤는가”의 시각화다. NMT에서 영-불 번역의 어텐션 행렬이 거의 대각선 패턴으로 학습된 것이 첫 발견이었고, 이후 모든 분야에서 어텐션 시각화가 모델 디버깅의 표준 도구가 됐다.</li>
+      </ul>
+
+      <h2>비전과 음성으로 옮겨간 어텐션</h2>
+
+      <p>어텐션의 가치가 NMT에서 입증되자, 곧 비전과 음성으로 역수출됐다. 비전에서는 Vision Transformer(ViT)가 이미지를 16×16 패치(patch)로 잘라 단어처럼 다루고 self-attention을 얹어, 합성곱 없이도 ImageNet 분류에서 최상위 성능을 냈다. 음성에서는 Conformer가 합성곱과 어텐션을 결합해 음성 인식의 새 표준이 됐다.</p>
+
+      <p>왜 어텐션이 NLP에 먼저 들어가고 비전·음성에 나중에 갔는가. 책의 답은 두 가지다. 첫째, NLP의 단일 요약 벡터 병목이 가장 극심했다 — 50단어를 300차원에 욱여넣는 작업의 손실이 컸다. 비전의 CNN은 처음부터 공간 정보를 통째로 들고 있었고, 음성의 CTC는 정렬 문제를 다른 방식으로 풀고 있었다. 둘째, NLP의 출력은 “어떤 한국어 단어가 어떤 영어 단어에 대응되는가”라는 명시적 정렬을 요구하는 자리가 많다. 비전 분류의 출력은 한 클래스, 음성 인식의 출력은 정렬 불명의 글자열로, 어텐션의 정렬 학습 능력이 직접 빛나는 자리가 적었다. 어텐션이 NMT에서 명백한 가치를 보여 준 뒤에야 다른 도메인으로 옮겨간 것이다.</p>
+
+      <h2>한 줄 결론</h2>
+
+      <p>언어 모델은 “다음 단어 예측”이라는 한 과제로 문법·의미·세상 지식을 모두 흡수한다. 두 언어 모델을 encoder-decoder로 잇고 단일 요약 벡터의 병목을 어텐션으로 풀면 NMT가 된다. 어텐션은 NMT의 특수 트릭에서 출발했지만 곧 모든 시퀀스 모델의 기본 부품이 됐다. 다음 sub에서는 NLP를 떠나, 같은 “임베딩 + 내적” 사고가 사용자×아이템 행렬에서 어떻게 추천 시스템(recommender system)으로 펼쳐지는지를 본다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    { no: '01', t: '응용 챕터의 의미' },
+    { no: '02', t: '대규모 비전 분류 1 — ImageNet' },
+    { no: '03', t: '대규모 비전 분류 2 — 증강·전이학습' },
+    { no: '04', t: '음성 인식 — 파형 → 스펙트로그램' },
+    { no: '05', t: 'NLP 1 — 단어 임베딩' },
+    { no: '06', t: 'NLP 2 — 분포 가설·임베딩 산수' },
+    { no: '07', t: 'NLP 3 — 언어 모델·번역·어텐션' },
+    { no: '08', t: '추천 시스템 — 협업 필터링' },
+    { no: '09', t: '강화학습 — agent-environment 루프' },
+    { no: '10', t: '공통 교훈 — 표상 위의 단순 산수' },
+    { no: '11', t: '시험 대비' },
+  ];
+  function buildNav(cur) {
+    const tb = document.querySelector('.topbar');
+    if (tb) tb.innerHTML =
+      '<a class="home" href="index.html">← Chapter 12 / 응용</a>' +
+      '<span class="ch-mini">SUB ' + cur + ' / 11</span>';
+    const ol = document.querySelector('.ch-nav ol');
+    if (ol) ol.innerHTML = SUBS.map(c =>
+      '<li><a href="' + c.no + '.html"' + (c.no === cur ? ' class="current"' : '') + '>' + c.t + '</a></li>').join('');
+    const foot = document.querySelector('.ch-foot');
+    if (foot) {
+      const i = SUBS.findIndex(c => c.no === cur);
+      const prev = i > 0 ? SUBS[i - 1] : { no: '', t: '표지로', _href: 'index.html' };
+      const next = i < SUBS.length - 1 ? SUBS[i + 1] : { no: '', t: '표지로', _href: 'index.html' };
+      const hp = prev._href || (prev.no + '.html');
+      const hn = next._href || (next.no + '.html');
+      foot.innerHTML =
+        '<a href="' + hp + '"><div class="dir">← 이전</div><div class="ti">' + prev.t + '</div></a>' +
+        '<a href="' + hn + '" class="next"><div class="dir">다음 →</div><div class="ti">' + next.t + '</div></a>';
+    }
+  }
+  function initScroll() {
+    const bar = document.querySelector('.scroll-progress');
+    if (!bar) return;
+    const on = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    document.addEventListener('scroll', on, { passive: true }); on();
+  }
+
+  // ─── 위젯 04: NMT 어텐션 시연 ───
+  // 영-한 번역의 어텐션 가중치를 직접 손으로 짜 놓고(실제 학습된 패턴 모방),
+  // 한국어 단어 클릭 시 그 행을 강조.
+  function attnWidget() {
+    const SRC = ['the','cat','sat','on','the','mat'];
+    const TGT = ['고양이','가','매트','위에','앉았다'];
+    // 각 한국어 단어가 영어 단어들에 부여하는 attention (행 합 = 1)
+    const ATTN = [
+      [0.05, 0.78, 0.05, 0.02, 0.05, 0.05], // 고양이 ← cat
+      [0.62, 0.20, 0.05, 0.03, 0.05, 0.05], // 가 ← the,cat
+      [0.03, 0.04, 0.04, 0.06, 0.05, 0.78], // 매트 ← mat
+      [0.05, 0.04, 0.06, 0.72, 0.06, 0.07], // 위에 ← on
+      [0.03, 0.05, 0.78, 0.05, 0.04, 0.05], // 앉았다 ← sat
+    ];
+    const srcEl = document.getElementById('srcTokens');
+    const tgtEl = document.getElementById('tgtTokens');
+    const grid  = document.getElementById('attnGrid');
+    const cap   = document.getElementById('nmtCap');
+
+    srcEl.innerHTML = SRC.map((w, i) => '<span class="nmt-tok src" data-i="' + i + '">' + w + '</span>').join('');
+    tgtEl.innerHTML = TGT.map((w, i) => '<span class="nmt-tok tgt" data-j="' + i + '">' + w + '</span>').join('');
+
+    function drawGrid(active) {
+      let html = '<table><thead><tr><th></th>' + SRC.map(w => '<th>' + w + '</th>').join('') + '</tr></thead><tbody>';
+      for (let j = 0; j < TGT.length; j++) {
+        html += '<tr><td>' + TGT[j] + '</td>';
+        for (let i = 0; i < SRC.length; i++) {
+          const a = ATTN[j][i];
+          const op = a;
+          const isRow = (active != null && active === j);
+          const bg = 'rgba(192,73,46,' + (op).toFixed(2) + ')';
+          const txt = isRow ? '#fff' : 'var(--ink-soft)';
+          const wt = isRow && op > 0.4 ? ' font-weight:600;' : '';
+          html += '<td style="background:' + bg + '; color:' + txt + ';' + wt + '">' + a.toFixed(2) + '</td>';
+        }
+        html += '</tr>';
+      }
+      html += '</tbody></table>';
+      grid.innerHTML = html;
+    }
+
+    function update(j) {
+      tgtEl.querySelectorAll('.nmt-tok').forEach((el, k) => el.classList.toggle('active', k === j));
+      // src 강조: 가장 큰 attention을 받은 영어 단어
+      const row = ATTN[j];
+      let maxI = 0; for (let i = 1; i < row.length; i++) if (row[i] > row[maxI]) maxI = i;
+      srcEl.querySelectorAll('.nmt-tok').forEach((el, k) => el.classList.toggle('active', k === maxI));
+      drawGrid(j);
+      cap.innerHTML = '<b>' + TGT[j] + '</b>를 생성할 때, 모델은 영어 원문의 <b>' + SRC[maxI] + '</b>(가중치 ' + row[maxI].toFixed(2) + ')를 가장 강하게 참조한다. 어텐션은 어순이 다른 두 언어 사이의 정렬을 명시적 라벨 없이 자동으로 학습한다.';
+    }
+
+    tgtEl.addEventListener('click', e => {
+      const t = e.target.closest('.nmt-tok'); if (!t) return;
+      update(+t.dataset.j);
+    });
+    drawGrid(null);
+    update(0);
+  }
+
+  window.addEventListener('load', () => {
+    buildNav('07'); initScroll();
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false},
+        ],
+        throwOnError: false,
+      });
+    }
+    attnWidget();
+  });
+</script>
+</body>
+</html>

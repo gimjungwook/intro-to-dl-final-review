@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>14 · 시험 대비 — 20+ 핵심 질문</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .qa { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 1rem 1.2rem; margin: 1rem 0; }
+  .qa summary { cursor: pointer; font-family: var(--serif); font-size: 1.08rem; font-weight: 500; color: var(--ink); list-style: none; padding-right: 1.5rem; position: relative; }
+  .qa summary::after { content: '+'; position: absolute; right: 0; top: 0; color: var(--ink-faint); font-family: var(--mono); font-size: 1.3rem; transition: transform .2s; }
+  .qa[open] summary::after { content: '−'; }
+  .qa summary:hover { color: var(--structure); }
+  .qa .ans { padding-top: 1rem; border-top: 1px solid var(--line-soft); margin-top: 1rem; color: var(--ink-soft); font-size: .95rem; line-height: 1.7; }
+  .qa .ans p { margin-bottom: .9rem; }
+  .qa .ans .math-block { margin: .9rem 0; }
+  .qa .qno { display: inline-block; background: var(--paper-2); color: var(--ink-soft); padding: .15rem .5rem; border-radius: 4px; font-family: var(--mono); font-size: .76rem; margin-right: .5rem; vertical-align: middle; }
+  .qa.diff-1 summary::before { content: '쉬움'; }
+  .qa.diff-2 summary::before { content: '중간'; }
+  .qa.diff-3 summary::before { content: '어려움'; }
+  .qa summary::before { font-family: var(--mono); font-size: .68rem; letter-spacing: .1em; color: var(--ink-faint); padding: .1rem .4rem; border: 1px solid var(--line); border-radius: 3px; margin-right: .6rem; vertical-align: middle; }
+  .qa.diff-3 summary::before { color: var(--style); border-color: var(--style); }
+  .formula-card { background: var(--paper-2); border-left: 4px solid var(--structure); padding: 1rem 1.2rem; margin: 1.4rem 0; border-radius: 0 6px 6px 0; }
+  .formula-card h4 { margin: 0 0 .5rem; font-family: var(--serif); color: var(--structure); }
+  .formula-card .math-note { margin-top: .4rem; font-size: .82rem; }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar">
+  <a class="home" href="index.html">← Ch.10 표지</a>
+  <span class="ch-mini">SUB 14 / 14</span>
+</div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol id="navlist"></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-chapter 14 · 시험 직전 최종 점검</span>
+      <h1><span class="t-ink-soft">시험에서</span> 묻기 좋은<br>20+ 핵심 질문</h1>
+      <p class="lede">기말고사 2026-06-04, 딥러닝 개론 Chapter 10. 이 장은 시험 직전 30분에 한 번 훑는 것을 목적으로 만들었다. 모든 수식을 한 페이지에, 핵심 구분 지점을 비교표 형태로, 묻기 좋은 질문 20개+ 모두 답과 함께. 질문은 난이도(쉬움·중간·어려움)로 표시했다.</p>
+    </header>
+
+    <div class="prose">
+      <h2>한 페이지 수식 정리</h2>
+      <div class="formula-card">
+        <h4>기본 RNN</h4>
+        <div class="math-block">$$h_t = \tanh(W h_{t-1} + U x_t + b), \quad \hat y_t = \mathrm{softmax}(V h_t + c)$$</div>
+        <p class="math-note">매개변수 다섯 개($W, U, V, b, c$)가 시퀀스 길이와 무관하게 모든 시점에 재사용.</p>
+      </div>
+
+      <div class="formula-card">
+        <h4>BPTT (Backpropagation Through Time)</h4>
+        <div class="math-block">$$\frac{\partial L}{\partial W} = \sum_{t=1}^{T} \sum_{k=1}^{t} \frac{\partial L_t}{\partial h_t} \left(\prod_{j=k+1}^{t} \frac{\partial h_j}{\partial h_{j-1}}\right) \frac{\partial h_k}{\partial W}$$</div>
+        <p class="math-note">중간 곱이 $\prod \frac{\partial h_j}{\partial h_{j-1}} = \prod W^\top \mathrm{diag}(\tanh'(h_j))$. 같은 $W$가 시간 길이만큼 곱해지는 것이 폭발/소실의 직접 원인.</p>
+      </div>
+
+      <div class="formula-card">
+        <h4>LSTM (Long Short-Term Memory)</h4>
+        <div class="math-block">$$\begin{aligned}
+          f_t &= \sigma(W_f[h_{t-1}, x_t] + b_f), \quad i_t = \sigma(W_i[h_{t-1}, x_t] + b_i) \\
+          o_t &= \sigma(W_o[h_{t-1}, x_t] + b_o), \quad \tilde C_t = \tanh(W_C[h_{t-1}, x_t] + b_C) \\
+          C_t &= f_t \odot C_{t-1} + i_t \odot \tilde C_t, \quad h_t = o_t \odot \tanh(C_t)
+        \end{aligned}$$</div>
+        <p class="math-note">매개변수 수: $4 \cdot d_h \cdot (d_h + d_x + 1)$. 기본 RNN의 4배. forget gate가 가장 결정적.</p>
+      </div>
+
+      <div class="formula-card">
+        <h4>GRU (Gated Recurrent Unit)</h4>
+        <div class="math-block">$$\begin{aligned}
+          z_t &= \sigma(W_z[h_{t-1}, x_t] + b_z), \quad r_t = \sigma(W_r[h_{t-1}, x_t] + b_r) \\
+          \tilde h_t &= \tanh(W[r_t \odot h_{t-1}, x_t] + b) \\
+          h_t &= (1-z_t) \odot h_{t-1} + z_t \odot \tilde h_t
+        \end{aligned}$$</div>
+        <p class="math-note">매개변수 수: $3 \cdot d_h \cdot (d_h + d_x + 1)$. LSTM의 75%. cell state 없음.</p>
+      </div>
+
+      <div class="formula-card">
+        <h4>양방향 RNN과 인코더-디코더</h4>
+        <div class="math-block">$$h_t = [\vec h_t \,;\, \overleftarrow h_t] \quad \text{(BiRNN, concatenation)}$$</div>
+        <div class="math-block">$$c = h_{T_x}^{(enc)}, \quad h_0^{(dec)} = c, \quad h_t^{(dec)} = f(h_{t-1}^{(dec)}, y_{t-1})$$</div>
+        <p class="math-note">BiRNN은 전체 시퀀스를 미리 봐야 하므로 디코더에는 쓸 수 없다. seq2seq는 컨텍스트 병목이 한계, 어텐션이 해법.</p>
+      </div>
+
+      <h2>구분 지점 비교표</h2>
+      <table class="symbols">
+        <tr><td><b>매개변수 공유 축</b></td><td>CNN — 공간. RNN — 시간. 둘 다 "같은 변환을 다른 위치에 반복"</td></tr>
+        <tr><td><b>등가성(equivariance)</b></td><td>CNN — 공간 평행이동. RNN — 시간 평행이동. 모두 매개변수 공유의 자연스러운 결과</td></tr>
+        <tr><td><b>BPTT 비용</b></td><td>시간 $O(T)$, 메모리 $O(T)$. 매개변수 수와 무관. 시퀀스 길이에 선형</td></tr>
+        <tr><td><b>기울기 폭발 vs 소실</b></td><td>폭발: 큰 보폭, clipping으로 해결 가능. 소실: 신호 자체가 사라짐, clipping 무력</td></tr>
+        <tr><td><b>cell state vs hidden state</b></td><td>cell — 장기 기억 통로(가중치 곱 없음). hidden — 외부 출력 가능한 작업 메모리</td></tr>
+        <tr><td><b>LSTM vs GRU</b></td><td>LSTM 4 게이트, 매개변수 4배. GRU 3 게이트, 매개변수 3배. 성능 차이는 데이터 의존</td></tr>
+        <tr><td><b>단방향 vs 양방향</b></td><td>단방향: 실시간/생성 가능, 미래 미참조. 양방향: 미래 참조, 전체 입력 미리 필요</td></tr>
+        <tr><td><b>teacher forcing의 trade-off</b></td><td>장점: 병렬 훈련 가능. 단점: 훈련-추론 분포 차이(exposure bias)</td></tr>
+      </table>
+
+      <h2>예상 질문 20+ 개</h2>
+
+      <details class="qa diff-1">
+        <summary><span class="qno">Q1</span>RNN의 점화식 한 줄을 쓰고, 그 안의 각 항이 무엇을 의미하는지 설명하라.</summary>
+        <div class="ans">
+          <div class="math-block">$$h_t = f(h_{t-1}, x_t; \theta)$$</div>
+          <p>$h_t$는 시간 $t$의 은닉 상태, $h_{t-1}$은 직전 상태, $x_t$는 현재 입력, $f$와 $\theta$는 시간에 의존하지 않는 함수와 매개변수다. 같은 $f$와 $\theta$가 모든 시점에 재사용되는 것이 "시간 매개변수 공유"의 본질. 가장 흔한 구체 형태는 $h_t = \tanh(W h_{t-1} + U x_t + b)$.</p>
+        </div>
+      </details>
+
+      <details class="qa diff-1">
+        <summary><span class="qno">Q2</span>RNN의 매개변수 공유가 CNN의 그것과 어떻게 다르고 어떻게 같은가?</summary>
+        <div class="ans">
+          <p>같은 점: 둘 다 "같은 변환을 다른 위치에 반복 적용"한다는 약속. 그 약속 덕분에 입력 크기에 무관한 매개변수 수, 위치(시점) 독립적인 표현이 가능. 다른 점: CNN의 공유 축은 공간(2D 격자의 모든 위치), RNN의 공유 축은 시간(시퀀스의 모든 시점). CNN은 병렬화하기 쉽고(모든 위치 독립 계산), RNN은 시점간 의존성 때문에 순차적 계산이 강제됨. 이 순차성이 RNN의 가장 큰 실용적 약점.</p>
+        </div>
+      </details>
+
+      <details class="qa diff-2">
+        <summary><span class="qno">Q3</span>가변 길이 시퀀스를 다루기 위한 두 가지 약속을 RNN이 어떻게 만족하는가?</summary>
+        <div class="ans">
+          <p>약속 1 — 시간 매개변수 공유: 같은 $f$와 $\theta$를 모든 시점에 적용. 시퀀스가 50이든 5000이든 매개변수는 같음. 약속 2 — 상태 누적: hidden state $h_t$가 시점 1부터 $t$까지의 모든 정보를 압축해 들고 다님. 두 약속이 합쳐져 가변 길이를 다룬다. FC는 두 약속 모두 깨지고, CNN은 약속 1만 만족(상태 누적 없음).</p>
+        </div>
+      </details>
+
+      <details class="qa diff-2">
+        <summary><span class="qno">Q4</span>BPTT란 무엇이고, 일반 역전파와 어떻게 다른가?</summary>
+        <div class="ans">
+          <p>BPTT(Backpropagation Through Time)는 RNN을 시간 축으로 펼친 계산 그래프에 일반 역전파를 적용하는 것. 따라서 알고리즘은 완전히 같다 — 차이는 그래프의 모양에 있다. RNN을 시간 1부터 $T$까지 펼치면, 같은 가중치 $W$가 그래프의 여러 위치에 나타난다(매개변수 공유). 한 가중치의 기울기는 그 가중치가 등장한 모든 위치의 기울기를 모두 더해 구한다. 시퀀스 길이가 $T$이면 비용은 시간·메모리 모두 $O(T)$.</p>
+        </div>
+      </details>
+
+      <details class="qa diff-3">
+        <summary><span class="qno">Q5</span>왜 같은 가중치 행렬을 반복해서 곱하면 기울기가 폭발하거나 사라지는가? 수학적으로 설명하라.</summary>
+        <div class="ans">
+          <p>BPTT 중간 항은 $\prod_{j=k+1}^t \frac{\partial h_j}{\partial h_{j-1}} = \prod W^\top \mathrm{diag}(\tanh'(h_j))$. 행렬 곱의 노름은 대략 $\|W\|^{t-k} \cdot \prod |\tanh'|$. $\tanh'$는 항상 1 이하이므로 보통 작은 수이다. $W$의 가장 큰 특이값을 $\sigma_{max}$라 하면, 노름이 약 $\sigma_{max}^{t-k}$만큼 자란다.</p>
+          <div class="math-block">$$\sigma_{max} > 1 \Rightarrow \text{지수적 폭발}, \quad \sigma_{max} < 1 \Rightarrow \text{지수적 소실}$$</div>
+          <p>$\sigma_{max} = 1$ 근처가 안정 경계지만 그 균형을 손으로 유지하기 어렵다. 이것이 기본 RNN이 긴 시퀀스에서 무너지는 본질적 이유.</p>
+        </div>
+      </details>
+
+      <details class="qa diff-2">
+        <summary><span class="qno">Q6</span>기울기 클리핑(gradient clipping)이 폭발은 막지만 소실은 못 막는 이유?</summary>
+        <div class="ans">
+          <p>클리핑은 기울기의 노름(크기)이 임계값을 넘으면 비율을 줄여 노름만 줄인다 — 방향은 그대로. 폭발의 경우 노름이 너무 커서 학습이 불안정하므로 노름을 줄이는 것만으로 문제가 해결된다. 소실은 노름이 너무 작아서 학습 신호가 거의 없는 경우 — 작은 신호를 더 줄여 봐야 더 작아질 뿐이다. 소실에는 더 근본적 해법(LSTM/GRU의 정보 고속도로, 잔차 연결, attention)이 필요.</p>
+        </div>
+      </details>
+
+      <details class="qa diff-1">
+        <summary><span class="qno">Q7</span>LSTM의 세 게이트 각각이 무엇을 결정하는가?</summary>
+        <div class="ans">
+          <p><strong>Forget gate $f_t$</strong>: 이전 cell state $C_{t-1}$의 어느 차원을 얼마나 유지할지(0-1 사이). <strong>Input gate $i_t$</strong>: 후보 cell $\tilde C_t$의 어느 차원을 얼마나 새로 더할지. <strong>Output gate $o_t$</strong>: cell state $C_t$의 어느 차원을 얼마나 hidden state $h_t$로 노출할지. 세 게이트 모두 시그모이드 출력이라 0-1 범위, $h_{t-1}$과 $x_t$를 입력으로 받는 작은 신경망.</p>
+        </div>
+      </details>
+
+      <details class="qa diff-3">
+        <summary><span class="qno">Q8</span>LSTM이 기본 RNN의 기울기 소실을 푸는 핵심 원리를 cell state 갱신식으로 설명하라.</summary>
+        <div class="ans">
+          <p>cell state 갱신: $C_t = f_t \odot C_{t-1} + i_t \odot \tilde C_t$. 이 식에는 두 가지 결정적 특징이 있다 — (1) 이전 $C_{t-1}$이 가중치 행렬에 곱해지지 않는다(단지 forget gate 벡터와 원소별 곱). (2) 비선형 활성화를 통과하지 않는다(단지 덧셈). 이 두 특징 덕분에 $\partial C_t / \partial C_{t-1} \approx \mathrm{diag}(f_t)$가 되어, 기본 RNN의 $W^\top \mathrm{diag}(\tanh'(h_t))$가 사라진다. forget gate가 1에 가까우면 기울기가 거의 손실 없이 흐른다 — "선형 자체 루프(linear self-loop)"의 효과. ResNet의 잔차 연결과 같은 원리.</p>
+        </div>
+      </details>
+
+      <details class="qa diff-1">
+        <summary><span class="qno">Q9</span>GRU와 LSTM의 매개변수 수 차이는?</summary>
+        <div class="ans">
+          <p>같은 차원 $d_h, d_x$에서 LSTM은 $4 \cdot d_h \cdot (d_h + d_x + 1)$, GRU는 $3 \cdot d_h \cdot (d_h + d_x + 1)$. GRU가 LSTM의 75%. 이유: LSTM은 4개의 작은 신경망(forget·input·output·candidate), GRU는 3개(update·reset·candidate). GRU는 cell state를 hidden state에 통합하고 forget·input을 update gate 하나로 묶음.</p>
+        </div>
+      </details>
+
+      <details class="qa diff-2">
+        <summary><span class="qno">Q10</span>GRU의 update gate $z_t$가 forget·input 두 게이트를 어떻게 묶었는가?</summary>
+        <div class="ans">
+          <p>GRU 상태 갱신: $h_t = (1-z_t) \odot h_{t-1} + z_t \odot \tilde h_t$. $z_t$가 1에 가까우면 새 후보 $\tilde h_t$를 받아들이고(input 강함, forget 0에 가까움), 0에 가까우면 이전 상태 $h_{t-1}$을 유지(input 0, forget 1). 즉 $z_t$가 시소(seesaw) 역할로 두 결정을 묶어 합친다. LSTM은 두 결정이 독립이라 "새로 쓰면서 이전을 유지" 같은 조합이 가능하지만, GRU는 그게 안 됨. 이 표현력 손실 대가로 매개변수 25% 절약.</p>
+        </div>
+      </details>
+
+      <details class="qa diff-2">
+        <summary><span class="qno">Q11</span>양방향 RNN이 단방향에 비해 가지는 장점과, 그래서 어디에는 쓸 수 없는가?</summary>
+        <div class="ans">
+          <p>장점: 매 시점의 출력이 전체 시퀀스에 의존(과거 + 미래). 동음이의어, 품사 모호성 같은 미래 단서가 필요한 문제에 강함. NLP 시퀀스 라벨링의 표준. 한계: 전체 입력 시퀀스가 미리 주어져야 함(역방향 RNN이 T에서 시작). 따라서 (1) 실시간 스트리밍(음성 비서, 라이브 캡션) 부적합, (2) 생성형 모델 디코더(다음 단어 예측)에 부적합. 자연스러운 자리는 인코더-디코더의 인코더.</p>
+        </div>
+      </details>
+
+      <details class="qa diff-1">
+        <summary><span class="qno">Q12</span>seq2seq(인코더-디코더)의 핵심 아이디어는?</summary>
+        <div class="ans">
+          <p>입력과 출력의 길이가 다른 시퀀스 변환을 위해 두 개의 RNN을 분리. 인코더는 입력 전체를 읽어 한 컨텍스트 벡터 $c = h_{T_x}^{(enc)}$로 압축. 디코더는 $c$를 초기 상태로 받아 자기회귀적으로(autoregressive) 출력 시퀀스를 한 토큰씩 생성. 종료 토큰(&lt;END&gt;)이 나올 때까지. 길이 불일치와 비정렬 시퀀스 변환을 자연스럽게 다룸. 기계 번역, 음성 인식, 텍스트 요약의 표준 구조.</p>
+        </div>
+      </details>
+
+      <details class="qa diff-2">
+        <summary><span class="qno">Q13</span>teacher forcing이란 무엇이고 그 trade-off는?</summary>
+        <div class="ans">
+          <p>훈련 시 디코더의 입력으로 모델의 이전 출력 대신 정답 토큰을 강제로 넣는 기법. 장점: 매 시점이 독립 분류 문제처럼 보여 병렬 훈련 가능, 학습 초기에도 디코더 입력이 합리적이라 빠른 수렴. 단점: 훈련-추론 분포 차이(exposure bias) — 추론 시에는 모델의 이전 출력이 입력으로 들어와, 모델이 한 번 실수하면 그 실수가 누적 증폭. 완화 기법으로 scheduled sampling 등이 있으나 실용적으로는 teacher forcing이 표준.</p>
+        </div>
+      </details>
+
+      <details class="qa diff-3">
+        <summary><span class="qno">Q14</span>seq2seq의 컨텍스트 병목(fixed-size context bottleneck)이란 무엇이고 어텐션이 이를 어떻게 해결하나?</summary>
+        <div class="ans">
+          <p>기본 seq2seq는 입력 전체를 인코더 마지막 hidden state $c$ 하나(보통 512에서 1024 차원)로 압축. 입력 시퀀스가 길면 그 한 점에 모든 정보가 들어가야 해서 손실 발생. 2014 Cho 등 실험에서 30 단어 이상 문장은 번역 품질 급락. 어텐션(2015 Bahdanau)은 디코더가 매 시점마다 인코더의 모든 hidden state $h_1^{(enc)}, \ldots, h_{T_x}^{(enc)}$ 중 "지금 가장 필요한 시점"을 가중치로 골라 가중합을 동적 컨텍스트로 사용. 한 점 압축 제거. 이 일반화가 2017 Transformer로 이어짐.</p>
+        </div>
+      </details>
+
+      <details class="qa diff-2">
+        <summary><span class="qno">Q15</span>LSTM의 forget gate 편향 $b_f$를 양수로 초기화하는 이유?</summary>
+        <div class="ans">
+          <p>표준 초기화에서 시그모이드 출력은 0.5 근처. forget gate가 매 단계 0.5를 곱하면 100 단계 후 $0.5^{100} \approx 0$. 학습 초기부터 모든 기억이 사라져 학습 신호가 흐르지 못한다. $b_f$를 양수(1.0에서 2.0 사이)로 초기화하면 시그모이드 출력이 0.7-0.9에서 시작 — 기억이 거의 살아남는다. 학습이 진행되면서 모델이 forget을 적절히 조절. 2015 Zaremba 등이 표준화한 트릭. 이 한 줄이 LSTM 학습 안정성을 크게 개선.</p>
+        </div>
+      </details>
+
+      <details class="qa diff-1">
+        <summary><span class="qno">Q16</span>RNN의 세 가지 출력 패턴을 예와 함께 설명하라.</summary>
+        <div class="ans">
+          <p><strong>many-to-one</strong>: 시퀀스 입력 → 단일 출력. 예: 문장 감성 분류, 시퀀스 분류. 마지막 hidden $h^{(T)}$만 사용. <strong>many-to-many 정렬</strong>: 시퀀스 입력과 출력의 길이 같음, 시점별 일대일 대응. 예: 품사 태깅, 음소 정렬. 매 시점 출력. <strong>many-to-many 비정렬</strong>: 길이가 다르고 정렬도 일대일 아님. 예: 기계 번역, 요약. 인코더-디코더로 분리. 세 패턴 모두 같은 점화식 위에서 출력을 어디서 빼느냐의 차이.</p>
+        </div>
+      </details>
+
+      <details class="qa diff-3">
+        <summary><span class="qno">Q17</span>LSTM 한 셀의 매개변수 수를 직접 계산하라. hidden 차원 $d_h = 256$, 입력 차원 $d_x = 128$.</summary>
+        <div class="ans">
+          <p>LSTM은 4개의 작은 신경망(f, i, o, $\tilde C$). 각 신경망은 $[h_{t-1}, x_t]$를 입력으로 받으니 입력 차원이 $d_h + d_x = 384$. 출력 차원은 $d_h = 256$. 한 신경망의 매개변수는 $d_h \cdot (d_h + d_x) + d_h$(가중치 + 편향) $= 256 \cdot 384 + 256 = 98{,}560$.</p>
+          <div class="math-block">$$N_{\text{LSTM}} = 4 \cdot 98{,}560 = 394{,}240$$</div>
+          <p>약 40만 개. 같은 차원의 GRU는 $3 \cdot 98{,}560 = 295{,}680$ (약 30만), 기본 RNN은 $1 \cdot 98{,}560 = 98{,}560$ (약 10만).</p>
+        </div>
+      </details>
+
+      <details class="qa diff-2">
+        <summary><span class="qno">Q18</span>왜 LSTM의 cell state 출구에 또 $\tanh$가 있는가? ($h_t = o_t \odot \tanh(C_t)$)</summary>
+        <div class="ans">
+          <p>cell state는 시간이 누적되면서 매우 큰 값을 가질 수 있다(forget=1, input=1로 계속 더하면 무한 발산 가능). 그 값이 그대로 hidden state로 나가면 다음 시점의 게이트 입력 $\sigma(W [h_{t-1}, x_t] + b)$가 시그모이드 포화 영역에 들어가 학습 신호가 끊긴다. $\tanh$로 한 번 짓이겨 $[-1, 1]$로 정규화한 뒤 외부에 노출하는 것이 안전. 단, $\tanh$는 cell state $\to$ hidden state의 출구에만 있고, cell state 내부 흐름에는 없다는 점이 중요. 내부 흐름은 여전히 선형 자체 루프.</p>
+        </div>
+      </details>
+
+      <details class="qa diff-3">
+        <summary><span class="qno">Q19</span>이론적으로 RNN이 보편 튜링 머신을 모사할 수 있다는데, 그런데 왜 실제로는 잘 학습되지 않는가?</summary>
+        <div class="ans">
+          <p>이론: 적절한 활성 함수와 무한한 정밀도, 무한한 시간을 허용하면 RNN은 임의의 계산을 모사할 수 있음(Siegelmann & Sontag, 1995). 그러나 실제 학습은 다음 세 가지에 막힌다 — (1) 기울기 소실/폭발로 장기 의존성을 학습하기 어려움, (2) 유한한 정밀도(float32) 때문에 미세한 상태 변화가 손실, (3) 학습 알고리즘(SGD)이 모든 가능한 함수 공간을 탐색하지 못함. 이론적 표현력과 실제 학습 가능성 사이의 간극은 LSTM·GRU·attention의 등장 이유. 표현력이 아니라 "학습 가능한 표현력"이 본질.</p>
+        </div>
+      </details>
+
+      <details class="qa diff-2">
+        <summary><span class="qno">Q20</span>LSTM의 cell state 자체 루프와 ResNet의 잔차 연결의 공통 원리는?</summary>
+        <div class="ans">
+          <p>둘 다 "항등 매핑(identity mapping)을 기본으로 두고 그 위에 작은 변형을 더한다"는 원리. ResNet: $x_{l+1} = x_l + f(x_l)$. LSTM cell: $C_t = C_{t-1} \odot f_t + i_t \odot \tilde C_t$ (forget이 1, input이 작으면 $C_t \approx C_{l-1}$). 둘 다 깊은 합성(공간 깊이 또는 시간 깊이)에서 기울기가 거의 손실 없이 흐르는 경로를 만든다. 표현하지 않을 자유(아무 일도 안 할 수 있는 항등 경로)가 학습을 안정화한다는 통찰. 이 원리는 Transformer의 잔차 연결, 정규화 흐름(normalizing flow), 확산 모델(diffusion model)에도 동일하게 적용.</p>
+        </div>
+      </details>
+
+      <details class="qa diff-1">
+        <summary><span class="qno">Q21</span>BPTT를 truncated BPTT로 줄이는 이유와 그 비용은?</summary>
+        <div class="ans">
+          <p>이유: 시퀀스가 매우 길면(예: 책 한 권) 전체 $T$로 BPTT 하면 메모리 $O(T)$가 폭발하고, 학습 신호도 어차피 멀리 도달하지 못함. truncated BPTT는 시퀀스를 짧은 블록(예: 35 단어씩)으로 나눠, 한 블록 안에서만 BPTT. hidden state는 블록 간 그대로 유지. 비용: 학습 가능한 의존성 거리가 블록 길이로 제한됨. 책 한 권의 첫 단어와 마지막 단어 사이 의존성은 학습 불가. 트레이드오프: 메모리·시간 절감 vs 장기 의존성 학습 불가.</p>
+        </div>
+      </details>
+
+      <details class="qa diff-3">
+        <summary><span class="qno">Q22</span>왜 RNN의 학습 신호 손실이 단순한 weight decay 같은 정칙화로는 해결되지 않는가?</summary>
+        <div class="ans">
+          <p>일반 신경망의 정칙화(weight decay, dropout, batch norm)는 "특정 가중치/뉴런이 너무 큰 영향을 가지지 못하도록" 또는 "표현이 더 일반적으로 되도록" 하는 기법. RNN의 기울기 소실은 그런 문제가 아니라, "체인 룰의 곱셈에서 한 항이 매번 1보다 작으면 지수적으로 0에 수렴"하는 구조적 문제. 정칙화는 가중치의 크기를 조정하지만, 곱셈의 개수(시퀀스 길이) 자체는 줄이지 못한다. 진짜 해법은 그 곱셈에 "1에 가까운 길"을 만드는 것 — LSTM의 cell state, ResNet의 잔차 연결, attention의 직접 참조. 구조적 문제는 구조적 해법으로만 풀린다.</p>
+        </div>
+      </details>
+
+      <details class="qa diff-2">
+        <summary><span class="qno">Q23</span>RNN과 Transformer의 본질적 차이는 무엇이고, RNN이 여전히 유용한 곳은?</summary>
+        <div class="ans">
+          <p>본질 차이: RNN은 순차적 계산(시점 $t$ 계산이 $t-1$ 결과를 기다림), Transformer는 모든 위치 병렬 계산(self-attention으로 직접 참조). 결과적으로 Transformer가 같은 길이에서 훨씬 빠르고 장기 의존성도 잘 잡음. 그러나 Transformer는 시퀀스 길이 $T$에 대해 메모리·계산 $O(T^2)$가 들어 매우 긴 시퀀스에는 부담. RNN은 $O(T)$. 따라서 RNN(특히 LSTM)이 여전히 유용한 곳: (1) 매우 긴 시퀀스(시계열 예측, 신호 처리), (2) 실시간 스트리밍 응용, (3) 작은 모델·임베디드, (4) 입력이 한 토큰씩 들어오는 상황. 2020년대 들어 두 구조를 결합한 하이브리드(예: RWKV, Mamba)가 활발히 연구됨.</p>
+        </div>
+      </details>
+
+      <h2>마지막 점검 — 시험 직전 30초</h2>
+      <p>한 호흡으로 다음을 떠올릴 수 있어야 한다.</p>
+      <ol>
+        <li>RNN 점화식: $h_t = f(h_{t-1}, x_t; \theta)$. 같은 $f, \theta$를 모든 시점에 재사용.</li>
+        <li>BPTT의 중간 곱: $\prod W^\top \mathrm{diag}(\tanh'(h_j))$. 같은 $W$가 길이만큼 곱해지는 것이 폭발/소실의 본질.</li>
+        <li>기울기 폭발은 클리핑으로, 소실은 LSTM/GRU의 정보 고속도로로 푼다.</li>
+        <li>LSTM cell state: $C_t = f_t \odot C_{t-1} + i_t \odot \tilde C_t$. 가중치 곱 없음, 비선형 없음. forget gate가 1에 가까울 때 기울기 보존.</li>
+        <li>GRU는 LSTM의 75% 매개변수. update gate 하나로 forget·input 묶음.</li>
+        <li>BiRNN은 인코더용. 생성/실시간에는 부적합.</li>
+        <li>seq2seq의 컨텍스트 병목 → 어텐션 → Transformer.</li>
+        <li>cell state 자체 루프 = ResNet 잔차 연결과 같은 원리: "항등 매핑 + 작은 변형".</li>
+      </ol>
+    </div>
+
+    <nav class="ch-foot" id="chfoot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    ['01','왜 시퀀스에 FC·CNN은 부족한가'],['02','RNN의 기본 아이디어'],['03','시간 펼치기'],
+    ['04','매개변수 공유'],['05','BPTT 1 — 직관'],['06','BPTT 2 — 손계산'],
+    ['07','기울기 폭발과 소실'],['08','기울기 클리핑'],['09','LSTM 1 — 세 게이트'],
+    ['10','LSTM 2 — cell state'],['11','GRU'],['12','양방향 RNN'],
+    ['13','인코더-디코더'],['14','시험 대비'],
+  ];
+  const CUR = '14';
+  const ol = document.getElementById('navlist');
+  SUBS.forEach(([n,t]) => {
+    const li = document.createElement('li');
+    li.innerHTML = `<a href="${n}.html"${n===CUR?' class="current"':''}>${t}</a>`;
+    ol.appendChild(li);
+  });
+  const i = SUBS.findIndex(s=>s[0]===CUR);
+  const prev = i>0 ? SUBS[i-1] : ['','표지로'];
+  const next = i<SUBS.length-1 ? SUBS[i+1] : ['','표지로'];
+  document.getElementById('chfoot').innerHTML =
+    `<a href="${prev[0]?prev[0]+'.html':'index.html'}"><div class="dir">← 이전</div><div class="ti">${prev[1]}</div></a>` +
+    `<a href="${next[0]?next[0]+'.html':'index.html'}" class="next"><div class="dir">다음 →</div><div class="ti">${next[1]}</div></a>`;
+  const bar = document.querySelector('.scroll-progress');
+  document.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max>0 ? (h.scrollTop/max)*100 : 0) + '%';
+  }, { passive: true });
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) renderMathInElement(document.body, {
+      delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }],
+      throwOnError: false,
+    });
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>13 / 09 / 희소 코딩 2 — ISTA · 압축 감지</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .ista-stage { padding: 1.4rem 1.1rem; }
+  .ista-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width: 720px) { .ista-row { grid-template-columns: 1fr; } }
+  .ista-cell { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: .8rem; }
+  .ista-cell h5 { margin: 0 0 .5rem; font-family: var(--mono); font-size: .7rem; letter-spacing: .12em; color: var(--ink-faint); text-transform: uppercase; }
+  .ista-cell h5 b { color: var(--ink); }
+  .ista-cell canvas { display: block; width: 100%; height: 180px; border-radius: 5px; background: var(--paper-2); }
+  .ista-bar { display: flex; gap: .25rem; align-items: flex-end; height: 80px; padding: 0 .3rem; }
+  .ista-bar .barb { flex: 1; background: var(--style); transition: height .15s var(--ease); min-height: 1px; }
+  .ista-bar .barb.zero { background: var(--paper-sink); }
+  .ista-ctr { padding: .8rem 1rem; border-top: 1px solid var(--line-soft); background: var(--paper); display: flex; gap: 1.2rem; flex-wrap: wrap; align-items: center; justify-content: center; }
+  .ista-readout { font-family: var(--mono); font-size: .78rem; color: var(--ink-soft); }
+  .ista-readout b { color: var(--style); }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-chapter 09 / 추론의 비용</span>
+      <h1>희소 코딩 2 —<br><span class="t-style">ISTA</span>와 압축 감지의 다리</h1>
+      <p class="lede">희소 코딩은 인코더가 없다. 매 입력마다 작은 최적화를 풀어 코드를 찾는다. 그 반복 알고리즘이 ISTA이고, 이 같은 수식이 의료영상의 압축 감지와 정확히 만난다. 추론 비용이 비싼 대가로 얻는 강력한 표현력.</p>
+    </header>
+
+    <div class="prose">
+      <p>지난 절에서 본 희소 코딩에는 한 가지 깊은 비대칭이 있다. 가우시안 모델(FA, PPCA)에서는 새 입력 $\mathbf{x}$에 대한 잠재 코드 $\mathbf{h}$가 닫힌 형태(closed-form)로 즉시 계산된다 — 사후 평균이 $\mathbf{W}^\top \mathbf{x}$ 같은 간단한 선형 변환이다. 그런데 희소 코딩에서는 그런 행운이 없다. L1 페널티 때문에 사후 평균이 닫힌 형태가 없고, 매 입력마다 작은 최적화 문제를 풀어야 한다.</p>
+
+      <div class="math-block">$$ \mathbf{h}^*(\mathbf{x}) = \arg\min_{\mathbf{h}} \; \frac{1}{2}\|\mathbf{x} - \mathbf{Wh}\|^2 + \lambda \|\mathbf{h}\|_1 $$</div>
+      <p class="math-note">새 입력 $\mathbf{x}$가 들어오면 그 코드는 이 최적화 문제의 답이다. $\mathbf{W}$가 고정돼 있어도(학습 끝난 상태) 매번 풀어야 한다. 신경망의 한 번 forward pass에 비해 압도적으로 비싸다.</p>
+
+      <p>이걸 두고 학계는 희소 코딩을 <strong>"학습된 인코더가 없는 모델"</strong>이라고 부른다. 학습이 끝나면 보통 모델은 $\mathbf{x} \to \mathbf{h}$로 가는 함수 — 인코더 — 가 명시적으로 있어야 새 입력의 표상을 얻을 수 있다. 신경망의 모든 층, FA/PPCA의 사후 평균, 오토인코더의 인코더가 다 인코더다. 희소 코딩은 그 자리를 작은 최적화 문제로 대체한다. 인코더 없음이 곧 추론 비용이다.</p>
+
+      <h2>ISTA — 가장 단순한 희소 코드 추론 알고리즘</h2>
+
+      <p>위 최적화를 푸는 가장 단순한 알고리즘이 <strong>ISTA(Iterative Shrinkage-Thresholding Algorithm)</strong>다. 이름이 길지만 동작은 두 줄이다. 한 번의 경사하강 + 한 번의 soft-thresholding을 번갈아 반복.</p>
+
+      <div class="math-block">$$ \mathbf{h}^{(t+1)} = \mathcal{S}_{\lambda/L}\Big(\mathbf{h}^{(t)} - \frac{1}{L} \mathbf{W}^\top (\mathbf{Wh}^{(t)} - \mathbf{x})\Big) $$</div>
+      <p class="math-note">괄호 안: 재구성 오차 $\|\mathbf{x}-\mathbf{Wh}\|^2$에 대한 한 번의 경사하강 (스텝 사이즈 $1/L$, $L$은 $\mathbf{W}^\top\mathbf{W}$의 가장 큰 고유값). $\mathcal{S}_\tau$: soft-thresholding 함수, $\mathcal{S}_\tau(h) = \text{sign}(h) \cdot \max(|h|-\tau, 0)$.</p>
+
+      <p>soft-thresholding 함수가 ISTA의 핵심이다. 입력의 절댓값에서 $\tau$를 빼고 부호를 복원하되, 결과가 0보다 작으면 0으로 자른다. 그림으로 보면 절댓값이 $\tau$ 이하인 모든 입력을 정확히 0으로 만들고, 그보다 크면 $\tau$만큼 0으로 끌어당긴다. 이 한 줄이 매 반복마다 코드의 작은 값들을 정확히 0으로 만들어 희소성을 강제하는 메커니즘이다.</p>
+
+      <div class="key-point">
+        <p>ISTA의 한 줄: <em>"경사하강 한 번 + soft-thresholding 한 번을 반복"</em>. 경사하강이 재구성 오차를 줄이고, soft-thresholding이 작은 코드 값을 0으로 만들어 희소성을 강제한다. 두 단계의 협상이 곧 희소 코드의 추론이다.</p>
+      </div>
+
+      <div class="widget">
+        <div class="widget-frame">
+          <div class="widget-label"><span class="lab-no">위젯 09</span><span>ISTA 한 반복씩 따라가기 · soft-thresholding이 0을 만드는 모습</span></div>
+          <div class="ista-stage">
+            <div class="ista-row">
+              <div class="ista-cell">
+                <h5>현재 코드 <b>h⁽ᵗ⁾</b> — 16차원</h5>
+                <div class="ista-bar" id="histBar"></div>
+              </div>
+              <div class="ista-cell">
+                <h5>soft-threshold 후 <b>h⁽ᵗ⁺¹⁾</b></h5>
+                <div class="ista-bar" id="hnewBar"></div>
+              </div>
+            </div>
+            <div class="ista-row" style="margin-top:.7rem">
+              <div class="ista-cell">
+                <h5>입력 <b>x</b> (목표) · 재구성 <b>Wh</b> (현재)</h5>
+                <canvas id="istaX" width="280" height="120"></canvas>
+              </div>
+              <div class="ista-cell">
+                <h5>재구성 오차 ‖x − Wh‖² 감소</h5>
+                <canvas id="istaLoss" width="280" height="120"></canvas>
+              </div>
+            </div>
+          </div>
+          <div class="ista-ctr">
+            <button class="btn" id="istaStep">한 반복 진행 (t = <span id="tVal">0</span>)</button>
+            <button class="btn ghost" id="istaRun">10번 자동 진행</button>
+            <button class="btn ghost" id="istaReset">초기화</button>
+            <div class="slider">
+              <label>희소성 λ<b id="lamVal">0.30</b></label>
+              <input type="range" id="lamSlider" min="0.05" max="0.8" step="0.01" value="0.3">
+            </div>
+            <div class="ista-readout"><b id="zeroCount">0</b> / 16 차원이 정확히 0</div>
+          </div>
+        </div>
+        <p class="widget-cap">왼쪽 위: 현재 코드 h의 16차원 막대 (회색 = 정확히 0). 오른쪽 위: soft-thresholding 후의 코드. λ를 키우면 더 많은 차원이 0으로 잘린다. 아래 왼쪽: 목표 x(파랑)와 현재 재구성 Wh(주황). 아래 오른쪽: 반복에 따라 재구성 오차가 줄어드는 곡선. 처음에는 빠르게 떨어지고 점점 평탄해진다.</p>
+      </div>
+
+      <h2>왜 ISTA가 수렴하는가 — 한 줄 정당화</h2>
+
+      <p>ISTA가 수렴한다는 사실은 직관으로 풀 수 있다. ISTA는 사실 두 단계로 분해된다. 첫째, 재구성 오차에 대한 한 번의 경사하강. 이건 표준 경사하강이고, 스텝 사이즈가 $\mathbf{W}^\top\mathbf{W}$의 최대 고유값 $L$로 나뉘어 있으므로 발산하지 않는다. 둘째, soft-thresholding. 이건 L1 노름의 근접 연산자(proximal operator)인데, 이 연산도 손실 함수를 감소시킨다. 두 단계가 모두 손실을 줄이므로 ISTA는 반드시 수렴한다.</p>
+
+      <p>수렴 속도는 $O(1/t)$다 — 매 반복마다 손실이 $1/t$ 비율로 줄어든다. 빠르지는 않다. 더 빠른 변형이 FISTA(Fast ISTA, Beck-Teboulle 2009)로, 모멘텀(momentum)을 추가해서 $O(1/t^2)$로 가속한다. 실용에서는 FISTA가 표준이다. 그래도 신경망의 한 번 forward pass에 비하면 훨씬 비싸다.</p>
+
+      <h2>압축 감지 — 같은 수식, 다른 응용</h2>
+
+      <p>희소 코딩의 수식은 같은 시기에 신호 처리에서 등장한 다른 분야와 정확히 같은 형태를 가진다 — <strong>압축 감지(compressed sensing, Donoho-Candes-Tao 2004-06)</strong>. 압축 감지의 문제 정의는 이렇다. 우리는 고차원 신호 $\mathbf{h} \in \mathbb{R}^k$가 어떤 알려진 기저에서 희소하다는 것을 안다. 그러나 직접 측정하는 대신 그것을 어떤 알려진 측정 행렬 $\mathbf{W} \in \mathbb{R}^{d \times k}$ ($d < k$)로 사영한 결과 $\mathbf{x} = \mathbf{Wh}$만 본다. $\mathbf{x}$로부터 $\mathbf{h}$를 복원할 수 있는가?</p>
+
+      <p>상식적으로는 $d < k$이므로 무한히 많은 $\mathbf{h}$가 같은 $\mathbf{x}$를 준다 — 풀 수 없는 문제로 보인다. 그러나 압축 감지가 보인 것은 — <strong>$\mathbf{h}$가 충분히 희소하고 $\mathbf{W}$가 충분히 "잘 섞는다"면, $\mathbf{h}$가 유일하게 복원된다</strong>는 것이다. 그 복원이 정확히 위의 L1 최소화 문제다.</p>
+
+      <div class="math-block">$$ \hat{\mathbf{h}} = \arg\min_{\mathbf{h}} \; \|\mathbf{h}\|_1 \quad \text{subject to} \quad \mathbf{x} = \mathbf{Wh} $$</div>
+      <p class="math-note">잡음 없는 경우의 압축 감지. 잡음이 있으면 등식이 부등식 $\|\mathbf{x}-\mathbf{Wh}\|^2 \leq \epsilon$이 되고, 라그랑주 형태로 풀면 정확히 희소 코딩의 손실 함수다.</p>
+
+      <p>이게 왜 놀라운가. 데이터를 압축하려면 보통 일단 다 측정한 다음 압축한다(JPEG 같은). 압축 감지는 — <strong>측정 자체를 적게 하고도 압축된 결과를 직접 얻을 수 있다</strong>는 주장이다. 의료 영상의 MRI가 그 대표 응용이다. MRI는 측정에 시간이 오래 걸려서 환자가 가만히 있어야 하는 시간이 길어진다. 압축 감지를 쓰면 측정 횟수를 줄여도 — 이미지가 어떤 기저에서 희소하다면 — 충분히 좋은 이미지를 복원할 수 있다. 측정 시간이 짧아지고 환자의 부담이 줄어든다.</p>
+
+      <h2>희소 코딩 vs 압축 감지 — 같은 수식, 두 가지 시점</h2>
+
+      <p>희소 코딩과 압축 감지는 정확히 같은 수식을 푼다. 차이는 무엇이 주어지고 무엇이 학습되는가에 있다.</p>
+
+      <table class="compare-tbl">
+        <thead><tr><th></th><th>주어진 것</th><th>학습하는 것</th><th>목적</th></tr></thead>
+        <tbody>
+          <tr><td>희소 코딩</td><td>관측 $\{\mathbf{x}_i\}$만</td><td>사전 $\mathbf{W}$ + 매 입력의 코드 $\mathbf{h}_i$</td><td>표상 학습, 차원 축소, 패치 분석</td></tr>
+          <tr><td>압축 감지</td><td>측정 행렬 $\mathbf{W}$ + 한 측정 $\mathbf{x}$</td><td>한 코드 $\mathbf{h}$</td><td>적은 측정으로 신호 복원</td></tr>
+        </tbody>
+      </table>
+
+      <p>희소 코딩은 사전을 데이터에서 학습한다는 점에서 데이터 적응적이고, 압축 감지는 사전(또는 측정 행렬)이 미리 주어졌다는 점에서 데이터 비적응적이다. 그러나 추론 단계 — 코드를 복원하는 ISTA/FISTA — 는 정확히 같은 알고리즘이다.</p>
+
+      <h2>인코더가 없음의 두 결과 — 비용과 표현력</h2>
+
+      <p>희소 코딩이 인코더가 없다는 것은 비용이자 강점이다. 비용은 명백하다 — 매 입력마다 반복 최적화. 신경망 인코더의 한 번 forward pass에 비해 10배에서 100배 비싸다. 실시간 응용에서는 사실상 쓰기 힘들다.</p>
+
+      <p>강점은 두 가지다. 첫째, <strong>표현력</strong>. 인코더가 있는 모델은 인코더 함수의 표현 한계에 갇힌다. 신경망 인코더는 결국 어떤 매개변수 함수이고 그 함수가 표현할 수 있는 코드의 종류에 제약이 있다. 희소 코딩은 매 입력마다 최적의 코드를 찾으므로 그런 제약이 없다. 둘째, <strong>적응성</strong>. 같은 입력의 종류에 대해 사전이 학습되었지만, 매 입력의 정확한 사전 조합은 매번 재계산되므로 사전 학습 데이터의 통계와 약간 다른 입력에도 자연스럽게 적응한다.</p>
+
+      <p>2010년대 중반 신경망의 부상으로 희소 코딩의 사용은 줄었지만, 그 이론은 신경망 안에 흡수되었다. 학습된 ISTA(Learned ISTA, LISTA, Gregor-LeCun 2010)는 ISTA의 반복을 신경망의 층으로 펼친 모델이다. K개의 ISTA 반복을 K층 신경망으로 만들어 그 모든 매개변수를 한 번에 학습하면, 같은 수렴 품질을 얻는 데 필요한 반복이 훨씬 적어진다. 신경망 안에 희소 코딩의 핵심이 들어간 형태다.</p>
+
+      <h2>이 절을 닫으며</h2>
+
+      <p>희소 코딩은 잠재 가정이 강할수록 추론이 비싸지는 트레이드오프를 명확히 보여 준 모델이다. PCA는 잠재 가정이 약해서 추론이 닫힌 형태이고, ICA는 중간이고, 희소 코딩은 가장 강한 가정과 가장 비싼 추론을 가진다. 다음 절에서는 잠재에 또 다른 종류의 가정 — 시간에 천천히 변한다는 가정 — 을 부여하는 슬로우 피처 분석을 본다. 시계열 데이터에서 의미 있는 잠재를 찾는 다른 길이다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'잠재 변수의 직관' },
+    { no:'02', t:'생성 vs 판별 모델' },
+    { no:'03', t:'요소 분석 (FA)' },
+    { no:'04', t:'확률적 PCA' },
+    { no:'05', t:'전통 PCA' },
+    { no:'06', t:'PCA의 한계' },
+    { no:'07', t:'ICA — 칵테일 파티' },
+    { no:'08', t:'희소 코딩 1' },
+    { no:'09', t:'희소 코딩 2 — ISTA' },
+    { no:'10', t:'슬로우 피처 분석' },
+    { no:'11', t:'매니폴드의 첫 등장' },
+    { no:'12', t:'시험 대비' },
+  ];
+  function buildNav(cur) {
+    const tb = document.querySelector('.topbar');
+    if (tb) tb.innerHTML =
+      '<a class="home" href="index.html">← Chapter 13 / 선형 요소 모델</a>' +
+      '<span class="ch-mini">SUB ' + cur + ' / 12</span>';
+    const ol = document.querySelector('.ch-nav ol');
+    if (ol) ol.innerHTML = SUBS.map(c =>
+      '<li><a href="' + c.no + '.html"' + (c.no === cur ? ' class="current"' : '') + '>' + c.t + '</a></li>').join('');
+    const foot = document.querySelector('.ch-foot');
+    if (foot) {
+      const i = SUBS.findIndex(c => c.no === cur);
+      const prev = i > 0 ? SUBS[i - 1] : { no: '', t: '표지로', _href: 'index.html' };
+      const next = i < SUBS.length - 1 ? SUBS[i + 1] : { no: '', t: '표지로', _href: 'index.html' };
+      const hp = prev._href || (prev.no + '.html');
+      const hn = next._href || (next.no + '.html');
+      foot.innerHTML =
+        '<a href="' + hp + '"><div class="dir">← 이전</div><div class="ti">' + prev.t + '</div></a>' +
+        '<a href="' + hn + '" class="next"><div class="dir">다음 →</div><div class="ti">' + next.t + '</div></a>';
+    }
+  }
+  function initScroll() {
+    const bar = document.querySelector('.scroll-progress');
+    if (!bar) return;
+    const on = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    document.addEventListener('scroll', on, { passive: true }); on();
+  }
+  function initKatex() {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [
+          { left: '$$', right: '$$', display: true },
+          { left: '$', right: '$', display: false },
+        ],
+        throwOnError: false,
+      });
+    }
+  }
+  function widget09() {
+    const css = getComputedStyle(document.documentElement);
+    const C = {
+      style: css.getPropertyValue('--style').trim() || '#C0492E',
+      structure: css.getPropertyValue('--structure').trim() || '#2D5B7A',
+      synth: css.getPropertyValue('--synth').trim() || '#A47B2E',
+      faint: css.getPropertyValue('--ink-faint').trim() || '#8E8576',
+    };
+    const K = 16, D = 12; // 코드 차원 16, 신호 차원 12
+    let W = null, x = null, hTrue = null, h = null, lossHist = [], t = 0;
+    function gauss(){ let u=0,v=0; while(u===0)u=Math.random(); while(v===0)v=Math.random(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+    function init() {
+      // 무작위 W (D x K)
+      W = [];
+      for (let i = 0; i < D; i++) {
+        const row = [];
+        for (let j = 0; j < K; j++) row.push(gauss() * 0.3);
+        W.push(row);
+      }
+      // 희소 진짜 코드 (5개만 0이 아님)
+      hTrue = new Array(K).fill(0);
+      const idxs = [];
+      while (idxs.length < 5) {
+        const r = Math.floor(Math.random() * K);
+        if (!idxs.includes(r)) idxs.push(r);
+      }
+      for (const i of idxs) hTrue[i] = (Math.random() - 0.5) * 2.5;
+      // x = W * hTrue
+      x = new Array(D).fill(0);
+      for (let i = 0; i < D; i++) for (let j = 0; j < K; j++) x[i] += W[i][j] * hTrue[j];
+      // 초기 h = 0
+      h = new Array(K).fill(0);
+      lossHist = [];
+      t = 0;
+    }
+
+    // 한 ISTA 반복
+    function ista(lam) {
+      // grad = W^T (W h - x)
+      const Wh = new Array(D).fill(0);
+      for (let i = 0; i < D; i++) for (let j = 0; j < K; j++) Wh[i] += W[i][j] * h[j];
+      const r = new Array(D);
+      for (let i = 0; i < D; i++) r[i] = Wh[i] - x[i];
+      const g = new Array(K).fill(0);
+      for (let j = 0; j < K; j++) for (let i = 0; i < D; i++) g[j] += W[i][j] * r[i];
+      // 스텝 사이즈 (대략적인 L 추정 = 1.0)
+      const stepSize = 0.5;
+      // gradient step
+      const hHalf = new Array(K);
+      for (let j = 0; j < K; j++) hHalf[j] = h[j] - stepSize * g[j];
+      // soft-threshold
+      const tau = lam * stepSize;
+      for (let j = 0; j < K; j++) {
+        const v = hHalf[j];
+        if (v > tau) h[j] = v - tau;
+        else if (v < -tau) h[j] = v + tau;
+        else h[j] = 0;
+      }
+      // loss
+      const Wh2 = new Array(D).fill(0);
+      for (let i = 0; i < D; i++) for (let j = 0; j < K; j++) Wh2[i] += W[i][j] * h[j];
+      let loss = 0;
+      for (let i = 0; i < D; i++) loss += (x[i] - Wh2[i]) ** 2;
+      let l1 = 0;
+      for (let j = 0; j < K; j++) l1 += Math.abs(h[j]);
+      lossHist.push(loss + lam * l1);
+      t++;
+    }
+
+    function drawBars(id, vals) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.innerHTML = '';
+      const mx = Math.max(...vals.map(Math.abs), 0.5);
+      let zCount = 0;
+      for (const v of vals) {
+        const b = document.createElement('div');
+        b.className = 'barb' + (Math.abs(v) < 1e-6 ? ' zero' : '');
+        b.style.height = (Math.abs(v) / mx * 100) + '%';
+        if (v < 0) b.style.background = 'var(--structure)';
+        el.appendChild(b);
+        if (Math.abs(v) < 1e-6) zCount++;
+      }
+      return zCount;
+    }
+
+    function drawX() {
+      const c = document.getElementById('istaX');
+      if (!c) return;
+      const ctx = c.getContext('2d');
+      ctx.clearRect(0, 0, c.width, c.height);
+      const Wh = new Array(D).fill(0);
+      for (let i = 0; i < D; i++) for (let j = 0; j < K; j++) Wh[i] += W[i][j] * h[j];
+      const all = [...x, ...Wh];
+      let mn = Math.min(...all), mx = Math.max(...all);
+      const rg = Math.max(0.1, mx - mn);
+      function ty(v) { return c.height - 10 - (v - mn) / rg * (c.height - 20); }
+      ctx.strokeStyle = C.faint + '40';
+      ctx.beginPath(); ctx.moveTo(0, ty(0)); ctx.lineTo(c.width, ty(0)); ctx.stroke();
+      // target x
+      ctx.strokeStyle = C.structure; ctx.lineWidth = 2; ctx.fillStyle = C.structure;
+      ctx.beginPath();
+      for (let i = 0; i < D; i++) {
+        const X = (i + 0.5) / D * c.width;
+        const Y = ty(x[i]);
+        if (i === 0) ctx.moveTo(X, Y); else ctx.lineTo(X, Y);
+        ctx.fillRect(X-2, Y-2, 4, 4);
+      }
+      ctx.stroke();
+      // recon Wh
+      ctx.strokeStyle = C.style; ctx.lineWidth = 1.5; ctx.fillStyle = C.style;
+      ctx.beginPath();
+      for (let i = 0; i < D; i++) {
+        const X = (i + 0.5) / D * c.width;
+        const Y = ty(Wh[i]);
+        if (i === 0) ctx.moveTo(X, Y); else ctx.lineTo(X, Y);
+        ctx.fillRect(X-1.5, Y-1.5, 3, 3);
+      }
+      ctx.stroke();
+    }
+
+    function drawLoss() {
+      const c = document.getElementById('istaLoss');
+      if (!c) return;
+      const ctx = c.getContext('2d');
+      ctx.clearRect(0, 0, c.width, c.height);
+      if (lossHist.length < 1) return;
+      const mx = Math.max(...lossHist);
+      const w = c.width, h2 = c.height;
+      ctx.strokeStyle = C.style; ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 0; i < lossHist.length; i++) {
+        const X = i / Math.max(1, lossHist.length - 1) * (w - 10) + 5;
+        const Y = h2 - 10 - (lossHist[i] / mx) * (h2 - 20);
+        if (i === 0) ctx.moveTo(X, Y); else ctx.lineTo(X, Y);
+      }
+      ctx.stroke();
+      ctx.fillStyle = C.faint; ctx.font = '10px monospace';
+      ctx.fillText('t=0', 4, h2 - 2);
+      ctx.fillText('t=' + (lossHist.length - 1), w - 30, h2 - 2);
+      ctx.fillText('loss=' + lossHist[lossHist.length-1].toFixed(2), 4, 12);
+    }
+
+    function update() {
+      const lam = parseFloat(document.getElementById('lamSlider').value);
+      document.getElementById('lamVal').textContent = lam.toFixed(2);
+      // ISTA 시각화: 이번 t에서 h 그대로 vs threshold 후
+      // 위에는 현재 h를, 아래에는 threshold 후 (이미 t+1 갱신된 h)
+      drawBars('histBar', h);
+      const zc = drawBars('hnewBar', h);
+      document.getElementById('zeroCount').textContent = zc;
+      document.getElementById('tVal').textContent = t;
+      drawX(); drawLoss();
+    }
+
+    document.getElementById('istaStep').addEventListener('click', () => {
+      const lam = parseFloat(document.getElementById('lamSlider').value);
+      ista(lam);
+      update();
+    });
+    document.getElementById('istaRun').addEventListener('click', () => {
+      const lam = parseFloat(document.getElementById('lamSlider').value);
+      let cnt = 0;
+      const iv = setInterval(() => { ista(lam); update(); if (++cnt >= 10) clearInterval(iv); }, 80);
+    });
+    document.getElementById('istaReset').addEventListener('click', () => { init(); update(); });
+    document.getElementById('lamSlider').addEventListener('input', update);
+    init(); update();
+  }
+  window.addEventListener('load', () => { buildNav('09'); initScroll(); initKatex(); widget09(); });
+</script>
+</body>
+</html>

@@ -3,315 +3,247 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>12.04 · 추천 시스템 — 협업 필터링과 임베딩</title>
+<title>12 / 04 / 음성 인식</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
-  .rec-stage { display: grid; grid-template-columns: 1fr 14rem; gap: 1rem; padding: 1.3rem 1.1rem 1rem; align-items: start; }
-  @media (max-width: 760px) { .rec-stage { grid-template-columns: 1fr; } }
-
-  .rec-matrix { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: .7rem; }
-  .rec-matrix table { border-collapse: collapse; width: 100%; font-family: var(--mono); font-size: .7rem; }
-  .rec-matrix th, .rec-matrix td { padding: .35rem .25rem; text-align: center; border: 1px solid var(--line-soft); transition: background .15s, color .15s; }
-  .rec-matrix th { color: var(--ink-faint); font-weight: 500; letter-spacing: .04em; }
-  .rec-matrix th:first-child, .rec-matrix td:first-child { text-align: left; color: var(--structure); font-weight: 600; padding-left: .5rem; }
-  .rec-matrix td.known { background: rgba(45, 91, 122, 0.12); color: var(--structure); font-weight: 600; }
-  .rec-matrix td.pred { color: var(--style); font-weight: 600; cursor: pointer; }
-  .rec-matrix td.pred:hover { background: var(--style-bg); }
-  .rec-matrix td.high { color: var(--synth); background: var(--synth-bg); font-weight: 700; }
-
-  .rec-panel { display: flex; flex-direction: column; gap: .7rem; }
-  .rec-explain { padding: .8rem 1rem; background: var(--paper-2); border-left: 3px solid var(--style); border-radius: 0 8px 8px 0; font-size: .85rem; color: var(--ink-soft); line-height: 1.55; min-height: 7rem; }
-  .rec-explain b { color: var(--ink); }
-  .rec-explain code { font-family: var(--mono); font-size: .82em; background: #fff; padding: .1em .3em; border-radius: 3px; }
-  .rec-ctrl { display: flex; flex-direction: column; gap: .5rem; padding: .8rem 1rem; background: #fff; border: 1px solid var(--line); border-radius: 8px; font-size: .8rem; }
-  .rec-ctrl label { display: flex; justify-content: space-between; font-family: var(--mono); font-size: .7rem; color: var(--ink-soft); letter-spacing: .05em; }
-  .rec-ctrl label b { color: var(--ink); }
-  .rec-ctrl button { font-family: var(--mono); font-size: .7rem; padding: .4rem .7rem; background: var(--ink); color: var(--paper); border: none; border-radius: 5px; cursor: pointer; margin-top: .3rem; }
-  .rec-ctrl button.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
-
-  .rec-legend { font-family: var(--mono); font-size: .68rem; color: var(--ink-faint); line-height: 1.6; padding: .6rem .9rem; background: var(--paper-2); border-radius: 6px; }
-  .rec-legend i { display: inline-block; width: 11px; height: 11px; border-radius: 2px; margin-right: .3rem; vertical-align: -1px; }
+  .sp-stages { display: grid; grid-template-columns: repeat(4, 1fr); gap: .55rem; padding: 1.4rem 1.2rem 1rem; }
+  .sp-card { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: .7rem .7rem .8rem; text-align: center; cursor: pointer; transition: .2s var(--ease); position: relative; }
+  .sp-card:hover { transform: translateY(-2px); border-color: var(--structure); }
+  .sp-card.on { border-color: var(--style); background: linear-gradient(180deg,#fff,var(--style-bg)); }
+  .sp-card .sn { font-family: var(--mono); font-size: .66rem; letter-spacing: .12em; color: var(--ink-faint); }
+  .sp-card .st { font-family: var(--serif); font-size: .92rem; margin: .25rem 0 .4rem; color: var(--ink); }
+  .sp-card canvas { width: 100%; height: 70px; border-radius: 5px; background: var(--paper-2); display: block; }
+  .sp-card .sk { font-family: var(--mono); font-size: .6rem; color: var(--structure); margin-top: .25rem; }
+  .sp-ctrl { display: flex; gap: 1.4rem; align-items: center; padding: .9rem 1.2rem; border-top: 1px solid var(--line-soft); background: var(--paper); }
+  .sp-ctrl button { font-family: var(--mono); font-size: .72rem; letter-spacing: .08em; padding: .45rem .9rem; border-radius: 6px; background: var(--ink); color: var(--paper); border: none; cursor: pointer; }
+  .sp-ctrl button:hover { opacity: .9; }
+  .sp-info { max-width: var(--measure); margin: .4rem auto 0; padding: 1rem 1.2rem; border-radius: 9px; background: var(--paper-2); border: 1px solid var(--line-soft); font-size: .92rem; color: var(--ink-soft); line-height: 1.55; min-height: 5rem; }
+  .sp-info b { color: var(--ink); }
+  @media (max-width: 720px) { .sp-stages { grid-template-columns: repeat(2, 1fr); } }
 </style>
 </head>
 <body>
 <div class="scroll-progress"></div>
-<div class="topbar">
-  <a class="home" href="index.html">← Chapter 12 표지</a>
-  <span class="ch-mini">12.04 · 추천 시스템</span>
-</div>
+<div class="topbar"></div>
 
 <div class="ch-layout">
-  <aside class="ch-nav"><nav><ol id="navlist"></ol></nav></aside>
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Sub-chapter 04 · 빈칸을 메우는 게임</span>
-      <h1>추천 시스템 —<br><span class="t-synth">협업 필터링</span>과 임베딩</h1>
-      <p class="lede">사용자 한 명이 평생 본 영화는 수십~수백 개에 불과한데, 카탈로그에는 수만 개의 영화가 있다. 추천이란 <em>거의 다 비어 있는 거대한 행렬의 빈칸을 채우는 문제</em>다. 그 빈칸을 메우는 가장 강력한 도구가 임베딩 기반 행렬 분해다.</p>
+      <span class="kicker">Sub-chapter 04 / 음성</span>
+      <h1>파형은 어떻게<br><span class="t-style">2D 그림</span>이 되는가</h1>
+      <p class="lede">음성 인식은 시간의 흐름을 가진 1D 파형(waveform)을 받아 문자열을 내놓는다. 1D 신호를 어떻게 정돈해 CNN과 RNN의 입력으로 만드는가, 그리고 GMM-HMM에서 deep LSTM·CTC로의 30년 추이가 무엇을 바꿨는가.</p>
     </header>
 
     <div class="prose">
-      <p>추천 시스템의 입력은 <strong>사용자-아이템 평점 행렬 $R$</strong>이다. 행은 사용자, 열은 아이템(영화·상품·노래), 값은 평점(1-5점) 또는 클릭 여부(0/1)다. 실제로 채워진 칸은 전체의 1% 미만이다. 모델의 일은 <strong>채워지지 않은 칸의 값을 예측해</strong>, 그 예측 점수가 가장 높은 아이템을 사용자에게 추천하는 것이다.</p>
+      <p>비전 도메인에서는 입력이 이미 2D 격자였다. 음성에서는 다르다. 마이크가 받는 신호는 시간 축 위에 늘어선 1차원 진폭의 수열, 즉 파형이다. 일반적인 음성은 초당 16,000번 진폭이 측정되므로, 1초의 음성은 16,000차원 벡터다. 이 신호를 모델에 그대로 던지면 두 가지 어려움이 있다. 첫째, 차원이 너무 높다. 둘째, 시간 영역(time domain)의 파형은 “이 시점에 어떤 주파수가 얼마나 강한가”라는 음성의 의미와 직접 대응되지 않는다. 사람이 “아”와 “이”를 구분하는 것은 시간 영역의 파형이 아니라 주파수 영역(frequency domain)의 분포 차이다.</p>
 
-      <div class="math-block">$$ R \in \mathbb{R}^{N_u \times N_i}, \qquad R_{ui} = \begin{cases} \text{평점} & \text{(관찰됨)} \\ ? & \text{(미관찰, 예측 대상)} \end{cases} $$</div>
-      <p class="math-note">N_u = 사용자 수(수백만), N_i = 아이템 수(수십만~). 대부분의 칸은 빈칸이다.</p>
-
-      <h2>왜 그냥 “비슷한 사람 찾기”로는 부족한가</h2>
-      <p>가장 단순한 접근은 <strong>이웃 기반 협업 필터링</strong>이다. “나와 비슷한 평점 패턴을 가진 다른 사용자들을 찾고, 그들이 좋아한 아이템을 추천한다.” 이 방법의 약점은 두 가지다. 첫째, 새로운 사용자/아이템은 평점이 거의 없어 <strong>이웃을 찾을 신호 자체가 부족하다</strong>(콜드 스타트). 둘째, 행렬이 거대해 매번 모든 사용자 쌍의 유사도를 계산하는 비용이 너무 크다.</p>
-
-      <p>딥러닝 시대의 표준 해법은 <strong>행렬 분해(matrix factorization)</strong>다. 거대한 희소 행렬 $R$을 두 개의 작은 “임베딩 행렬”의 곱으로 근사한다.</p>
-
-      <div class="math-block">$$ R \approx U V^\top, \qquad U \in \mathbb{R}^{N_u \times k},\; V \in \mathbb{R}^{N_i \times k} $$</div>
-      <p class="math-note">U의 한 행 = 한 사용자의 k차원 임베딩. V의 한 행 = 한 아이템의 k차원 임베딩. k는 보통 20-200.</p>
-
-      <p>한 칸의 예측은 두 임베딩의 내적이다.</p>
-
-      <div class="math-block">$$ \hat{R}_{ui} = \mathbf{u}_u^\top \mathbf{v}_i = \sum_{f=1}^{k} u_{uf}\, v_{if} $$</div>
-      <p class="math-note">사용자 u의 임베딩 벡터와 아이템 i의 임베딩 벡터를 내적한 값. 두 벡터가 “같은 방향”일수록 높은 점수.</p>
-
-      <h2>왜 이 형태인가 — 임베딩의 두 가지 해석</h2>
-      <p>이 식이 똑똑한 이유는 두 가지로 읽힌다.</p>
-
-      <p><strong>해석 1: 잠재 인자(latent factors).</strong> k차원의 각 축이 “액션 영화 선호도”, “느린 전개 선호도”, “해외 영화 선호도” 같은 <em>관측되지 않은 취향 축</em>을 자동으로 학습한다. 사용자 u가 “액션 축 +0.7, 해외 축 −0.3”이고 아이템 i가 “액션 축 +0.9, 해외 축 +0.1”이면, 내적은 액션 축에서 큰 +값을 받아 추천 점수가 높아진다. 사람이 “이 영화의 장르 태그를 어떻게 매길까” 고민할 필요가 없다 — 학습이 알아서 축을 잡는다.</p>
-
-      <p><strong>해석 2: 단어 임베딩의 자매판.</strong> 이전 장에서 본 word2vec과 거의 같은 구조다. 단어가 “문맥”에 의해 임베딩되었다면, 사용자/아이템은 “관찰된 평점 쌍”에 의해 임베딩된다. 한 사용자가 영화 A와 B를 모두 좋게 평가했다면, A와 B는 임베딩 공간에서 가까워진다. 한 영화가 사용자 X와 Y에게 모두 좋게 평가받았다면, X와 Y는 가까워진다. 분포 가설의 추천판이다.</p>
+      <p>이 두 어려움을 한 번에 푸는 표준 전처리가 단시간 푸리에 변환(short-time Fourier transform, STFT)을 거쳐 스펙트로그램(spectrogram)으로 옮기는 것이다. 파형을 짧은 창(window, 보통 25 ms)으로 자르고, 각 창에 푸리에 변환을 적용해 그 창의 주파수 분포를 구한다. 창을 10 ms씩 옮기며 이 작업을 반복하면, 가로축이 시간, 세로축이 주파수, 색깔이 진폭인 2D 그림이 나온다. 이 그림이 스펙트로그램이고, 음성 인식의 표준 입력이다.</p>
 
       <div class="analogy">
-        도서관 사서가 신간 소설을 어디 꽂을지 결정하는 장면을 떠올려 보자. 사서는 책 표지를 보지 않는다. 대신 <b>이 책을 빌려 간 독자들이 다른 어떤 책을 빌려 갔는지</b>를 본다. “이 사람들은 추리·심리 스릴러 칸에서 많이 빌리는군 → 이 책도 그 칸으로.” 책의 좌표(임베딩)는 책의 내용이 아니라 <b>책을 둘러싼 사람들의 행동 패턴</b>으로 결정된다.
+        파형이 <b>“1초에 16,000번 펜이 위아래로 떨리는 그래프”</b>라면, 스펙트로그램은 <b>“그 그래프를 25 ms씩 자른 뒤 각 토막에서 어떤 음높이가 얼마나 강한지를 색으로 적은 두루마리”</b>다. 사람이 음성을 들을 때 귀가 실제로 하는 일에 더 가까운 표현이다. 와우(cochlea)는 주파수별로 다른 위치에서 진동을 감지하므로, 신경계는 처음부터 주파수 영역에서 음성을 본다.
       </div>
+
+      <h2>음성 4단 변환 — 직접 만져 보기</h2>
+
+      <p>음성 인식 전처리의 표준 절차는 4단계로 정리된다. 위젯에서 단계를 클릭하면 각 단계가 같은 입력에 어떻게 적용되는지를 볼 수 있고, 재생을 누르면 4단계를 순서대로 따라간다.</p>
     </div>
 
     <div class="widget">
       <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 12.04</span><span>희소 평점 행렬의 빈칸 채우기 — k차원 임베딩 곱</span></div>
-        <div class="rec-stage">
-          <div class="rec-matrix">
-            <table id="recTable"></table>
-          </div>
-          <div class="rec-panel">
-            <div class="rec-ctrl">
-              <label>잠재 차원 <b id="kVal">2</b><span>k</span></label>
-              <input type="range" id="kSlider" min="1" max="4" step="1" value="2">
-              <button id="btnFit">다시 학습</button>
-              <button class="ghost" id="btnReveal">관찰값 숨기기/보이기</button>
-            </div>
-            <div class="rec-explain" id="recExplain">셀에 마우스를 올려 보세요. <b>파랑</b>은 관찰된 평점, <b>주황</b>은 임베딩 곱으로 예측한 값입니다.</div>
-            <div class="rec-legend">
-              <div><i style="background: rgba(45, 91, 122, 0.4)"></i>관찰값 (known)</div>
-              <div><i style="background: rgba(192, 73, 46, 0.3)"></i>예측값 (predicted)</div>
-              <div><i style="background: rgba(164, 123, 46, 0.4)"></i>높은 예측 = 추천 후보</div>
-            </div>
-          </div>
+        <div class="widget-label"><span class="lab-no">위젯 02</span><span>음성 4단 시각화 재생</span></div>
+        <div class="sp-stages" id="spStages"></div>
+        <div class="sp-ctrl">
+          <button id="spPlay">▶ 재생</button>
+          <span style="font-family:var(--mono); font-size:.72rem; color:var(--ink-soft);">단계 카드 클릭으로 개별 단계 보기</span>
         </div>
       </div>
-      <p class="widget-cap">왼쪽은 사용자(행) × 영화(열) 평점 행렬. 색칠된 칸이 관찰된 평점, 흰 칸이 모델이 메워야 할 빈칸이다. k 슬라이더로 잠재 차원을 바꾸면 학습이 다시 돌아가고, 예측값이 갱신된다. k가 너무 작으면 표현력이 부족해 관찰값도 못 맞추고(저적합), k가 너무 크면 관찰값에 과적합한다.</p>
+      <div class="sp-info" id="spInfo"></div>
+      <p class="widget-cap">합성된 “안녕” 음성의 4단계 표현. 단계 1은 시간 영역 파형, 단계 2는 25 ms씩 창으로 자른 모습, 단계 3은 푸리에 변환을 거친 스펙트로그램, 단계 4는 멜 필터뱅크를 거친 mel-spectrogram이다. 음성 인식 모델은 보통 단계 4의 표현을 입력으로 받는다.</p>
     </div>
 
     <div class="prose">
-      <h2>학습 — 관찰된 칸만 손실에 넣는다</h2>
-      <p>핵심 트릭은 <strong>관찰된 칸에만 손실을 부과한다</strong>는 점이다.</p>
+      <h2>스펙트로그램을 “2D 그림처럼” 다루는 의미</h2>
 
-      <div class="math-block">$$ \mathcal{L}(U, V) = \sum_{(u,i) \in \Omega} (R_{ui} - \mathbf{u}_u^\top \mathbf{v}_i)^2 + \lambda(\|U\|^2 + \|V\|^2) $$</div>
-      <p class="math-note">Ω = 관찰된 (사용자, 아이템) 쌍의 집합. λ = L2 정칙화 계수.</p>
+      <p>스펙트로그램은 가로축 시간, 세로축 주파수의 2D 행렬이다. 책이 강조하는 결정적 관찰은 이것이다. <strong>스펙트로그램이 일단 만들어지면 음성 인식의 본체 모델은 2D 그림을 다루는 부품을 거의 그대로 쓸 수 있다.</strong> 합성곱이 시간×주파수 격자 위에서 국소 패턴(특정 음소(phoneme)에 해당하는 주파수 분포)을 잡고, RNN이 시간 축을 따라 그 패턴들의 연결을 모델링한다. 책 본문은 “스펙트로그램을 이미지처럼 다루는” 2D 합성곱이 음성 인식 정확도에서 추가 이득을 가져왔다는 점을 직접 언급한다.</p>
 
-      <p>왜 이 형태인가? 빈칸을 0으로 보고 그 칸까지 손실에 넣으면, 모델은 “모든 칸을 0으로 예측”하는 자명한 해에 끌려간다(99%의 칸이 빈칸이니 그게 거의 정답이 된다). 빈칸을 <em>학습 데이터가 아니라 예측 대상</em>으로 따로 떼어 두고, 관찰된 칸만으로 임베딩을 학습한 뒤 그 임베딩을 빈칸 예측에 쓰는 것이 핵심이다. L2 정칙화는 임베딩이 너무 커져 관찰값에 과적합하는 것을 막는다.</p>
+      <h2>GMM-HMM에서 deep LSTM·CTC로의 추이</h2>
 
-      <h2>콜드 스타트와 강화학습 연결</h2>
-      <p>행렬 분해의 가장 큰 약점은 <strong>콜드 스타트(cold start)</strong>다. 새로 가입한 사용자는 평점이 0개라 임베딩을 학습할 신호가 없다. 새로 등록된 영화도 마찬가지다. 책은 이 문제를 두 가지 방식으로 다룬다.</p>
+      <p>2009년 이전 음성 인식은 가우시안 혼합 모델(Gaussian mixture model, GMM)-은닉 마르코프 모델(hidden Markov model, HMM) 체계가 지배했다. GMM은 매 시각의 음향 특징이 어떤 음소 상태(phone state)에서 방출되는지를 가우시안 혼합으로 모델링했고, HMM은 음소 상태가 시간에 따라 어떻게 전이하는지를 모델링했다. 이 구조는 “관측은 GMM, 시퀀스는 HMM”이라는 깔끔한 분업으로 약 20년 동안 표준이었다.</p>
 
-      <ul>
-        <li><strong>콘텐츠 결합</strong> — 사용자의 인구통계 정보(나이·성별·지역), 아이템의 메타데이터(장르·감독·발매 연도)를 보조 입력으로 결합한다. 신규 사용자도 “20대 남성 한국인” 같은 메타데이터로 초기 임베딩을 잡을 수 있다.</li>
-        <li><strong>탐험과 착취(exploration vs exploitation)</strong> — 신규 사용자에게 무엇을 보여줘야 임베딩을 빠르게 배울 수 있는가? 항상 “지금 가장 좋아 보이는 것”만 보여주면(착취) 새 정보가 안 들어온다. 가끔 “잘 모르는 영역”을 보여줘야(탐험) 임베딩이 자란다. 이 충돌이 <strong>강화학습</strong>의 핵심 문제다.</li>
-      </ul>
+      <p>2009-2012년 사이에 일어난 변화는 두 단계로 진행됐다. 첫째, HMM 구조를 유지한 채 GMM을 깊은 신경망(deep neural network, DNN)으로 대체했다. 신경망은 음향 특징에서 음소 상태로의 사후 확률(posterior)을 직접 예측했고, 이 변형은 TIMIT 데이터셋의 음소 오류율을 26%에서 20.7%로 떨어뜨렸다. 초기에는 사전학습으로 제한 볼츠만 머신(restricted Boltzmann machine, RBM)을 썼지만, 이후 ReLU와 드롭아웃이 그 사전학습 단계를 대체했다. 둘째, HMM조차 떼어 내고 시퀀스 자체를 직접 출력하는 종단간(end-to-end) 모델로 옮겨갔다. 깊은 LSTM에 연결주의적 시간 분류(connectionist temporal classification, CTC) 손실을 결합한 모델이 TIMIT 음소 오류율을 17.7%까지 끌어내렸다.</p>
 
-      <p>두 번째 점이 결정적이다. 추천 시스템은 단순한 회귀 문제가 아니다. <strong>모델의 추천 자체가 사용자의 다음 행동을 바꾸고, 그 행동이 다음 학습 데이터가 된다.</strong> 모델이 보지 않은 영역의 데이터는 영원히 들어오지 않을 수도 있다. 이 “데이터를 모델이 만들어 낸다”는 폐쇄 루프 구조가 다음 장의 강화학습 주제다.</p>
+      <div class="math-block">$$ \mathcal{L}_{\text{CTC}}(y \mid x) = -\log \sum_{\pi \in B^{-1}(y)} \prod_{t=1}^{T} p(\pi_t \mid x_t) $$</div>
+      <p class="math-note">CTC 손실. 입력 시퀀스 $x$가 길이 $T$, 출력 시퀀스 $y$가 더 짧은 길이일 때, 출력 위에 빈 토큰을 끼워 같은 길이로 늘릴 수 있는 모든 경로 $\pi$를 합한다. $B$는 빈 토큰과 연속 중복을 제거해 $y$를 복원하는 함수.</p>
 
-      <h2>비전·NLP의 임베딩과 추천 임베딩의 공통점</h2>
-      <p>여기서 잠깐 멈춰 세 도메인의 임베딩을 비교해 보자.</p>
-      <ul>
-        <li><strong>비전</strong>의 CNN 마지막 층 출력 = “이미지의 의미적 좌표”. 같은 객체의 다른 사진은 가까이.</li>
-        <li><strong>NLP</strong>의 word2vec = “단어의 의미적 좌표”. 같은 문맥에 등장하는 단어는 가까이.</li>
-        <li><strong>추천</strong>의 행렬 분해 = “사용자/아이템의 취향적 좌표”. 같은 사용자에게 좋게 평가받은 아이템은 가까이.</li>
-      </ul>
+      <p>CTC가 한 일은 “입력 길이와 출력 길이가 다른 시퀀스 변환”을 신경망 단일 손실로 표현한 것이다. 음성에서 입력 프레임 수는 출력 음소 수보다 훨씬 많다(같은 음소가 여러 프레임 동안 지속되기 때문). 그런 길이 불일치를 손으로 정렬하지 않고도 학습이 가능하게 만들었다는 점에서 종단간 음성 인식의 결정적 부품이다.</p>
 
-      <p>세 경우 모두 <strong>입력을 “고차원 좌표”로 옮긴 뒤, 그 좌표에서 정의된 단순한 연산(내적·거리·softmax)으로 의사결정을 한다</strong>. 입력이 픽셀이든 단어든 클릭이든, 일단 좋은 임베딩이 잡히면 그 다음의 정답은 단순 산수다. 이것이 “표상 학습”이라는 책 후반부(13-15장)의 큰 주제로 곧장 이어진다.</p>
+      <h2>음성 증강 — 이미지 증강과 무엇이 다른가</h2>
 
-      <p>다음 장에서는 추천 시스템의 폐쇄 루프 구조를 일반화한 강화학습의 기본 그림(상태·행동·보상·정책)을 직접 만져 본다.</p>
+      <p>워크북의 질문 2번에서 정확히 물어보는 지점이 여기다. 음성에서는 어떤 증강을 어떻게 하는가. 음성 증강은 두 영역으로 나뉜다. 첫째, 시간 영역의 변환: 잡음 더하기(가산 잡음, 가산 음향 환경 합성), 속도 약간 바꾸기(시간 스트레치(time stretch)), 잔향 더하기(room impulse response 합성). 둘째, 스펙트로그램 영역의 변환: SpecAugment처럼 시간 또는 주파수의 일부 띠를 0으로 가리는 마스킹(time masking, frequency masking)이다.</p>
+
+      <p>이미지 증강과의 본질적 차이는 두 가지다. (1) 음성에서는 어떤 변환이 “라벨 보존”인지가 도메인 지식에 더 강하게 의존한다. 좌우 뒤집기는 음성에서 라벨을 깬다(시간을 뒤집으면 발음이 바뀐다). 색 변환은 의미가 없다. 대신 잔향이나 잡음 같은 “실제 녹음 환경에서 흔히 일어나는 손상”이 자연스러운 라벨 보존 변환이다. (2) 음성 증강은 이미지보다 “시뮬레이션”의 색이 더 짙다. 룸 임펄스 응답을 곱하거나, 다양한 잡음을 더하거나, 다른 화자 데이터와 섞어 합성하는 식이다. 이는 “모든 음향 환경을 데이터로 수집할 수 없으니, 흔한 환경을 합성으로 만들어 두자”는 실용 정신이 강하게 작동하기 때문이다.</p>
+
+      <h2>한 줄 결론</h2>
+
+      <p>음성 응용의 핵심은 “파형을 스펙트로그램으로 옮긴 뒤 비전과 거의 같은 부품(2D 합성곱)과 RNN을 결합하고, CTC로 길이 불일치를 처리하는 것”이다. 입력의 모양만 잘 정돈하면 모델 본체는 비전과 크게 다르지 않다는 점이 12장이 음성을 비전 다음에 배치한 이유다. 다음 sub부터는 입력이 또 다른 모양 — 이산 토큰열 — 인 자연어 처리로 옮겨, 단어를 벡터로 만드는 단계부터 시작한다.</p>
     </div>
 
-    <nav class="ch-foot">
-      <a href="03.html"><span class="dir">← Prev</span><div class="ti">03 · 자연어 처리</div></a>
-      <a href="05.html" class="next"><span class="dir">Next →</span><div class="ti">05 · 강화학습 응용</div></a>
-    </nav>
+    <nav class="ch-foot"></nav>
   </main>
 </div>
 
 <script>
   const SUBS = [
-    ['01','대규모 비전 분류'],
-    ['02','음성 인식'],
-    ['03','자연어 처리'],
-    ['04','추천 시스템'],
-    ['05','강화학습 응용'],
-    ['06','시험 대비'],
+    { no: '01', t: '응용 챕터의 의미' },
+    { no: '02', t: '대규모 비전 분류 1 — ImageNet' },
+    { no: '03', t: '대규모 비전 분류 2 — 증강·전이학습' },
+    { no: '04', t: '음성 인식 — 파형 → 스펙트로그램' },
+    { no: '05', t: 'NLP 1 — 단어 임베딩' },
+    { no: '06', t: 'NLP 2 — 분포 가설·임베딩 산수' },
+    { no: '07', t: 'NLP 3 — 언어 모델·번역·어텐션' },
+    { no: '08', t: '추천 시스템 — 협업 필터링' },
+    { no: '09', t: '강화학습 — agent-environment 루프' },
+    { no: '10', t: '공통 교훈 — 표상 위의 단순 산수' },
+    { no: '11', t: '시험 대비' },
   ];
-  const here = '04';
-  const navlist = document.getElementById('navlist');
-  SUBS.forEach(([no, t]) => {
-    const li = document.createElement('li');
-    const a = document.createElement('a');
-    a.href = no + '.html';
-    a.textContent = t;
-    if (no === here) a.classList.add('current');
-    li.appendChild(a); navlist.appendChild(li);
-  });
-
-  const prog = document.querySelector('.scroll-progress');
-  window.addEventListener('scroll', () => {
-    const h = document.documentElement;
-    prog.style.width = (h.scrollTop / (h.scrollHeight - h.clientHeight) * 100) + '%';
-  });
-
-  window.addEventListener('load', () => {
-    if (window.renderMathInElement) {
-      renderMathInElement(document.body, {
-        delimiters: [
-          {left: '$$', right: '$$', display: true},
-          {left: '$', right: '$', display: false},
-        ],
-        throwOnError: false,
-      });
+  function buildNav(cur) {
+    const tb = document.querySelector('.topbar');
+    if (tb) tb.innerHTML =
+      '<a class="home" href="index.html">← Chapter 12 / 응용</a>' +
+      '<span class="ch-mini">SUB ' + cur + ' / 11</span>';
+    const ol = document.querySelector('.ch-nav ol');
+    if (ol) ol.innerHTML = SUBS.map(c =>
+      '<li><a href="' + c.no + '.html"' + (c.no === cur ? ' class="current"' : '') + '>' + c.t + '</a></li>').join('');
+    const foot = document.querySelector('.ch-foot');
+    if (foot) {
+      const i = SUBS.findIndex(c => c.no === cur);
+      const prev = i > 0 ? SUBS[i - 1] : { no: '', t: '표지로', _href: 'index.html' };
+      const next = i < SUBS.length - 1 ? SUBS[i + 1] : { no: '', t: '표지로', _href: 'index.html' };
+      const hp = prev._href || (prev.no + '.html');
+      const hn = next._href || (next.no + '.html');
+      foot.innerHTML =
+        '<a href="' + hp + '"><div class="dir">← 이전</div><div class="ti">' + prev.t + '</div></a>' +
+        '<a href="' + hn + '" class="next"><div class="dir">다음 →</div><div class="ti">' + next.t + '</div></a>';
     }
-  });
-
-  // ====== 추천 행렬 위젯 ======
-  const USERS = ['Anna', 'Bo', 'Cho', 'Dae', 'Eun'];
-  const ITEMS = ['Avengers', 'Inception', 'Spirited', 'Parasite', 'Coco', '8 1/2', 'Mad Max'];
-
-  // 진짜 임베딩 (배경 truth, k=2)
-  const trueU = [
-    [ 0.9,  0.2], // Anna - 액션 좋아함
-    [-0.6,  0.7], // Bo   - 예술 좋아함
-    [ 0.7, -0.3], // Cho  - 액션·블록버스터
-    [-0.2,  0.8], // Dae  - 예술·드라마
-    [ 0.5,  0.5], // Eun  - 균형
-  ];
-  const trueV = [
-    [ 0.95,  0.1], // Avengers - 액션
-    [ 0.5,   0.5], // Inception - 블록버스터+예술
-    [-0.4,   0.85], // Spirited - 예술
-    [-0.1,   0.9], // Parasite - 드라마·예술
-    [ 0.3,   0.65], // Coco - 가족
-    [-0.7,   0.7], // 8 1/2 - 고전 예술
-    [ 0.85, -0.2], // Mad Max - 액션
-  ];
-  // 실제 평점 (1-5)
-  function trueRating(u, i) {
-    const dot = trueU[u][0]*trueV[i][0] + trueU[u][1]*trueV[i][1];
-    return Math.max(1, Math.min(5, Math.round((dot + 1) * 2.5)));
   }
-  // 관측 mask (희소, 약 40% 관찰)
-  const mask = [
-    [1,1,0,0,1,0,1],
-    [0,1,1,1,0,1,0],
-    [1,0,0,1,0,0,1],
-    [0,0,1,1,1,1,0],
-    [1,1,1,0,1,0,0],
-  ];
+  function initScroll() {
+    const bar = document.querySelector('.scroll-progress');
+    if (!bar) return;
+    const on = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    document.addEventListener('scroll', on, { passive: true }); on();
+  }
 
-  let kDim = 2;
-  let estU, estV;
-  let hideKnown = false;
+  function spectrogramWidget(host, info, playBtn) {
+    const STAGES = [
+      { n:'01', t:'파형', k:'time, 16 kHz', info:'<b>1단계: 시간 영역 파형.</b> 마이크가 받는 신호. 1초당 16,000개 진폭. “안녕”이라는 한 단어가 약 0.5초로 8,000개 샘플. 이 1차원 신호는 차원이 너무 높고, 음소와 직접 대응되지 않아 모델 입력으로 그대로 쓰기 어렵다.' },
+      { n:'02', t:'창 자르기', k:'25 ms / 10 ms hop', info:'<b>2단계: 짧은 창으로 자르기.</b> 25 ms 폭의 창을 10 ms씩 옮기며 자른다. 한 창에는 약 400개 샘플이 들어간다. 이 작업으로 “지역적으로 짧은 시간 동안에는 신호가 거의 정상적(stationary)”이라는 가정을 사용할 수 있게 된다.' },
+      { n:'03', t:'스펙트로그램', k:'STFT magnitude', info:'<b>3단계: 푸리에 변환.</b> 각 창에 단시간 푸리에 변환(STFT)을 적용해 그 창의 주파수 분포를 구한다. 결과를 시간×주파수 행렬로 쌓으면 2D 그림이 나온다. 가로축이 시간, 세로축이 주파수, 색이 진폭. 이제 음성을 “이미지처럼” 다룰 수 있다.' },
+      { n:'04', t:'멜 필터뱅크', k:'log-mel, 80 bins', info:'<b>4단계: 멜 스케일.</b> 사람의 귀는 주파수를 선형이 아닌 멜(mel) 스케일로 듣는다(낮은 주파수의 작은 차이는 잘 듣지만, 높은 주파수의 작은 차이는 잘 못 듣는다). 스펙트로그램을 80개 정도의 멜 필터뱅크로 압축한 log-mel 스펙트로그램이 음성 인식 모델의 표준 입력이다.' },
+    ];
 
-  // SGD 학습
-  function fit(k) {
-    estU = USERS.map(() => Array.from({length: k}, () => (Math.random() - 0.5) * 0.4));
-    estV = ITEMS.map(() => Array.from({length: k}, () => (Math.random() - 0.5) * 0.4));
-    const lr = 0.05, lam = 0.05, epochs = 800;
-    for (let e = 0; e < epochs; e++) {
-      for (let u = 0; u < USERS.length; u++) {
-        for (let i = 0; i < ITEMS.length; i++) {
-          if (!mask[u][i]) continue;
-          const r = trueRating(u, i);
-          let pred = 0;
-          for (let f = 0; f < k; f++) pred += estU[u][f] * estV[i][f];
-          const err = r - pred;
-          for (let f = 0; f < k; f++) {
-            const uf = estU[u][f], vf = estV[i][f];
-            estU[u][f] += lr * (err * vf - lam * uf);
-            estV[i][f] += lr * (err * uf - lam * vf);
+    host.innerHTML = STAGES.map(s =>
+      '<div class="sp-card" data-no="' + s.n + '">' +
+      '  <div class="sn">STAGE ' + s.n + '</div>' +
+      '  <div class="st">' + s.t + '</div>' +
+      '  <canvas></canvas>' +
+      '  <div class="sk">' + s.k + '</div>' +
+      '</div>').join('');
+
+    function paint(ctx, stage) {
+      const w = ctx.canvas.width, h = ctx.canvas.height;
+      ctx.clearRect(0, 0, w, h);
+      ctx.save();
+      if (stage === 1 || stage === 2) {
+        // 합성 파형
+        ctx.strokeStyle = '#2D5B7A'; ctx.lineWidth = 1.1;
+        ctx.beginPath();
+        for (let x = 0; x < w; x++) {
+          const t = x / w;
+          const env = Math.exp(-((t-0.5)*(t-0.5))/0.06);
+          const y = h/2 + env * 26 * Math.sin(t*120 + Math.sin(t*40)*1.5);
+          if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+        if (stage === 2) {
+          // 창 표시
+          ctx.strokeStyle = '#C0492E'; ctx.setLineDash([3,2]); ctx.lineWidth = 1.2;
+          for (let k = 1; k < 8; k++) ctx.strokeRect(k * w/8 - 8, 4, 16, h-8);
+          ctx.setLineDash([]);
+        }
+      } else if (stage === 3) {
+        // 스펙트로그램 (가짜)
+        const cols = 32, rows = 16;
+        for (let i = 0; i < cols; i++) {
+          for (let j = 0; j < rows; j++) {
+            const t = i / cols, f = j / rows;
+            const env = Math.exp(-((t-0.5)*(t-0.5))/0.06);
+            const v = env * (Math.exp(-Math.abs(f - 0.25) * 6) + 0.6 * Math.exp(-Math.abs(f - 0.55) * 8));
+            ctx.fillStyle = `rgba(45,91,122,${Math.min(0.95, v*1.4)})`;
+            ctx.fillRect(i * w/cols, h - (j+1) * h/rows, Math.ceil(w/cols), Math.ceil(h/rows));
+          }
+        }
+      } else if (stage === 4) {
+        // 멜: 더 거친 격자
+        const cols = 32, rows = 10;
+        for (let i = 0; i < cols; i++) {
+          for (let j = 0; j < rows; j++) {
+            const t = i / cols, f = j / rows;
+            const env = Math.exp(-((t-0.5)*(t-0.5))/0.06);
+            const v = env * (Math.exp(-Math.abs(f - 0.3) * 4) + 0.5 * Math.exp(-Math.abs(f - 0.6) * 5));
+            ctx.fillStyle = `rgba(192,73,46,${Math.min(0.95, v*1.4)})`;
+            ctx.fillRect(i * w/cols, h - (j+1) * h/rows, Math.ceil(w/cols), Math.ceil(h/rows));
           }
         }
       }
+      ctx.restore();
     }
-  }
 
-  function predict(u, i) {
-    let p = 0;
-    for (let f = 0; f < kDim; f++) p += estU[u][f] * estV[i][f];
-    return p;
-  }
-
-  function render() {
-    const table = document.getElementById('recTable');
-    let html = '<thead><tr><th></th>';
-    ITEMS.forEach(it => html += `<th>${it.slice(0,7)}</th>`);
-    html += '</tr></thead><tbody>';
-    USERS.forEach((u, ui) => {
-      html += `<tr><td>${u}</td>`;
-      ITEMS.forEach((it, ii) => {
-        const known = mask[ui][ii];
-        if (known && !hideKnown) {
-          const r = trueRating(ui, ii);
-          html += `<td class="known" data-u="${ui}" data-i="${ii}">${r}</td>`;
-        } else {
-          const p = predict(ui, ii);
-          const cls = p >= 3.5 ? 'high' : 'pred';
-          html += `<td class="${cls}" data-u="${ui}" data-i="${ii}">${p.toFixed(1)}</td>`;
-        }
+    let cur = 1, playing = false, timer = null;
+    function draw() {
+      host.querySelectorAll('.sp-card').forEach((el, i) => {
+        const cv = el.querySelector('canvas');
+        if (!cv.width) { cv.width = cv.clientWidth; cv.height = 70; }
+        paint(cv.getContext('2d'), i + 1);
+        el.classList.toggle('on', (i + 1) === cur);
       });
-      html += '</tr>';
+      info.innerHTML = STAGES[cur - 1].info;
+    }
+    host.addEventListener('click', e => {
+      const t = e.target.closest('.sp-card'); if (!t) return;
+      cur = parseInt(t.dataset.no, 10); draw();
     });
-    html += '</tbody>';
-    table.innerHTML = html;
-
-    table.querySelectorAll('td[data-u]').forEach(td => {
-      td.addEventListener('mouseenter', () => {
-        const ui = +td.dataset.u, ii = +td.dataset.i;
-        const u = USERS[ui], it = ITEMS[ii];
-        const isKnown = mask[ui][ii] && !hideKnown;
-        const r = trueRating(ui, ii);
-        const p = predict(ui, ii);
-        const ex = document.getElementById('recExplain');
-        const uvec = estU[ui].map(x => x.toFixed(2)).join(', ');
-        const ivec = estV[ii].map(x => x.toFixed(2)).join(', ');
-        if (isKnown) {
-          ex.innerHTML = `<b>관찰값:</b> ${u}이(가) <em>${it}</em>에 매긴 평점 = <b>${r}</b>점. 이 칸은 학습 손실에 들어가 임베딩을 잡는 근거가 됩니다.<br><br><code>u = [${uvec}]</code><br><code>v = [${ivec}]</code><br>내적 = <b>${p.toFixed(2)}</b> (관찰값과의 오차로 임베딩이 갱신됨)`;
-        } else {
-          ex.innerHTML = `<b>예측값:</b> ${u}의 임베딩과 <em>${it}</em>의 임베딩 내적 = <b>${p.toFixed(2)}</b>. 이 칸은 관찰되지 않은 빈칸이며, 모델이 “${u}이(가) ${it}을(를) 좋아할 정도”로 추정한 값입니다.<br><br><code>u = [${uvec}]</code><br><code>v = [${ivec}]</code>${p >= 3.5 ? '<br><br><b style="color: var(--synth)">→ 강력 추천 후보</b>' : ''}`;
-        }
-      });
+    playBtn.addEventListener('click', () => {
+      if (playing) { clearInterval(timer); playing = false; playBtn.textContent = '▶ 재생'; return; }
+      playing = true; playBtn.textContent = '⏸ 일시정지';
+      timer = setInterval(() => {
+        cur = cur === 4 ? 1 : cur + 1; draw();
+      }, 1100);
     });
+    window.addEventListener('resize', () => {
+      host.querySelectorAll('.sp-card canvas').forEach(c => c.width = 0);
+      draw();
+    });
+    draw();
   }
 
-  document.getElementById('kSlider').addEventListener('input', (e) => {
-    kDim = +e.target.value;
-    document.getElementById('kVal').textContent = kDim;
-    fit(kDim);
-    render();
+  window.addEventListener('load', () => {
+    buildNav('04'); initScroll();
+    const stages = document.getElementById('spStages');
+    const info = document.getElementById('spInfo');
+    const play = document.getElementById('spPlay');
+    if (stages && info && play) spectrogramWidget(stages, info, play);
   });
-  document.getElementById('btnFit').addEventListener('click', () => {
-    fit(kDim); render();
-  });
-  document.getElementById('btnReveal').addEventListener('click', () => {
-    hideKnown = !hideKnown; render();
-  });
-
-  fit(kDim);
-  render();
 </script>
 </body>
 </html>
+</content>
+</invoke>

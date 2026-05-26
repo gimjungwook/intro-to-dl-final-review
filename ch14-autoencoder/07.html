@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>07 — 수축적 AE — 자코비안 — Ch.14</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .cae-stage { padding: 1.4rem 1.2rem 1rem; display: grid; grid-template-columns: 1fr; gap: .8rem; }
+  .cae-stage canvas { display: block; width: 100%; max-width: 720px; aspect-ratio: 16/10; border-radius: 10px; border: 1px solid var(--line); background: #fff; margin: 0 auto; }
+  .verdict { padding: .9rem 1.2rem; border-top: 1px solid var(--line-soft); background: var(--paper); font-size: .9rem; color: var(--ink-soft); line-height: 1.55; }
+  .verdict b.ok { color: var(--structure); } .verdict b.bad { color: var(--style); } .verdict b.mid { color: var(--synth); }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 07 — 변화에 둔감하라, 단 매니폴드 방향만 빼고</span>
+      <h1>수축적 자기부호화기 — <span class="t-structure">자코비안 페널티</span>로 매니폴드 따라가기</h1>
+      <p class="lede">"잠재 코드를 입력 변화에 둔감하게 만들어라"는 페널티를 걸면, 재구성 손실과의 줄다리기 끝에 모델은 데이터가 실제로 변하는 방향(매니폴드 접선)에만 민감해진다. DAE와 같은 목표를 명시적인 미분으로 풀어내는 해석적 쌍둥이.</p>
+    </header>
+
+    <div class="prose">
+      <p>잡음 제거 자기부호화기(DAE)는 입력에 무작위 노이즈를 가해서 모델이 매니폴드를 학습하게 만든다. 본질은 "입력이 살짝 변해도 출력이 크게 변하지 않게 만들어라"는 요구다. 그렇다면 노이즈를 가하는 대신, 이 요구를 직접 손실 함수에 페널티항으로 적어 넣을 수도 있을 것이다. 그 결과가 <strong>수축적 자기부호화기(contractive autoencoder, CAE)</strong>다.</p>
+
+      <p>CAE의 손실은 두 항으로 이루어진다.</p>
+
+      <p>$$L_{\text{CAE}} = \mathbb{E}_{x \sim p_{\text{data}}} \Big[ \| x - g(f(x)) \|_2^2 \;+\; \lambda \, \Big\| \frac{\partial f}{\partial x} \Big\|_F^2 \Big]$$</p>
+
+      <p>식의 모든 기호를 풀어 보자. 첫째 항 $\| x - g(f(x)) \|_2^2$는 익숙한 재구성 손실이다. 이전과 동일하다. 둘째 항이 새 페널티다.</p>
+
+      <p>$\partial f / \partial x$는 인코더 $f$의 <strong>자코비안 행렬(Jacobian matrix)</strong>이다. 자코비안이라는 단어가 처음 등장했다면 한 줄 풀이부터 보자. 자코비안은 함수의 미분을 행렬 형태로 일반화한 것이다. 인코더가 입력 $x \in \mathbb{R}^d$를 잠재 코드 $h \in \mathbb{R}^k$로 보낼 때, 자코비안 $J = \partial f / \partial x$는 $k \times d$ 크기의 행렬이고, 그 원소 $J_{ij} = \partial h_i / \partial x_j$는 "입력의 $j$번째 차원이 살짝 변하면 잠재의 $i$번째 차원이 얼마나 변하는가"를 잰다. 한 마디로 입력의 작은 떨림이 잠재에 얼마나 증폭되는가를 가리키는 모든 부분미분의 집합이다.</p>
+
+      <p>$\| \cdot \|_F^2$는 <strong>프로베니우스 노름(Frobenius norm)의 제곱</strong>이다. 행렬의 모든 원소를 제곱해서 더한 값이다. 즉</p>
+
+      <p>$$\Big\| \frac{\partial f}{\partial x} \Big\|_F^2 = \sum_{i=1}^{k} \sum_{j=1}^{d} \Big( \frac{\partial h_i}{\partial x_j} \Big)^2$$</p>
+
+      <p>이 값이 크면 인코더는 입력 변화에 민감한 것이고, 작으면 입력이 변해도 잠재 코드가 거의 변하지 않는 것이다. CAE는 이 값을 작게 만들도록 페널티를 건다. 가중치 $\lambda$는 페널티의 세기를 정한다.</p>
+
+      <div class="analogy">
+        <b>책상 위에 놓인 컵.</b> 컵 안에 물을 가득 채워 책상 위에 둔다. 책상이 약간 흔들리면 물은 출렁인다. CAE의 자코비안 페널티는 "책상이 흔들려도 물이 거의 출렁이지 않도록 만들어라"라는 요구다. 가장 쉬운 해법은 컵에서 물을 다 빼는 것이다 — 출렁일 수가 없다. 그러나 컵의 목적은 물을 담는 것이므로 그렇게 할 수 없다. 그래서 컵은 절충점을 찾는다. 책상의 자잘한 떨림에는 출렁이지 않지만, 책상을 정말로 옮기면 물도 따라 움직인다. CAE의 잠재 코드도 같다. 입력의 자잘한 잡음에는 무감각하지만, 데이터가 진짜로 변하는 방향(매니폴드 접선)에는 따라 움직인다.
+      </div>
+
+      <h2>왜 항등 함수로 빠지지 않는가</h2>
+      <p>여기서 학생이 흔히 던지는 질문이 있다. 자코비안 페널티를 작게 만들고 싶다면 가장 쉬운 답은 인코더를 상수 함수로 만드는 것이다. $f(x) = c$로 두면 자코비안의 모든 원소가 0이고 페널티는 정확히 0이다. 그런데 왜 모델이 그렇게 무너지지 않는가?</p>
+
+      <p>답은 첫째 항인 재구성 손실이 강하게 반박하기 때문이다. 인코더가 상수 함수면 모든 입력이 같은 잠재 코드 $c$로 보내지고, 디코더는 그 하나의 코드에서 모든 입력을 재구성해야 한다. 이것은 불가능에 가깝다. 재구성 손실이 폭발한다. 따라서 모델은 "재구성 손실을 너무 크게 하지 않으면서 자코비안 페널티를 작게 만들 수 있는 절충점"을 찾아야 한다.</p>
+
+      <p>그 절충점이 정확히 매니폴드 학습이다. 데이터가 실제로 변하는 방향, 즉 매니폴드 접선 방향에는 잠재 코드가 따라 변해야만 재구성이 가능하다. 그 외 방향(매니폴드와 직교하는 방향, 데이터가 거의 존재하지 않는 방향)에는 자코비안을 작게 두는 것이 페널티를 줄이는 데 유리하다. 결과적으로 학습된 인코더는 다음 성질을 가진다.</p>
+
+      <ul>
+        <li><strong>매니폴드 접선 방향</strong>으로는 민감하게 변한다. 데이터의 진짜 변동을 따라간다.</li>
+        <li><strong>매니폴드 직교 방향</strong>으로는 둔감하게 변한다. 잡음에 흔들리지 않는다.</li>
+      </ul>
+
+      <p>이 성질을 책에서는 "잠재 표상이 데이터 매니폴드의 접선 방향으로 등변(equivariant)이고, 그 외 방향으로 불변(invariant)이다"라고 부른다. 등변과 불변이 처음이라면 한 줄 풀이. 불변은 입력이 변해도 출력이 안 변하는 성질, 등변은 입력이 어떤 방향으로 변하면 출력도 그 방향에 맞춰 변하는 성질이다.</p>
+
+      <h2>CAE와 DAE의 관계 — 같은 목표의 두 얼굴</h2>
+      <p>CAE의 깊은 의미는 그것이 DAE의 해석적 쌍둥이라는 점이다. DAE는 입력에 무작위 노이즈를 가하는 확률적 페널티이고, CAE는 자코비안의 프로베니우스 노름이라는 결정론적 페널티다. 그러나 둘이 학습하는 결과는 본질적으로 같다. 데이터 매니폴드의 모양이다.</p>
+
+      <p>책의 미묘한 관찰을 한 줄 더 적어 두자. 작은 잡음 극한($\sigma \to 0$)을 가진 DAE의 학습 목표를 테일러 전개로 정리하면 정확히 인코더 자코비안의 프로베니우스 노름 페널티가 나타난다. 즉 무한히 작은 노이즈로 학습한 DAE는 수학적으로 CAE와 동일하다. DAE는 큰 잡음에서도 잘 동작하는 확률적 일반화이고, CAE는 그것의 0차 극한이다. 같은 산을 다른 길로 오르는 두 등산객인 셈이다.</p>
+
+      <div class="analogy">
+        <b>운전 강사의 두 가지 가르침.</b> DAE는 학생이 평지에서 차를 잘 모는 능력이 생기면 일부러 핸들을 흔들거나 도로의 작은 구덩이를 만들어서 "흔들려도 차선을 유지하는 법"을 가르친다. CAE는 학생 옆에 앉아 "핸들을 그렇게 자주 움직이지 마라, 꼭 필요할 때만 돌려라"라고 말로 가르친다. 방법은 다르지만 목적은 같다. 입력의 작은 잡음(노면 상태)에 둔감하면서도 진짜 회전이 필요할 때(매니폴드 접선)는 따라 움직이는 운전.
+      </div>
+
+      <h2>실제로 어떻게 계산하는가</h2>
+      <p>자코비안 행렬 자체는 $k \times d$ 원소를 가진다. 이미지처럼 입력 차원이 수만 개가 되면 자코비안을 만들고 그 원소를 모두 제곱해 더하는 일은 비싸다. 그래서 실제로는 두 가지 절약 방법을 쓴다.</p>
+
+      <p>첫째, 인코더가 한 층의 시그모이드 신경망이라면 자코비안은 닫힌 형태로 적을 수 있다. $h_i = \sigma(W_i x + b_i)$일 때 $\partial h_i / \partial x_j = h_i (1 - h_i) W_{ij}$이고, 페널티는 $\sum_i h_i^2 (1 - h_i)^2 \sum_j W_{ij}^2$로 정리된다. 즉 가중치와 활성화의 함수가 되어 행렬 계산 없이 단순한 합으로 끝난다.</p>
+
+      <p>둘째, 깊은 신경망이라면 정확한 자코비안 대신 무작위 벡터의 자코비안-벡터곱(Jacobian-vector product) 한두 번으로 페널티를 추정한다. 이 기법은 자동미분(automatic differentiation) 프레임워크에서 효율적으로 지원된다. 실무에서는 거의 항상 이 추정값을 사용한다.</p>
+
+      <p>아래 위젯에서 자코비안 페널티가 잠재 코드의 등고선에 어떤 영향을 주는지 직접 본다. $\lambda$가 0이면 일반 AE, $\lambda$가 크면 매니폴드 접선 방향만 살아남는 CAE.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 07</span><span>자코비안 페널티 — 잠재 코드의 등고선</span></div>
+        <div class="cae-stage">
+          <canvas id="cae-canvas"></canvas>
+        </div>
+        <div class="widget-controls">
+          <div class="slider" style="flex:1; min-width:240px;">
+            <label>자코비안 페널티 <b id="cae-lval">λ = 0.20</b></label>
+            <input type="range" id="cae-l" min="0" max="1" step="0.02" value="0.2">
+          </div>
+          <div class="legend">
+            <span><i style="background:var(--structure)"></i> 데이터 매니폴드</span>
+            <span><i style="background:var(--style)"></i> 잠재 코드 h 등고선</span>
+          </div>
+        </div>
+        <div class="verdict" id="cae-verdict"></div>
+      </div>
+      <p class="widget-cap">λ=0: 잠재 코드 등고선이 입력 공간을 자유롭게 채운다(일반 AE). λ를 키울수록 등고선이 매니폴드 접선 방향에만 정렬되고, 직교 방향으로는 평평해진다. 즉 그 방향의 입력 변화는 잠재 코드를 거의 움직이지 못한다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>한 줄 요약</h2>
+      <p>시험 답안의 한 줄. <strong>"CAE는 재구성 손실에 인코더 자코비안 $\partial f / \partial x$의 프로베니우스 노름의 제곱을 페널티항으로 더한 자기부호화기다. 자코비안 페널티는 잠재 코드를 입력 변화에 둔감하게 만들고, 재구성 손실은 그 둔감함이 너무 심해지지 않도록 반박한다. 두 항의 절충 결과 모델은 데이터 매니폴드 접선 방향에만 민감해진다. DAE의 작은 잡음 극한과 수학적으로 동등하다."</strong></p>
+
+      <h2>다음 절 미리보기 — 매니폴드라는 한 단어로 모든 것을 묶기</h2>
+      <p>여기까지 미완전, 과완전, DAE, CAE라는 네 가지 정칙화 방법을 봤다. 다음 <a href="08.html">Sub 08</a>에서는 이 모든 방법이 결국 같은 곳, 즉 데이터 매니폴드의 모양을 학습한다는 통일적 그림을 본다. 13장의 선형 인자 모델과 15장의 표상 학습 사이에 자기부호화기를 어떻게 자리매김할지도 함께 정리한다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'자기부호화기란 무엇인가', f:'01.html' },
+    { no:'02', t:'인코더 · 디코더 · 재구성 손실', f:'02.html' },
+    { no:'03', t:'미완전 자기부호화기', f:'03.html' },
+    { no:'04', t:'과완전 AE의 위험', f:'04.html' },
+    { no:'05', t:'잡음 제거 AE — 매니폴드', f:'05.html' },
+    { no:'06', t:'잡음 제거 AE — 점수 매칭', f:'06.html' },
+    { no:'07', t:'수축적 AE — 자코비안', f:'07.html' },
+    { no:'08', t:'AE와 매니폴드 학습', f:'08.html' },
+    { no:'09', t:'AE vs PCA', f:'09.html' },
+    { no:'10', t:'스파스 AE', f:'10.html' },
+    { no:'11', t:'변분 AE 맛보기', f:'11.html' },
+    { no:'12', t:'시험 대비 체크리스트', f:'12.html' },
+  ];
+  const CURRENT = '07';
+  (function buildNav() {
+    document.querySelector('.topbar').innerHTML =
+      `<a class="home" href="index.html">← Chapter 14 — 자기부호화기</a>` +
+      `<span class="ch-mini">SUB ${CURRENT} / 12</span>`;
+    document.querySelector('.ch-nav ol').innerHTML = SUBS.map(s =>
+      `<li><a href="${s.f}" ${s.no === CURRENT ? 'class="current"' : ''}>${s.t}</a></li>`).join('');
+    const i = SUBS.findIndex(s => s.no === CURRENT);
+    const prev = i > 0 ? SUBS[i-1] : { f:'index.html', t:'챕터 표지', no:'' };
+    const next = i < SUBS.length-1 ? SUBS[i+1] : { f:'index.html', t:'챕터 표지', no:'' };
+    document.querySelector('.ch-foot').innerHTML =
+      `<a href="${prev.f}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+      `<a href="${next.f}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+    const bar = document.querySelector('.scroll-progress');
+    const onScroll = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    document.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+  })();
+
+  (function caeWidget() {
+    const canvas = document.getElementById('cae-canvas');
+    const slider = document.getElementById('cae-l');
+    const lval = document.getElementById('cae-lval');
+    const verdict = document.getElementById('cae-verdict');
+    const css = getComputedStyle(document.documentElement);
+    const STRUCT = css.getPropertyValue('--structure').trim();
+    const STYLE = css.getPropertyValue('--style').trim();
+    const FAINT = css.getPropertyValue('--ink-faint').trim();
+
+    function manifold(t) {
+      const u = (t * 2 - 1) * Math.PI;
+      return { x: 0.7 * Math.cos(u), y: 0.5 * Math.sin(u) };
+    }
+    function tangent(t) {
+      const u = (t * 2 - 1) * Math.PI;
+      const dx = -0.7 * Math.sin(u);
+      const dy = 0.5 * Math.cos(u);
+      const L = Math.sqrt(dx*dx + dy*dy);
+      return { x: dx/L, y: dy/L };
+    }
+
+    function encoderH(x, y, lam) {
+      let bestT = 0, bestD = Infinity;
+      for (let i = 0; i <= 80; i++) {
+        const t = i/80;
+        const p = manifold(t);
+        const d = (p.x-x)*(p.x-x) + (p.y-y)*(p.y-y);
+        if (d < bestD) { bestD = d; bestT = t; }
+      }
+      const p = manifold(bestT);
+      const T = tangent(bestT);
+      const dx = x - p.x, dy = y - p.y;
+      const tang = dx*T.x + dy*T.y;
+      const sign = (dx * (-T.y) + dy * T.x) >= 0 ? 1 : -1;
+      const normal = Math.sqrt(Math.max(0, (dx*dx + dy*dy) - tang*tang)) * sign;
+      const radial = bestT * 2 - 1;
+      const lamMix = 1 - lam;
+      return radial * 1.2 + 0.5 * tang + lamMix * 0.9 * normal;
+    }
+
+    function draw(lam) {
+      const ctx = canvas.getContext('2d');
+      const W = canvas.width = canvas.clientWidth, H = canvas.height = Math.round(W * 10/16);
+      ctx.fillStyle = '#fff'; ctx.fillRect(0,0,W,H);
+      function px(x) { return W/2 + x * (W/2 - 40); }
+      function py(y) { return H/2 - y * (H/2 - 40); }
+
+      const resI = 70, resJ = 100;
+      const data = [];
+      for (let i = 0; i < resI; i++) {
+        const yi = -0.9 + (i / (resI-1)) * 1.8;
+        const row = [];
+        for (let j = 0; j < resJ; j++) {
+          const xi = -1.1 + (j / (resJ-1)) * 2.2;
+          row.push(encoderH(xi, yi, lam));
+        }
+        data.push(row);
+      }
+      let minV = Infinity, maxV = -Infinity;
+      for (const row of data) for (const v of row) { if (v < minV) minV = v; if (v > maxV) maxV = v; }
+
+      const levels = 18;
+      ctx.lineWidth = 1.1;
+      for (let lvl = 0; lvl < levels; lvl++) {
+        const v = minV + (lvl + 0.5) / levels * (maxV - minV);
+        ctx.strokeStyle = `rgba(192, 73, 46, ${0.22 + (lvl % 3 === 0 ? 0.35 : 0.1)})`;
+        ctx.beginPath();
+        for (let i = 0; i < resI-1; i++) {
+          for (let j = 0; j < resJ-1; j++) {
+            const a = data[i][j], b = data[i][j+1], c = data[i+1][j], d = data[i+1][j+1];
+            const mn = Math.min(a,b,c,d), mx = Math.max(a,b,c,d);
+            if (v < mn || v > mx) continue;
+            const xi = -1.1 + (j / (resJ-1)) * 2.2;
+            const xj = -1.1 + ((j+1) / (resJ-1)) * 2.2;
+            const yi = -0.9 + (i / (resI-1)) * 1.8;
+            const yj = -0.9 + ((i+1) / (resI-1)) * 1.8;
+            ctx.rect(px(xi), py(yj), px(xj)-px(xi), py(yi)-py(yj));
+          }
+        }
+        ctx.stroke();
+      }
+
+      ctx.strokeStyle = STRUCT; ctx.lineWidth = 2.6;
+      ctx.beginPath();
+      for (let i = 0; i <= 200; i++) {
+        const p = manifold(i/200);
+        const X = px(p.x), Y = py(p.y);
+        if (i === 0) ctx.moveTo(X, Y); else ctx.lineTo(X, Y);
+      }
+      ctx.stroke();
+
+      ctx.fillStyle = FAINT; ctx.font = '11px "Spline Sans Mono", monospace';
+      ctx.fillText(`λ = ${lam.toFixed(2)} · 등고선이 매니폴드 접선과 정렬될수록 페널티 효과 ↑`, 12, H - 14);
+    }
+
+    function update() {
+      const lam = parseFloat(slider.value);
+      lval.textContent = `λ = ${lam.toFixed(2)}`;
+      draw(lam);
+      let msg = '';
+      if (lam < 0.1) msg = `λ=${lam.toFixed(2)} — 거의 일반 AE. 잠재 등고선이 입력 공간을 자유롭게 채우고 매니폴드 직교 방향에도 민감.`;
+      else if (lam < 0.5) msg = `λ=${lam.toFixed(2)} — 적정 CAE. 매니폴드 접선 방향으로 정렬이 시작되고 직교 방향 민감도가 줄어든다.`;
+      else msg = `λ=${lam.toFixed(2)} — 강한 CAE. 잠재 코드가 매니폴드 접선 방향에만 따라 움직이고, 직교 방향에는 거의 평평하다.`;
+      verdict.innerHTML = msg;
+    }
+    slider.addEventListener('input', update);
+    window.addEventListener('resize', update);
+    update();
+  })();
+
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
+        throwOnError: false,
+      });
+    }
+  });
+</script>
+</body>
+</html>

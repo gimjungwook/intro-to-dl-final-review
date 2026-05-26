@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>02 · 양방향 사전훈련의 발상</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="assets/bert.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Chapter 02 · 빈칸 채우기라는 발상</span>
+      <h1>왜 양쪽을 본다는 것이<br><span class="t-bidir">정보 두 배</span>가 아니라 질적 도약인가</h1>
+      <p class="lede">이 장은 BERT 의 가장 단순하고 가장 강력한 아이디어 하나만 다룬다. “일부 단어를 가린 뒤 양쪽을 모두 보면서 그 자리의 단어를 맞혀라.” 이 한 문장이 왜 자연어 이해(natural language understanding) 의 분기점을 만들었는지를 짓는다.</p>
+    </header>
+
+    <div class="prose">
+      <h2>1. 사람은 어떻게 단어의 의미를 이해하는가</h2>
+      <p>아주 단순한 실험에서 출발하자. 다음 한 문장을 읽어 보자.</p>
+      <blockquote style="font-style:italic; color:var(--ink-soft); border-left:3px solid var(--bidir); padding:.6rem 1rem; margin:1rem 0; background:var(--paper-2); border-radius:0 6px 6px 0;">
+        그는 ___ 을 들고 사진을 찍었다.
+      </blockquote>
+      <p>빈칸에 어떤 단어가 들어갈까? “카메라”, “스마트폰”, “아이를”, “꽃다발을” 등 여러 후보가 가능하다. 그런데 만약 문장이 다음과 같이 이어진다고 해 보자.</p>
+      <blockquote style="font-style:italic; color:var(--ink-soft); border-left:3px solid var(--mask); padding:.6rem 1rem; margin:1rem 0; background:var(--paper-2); border-radius:0 6px 6px 0;">
+        그는 ___ 을 들고 사진을 찍었다. <b>그것은 1초 만에 즉석 사진이 나오는 폴라로이드였다.</b>
+      </blockquote>
+      <p>이제 빈칸 후보가 갑자기 좁혀진다. “카메라”이긴 한데, 더 정확히는 “폴라로이드 카메라”다. 빈칸의 오른쪽에 있는 “1초 만에”, “즉석”, “폴라로이드” 같은 단서가 빈칸의 의미를 결정짓는다. 우리는 글을 읽을 때 이렇게 좌우를 자유롭게 오가며 의미를 좁힌다. 이것이 사람이 언어를 이해하는 자연스러운 방식이다.</p>
+
+      <p>여기서 첫 번째 핵심 관찰이 나온다. <strong>한 단어의 의미는 그 단어 단독으로가 아니라, 좌우 문맥 전체와의 관계에서 결정된다.</strong> 이 통찰 자체는 새롭지 않다 — 분포 의미론(distributional semantics) 의 옛 격언이 정확히 그 말이다 (“You shall know a word by the company it keeps”). 새로운 것은 이 통찰을 거대 신경망의 학습 목표로 어떻게 번역할 것인가에 대한 답이다.</p>
+
+      <h2>2. 빈칸 채우기를 그대로 학습 시키자</h2>
+      <p>BERT 의 발상은 어이없을 정도로 직설적이다. <em>사람이 빈칸 채우기로 의미를 배운다면, 모델도 빈칸 채우기로 학습시키자.</em> 학자들이 ‘Cloze task’(클로즈 과제) 라고 부르는 이 방식은 사실 1953년 Wilson Taylor 가 언어학 실험에서 처음 제안한 것이다. BERT 는 그 오래된 발상을 거대 트랜스포머에 그대로 가져왔다. 다만 조건이 하나 있다.</p>
+
+      <div class="def-box">
+        <div class="deft">규칙</div>
+        <p>입력 문장에서 일부 토큰을 <b>특수 토큰 [MASK]</b> 로 가린다. 모델은 그 자리에 원래 어떤 단어가 있었는지를 예측한다. 손실(loss)은 <b>가린 자리에서만 계산</b>한다. 가리지 않은 토큰의 출력은 손실에 영향을 주지 않는다.</p>
+      </div>
+
+      <p>왜 “가린 자리에서만 손실을 계산”하는가? 1장에서 본 문제 때문이다. 만약 모델이 모든 토큰을 보면서 동시에 모든 토큰을 예측해야 한다면, 모델은 각 위치에서 자기 자신을 보고 자기 자신을 답으로 내놓는 자명한 해(trivial solution)에 빠진다. 정답을 보면서 정답을 맞히는 셈이라 학습이 진행되지 않는다. 그러나 가린 자리에는 정답이 [MASK] 라는 특수 토큰으로 가려져 있으므로, 모델은 그 자리의 좌우 문맥을 활용해 추론할 수밖에 없다.</p>
+
+      <div class="analogy">
+        선생님이 영어 시험지를 만든다. 본문 중간중간에 단어 몇 개를 지우개로 지운다. 학생은 본문 전체를 다 읽으면서(앞 뒤 모두) 지워진 자리에 무슨 단어가 들어가야 자연스러운지를 답한다. 본문에는 지워진 자리 말고는 다른 단어가 그대로 있으므로 “정답을 보고 베끼는” 일은 일어나지 않는다. 이게 BERT 학습의 본질이다.
+      </div>
+
+      <h2>3. 수식으로 다시 — 마스크 언어 모델 손실</h2>
+      <p>이 발상을 수식으로 적어 보자. 입력 토큰 시퀀스를 $x = (x_1, x_2, \ldots, x_T)$ 라 하고, 가린 위치 집합을 $M \subseteq \{1, 2, \ldots, T\}$ 라 하자. 그러면 손실 함수는 다음과 같다.</p>
+
+      <div class="math-block">$$ \mathcal{L}_{\text{MLM}} = - \mathbb{E}_{x, M} \left[ \sum_{i \in M} \log P\bigl(x_i \,\big|\, x_{\setminus M}\bigr) \right] $$</div>
+      <p class="math-note">$x_{\setminus M}$ 은 가린 자리들을 [MASK] 로 바꾼 입력 시퀀스. 합은 가린 자리에서만 매긴다.</p>
+
+      <p>이 식을 하나하나 풀어 보자. $\mathbb{E}_{x, M}$ 은 “학습 데이터에 있는 모든 가능한 (문장, 마스크 패턴) 쌍에 대해 평균을 낸다”는 뜻이다. 실제로는 한 배치(batch)마다 새로 무작위로 어떤 위치를 가릴지를 정하므로, 이 기댓값은 그 무작위성에 대한 평균이다.</p>
+
+      <p>$\sum_{i \in M}$ 은 “가린 위치만 모아 더한다”는 뜻이다. 가리지 않은 자리는 손실에 들어가지 않는다는 점이 1장에서 본 자명한 해 문제를 막는 장치다.</p>
+
+      <p>$\log P(x_i \mid x_{\setminus M})$ 은 “가린 자리들이 표시된 문장 $x_{\setminus M}$ 이 주어졌을 때, 그 자리에 원래 단어 $x_i$ 가 들어갈 확률”의 로그값이다. 로그를 쓰는 이유는 두 가지다. 첫째, 곱셈을 덧셈으로 바꾸어 수치적으로 안정적이게 만든다(아주 작은 확률들의 곱은 컴퓨터에서 underflow 가 난다). 둘째, 정보이론적으로 “모델이 정답을 맞히기 위해 필요로 한 비트 수”를 의미한다 — 적게 필요할수록 모델이 잘 학습된 것이다.</p>
+
+      <p>음수 부호는 “최소화 문제로 만들기 위해서”다. 확률 $P$ 가 1 에 가까울수록 $\log P$ 는 0 에 가까워지고, 0 에 가까울수록 $\log P$ 는 매우 큰 음수가 된다. 앞에 음수를 붙이면 “정답에 가까울수록 손실이 작다”라는 자연스러운 형태가 된다. 이 형태가 흔히 말하는 교차 엔트로피(cross-entropy) 손실이다.</p>
+
+      <h2>4. 왜 단순한 “데이터 두 배”가 아닌가</h2>
+      <p>처음 이 발상을 만날 때 흔히 드는 직관은 “좌→우만 학습한 모델 따로, 우→좌만 학습한 모델 따로 만들면 같은 일 아닌가?” 다. 결과적으로 양쪽 정보를 다 보긴 보니까. 그러나 1장 끝에서 짚었듯 둘은 본질적으로 다르다. 한 번 더 짚자.</p>
+
+      <ul style="font-size:.95rem; color:var(--ink-soft); line-height:1.7;">
+        <li><b>두 단방향 모델 이어 붙이기.</b> 어떤 단어의 의미를 만들 때, 좌 방향 모델은 그 단어의 왼쪽 정보로 표현을 만들고, 우 방향 모델은 그 단어의 오른쪽 정보로 표현을 만든다. 두 표현은 그 단어를 처리하는 “마지막 순간에야” 합쳐진다. 그 사이의 모든 층에서는 둘이 만나지 않는다.</li>
+        <li><b>한 양방향 모델.</b> 어떤 단어의 의미를 만들 때, 첫 층(layer 1)부터 좌우의 모든 단어가 한 자리에 모인다. 그 위에 쌓이는 12층(혹은 24층)의 모든 표현은 좌우가 함께 만들어 낸 것이다. 깊이 들어갈수록 “좌측의 어떤 단서가 우측의 어떤 단서와 어떻게 상호작용하는가”라는 더 추상적인 패턴이 잡힌다.</li>
+      </ul>
+
+      <p>이 차이가 얼마나 큰지는 1장의 어텐션 매트릭스 위젯이 잘 보여 준다. 단방향은 대각선 아래쪽 삼각형만 가능하다. 양방향은 정사각형 전체가 가능하다. 단순히 셀이 두 배라는 양적 차이가 아니라, 정보가 흐를 수 있는 경로의 위상(topology) 자체가 다르다.</p>
+
+      <div class="analogy">
+        도시를 비유로 들면 이렇다. 단방향 모델은 모든 도로가 일방통행인 도시다. 갈 수 있는 길은 정해져 있다. 양방향 모델은 모든 도로가 쌍방통행인 도시다. 어떤 교차로에서도 어디서 와서 어디로 갈지 자유롭다. 일방통행 도시에서도 결국 모든 곳을 갈 수는 있겠지만, 그 길은 빙 둘러 가는 길이다. 쌍방통행 도시에서는 직선으로 갈 수 있다. 깊은 신경망의 경우 “빙 둘러 가는 길”은 학습 신호가 너무 약해져서 결국 잘 학습되지 않는다.
+      </div>
+
+      <h2>5. 입력의 어디까지를 가릴 것인가</h2>
+      <p>이제 자연스러운 질문이 나온다. 가릴 비율은 얼마가 적당한가? 너무 적게 가리면 학습 신호가 적다(가린 자리에서만 손실이 계산되므로, 가린 자리가 적으면 한 문장당 거의 배우는 게 없다). 너무 많이 가리면 문맥이 사라져서 빈칸 채우기 자체가 불가능해진다.</p>
+
+      <p>BERT 는 실험적으로 <strong>전체 토큰의 약 15%</strong> 를 가리는 것이 가장 좋다고 보고했다. 한 문장당 평균 15% 정도가 빈칸이 되는 셈이다. 이 숫자가 어떻게 정해졌는지, 그리고 가린 자리 중에서도 어떻게 다시 80/10/10 으로 나누는지는 6장(MLM)에서 본격적으로 다룬다.</p>
+
+      <h2>6. 발상의 작은 그림 — 이 장이 깐 길</h2>
+      <p>BERT 의 본문은 “구조 + 사전훈련 + 미세조정”의 세 부분으로 나뉜다. 그중 사전훈련의 핵심 절반이 바로 이 장에서 본 양방향 마스크 언어 모델이다. 나머지 절반은 다음 문장 예측(NSP) 이다(7장). 구조 자체는 트랜스포머 인코더 그대로니까 새로울 게 없다(3장에서 짧게 복습). 미세조정도 단순한 분류기 한 층을 얹는 일이다(9–11장). 결국 BERT 논문이 진짜로 보여 준 새로움은 이 한 가지다 — <em>마스킹을 활용해 진짜 양방향 사전훈련을 가능하게 했다.</em></p>
+
+      <p>다음 장에서는 BERT 라는 모델 자체의 구조를 짧게 짚는다. P3 에서 본 트랜스포머의 인코더만 떼어내 깊게 쌓은 것이라는 사실을 확인하고, BASE 와 LARGE 두 크기의 파라미터 수를 손에 익힌다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script src="assets/bert.js"></script>
+<script>
+  window.addEventListener('load', () => { BERT.buildNav('02'); });
+</script>
+</body>
+</html>

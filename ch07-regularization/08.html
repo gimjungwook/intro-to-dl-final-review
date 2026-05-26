@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sub 08 · 노이즈 주입 — 입력, 은닉, 가중치 · Ch.07</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .noise-stage { padding: 1.2rem 1.2rem 1rem; }
+  .noise-cv { display: block; max-width: 100%; border-radius: 8px; border: 1px solid var(--line); background: var(--paper); margin: 0 auto; }
+  .noise-ctr { display: flex; gap: 1rem; flex-wrap: wrap; padding: .9rem 1.1rem; border-top: 1px solid var(--line-soft); background: var(--paper); }
+  .noise-read { padding: .8rem 1.4rem; font-size: .9rem; color: var(--ink-soft); line-height: 1.55; }
+  .noise-read b { color: var(--ink); }
+  .deriv { max-width: var(--measure); margin: 1.4rem auto; padding: 1.1rem 1.4rem; background: var(--paper-2); border: 1px solid var(--line-soft); border-radius: 9px; }
+  .deriv .lbl { font-family: var(--mono); font-size: .7rem; letter-spacing: .12em; color: var(--style); margin-bottom: .35rem; }
+  .deriv .why { font-size: .88rem; color: var(--ink-soft); line-height: 1.6; margin-top: .35rem; }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 08 · 어디에 흔드는가가 모든 것을 정한다</span>
+      <h1>노이즈 주입 — <span class="t-style">입력</span>, 은닉, 가중치</h1>
+      <p class="lede">같은 가우시안 노이즈라도 입력에 넣으면 매끄러움 페널티가 되고, 가중치에 넣으면 L2가 되며, 은닉에 넣으면 표현 강건화가 된다.</p>
+    </header>
+
+    <div class="prose">
+      <p>7장의 큰 흐름을 한 번 정리해 두자. L2와 L1은 가중치 공간에서 모형을 묶었고, 데이터 증강은 입력 공간에서 모형을 묶었다. 그리고 이 sub의 주제 — 노이즈 주입(noise injection)은 모형의 어느 한 곳을 골라 무작위로 살짝 흔드는 정칙화다. 흔드는 위치가 핵심이다. 같은 평균 0, 분산 σ²의 가우시안 노이즈를 어디에 넣느냐에 따라, 결과로 부과되는 페널티 Ω의 모양이 완전히 달라진다.</p>
+
+      <p>책은 노이즈를 넣을 수 있는 세 위치를 명시한다. <strong>입력 노이즈</strong>(input noise), <strong>은닉표현 노이즈</strong>(hidden noise), <strong>가중치 노이즈</strong>(weight noise). 이 세 가지가 각각 어떤 정칙화 효과를 만드는지, 그리고 왜 그렇게 다른 효과가 나오는지가 이 sub의 내용이다.</p>
+
+      <h2>1. 입력 노이즈 — 함수의 매끄러움 강제</h2>
+
+      <p>입력 노이즈는 매 미니배치에서 입력 $x$에 작은 가우시안 노이즈 $\epsilon \sim \mathcal{N}(0, \sigma^2 I)$를 더한 $\tilde x = x + \epsilon$로 훈련하는 방법이다. 즉 모형이 보는 데이터는 매번 살짝 다른 $x$다.</p>
+
+      <p>이게 왜 정칙화가 되는가? 작은 노이즈 $\epsilon$에 대해 출력 $f_\theta(x + \epsilon)$을 테일러 전개하면 다음과 같다.</p>
+
+      <div class="math-block">$$ f_\theta(x + \epsilon) \;\approx\; f_\theta(x) \;+\; \nabla_x f_\theta(x)^\top \epsilon \;+\; \frac{1}{2}\epsilon^\top \nabla_x^2 f_\theta(x)\,\epsilon $$</div>
+      <p class="math-note">$\nabla_x f$는 입력에 대한 출력의 1차 미분(자코비안), $\nabla_x^2 f$는 2차 미분(헤시안).</p>
+
+      <p>이 식의 양변에서 $\epsilon$에 대한 기댓값을 취하면 평균 0의 1차 항은 사라지고 2차 항만 남는다. 이를 손실에 대입하고 정리하면 결국 다음과 같은 페널티가 추가됨을 보일 수 있다.</p>
+
+      <div class="deriv">
+        <span class="lbl">유도 1 · 입력 노이즈가 만드는 페널티</span>
+        <div class="math-block">$$ \mathbb{E}_\epsilon\bigl[L(f_\theta(x+\epsilon), y)\bigr] \;\approx\; L(f_\theta(x), y) \;+\; \frac{\sigma^2}{2}\,\bigl\|\nabla_x f_\theta(x)\bigr\|^2 $$</div>
+        <p class="why">즉 입력 노이즈는 "함수가 입력 변화에 얼마나 민감한가($\|\nabla_x f\|^2$)"라는 페널티를 자동으로 부과한다. 모형은 자코비안 노름을 작게 유지하기 위해 입력 변화에 둔감한, 즉 매끄러운 함수가 되도록 학습된다.</p>
+      </div>
+
+      <p>이 결과는 7sub에서 본 데이터 증강의 분석과 정확히 같은 구조다. 회전·반전 같은 의미 있는 변환이 아니라 임의의 가우시안 노이즈라는 점만 다르다. 의미 있는 변환을 모를 때(도메인 지식이 약할 때) 입력 노이즈는 안전한 정칙화 기본값이다.</p>
+
+      <h2>2. 가중치 노이즈 — L2와 거의 같다</h2>
+
+      <p>가중치 노이즈는 매 미니배치마다 가중치 $\theta$에 가우시안 노이즈 $\eta \sim \mathcal{N}(0, \sigma^2 I)$를 더한 $\tilde\theta = \theta + \eta$로 순전파/역전파를 수행하는 방법이다. 분석을 비슷하게 하면, 가중치 노이즈가 추가하는 페널티는 다음과 같다.</p>
+
+      <div class="deriv">
+        <span class="lbl">유도 2 · 가중치 노이즈가 만드는 페널티</span>
+        <div class="math-block">$$ \mathbb{E}_\eta\bigl[L(f_{\theta+\eta}(x), y)\bigr] \;\approx\; L(f_\theta(x), y) \;+\; \frac{\sigma^2}{2}\,\bigl\|\nabla_\theta f_\theta(x)\bigr\|^2 $$</div>
+        <p class="why">$\|\nabla_\theta f\|^2$가 작아야 손실이 작아지므로, 가중치 노이즈는 "모형이 가중치 변화에 둔감해지도록" 강제한다. 가중치가 작을수록 일반적으로 이 노름이 작아지므로, <strong>가중치 노이즈는 L2와 매우 유사한 효과</strong>를 낸다 — 특히 선형 모형에서는 정확히 L2와 동치.</p>
+      </div>
+
+      <p>가중치 노이즈는 L2보다 구현이 약간 복잡하지만, 매 미니배치에서 다른 노이즈를 쓰므로 "여러 모형을 평균하는" 앙상블 효과도 약간 갖는다. 후술하는 드롭아웃(12sub)이 가중치 노이즈의 극단적 형태로 해석되기도 한다 — 노이즈가 가우시안이 아니라 0/1 곱셈 마스크일 뿐이다.</p>
+
+      <h2>3. 은닉표현 노이즈 — 표현 강건화</h2>
+
+      <p>은닉표현 노이즈는 모형의 중간층 활성 $h$에 노이즈를 더한 $\tilde h = h + \xi$로 다음 층 계산을 수행하는 방법이다. 입력에 노이즈를 넣는 것과 비슷해 보이지만 효과는 더 강하다 — 깊은 층의 표현이 노이즈에 강건해져야 하므로, 모형은 표현을 더 "이산적이고 강건하게" 학습한다.</p>
+
+      <p>은닉 노이즈의 가장 유명한 사례가 바로 <strong>드롭아웃(dropout)</strong>이다. 드롭아웃은 은닉표현에 0/1 베르누이 마스크를 곱하는 형태의 노이즈로, 12sub에서 깊이 다룬다. 또 다른 사례로 가우시안 드롭아웃(Gaussian dropout)이 있는데, 0/1 마스크 대신 평균 1의 가우시안 곱셈 노이즈를 쓴다 — 효과는 표준 드롭아웃과 유사하면서 미분이 매끄럽다.</p>
+
+      <div class="analogy">
+        <b>학생에게 흐릿한 칠판을 보면서도 정확히 풀게 만들기</b>를 떠올려 보자. 입력 노이즈는 칠판 글씨에 직접 흐림을 더하는 것 — 학생은 흐릿한 글씨에서도 의미를 읽어내는 능력을 기른다. 은닉 노이즈는 학생의 머릿속 중간 계산에 작은 흔들림을 주는 것 — 학생은 한두 단계의 계산이 흔들려도 답이 크게 틀리지 않도록 더 견고한 풀이 전략을 익힌다. 가중치 노이즈는 학생의 기억 자체가 살짝 흔들리는 것 — 학생은 어느 한 사실에 모든 것을 걸지 않도록, 분산된 지식 구조를 만든다.
+      </div>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 08</span><span>입력 vs 가중치 노이즈 — 학습된 함수의 모양 비교</span></div>
+        <div id="noise"></div>
+      </div>
+      <p class="widget-cap">11개 데이터점을 통과하는 회귀 모형을 노이즈 없이 / 입력 노이즈 / 가중치 노이즈로 각각 학습. 입력 노이즈를 키울수록 함수가 더 매끄러워진다(자코비안 페널티). 가중치 노이즈도 비슷한 효과지만 더 균등하게 작용. 노이즈를 너무 크게 하면 데이터 자체를 못 따라간다(과소적합).</p>
+    </div>
+
+    <div class="prose">
+      <h2>출력 라벨 노이즈 — 라벨 스무딩의 사촌</h2>
+
+      <p>네 번째 위치도 있다 — 출력 라벨에 노이즈를 넣는 방법. 이는 다음 sub의 주제인 라벨 스무딩(label smoothing)과 사실상 같은 아이디어다. 정답 라벨 $y$의 일부 확률을 다른 클래스에 분산시켜 모형이 100 퍼센트 확신을 갖지 못하게 만든다. 노이즈는 한 곳에만 넣을 수 있는 게 아니라, 모형의 어느 단계에든 넣을 수 있다.</p>
+
+      <h2>세 위치 한 표 비교</h2>
+
+      <table class="symbols">
+        <tr><td><b>입력 노이즈</b></td><td>$x \to x + \epsilon$. 페널티 ≈ $\frac{\sigma^2}{2}\|\nabla_x f\|^2$. <em>함수의 매끄러움</em> 강제. 도메인 지식 없을 때 안전한 기본값.</td></tr>
+        <tr><td><b>가중치 노이즈</b></td><td>$\theta \to \theta + \eta$. 페널티 ≈ $\frac{\sigma^2}{2}\|\nabla_\theta f\|^2$. 선형 모형에서는 L2와 동치. 미니배치별 다른 노이즈로 약한 앙상블 효과.</td></tr>
+        <tr><td><b>은닉 노이즈</b></td><td>$h \to h + \xi$. <em>중간 표현의 강건화</em>. 드롭아웃(베르누이 마스크), 가우시안 드롭아웃이 대표 사례. 효과가 가장 강함.</td></tr>
+        <tr><td><b>라벨 노이즈</b></td><td>$y \to (1-\epsilon)y + \epsilon\cdot\text{uniform}$. <em>과도확신 방지</em>. 라벨 스무딩과 사실상 동일 — 9sub에서 본격적으로 본다.</td></tr>
+      </table>
+
+      <h2>실전 — 어디에 얼마나 넣을 것인가</h2>
+
+      <p>실전에서 가장 많이 쓰이는 것은 단연 <strong>은닉 노이즈(드롭아웃)</strong>다. 다음으로 자주 쓰이는 것은 <strong>입력 노이즈</strong>(데이터 증강의 한 형태로). 가중치 노이즈는 직접 쓰기보다 L2를 쓰는 쪽이 일반적이다 — 효과가 비슷하면서 구현이 간단하기 때문.</p>
+
+      <p>노이즈 분산 $\sigma^2$는 또 다른 하이퍼파라미터다. 너무 작으면 정칙화 효과가 약하고, 너무 크면 모형이 신호 자체를 못 잡는다. 입력 노이즈의 경우 보통 입력 데이터 분산의 $1\%$에서 $10\%$ 정도가 시작점이고, 검증 손실로 튜닝한다. 드롭아웃의 경우 보통 $p=0.5$(은닉층) 또는 $p=0.1$에서 $0.2$(입력층)가 표준값이다.</p>
+
+      <h2>노이즈 주입과 데이터 증강의 관계</h2>
+
+      <p>두 개념이 실은 한 줄에서 만난다. 데이터 증강은 "의미를 보존하는 변환"이라는 도메인 지식 기반 노이즈고, 입력 노이즈는 "임의의 가우시안" 도메인 지식 없는 노이즈다. 양쪽 모두 입력 공간에서 모형을 흔드는 정칙화다.</p>
+
+      <p>실전에서는 둘을 같이 쓴다. 회전·잘라내기로 의미 있는 증강을 하고, 그 위에 작은 가우시안 노이즈를 추가하는 식. 두 효과는 곱셈적으로 작용하므로 작은 강도라도 함께 쓰면 큰 이득이다.</p>
+
+      <h2>한 줄 정리</h2>
+
+      <p>노이즈 주입은 한 가지 기법이 아니라 위치별로 다른 페널티를 부과하는 기법군이다. 입력 노이즈는 함수 매끄러움, 가중치 노이즈는 L2, 은닉 노이즈는 표현 강건화, 라벨 노이즈는 과도확신 방지. 같은 가우시안이라도 어디에 넣느냐가 모든 것을 정한다. 시험에서 "노이즈 주입은 어떻게 정칙화가 되는가"를 묻는다면, 위 식 한 줄 — $\|\nabla_x f\|^2$ 또는 $\|\nabla_\theta f\|^2$ 페널티 — 을 보이면 된다.</p>
+
+      <p>다음 sub에서는 출력 라벨에 노이즈를 넣는 방법 — 라벨 스무딩을 본다. 단순히 "0과 1 대신 0.1과 0.9를 쓰자"는 것이 왜 강력한 정칙화인지, 그리고 100 퍼센트 자신감을 갖는 모형이 왜 위험한지가 거기서 분명해진다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script src="widgets.js"></script>
+<script>
+window.addEventListener('load', () => {
+  CH7.buildNav('08');
+  if (window.renderMathInElement) {
+    renderMathInElement(document.body, {
+      delimiters: [
+        { left: '$$', right: '$$', display: true },
+        { left: '$', right: '$', display: false },
+      ],
+      throwOnError: false,
+    });
+  }
+  CH7.onVisible(document.getElementById('noise'), () => CH7.noise(document.getElementById('noise')));
+});
+</script>
+</body>
+</html>

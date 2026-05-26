@@ -3,20 +3,24 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Chapter 12 · 응용 — 인터랙티브 복습</title>
+<title>Chapter 12 / 응용 — 인터랙티브 복습</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
   .masthead { position: relative; max-width: var(--wide); margin: 0 auto; padding: 1.5rem 1.4rem 0; }
+  .home-link { display: inline-flex; align-items: center; gap: .35rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .12em; color: var(--ink-faint); text-decoration: none; padding: .35rem .6rem; margin-bottom: .9rem; border-radius: 6px; border: 1px solid var(--line-soft); transition: all .15s var(--ease); }
+  .home-link:hover { color: var(--ink); border-color: var(--line); background: var(--paper-2); }
   .hero-wrap { position: relative; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: linear-gradient(180deg,#fff,var(--paper-2)); box-shadow: var(--shadow-plate); }
-  #hero { display: block; width: 100%; height: 360px; }
+  #hero { display: block; width: 100%; }
   .hero-cap { position: absolute; left: 1.2rem; bottom: 1rem; font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; color: var(--ink-faint); pointer-events: none; }
   .hero-cap b { color: var(--structure); } .hero-cap em { color: var(--style); font-style: normal; }
+
   .title-block { max-width: var(--wide); margin: 2.4rem auto 0; padding-inline: 1.4rem; }
   .title-block .kicker { display: block; margin-bottom: 1rem; }
-  .title-block h1 { font-size: clamp(2.6rem, 7vw, 5rem); margin: 0; line-height: 1.05; }
+  .title-block h1 { font-size: clamp(2.6rem, 7vw, 5rem); margin: 0; line-height: 1.06; }
   .title-block h1 em { color: var(--style); font-style: normal; }
   .paper-meta { display: flex; flex-wrap: wrap; gap: .5rem 1.6rem; margin-top: 1.4rem; font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); letter-spacing: .02em; }
   .paper-meta span b { color: var(--ink); font-weight: 500; }
@@ -31,10 +35,9 @@
   .plate .spectrum i { display: block; height: 100%; }
   .plate .go { margin-top: 1rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; color: var(--style); opacity: 0; transform: translateX(-4px); transition: .2s var(--ease); }
   .plate:hover .go { opacity: 1; transform: translateX(0); }
-  .plate .kw { margin-top: .8rem; font-family: var(--mono); font-size: .68rem; color: var(--ink-faint); letter-spacing: .04em; }
 
-  .section-intro { max-width: var(--measure); margin: 2.6rem auto 0; padding-inline: 1.4rem; }
-  .section-intro h2 { margin-top: 0; }
+  .section-intro { max-width: var(--measure); margin: 1rem auto 0; padding-inline: 1.4rem; }
+  .section-intro h2 { margin-top: 1rem; }
   .twopole { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; max-width: var(--measure); margin: 1.6rem auto; padding-inline: 1.4rem; }
   .pole { padding: 1.1rem 1.2rem; border-radius: 11px; }
   .pole.s1 { background: var(--style-bg); } .pole.s2 { background: var(--structure-bg); }
@@ -58,32 +61,33 @@
 <body>
 
 <header class="masthead">
+  <a class="home-link" href="../index.html">← 기말고사 인터랙티브 복습</a>
   <div class="hero-wrap">
     <canvas id="hero"></canvas>
-    <div class="hero-cap"><b>도메인 — 다섯 갈래의 신호</b> ↔ <em>같은 추상 기계로 다 풀린다</em> · 마우스를 움직여보세요</div>
+    <div class="hero-cap"><b>다른 신호 (픽셀, 파형, 단어, 행렬, 상태)</b> ↔ <em>같은 학습 기계</em> / 마우스를 움직여 보세요</div>
   </div>
 </header>
 
 <div class="title-block">
-  <span class="kicker">Deep Learning Book · Chapter 12 · Applications</span>
-  <h1>같은 그물을 어떻게<br><em>다섯 도메인</em>에 던지는가</h1>
+  <span class="kicker">Deep Learning Book / Chapter 12 / Applications</span>
+  <h1>이론을<br><em>산업 문제</em> 위에 올리는 법</h1>
   <div class="paper-meta">
-    <span><b>딥러닝 개론</b> 기말고사 인터랙티브</span>
-    <span>제작 <b>김정욱</b></span>
-    <span>분량 <b>약 35분</b></span>
-    <span>위젯 <b>5개</b></span>
+    <span><b>딥러닝 개론</b> 기말고사 인터랙티브 복습</span>
+    <span>저자 <b>Goodfellow, Bengio, Courville (2016)</b></span>
+    <span>읽는 시간 <b>약 70분</b></span>
+    <span>D-day <b>2026-06-04</b></span>
   </div>
 </div>
 
 <section class="section-intro">
   <h2>한 문장으로</h2>
-  <p>이 장은 <strong>"같은 딥러닝의 기본 부품(합성곱, 순환, 임베딩, 역전파)이 어떻게 비전·음성·자연어·추천·강화학습이라는 전혀 다른 모양의 문제에 그대로 통하는가"</strong>를 보여 준다. 비밀은 모델이 아니라 <em>워크플로(workflow)</em>다. 입력의 모양·증강·정규화, 출력의 분해, 그리고 데이터 양에 맞춘 인프라를 도메인에 맞게 다듬으면, 본체는 거의 같은 그물을 쓸 수 있다.</p>
-  <p>처음 읽을 때 잡아야 할 그림은 이것이다. 책의 1-11장이 <em>“부품과 학습 알고리즘”</em>을 만들었다면, 12장은 <em>“그 부품을 실제 산업 문제 위에 어떻게 올려놓는가”</em>의 카탈로그다. 따라서 이 챕터의 수식은 새 이론이 아니라, 9장(CNN)·10장(RNN)·5장(MLE)·11장(방법론)에서 본 것들이 도메인의 옷을 입은 모습이다.</p>
+  <p>12장은 <strong>“같은 학습 기계(가중치, 역전파, 미니배치 경사하강)가 어떻게 비전·음성·자연어·추천·강화학습이라는 모양이 전혀 다른 문제들을 푸는가”</strong>를 보여 준다. 비밀은 모델 자체보다 <em>입력의 모양을 어떻게 정돈하고, 출력의 분포를 어떻게 분해하고, 데이터 양에 맞춰 인프라를 어떻게 까는가</em>에 있다. 1-11장이 학습 기계의 부품을 만들었다면, 12장은 그 부품을 실제 산업 문제 위에 어떻게 올려놓는가의 카탈로그다.</p>
+  <p>처음 읽을 때 잡아야 할 그림은 이것이다. 도메인별 모델의 표면적 차이(합성곱 신경망(Convolutional Neural Network, CNN) vs 순환 신경망(Recurrent Neural Network, RNN) vs 단어 임베딩(word embedding) vs 정책 그라디언트(policy gradient))는 크지만, 그 아래에는 한 가지 공통 원리가 있다. <strong>좋은 표상(representation)을 먼저 만들고, 그 위에서 단순한 산수(내적, 분류, 회귀)를 하는 것.</strong> 12장의 모든 사례는 이 한 줄의 변주다.</p>
 </section>
 
 <div class="twopole">
-  <div class="pole s1"><h4>도메인 (입력의 모양)</h4><p>비전은 2D 격자, 음성은 1D 시계열·2D 스펙트로그램, 언어는 이산 토큰열, 추천은 희소 사용자-아이템 행렬, RL은 상태-행동의 궤적. 입력 모양이 부품(CNN·RNN·임베딩)을 고른다.</p></div>
-  <div class="pole s2"><h4>공통 기계 (학습의 핵)</h4><p>네거티브 로그우도, 미니배치 SGD, 역전파, 정칙화. 도메인이 달라도 손실 함수는 거의 모두 “정답 분포에 가까운 분포를 출력하라”는 형태로 통일된다.</p></div>
+  <div class="pole s1"><h4>도메인 (입력의 모양)</h4><p>비전은 2D 격자, 음성은 1D 시계열 또는 2D 스펙트로그램, 언어는 이산 토큰열, 추천은 희소 사용자-아이템 행렬, 강화학습은 상태-행동 궤적. 입력의 모양이 부품(CNN, RNN, 임베딩 등)을 고른다. 이 사이트에서 <b>웜한 주홍</b>으로 표시된다.</p></div>
+  <div class="pole s2"><h4>공통 기계 (학습의 핵)</h4><p>음의 로그우도(negative log-likelihood) 손실, 미니배치 확률적 경사하강(stochastic gradient descent, SGD), 역전파(backpropagation), 정칙화(regularization). 도메인이 달라져도 손실 함수는 거의 모두 “정답 분포에 가까운 분포를 출력하라”는 한 형태로 통일된다. 이 사이트에서 <b>차분한 파랑</b>으로 표시된다.</p></div>
 </div>
 
 <section class="plates" id="plates"></section>
@@ -94,165 +98,206 @@
 </section>
 
 <footer class="colophon">
-  <p>이 해설은 Goodfellow, Bengio, Courville의 Deep Learning Book Chapter 12 (Applications)를 바텀업으로 다시 쓴 것이다. 인프라(GPU·분산학습)에서 출발해 비전·음성·NLP·추천·RL의 다섯 도메인을, 각 도메인의 워크플로와 함께 단계별로 쌓아 올린다. 모든 수식은 "왜 그 형태인가"를 함께 설명한다.</p>
+  <p>이 해설은 Goodfellow, Bengio, Courville(2016) 12장 "Applications"를 바탕으로 재구성한 시험 대비 자료다. 챕터의 다섯 도메인(비전, 음성, 자연어, 추천, 강화학습)을 각각 도메인 워크플로와 함께 단계별로 쌓고, "왜 그 부품이 그 자리에 들어가는가"를 비유와 예시로 풀었다. 모든 수식은 형태가 그렇게 생긴 이유를 함께 설명한다. 위젯 5개로 비전 파이프라인, 음성 4단 변환, 임베딩 산수, 행렬 분해 SGD, ε-greedy 멀티암드 밴딧을 직접 만져 본다.</p>
   <p class="src">
-    원서 · <a href="https://www.deeplearningbook.org/contents/applications.html">deeplearningbook.org/contents/applications.html</a><br>
-    과제 제출본 · <a href="../../../03-과제-제출/IntroToDL_Week8_22000168.md">IntroToDL_Week8_22000168.md</a><br>
-    상위 인덱스 · <a href="../index.html">기말고사 인터랙티브 표지</a>
+    원문 / <a href="https://www.deeplearningbook.org/contents/applications.html">deeplearningbook.org/applications</a><br>
+    과제 노트 / <a href="../../../03-과제-제출/IntroToDL_Week8_22000168.md">IntroToDL_Week8_22000168.md (Ch.11-12)</a><br>
+    이전 장 / <a href="../ch09-cnn/index.html">Ch.9 CNN</a> · <a href="../ch10-rnn/index.html">Ch.10 RNN</a> · <a href="../ch11-practical/index.html">Ch.11 실용 방법론</a>
   </p>
 </footer>
 
 <script>
-  const CHAPTERS = [
-    { no:'01', t:'대규모 비전 분류 — CNN의 본거지', d:'표준화·증강·대비 정규화로 시작하는 객체 인식의 워크플로. 입력 → 전처리 → CNN → softmax 파이프라인을 직접 분해한다.', sp:['structure','structure-lo'] },
-    { no:'02', t:'음성 인식 — 시퀀스로의 변환', d:'파형 → 스펙트로그램 → 음향 모델 → 텍스트. GMM-HMM에서 RNN+CTC, end-to-end 딥 LSTM, 2D 합성곱 위 스펙트로그램까지의 진화.', sp:['style','synth'] },
-    { no:'03', t:'자연어 처리 — 임베딩과 어텐션', d:'단어 임베딩의 분산 표상. n-gram의 차원의 저주를 어떻게 깼는가. 인코더-디코더와 어텐션, 그리고 큰 어휘 softmax의 처리.', sp:['structure','style'] },
-    { no:'04', t:'추천 시스템 — 협업 필터링과 임베딩', d:'사용자-아이템 행렬 분해. 잠재 인자로서의 임베딩. 콜드 스타트와 탐험-착취의 충돌. 컨텍스트 밴딧이 왜 등장하는가.', sp:['synth','style-lo'] },
-    { no:'05', t:'강화학습 응용 — agent-environment 루프', d:'상태·행동·보상의 폐쇄 루프. ε-greedy로 직접 본 탐험-착취. DQN과 정책 경사가 같은 그림 위에 어떻게 놓이는가.', sp:['structure-lo','style'] },
-    { no:'06', t:'시험 대비 — 한 장 요약과 예상 문제', d:'도메인별 한 줄 정답. 어텐션이 NLP에서 먼저 채택된 이유, 음성/NLP의 증강이 이미지와 본질적으로 다른 이유. Ch.10·11과의 다리.', sp:['ink-soft','ink'] },
+  const SUBCHAPTERS = [
+    { no:'01', t:'응용 챕터의 의미 — 이론을 산업 문제 위에 올리는 법', d:'12장이 책의 끝에 놓인 이유. 부품 카탈로그(Ch.1-11)에서 워크플로 카탈로그로의 전환. 인프라가 왜 응용의 출발점이 되는가.', sp:['structure'] },
+    { no:'02', t:'대규모 비전 분류 1 — CNN의 본거지, ImageNet', d:'대규모 시각 인식(Large Scale Visual Recognition Challenge, LSVRC) 사례로 본 비전 파이프라인. 입력 정규화, 데이터 증강, CNN 본체의 5단 구조를 직접 슬라이드로 본다.', sp:['structure','style'] },
+    { no:'03', t:'대규모 비전 분류 2 — 데이터 증강·전이학습 실전 트릭', d:'증강(augmentation)이 왜 정칙화로 작동하는가. 대비 정규화(contrast normalization)와 ImageNet 사전학습 특징 재사용이 실전에서 왜 강한가.', sp:['style','synth'] },
+    { no:'04', t:'음성 인식 — 파형 → 스펙트로그램 → 시퀀스 모델', d:'시간 흐름을 가진 파형을 어떻게 2D 그림으로 바꿔 CNN과 RNN의 입력으로 쓰는가. 4단 변환을 슬라이더로 재생한다. GMM-HMM에서 deep LSTM·CTC로의 30년 추이.', sp:['style','structure'] },
+    { no:'05', t:'자연어 처리 1 — 단어 임베딩 (word2vec, GloVe)', d:'단어를 원-핫(one-hot)이 아니라 밀집 벡터(dense vector)로 옮기면 무엇이 풀리는가. n-그램의 차원의 저주(curse of dimensionality)를 깨는 분포 가설(distributional hypothesis)의 정확한 진술.', sp:['structure-lo','style']},
+    { no:'06', t:'자연어 처리 2 — 분포 가설과 임베딩 산수 (king - man + woman)', d:'유명한 등식 king - man + woman ≈ queen의 정확한 의미. 2D 투영으로 의미 거리를 직접 만져 본다. 임베딩 산수가 “공짜”가 아닌 이유.', sp:['style','synth']},
+    { no:'07', t:'자연어 처리 3 — 언어 모델, 다음 단어 예측', d:'언어 모델(language model)이 왜 “다음 단어 예측”이라는 단 하나의 과제로 충분한가. 신경 기계 번역(neural machine translation)의 encoder-decoder와 어텐션(attention) 직관.', sp:['structure','style','synth'] },
+    { no:'08', t:'추천 시스템 — 협업 필터링과 행렬 분해', d:'사용자×아이템 평점 행렬을 두 임베딩의 내적으로 분해한다. 라이브 SGD 위젯으로 잠재 인자(latent factor)가 어떻게 자라는지 본다. 평균 평점 함정, 콜드 스타트(cold start) 문제.', sp:['structure'] },
+    { no:'09', t:'강화학습 — 게임·로봇의 시점, agent-environment 루프', d:'지도학습이 단발성 질의응답이라면 강화학습(reinforcement learning)은 길게 이어지는 결과의 책임 추적. ε-greedy 멀티암드 밴딧(multi-armed bandit)으로 탐색-활용 균형을 만져 본다.', sp:['synth'] },
+    { no:'10', t:'응용 공통의 교훈 — 좋은 표상 위의 단순 산수', d:'다섯 도메인을 관통하는 단일 원리. CNN의 특징 맵, word2vec의 임베딩, 추천의 잠재 인자, RL의 가치 함수 — 모두 “좋은 표상 위에서 내적이나 분류로 답하기”다.', sp:['structure','style','synth'] },
+    { no:'11', t:'시험 대비 — 핵심 구분, 예상 질문 체크리스트', d:'증강이 NLP·음성에서 어떻게 다르게 나타나는가, 어텐션이 비전·음성에 옮겨가면 어떤 이득인가, 임베딩이 차원의 저주를 어떻게 깨는가. 시험 직전에 한 번 더 훑을 카드 15-20장.', sp:['ink'] },
   ];
-  const colMap = { structure:'var(--structure)', 'structure-lo':'var(--structure-lo)', style:'var(--style)', 'style-lo':'var(--style-lo)', synth:'var(--synth)', ink:'var(--ink)', 'ink-soft':'var(--ink-soft)' };
+  const colMap = { structure:'var(--structure)', 'structure-lo':'var(--structure-lo)', style:'var(--style)', 'style-lo':'var(--style-lo)', synth:'var(--synth)', ink:'var(--ink-soft)' };
   const platesEl = document.getElementById('plates');
   const flowEl = document.getElementById('pathflow');
-  CHAPTERS.forEach((c, idx) => {
+  SUBCHAPTERS.forEach((c, idx) => {
     const sp = c.sp.length === 1 ? [c.sp[0], c.sp[0]] : c.sp;
     const a = document.createElement('a');
     a.className = 'plate'; a.href = c.no + '.html';
-    a.innerHTML = `
-      <div class="spectrum">${sp.map(s=>`<i style="flex:1;background:${colMap[s]}"></i>`).join('')}</div>
-      <span class="pno">SUB-CHAPTER ${c.no}</span>
-      <h3>${c.t}</h3>
-      <p>${c.d}</p>
-      <span class="go">읽기 →</span>`;
+    a.innerHTML =
+      '<div class="spectrum">' + sp.map(s => '<i style="flex:1;background:' + colMap[s] + '"></i>').join('') + '</div>' +
+      '<span class="pno">SUB ' + c.no + '</span>' +
+      '<h3>' + c.t + '</h3>' +
+      '<p>' + c.d + '</p>' +
+      '<span class="go">읽기 →</span>';
     platesEl.appendChild(a);
 
     const f = document.createElement('a'); f.href = c.no + '.html';
-    f.innerHTML = `<b>${c.no}</b> ${c.t}`;
+    const shortTitle = c.t.split('—')[0].trim().slice(0, 14);
+    f.innerHTML = '<b>' + c.no + '</b> ' + shortTitle + '…';
     flowEl.appendChild(f);
-    if (idx < CHAPTERS.length - 1) { const s = document.createElement('span'); s.className='arr'; s.textContent='→'; flowEl.appendChild(s); }
+    if (idx < SUBCHAPTERS.length - 1) { const s = document.createElement('span'); s.className='arr'; s.textContent='→'; flowEl.appendChild(s); }
   });
 
-  // 히어로 — 다섯 도메인의 신호가 같은 임베딩 구체로 모이는 입자 애니메이션
+  // 표지 hero — 다섯 도메인 입자 군집이 한 점(공통 학습 기계)으로 모였다가 흩어지는 모션
   window.addEventListener('load', () => {
+    if (!window.THREE || !document.getElementById('hero')) return;
     const canvas = document.getElementById('hero');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    function resize() {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      const w = canvas.clientWidth, h = 360;
-      canvas.width = w * dpr; canvas.height = h * dpr;
-      ctx.setTransform(dpr,0,0,dpr,0,0);
-    }
-    resize();
-    window.addEventListener('resize', resize);
+    const wrap = canvas.parentElement;
+    const css = getComputedStyle(document.documentElement);
+    const C = {
+      structure: css.getPropertyValue('--structure').trim() || '#2D5B7A',
+      style: css.getPropertyValue('--style').trim() || '#C0492E',
+      synth: css.getPropertyValue('--synth').trim() || '#A47B2E',
+    };
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    const scene = new THREE.Scene();
+    const cam = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+    cam.position.set(0, 0, 3.0);
 
-    let mouseX = 0.5, mouseY = 0.5;
-    canvas.addEventListener('mousemove', (e) => {
-      const r = canvas.getBoundingClientRect();
-      mouseX = (e.clientX - r.left) / r.width;
-      mouseY = (e.clientY - r.top) / r.height;
+    // 다섯 도메인 클러스터 위치 (도메인별로 다른 모양)
+    const DOMAINS = 5;
+    const PER = 90;            // 각 도메인 입자 수
+    const N = DOMAINS * PER;
+    const dist = new Float32Array(N * 3);  // 분산: 도메인별 클러스터
+    const cent = new Float32Array(N * 3);  // 수렴: 모든 입자가 가운데로
+    const rnd = new Float32Array(N);
+    const domain = new Float32Array(N);
+    const W = 3.0, H = 1.8;
+
+    // 다섯 도메인을 가로로 배치
+    for (let d = 0; d < DOMAINS; d++) {
+      const cx = ((d + 0.5) / DOMAINS - 0.5) * W;
+      // 도메인별 클러스터 모양: 0=격자(비전), 1=수평 시계열(음성), 2=세로 토큰열(언어), 3=2D 점들(추천), 4=링(RL)
+      for (let i = 0; i < PER; i++) {
+        const idx = d * PER + i;
+        let x = 0, y = 0;
+        if (d === 0) {
+          // 비전: 정방 격자
+          const side = Math.ceil(Math.sqrt(PER));
+          const r = Math.floor(i / side), c = i % side;
+          x = cx + (c / (side - 1) - 0.5) * 0.45;
+          y = (r / (side - 1) - 0.5) * H * 0.42;
+        } else if (d === 1) {
+          // 음성: 가로 시계열 + 사인 흔들림
+          const t = i / (PER - 1);
+          x = cx + (t - 0.5) * 0.45;
+          y = Math.sin(t * Math.PI * 6) * H * 0.18;
+        } else if (d === 2) {
+          // 언어: 세로 토큰열
+          const t = i / (PER - 1);
+          y = (t - 0.5) * H * 0.78;
+          x = cx + (((i * 13) % 7) / 7 - 0.5) * 0.22;
+        } else if (d === 3) {
+          // 추천: 산점도
+          x = cx + (Math.random() - 0.5) * 0.45;
+          y = (Math.random() - 0.5) * H * 0.78;
+        } else {
+          // RL: 원 + 한 점(에이전트)
+          const ang = (i / PER) * Math.PI * 2;
+          x = cx + Math.cos(ang) * 0.22;
+          y = Math.sin(ang) * 0.34;
+        }
+        dist[idx*3]   = x;
+        dist[idx*3+1] = y;
+        dist[idx*3+2] = 0;
+        // 수렴 위치: 중앙
+        const ang2 = Math.random() * Math.PI * 2;
+        const rad2 = Math.random() * 0.18;
+        cent[idx*3]   = Math.cos(ang2) * rad2;
+        cent[idx*3+1] = Math.sin(ang2) * rad2;
+        cent[idx*3+2] = 0.05;
+        rnd[idx] = Math.random();
+        domain[idx] = d / (DOMAINS - 1);
+      }
+    }
+
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('aDist', new THREE.BufferAttribute(dist, 3));
+    geo.setAttribute('aCent', new THREE.BufferAttribute(cent, 3));
+    geo.setAttribute('aRand', new THREE.BufferAttribute(rnd, 1));
+    geo.setAttribute('aDom',  new THREE.BufferAttribute(domain, 1));
+    geo.setAttribute('position', new THREE.BufferAttribute(dist.slice(), 3));
+    const uniforms = {
+      uMix: { value: 0 }, uTime: { value: 0 }, uMouse: { value: new THREE.Vector2(99,99) },
+      uColA: { value: new THREE.Color(C.structure) },
+      uColB: { value: new THREE.Color(C.style) },
+      uColC: { value: new THREE.Color(C.synth) },
+      uSize: { value: 11.0 * Math.min(devicePixelRatio, 2) },
+    };
+    const mat = new THREE.ShaderMaterial({
+      uniforms, transparent: true, depthWrite: false,
+      vertexShader:
+        'attribute vec3 aDist; attribute vec3 aCent; attribute float aRand; attribute float aDom;' +
+        'uniform float uMix, uTime, uSize; uniform vec2 uMouse;' +
+        'varying float vM; varying float vD; varying float vA;' +
+        'void main(){' +
+        '  float m = clamp(uMix + (aRand-0.5)*0.18, 0.0, 1.0);' +
+        '  m = m*m*(3.0-2.0*m); vM = m; vD = aDom;' +
+        '  vec3 pos = mix(aDist, aCent, m);' +
+        '  pos.y += sin(uTime*0.5 + aRand*6.28) * 0.012;' +
+        '  vec2 d = pos.xy - uMouse;' +
+        '  float dist = length(d);' +
+        '  float push = smoothstep(0.55, 0.0, dist) * 0.32;' +
+        '  pos.xy += normalize(d + 0.0001) * push;' +
+        '  vA = 0.68 + 0.32*(1.0-m) + push*0.4;' +
+        '  vec4 mv = modelViewMatrix * vec4(pos,1.0);' +
+        '  gl_PointSize = uSize * (1.0 / -mv.z) * (0.85 + m*0.4);' +
+        '  gl_Position = projectionMatrix * mv;' +
+        '}',
+      fragmentShader:
+        'precision mediump float;' +
+        'uniform vec3 uColA, uColB, uColC; varying float vM; varying float vD; varying float vA;' +
+        'void main(){' +
+        '  vec2 uv = gl_PointCoord - 0.5;' +
+        '  float d = length(uv);' +
+        '  float alpha = smoothstep(0.5, 0.12, d) * vA;' +
+        '  vec3 cDom = mix(uColA, uColB, vD);' +
+        '  vec3 col = mix(cDom, uColC, vM);' +
+        '  gl_FragColor = vec4(col, alpha);' +
+        '}',
     });
-    canvas.addEventListener('mouseleave', () => { mouseX = 0.5; mouseY = 0.5; });
+    const points = new THREE.Points(geo, mat);
+    scene.add(points);
 
-    // 5개 도메인 — 색·위치·신호
-    const domains = [
-      { name:'VISION',  color:'#2D5B7A', sigType:'grid' },
-      { name:'SPEECH',  color:'#C0492E', sigType:'wave' },
-      { name:'NLP',     color:'#A47B2E', sigType:'tokens' },
-      { name:'RECSYS',  color:'#6E97AF', sigType:'sparse' },
-      { name:'RL',      color:'#D98E73', sigType:'loop' },
-    ];
-    const N = 360;
-    const particles = [];
-    for (let i = 0; i < N; i++) {
-      const d = i % 5;
-      particles.push({ d, t: Math.random(), phase: Math.random() * Math.PI*2 });
+    const ray = new THREE.Raycaster();
+    const plane = new THREE.Plane(new THREE.Vector3(0,0,1), 0);
+    const mNDC = new THREE.Vector2(99,99);
+    let targetMouse = new THREE.Vector3(99,99,0);
+    canvas.addEventListener('pointermove', (e) => {
+      const r = canvas.getBoundingClientRect();
+      mNDC.x = ((e.clientX - r.left)/r.width)*2 - 1;
+      mNDC.y = -((e.clientY - r.top)/r.height)*2 + 1;
+      ray.setFromCamera(mNDC, cam);
+      ray.ray.intersectPlane(plane, targetMouse);
+    });
+    canvas.addEventListener('pointerleave', () => { targetMouse.set(99,99,0); });
+
+    function resize() {
+      const w = wrap.clientWidth, h = Math.min(window.innerWidth*0.48, 470);
+      renderer.setSize(w, h, false);
+      cam.aspect = w/h; cam.updateProjectionMatrix();
     }
+    window.addEventListener('resize', resize); resize();
 
-    let frame = 0;
-    function draw() {
-      frame++;
-      const w = canvas.clientWidth, h = 360;
-      ctx.fillStyle = '#FAF7F0'; ctx.fillRect(0,0,w,h);
-
-      const cx = w/2, cy = h/2;
-      const merge = mouseY; // 위로 갈수록 도메인 분리, 아래로 갈수록 임베딩 구체로 합쳐짐
-      const swirl = (mouseX - 0.5) * 2; // 좌우 비틀기
-
-      // 가운데 임베딩 구체 (목표 합류점)
-      ctx.fillStyle = 'rgba(38, 34, 28, 0.06)';
-      ctx.beginPath(); ctx.arc(cx, cy, 50, 0, Math.PI*2); ctx.fill();
-      ctx.fillStyle = 'rgba(164, 123, 46, 0.10)';
-      ctx.beginPath(); ctx.arc(cx, cy, 30, 0, Math.PI*2); ctx.fill();
-
-      particles.forEach(p => {
-        const dom = domains[p.d];
-        const angle = (p.d / 5) * Math.PI * 2 - Math.PI/2 + swirl * 0.3;
-        // 도메인별 출발점 (외곽 5개 위치)
-        const Rstart = 150;
-        const sx = cx + Math.cos(angle) * Rstart;
-        const sy = cy + Math.sin(angle) * Rstart * 0.65;
-        // 신호 진동 (도메인마다 다른 패턴)
-        let ox = 0, oy = 0;
-        const tt = frame * 0.02 + p.phase;
-        if (dom.sigType === 'grid')   { ox = Math.cos(tt*2) * 22; oy = Math.sin(tt*1.3) * 22; }
-        else if (dom.sigType === 'wave')   { ox = Math.cos(tt*3) * 38; oy = Math.sin(tt*3) * 8; }
-        else if (dom.sigType === 'tokens') { ox = Math.cos(p.phase * 17) * 30; oy = Math.sin(p.phase * 11) * 16; }
-        else if (dom.sigType === 'sparse') { ox = (Math.random() < 0.04 ? 30 : 0); oy = (Math.random() < 0.04 ? 30 : 0); }
-        else if (dom.sigType === 'loop')   { ox = Math.cos(tt*1.5 + p.phase) * 26; oy = Math.sin(tt*1.5 + p.phase) * 26; }
-
-        const startX = sx + ox * (1 - merge);
-        const startY = sy + oy * (1 - merge);
-        // 목표 — 임베딩 구체 위 무작위 점
-        const eA = p.phase + frame * 0.005;
-        const eR = 28;
-        const ex = cx + Math.cos(eA) * eR;
-        const ey = cy + Math.sin(eA) * eR;
-        const px = startX * (1 - merge) + ex * merge;
-        const py = startY * (1 - merge) + ey * merge;
-
-        ctx.fillStyle = dom.color + (merge > 0.5 ? '88' : 'cc');
-        ctx.beginPath(); ctx.arc(px, py, 1.8, 0, Math.PI*2); ctx.fill();
-      });
-
-      // 도메인 라벨
-      ctx.font = '10px "Spline Sans Mono", monospace';
-      ctx.textAlign = 'center';
-      domains.forEach((d, i) => {
-        const angle = (i / 5) * Math.PI * 2 - Math.PI/2 + swirl * 0.3;
-        const lx = cx + Math.cos(angle) * 180;
-        const ly = cy + Math.sin(angle) * 180 * 0.65;
-        ctx.fillStyle = d.color;
-        ctx.globalAlpha = 1 - merge * 0.7;
-        ctx.fillText(d.name, lx, ly);
-      });
-      ctx.globalAlpha = 1;
-      ctx.textAlign = 'left';
-
-      // 임베딩 라벨
-      if (merge > 0.5) {
-        ctx.fillStyle = '#26221C';
-        ctx.font = 'italic 11px "Fraunces", serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('shared representation', cx, cy + 75);
-        ctx.textAlign = 'left';
-      }
-
-      requestAnimationFrame(draw);
+    let t0 = performance.now();
+    function loop() {
+      const t = (performance.now() - t0) / 1000;
+      uniforms.uTime.value = t;
+      const target = (targetMouse.x < 90) ? 1.0 : (0.5 + 0.5 * Math.sin(t * 0.32));
+      uniforms.uMix.value += (target - uniforms.uMix.value) * 0.035;
+      uniforms.uMouse.value.set(targetMouse.x, targetMouse.y);
+      renderer.render(scene, cam);
+      requestAnimationFrame(loop);
     }
-    draw();
-
-    // 자동 마우스 시뮬레이션 (사용자가 안 만질 때)
-    let auto = true;
-    canvas.addEventListener('mousemove', () => { auto = false; });
-    canvas.addEventListener('mouseleave', () => { auto = true; });
-    setInterval(() => {
-      if (auto) {
-        mouseX = 0.5 + 0.3 * Math.sin(frame * 0.02);
-        mouseY = 0.5 + 0.3 * Math.cos(frame * 0.015);
-      }
-    }, 30);
+    loop();
   });
 </script>
 </body>
 </html>
+</content>
+</invoke>

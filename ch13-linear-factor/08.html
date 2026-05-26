@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>13 / 08 / 희소 코딩 1 — 사전과 희소 표상</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .dict-stage { padding: 1.4rem 1.1rem; }
+  .dict-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .55rem; }
+  @media (max-width: 720px) { .dict-grid { grid-template-columns: repeat(2, 1fr); } }
+  .dict-cell { background: #fff; border: 1px solid var(--line); border-radius: 7px; padding: .55rem; cursor: pointer; transition: border-color .15s, transform .15s; }
+  .dict-cell:hover { border-color: var(--style); transform: translateY(-2px); }
+  .dict-cell.on { border-color: var(--style); background: var(--style-bg); }
+  .dict-cell canvas { display: block; width: 100%; height: 70px; background: #000; border-radius: 4px; image-rendering: pixelated; }
+  .dict-cell .cap { font-family: var(--mono); font-size: .68rem; color: var(--ink-faint); display: flex; justify-content: space-between; margin-top: .3rem; }
+  .dict-cell .cap b { color: var(--style); }
+  .dict-out { display: flex; gap: 1rem; justify-content: center; margin-top: 1rem; align-items: center; flex-wrap: wrap; }
+  .dict-out .out-cell { display: flex; flex-direction: column; gap: .35rem; align-items: center; }
+  .dict-out .out-cell canvas { background: #000; border: 1px solid var(--line); border-radius: 5px; image-rendering: pixelated; }
+  .dict-out .out-cell h6 { margin: 0; font-family: var(--mono); font-size: .68rem; color: var(--ink-faint); letter-spacing: .1em; text-transform: uppercase; }
+  .dict-out .out-cell h6 b { color: var(--ink); }
+  .dict-eq { text-align: center; font-family: var(--mono); font-size: 1.3rem; color: var(--synth); }
+  .prior-stage { padding: 1.4rem 1.1rem; display: flex; gap: 1.2rem; justify-content: center; flex-wrap: wrap; }
+  .prior-col { display: flex; flex-direction: column; gap: .4rem; min-width: 180px; }
+  .prior-col h5 { margin: 0; font-family: var(--mono); font-size: .7rem; letter-spacing: .12em; color: var(--ink-faint); text-transform: uppercase; }
+  .prior-col canvas { display: block; width: 100%; height: 140px; border-radius: 6px; background: var(--paper-2); }
+  .prior-col p { margin: 0; font-size: .76rem; color: var(--ink-soft); line-height: 1.4; }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-chapter 08 / 가장 강한 잠재 가정</span>
+      <h1>희소 코딩 1 —<br><span class="t-style">사전</span>과 희소 표상</h1>
+      <p class="lede">잠재의 가정을 한 칸 더 강하게. "잠재의 대부분은 0이고, 켜질 때만 큰 값을 가진다." 이 가정 하나로 자연 이미지에서 V1 단순 세포와 닮은 가버 필터가 자동으로 나타난다. 신경과학과 머신러닝이 만난 가장 아름다운 결과 중 하나.</p>
+    </header>
+
+    <div class="prose">
+      <p>지금까지 본 모델들은 잠재 $\mathbf{h}$에 점점 더 강한 가정을 부여해 왔다. FA/PCA는 잠재가 가우시안이라고 가정했고, ICA는 한 발 더 나아가 비가우시안이며 통계적으로 독립이라고 가정했다. <strong>희소 코딩(sparse coding)</strong>은 그 가정을 한 칸 더 좁힌다 — 잠재가 <em>대부분 0이고, 극히 일부만 큰 값을 가진다</em>는 가정이다. 이 가정을 통계적으로 적으면 잠재 분포가 0 근처에서 매우 첨예하고 꼬리가 무거운 — 라플라스(Laplace) 또는 Cauchy 같은 — 분포라는 뜻이다.</p>
+
+      <p>왜 이 가정이 자연스러운가. 자연 이미지의 작은 조각(patch)을 생각해 보자. 16×16 픽셀 작은 정사각형 이미지가 있다. 이걸 256차원 벡터 $\mathbf{x}$로 본다. 이 작은 이미지를 어떻게 설명할까. 가버 필터(Gabor filter)같이 특정 위치, 특정 방향, 특정 주파수의 줄무늬가 있는 작은 그림 조각 한 무더기를 미리 준비해 두고, 그 중 몇 개만 골라서 더하는 식으로 표현할 수 있다. 사람이 보는 자연 이미지는 보통 "전체 그림 사전(dictionary) 중 극소수의 조각만 켜진 합"이라는 가정이 그럴듯하게 들어맞는다.</p>
+
+      <div class="analogy">
+        영어 책을 펼치면 한 페이지에 약 250개 단어가 있다. 영어 전체 어휘는 50만 단어가 넘는다. 즉 한 페이지를 표현하는 데 쓰이는 단어는 전체 어휘의 0.05%뿐이다 — <b>극도로 희소하다</b>. 그래도 그 250개로 페이지 전체의 의미가 충분히 표현된다. 희소 코딩이 자연 이미지에 적용하는 가정이 이것과 같다 — "큰 사전(dictionary)에서 매번 극소수의 항목만 골라 쓰면 어떤 입력이든 표현할 수 있다."
+      </div>
+
+      <h2>희소 코딩의 모델 — 사전, 코드, 그리고 두 항의 손실</h2>
+
+      <p>희소 코딩의 모델은 선형 요소 모델 가족답게 단순하다.</p>
+
+      <div class="math-block">$$ \mathbf{x} = \mathbf{Wh} + \boldsymbol{\epsilon}, \quad \mathbf{W} \in \mathbb{R}^{d \times k}, \quad k > d \text{ (보통)} $$</div>
+      <p class="math-note">$\mathbf{W}$는 사전(dictionary). 각 열이 사전의 한 원자(atom) — 가버 필터 한 개 같은 작은 그림 조각. $\mathbf{h}$는 그 사전에서 어떤 원자를 얼마나 켤지 정하는 계수. 잠재 차원이 보통 관측 차원보다 <em>크다</em>는 것이 특이하다 — overcomplete dictionary.</p>
+
+      <p>잠재 차원 $k$가 관측 차원 $d$보다 크다는 게 PCA와 본질적으로 다르다. PCA는 압축이 목적이라 $k < d$지만, 희소 코딩은 표현력이 목적이라 사전을 크게 만들고 그 안에서 매번 몇 개만 골라 쓴다. 이게 가능한 이유는 "골라 쓰기"가 강제되기 때문이다 — 잠재가 희소하다는 가정이 사전을 크게 만들어도 무리 없이 학습되도록 한다.</p>
+
+      <p>학습은 두 항의 손실 함수를 최소화하는 일이다.</p>
+
+      <div class="math-block">$$ \mathcal{L}(\mathbf{W}, \{\mathbf{h}_i\}) = \sum_i \|\mathbf{x}_i - \mathbf{W} \mathbf{h}_i\|^2 + \lambda \sum_i \|\mathbf{h}_i\|_1 $$</div>
+      <p class="math-note">첫째 항: 재구성 오차 — 입력 $\mathbf{x}_i$를 사전과 코드로 얼마나 잘 복원하는가. 둘째 항: 희소성 페널티 — $\mathbf{h}_i$의 L1 노름(절댓값 합)을 작게 한다. $\lambda$는 두 항의 트레이드오프를 정하는 하이퍼파라미터.</p>
+
+      <h2>L1 노름이 왜 희소성을 강제하는가</h2>
+
+      <p>L1 노름이 희소성을 강제한다는 사실은 처음 보면 의외다. 직관을 풀어 보자. 사전의 두 원자가 모두 입력을 어느 정도 설명한다고 하자. 첫 번째 원자에 계수 1을 주고 두 번째에 0을 주는 것 vs 첫 번째에 0.5, 두 번째에 0.5를 주는 것을 비교하자. 두 경우 모두 L2 노름(제곱 합)으로 보면 비슷한 크기(전자 1.0, 후자 0.5)다. 그러나 L1 노름(절댓값 합)으로 보면 전자 1.0, 후자 1.0이다 — 같다. 그런데 0.5+0.5 vs 1.0+0.0을 다시 보면 L1은 같지만, 만약 둘 다 0인 옵션이 가능하다면(예: 첫 번째에 1.0만 줘도 입력이 다 설명된다면) L1은 그 옵션을 더 선호한다.</p>
+
+      <p>좀 더 정확하게는, L1 페널티의 미분이 부호 함수다. $|\h|$의 미분이 $\text{sign}(h)$다(0에서는 정의되지 않지만 부분미분으로 다룬다). 그 결과 최적화 도중 작은 $h$ 값들은 0으로 "강제로 밀린다." 정확히 0이 되면 미분이 양쪽에서 다르게 정의되는 비미분 가능한 점이 되고, 그곳에 코드가 머문다. 이게 L1이 진정한 0을 만드는 메커니즘이다. L2 페널티는 작은 값을 더 작게 만들 뿐 정확히 0으로 만들지는 않는다. 그래서 희소 코딩은 반드시 L1(또는 더 강한) 페널티를 쓴다.</p>
+
+      <p>확률적 시점에서 보면 이 두 항은 가우시안 우도와 라플라스 사전의 음의 로그우도다.</p>
+
+      <div class="math-block">$$ -\log p(\mathbf{x}, \mathbf{h}) = -\log p(\mathbf{x}|\mathbf{h}) - \log p(\mathbf{h}) = \frac{1}{2\sigma^2}\|\mathbf{x}-\mathbf{Wh}\|^2 + \lambda \|\mathbf{h}\|_1 + C $$</div>
+      <p class="math-note">잡음 $p(\mathbf{x}|\mathbf{h})$ = 가우시안 → 제곱 오차 항. 잠재 $p(\mathbf{h})$ = 라플라스 $\propto \exp(-\lambda \|\mathbf{h}\|_1)$ → L1 페널티 항. 두 항을 더하면 정확히 위의 손실이다.</p>
+
+      <div class="widget">
+        <div class="widget-frame">
+          <div class="widget-label"><span class="lab-no">위젯 08a</span><span>잠재 분포의 모양 · 가우시안 vs 라플라스 vs Cauchy</span></div>
+          <div class="prior-stage">
+            <div class="prior-col">
+              <h5>가우시안 (FA/PCA)</h5>
+              <canvas id="prG" width="220" height="140"></canvas>
+              <p>둥근 종 모양. 큰 값과 작은 값이 모두 흔하지 않다. 잠재가 보통 어느 정도의 크기를 갖는다.</p>
+            </div>
+            <div class="prior-col">
+              <h5>라플라스 (희소 코딩)</h5>
+              <canvas id="prL" width="220" height="140"></canvas>
+              <p>0에서 첨예한 봉우리, 꼬리는 더 무겁다. 잠재가 보통 0에 가깝고 가끔 큰 값을 가진다. 희소성을 만든다.</p>
+            </div>
+            <div class="prior-col">
+              <h5>Cauchy (더 강한 희소)</h5>
+              <canvas id="prC" width="220" height="140"></canvas>
+              <p>라플라스보다 더 첨예하고 꼬리가 더 무겁다. 사실상 모두 0이거나 가끔 매우 큰 값.</p>
+            </div>
+          </div>
+        </div>
+        <p class="widget-cap">잠재의 사전 분포가 모델의 정체성을 결정한다. FA/PCA의 가우시안은 잠재가 보통의 크기를 가진다고 가정한다. 희소 코딩의 라플라스/Cauchy는 잠재가 대부분 0이고 켜질 때만 큰 값이라고 가정한다. 분포의 첨예함(peakedness)이 강할수록 더 희소한 표상이 학습된다.</p>
+      </div>
+
+      <h2>사전이 자연 이미지에서 무엇을 배우는가 — V1 단순 세포와의 닮음</h2>
+
+      <p>희소 코딩이 머신러닝과 신경과학의 만남이 된 결정적 결과가 1996년 Olshausen과 Field의 논문이다. 그들은 자연 이미지에서 16×16 패치를 수십만 장 추출해 희소 코딩을 학습시켰다. 학습된 사전 $\mathbf{W}$의 각 열이 무엇이었는지가 충격이었다 — <strong>특정 위치, 특정 방향, 특정 주파수의 줄무늬</strong>가 보이는 가버 필터(Gabor filter) 같은 작은 그림 조각들이었다. 이게 왜 충격인가. 1960년대 신경과학자 Hubel과 Wiesel이 고양이의 시각피질(V1) 뉴런들을 측정해서 그것들이 정확히 같은 형태 — 특정 위치, 방향, 주파수에 반응하는 가버 필터 같은 수용야(receptive field) — 를 가진다는 것을 보였기 때문이다.</p>
+
+      <p>그러니까 단순한 가정 두 줄(선형 + 희소)만으로 컴퓨터 알고리즘이 자연 이미지에서 학습한 것이 포유류의 1차 시각피질이 진화로 만들어낸 것과 본질적으로 같았다. 이게 희소 코딩이 컴퓨터 비전과 시각 신경과학을 잇는 다리가 된 이유다. <em>"자연 이미지의 통계적 구조가 V1 단순 세포의 형태를 결정했다"</em>는 가설을 정량적으로 뒷받침한 첫 결과이기 때문이다.</p>
+
+      <div class="widget">
+        <div class="widget-frame">
+          <div class="widget-label"><span class="lab-no">위젯 08b</span><span>희소 코딩 사전 8원자 · 클릭으로 켜기</span></div>
+          <div class="dict-stage">
+            <div class="dict-grid" id="dictGrid"></div>
+            <div class="dict-out">
+              <div class="out-cell"><h6>활성 코드 <b id="codeRead">000</b></h6></div>
+              <div class="dict-eq">≈ Σ hᵢ · Wᵢ =</div>
+              <div class="out-cell"><h6>재구성 x̂</h6><canvas id="dictRecon" width="80" height="80"></canvas></div>
+            </div>
+          </div>
+        </div>
+        <p class="widget-cap">8개의 사전 원자 (8개 가버 필터). 각 원자 카드를 클릭해서 코드 h의 해당 차원을 켜고/끄거나, 카드의 슬라이더로 활성도를 조정한다. 활성 원자들의 가중합이 오른쪽 재구성 x̂. 한두 개만 켜도 의미 있는 줄무늬 패치가 만들어지는 것을 볼 수 있다 — 이게 희소 표상의 핵심이다.</p>
+      </div>
+
+      <h2>희소 표상이 다음 단계 모델에 좋은 이유</h2>
+
+      <p>희소 표상은 단지 모델이 학습한 결과일 뿐만 아니라, 다음 단계 모델의 입력으로 쓸 때 여러 이점을 가진다. 첫째, <strong>해석 가능성</strong>. 코드의 어느 차원이 켜졌는지를 보면 "이 입력이 어떤 원자들의 조합인가"를 직접 읽을 수 있다. 자연 이미지에서 "이 패치는 45도 줄무늬 + 수직 에지로 이루어져 있다" 같은 해석이 가능하다.</p>
+
+      <p>둘째, <strong>선형 분리 가능성</strong>. 희소한 표상은 같은 차원에서 두 클래스가 겹칠 가능성이 낮다. 그래서 희소 표상 위에 단순한 선형 분류기를 얹어도 좋은 성능이 나오는 경우가 많다. SIFT/SURF 같은 컴퓨터 비전 특징을 희소 코드로 변환한 "bag of visual words" 기법이 2000년대 ImageNet 이전 비전의 표준이었던 이유다.</p>
+
+      <p>셋째, <strong>저장 효율</strong>. 코드의 대부분이 0이므로 (위치, 값) 쌍의 리스트로만 저장하면 매우 적은 메모리를 쓴다. 압축의 직접적 응용이 압축 감지(compressed sensing)다 — sub 09에서 다룬다.</p>
+
+      <h2>다음 절로 — 추론의 비용</h2>
+
+      <p>희소 코딩의 가장 큰 단점이 다음 절의 주제다. <strong>새 입력 $\mathbf{x}$가 들어왔을 때 그 코드 $\mathbf{h}$를 어떻게 구하는가</strong>. 가우시안 모델(FA/PCA/PPCA)에서는 코드가 닫힌 형태(사후평균)로 즉시 계산된다. 그러나 희소 코딩에서는 L1 페널티 때문에 닫힌 형태가 없고, 매 입력마다 작은 최적화 문제를 풀어야 한다. 이 반복 알고리즘이 ISTA(iterative shrinkage-thresholding algorithm)이고, 그것이 압축 감지와 어떻게 만나는지가 sub 09의 이야기다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'잠재 변수의 직관' },
+    { no:'02', t:'생성 vs 판별 모델' },
+    { no:'03', t:'요소 분석 (FA)' },
+    { no:'04', t:'확률적 PCA' },
+    { no:'05', t:'전통 PCA' },
+    { no:'06', t:'PCA의 한계' },
+    { no:'07', t:'ICA — 칵테일 파티' },
+    { no:'08', t:'희소 코딩 1' },
+    { no:'09', t:'희소 코딩 2 — ISTA' },
+    { no:'10', t:'슬로우 피처 분석' },
+    { no:'11', t:'매니폴드의 첫 등장' },
+    { no:'12', t:'시험 대비' },
+  ];
+  function buildNav(cur) {
+    const tb = document.querySelector('.topbar');
+    if (tb) tb.innerHTML =
+      '<a class="home" href="index.html">← Chapter 13 / 선형 요소 모델</a>' +
+      '<span class="ch-mini">SUB ' + cur + ' / 12</span>';
+    const ol = document.querySelector('.ch-nav ol');
+    if (ol) ol.innerHTML = SUBS.map(c =>
+      '<li><a href="' + c.no + '.html"' + (c.no === cur ? ' class="current"' : '') + '>' + c.t + '</a></li>').join('');
+    const foot = document.querySelector('.ch-foot');
+    if (foot) {
+      const i = SUBS.findIndex(c => c.no === cur);
+      const prev = i > 0 ? SUBS[i - 1] : { no: '', t: '표지로', _href: 'index.html' };
+      const next = i < SUBS.length - 1 ? SUBS[i + 1] : { no: '', t: '표지로', _href: 'index.html' };
+      const hp = prev._href || (prev.no + '.html');
+      const hn = next._href || (next.no + '.html');
+      foot.innerHTML =
+        '<a href="' + hp + '"><div class="dir">← 이전</div><div class="ti">' + prev.t + '</div></a>' +
+        '<a href="' + hn + '" class="next"><div class="dir">다음 →</div><div class="ti">' + next.t + '</div></a>';
+    }
+  }
+  function initScroll() {
+    const bar = document.querySelector('.scroll-progress');
+    if (!bar) return;
+    const on = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    document.addEventListener('scroll', on, { passive: true }); on();
+  }
+  function initKatex() {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [
+          { left: '$$', right: '$$', display: true },
+          { left: '$', right: '$', display: false },
+        ],
+        throwOnError: false,
+      });
+    }
+  }
+  function widget08a() {
+    const css = getComputedStyle(document.documentElement);
+    const C = {
+      style: css.getPropertyValue('--style').trim() || '#C0492E',
+      structure: css.getPropertyValue('--structure').trim() || '#2D5B7A',
+      synth: css.getPropertyValue('--synth').trim() || '#A47B2E',
+      faint: css.getPropertyValue('--ink-faint').trim() || '#8E8576',
+    };
+    function drawDist(id, fn, color) {
+      const c = document.getElementById(id);
+      if (!c) return;
+      const ctx = c.getContext('2d');
+      const w = c.width, h = c.height;
+      ctx.clearRect(0, 0, w, h);
+      // 축
+      ctx.strokeStyle = C.faint + '50';
+      ctx.beginPath(); ctx.moveTo(0, h-10); ctx.lineTo(w, h-10); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(w/2, 5); ctx.lineTo(w/2, h-10); ctx.stroke();
+      // pdf
+      const ys = [];
+      let mx = 0;
+      for (let px = 0; px < w; px++) {
+        const x = (px - w/2) / (w/4);
+        const y = fn(x);
+        ys.push(y); if (y > mx) mx = y;
+      }
+      ctx.fillStyle = color + '50';
+      ctx.beginPath();
+      ctx.moveTo(0, h-10);
+      for (let px = 0; px < w; px++) {
+        ctx.lineTo(px, h-10 - (ys[px] / mx) * (h-15));
+      }
+      ctx.lineTo(w, h-10); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = color; ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let px = 0; px < w; px++) {
+        const Y = h-10 - (ys[px] / mx) * (h-15);
+        if (px === 0) ctx.moveTo(px, Y); else ctx.lineTo(px, Y);
+      }
+      ctx.stroke();
+    }
+    drawDist('prG', x => Math.exp(-x*x/2), C.structure);
+    drawDist('prL', x => Math.exp(-Math.abs(x) * 1.4), C.style);
+    drawDist('prC', x => 1/(1+x*x*2), C.synth);
+  }
+  function widget08b() {
+    const css = getComputedStyle(document.documentElement);
+    const C = {
+      style: css.getPropertyValue('--style').trim() || '#C0492E',
+      structure: css.getPropertyValue('--structure').trim() || '#2D5B7A',
+      faint: css.getPropertyValue('--ink-faint').trim() || '#8E8576',
+    };
+    const grid = document.getElementById('dictGrid');
+    const recon = document.getElementById('dictRecon');
+    const codeRead = document.getElementById('codeRead');
+    if (!grid || !recon) return;
+
+    const SZ = 16;
+    // 8개 가버 필터 정의 (방향, 주파수, 위상)
+    const atoms = [
+      { ang: 0,           freq: 0.35, phs: 0 },
+      { ang: Math.PI/4,   freq: 0.35, phs: 0 },
+      { ang: Math.PI/2,   freq: 0.35, phs: 0 },
+      { ang: 3*Math.PI/4, freq: 0.35, phs: 0 },
+      { ang: 0,           freq: 0.6,  phs: Math.PI/2 },
+      { ang: Math.PI/4,   freq: 0.6,  phs: Math.PI/2 },
+      { ang: Math.PI/2,   freq: 0.6,  phs: Math.PI/2 },
+      { ang: 3*Math.PI/4, freq: 0.6,  phs: Math.PI/2 },
+    ];
+    function gabor(at, x, y) {
+      const cx = SZ/2, cy = SZ/2;
+      const dx = x - cx, dy = y - cy;
+      const sigma = 3.0;
+      const env = Math.exp(-(dx*dx+dy*dy)/(2*sigma*sigma));
+      const xp = dx * Math.cos(at.ang) + dy * Math.sin(at.ang);
+      const wave = Math.cos(2 * Math.PI * at.freq * xp + at.phs);
+      return env * wave;
+    }
+    function atomPatch(at) {
+      const p = new Float32Array(SZ * SZ);
+      for (let y = 0; y < SZ; y++)
+        for (let x = 0; x < SZ; x++)
+          p[y * SZ + x] = gabor(at, x, y);
+      return p;
+    }
+    const patches = atoms.map(atomPatch);
+
+    let codes = new Array(atoms.length).fill(0);
+    grid.innerHTML = '';
+    atoms.forEach((at, i) => {
+      const cell = document.createElement('div');
+      cell.className = 'dict-cell';
+      cell.innerHTML = '<canvas width="64" height="64"></canvas><div class="cap"><span>원자 ' + i + '</span><b id="hVal' + i + '">0.0</b></div>';
+      grid.appendChild(cell);
+      const cv = cell.querySelector('canvas');
+      drawPatch(cv, patches[i], 64);
+      cell.addEventListener('click', (e) => {
+        if (codes[i] > 0) {
+          codes[i] = 0;
+          cell.classList.remove('on');
+        } else {
+          codes[i] = 0.8 + Math.random() * 0.4;
+          cell.classList.add('on');
+        }
+        update();
+      });
+    });
+
+    function drawPatch(cv, patch, size) {
+      const ctx = cv.getContext('2d');
+      const img = ctx.createImageData(SZ, SZ);
+      for (let i = 0; i < SZ * SZ; i++) {
+        const v = (patch[i] + 1) / 2;
+        const g = Math.max(0, Math.min(255, v * 255));
+        img.data[i*4] = g; img.data[i*4+1] = g; img.data[i*4+2] = g; img.data[i*4+3] = 255;
+      }
+      const tmp = document.createElement('canvas');
+      tmp.width = SZ; tmp.height = SZ;
+      tmp.getContext('2d').putImageData(img, 0, 0);
+      ctx.clearRect(0, 0, cv.width, cv.height);
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(tmp, 0, 0, cv.width, cv.height);
+    }
+    function update() {
+      // 재구성: Σ codes[i] * patches[i]
+      const r = new Float32Array(SZ * SZ);
+      for (let i = 0; i < atoms.length; i++) {
+        const c = codes[i];
+        document.getElementById('hVal' + i).textContent = c.toFixed(2);
+        if (c === 0) continue;
+        for (let j = 0; j < SZ * SZ; j++) r[j] += c * patches[i][j];
+      }
+      // 정규화
+      let mn = Infinity, mx = -Infinity;
+      for (let i = 0; i < SZ * SZ; i++) { if (r[i] < mn) mn = r[i]; if (r[i] > mx) mx = r[i]; }
+      const rg = Math.max(0.001, mx - mn);
+      const norm = new Float32Array(SZ * SZ);
+      for (let i = 0; i < SZ * SZ; i++) norm[i] = ((r[i] - mn) / rg) * 2 - 1;
+      drawPatch(recon, norm, 80);
+      const active = codes.map((c, i) => c > 0 ? i : -1).filter(i => i >= 0);
+      codeRead.textContent = active.length ? '[' + active.join(',') + ']' : '∅';
+    }
+    update();
+  }
+  window.addEventListener('load', () => { buildNav('08'); initScroll(); initKatex(); widget08a(); widget08b(); });
+</script>
+</body>
+</html>

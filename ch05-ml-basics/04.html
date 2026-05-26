@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>04 · 최대우도 추정 (MLE)</title>
+<title>04 · 과적합과 과소적합</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -18,99 +18,66 @@
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Section 04 · 모든 손실 함수의 어머니</span>
-      <h1>최대우도 추정 (MLE)<br>= 음의 로그우도 <em>최소화</em></h1>
-      <p class="lede">MSE도, 교차 엔트로피도, KL 발산도 — 우리가 딥러닝에서 쓰는 거의 모든 손실 함수는 최대우도 원리 한 줄에서 파생된 것이다. "데이터를 가장 잘 설명하는 매개변수를 찾는다"는 명제를 수식으로 적으면 자연스럽게 손실 함수가 떨어진다.</p>
+      <span class="kicker">Section 04 · 학습은 일반화의 시작</span>
+      <h1>과적합과 <span class="t-style">과소적합</span></h1>
+      <p class="lede">훈련 오차가 0이라는 말이 곧 좋은 모델이라는 말은 아니다. 5장의 두 번째 큰 메시지는 "보지 못한 데이터에서도 잘하느냐"가 진짜 기준이라는 것이다. 그 기준을 못 채우는 두 가지 실패가 과적합과 과소적합이다.</p>
     </header>
 
     <div class="prose">
-      <p>3절에서 편향-분산 분해를 봤지만, 그 분해식이 어떤 손실 함수를 가정하는지에 대해서는 침묵했다. 사실 우리는 "MSE를 쓰면" 또는 "교차 엔트로피를 쓰면"이라고 임의로 시작했을 뿐이다. 그렇다면 그 손실 함수는 어디서 왔는가?</p>
+      <p>먼저 두 단어를 정확히 정의하자. 모델이 훈련 데이터에서 보이는 오차를 훈련 오차(training error), 모델이 만난 적 없는 새로운 데이터에서 보이는 오차를 일반화 오차(generalization error) 또는 시험 오차(test error)라 한다. 우리의 진짜 목표는 일반화 오차를 줄이는 것이고, 훈련 오차는 그 목표를 향해 가는 길에 나타나는 중간 신호일 뿐이다. 이 둘의 관계로 두 가지 실패를 정의한다. 과소적합(underfitting)은 모델이 훈련 데이터조차 잘 설명하지 못해서 훈련 오차가 큰 상태다. 과적합(overfitting)은 훈련 오차는 매우 작은데 일반화 오차가 그보다 훨씬 큰 상태다. 둘 다 일반화 오차가 크다는 점에서 같지만, 그 원인이 정반대다.</p>
 
-      <p>답은 <strong>최대우도 추정(Maximum Likelihood Estimation, MLE)</strong>이다. MLE는 머신러닝 손실 함수의 가장 깊은 원천이고, 거의 모든 표준 손실이 MLE의 특수한 경우다.</p>
+      <p>왜 훈련 오차와 일반화 오차가 다를 수 있는가. 핵심 이유는 우리가 가진 훈련 데이터가 진짜 분포 $p_{\text{data}}$의 유한한 표본일 뿐이라는 사실에 있다. 표본은 진짜 분포의 모양을 대략 반영하지만 잡음(noise)과 표본 변동(sampling variance)을 함께 가진다. 모델이 훈련 데이터에 너무 충실하면 진짜 패턴뿐 아니라 잡음과 변동까지 외워 버리고, 새로운 표본은 다른 잡음을 가지고 있으므로 일반화 오차가 커진다. 반대로 모델이 너무 단순하면 진짜 패턴조차 표현하지 못해 훈련 오차부터 크다.</p>
 
-      <h2>우도(likelihood)란 무엇인가</h2>
-      <p>매개변수 $\theta$로 정의된 확률 모형 $p(x; \theta)$가 있다고 하자. 그리고 우리에게는 $m$개의 데이터 $x_1, x_2, \dots, x_m$이 있다. <strong>우도</strong>는 "이 매개변수 $\theta$ 하에서 이 데이터가 관측될 확률"을 말한다. 데이터가 독립이라는 가정 하에:</p>
+      <h2>같은 그래프, 다른 차수 — 직접 보는 과적합</h2>
+      <p>가장 친숙한 예는 다항식 회귀다. 입력 $x$에 대해 진짜 함수가 $y = \sin(2\pi x)$이고, 잡음이 약간 끼어 있다고 하자. 다항식 차수 $d$를 0부터 12까지 바꿔 가며 같은 데이터에 적합시키면 다음과 같은 일이 일어난다. $d = 0$은 상수 함수, 즉 평균선만 그릴 수 있다. 사인 곡선의 모양을 전혀 따라가지 못한다(과소적합). $d = 1$은 직선이다. 평균선보다는 약간 낫지만 여전히 모양이 안 맞는다. $d = 3$이 되면 사인 곡선의 한 주기를 그릴 수 있어 훈련 오차와 일반화 오차가 모두 가장 낮은 영역에 들어간다. $d = 9$가 되면 모든 데이터 점을 통과하지만 데이터 사이에서 곡선이 격렬하게 진동한다. 훈련 오차는 거의 0이지만 새로운 $x$에 대한 예측은 엉뚱한 값이 된다(과적합).</p>
 
-      <div class="math-block">$$ L(\theta) \;=\; p(x_1, x_2, \dots, x_m; \theta) \;=\; \prod_{i=1}^{m} p(x_i; \theta) $$</div>
-      <p class="math-note">곱 형태가 나오는 건 i.i.d. (독립 동일분포) 가정 때문. 데이터 점들이 서로 영향을 주지 않으니 확률들을 곱한다.</p>
+      <p>이 그래프가 보여주는 것은 분명하다. 훈련 오차는 차수 $d$에 대해 단조 감소한다(또는 거의 그렇다). 그러나 일반화 오차는 U자 모양을 그린다. 가운데에 최저점이 있고, 그 좌우로 과소적합과 과적합이 펼쳐진다. 모든 학습 알고리즘의 핵심 과제는 이 U자의 최저점을 어떻게 찾을 것인가이다. 데이터를 더 모으거나, 모델 용량을 조절하거나, 정칙화를 더하는 모든 기법은 결국 이 U자를 왼쪽으로 옮기거나 바닥을 더 깊게 만드는 시도다.</p>
 
-      <p>MLE의 정의: <strong>우도 $L(\theta)$를 최대화하는 $\theta$를 고른다</strong>. 이름 그대로 "데이터를 가장 잘 설명하는 매개변수"다.</p>
+      <h2>훈련 오차가 0인데 왜 나쁜가</h2>
+      <p>훈련 오차가 0이면 모델이 모든 훈련 점을 통과한다는 뜻이다. 직관적으로는 "완벽하게 학습한 것"처럼 들리지만, 사실은 정반대다. 훈련 데이터가 유한하다는 사실과 잡음이 있다는 사실을 떠올려 보자. 데이터 점 $(x_i, y_i)$에서 $y_i = f^*(x_i) + \epsilon_i$이고 $\epsilon_i$는 잡음이다. 모델 $f_\theta$가 모든 $x_i$에서 $f_\theta(x_i) = y_i$가 되도록 적합시키면, 모델은 진짜 함수 $f^*$가 아니라 $f^* + \epsilon$을 학습한 것이다. 새로운 $x$에 대해 모델이 예측하는 값은 $f^*(x) + \text{잡음의 보간}$이며, 잡음의 보간은 일반적으로 진짜 함수 $f^*(x)$와 무관한 무작위 값이다. 그래서 일반화 오차가 폭발한다.</p>
 
-      <div class="math-block">$$ \theta_{\text{MLE}} \;=\; \arg\max_{\theta}\; L(\theta) \;=\; \arg\max_{\theta}\; \prod_{i=1}^{m} p(x_i; \theta) $$</div>
-      <p class="math-note">곱 형태는 수치적으로 안 좋다 (값이 매우 작아 underflow). 그래서 로그를 씌운다.</p>
-
-      <h2>왜 로그를 씌우는가 — 그리고 왜 부호를 뒤집는가</h2>
-      <p>로그는 단조증가 함수다. 즉 $L(\theta)$를 최대화하는 $\theta$는 $\log L(\theta)$를 최대화하는 $\theta$와 정확히 같다. 그러면서 곱이 합으로 바뀐다.</p>
-
-      <div class="math-block">$$ \arg\max_\theta\, L(\theta) \;=\; \arg\max_\theta\, \log L(\theta) \;=\; \arg\max_\theta\, \sum_{i=1}^{m} \log p(x_i; \theta) $$</div>
-      <p class="math-note">곱이 합으로 바뀐 덕분에 미분이 쉽고, 수치적으로도 안정적. 곱 $\prod_i 0.01$ 같은 형태가 한 번에 underflow되지만, 합 $\sum_i \log 0.01$ 은 안전.</p>
-
-      <p>여기서 한 번 더, 머신러닝에서는 보통 <strong>최소화</strong> 문제로 다룬다. 그래서 부호를 뒤집어 음의 로그우도(Negative Log-Likelihood, NLL)를 정의하고, 그것을 최소화한다.</p>
-
-      <div class="math-block">$$ \arg\max_\theta\, \log L(\theta) \;=\; \arg\min_\theta\, \underbrace{\Big[-\sum_{i=1}^{m} \log p(x_i; \theta)\Big]}_{\text{NLL}(\theta)} $$</div>
-      <p class="math-note">L 최대화 = lnL 최대화 = −lnL 최소화. 세 식이 같은 해를 준다. 이 동치성이 시험 직출 가능.</p>
-
-      <div class="analogy">
-        용의자 추리 비유. 검사가 여러 용의자 $\theta_1, \theta_2, \dots$ 중에서 가장 의심스러운 사람을 고른다. 의심도는 "이 사람이 범인이라면 이 증거들이 동시에 발생했을 확률"이다. 증거가 5개면 5개의 확률을 곱한다. 그러나 0.1 × 0.05 × 0.2 × 0.01 × 0.3 같은 숫자는 너무 작아서 다루기 힘들다. 그래서 로그를 씌워 합으로 만든다. 마지막에 "가장 의심스러운 사람"을 "가장 의심이 작은 사람"으로 뒤집어 말해도 답은 같다.
-      </div>
-    </div>
-
-    <h2 style="max-width: var(--measure); margin-inline: auto; padding-inline: 1.4rem">위젯 — L 최대 = −lnL 최소 (동치)</h2>
-
-    <div class="prose">
-      <p>가장 단순한 예: 평균 $\mu$, 분산 $\sigma^2 = 1$인 정규분포에서 12개 데이터가 나왔다고 하자. $\mu$를 추정하는 MLE 문제다. 왼쪽 그림은 현재 $\mu$에서의 정규분포와 데이터 점, 오른쪽 그림은 $\mu$를 움직이며 본 음의 로그우도 곡선이다.</p>
+      <p>이 현상을 또 다른 비유로 보자. 시험 직전에 연습문제집을 통째로 외운 학생은 연습문제는 100점이다. 같은 문제가 시험에 그대로 나오면 100점이다. 그러나 숫자와 문맥이 살짝 바뀐 응용 문제가 나오면 점수가 무너진다. 모델도 마찬가지다. 훈련 데이터에 너무 충실한 모델은 "외운" 답만 잘하고, "이해한" 답은 못한다. 학습의 목표가 외움이 아니라 이해라는 사실이 5장의 가장 큰 교훈이다.</p>
     </div>
 
     <div class="widget">
       <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 01</span><span>MLE = NLL 최소화 — 동치 시각화</span></div>
-        <div id="mle"></div>
+        <div class="widget-label"><span class="lab-no">위젯 04</span><span>다항식 차수 vs 과적합 — 슬라이더로 U자 곡선 직접 보기</span></div>
+        <div id="poly"></div>
       </div>
-      <p class="widget-cap">μ 슬라이더를 움직이면 왼쪽 정규분포의 위치가 바뀌고, 데이터 점들이 분포의 어느 부분에 떨어지는지 보인다. 오른쪽은 −ln L(μ) 곡선. 그 곡선의 최솟값(노란 점)이 μ_MLE이고, 정규분포의 경우 그건 표본평균과 같다.</p>
+      <p class="widget-cap">차수 d를 0부터 12까지 움직이면 적합 곡선이 직선에서 출발해 사인 곡선을 따라가다가, 어느 지점부터 곡선이 데이터 점을 통과하기 위해 격렬하게 진동한다. 우측 위의 훈련 MSE는 계속 줄어들지만 일반화 MSE는 U자를 그린다.</p>
     </div>
 
-    <h2 style="max-width: var(--measure); margin-inline: auto; padding-inline: 1.4rem">왜 우리가 매일 쓰는 손실들이 다 MLE에서 나오는가</h2>
-
     <div class="prose">
-      <p>MLE는 분포 가정을 바꾸면 익숙한 손실이 떨어진다. 이것이 MLE를 "손실의 어머니"라고 부르는 이유다.</p>
+      <h2>과적합이 일어나는 세 가지 조건</h2>
+      <p>과적합은 임의의 모델에서 자동으로 발생하는 현상이 아니다. 다음 세 가지 조건이 만나야 비로소 나타난다. 첫째, 모델의 용량이 데이터의 진짜 패턴을 충분히 표현할 수 있을 만큼 크고, 더 나아가 잡음까지 외울 만큼 크다. 매개변수가 적은 선형회귀는 과적합이 잘 일어나지 않는다(과소적합이 더 흔하다). 둘째, 훈련 데이터의 양이 모델의 용량에 비해 적다. 데이터가 많으면 잡음의 평균이 0에 가까워지므로 모델이 잡음을 외우기 어렵다. 셋째, 손실 함수가 훈련 점들을 통과하도록 유도한다. 정확히 통과할 필요가 없는 손실(예: hinge loss with margin)이나 정칙화가 들어가면 통과를 강제하지 않는다.</p>
 
-      <h3>가우시안 모형 → MSE</h3>
-      <p>회귀 문제에서, 출력이 정규분포 $p(y|x; \theta) = \mathcal{N}(y; f(x;\theta), \sigma^2)$를 따른다고 가정한다. NLL을 적으면:</p>
-      <div class="math-block">$$ -\sum_i \log p(y_i|x_i) \;=\; \sum_i \frac{(y_i - f(x_i;\theta))^2}{2\sigma^2} + \text{const} $$</div>
-      <p class="math-note">상수 항과 분산 $\sigma^2$은 최적화에 영향 없음. 결국 NLL 최소화 = 평균제곱오차(MSE) 최소화. <strong>MSE는 가우시안 가정의 MLE</strong>.</p>
+      <p>이 세 조건은 동시에 충족될 때 가장 심각한 과적합을 만든다. 신경망은 이 셋을 모두 갖추기 쉬운 모델 — 매개변수가 수백만 개에서 수십억 개까지 갈 수 있고, 손실은 매끄러우며, 데이터가 아무리 많아도 모델의 용량은 그보다 크다. 그래서 신경망의 모든 정칙화 기법(드롭아웃, 가중치 감쇠, 데이터 증강, 조기 종료, 배치 정규화)은 이 세 조건 중 하나 이상을 깨려는 시도다.</p>
 
-      <h3>베르누이/카테고리 모형 → 교차 엔트로피</h3>
-      <p>분류 문제에서, 출력이 카테고리 분포 $p(y|x;\theta)$를 따른다고 가정한다. 클래스 $k$일 확률을 $\hat{y}_k$라 하고 정답 라벨을 원핫 $y_k \in \{0,1\}$로 적으면:</p>
-      <div class="math-block">$$ -\sum_i \log p(y_i|x_i) \;=\; -\sum_i \sum_k y_{i,k} \log \hat{y}_{i,k} $$</div>
-      <p class="math-note">바로 그것이 <strong>교차 엔트로피 손실</strong>이다. 베르누이/카테고리 가정의 MLE.</p>
+      <h2>과소적합은 왜 덜 주목받는가</h2>
+      <p>실제 머신러닝 실습에서 학생들이 가장 먼저 마주치는 적은 과소적합이다. 데이터가 잘 학습되지 않아 훈련 오차부터 높다. 그러나 일단 이 문턱을 넘으면 그 다음은 거의 항상 과적합과의 싸움이 된다. 그래서 교과서와 실무 자료는 과적합에 훨씬 더 많은 지면을 할애한다. 그렇다고 과소적합을 무시해도 된다는 뜻은 아니다. 데이터가 매우 작거나 모델이 지나치게 단순할 때, 또는 입력 특징이 부적절할 때는 과소적합이 일어난다. 이때의 해법은 정칙화를 줄이거나, 모델 용량을 키우거나, 더 표현력 있는 특징(feature)을 만들거나, 데이터의 잡음을 줄이는 일이다.</p>
 
-      <h3>일반화 — 모든 NLL은 KL 발산의 한 형태</h3>
-      <p>NLL을 더 깊이 들여다보면 KL 발산(Kullback-Leibler divergence)이 나온다. 실제 데이터 분포 $p_{\text{data}}$와 모형 분포 $p_\theta$ 사이의 KL을 최소화하는 것이, 데이터에 대한 NLL을 최소화하는 것과 동치다 (상수 차이만 있음).</p>
-      <div class="math-block">$$ \arg\min_\theta\, \mathrm{KL}(p_{\text{data}} \| p_\theta) \;=\; \arg\min_\theta\, -\mathbb{E}_{x \sim p_{\text{data}}}[\log p_\theta(x)] $$</div>
-      <p class="math-note">우변은 정확히 (큰 표본 한계에서의) NLL. 즉 MLE = KL 최소화. 정보이론적 해석.</p>
+      <h2>딥러닝에서의 흥미로운 역전 — 이중 강하</h2>
+      <p>5장이 가르치는 U자 곡선은 고전적인 그림이다. 그러나 최근(약 2019년 이후) 딥러닝 실험에서는 U자 다음에 또 한 번 일반화 오차가 떨어지는 현상이 보고되었다. 이를 이중 강하(double descent) 또는 epochal double descent라 부른다. 모델 크기를 데이터 크기에 정확히 맞췄을 때 일반화 오차가 일시적으로 폭발하지만, 모델을 더 키우면 다시 줄어든다는 관찰이다. 이 현상은 신경망의 암묵적 정칙화(implicit regularization)와 관련이 있다고 추정되며, 활발한 연구 주제다. 시험에서는 고전적 U자 그림을 정확히 그리는 것이 우선이지만, 딥러닝 실무에서는 단순히 "모델을 작게 유지하라"는 격언이 모든 경우에 옳지 않다는 사실을 기억해 둘 만하다.</p>
 
-      <h2>MLE의 좋은 성질 — 일관성과 효율성</h2>
-      <ul style="padding-left: 1.4rem">
-        <li><strong>일관성 (Consistency)</strong>: 데이터 수 $m \to \infty$이면 $\hat{\theta}_{\text{MLE}} \to \theta_{\text{true}}$에 수렴한다 (단, 모형이 진짜 분포를 표현할 수 있고, 식별 가능할 때).</li>
-        <li><strong>점근 효율성 (Asymptotic Efficiency)</strong>: 큰 표본 한계에서 MLE의 분산은 Cramér-Rao 하한에 도달한다. 즉 가능한 가장 작은 분산.</li>
-        <li><strong>스케일 불변성</strong>: $\theta$를 다른 매개변수화 $\phi = g(\theta)$로 바꾸면, $\hat{\phi}_{\text{MLE}} = g(\hat{\theta}_{\text{MLE}})$. 즉 매개변수를 어떻게 적든 답이 같다.</li>
-      </ul>
+      <div class="analogy">
+        과적합과 과소적합을 <b>몸 만들기</b>에 비유해 보자. 과소적합은 운동을 너무 적게 한 상태다. 몸이 변화에 적응하지 못해 어떤 운동에도 약하다. 과적합은 한 가지 운동만 너무 많이 한 상태다. 그 운동은 잘하지만 다른 모든 운동에는 오히려 더 약해진다. 좋은 훈련은 다양한 자극을 적절한 강도로 주는 일이며, 머신러닝의 정칙화도 그런 의미에서 모델이 한 가지 자극(훈련 데이터)에만 너무 매몰되지 않도록 균형을 잡아주는 장치다.
+      </div>
 
-      <p>그러나 MLE에도 약점이 있다. 데이터가 적을 때 과적합하기 쉽다는 점이다. 예컨대 동전을 3번 던져 3번 다 앞면이 나오면, MLE는 $p = 1$ (앞면이 항상 나온다)로 추정한다. 이는 분명히 과한 추정이다. 이 문제를 다음 절의 <strong>베이지안 추정과 사전(prior)</strong>이 해결한다. <a href="05.html">Sec.5</a>로 이어진다.</p>
+      <p>다음 장에서는 이 과적합·과소적합 현상을 다른 각도에서 — 편향과 분산이라는 통계적 분해로 — 본다. 같은 그래프를 보는 두 번째 시점을 가지면 진단과 처방이 훨씬 정확해진다.</p>
     </div>
 
     <nav class="ch-foot"></nav>
   </main>
 </div>
 
-<script src="../assets/widgets.js"></script>
-<script src="widgets-ch05.js"></script>
 <script>
   window.addEventListener('load', () => {
     NST.buildNav('04');
-    const mle = document.getElementById('mle');
-    NST.onVisible(mle, () => NST.mleNll(mle));
+    const t = document.getElementById('poly');
+    NST.onVisible(t, () => NST.polyCapacity(t));
   });
 </script>
+<script src="../assets/widgets.js"></script>
+<script src="widgets-ch05.js"></script>
 </body>
 </html>

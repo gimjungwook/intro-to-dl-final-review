@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>12 · Positional Encoding 2 — sin·cos</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Chapter 12 · 사인·코사인 위치 부호화의 해부</span>
+      <h1>Positional Encoding 2 —<br><span class="t-style">sin</span>과 <span class="t-structure">cos</span>으로 자리를 새기다</h1>
+      <p class="lede">앞 장에서 왜 위치 부호화가 필요한지, 그리고 원 Transformer 논문이 함수 기반 결정론적 방식을 택했다는 것을 보았다. 이 장은 그 함수의 정체 — sin·cos 조합 — 를 수식·기하·실험 세 갈래로 해부한다. 처음 보면 “왜 이런 이상한 함수를?”이라는 의문이 드는데, 한 단계씩 풀어 보면 의외로 자연스러운 선택이다.</p>
+    </header>
+
+    <div class="prose">
+      <h2>수식 — 두 줄로 끝나는 PE</h2>
+      <p>원 논문 "Attention Is All You Need"가 정의한 Positional Encoding은 다음 두 줄이다.</p>
+
+      <div class="math-block">$$ \text{PE}(pos, 2i)   = \sin\!\left( \frac{pos}{10000^{2i/d_{model}}} \right) $$</div>
+      <div class="math-block">$$ \text{PE}(pos, 2i+1) = \cos\!\left( \frac{pos}{10000^{2i/d_{model}}} \right) $$</div>
+      <p class="math-note">$pos$ = 시퀀스 안의 위치(0부터). $i$ = 차원 인덱스(0부터 $d_{model}/2 - 1$까지). $2i$ = 짝수 차원(sin), $2i+1$ = 홀수 차원(cos). $d_{model}$ = 임베딩 차원(논문 base 모델 = 512). 결과 $\text{PE}(pos, \cdot)$는 길이 $d_{model}$인 벡터로 토큰 임베딩에 더해진다.</p>
+
+      <p>이 식을 한 줄씩 풀어 보자. <strong>위치 $pos$는 시퀀스 안에서의 자리(0, 1, 2, ...)다.</strong> 단어 "The"가 첫 자리면 $pos = 0$, 두 번째 자리면 $pos = 1$이다. $i$는 임베딩 차원 인덱스의 “쌍 단위”다 — 차원 0과 1이 한 쌍($i = 0$), 차원 2와 3이 한 쌍($i = 1$), ... 식. 각 쌍 안에서 sin은 짝수 차원, cos은 홀수 차원을 채운다.</p>
+
+      <h2>핵심 부품 1 — 위치를 “주기”로 보낸 발상</h2>
+      <p>왜 sin·cos인가? 첫 번째 답은 “주기성”이다. $\sin(\theta)$와 $\cos(\theta)$는 $\theta$가 변할 때 값이 $-1$과 $1$ 사이를 진동한다. 위치 $pos$가 sin·cos의 입력 $\theta$로 들어가는 순간, “위치”라는 1차원 정수 값이 “단위 원 위의 점”이라는 2차원 좌표로 변환된다. 이게 무엇을 의미하는가?</p>
+
+      <div class="analogy">
+        <b>시계 비유.</b> 시계의 시침 끝은 12시 정각에 (0, 1), 3시에 (1, 0), 6시에 (0, -1), 9시에 (-1, 0) 위치에 있다. 즉 “지금이 몇 시인가”라는 1차원 시간 정보를 “시계판 위 좌표”라는 2차원 벡터로 표현한 것이다. 시계는 12시간마다 한 바퀴를 돈다. PE의 sin·cos도 마찬가지로 어떤 주기마다 한 바퀴를 돈다. 차이는 “주기가 차원마다 다르다”는 것뿐.
+      </div>
+
+      <h2>핵심 부품 2 — 차원마다 다른 주기, 왜?</h2>
+      <p>위 PE 식에서 $\theta = pos / 10000^{2i/d_{model}}$다. $i$가 클수록(즉 더 깊은 차원일수록) 분모 $10000^{2i/d_{model}}$가 커진다. $i = 0$이면 분모는 1, $i = d_{model}/2 - 1$이면 분모는 약 10000이다. 분모가 클수록 $\theta$의 변화 속도가 느려진다 — 즉 사인 곡선의 주기가 길어진다.</p>
+
+      <p>구체 숫자로 보자. $d_{model} = 512$일 때 :</p>
+
+      <div class="math-block">$$ i = 0: \theta = pos / 1, \quad \text{주기} = 2\pi \approx 6.3 $$</div>
+      <div class="math-block">$$ i = 128: \theta = pos / 10000^{0.5} = pos / 100, \quad \text{주기} = 2\pi \times 100 \approx 628 $$</div>
+      <div class="math-block">$$ i = 255: \theta = pos / 10000 \approx pos / 10000, \quad \text{주기} \approx 2\pi \times 10000 \approx 62832 $$</div>
+
+      <p>해석은 이렇다. <strong>낮은 차원은 “짧은 주기” = 인접한 위치 간 빠른 변화를 잡고, 높은 차원은 “긴 주기” = 멀리 떨어진 위치 간 느린 변화를 잡는다.</strong> 결과적으로 한 PE 벡터 안에 “짧은 거리 정보부터 긴 거리 정보까지 다양한 스케일”이 동시에 담긴다. 마치 디지털 시계가 시·분·초를 따로 표시하는 것과 같다 — 시는 천천히 변하고(긴 주기), 초는 빨리 변한다(짧은 주기). 두 정보를 함께 보면 “지금이 정확히 언제인가”를 알 수 있다.</p>
+
+      <p>왜 분모 베이스가 10000인가? 이는 “충분히 큰 주기 범위를 커버하기 위한 경험적 선택”이다. 논문 저자들이 여러 베이스로 실험해 봤고, 10000이 학습이 잘 되고 길이 일반화도 잘 되는 값이었다. 너무 작으면 모든 차원이 빠르게 변해 긴 거리 정보를 못 잡고, 너무 크면 거의 모든 차원이 너무 느려 위치 차이를 구별 못 한다.</p>
+
+      <div class="widget">
+        <div class="widget-frame">
+          <div class="widget-label"><span class="lab-no">위젯 12</span><span>PE 히트맵 — 차원·위치별 sin·cos 값</span></div>
+          <div id="pe2"></div>
+        </div>
+        <p class="widget-cap">가로축 = 차원 0–63 (짝수=sin, 홀수=cos), 세로축 = 위치 0–49. 왼쪽(낮은 차원)은 빨리 진동하고, 오른쪽(높은 차원)은 천천히 진동하는 줄무늬 패턴이 보인다. 이게 “차원마다 다른 주기”의 시각적 확인.</p>
+      </div>
+
+      <h2>핵심 부품 3 — 위치 차이를 선형 변환으로 표현할 수 있다</h2>
+      <p>sin·cos PE의 가장 우아한 성질은 “위치 차이($\Delta = pos_b - pos_a$)를 attention 내적이 자연스럽게 다룰 수 있다”는 것이다. 구체적으로 :</p>
+
+      <div class="math-block">$$ \text{PE}(pos + \Delta) = M_\Delta \cdot \text{PE}(pos) $$</div>
+      <p class="math-note">어떤 위치 $pos$의 PE 벡터에 $\Delta$만큼 위치를 옮긴 PE 벡터는, $\Delta$에만 의존하는 선형 변환 $M_\Delta$로 표현된다. 즉 “위치 5의 PE를 위치 7의 PE로 변환하는 작업”은 “위치 100의 PE를 위치 102의 PE로 변환하는 작업”과 같은 행렬을 쓴다.</p>
+
+      <p>왜 이게 중요한가? Attention의 내적 $Q_i K_j^\top$를 생각해 보자. $i, j$ 위치의 토큰들이 위치 정보까지 포함한 임베딩이라면, 내적 결과는 “토큰 의미의 유사도” + “위치 관계의 어떤 함수”로 분해될 수 있다. sin·cos PE의 선형 변환 성질 덕분에, 내적이 “위치 차이 $\Delta = j - i$”에만 의존하는 항을 자동으로 만들어 낼 수 있다. 모델은 학습하면서 “두 토큰의 거리에 따라 attention을 어떻게 다르게 줄지”를 자연스럽게 배운다.</p>
+
+      <p>증명은 삼각함수 공식 한 줄이다. $\sin(\alpha + \beta) = \sin\alpha\cos\beta + \cos\alpha\sin\beta$, $\cos(\alpha + \beta) = \cos\alpha\cos\beta - \sin\alpha\sin\beta$. 즉 $(\sin(pos+\Delta), \cos(pos+\Delta))$는 $(\sin pos, \cos pos)$의 $2 \times 2$ 회전 행렬 변환이다. 이 회전 행렬이 $\Delta$에만 의존하므로, “위치 차이”라는 개념이 모델 안에 기하적으로 코딩된다.</p>
+
+      <h2>구체적인 PE 벡터 살펴보기</h2>
+      <p>위치 $pos = 0$에서의 PE 벡터는 어떻게 생겼을까? $\theta = 0$이므로 모든 sin 값은 0, 모든 cos 값은 1. 즉 PE(0) = [0, 1, 0, 1, 0, 1, ...] 형태의 벡터다.</p>
+
+      <p>위치 $pos = 1$에서는 $\theta = 1, 1/100^{1/256}, 1/100^{2/256}, \ldots$ 들이고, 낮은 차원에서는 $\sin(1) \approx 0.841, \cos(1) \approx 0.540$, 높은 차원에서는 $\sin(1/10000) \approx 0.0001, \cos(1/10000) \approx 1$ 정도다. 즉 “낮은 차원은 위치 1과 위치 0이 매우 다르고, 높은 차원은 거의 같다.”</p>
+
+      <p>위치 $pos = 100$이라면 낮은 차원은 sin이 무한히 진동하여 0 근처 어딘가의 값이지만, 높은 차원은 $\sin(100/10000) \approx 0.01, \cos(100/10000) \approx 1$. 즉 “낮은 차원은 위치 0과 100이 거의 무관, 높은 차원은 위치 0과 100을 비슷한 값으로 본다.” 이 두 관점이 한 벡터 안에 동시에 들어있는 게 PE의 묘미다.</p>
+
+      <h2>왜 “더하기”인가, 왜 “이어붙이기”가 아닌가</h2>
+      <p>구현상 PE는 토큰 임베딩에 그냥 “더해진다”. $\text{Input}_i = \text{TokenEmbed}(x_i) + \text{PE}(i)$. 이게 처음 보면 이상하다. 토큰 의미와 위치라는 서로 다른 두 정보를 같은 차원에 “더해서 섞어 버리면” 모델이 둘을 구분 못 하지 않을까?</p>
+
+      <p>대답은 “부분적으로 그렇고, 부분적으로 아니다”다. 학습이 시작될 때는 토큰 임베딩이 랜덤이라 PE가 그저 노이즈처럼 추가된다. 하지만 학습이 진행되면서 토큰 임베딩은 PE와 “겹치지 않는 부분 공간”에 살도록 자연스럽게 적응한다. 즉 $d_{model} = 512$차원 공간을 큰 그릇으로 두고, 그 안의 일부 부분 공간을 “위치용”으로, 다른 부분 공간을 “의미용”으로 모델이 알아서 나눠 쓴다. Attention의 첫 단계에서 $W^Q, W^K, W^V$가 이런 분리를 수행하는 사영(projection) 행렬로 학습된다.</p>
+
+      <p>또한 실험적으로 “더하기”와 “이어붙이기(concatenation)”의 표현력 차이가 거의 없다는 것이 보고되었다. 이어붙이기는 차원이 2배 늘어 메모리·계산이 더 들지만, 모델 성능 차이는 미미하다. 그래서 효율을 위해 더하기를 채택했다.</p>
+
+      <h2>학습형 PE vs 함수형 PE — 무엇이 더 좋은가</h2>
+      <p>원 Transformer 논문에서는 함수형(sin·cos)과 학습형(learned embedding) 두 가지를 모두 실험해 보고, 두 방식의 성능이 거의 같다는 것을 확인했다. 그럼에도 함수형을 선택한 이유는 “길이 일반화”에 강하기 때문이다. 학습형 PE는 학습 시 본 최대 위치까지만 정의되지만, 함수형 PE는 어떤 위치든 함수에 넣기만 하면 값이 나온다.</p>
+
+      <p>하지만 후속 연구에서는 학습형 PE가 더 자주 쓰이게 됐다(BERT, GPT 계열). 이유는 “실제 추론 시 학습 길이를 크게 넘어가는 경우가 드물고, 학습형이 데이터의 패턴에 더 잘 맞춰 학습된다”는 것. 또 다른 흐름으로는 RoPE(Rotary Position Embedding), ALiBi 등 “attention 내부에서 위치를 직접 사용”하는 방식이 등장했지만, 그 모두가 sin·cos PE의 “선형 변환으로 위치 차이를 표현”이라는 아이디어를 계승한다.</p>
+
+      <h2>요약 — 이 장의 핵심 4가지</h2>
+      <p><strong>(1) sin·cos PE는 위치를 “단위 원 위의 점”으로 변환한다.</strong> 1차원 정수가 2차원 좌표쌍으로. <strong>(2) 차원마다 주기가 기하급수로 달라진다.</strong> 낮은 차원 = 짧은 주기, 높은 차원 = 긴 주기. 한 벡터 안에 다양한 스케일의 위치 정보가 동시에 담긴다. <strong>(3) 위치 차이 $\Delta$를 “선형 변환”으로 표현 가능하다.</strong> Attention 내적이 자연스럽게 거리 정보를 다룰 수 있는 기하적 토대. <strong>(4) PE는 토큰 임베딩에 “더해서” 주입한다.</strong> 모델이 학습으로 두 정보를 분리해 사용. 다음 장에서는 이 PE까지 포함된 입력이 Encoder 블록을 통과하는 전체 흐름을 본다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  window.addEventListener('load', () => {
+    TFR.buildNav('12');
+    const p = document.getElementById('pe2');
+    TFR.onVisible(p, () => TFR.positionalEnc(p));
+  });
+</script>
+<script src="assets/widgets.js"></script>
+</body>
+</html>

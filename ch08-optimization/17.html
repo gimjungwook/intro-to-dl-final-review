@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>17 · 시험 대비 — 정의, 계보, 예상 질문 25+</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .lineage { max-width: var(--measure); margin: 1.6rem auto; padding: 1.4rem 1.2rem; background: linear-gradient(180deg, #fff, var(--paper-2)); border: 1px solid var(--line); border-radius: 11px; }
+  .lineage-row { display: grid; grid-template-columns: 8rem 1fr; gap: 0.8rem; padding: 0.65rem 0; border-bottom: 1px solid var(--line-soft); align-items: baseline; }
+  .lineage-row:last-child { border-bottom: none; }
+  .lineage-row .alg { font-family: var(--serif); font-size: 1.05rem; color: var(--structure); font-weight: 700; }
+  .lineage-row .desc { font-size: .9rem; color: var(--ink-soft); line-height: 1.55; }
+  .lineage-row .arrow { font-family: var(--mono); font-size: 0.72rem; color: var(--ink-faint); padding-left: 0.5rem; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a class="home" href="index.html">← Ch.08 최적화</a>
+  <span class="ch-mini">SUB 17 / 17</span>
+</div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol id="navlist"></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 17 · 한 카드에 담는 모든 정의·계보·자가점검</span>
+      <h1>SGD에서 Adam까지,<br><span class="t-style">한 페이지로 정리</span>하다</h1>
+      <p class="lede">시험 직전에 빠르게 훑을 수 있는 마지막 페이지. 옵티마이저 계보, 핵심 정의, 자가점검 질문 25개를 한 곳에.</p>
+    </header>
+
+    <div class="prose">
+
+      <h2>옵티마이저 진화 계보 — 한 그림으로</h2>
+
+      <p>8장에 등장한 옵티마이저들은 모두 한 가지 진화 줄기에 놓을 수 있다. SGD에서 Adam까지의 흐름을 한 표로 정리하면 다음과 같다. 시험 답안에 옵티마이저 비교 질문이 나오면 이 표를 떠올리자.</p>
+    </div>
+
+    <div class="lineage">
+      <div class="lineage-row">
+        <div class="alg">SGD</div>
+        <div class="desc">$\theta \leftarrow \theta - \varepsilon \hat{g}$. 기본 1차 알고리즘. 단순하지만 좁은 골짜기에서 지그재그.</div>
+      </div>
+      <div class="lineage-row">
+        <div class="alg">+ 모멘텀</div>
+        <div class="desc">속도 $v$ 유지, $v \leftarrow \alpha v - \varepsilon \hat{g}$. 일관된 방향 가속, 진동 상쇄. 종말 속도 $\varepsilon \|g\|/(1-\alpha)$.</div>
+      </div>
+      <div class="lineage-row">
+        <div class="alg">+ 네스테로프</div>
+        <div class="desc">기울기를 $\theta + \alpha v$에서 계산 (룩어헤드). 볼록에서 $O(1/k^2)$ 수렴 가속.</div>
+      </div>
+      <div class="lineage-row">
+        <div class="alg">AdaGrad</div>
+        <div class="desc">$r$에 기울기 제곱 누적, 유효 학습률 $\varepsilon/\sqrt{r}$. 파라미터별 학습률. 단점: $r$이 단조 증가.</div>
+      </div>
+      <div class="lineage-row">
+        <div class="alg">RMSProp</div>
+        <div class="desc">$r$을 지수 이동 평균으로 ($r \leftarrow \rho r + (1-\rho) g^2$). AdaGrad의 단조 누적 해결.</div>
+      </div>
+      <div class="lineage-row">
+        <div class="alg">Adam</div>
+        <div class="desc">모멘텀 + RMSProp + 편향 보정. 현대 표준. 기본값 (0.001, 0.9, 0.999, 10⁻⁸).</div>
+      </div>
+    </div>
+
+    <div class="prose">
+
+      <h2>핵심 정의 빠른 복습</h2>
+
+      <ul>
+        <li><strong>경험적 위험(empirical risk):</strong> $J(\theta) = (1/N)\sum \ell(f(x^{(i)};\theta), y^{(i)})$. 훈련셋 평균 손실.</li>
+        <li><strong>진짜 위험(true risk):</strong> $J^*(\theta) = \mathbb{E}_{p_{\text{data}}}[\ell]$. 진짜 데이터 분포의 기대 손실 — 진짜 목표.</li>
+        <li><strong>대리 손실(surrogate loss):</strong> 미분 불가능한 진짜 손실(0-1) 대신 미분 가능한 손실(교차엔트로피).</li>
+        <li><strong>안장점(saddle point):</strong> 헤시안 고유값에 양수·음수가 섞인 임계점. 고차원에서 지역 최솟값보다 흔함.</li>
+        <li><strong>SGD 수렴 조건:</strong> $\sum\varepsilon_k = \infty$, $\sum\varepsilon_k^2 < \infty$. "충분히 멀리, 결국 잡음 소멸".</li>
+        <li><strong>종말 속도:</strong> $v_\infty = \varepsilon\|g\|/(1-\alpha)$. 모멘텀이 SGD의 $1/(1-\alpha)$배 가속.</li>
+        <li><strong>편향 보정:</strong> Adam의 $\hat{s} = s/(1-\rho_1^t)$. 초기 0 출발 편향 제거.</li>
+        <li><strong>Xavier 초기화:</strong> $\mathrm{Var}(W) = 2/(m+n)$. 활성값·기울기 분산 보존.</li>
+        <li><strong>He 초기화:</strong> $\mathrm{Var}(W) = 2/m$. ReLU의 절반 손실 보정.</li>
+        <li><strong>배치 정규화:</strong> $(H-\mu)/\sigma$ → $\gamma H' + \beta$. 내부 공변량 이동 완화.</li>
+        <li><strong>기울기 클리핑:</strong> $\|g\|>c$이면 $g \leftarrow c g/\|g\|$. 방향 유지, 크기만 절단.</li>
+      </ul>
+
+      <h2>자가점검 질문 25개</h2>
+
+      <p>아래 25개 질문을 풀어 보라. 답을 모르겠으면 해당 sub를 다시 본다. 시험 직전 마지막 30분에 이 페이지만 다시 훑어도 충분하다.</p>
+    </div>
+
+    <div class="quiz-list">
+      <div class="quiz-item">
+        <div class="quiz-q"><span class="qn">Q01</span><span class="qt">머신러닝 최적화가 순수 최적화와 다른 가장 본질적인 차이는?</span><span class="qx">+</span></div>
+        <div class="quiz-a"><div class="quiz-a-inner"><span class="ans-tag">SUB 01</span>우리가 진짜 줄이고 싶은 것은 훈련 비용 $J$가 아니라 진짜 위험 $J^*$다. $J$는 표본 평균이고 $J^*$는 모집단 기대값. $\nabla J = 0$은 ML의 종료 조건이 아니다. 7장 정칙화와 조기 종료가 필요한 이유.</div></div>
+      </div>
+      <div class="quiz-item">
+        <div class="quiz-q"><span class="qn">Q02</span><span class="qt">대리 손실함수가 필요한 두 가지 이유는?</span><span class="qx">+</span></div>
+        <div class="quiz-a"><div class="quiz-a-inner"><span class="ans-tag">SUB 01</span>① 진짜 손실(0-1)이 미분 불가능. ② 대리(교차엔트로피)는 부드럽게 미분 가능, 클래스 간 확률 간격을 점진적으로 넓혀 일반화에도 도움.</div></div>
+      </div>
+      <div class="quiz-item">
+        <div class="quiz-q"><span class="qn">Q03</span><span class="qt">고차원에서 지역 최솟값보다 안장점이 흔한 이유를 동전 던지기 비유로 설명하라.</span><span class="qx">+</span></div>
+        <div class="quiz-a"><div class="quiz-a-inner"><span class="ans-tag">SUB 02</span>임계점에서 헤시안의 한 고유값이 양수일 확률이 1/2이라면, 모두 양수(지역 최솟값)일 확률은 $(1/2)^n$. 차원 $n$이 커질수록 지수적으로 드물어진다.</div></div>
+      </div>
+      <div class="quiz-item">
+        <div class="quiz-q"><span class="qn">Q04</span><span class="qt">절벽(cliff)과 평탄 고원(plateau)의 차이는 무엇이며, 각각 어떤 알고리즘으로 해결하는가?</span><span class="qx">+</span></div>
+        <div class="quiz-a"><div class="quiz-a-inner"><span class="ans-tag">SUB 02</span>절벽은 기울기가 갑자기 매우 큰 영역. 기울기 클리핑(sub 16)으로 해결. 평탄 고원은 기울기가 너무 작은 영역. 적응 학습률(AdaGrad·RMSProp·Adam)이나 모멘텀으로 완화.</div></div>
+      </div>
+      <div class="quiz-item">
+        <div class="quiz-q"><span class="qn">Q05</span><span class="qt">미니배치 크기를 100배 키워도 기울기 추정 정확도는 10배만 좋아진다. 왜?</span><span class="qx">+</span></div>
+        <div class="quiz-a"><div class="quiz-a-inner"><span class="ans-tag">SUB 03</span>표준오차가 $\sigma/\sqrt{n}$이므로 $n$의 제곱근에 비례. 100배 → √100 = 10배 정밀도. 수확 체감(diminishing returns).</div></div>
+      </div>
+      <div class="quiz-item">
+        <div class="quiz-q"><span class="qn">Q06</span><span class="qt">SGD 수렴을 보장하는 두 조건 $\sum\varepsilon_k = \infty$, $\sum\varepsilon_k^2 < \infty$의 의미는?</span><span class="qx">+</span></div>
+        <div class="quiz-a"><div class="quiz-a-inner"><span class="ans-tag">SUB 03</span>첫째: 학습률 합이 무한대여야 충분히 멀리 갈 수 있다. 둘째: 학습률 제곱 합이 유한해야 잡음 누적이 결국 사라진다.</div></div>
+      </div>
+      <div class="quiz-item">
+        <div class="quiz-q"><span class="qn">Q07</span><span class="qt">큰 배치의 일반화 격차가 발생하는 이유 두 가지는?</span><span class="qx">+</span></div>
+        <div class="quiz-a"><div class="quiz-a-inner"><span class="ans-tag">SUB 04</span>① 큰 배치 SGD는 노이즈가 작아 안장점에서 빠져나오기 어렵다. ② 큰 배치는 좁고 깊은 골짜기에 자리잡을 수 있어 플랫 미니마를 선호하지 않는다.</div></div>
+      </div>
+      <div class="quiz-item">
+        <div class="quiz-q"><span class="qn">Q08</span><span class="qt">선형 스케일링 규칙은 무엇이며 언제 깨지는가?</span><span class="qx">+</span></div>
+        <div class="quiz-a"><div class="quiz-a-inner"><span class="ans-tag">SUB 04·05</span>배치 $k$배 → 학습률 $k$배. 작은 배치 한계(16 이하)와 매우 큰 배치(8192+)에서 깨진다. 큰 배치는 warmup 필수.</div></div>
+      </div>
+      <div class="quiz-item">
+        <div class="quiz-q"><span class="qn">Q09</span><span class="qt">1차원 $J = \frac{1}{2}\theta^2$에서 발산하지 않는 학습률 범위는?</span><span class="qx">+</span></div>
+        <div class="quiz-a"><div class="quiz-a-inner"><span class="ans-tag">SUB 05</span>$\theta_{k+1} = (1-\varepsilon)\theta_k$. $|1-\varepsilon| < 1$ → $0 < \varepsilon < 2$. $0<\varepsilon<1$ 수렴, $1<\varepsilon<2$ 진동 수렴, $\varepsilon>2$ 발산.</div></div>
+      </div>
+      <div class="quiz-item">
+        <div class="quiz-q"><span class="qn">Q10</span><span class="qt">모멘텀의 종말 속도 식과 그 의미는?</span><span class="qx">+</span></div>
+        <div class="quiz-a"><div class="quiz-a-inner"><span class="ans-tag">SUB 06</span>$v_\infty = \varepsilon \|g\| / (1-\alpha)$. $\alpha = 0.9$이면 SGD의 10배. 일관된 방향에서 가속하지만, 학습률을 그만큼 키운 SGD보다 안정적.</div></div>
+      </div>
+      <div class="quiz-item">
+        <div class="quiz-q"><span class="qn">Q11</span><span class="qt">표준 모멘텀과 네스테로프의 차이를 한 줄로 적어라.</span><span class="qx">+</span></div>
+        <div class="quiz-a"><div class="quiz-a-inner"><span class="ans-tag">SUB 07</span>기울기를 현재 위치 $\theta$가 아니라 도착 예상 위치 $\theta + \alpha v$에서 계산한다.</div></div>
+      </div>
+      <div class="quiz-item">
+        <div class="quiz-q"><span class="qn">Q12</span><span class="qt">네스테로프의 이론적 수렴 속도가 SGD보다 빠른 정도는?</span><span class="qx">+</span></div>
+        <div class="quiz-a"><div class="quiz-a-inner"><span class="ans-tag">SUB 07</span>볼록 배치 기울기에서 $O(1/k)$ → $O(1/k^2)$. 정확도 $10^{-6}$을 위해 $10^6$ 대신 $10^3$ 반복.</div></div>
+      </div>
+      <div class="quiz-item">
+        <div class="quiz-q"><span class="qn">Q13</span><span class="qt">AdaGrad가 비볼록 신경망에서 실패하는 이유는?</span><span class="qx">+</span></div>
+        <div class="quiz-a"><div class="quiz-a-inner"><span class="ans-tag">SUB 08</span>$r$이 단조 증가 → 유효 학습률 $\varepsilon/\sqrt{r}$이 0으로 수렴. 학습이 너무 일찍 멈춘다.</div></div>
+      </div>
+      <div class="quiz-item">
+        <div class="quiz-q"><span class="qn">Q14</span><span class="qt">RMSProp이 AdaGrad에서 어떤 한 글자를 바꿨는가?</span><span class="qx">+</span></div>
+        <div class="quiz-a"><div class="quiz-a-inner"><span class="ans-tag">SUB 09</span>$r \leftarrow r + g^2$ → $r \leftarrow \rho r + (1-\rho) g^2$. 누적 → 지수 감쇠 이동 평균. $r$이 평형값에 수렴.</div></div>
+      </div>
+      <div class="quiz-item">
+        <div class="quiz-q"><span class="qn">Q15</span><span class="qt">Adam의 두 모멘트와 편향 보정을 식으로 적어라.</span><span class="qx">+</span></div>
+        <div class="quiz-a"><div class="quiz-a-inner"><span class="ans-tag">SUB 10</span>1차: $s \leftarrow \rho_1 s + (1-\rho_1)g$. 2차: $r \leftarrow \rho_2 r + (1-\rho_2)g^2$. 보정: $\hat{s} = s/(1-\rho_1^t)$, $\hat{r} = r/(1-\rho_2^t)$. 업데이트: $\theta -= \varepsilon \hat{s}/(\sqrt{\hat{r}}+\delta)$.</div></div>
+      </div>
+      <div class="quiz-item">
+        <div class="quiz-q"><span class="qn">Q16</span><span class="qt">Adam의 권장 기본값 4개는?</span><span class="qx">+</span></div>
+        <div class="quiz-a"><div class="quiz-a-inner"><span class="ans-tag">SUB 10</span>$\varepsilon = 0.001$, $\rho_1 = 0.9$, $\rho_2 = 0.999$, $\delta = 10^{-8}$.</div></div>
+      </div>
+      <div class="quiz-item">
+        <div class="quiz-q"><span class="qn">Q17</span><span class="qt">모든 가중치를 0으로 초기화하면 안 되는 이유는?</span><span class="qx">+</span></div>
+        <div class="quiz-a"><div class="quiz-a-inner"><span class="ans-tag">SUB 11</span>같은 가중치 → 같은 출력 → 같은 기울기 → 영원히 같은 가중치. $n$개 뉴런이 사실상 1개로 작동. 대칭성 깨기 실패.</div></div>
+      </div>
+      <div class="quiz-item">
+        <div class="quiz-q"><span class="qn">Q18</span><span class="qt">Xavier와 He 초기화의 분산 공식 차이는?</span><span class="qx">+</span></div>
+        <div class="quiz-a"><div class="quiz-a-inner"><span class="ans-tag">SUB 12</span>Xavier: $\mathrm{Var}(W) = 2/(m+n)$ — 활성값·기울기 분산 평균 보존, tanh 적합. He: $\mathrm{Var}(W) = 2/m$ — ReLU의 절반 손실 보정, 현대 표준.</div></div>
+      </div>
+      <div class="quiz-item">
+        <div class="quiz-q"><span class="qn">Q19</span><span class="qt">배치 정규화의 4단계는?</span><span class="qx">+</span></div>
+        <div class="quiz-a"><div class="quiz-a-inner"><span class="ans-tag">SUB 13</span>① 미니배치 평균 $\mu_B$. ② 미니배치 분산 $\sigma_B^2$. ③ 정규화 $\hat{x} = (x-\mu)/\sqrt{\sigma^2+\delta}$. ④ 재스케일 $y = \gamma \hat{x} + \beta$.</div></div>
+      </div>
+      <div class="quiz-item">
+        <div class="quiz-q"><span class="qn">Q20</span><span class="qt">BN이 평균 0, 분산 1로 정규화한 뒤 다시 γ, β로 자유롭게 만드는 이유는?</span><span class="qx">+</span></div>
+        <div class="quiz-a"><div class="quiz-a-inner"><span class="ans-tag">SUB 13</span>출력 분포의 자유도를 두 파라미터(γ, β)로 격리. 옵티마이저가 분포 조정과 함수 학습을 분리해 다룰 수 있다.</div></div>
+      </div>
+      <div class="quiz-item">
+        <div class="quiz-q"><span class="qn">Q21</span><span class="qt">BN이 작은 배치에서 무너지는 이유와 대안은?</span><span class="qx">+</span></div>
+        <div class="quiz-a"><div class="quiz-a-inner"><span class="ans-tag">SUB 14</span>미니배치 통계가 노이즈가 많아 안정적이지 않음. 대안: LayerNorm(트랜스포머), Instance Norm(스타일 전이), Group Norm(작은 배치 검출).</div></div>
+      </div>
+      <div class="quiz-item">
+        <div class="quiz-q"><span class="qn">Q22</span><span class="qt">BN 모델 추론 시 어떤 평균·분산을 쓰는가?</span><span class="qx">+</span></div>
+        <div class="quiz-a"><div class="quiz-a-inner"><span class="ans-tag">SUB 14</span>학습 중 누적한 running mean·variance를 사용. PyTorch는 `model.eval()`로 전환. 평가 모드 켜는 걸 잊으면 추론 결과가 매우 이상해진다.</div></div>
+      </div>
+      <div class="quiz-item">
+        <div class="quiz-q"><span class="qn">Q23</span><span class="qt">현대 트랜스포머 학습의 표준 학습률 스케줄은?</span><span class="qx">+</span></div>
+        <div class="quiz-a"><div class="quiz-a-inner"><span class="ans-tag">SUB 15</span>warmup + cosine annealing. 처음 몇 천 스텝 동안 0에서 목표 학습률로 선형 증가, 그 뒤 cosine 곡선으로 감소.</div></div>
+      </div>
+      <div class="quiz-item">
+        <div class="quiz-q"><span class="qn">Q24</span><span class="qt">clip-by-norm과 clip-by-value의 차이는?</span><span class="qx">+</span></div>
+        <div class="quiz-a"><div class="quiz-a-inner"><span class="ans-tag">SUB 16</span>clip-by-norm: 전체 벡터 노름 절단, 방향 유지. clip-by-value: 각 성분 독립 절단, 방향 왜곡 가능. 표준은 clip-by-norm.</div></div>
+      </div>
+      <div class="quiz-item">
+        <div class="quiz-q"><span class="qn">Q25</span><span class="qt">RNN에서 기울기 클리핑이 사실상 필수인 이유는?</span><span class="qx">+</span></div>
+        <div class="quiz-a"><div class="quiz-a-inner"><span class="ans-tag">SUB 16</span>BPTT가 같은 가중치 행렬을 시간 스텝만큼 반복 곱함. 시퀀스 길이 $T$가 100이면 $W^{100}$. $W$의 최대 고유값 약간만 1보다 커도 기울기가 지수적으로 폭발.</div></div>
+      </div>
+      <div class="quiz-item">
+        <div class="quiz-q"><span class="qn">Q26</span><span class="qt">옵티마이저 진화 계보를 한 줄로 적어라.</span><span class="qx">+</span></div>
+        <div class="quiz-a"><div class="quiz-a-inner"><span class="ans-tag">SUB 17</span>SGD → 모멘텀(관성) → 네스테로프(룩어헤드) → AdaGrad(파라미터별 학습률) → RMSProp(감쇠 평균) → Adam(모멘텀+RMSProp+편향보정).</div></div>
+      </div>
+      <div class="quiz-item">
+        <div class="quiz-q"><span class="qn">Q27</span><span class="qt">Adam이 항상 최선인가?</span><span class="qx">+</span></div>
+        <div class="quiz-a"><div class="quiz-a-inner"><span class="ans-tag">SUB 10</span>아니다. 합리적 기본값이지만, 잘 튜닝된 SGD+모멘텀이 이미지 분류의 최종 성능에서 약간 더 나을 수 있다. "탐색은 Adam, 최종 튜닝은 SGD+모멘텀"이 권고.</div></div>
+      </div>
+    </div>
+
+    <div class="prose">
+
+      <h2>8장 통째로 묶는 한 줄 요약 — 머신러닝 최적화는 일반화를 위한 간접 최적화</h2>
+
+      <p>8장의 모든 알고리즘은 한 가지 큰 그림 안에 놓인다. 우리는 진짜 위험 $J^*$를 줄이고 싶지만 직접 계산할 수 없으므로, 훈련 비용 $J$를 대리로 줄인다. 그 과정에서 노이즈 있는 미니배치, 좁은 골짜기, 안장점, 절벽 같은 다양한 장애물을 만난다. 모멘텀·적응 학습률·배치 정규화·기울기 클리핑은 각각 다른 장애물을 푸는 도구다.</p>
+
+      <p>그래서 8장의 핵심 메시지는 단순히 "Adam이 최고"가 아니다. 그것은 <strong>"각 도구는 어떤 문제를 해결하는가"를 이해하는 것</strong>이다. 모멘텀은 좁은 골짜기, 적응 학습률은 방향마다 다른 곡률, BN은 층간 분포 변화, 클리핑은 절벽 — 각각 다른 문제를 푼다. 새 프로젝트에서 어떤 도구를 쓸지는 만나는 문제에 따라 결정해야 한다.</p>
+
+      <h2>옵티마이저 선택 의사결정 가이드</h2>
+
+      <p>실전 프로젝트에서 옵티마이저를 선택할 때 다음 가이드를 따르자.</p>
+
+      <ol>
+        <li><strong>첫 시작은 Adam (학습률 0.001).</strong> 모든 모델에서 합리적 베이스라인.</li>
+        <li><strong>이미지 분류 최종 튜닝 단계라면 SGD + Momentum (학습률 0.1, 모멘텀 0.9).</strong> 정확도 1-2%포인트 더 짤 수 있다.</li>
+        <li><strong>트랜스포머 학습이라면 AdamW + warmup + cosine.</strong> 사실상 표준.</li>
+        <li><strong>RNN/LSTM이라면 RMSProp + 기울기 클리핑(임계값 5).</strong> Adam도 가능하지만 폭발 위험 때문에 클리핑 필수.</li>
+        <li><strong>매우 큰 배치 (8k+)라면 LARS, LAMB 같은 특수 옵티마이저 고려.</strong> ImageNet 분 단위 학습 등에서.</li>
+      </ol>
+
+      <h2>마지막 조언 — 시험 답안 작성법</h2>
+
+      <p>옵티마이저 비교나 알고리즘 설명 질문이 나오면 다음 구조로 답안을 적자.</p>
+
+      <ol>
+        <li><strong>한 줄 정의</strong>: "이 알고리즘은 ... 한다."</li>
+        <li><strong>업데이트 식</strong>: 정확한 수식 — 기억해야 한다.</li>
+        <li><strong>왜 이런 모양인가</strong>: 어떤 문제를 해결하기 위해 이 모양인지.</li>
+        <li><strong>비교</strong>: 이전 알고리즘과의 차이가 한 가지라면 그 한 가지를 명시.</li>
+      </ol>
+
+      <p>그리고 옵티마이저 비교가 나오면, 단일 최고가 없다는 사실을 잊지 말자. 책의 결론도 그렇다. <em>"단일 최고 알고리즘은 아직 없다."</em> 답안에 이 균형감을 보이면 좋다.</p>
+
+      <p>마지막으로, 이 페이지를 시험 전날 한 번 더 펼치자. 25개 질문에 모두 답할 수 있다면 8장은 완성이다.</p>
+    </div>
+
+    <nav class="ch-foot" id="chFoot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'순수 vs ML 최적화' }, { no:'02', t:'학습의 장애물' }, { no:'03', t:'미니배치 SGD 1' }, { no:'04', t:'미니배치 SGD 2' },
+    { no:'05', t:'학습률의 의미' }, { no:'06', t:'모멘텀 1' }, { no:'07', t:'모멘텀 2 (네스테로프)' }, { no:'08', t:'적응 1 (AdaGrad)' },
+    { no:'09', t:'적응 2 (RMSProp)' }, { no:'10', t:'적응 3 (Adam)' }, { no:'11', t:'초기화 1 (대칭성)' }, { no:'12', t:'초기화 2 (Xavier·He)' },
+    { no:'13', t:'배치 정규화 1' }, { no:'14', t:'배치 정규화 2' }, { no:'15', t:'학습률 스케줄' }, { no:'16', t:'기울기 클리핑' },
+    { no:'17', t:'시험 대비' },
+  ];
+  const CUR = '17';
+  const navlist = document.getElementById('navlist');
+  SUBS.forEach(s => { const li = document.createElement('li'); li.innerHTML = `<a href="${s.no}.html"${s.no===CUR?' class="current"':''}>${s.t}</a>`; navlist.appendChild(li); });
+  const chFoot = document.getElementById('chFoot');
+  const idx = SUBS.findIndex(s => s.no === CUR);
+  const prev = idx > 0 ? SUBS[idx-1] : { no:'index', t:'표지로' };
+  const next = idx < SUBS.length-1 ? SUBS[idx+1] : { no:'index', t:'표지로' };
+  chFoot.innerHTML = `<a href="${prev.no}.html"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` + `<a href="${next.no}.html" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
+        throwOnError: false,
+      });
+    }
+    // Quiz 아코디언
+    document.querySelectorAll('.quiz-item').forEach(item => {
+      item.querySelector('.quiz-q').addEventListener('click', () => {
+        item.classList.toggle('open');
+      });
+    });
+  });
+</script>
+</body>
+</html>

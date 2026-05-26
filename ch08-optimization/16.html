@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>16 · 기울기 클리핑 — 절벽에서 방향 유지</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="topbar">
+  <a class="home" href="index.html">← Ch.08 최적화</a>
+  <span class="ch-mini">SUB 16 / 17</span>
+</div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol id="navlist"></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 16 · 절벽 같은 손실 지형에서 한 스텝의 폭주를 막는다</span>
+      <h1>크기는 줄이되,<br><span class="t-style">방향은 그대로</span> 유지하라</h1>
+      <p class="lede">기울기 클리핑은 한 줄짜리 안전벨트다. 기울기 노름이 임계값을 넘으면 그 크기만 잘라낸다. RNN의 폭발 기울기를 막는 사실상의 표준이며, Ch.10에서 다시 만난다.</p>
+    </header>
+
+    <div class="prose">
+
+      <p>2번 절에서 신경망 학습의 진짜 장애물 중 하나로 <strong>절벽(cliff)과 폭발 기울기(exploding gradient)</strong>를 봤다. 깊은 네트워크, 특히 RNN 같은 순환 구조에서는 손실 함수 표면에 갑자기 매우 가파른 영역이 나타날 수 있다. 평소엔 평탄한 영역을 따라 학습이 잘 진행되다가, 어느 순간 절벽 같은 영역에 진입하면 기울기가 100배, 1000배로 폭증한다.</p>
+
+      <p>이 상황에서 평범한 SGD 스텝을 밟으면 어떻게 되는가? 학습률 $\varepsilon$이 0.01이고 기울기 노름이 갑자기 1000이 되면, 파라미터가 한 스텝에 노름 10만큼 움직인다. 보통 한 스텝의 거리는 0.01 정도이므로, 이는 1000배의 폭주다. 결과적으로 파라미터가 절벽 너머로 튕겨 나가, 지금까지의 학습 성과를 한순간에 잃는다. 운이 나쁘면 발산까지 한다.</p>
+
+      <p><strong>기울기 클리핑(gradient clipping)</strong>은 이 폭주를 막는 매우 단순한 도구다. 기울기의 노름이 임계값 $c$를 넘으면, 노름을 $c$로 잘라내고 방향은 그대로 유지한다. 한 줄짜리 안전벨트다.</p>
+
+      <h2>두 가지 클리핑 방식</h2>
+
+      <p>실전에서 쓰이는 클리핑은 두 가지다.</p>
+
+      <p><strong>① Clip by norm (가장 흔함).</strong> 전체 기울기 벡터의 노름이 임계값을 넘으면, 방향은 유지하고 노름만 잘라낸다.</p>
+
+      <div class="math-block">$$ \hat{g} \leftarrow \begin{cases} c \cdot \frac{\hat{g}}{\|\hat{g}\|} & \|\hat{g}\| > c \\ \hat{g} & \|\hat{g}\| \le c \end{cases} $$</div>
+      <p class="math-note">clip-by-norm. 노름이 임계값 c를 넘으면 방향은 그대로, 크기만 c로 잘라낸다. PyTorch의 `clip_grad_norm_`.</p>
+
+      <p><strong>② Clip by value (덜 흔함).</strong> 기울기 벡터의 각 성분을 개별적으로 $[-c, c]$로 잘라낸다.</p>
+
+      <div class="math-block">$$ \hat{g}_i \leftarrow \max(-c, \min(c, \hat{g}_i)) $$</div>
+      <p class="math-note">clip-by-value. 각 성분을 독립적으로 자른다. 방향이 바뀔 수 있다는 단점.</p>
+
+      <p>둘 중 clip-by-norm이 더 흔히 쓰이는 이유는 <strong>방향이 보존되기 때문</strong>이다. clip-by-value는 각 성분을 따로 자르므로, 큰 성분이 잘리고 작은 성분은 그대로라 방향이 왜곡될 수 있다. clip-by-norm은 전체를 같은 비율로 줄이므로 방향이 유지된다.</p>
+
+      <div class="analogy">
+        내리막길에서 속도가 너무 붙었을 때, 운전사는 두 가지 선택지가 있다. <b>① 핸들은 그대로 둔 채 브레이크만 밟는다 (clip-by-norm).</b> 방향은 유지하고 속도만 줄임. <b>② 핸들도 같이 흔들며 멈춘다 (clip-by-value).</b> 잠시 안정되지만 방향이 왜곡됨. 안전 운전의 표준은 ①이다. 그래서 기울기 클리핑의 표준도 clip-by-norm이다.
+      </div>
+
+      <h2>왜 clip-by-norm이 작동하는가</h2>
+
+      <p>clip-by-norm의 핵심 통찰은 다음과 같다. <strong>절벽 근처에서 기울기 방향은 의미 있는 정보를 담고 있다 — 어느 방향으로 가야 비용이 줄어드는지를 가리킨다. 문제는 그 크기가 너무 클 뿐이다.</strong> 그러니 방향은 살리고 크기만 잘라내면 절벽을 안전하게 빠져나갈 수 있다.</p>
+
+      <p>구체적으로 보자. 기울기 노름이 1000이고 임계값이 1이라면, 클리핑 후 노름은 1이다. 학습률 0.01과 곱하면 한 스텝 거리는 0.01이다. 평소 스텝과 같은 크기다. 발산할 위험이 없다. 그러면서도 방향은 절벽에서 빠져나가는 쪽을 가리키고 있으므로, 다음 스텝에서는 절벽을 벗어난다.</p>
+
+      <h2>임계값 c는 어떻게 잡는가</h2>
+
+      <p>임계값 $c$는 실전에서 1.0 또는 5.0이 흔하다. 너무 작으면 정상적인 기울기까지 잘라내 학습이 느려진다. 너무 크면 폭발을 막지 못한다.</p>
+
+      <p>한 가지 실용적 방법은 학습 초반의 기울기 노름을 모니터링하는 것이다. 정상 상태에서 기울기 노름이 0.1-1 사이라면, 임계값을 5 정도로 잡으면 평소엔 작동하지 않고 폭발 시에만 안전벨트로 작동한다.</p>
+
+      <h2>RNN에서 기울기 클리핑의 필연성</h2>
+
+      <p>기울기 클리핑은 모든 신경망에서 유용하지만, 특히 RNN(순환 신경망)에서는 사실상 필수다. RNN의 역전파인 BPTT(backpropagation through time)는 같은 가중치 행렬을 시간 스텝만큼 반복 곱한다. 시퀀스 길이 $T$가 100이면 $W^{100}$이 나온다.</p>
+
+      <p>$W$의 최대 고유값이 1.1이면 $1.1^{100} \approx 13780$이다. 시퀀스 길이가 200이면 $1.1^{200} \approx 1.9 \times 10^8$이다. 매우 작은 고유값 차이가 시간 방향으로 지수적으로 증폭된다. 그래서 RNN에서 폭발 기울기는 매우 흔하다.</p>
+
+      <p>2013년 Pascanu, Mikolov, Bengio의 논문 "On the difficulty of training recurrent neural networks"가 이 문제를 정면으로 다루며 기울기 클리핑을 RNN의 표준 도구로 자리잡게 했다. <strong>Chapter 10에서 RNN을 다룰 때 이 절을 다시 떠올리게 될 것이다.</strong></p>
+
+      <h2>위젯 — 절벽 손실 지형에서 클리핑 효과</h2>
+
+      <p>아래 위젯은 절벽이 있는 1D 손실 함수에서 클리핑 없는 SGD와 있는 SGD의 궤적을 비교한다. 클리핑 없는 SGD는 절벽에 진입하면 파라미터가 멀리 튕겨 나간다. 클리핑 있는 SGD는 안전하게 절벽을 빠져나간다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 16</span><span>절벽 손실 지형에서 클리핑 유무 비교</span></div>
+        <div style="padding: 1.2rem 1.1rem;">
+          <canvas id="clipCanvas" width="800" height="420" style="width: 100%; height: 420px; display: block; background: #fff; border: 1px solid var(--line); border-radius: 8px;"></canvas>
+        </div>
+        <div class="widget-controls">
+          <div class="slider">
+            <label>클리핑 임계값 c <b id="cVal">1.0</b></label>
+            <input id="cSlide" type="range" min="0.1" max="10" value="1.0" step="0.1">
+          </div>
+          <div class="slider">
+            <label>학습률 ε <b id="lrValClip">0.05</b></label>
+            <input id="lrSlideClip" type="range" min="0.01" max="0.3" value="0.05" step="0.01">
+          </div>
+          <button class="btn ghost" id="clipRestart">처음부터</button>
+        </div>
+      </div>
+      <p class="widget-cap">파랑 = 클리핑 없는 SGD. 절벽에 진입하면 한 스텝에 멀리 튕겨 나감. 주황 = clip-by-norm SGD. 절벽에서도 한 스텝 거리가 일정해 안전하게 빠져나감. c를 매우 크게 (예: 10) 잡으면 클리핑이 무력화되어 SGD와 같아진다.</p>
+    </div>
+
+    <div class="prose">
+
+      <h2>기울기 클리핑이 다른 알고리즘과 결합하는 방식</h2>
+
+      <p>기울기 클리핑은 어떤 옵티마이저와도 함께 쓸 수 있다. SGD, 모멘텀, Adam 모두 클리핑 후의 기울기로 작동한다. 클리핑은 옵티마이저의 일부가 아니라, 옵티마이저에 들어가기 전 단계의 안전벨트다.</p>
+
+      <p>한 가지 미묘한 점은 Adam과 클리핑의 결합이다. Adam은 이미 2차 모멘트로 학습률을 조정하므로, 큰 기울기가 들어와도 어느 정도 흡수한다. 그래도 매우 큰 기울기 한 번이 Adam의 2차 모멘트 $r$을 크게 흔들어 그 영향이 오랫동안 남는다. 그래서 RNN처럼 폭발 기울기가 자주 발생하는 상황에서는 Adam도 클리핑과 함께 쓰는 게 좋다.</p>
+
+      <h2>전역 노름(global norm) vs 파라미터별 노름</h2>
+
+      <p>clip-by-norm에서 또 한 가지 결정이 필요하다. "어느 노름을 자를 것인가?" 두 가지 선택이 있다.</p>
+
+      <p><strong>① 전역 노름 (global norm):</strong> 모든 파라미터의 기울기를 한 벡터로 묶어 그 노름을 자른다. PyTorch의 `clip_grad_norm_` 기본 동작.</p>
+
+      <p><strong>② 파라미터별 노름 (per-parameter norm):</strong> 각 파라미터 그룹(예: 한 층)의 기울기 노름을 따로 자른다.</p>
+
+      <p>일반적으로 전역 노름이 표준이다. 이유는 모델의 한 부분에서만 발생한 폭발이 전체에 영향을 미치는 것을 방지하기 위해서다. 그러나 매우 큰 모델(트랜스포머 LLM 등)에서는 파라미터별 노름이 더 정밀한 통제를 가능하게 한다. AdamW + per-parameter clipping이 일부 LLM 학습에서 쓰인다.</p>
+
+      <h2>시험 답안 핵심</h2>
+
+      <p>기울기 클리핑이 시험에 나오면 다음 세 가지를 적자. 첫째, <strong>기울기 노름이 임계값 c를 넘으면 c로 줄임, 방향은 유지 (clip-by-norm)</strong>. 둘째, <strong>절벽·폭발 기울기에서 한 스텝 폭주 방지</strong>. 셋째, <strong>RNN에서 사실상 필수 — 시퀀스 길이에 따라 기울기가 지수적으로 폭발</strong>. Ch.10 RNN과의 연결고리도 함께.</p>
+    </div>
+
+    <nav class="ch-foot" id="chFoot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'순수 vs ML 최적화' }, { no:'02', t:'학습의 장애물' }, { no:'03', t:'미니배치 SGD 1' }, { no:'04', t:'미니배치 SGD 2' },
+    { no:'05', t:'학습률의 의미' }, { no:'06', t:'모멘텀 1' }, { no:'07', t:'모멘텀 2 (네스테로프)' }, { no:'08', t:'적응 1 (AdaGrad)' },
+    { no:'09', t:'적응 2 (RMSProp)' }, { no:'10', t:'적응 3 (Adam)' }, { no:'11', t:'초기화 1 (대칭성)' }, { no:'12', t:'초기화 2 (Xavier·He)' },
+    { no:'13', t:'배치 정규화 1' }, { no:'14', t:'배치 정규화 2' }, { no:'15', t:'학습률 스케줄' }, { no:'16', t:'기울기 클리핑' },
+    { no:'17', t:'시험 대비' },
+  ];
+  const CUR = '16';
+  const navlist = document.getElementById('navlist');
+  SUBS.forEach(s => { const li = document.createElement('li'); li.innerHTML = `<a href="${s.no}.html"${s.no===CUR?' class="current"':''}>${s.t}</a>`; navlist.appendChild(li); });
+  const chFoot = document.getElementById('chFoot');
+  const idx = SUBS.findIndex(s => s.no === CUR);
+  const prev = idx > 0 ? SUBS[idx-1] : { no:'index', t:'표지로' };
+  const next = idx < SUBS.length-1 ? SUBS[idx+1] : { no:'index', t:'표지로' };
+  chFoot.innerHTML = `<a href="${prev.no}.html"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` + `<a href="${next.no}.html" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
+        throwOnError: false,
+      });
+    }
+  });
+
+  (function() {
+    const css = getComputedStyle(document.documentElement);
+    const C = {
+      structure: css.getPropertyValue('--structure').trim() || '#2D5B7A',
+      style: css.getPropertyValue('--style').trim() || '#C0492E',
+      faint: css.getPropertyValue('--ink-faint').trim() || '#8E8576',
+      line: '#d8d2c4',
+    };
+    const cvs = document.getElementById('clipCanvas');
+    const cSlide = document.getElementById('cSlide');
+    const cVal = document.getElementById('cVal');
+    const lrSlide = document.getElementById('lrSlideClip');
+    const lrVal = document.getElementById('lrValClip');
+    const restartBtn = document.getElementById('clipRestart');
+
+    // 절벽 손실 함수: 평탄 + 절벽
+    function J(t) {
+      const cliff = 30 * Math.exp(-((t-0.7)*(t-0.7)) / (2 * 0.001)); // 0.7 근처에 절벽
+      const flat = 0.5 * (t-1.0) * (t-1.0); // 1.0 근처 최솟값
+      return flat + cliff * 0.05;
+    }
+    function gradJ(t) {
+      const eps = 1e-4;
+      return (J(t+eps) - J(t-eps)) / (2*eps);
+    }
+
+    let tNoClip, tClip;
+    let trajNoClip, trajClip;
+    function reset() {
+      tNoClip = 0.0; tClip = 0.0;
+      trajNoClip = [tNoClip]; trajClip = [tClip];
+    }
+    reset();
+    restartBtn.addEventListener('click', reset);
+
+    function tick() {
+      const c = +cSlide.value;
+      const lr = +lrSlide.value;
+      // No clip
+      const gN = gradJ(tNoClip);
+      tNoClip -= lr * gN;
+      if (Math.abs(tNoClip) > 3) tNoClip = 3 * Math.sign(tNoClip);
+      trajNoClip.push(tNoClip);
+      // Clip by norm
+      const gC = gradJ(tClip);
+      const gCNorm = Math.abs(gC);
+      const gCClipped = gCNorm > c ? c * Math.sign(gC) : gC;
+      tClip -= lr * gCClipped;
+      trajClip.push(tClip);
+      if (trajNoClip.length > 80) { trajNoClip.shift(); trajClip.shift(); }
+    }
+
+    function draw() {
+      const ctx = cvs.getContext('2d');
+      const W = cvs.width, H = cvs.height;
+      ctx.clearRect(0,0,W,H);
+      ctx.strokeStyle = C.line; ctx.strokeRect(0.5,0.5,W-1,H-1);
+      const X = t => 40 + (t+0.5)/3 * (W-60);
+      const Y = j => H - 40 - Math.min(2, j) * (H-80) / 2;
+      // 손실 함수
+      ctx.strokeStyle = C.faint; ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      for (let i = -50; i <= 250; i++) {
+        const t = i*0.01;
+        if (t < -0.5 || t > 2.5) continue;
+        const j = J(t);
+        if (j > 2) continue;
+        if (i === -50) ctx.moveTo(X(t), Y(j));
+        else ctx.lineTo(X(t), Y(j));
+      }
+      ctx.stroke();
+      // 최솟값
+      ctx.fillStyle = C.faint;
+      ctx.beginPath(); ctx.arc(X(1.0), Y(0), 4, 0, Math.PI*2); ctx.fill();
+      ctx.font='11px monospace';
+      ctx.fillText('최솟값 t=1', X(1.0)+8, Y(0)-2);
+      ctx.fillText('절벽', X(0.7)-12, Y(1.5));
+      // No clip 궤적
+      ctx.strokeStyle = C.structure; ctx.lineWidth = 1.2; ctx.globalAlpha=0.5;
+      ctx.beginPath();
+      trajNoClip.forEach((t, i) => { const j = J(t); if (i===0) ctx.moveTo(X(t), Y(j)); else ctx.lineTo(X(t), Y(j)); });
+      ctx.stroke();
+      ctx.globalAlpha=1.0;
+      // 점
+      ctx.fillStyle = C.structure;
+      ctx.beginPath(); ctx.arc(X(tNoClip), Y(J(tNoClip)), 6, 0, Math.PI*2); ctx.fill();
+      // Clip 궤적
+      ctx.strokeStyle = C.style; ctx.lineWidth = 1.2; ctx.globalAlpha=0.5;
+      ctx.beginPath();
+      trajClip.forEach((t, i) => { const j = J(t); if (i===0) ctx.moveTo(X(t), Y(j)); else ctx.lineTo(X(t), Y(j)); });
+      ctx.stroke();
+      ctx.globalAlpha=1.0;
+      ctx.fillStyle = C.style;
+      ctx.beginPath(); ctx.arc(X(tClip), Y(J(tClip)), 6, 0, Math.PI*2); ctx.fill();
+
+      ctx.fillStyle = C.faint; ctx.font='12px monospace';
+      ctx.fillText('파랑 = 클리핑 없음, 주황 = clip-by-norm', 14, 22);
+      ctx.fillText('y축 = J(θ), x축 = θ', 14, 40);
+    }
+
+    function loop() {
+      const c = +cSlide.value;
+      const lr = +lrSlide.value;
+      cVal.textContent = c.toFixed(1);
+      lrVal.textContent = lr.toFixed(2);
+      tick();
+      draw();
+      setTimeout(() => requestAnimationFrame(loop), 80);
+    }
+    cSlide.addEventListener('input', reset);
+    lrSlide.addEventListener('input', reset);
+    loop();
+  })();
+</script>
+</body>
+</html>

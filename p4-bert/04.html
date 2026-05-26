@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>04 · 입력 표현 — 세 임베딩의 합</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="assets/bert.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Chapter 04 · 입력 — 세 임베딩이 만나는 자리</span>
+      <h1>어떤 단어인가, 어느 문장인가,<br>몇 번째 자리인가</h1>
+      <p class="lede">BERT 인코더로 들어가는 입력 벡터 한 개는 세 종류의 임베딩이 더해진 결과다. 토큰 자체의 정체, 어느 문장에 속하는가, 몇 번째 자리에 있는가. 이 셋이 한 자리에 모여야 인코더는 “이 단어를 어떻게 다뤄야 하는지”를 판단할 수 있다.</p>
+    </header>
+
+    <div class="prose">
+      <h2>1. 왜 임베딩이 “세 개”인가</h2>
+      <p>먼저 직관에서 출발하자. 인코더에 들어가는 입력 벡터 하나가 답해야 하는 질문은 세 가지다.</p>
+      <ul style="font-size:.95rem; color:var(--ink-soft); line-height:1.7;">
+        <li><b>① 이 자리는 어떤 단어인가?</b> “cat” 인가 “dog” 인가. 단어 자체의 정체.</li>
+        <li><b>② 이 단어는 어느 문장에 속하는가?</b> 두 문장을 입력 받는 작업(NLI, QA)에서 어느 쪽 문장에 속한 단어인지 알아야 한다.</li>
+        <li><b>③ 이 단어는 몇 번째 자리에 있는가?</b> 어텐션 자체는 위치를 모르므로(softmax 는 순서에 무관하다) 위치 정보를 따로 넣어 줘야 한다.</li>
+      </ul>
+
+      <p>세 정보를 하나의 입력 벡터로 합치는 가장 단순한 방법은 “세 임베딩을 모두 같은 차원으로 만들어서 그냥 더하기”다. BERT 는 정확히 그렇게 한다. 세 임베딩이 모두 $\mathbb{R}^H$ 차원이고(H=768 for BASE), 한 위치의 최종 입력 벡터는 셋의 단순 합이다.</p>
+
+      <div class="math-block">$$ x_i = E_{\text{tok}}(w_i) + E_{\text{seg}}(s_i) + E_{\text{pos}}(i) $$</div>
+      <p class="math-note">$w_i$ 는 $i$ 번째 토큰의 ID. $s_i$ 는 $i$ 번째 토큰이 속한 문장 라벨(A 또는 B). $i$ 는 위치 인덱스(0, 1, 2, …).</p>
+
+      <p>이 식은 단순하지만 한 가지 의문을 남긴다. “셋을 그냥 더해도 정보가 섞이지 않고 잘 분리될까?” 답은 “학습이 알아서 분리한다”이다. 임베딩 행렬들이 학습 가능한 파라미터이므로, 인코더가 이 세 신호를 구분해 사용할 수 있도록 임베딩들의 값이 자연스럽게 갈라진다.</p>
+
+      <div class="analogy">
+        세 색의 잉크를 같은 종이 위에 겹쳐 인쇄한다고 생각하자. 빨강은 “단어”, 파랑은 “어느 문장”, 노랑은 “자리”. 합쳐진 인쇄물을 보면 세 색이 겹쳐 있어 한 점은 “주황빛”이거나 “초록빛”이지만, 시력이 좋은 독자라면(=충분히 학습된 인코더라면) 각 색의 패턴을 어느 정도 분리해 읽을 수 있다.
+      </div>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 03</span><span>세 임베딩의 합 — 단계별 시각화</span></div>
+        <div id="emb"></div>
+      </div>
+      <p class="widget-cap">윗 줄부터 토큰·세그먼트·위치 임베딩이고, 마지막 줄(굵은 사각형)이 셋을 더한 최종 입력 벡터다. 세그먼트는 두 색(A=청록, B=자홍)으로 첫 [SEP] 를 기준으로 갈라지고, 위치는 모든 자리에 다른 값이 들어간다. 모두 같은 차원이라 단순 덧셈으로 합쳐진다는 점이 핵심.</p>
+    </div>
+
+    <div class="prose">
+      <h2>2. 토큰 임베딩 — WordPiece 라는 부분 단어 단위</h2>
+      <p>가장 먼저, 입력 문장을 어떻게 “토큰” 으로 자르는가의 문제가 있다. 가장 단순한 방법은 공백(space) 으로 단어를 자르는 것이다. 그러나 이 방식은 두 가지 문제를 만든다.</p>
+      <ul style="font-size:.95rem; color:var(--ink-soft); line-height:1.7;">
+        <li><b>어휘 폭발.</b> 영어만 해도 수십만 개의 단어가 있고, 신조어와 이름까지 합치면 끝이 없다. 모든 단어에 임베딩을 할당하려면 어휘집(vocabulary) 이 너무 커진다.</li>
+        <li><b>희귀어 미등록.</b> 학습 시 본 적 없는 단어가 등장하면 “모르는 단어”로 처리할 수밖에 없다. 즉 출현 빈도가 낮은 단어는 모두 같은 [UNK] 토큰이 되어 의미가 죽는다.</li>
+      </ul>
+
+      <p>BERT 는 이 문제를 해결하려고 <strong>WordPiece</strong> 라는 부분 단어 토큰화(subword tokenization) 를 쓴다. 어휘집 크기는 약 3만 개(영어 BERT 는 30,522). 단어 “unbelievable” 같은 긴 단어는 “un”, “##believ”, “##able” 처럼 더 작은 조각으로 쪼개진다(## 은 “이 조각은 단어 시작이 아니라 중간”이라는 표시). 자주 등장하는 단어는 통째로 토큰이 되고, 드문 단어만 조각으로 쪼개진다.</p>
+
+      <div class="def-box">
+        <div class="deft">WordPiece 의 핵심</div>
+        <p>모든 단어를 표현할 수 있도록 “자주 쓰이는 조각 30,522개”의 어휘집을 만든다. 새로운 단어가 와도 항상 조각들의 조합으로 분해할 수 있으므로 [UNK] 가 거의 발생하지 않는다.</p>
+      </div>
+
+      <p>일단 어떤 토큰을 받았으면, 그 토큰의 ID 를 인덱스로 사용해 $V \times H$ 크기의 토큰 임베딩 테이블에서 한 행을 꺼낸다($V$ = 어휘집 크기 30,522, $H$ = 768 또는 1024). 이 행이 그 토큰의 $E_{\text{tok}}$ 다. 임베딩 테이블 자체가 학습되는 파라미터다.</p>
+
+      <h2>3. 세그먼트 임베딩 — “어느 문장” 표시</h2>
+      <p>BERT 는 한 번의 입력으로 한 문장만이 아니라 두 문장도 받을 수 있다. 예를 들어 자연어 추론(NLI) 작업은 “전제 문장과 가설 문장이 함의 관계인지 모순인지”를 묻는데, 두 문장을 같이 입력해야 한다. 그래서 BERT 는 모든 입력에 “이 토큰이 어느 문장에 속하는가”를 알려 주는 두 번째 임베딩을 추가한다.</p>
+
+      <p>이건 매우 단순하다. 학습 가능한 임베딩 벡터가 단 두 개($E_A, E_B$) 만 있다. 첫 [SEP] 까지의 토큰은 모두 $E_A$, 그 다음부터 마지막 [SEP] 까지의 토큰은 모두 $E_B$ 를 받는다. 한 문장만 입력하는 경우엔 모든 토큰이 $E_A$ 를 받는다.</p>
+
+      <div class="analogy">
+        교실에서 학생마다 “모자 색”으로 어느 반인지를 표시한다고 하자. 1반은 빨간 모자, 2반은 파란 모자. 모자만 봐도 두 반이 섞여 있어도 누가 어느 반인지 구별된다. 세그먼트 임베딩이 정확히 그 모자 색이다.
+      </div>
+
+      <h2>4. 위치 임베딩 — 자리 번호</h2>
+      <p>세 번째 임베딩은 위치다. 왜 필요한가? 트랜스포머의 self-attention 은 모든 토큰을 동시에 본다. 어떤 토큰이 다른 토큰과 “닮았는지”만 본다. 그런데 닮음에는 순서 정보가 없다. “나는 너를 사랑한다”와 “너는 나를 사랑한다”가 self-attention 입장에서는 같은 토큰 집합이다(단어 셋 = {나, 는/는, 너, 를/를, 사랑, 한다}). 그런데 의미는 정반대다. 그러므로 위치 정보를 어딘가에서 모델에 알려 줘야 한다.</p>
+
+      <p>P3 의 원조 트랜스포머는 “사인·코사인 함수로 만든 고정 패턴”을 위치 정보로 사용했다. BERT 는 다른 접근을 택했다 — <strong>학습 가능한 위치 임베딩</strong>. 즉 각 위치(0, 1, 2, …, 511) 마다 별도의 임베딩 벡터 $E_{\text{pos}}(i)$ 가 있고, 이 벡터들도 다른 임베딩처럼 학습된다.</p>
+
+      <p>BERT 의 최대 입력 길이는 512 토큰이다. 즉 위치 임베딩 테이블은 $512 \times H$ 크기다. 더 긴 문장은 잘라야 한다. 이 한계는 BERT 의 단점 중 하나로 자주 지적된다 — 긴 문서를 통째로 처리하기 어렵다(7장과 13장에서 다시 언급).</p>
+
+      <div class="def-box mask-side">
+        <div class="deft">왜 사인·코사인 대신 학습 가능?</div>
+        <p>두 방식 모두 위치 정보를 주입한다는 점에서 같지만, 학습 가능한 방식은 BERT 처럼 “고정된 최대 길이”가 있을 때 더 자연스럽다. 데이터에서 “이 위치는 보통 어떤 역할을 하는가”를 직접 배우게 둔다.</p>
+      </div>
+
+      <h2>5. 셋을 어떻게 한 벡터로 합치는가</h2>
+      <p>이제 다시 처음으로 돌아가자. 한 토큰 자리의 최종 입력 벡터는 세 임베딩의 단순 합이다.</p>
+      <div class="math-block">$$ x_i = E_{\text{tok}}(w_i) + E_{\text{seg}}(s_i) + E_{\text{pos}}(i) $$</div>
+      <p>그 다음에 한 가지 처리가 더 추가된다. 합한 결과에 LayerNorm 을 적용하고 dropout 을 한 번 거친다. LayerNorm 은 한 토큰 벡터 안의 값들의 평균과 분산을 정규화해서 분포를 안정화한다. 이걸 거친 결과가 인코더 첫 층의 입력이 된다.</p>
+
+      <div class="math-block">$$ \tilde{x}_i = \text{Dropout}\!\left(\text{LayerNorm}\!\left(E_{\text{tok}}(w_i) + E_{\text{seg}}(s_i) + E_{\text{pos}}(i)\right)\right) $$</div>
+      <p class="math-note">$\tilde{x}_i$ 가 첫 인코더 층에 입력되는 벡터다. 이 식 한 줄이 “BERT 의 입력단”을 모두 표현한다.</p>
+
+      <h2>6. 입력의 시작과 끝 — 특수 토큰의 자리</h2>
+      <p>한 가지 빠뜨릴 수 없는 것이 있다. 입력 토큰의 맨 앞과 두 문장 사이, 그리고 맨 끝에는 특수 토큰이 들어간다. 일반적인 두 문장 입력은 다음과 같이 생겼다.</p>
+
+      <pre style="background:var(--paper-2); padding:1rem; border-radius:8px; border:1px solid var(--line-soft); font-family:var(--mono); font-size:.85rem; line-height:1.6; overflow-x:auto;">
+[CLS] my dog is cute [SEP] he likes play ##ing [SEP]
+  ↑     ─────── A ─────  ↑   ──────── B ────────  ↑
+시작                    구분                         끝</pre>
+
+      <p>[CLS] 는 “이 입력 전체의 요약을 담아 둘 자리”이고, [SEP] 는 “문장 경계”다. 자세한 역할은 다음 장(5장)에서 다룬다. 일단 여기서는 “입력은 [CLS] 로 시작하고, 문장 경계와 끝마다 [SEP] 가 들어간다”는 사실만 기억하면 된다.</p>
+
+      <h2>7. 정리 — 한 줄 입력의 해부</h2>
+      <p>한 번 더 그림을 정리하자. BERT 에 입력되는 한 토큰 자리는 다음 정보를 동시에 가지고 있다.</p>
+      <ol style="font-size:.95rem; color:var(--ink-soft); line-height:1.7;">
+        <li>이 자리에 어떤 WordPiece 토큰이 있는가 ($E_{\text{tok}}$).</li>
+        <li>이 토큰이 어느 문장에 속하는가 ($E_{\text{seg}}$, A 또는 B).</li>
+        <li>이 토큰의 위치는 몇 번째인가 ($E_{\text{pos}}$, 0…511).</li>
+      </ol>
+      <p>세 정보가 같은 차원으로 임베딩 되어 단순 덧셈으로 합쳐지고, LayerNorm 과 dropout 을 거쳐 첫 인코더 층에 들어간다. 다음 12층(또는 24층) 동안 이 한 벡터는 자기 자신을 보존하면서 동시에 좌우의 모든 다른 벡터들과 상호작용하며 “문맥이 풍부한 표현”으로 변해 간다.</p>
+
+      <p>다음 장에서는 이 입력에 들어 있는 세 특수 토큰 [CLS], [SEP], [MASK] 가 정확히 무엇을 하는지를 짚는다. 이 셋의 역할을 정확히 이해하면 BERT 의 미세조정 단계가 훨씬 잘 보인다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script src="assets/bert.js"></script>
+<script>
+  window.addEventListener('load', () => {
+    BERT.buildNav('04');
+    const e = document.getElementById('emb');
+    BERT.onVisible(e, () => BERT.embStack(e));
+  });
+</script>
+</body>
+</html>

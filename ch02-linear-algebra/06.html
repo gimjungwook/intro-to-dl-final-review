@@ -3,29 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ch.02 · 06 SVD — 특이값분해</title>
-<link rel="stylesheet" href="../assets/site.css">
+<title>06 · 특수 행렬</title>
+<link rel="stylesheet" href="./assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
-<style>
-  .svd-stage { padding: 1.4rem 1.4rem 0; }
-  .svd-imgs { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: center; }
-  .svd-img { text-align: center; }
-  .svd-img canvas { display: block; width: 100%; max-width: 320px; height: 320px; background: #111; border-radius: 8px; border: 1px solid var(--line); margin: 0 auto; image-rendering: pixelated; }
-  .svd-img h4 { margin: .5rem 0 .3rem; font-family: var(--serif); font-size: 1rem; color: var(--ink); }
-  .svd-img p { font-family: var(--mono); font-size: .78rem; color: var(--ink-faint); margin: 0; }
-  .svd-bars { padding: 1rem 1.2rem 0; }
-  .svd-bars h5 { font-family: var(--mono); font-size: .8rem; letter-spacing: .08em; color: var(--ink-soft); margin: 0 0 .5rem; text-transform: uppercase; }
-  .svd-bar-row { display: grid; grid-template-columns: 2.5rem 1fr 3rem; align-items: center; gap: .5rem; padding: .15rem 0; font-family: var(--mono); font-size: .78rem; color: var(--ink-soft); }
-  .svd-bar-row.dropped { opacity: .25; }
-  .svd-bar-row .bar-track { height: 8px; background: var(--paper-sink); border-radius: 4px; overflow: hidden; }
-  .svd-bar-row .bar-fill { display: block; height: 100%; background: var(--structure); }
-  .svd-bar-row.dropped .bar-fill { background: var(--ink-faint); }
-  .svd-ctl { padding: 1rem 1.2rem; display: flex; gap: 1.2rem; align-items: center; flex-wrap: wrap; }
-  .svd-ctl .slider { flex: 1; min-width: 220px; }
-  @media (max-width: 720px) { .svd-imgs { grid-template-columns: 1fr; } }
-</style>
 </head>
 <body>
 <div class="scroll-progress"></div>
@@ -36,273 +18,129 @@
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Ch.02 · Sub 06 · 모든 행렬의 분해</span>
-      <h1>SVD — 임의의 행렬을<br><span class="t-style">회전 · 스케일 · 회전</span>으로 쪼개기</h1>
-      <p class="lede">고유분해는 정사각·대칭 행렬에만 작동한다. 그러나 실제 데이터 행렬은 직사각형이다. 특이값분해(SVD)는 모든 행렬에 대해 항상 존재하며, 그 행렬이 무엇을 어떻게 하는지를 가장 명확하게 보여 주는 분해다.</p>
+      <span class="kicker">Sub 06 · 자주 만나는 좋은 모양들</span>
+      <h1>특수 행렬 —<br><span class="t-structure">대각·대칭·직교·단위</span></h1>
+      <p class="lede">어떤 행렬은 모양이 단순해서 계산이 쉽다. 어떤 행렬은 특정 성질을 보존해 “안전한 변환”이 된다. 이 sub에서 자주 만날 네 가지를 정리한다.</p>
     </header>
 
     <div class="prose">
-      <p>$m \times n$ 임의의 행렬 $\mathbf{A}$는 다음과 같이 항상 분해된다.</p>
+      <p>일반적인 행렬은 “계산이 무겁고 직관이 잘 안 잡히는” 경우가 많다. 그러나 어떤 특별한 모양의 행렬들은 매우 단순한 성질을 가져, 신경망과 수학 양쪽에서 “기본 도구”로 끊임없이 등장한다. 이 sub에서는 네 가지 — 단위행렬, 대각행렬, 대칭행렬, 직교행렬 — 의 정의와 의미를 한 자리에 정리한다. 각 행렬이 “공간에서 무엇을 보존하고 무엇을 바꾸는가”라는 관점으로 본다.</p>
 
-      <div class="math-block">$$ \mathbf{A} = \mathbf{U} \boldsymbol{\Sigma} \mathbf{V}^\top $$</div>
-      <p class="math-note">U는 m×m 직교, Σ는 m×n 대각, V는 n×n 직교 행렬.</p>
+      <h2>① 단위행렬(Identity matrix) — 아무것도 하지 않는 행렬</h2>
+      <p>가장 단순한 특수 행렬은 단위행렬이다. 대각선만 1이고 나머지는 0이다.</p>
 
-      <p>이 한 줄을 기하학적으로 풀어 보면 다음과 같다. <strong>임의의 행렬 $\mathbf{A}$는 곧 “입력 공간에서 회전($\mathbf{V}^\top$) → 각 축마다 다른 스케일($\boldsymbol{\Sigma}$) → 출력 공간에서 또 한 번 회전($\mathbf{U}$)”의 조합이다.</strong> 즉, 어떤 행렬이든 결국 세 가지 단순한 변환의 합이다.</p>
+      <div class="math-block">$$ I_n = \begin{pmatrix} 1 & 0 & \cdots & 0 \\ 0 & 1 & \cdots & 0 \\ \vdots & & \ddots & \vdots \\ 0 & 0 & \cdots & 1 \end{pmatrix} \in \mathbb{R}^{n \times n} $$</div>
+      <p class="math-note">I = identity. 대각 1, 나머지 0. n이 클수록 큰 정사각 단위행렬.</p>
 
-      <h2>각 부분의 의미</h2>
-      <table class="symbols">
-        <tr><td>$\mathbf{U}$</td><td>$m \times m$ 직교 행렬. 출력 공간의 새 기저. 열들이 <b>좌특이벡터(left singular vector)</b>. $\mathbf{A}\mathbf{A}^\top$의 고유벡터와 같다.</td></tr>
-        <tr><td>$\boldsymbol{\Sigma}$</td><td>$m \times n$ 대각 행렬. 대각에 <b>특이값 $\sigma_1 \geq \sigma_2 \geq \dots \geq 0$</b>. 각 방향이 얼마나 늘어나는지를 알려 주는 “스케일 다이얼”.</td></tr>
-        <tr><td>$\mathbf{V}^\top$</td><td>$n \times n$ 직교 행렬의 전치. 입력 공간의 새 기저. 행들이 <b>우특이벡터(right singular vector)</b>. $\mathbf{A}^\top\mathbf{A}$의 고유벡터와 같다.</td></tr>
-      </table>
+      <p>단위행렬의 성질은 단 하나다. <strong>어떤 행렬에 곱해도 아무 일도 일어나지 않는다.</strong></p>
 
-      <p>특이값은 <strong>항상 0 이상의 실수</strong>이고, 큰 순서대로 정렬된다. 이 정렬이 왜 중요한가? <em>“큰 특이값에 대응하는 방향이 행렬의 영향이 큰 방향”</em>이라는 직접적 해석을 주기 때문이다.</p>
+      <div class="math-block">$$ I\mathbf{x} = \mathbf{x}, \quad AI = A, \quad IA = A $$</div>
+      <p class="math-note">단위행렬은 곱셈의 항등원(identity element). 숫자의 1과 같은 역할.</p>
 
-      <h2>고유분해와의 관계</h2>
-      <p>SVD는 고유분해의 일반화다. 대칭이고 양의 정부호인 정사각 행렬에서는 두 분해가 일치한다 ($\mathbf{U} = \mathbf{V}$, $\boldsymbol{\Sigma} = \boldsymbol{\Lambda}$). 그러나 직사각이거나 비대칭이거나 음의 고유값이 섞인 행렬에서는 SVD가 더 일반적이고 안정적이다.</p>
-
-      <div class="math-block">$$ \mathbf{A}^\top \mathbf{A} = \mathbf{V} \boldsymbol{\Sigma}^\top \boldsymbol{\Sigma} \mathbf{V}^\top, \quad \mathbf{A} \mathbf{A}^\top = \mathbf{U} \boldsymbol{\Sigma} \boldsymbol{\Sigma}^\top \mathbf{U}^\top $$</div>
-      <p class="math-note">SVD의 V와 U는 각각 AᵀA와 AAᵀ의 고유분해에서 나온다. σᵢ² = λᵢ.</p>
-
-      <h2>저랭크 근사(Low-rank Approximation)</h2>
-      <p>SVD의 가장 강력한 응용은 <strong>저랭크 근사</strong>다. $\mathbf{A}$의 SVD를 외적(outer product) 합으로 다시 쓸 수 있다.</p>
-
-      <div class="math-block">$$ \mathbf{A} = \sum_{i=1}^{r} \sigma_i \, \mathbf{u}_i \mathbf{v}_i^\top $$</div>
-      <p class="math-note">r = rank(A). 각 항은 σᵢ × (좌특이벡터 ⊗ 우특이벡터).</p>
-
-      <p>이 합에서 작은 $\sigma_i$에 해당하는 항을 버리고 큰 것 $k$개만 남기면, 원래 행렬의 가장 좋은 <em>$k$-랭크 근사</em>가 된다 (에카르트-영(Eckart-Young) 정리). 이 근사는 프로베니우스 노름 기준으로 가능한 모든 $k$-랭크 행렬 중 최적이다.</p>
-
-      <div class="math-block">$$ \mathbf{A}_k = \sum_{i=1}^{k} \sigma_i \, \mathbf{u}_i \mathbf{v}_i^\top, \quad k < r $$</div>
-      <p class="math-note">k개 항만 남긴 근사. k가 클수록 정확하고, k가 작을수록 압축률이 높다.</p>
-
-      <p>이게 왜 실용적인가? 데이터 행렬의 특이값은 대개 빠르게 감소한다 — 큰 것 몇 개에 정보가 집중되고, 작은 것들은 노이즈이거나 무시할 만하다. 그래서 $k$를 작게 잡아도 원본의 핵심 정보가 거의 유지된다.</p>
-
-      <p>아래 위젯에서 직접 확인해 보자. 64x64 흑백 이미지의 SVD를 미리 계산해 두었고, 슬라이더로 사용하는 특이값 개수 $k$를 줄이면 이미지가 어떻게 흐려지는지 본다.</p>
-    </div>
-
-    <div class="widget">
-      <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 06</span><span>SVD 저랭크 근사 — k개의 특이값만 남기면?</span></div>
-        <div class="svd-stage">
-          <div class="svd-imgs">
-            <div class="svd-img">
-              <canvas id="svdOrig" width="64" height="64"></canvas>
-              <h4>원본 (k = 64)</h4>
-              <p id="svdOrigInfo">100% 정보</p>
-            </div>
-            <div class="svd-img">
-              <canvas id="svdRecon" width="64" height="64"></canvas>
-              <h4>근사 (k = <span id="svdK">8</span>)</h4>
-              <p id="svdReconInfo">8/64 특이값 사용</p>
-            </div>
-          </div>
-          <div class="svd-bars">
-            <h5>특이값 σ₁ ≥ σ₂ ≥ ... ≥ σ₆₄ (사용 = 파랑, 버린 = 회색)</h5>
-            <div id="svdBars"></div>
-          </div>
-          <div class="svd-ctl">
-            <div class="slider"><label>k (사용할 특이값 수) <b id="svdKLab">8</b></label><input type="range" id="svdSlider" min="1" max="64" step="1" value="8"></div>
-            <div style="font-family:var(--mono); font-size:.82rem; color:var(--ink-soft);">압축률: <b id="svdComp" style="color:var(--style)">25%</b><br>(저장: <b id="svdSize">1024 → 256 숫자</b>)</div>
-          </div>
-        </div>
-      </div>
-      <p class="widget-cap">왼쪽은 원본 64x64 이미지(가로/세로 줄무늬와 동심원이 섞인 패턴). 오른쪽은 가장 큰 k개의 특이값만 사용한 근사. k가 작아도 큰 구조는 살아남고, k가 5-10만 되어도 알아볼 수 있다. 모든 64개의 특이값이 필요한 것이 아니다. <b>이미지 압축, 노이즈 제거, 추천 시스템</b>이 모두 이 원리를 쓴다.</p>
-    </div>
-
-    <div class="prose">
-      <h2>SVD의 응용 — 딥러닝과 데이터 과학</h2>
-
-      <ul style="max-width: var(--measure); margin: 1rem auto; padding-left: 2.4rem; font-size: .95rem; color: var(--ink-soft); line-height: 1.7;">
-        <li><strong>주성분 분석(PCA)</strong>: 데이터 행렬 $\mathbf{X}$에 SVD를 직접 적용하면 공분산 행렬을 만들지 않고도 주성분을 얻는다. 수치적으로 더 안정적.</li>
-        <li><strong>잠재 의미 분석(LSA)</strong>: 문서-단어 행렬에 SVD를 적용해 의미적으로 비슷한 단어들을 묶는 기법. word2vec 이전의 표준이었다.</li>
-        <li><strong>추천 시스템</strong>: 사용자-아이템 평점 행렬을 저랭크 분해해 빈 칸을 예측. Netflix Prize의 핵심 기법.</li>
-        <li><strong>모델 압축</strong>: 신경망의 큰 가중치 행렬을 SVD로 분해한 뒤 작은 특이값을 버려 파라미터 수를 줄인다. 모바일 배포에 사용.</li>
-        <li><strong>의사역행렬</strong>: 직사각 행렬의 의사역행렬은 SVD로 정의된다. $\mathbf{A}^+ = \mathbf{V}\boldsymbol{\Sigma}^+\mathbf{U}^\top$.</li>
-      </ul>
-
-      <h2>의사역행렬(Pseudoinverse) — 모든 경우의 “역”</h2>
-      <p>역행렬 $\mathbf{A}^{-1}$은 정사각이고 비특이일 때만 존재한다. 그러나 실제 문제는 보통 다음과 같다 — “선형 시스템 $\mathbf{A}\mathbf{x} = \mathbf{b}$의 해를 찾고 싶은데, $\mathbf{A}$가 직사각이거나 해가 정확히 존재하지 않는다.” 이 경우 <strong>가장 그럴듯한 해</strong>를 SVD로 정의한다.</p>
-
-      <div class="math-block">$$ \mathbf{A}^+ = \mathbf{V} \boldsymbol{\Sigma}^+ \mathbf{U}^\top $$</div>
-      <p class="math-note">Σ⁺는 σᵢ ≠ 0인 자리에 1/σᵢ를 놓은 대각 행렬. (0인 자리는 그대로 0.)</p>
-
-      <p>이 의사역행렬로 $\mathbf{x} = \mathbf{A}^+ \mathbf{b}$를 계산하면, 두 가지 경우에서 동시에 의미를 가진다.</p>
-      <ul style="max-width: var(--measure); margin: 1rem auto; padding-left: 2.4rem; font-size: .95rem; color: var(--ink-soft); line-height: 1.7;">
-        <li>방정식이 <strong>해가 여러 개</strong>면, 가장 작은 노름의 해 (즉, 가장 “단순한” 해).</li>
-        <li>방정식이 <strong>해가 없으면</strong>, $\|\mathbf{A}\mathbf{x} - \mathbf{b}\|_2$를 최소화하는 최소제곱(least squares) 해.</li>
-      </ul>
-
-      <p>선형 회귀(Linear Regression)의 닫힌 해 $\mathbf{w} = (\mathbf{X}^\top \mathbf{X})^{-1} \mathbf{X}^\top \mathbf{y}$는 본질적으로 의사역행렬 $\mathbf{X}^+ \mathbf{y}$다. 그래서 의사역행렬은 <strong>가장 단순한 머신러닝 모델의 정확한 해</strong>를 정의한다.</p>
+      <p>단위행렬이 “자명한” 존재인데도 왜 중요한가? 두 가지 자리에서 결정적이다. 첫째는 <strong>역행렬의 정의</strong>다. 행렬 $A$의 역행렬 $A^{-1}$은 $AA^{-1} = A^{-1}A = I$를 만족하는 행렬로 정의된다. 즉 “곱해서 단위행렬이 되는 짝”이다. 둘째는 정칙화 항이다. 가중치를 0으로 잡아당기는 항을 변형하면 “단위행렬에 가까워지도록” 잡아당기는 항으로 일반화되기도 한다. ResNet의 “skip connection”도 사실상 $H(x) = F(x) + I(x)$의 형태로, 단위변환을 베이스로 두고 그 위에 차이만 학습하는 구조다.</p>
 
       <div class="analogy">
-        SVD는 행렬을 보는 <b>X선 사진</b>과 같다. 일반 사진은 행렬의 모든 성분을 보여 주지만 어디가 중요한지 알려 주지 않는다. SVD는 그 행렬을 “골격(큰 특이값)과 살(작은 특이값)”로 분해해, 골격만 남기고 살은 잘라낼 수 있게 한다. 그래서 같은 정보를 훨씬 적은 비용으로 저장할 수 있다.
+        단위행렬은 <b>맹물</b>이다. 어떤 음식에 더해도 맛이 변하지 않는다. 음식의 맛(원래 행렬)을 그대로 살리고 싶을 때, 또는 “기준점”을 정해 두고 거기서부터의 변화량만 보고 싶을 때 단위행렬을 쓴다. ResNet이 “원본 정보를 잃지 않으면서 그 위에 무엇을 더할지 학습한다”는 발상이 바로 이 맹물 + 양념의 발상이다.
       </div>
 
-      <h2>SVD의 계산 비용과 실제 사용</h2>
-      <p>SVD 계산은 $O(\min(mn^2, m^2n))$로 무겁다. 그래서 매우 큰 행렬에서는 정확한 SVD 대신 <strong>잘린 SVD(truncated SVD)</strong>나 <strong>무작위 SVD(randomized SVD)</strong>를 쓴다. 후자는 무작위 투영으로 $k$개의 특이값만 빠르게 근사하는 기법으로, 추천 시스템과 대규모 NLP에서 표준이다.</p>
+      <h2>② 대각행렬(Diagonal matrix) — 축마다 스케일</h2>
+      <p>대각선만 0이 아니고 나머지는 0인 행렬이다.</p>
 
-      <h3>핵심 정리 — 이것만은 기억하자</h3>
-      <ul class="checklist">
-        <li>A = UΣVᵀ. 모든 m×n 행렬에 대해 항상 존재한다.</li>
-        <li>U와 V는 직교 행렬, Σ는 대각 행렬에 특이값 σ₁ ≥ σ₂ ≥ ... ≥ 0.</li>
-        <li>기하학적으로: 회전 → 축마다 스케일 → 회전.</li>
-        <li>가장 큰 k개 특이값만 남기면 최적의 k-랭크 근사 (에카르트-영).</li>
-        <li>저랭크 근사는 이미지 압축, 추천 시스템, 모델 압축의 기반.</li>
-        <li>의사역행렬 A⁺ = VΣ⁺Uᵀ. 직사각 행렬에서도 “가장 그럴듯한 해”를 정의.</li>
-        <li>σᵢ² = AᵀA의 고유값. PCA는 SVD로 구현하는 것이 안정적.</li>
-      </ul>
+      <div class="math-block">$$ D = \text{diag}(d_1, d_2, \ldots, d_n) = \begin{pmatrix} d_1 & & 0 \\ & d_2 & \\ 0 & & d_n \end{pmatrix} $$</div>
+      <p class="math-note">diag = diagonal. 대각 원소만 적어두고 나머지는 0으로 간주.</p>
+
+      <p>대각행렬의 의미는 매우 직관적이다. $D\mathbf{x}$를 계산하면 각 좌표가 독립적으로 곱해진다.</p>
+
+      <div class="math-block">$$ D\mathbf{x} = \begin{pmatrix} d_1 x_1 \\ d_2 x_2 \\ \vdots \\ d_n x_n \end{pmatrix} $$</div>
+      <p class="math-note">i번째 좌표가 d_i배. 좌표끼리 섞이지 않음.</p>
+
+      <p>즉 대각행렬은 “각 축을 따로 늘이거나 줄이는” 변환이다. 좌표끼리 섞이지 않으므로, 어떤 좌표가 결과의 어떤 좌표로 가는지가 한눈에 보인다. <a href="04.html">sub 04</a>의 “스케일 행렬”이 정확히 대각행렬이다.</p>
+
+      <p>대각행렬의 좋은 점은 <strong>계산 비용이 압도적으로 싸다</strong>는 점이다. $n \times n$ 일반 행렬과 벡터의 곱은 $O(n^2)$ 연산이지만, 대각행렬과 벡터의 곱은 $O(n)$이다. 그래서 가능하면 “이 행렬을 대각으로 만들 수 있을까?”라고 묻는 것이 핵심 전략이 된다. 이 질문이 <a href="08.html">sub 08</a>의 고유분해(eigendecomposition)로 이어진다. 고유분해는 어떤 행렬이든 “자기 좌표계에서는 대각행렬처럼 보이게” 변환하는 작업이다.</p>
+
+      <div class="example">
+        <b>역행렬 계산</b>. 대각행렬의 역행렬은 “각 대각 원소의 역수”다. $D = \text{diag}(2, 3, 4)$이면 $D^{-1} = \text{diag}(0.5, 1/3, 0.25)$다. 일반 행렬의 역행렬 계산은 $O(n^3)$이 들어가는 어려운 작업이지만, 대각행렬은 거의 무료다. 단, 대각 원소 중에 0이 있으면 역수가 없으므로 역행렬도 없다. 0인 대각 원소는 “그 축의 정보를 모두 0으로 만든다”는 뜻이라 되돌릴 수 없다.
+      </div>
+
+      <h2>③ 대칭행렬(Symmetric matrix) — 자기 자신과 같은 전치</h2>
+      <p>전치를 했을 때 자기 자신이 되는 행렬을 대칭행렬이라고 한다.</p>
+
+      <div class="math-block">$$ A^\top = A \quad \Leftrightarrow \quad A_{ij} = A_{ji} \;\; \forall i, j $$</div>
+      <p class="math-note">i행 j열과 j행 i열의 원소가 같음. 대각선을 거울로 좌우 대칭.</p>
+
+      <p>대칭행렬은 정사각형($n \times n$)일 때만 정의된다. 자기 자신과 모양(차원)이 같아야 비교가 되기 때문이다. 시각적으로는 대각선을 기준으로 좌우 대칭이라 “접으면 겹친다”.</p>
+
+      <p>대칭행렬은 왜 특별할까? 세 가지 이유가 있다.</p>
+
+      <ol>
+        <li><strong>모든 고유값이 실수</strong>(real). 일반 행렬의 고유값은 복소수일 수 있지만, 대칭행렬은 항상 실수.</li>
+        <li><strong>고유벡터들이 서로 직교</strong>(orthogonal)하게 잡힐 수 있다. 즉 “서로 직각인 자연스러운 축”이 존재.</li>
+        <li><strong>스펙트럼 정리(spectral theorem)</strong>: 모든 대칭행렬은 $A = Q\Lambda Q^\top$로 분해된다. $Q$는 직교, $\Lambda$는 대각. <a href="09.html">sub 09</a>의 핵심.</li>
+      </ol>
+
+      <p>이 세 가지 성질이 PCA(<a href="09.html">sub 09</a>), 그리고 신경망의 헤시안(Hessian, <a href="12.html">sub 12</a>) 분석을 가능하게 한다. 데이터의 공분산 행렬(covariance matrix)은 항상 대칭이고, 함수의 2차 도함수(헤시안) 행렬도 대부분 대칭이다. 그래서 대칭행렬을 다루는 도구가 머신러닝의 “큰 기둥” 중 하나다.</p>
+
+      <div class="example">
+        <b>공분산 행렬</b>. $N$개의 데이터 샘플을 모은 설계 행렬 $X \in \mathbb{R}^{N \times d}$에서, 공분산 행렬은 $C = \frac{1}{N} X^\top X$로 정의된다(데이터를 평균 0으로 정렬한 경우). 이 $C \in \mathbb{R}^{d \times d}$는 항상 대칭이다. 왜? $C^\top = (\frac{1}{N} X^\top X)^\top = \frac{1}{N} X^\top X = C$이기 때문. 이 사실 덕분에 PCA가 안정적인 “직교 주축”을 항상 찾아낼 수 있다.
+      </div>
+
+      <h2>④ 직교행렬(Orthogonal matrix) — 길이와 각도를 보존</h2>
+      <p>전치가 곧 역행렬인 정사각 행렬을 직교행렬이라고 한다.</p>
+
+      <div class="math-block">$$ Q^\top Q = Q Q^\top = I \quad \Leftrightarrow \quad Q^{-1} = Q^\top $$</div>
+      <p class="math-note">직교(orthogonal)는 “열벡터들이 서로 직교, 그리고 단위벡터”라는 뜻. 정규직교(orthonormal)라고도 함.</p>
+
+      <p>직교행렬의 모든 열은 서로 직각이고 각각 단위벡터다. 이 사실에서 가장 중요한 성질이 따라온다. <strong>직교행렬을 곱해도 벡터의 길이가 변하지 않는다.</strong></p>
+
+      <div class="math-block">$$ \|Q\mathbf{x}\|_2 = \|\mathbf{x}\|_2 $$</div>
+      <p class="math-note">증명: ‖Qx‖² = (Qx)ᵀ(Qx) = xᵀQᵀQx = xᵀIx = xᵀx = ‖x‖².</p>
+
+      <p>즉 직교행렬은 “길이와 각도를 모두 보존하는 변환”이다. 회전(rotation)과 반사(reflection)가 직교행렬의 두 가지 대표적 예다. <a href="04.html">sub 04</a>에서 본 회전 행렬 $R_\theta$는 직교행렬이다.</p>
+
+      <div class="analogy">
+        직교행렬은 <b>지구본 돌리기</b>다. 지구본을 손으로 돌려도, 그 위에 그려진 두 도시 사이의 거리는 변하지 않는다. 한국과 미국 사이의 “직선 거리”는 지구본이 어떻게 놓여 있든 그대로다. 직교행렬도 이 “회전·뒤집기”의 수학적 표현으로, 데이터의 모든 상대적 관계를 보존한 채 단지 좌표축의 방향만 바꾸는 변환이다.
+      </div>
+
+      <p>직교행렬이 좋은 또 한 가지 이유는 <strong>수치 안정성(numerical stability)</strong>이다. 일반 행렬을 반복 곱하면 결과가 “폭발”하거나 “0으로 수렴”할 수 있다(고유값이 1이 아니면). 그러나 직교행렬을 100번 곱해도 길이가 그대로다. 이 사실이 RNN(recurrent neural network)의 “기울기 폭발/소멸 문제”를 막기 위한 “직교 가중치 초기화”의 근거가 된다. 또한 모든 SVD(<a href="10.html">sub 10</a>)와 QR 분해의 핵심 부품이 직교행렬이다.</p>
+
+      <div class="example">
+        <b>2×2 회전 행렬은 직교다</b>. $R_\theta = \begin{pmatrix} \cos\theta & -\sin\theta \\ \sin\theta & \cos\theta \end{pmatrix}$. 이 행렬의 두 열은 $(\cos\theta, \sin\theta)$와 $(-\sin\theta, \cos\theta)$. 각각의 길이는 $\cos^2\theta + \sin^2\theta = 1$이고, 두 열의 점 곱은 $\cos\theta \cdot (-\sin\theta) + \sin\theta \cdot \cos\theta = 0$이다. 단위 길이 + 직각 = 직교의 정의를 만족한다.
+      </div>
+
+      <h2>네 행렬의 관계 정리</h2>
+      <p>네 가지 특수 행렬은 서로 겹치기도 한다. 관계를 정리하면 다음과 같다.</p>
+
+      <div class="cmp">
+        <div class="card s1">
+          <h4>대각 ⊂ 대칭</h4>
+          <p>모든 대각행렬은 대칭이다. 비대각이 모두 0이므로 자명. 그러나 대칭이라고 모두 대각인 것은 아님.</p>
+        </div>
+        <div class="card s2">
+          <h4>직교 ∩ 대각 = 부호행렬</h4>
+          <p>직교이면서 대각인 행렬은 대각 원소가 ±1뿐인 행렬. 좌표축을 따라 반사하는 변환들.</p>
+        </div>
+      </div>
+
+      <p>그리고 <strong>$I$(단위행렬)는 대각/대칭/직교 셋 다 만족한다</strong>. 가장 “좋은” 행렬이라고 봐도 된다. 어떤 행렬을 변환해서 단위행렬에 가깝게 만드는 것이 많은 알고리즘의 목표인 이유다.</p>
+
+      <h2>positive definite — 한 단계 더</h2>
+      <p>대칭행렬 가운데 특히 좋은 성질을 가지는 것이 “양의 정부호(positive definite)” 행렬이다. 모든 0이 아닌 벡터 $\mathbf{x}$에 대해 $\mathbf{x}^\top A \mathbf{x} > 0$인 대칭행렬을 말한다.</p>
+
+      <div class="math-block">$$ A^\top = A, \quad \mathbf{x}^\top A \mathbf{x} > 0 \;\; \forall \mathbf{x} \neq \mathbf{0} \;\;\Rightarrow\;\; A \text{ is positive definite} $$</div>
+      <p class="math-note">대칭 + 모든 비영 벡터에 대해 양의 값. 모든 고유값이 양수와 동치.</p>
+
+      <p>양의 정부호 행렬의 의미는 “이 행렬이 만드는 2차 함수가 항상 위로 볼록(strictly convex)하다”이다. 최적화 이론에서 “이 함수에는 단일한 최저점이 존재한다”는 보장과 같다. 신경망 최적화의 헤시안이 모든 자리에서 양의 정부호라면 “이론적으로 최적해가 유일하다”는 좋은 성질이 따라온다(실제 신경망에서는 비볼록이지만).</p>
+
+      <p>이 sub에서 만난 네 행렬 — 단위, 대각, 대칭, 직교 — 는 이후 모든 분해 정리의 “부품”이다. 고유분해는 “직교 × 대각 × 직교” 형태로 행렬을 분해하고(대칭이라면), SVD는 “직교 × 대각 × 직교” 형태로 임의의 행렬을 분해한다. <a href="07.html">다음 sub</a>에서는 행렬의 “정보량”을 재는 도구 — 랭크와 4가지 부분공간 — 으로 넘어간다.</p>
     </div>
 
     <nav class="ch-foot"></nav>
   </main>
 </div>
 
+<script src="./assets/widgets.js"></script>
 <script>
-  const CHAPTERS = [
-    { no:'01', t:'스칼라·벡터·행렬·텐서' },
-    { no:'02', t:'행렬 곱과 선형 변환' },
-    { no:'03', t:'노름과 거리' },
-    { no:'04', t:'특수 행렬과 직교성' },
-    { no:'05', t:'고유분해' },
-    { no:'06', t:'SVD — 특이값분해' },
-    { no:'07', t:'시험 대비 — 핵심 정리' },
-  ];
-  const CUR = '06';
-  document.querySelector('.topbar').innerHTML =
-    `<a class="home" href="index.html">← Ch.02 선형대수 표지</a>` +
-    `<span class="ch-mini">SUB ${CUR} / 07</span>`;
-  document.querySelector('.ch-nav ol').innerHTML = CHAPTERS.map(c =>
-    `<li><a href="${c.no}.html" ${c.no===CUR?'class="current"':''}>${c.t}</a></li>`).join('');
-  const idx = CHAPTERS.findIndex(c=>c.no===CUR);
-  const prev = idx>0 ? CHAPTERS[idx-1] : { no:'', t:'표지로', _:'index.html' };
-  const next = idx<CHAPTERS.length-1 ? CHAPTERS[idx+1] : { no:'', t:'표지로', _:'index.html' };
-  document.querySelector('.ch-foot').innerHTML =
-    `<a href="${prev._ || prev.no+'.html'}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
-    `<a href="${next._ || next.no+'.html'}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
-  const bar = document.querySelector('.scroll-progress');
-  document.addEventListener('scroll', () => {
-    const h = document.documentElement;
-    const max = h.scrollHeight - h.clientHeight;
-    bar.style.width = (max > 0 ? (h.scrollTop/max)*100 : 0) + '%';
-  }, { passive: true });
-  window.addEventListener('load', () => {
-    if (window.renderMathInElement) {
-      renderMathInElement(document.body, {
-        delimiters: [{ left:'$$', right:'$$', display:true }, { left:'$', right:'$', display:false }],
-        throwOnError: false,
-      });
-    }
-  });
-
-  // ---------- 위젯: SVD 저랭크 근사 ----------
-  // 64x64 합성 이미지를 만들고, JS로 SVD를 계산 (느림이라 미리 외적 정의를 합성)
-  // 정확한 SVD 대신 "특이값이 빠르게 감소하는 합성 행렬"을 직접 구성해 시연
-  const N = 64;
-  // K개의 (σ, u, v) 외적을 합성: u, v는 단위 벡터, σ는 지수 감소
-  const K = 64;
-  const sigmas = new Float32Array(K);
-  const Us = []; // K개의 길이 N 벡터
-  const Vs = [];
-  for (let k = 0; k < K; k++) {
-    // 지수 감소 σ
-    sigmas[k] = Math.exp(-k * 0.18) * 80;
-    // u, v: 코사인/사인 모드 (이미지에 잘 보이는 구조)
-    const u = new Float32Array(N), v = new Float32Array(N);
-    const freqU = (k + 1) * 0.5;
-    const freqV = (k * 0.7 + 1) * 0.5;
-    let uS = 0, vS = 0;
-    for (let i = 0; i < N; i++) {
-      const t = i / N;
-      u[i] = Math.cos(freqU * t * Math.PI + k * 0.4) + 0.5 * Math.sin((k+1) * t * 3);
-      v[i] = Math.cos(freqV * t * Math.PI + k * 0.7) + 0.3 * Math.cos((k+2) * t * 2.7);
-      uS += u[i] * u[i]; vS += v[i] * v[i];
-    }
-    uS = Math.sqrt(uS); vS = Math.sqrt(vS);
-    for (let i = 0; i < N; i++) { u[i] /= uS; v[i] /= vS; }
-    Us.push(u); Vs.push(v);
-  }
-  // 픽셀 함수: A_ij = sum_k σ_k u_k(i) v_k(j) (k = 0..K_used-1)
-  function buildImg(kUse) {
-    const img = new Float32Array(N * N);
-    for (let i = 0; i < N; i++) {
-      for (let j = 0; j < N; j++) {
-        let s = 0;
-        for (let k = 0; k < kUse; k++) s += sigmas[k] * Us[k][i] * Vs[k][j];
-        img[i * N + j] = s;
-      }
-    }
-    return img;
-  }
-  function drawImg(canvas, img) {
-    const ctx = canvas.getContext('2d');
-    const id = ctx.createImageData(N, N);
-    let mn = Infinity, mx = -Infinity;
-    for (let p = 0; p < N * N; p++) {
-      if (img[p] < mn) mn = img[p];
-      if (img[p] > mx) mx = img[p];
-    }
-    const sc = 255 / (mx - mn + 1e-9);
-    for (let p = 0; p < N * N; p++) {
-      const v = Math.round((img[p] - mn) * sc);
-      id.data[p*4] = v; id.data[p*4+1] = v; id.data[p*4+2] = v; id.data[p*4+3] = 255;
-    }
-    ctx.putImageData(id, 0, 0);
-  }
-  const origImg = buildImg(K);
-  drawImg(document.getElementById('svdOrig'), origImg);
-
-  // 특이값 막대
-  const barsEl = document.getElementById('svdBars');
-  const maxS = sigmas[0];
-  for (let k = 0; k < K; k++) {
-    const row = document.createElement('div');
-    row.className = 'svd-bar-row';
-    row.dataset.k = k;
-    row.innerHTML = `<span>σ${(k+1)}</span><div class="bar-track"><span class="bar-fill" style="width:${(sigmas[k]/maxS*100)}%"></span></div><span>${sigmas[k].toFixed(1)}</span>`;
-    barsEl.appendChild(row);
-  }
-  // 처음에는 64개 다 보여주면 너무 김 → 16개만 보이게
-  const visibleBars = 24;
-  Array.from(barsEl.children).forEach((r, i) => {
-    if (i >= visibleBars) r.style.display = 'none';
-  });
-  if (K > visibleBars) {
-    const more = document.createElement('div');
-    more.style.cssText = 'font-family:var(--mono);font-size:.74rem;color:var(--ink-faint);text-align:center;padding:.3rem 0;';
-    more.innerHTML = `... σ${visibleBars+1} ~ σ${K}는 매우 작아 시각화 생략`;
-    barsEl.appendChild(more);
-  }
-
-  const slider = document.getElementById('svdSlider');
-  const kLab = document.getElementById('svdKLab');
-  const kLab2 = document.getElementById('svdK');
-  const compEl = document.getElementById('svdComp');
-  const sizeEl = document.getElementById('svdSize');
-  const reconInfo = document.getElementById('svdReconInfo');
-  function update() {
-    const k = parseInt(slider.value);
-    kLab.textContent = k;
-    kLab2.textContent = k;
-    const img = buildImg(k);
-    drawImg(document.getElementById('svdRecon'), img);
-    // 막대 상태
-    Array.from(barsEl.children).forEach((r, i) => {
-      if (i < K) r.classList.toggle('dropped', i >= k);
-    });
-    // 압축률: 원본 64x64 = 4096 숫자. k-랭크 = k(2N+1) = k * 129.
-    const orig = N * N;
-    const used = k * (2 * N + 1);
-    const pct = Math.min(100, (used / orig * 100));
-    compEl.textContent = pct.toFixed(0) + '%';
-    sizeEl.textContent = `${orig} → ${used} 숫자`;
-    // 정보량 (특이값 제곱 비율로 추정)
-    let totE = 0, useE = 0;
-    for (let i = 0; i < K; i++) totE += sigmas[i] * sigmas[i];
-    for (let i = 0; i < k; i++) useE += sigmas[i] * sigmas[i];
-    reconInfo.innerHTML = `에너지 보존: <b>${(useE / totE * 100).toFixed(1)}%</b> (${k}/${K} 특이값)`;
-  }
-  slider.addEventListener('input', update);
-  update();
+  window.addEventListener('load', () => { NST.buildNav('06'); });
 </script>
 </body>
 </html>

@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>11.11 · 시험 대비</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .def-grid { padding: 1.4rem 1.2rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: .7rem; }
+  .def-card { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: .8rem 1rem; cursor: pointer; transition: all .15s; }
+  .def-card:hover { border-color: var(--structure-lo); }
+  .def-card.open { background: var(--paper-2); border-color: var(--structure); }
+  .def-card .term { font-family: var(--mono); font-size: .92rem; color: var(--structure); font-weight: 600; display: flex; justify-content: space-between; align-items: baseline; }
+  .def-card .term .x { color: var(--ink-faint); font-size: .8rem; transition: transform .2s; }
+  .def-card.open .term .x { transform: rotate(45deg); }
+  .def-card .body { max-height: 0; overflow: hidden; transition: max-height .25s var(--ease); font-size: .85rem; color: var(--ink-soft); line-height: 1.55; }
+  .def-card.open .body { max-height: 12rem; padding-top: .55rem; }
+  .def-card .body b { color: var(--ink); }
+
+  .connect-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: .8rem; max-width: var(--measure); margin: 1.4rem auto; padding-inline: 1.4rem; }
+  .conn-card { padding: 1rem 1.1rem; background: #fff; border: 1px solid var(--line); border-radius: 10px; border-left: 3px solid var(--style); }
+  .conn-card h6 { margin: 0 0 .35rem; font-family: var(--serif); font-size: 1rem; color: var(--ink); }
+  .conn-card .from { font-family: var(--mono); font-size: .72rem; color: var(--structure); margin-bottom: .35rem; }
+  .conn-card p { margin: 0; font-size: .85rem; color: var(--ink-soft); line-height: 1.55; }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-chapter 11 · 시험 직전 마무리</span>
+      <h1>한 줄로 답할 수 있는<br><span class="t-style">20가지</span>를 빠르게 점검</h1>
+      <p class="lede">11장은 시험에 단독으로 길게 나오기보다 다른 장 문제 안에 "왜 이 선택을 했는가"로 녹아 나온다. 헷갈리기 쉬운 정의 20개, 모범 답안 2개, 다른 장과의 연결고리를 마지막으로 점검한다.</p>
+    </header>
+
+    <div class="prose">
+      <h2>과제 모범 답안 — Q&A</h2>
+      <p>주차 8 과제로 제출한 두 질문에 대한 답을 펼쳐 보자. 시험에 비슷한 형태로 나올 수 있다.</p>
+    </div>
+
+    <div class="qa">
+      <div class="qa-q"><span class="qn">Q1</span><span class="qt">Refinement loop는 정량 지표를 전제로 한다. 생성·대화 시스템처럼 "좋은 출력"이 주관적인 영역에서는 어떻게 적응해야 하나?</span><span class="qx">+</span></div>
+      <div class="qa-a"><div class="qa-a-inner">
+        <span class="rel">관련 · 책 11.4 (지표 정의), 12.4 (NLP), RLHF 이후 흐름</span>
+        <b>핵심 적응 — 다섯 가지 전략</b>:<br>
+        ① 대리 지표(proxy metric) — 이미지 생성 FID, 텍스트 perplexity·BLEU·ROUGE. 완벽하지 않지만 자동 계산되어 빠른 반복 가능.<br>
+        ② 정기 사람 평가(human evaluation) — Likert 척도(1-5)로 100번에 1번 사람이 직접 점수. 정량화하면 절차에 통합.<br>
+        ③ A/B 테스트 — 두 모델 출력을 짝지어 사람에게 보여주고 어느 쪽이 좋은지 고르게 함. 절대 점수가 어려운 영역에서 상대 비교가 잘 동작.<br>
+        ④ 학습된 평가자(learned evaluator) — 사람 평가 데이터로 평가자 모델 학습. RLHF처럼 강화학습 보상 함수로 활용. 책 출간 후 흐름.<br>
+        ⑤ 다중 지표 동시 추적 — 단일 점수가 못 잡는 측면(다양성·안전성·환각률) 별도 지표. 한 지표 over-optimize 방지.<br><br>
+        <b>핵심</b>: 절차 자체("한 번에 한 가지 가설")는 그대로 살리고 지표만 정성+정량 혼합으로 재정의. "빠른 반복용 자동 지표 + 느린 검증용 사람 평가"의 이중 구조가 핵심.
+      </div></div>
+    </div>
+
+    <div class="qa">
+      <div class="qa-q"><span class="qn">Q2</span><span class="qt">활성·기울기 히스토그램은 주로 vanishing/exploding gradient를 잡는 데 권장된다. 그 외에 어떤 문제들이 보일 수 있나?</span><span class="qx">+</span></div>
+      <div class="qa-a"><div class="qa-a-inner">
+        <span class="rel">관련 · 책 6.5 (활성 함수), 7.12 (Dropout), 8.7 (BatchNorm)</span>
+        <b>여섯 가지 부가 결함</b>:<br>
+        ① Dead ReLU — 활성이 0에 거대한 봉우리, 양수 영역이 비어 있음. ReLU 입력이 학습 초기 모두 음수가 된 채 영구히 죽음.<br>
+        ② Sigmoid/tanh 포화 — 가장자리 두 봉우리가 큼. 기울기 거의 0으로 학습 정체.<br>
+        ③ 가중치 초기화 불량 — 첫 epoch 활성 분산 비정상. He/Xavier가 제대로 적용 안 된 것.<br>
+        ④ BatchNorm running statistics 이상 — 학습/추론 모드 간 활성 분포 차이. running mean/var가 발산.<br>
+        ⑤ 학습률 미스매치 — 기울기 분포가 점점 넓어짐(큰 lr) 또는 거의 0(작은 lr). 폭발·소실의 약한 형태.<br>
+        ⑥ Dropout 모드 토글 실수 — train()/eval() 토글 누락. epoch 사이 활성 분포가 너무 일정하면 의심.<br><br>
+        <b>공통점</b>: 모두 "부품끼리 서로 보완해서 손실 곡선만으로는 안 보이는" 결함. 히스토그램은 모델 내부의 통계적 건강 상태를 직접 들여다보는 거의 유일한 도구.
+      </div></div>
+    </div>
+
+    <div class="prose">
+      <h2>헷갈리는 정의 20개 — 한 줄 점검</h2>
+      <p>아래 카드를 클릭하면 정의가 펼쳐진다. 한 번 가린 채로 정의를 떠올려 보고, 막히는 것만 펼쳐 보자.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 11</span><span>핵심 용어 20개 · 클릭해서 정의 확인</span></div>
+        <div class="def-grid" id="defGrid"></div>
+      </div>
+      <p class="widget-cap">기본 정의가 흔들리면 응용 문제도 못 푼다. 가린 채로 떠올려 본 후 펼쳐서 확인하는 active recall 방식이 가장 효율적.</p>
+    </div>
+
+    <div class="prose">
+      <h2>다른 장과의 연결고리 — 11장이 녹아 나오는 형태</h2>
+      <p>11장이 시험에 단독으로 길게 나오는 경우는 드물다. 보통 다른 장 문제 안에 "왜 이 선택을 했는가"로 녹아 나온다. 다음 연결을 한 번씩 점검하자.</p>
+
+      <div class="connect-grid">
+        <div class="conn-card"><div class="from">FROM 7장 정칙화</div><h6>"이 모델이 과대적합한다. 무엇부터?"</h6><p>7장의 부품(Dropout, L2)을 묻는 것 같지만 사실 <b>11장의 진단 사이클</b>을 묻는다. "학습 곡선 진단 → 정칙화 강화 또는 데이터 추가" 순서로 답.</p></div>
+        <div class="conn-card"><div class="from">FROM 8장 최적화</div><h6>"학습률을 어떻게 정할 것인가?"</h6><p>8장의 옵티마이저를 묻는 것 같지만 <b>11장의 하이퍼파라미터 탐색</b>. 로그스케일 random search 5-7점, 학습률이 단연 1순위.</p></div>
+        <div class="conn-card"><div class="from">FROM 8장 최적화</div><h6>"왜 SGD+momentum이 default인가?"</h6><p>8장의 알고리즘 비교 같지만 <b>11장의 베이스라인 권고</b>. 검증된 안정성 + 일반화 성능 우위.</p></div>
+        <div class="conn-card"><div class="from">FROM 9장 CNN</div><h6>"이미지 분류 모델은 어떻게 시작하나?"</h6><p>9장의 CNN 구조 같지만 <b>11장의 베이스라인 카탈로그</b>. ImageNet pretrained ResNet fine-tune. 처음부터 짜지 말 것.</p></div>
+        <div class="conn-card"><div class="from">FROM 10장 RNN</div><h6>"시퀀스 모델은 어떻게 시작?"</h6><p>10장의 LSTM·GRU 구조 같지만 <b>11장의 입력 종류별 디폴트</b>. 짧으면 Transformer, 길면 LSTM.</p></div>
+        <div class="conn-card"><div class="from">FROM 5장 ML 기초</div><h6>"정확도가 좋은 지표가 아닌 이유는?"</h6><p>5장의 분류 기초 같지만 <b>11장의 지표 선택</b>. 클래스 불균형·비대칭 비용·양성이 흥미 중심·모델이 거부 가능.</p></div>
+      </div>
+
+      <h2>시험 직전 체크리스트</h2>
+    </div>
+
+    <ul class="checklist">
+      <li><b>4단계 절차</b>를 순서대로 말할 수 있다 — 지표 결정 → 베이스라인 → 데이터/모델 진단 → 하이퍼파라미터·디버깅. 이게 순환임을 안다.</li>
+      <li><b>"잘 적용된 평범한 알고리즘이 잘못 적용된 특이한 알고리즘을 이긴다"</b>는 11장의 명제와, 그 사례가 Street View 주소 인식임을 안다.</li>
+      <li>정확도가 거짓말하는 두 상황 — <b>클래스 불균형</b>과 <b>비대칭 비용</b> — 을 구분하고 각각에 적합한 지표를 짝지을 수 있다.</li>
+      <li>정밀도·재현율·F1의 정의를 컨퓨전 매트릭스로부터 직접 적을 수 있다. <b>"왜 조화 평균인가"</b>를 한 줄로 설명할 수 있다.</li>
+      <li>ROC-AUC와 PR-AUC의 차이 — 후자가 <b>희귀 양성</b>에서 더 진실하다 — 를 안다.</li>
+      <li>입력 종류별 베이스라인 — 이미지=CNN, 시퀀스=LSTM/GRU 또는 Transformer, 표=MLP/GBM, 유사 과제=전이학습 — 을 카탈로그처럼 외운다.</li>
+      <li>학습 곡선에서 <b>과소적합</b>(두 줄 모두 높음, 데이터 추가 무의미)과 <b>과대적합</b>(훈련은 낮고 검증은 높음, 정칙화 또는 데이터)를 진단할 수 있다.</li>
+      <li><b>"학습률이 1순위 하이퍼파라미터"</b>인 이유 — U자 곡선의 양쪽 끝이 모두 효과적 용량을 죽인다 — 를 말할 수 있다.</li>
+      <li><b>Random search가 Grid search를 이기는 이유</b> — 영향 없는 차원에 예산을 낭비하지 않음 — 를 Bergstra &amp; Bengio 결과로 설명할 수 있다.</li>
+      <li>로그스케일 표본추출(learning rate, weight decay)이 균등 분포보다 좋은 이유를 한 줄로 말할 수 있다.</li>
+      <li>Bayesian optimization이 random보다 강한 영역 — <b>학습 한 번이 비쌀 때</b> — 을 안다. GP·EI의 핵심 아이디어("관찰을 모델로 표현해 다음 점을 똑똑하게 고름")를 한 줄로 적을 수 있다.</li>
+      <li>디버깅 5종 — 시각화, 고신뢰 오답, tiny dataset, 자동미분 비교, 활성/기울기 히스토그램 — 을 외우고 각각이 어떤 결함을 잡는지 짝지을 수 있다.</li>
+      <li><b>"한 번에 한 가지 가설, 한 번에 한 가지 수정"</b>이 왜 11장의 메타 원칙인지 말할 수 있다 — 적응형 부품끼리 서로의 결함을 가린다.</li>
+      <li>Tiny dataset에 과적합되지 않는다 = <b>소프트웨어 버그</b>이지 데이터 부족이 아니라는 점을 외운다.</li>
+      <li>활성·기울기 히스토그램이 잡는 6가지 결함(Dead ReLU, 포화, 초기화, BatchNorm, 학습률, Dropout 모드)을 모두 댈 수 있다.</li>
+      <li>실패 모드 3분류 — <b>데이터 / 모델 / 코드 버그</b> — 의 처방이 정반대임을 안다. 진단 우선순위는 코드(tiny) → 데이터(라벨/분할) → 모델.</li>
+      <li>같은 알고리즘 + 절차에서 마지막 차이를 만드는 변수는 <b>한 사이클의 시간</b>임을 안다. 탐색 사이클과 확인 사이클을 분리.</li>
+      <li>11장은 시험에 단독으로 길게 나오기보다 <b>다른 장 문제 안에 "왜 이 선택을 했는가"</b>로 녹아 나옴을 안다.</li>
+      <li>생성·대화 시스템에서 정량 지표가 부족할 때의 5가지 적응 — 대리 지표, 사람 평가, A/B, learned evaluator, 다중 지표 — 을 안다.</li>
+      <li><b>Street View 사례의 핵심 메시지</b> — 모델이 아니라 전처리(크롭) 한 줄이 인간 수준 정확도를 만들었다 — 를 한 줄로 적을 수 있다.</li>
+    </ul>
+
+    <div class="prose">
+      <h2>마치며 — 11장이 다른 장과 다른 점</h2>
+      <p>딥러닝 책의 다른 장(6장 순방향, 7장 정칙화, 8장 최적화, 9장 CNN, 10장 RNN)은 모두 <em>"무엇을 쓸 수 있는가"</em>를 다룬다. 부품의 카탈로그다. 11장은 그 위에서 <em>"언제 어느 부품을 끼울 것인가"</em>를 다룬다. 운영 매뉴얼이다.</p>
+
+      <p>그래서 11장 단독으로 시험에 나오기는 어렵지만, 거의 모든 응용 문제의 답안에 11장의 절차가 깔린다. 시험에서 "이 모델이 안 된다. 무엇부터?"라는 형태의 질문이 나오면 답은 항상 같은 구조다 — <strong>지표 → 베이스라인 → 학습 곡선 진단 → 한 번에 한 가지 수정</strong>. 그 위에 7-10장의 부품 이름이 들어간다.</p>
+
+      <p>다음 장(<a href="../ch12-applications/index.html">Ch.12 응용</a>)에서는 같은 절차가 컴퓨터 비전, NLP, 음성 인식, 추천 시스템에서 도메인별로 어떻게 변형되는지를 본다. 11장의 일반론이 어떻게 도메인의 특수성을 만나 구체화되는지가 12장의 주제다. 이 장을 끝까지 읽었다면 — <em>알고리즘이 아니라 절차가 결정한다</em>는 한 문장이 머릿속에 남았기를 바란다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUB = [
+    { no:'01', t:'절차가 알고리즘보다 중요한 이유' },
+    { no:'02', t:'성능 지표 선택' },
+    { no:'03', t:'정밀도·재현율·F1·AUC' },
+    { no:'04', t:'기본 베이스라인' },
+    { no:'05', t:'데이터 vs 모델 키우기' },
+    { no:'06', t:'하이퍼파라미터 1 — grid vs random' },
+    { no:'07', t:'하이퍼파라미터 2 — 베이지안' },
+    { no:'08', t:'디버깅 결정 트리' },
+    { no:'09', t:'실패 모드 분류' },
+    { no:'10', t:'실전 워크플로우' },
+    { no:'11', t:'시험 대비' },
+  ];
+  const CUR = '11';
+
+  document.querySelector('.topbar').innerHTML =
+    `<a class="home" href="index.html">← Ch.11 실용적 방법론</a>` +
+    `<span class="ch-mini">SUB ${CUR} / ${SUB.length}</span>`;
+  document.querySelector('.ch-nav ol').innerHTML = SUB.map(c =>
+    `<li><a href="${c.no}.html" ${c.no === CUR ? 'class="current"' : ''}>${c.t}</a></li>`).join('');
+  const i = SUB.findIndex(c => c.no === CUR);
+  const prev = i > 0 ? SUB[i-1] : { no:'', t:'챕터 표지로' };
+  const next = i < SUB.length-1 ? SUB[i+1] : { no:'', t:'챕터 표지로' };
+  document.querySelector('.ch-foot').innerHTML =
+    `<a href="${prev.no ? prev.no + '.html' : 'index.html'}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+    `<a href="${next.no ? next.no + '.html' : 'index.html'}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+
+  const bar = document.querySelector('.scroll-progress');
+  window.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max > 0 ? (h.scrollTop/max)*100 : 0) + '%';
+  }, { passive: true });
+
+  // QA 아코디언
+  document.querySelectorAll('.qa-q').forEach(q => {
+    q.addEventListener('click', () => q.parentElement.classList.toggle('open'));
+  });
+
+  // 핵심 용어 20개
+  const DEFS = [
+    { term: 'Bayes error', body: '입력만으로는 출력을 완전히 결정할 수 없는 본질적 오차 한계. <b>0% 오차는 도달 불가능</b>한 이유.' },
+    { term: 'Precision (정밀도)', body: 'TP / (TP + FP). 모델이 양성이라 한 결과 중 진짜 양성의 비율. "양성이라는 답을 얼마나 믿을 수 있나".' },
+    { term: 'Recall (재현율)', body: 'TP / (TP + FN). 진짜 양성 중 모델이 양성으로 잡아낸 비율. "놓치면 안 되는 양성 중 얼마나 잡았나".' },
+    { term: 'F1 score', body: '정밀도와 재현율의 <b>조화 평균</b>. 산술이 아닌 이유: 한쪽이 0에 가까우면 F1도 0에 가깝다. 둘 다 균형 잡혀야 의미 있게 높아짐.' },
+    { term: 'ROC AUC', body: 'FPR-TPR 곡선 아래 면적. 임계값 전체 평균 성능. <b>균형 데이터에 적합</b>, 극단 불균형에서는 과장됨.' },
+    { term: 'PR AUC (AP)', body: 'Recall-Precision 곡선 아래 면적. <b>희귀 양성</b>(양성 < 5%)에서 ROC-AUC보다 진실. 정보 검색·이상 탐지의 표준.' },
+    { term: 'Coverage', body: '모델이 자동 처리한 입력의 비율. <b>"모르겠다고 답할 권리"</b>를 줄 때 정확도와 짝으로 사용 (Street View 사례).' },
+    { term: 'Default baseline', body: '동작하는 가장 단순한 end-to-end 시스템. 입력별 디폴트: 이미지=CNN, 시퀀스=GRU/LSTM, 표=MLP, 유사 과제=전이학습.' },
+    { term: 'Transfer learning', body: '비슷한 과제로 학습된 모델 가중치를 가져와 fine-tune. <b>처음부터 짜는 것보다 거의 항상 빠르고 좋다</b>. ImageNet pretrained가 표준.' },
+    { term: 'Underfitting', body: '훈련 오차도 높고 검증 오차도 높음. 모델이 훈련 패턴조차 못 잡음. <b>데이터 추가 무의미</b> — 모델 용량 증가가 처방.' },
+    { term: 'Overfitting', body: '훈련은 낮은데 검증은 높음. 모델이 노이즈까지 외움. 처방: <b>정칙화 강화 또는 데이터 추가</b>.' },
+    { term: 'Effective capacity (효과적 용량)', body: '모델이 실제로 표현 가능한 함수의 범위. 하이퍼파라미터가 U자 곡선으로 영향 — 너무 작거나 크면 모두 망가짐.' },
+    { term: 'Grid search', body: '하이퍼파라미터의 모든 조합 시험. <b>차원의 저주</b> — 변수가 늘면 조합 수 지수 폭증. 학술 비교에 유효.' },
+    { term: 'Random search', body: '독립적 무작위 표본추출. <b>같은 예산으로 grid보다 빠름</b> — 영향 없는 차원에 예산 안 낭비 (Bergstra &amp; Bengio 2012).' },
+    { term: 'Bayesian optimization', body: '지금까지 관찰을 GP(가우시안 과정)로 모델링, EI(Expected Improvement)로 다음 점 결정. <b>학습 한 번이 비쌀 때</b> random을 이김.' },
+    { term: 'Acquisition function', body: '베이지안 최적화에서 "다음에 어디를 시험할지" 정하는 함수. Expected Improvement, Upper Confidence Bound 등. exploration ↔ exploitation 균형.' },
+    { term: 'Tiny dataset test', body: '5-10개 예제만으로 학습. <b>훈련 손실이 0 근처로 안 가면 소프트웨어 버그</b>. 데이터 부족이 아니다. 가장 결정적인 1차 디버깅 도구.' },
+    { term: 'High-confidence mistakes', body: '모델이 가장 자신 있게 틀린 답. <b>모델이 무엇을 "당연하다"고 잘못 믿는지</b>를 드러냄. Street View 사례의 핵심 도구.' },
+    { term: 'Dead ReLU', body: 'ReLU 입력이 학습 초기 모두 음수가 되어 출력·기울기가 모두 0인 뉴런이 영구히 죽음. 활성 히스토그램에서 0에 거대한 봉우리로 보임.' },
+    { term: 'Cycle time (사이클 시간)', body: '가설→코드→학습→평가→다음 가설의 한 바퀴. 5분 vs 5시간이 1년 후 모델 품질의 100배 차이를 만드는 메타 변수.' },
+  ];
+
+  const defGrid = document.getElementById('defGrid');
+  DEFS.forEach(d => {
+    const c = document.createElement('div');
+    c.className = 'def-card';
+    c.innerHTML = `<div class="term">${d.term}<span class="x">+</span></div><div class="body">${d.body}</div>`;
+    c.addEventListener('click', () => c.classList.toggle('open'));
+    defGrid.appendChild(c);
+  });
+
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) renderMathInElement(document.body, {
+      delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}], throwOnError:false
+    });
+  });
+</script>
+</body>
+</html>

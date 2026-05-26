@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>12 · 시험 대비 체크리스트</title>
+<link rel="stylesheet" href="assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Chapter 12 · 시험 1시간 전</span>
+      <h1>FGSM 시험 대비 —<br><span class="t-style">정의·수식·15개 예상 질문</span></h1>
+      <p class="lede">이 장은 시험 1시간 전 한 번 더 훑을 수 있는 체크리스트다. 한 줄 정의, 핵심 수식 4개, 자주 묻는 15개 예상 질문, 그리고 가장 자주 범하는 5개 함정을 정리한다. 앞 11개 장의 내용을 시험 답안 형태로 압축한 한 페이지다.</p>
+    </header>
+
+    <div class="prose">
+      <h2>핵심 한 줄 — 외워야 할 사실</h2>
+
+      <div class="math-block">$$ \begin{aligned} &amp;\text{이 논문의 핵심 주장:} \\ &amp;\quad \text{신경망이 적대적 예제에 약한 이유는 너무 비선형이라서가 아니라 너무 \textbf{선형}이기 때문이다.} \end{aligned} $$</div>
+      <p class="math-note">3장의 "비선형 + 과적합 가설"이 틀렸음을 4장의 "지역 선형 가설"이 대체한다. 이 한 줄이 논문 전체의 압축.</p>
+
+      <h2>핵심 수식 4개</h2>
+
+      <div class="prose">
+        <p><strong>수식 1 — 선형 모델 점수 변화:</strong></p>
+        <div class="math-block">$$ z' = w^\top(x + \delta) = w^\top x + w^\top \delta $$</div>
+        <p class="math-note">선형 모델에서 입력 변화의 점수 효과. ∞-노름 제약 아래 wᵀδ 최대화의 닫힌 해가 ε · sign(w).</p>
+
+        <p><strong>수식 2 — FGSM 정의 (가장 중요):</strong></p>
+        <div class="math-block">$$ \tilde{x} = x + \epsilon \cdot \text{sign}\bigl(\nabla_x L(\theta, x, y)\bigr) $$</div>
+        <p class="math-note">x = 원본 입력, y = 정답, θ = 모델 가중치, L = 손실, ε = ∞-노름 예산. 한 번의 역전파로 ∇<sub>x</sub> L을 구하고 부호 취해 ε 곱해 더함.</p>
+
+        <p><strong>수식 3 — 선형 누적 효과:</strong></p>
+        <div class="math-block">$$ w^\top \delta_{\text{adv}} = \epsilon \cdot \|w\|_1 \approx \epsilon \cdot n \cdot \overline{|w|} $$</div>
+        <p class="math-note">픽셀당 ε 변화가 점수에서 n에 비례하는 변화로 누적. ImageNet n = 150,000에서 ε = 0.007이 10.5 수준의 점수 변화 → 라벨 뒤집기에 충분.</p>
+
+        <p><strong>수식 4 — 적대적 훈련 손실:</strong></p>
+        <div class="math-block">$$ L_{\text{adv}} = \alpha \, L(\theta, x, y) + (1-\alpha) \, L(\theta, \tilde{x}, y) $$</div>
+        <p class="math-note">정상 손실과 적대적 손실의 가중평균. 1차 근사로 ≈ L(x) + ε(1−α)‖∇<sub>x</sub> L‖₁ 즉 입력 기울기 L1 정칙화.</p>
+      </div>
+
+      <h2>15개 예상 질문과 한 줄 답</h2>
+
+      <div class="prose">
+        <p><strong>Q1. 적대적 예제란 무엇인가?</strong> 원본 입력 x를 ε 이하로만 바꿔서 사람 눈으로는 같아 보이지만 모델이 다른 라벨을 자신 있게 내놓는 입력 x̃.</p>
+
+        <p><strong>Q2. 적대적 예제의 라벨이 더 자신 있는 오답이라는 것이 왜 중요한가?</strong> 일반 노이즈에 의한 분류 오류는 자신감이 낮지만, 적대적 예제는 자신감이 더 높은 오답. 모델이 자기가 무엇을 모르는지 모른다는 뜻.</p>
+
+        <p><strong>Q3. 논문의 핵심 주장은?</strong> 적대적 예제는 신경망이 너무 비선형이라서가 아니라 너무 선형(locally linear)이라서 생긴다.</p>
+
+        <p><strong>Q4. FGSM 공식을 쓰시오.</strong> x̃ = x + ε · sign(∇<sub>x</sub> L(θ, x, y)).</p>
+
+        <p><strong>Q5. FGSM이 왜 "Fast"인가?</strong> 한 번의 역전파만으로 적대적 입력을 만든다. 학습 한 스텝과 같은 비용. 매 미니배치에서 호출할 수 있을 정도로 빠름.</p>
+
+        <p><strong>Q6. 왜 sign이고 ∇<sub>x</sub> L 자체가 아닌가?</strong> ∞-노름 제약 ‖δ‖<sub>∞</sub> ≤ ε 아래에서 wᵀδ를 최대화하는 닫힌 해가 정확히 ε · sign(w). 각 차원이 독립이라 양쪽 끝까지 가는 것이 최적.</p>
+
+        <p><strong>Q7. ε = 0.007이 왜 충격적인가?</strong> 픽셀 값 [0,1] 범위에서 0.7%에 불과한 작은 변화. JPEG 압축이나 카메라 노이즈에 묻힐 만한 크기. 그런데도 GoogLeNet의 라벨이 panda 57.7% → gibbon 99.3%로 뒤집힘.</p>
+
+        <p><strong>Q8. 고차원이 왜 공격자의 축복인가?</strong> 적대적 점수 변화는 nε에 비례, 무작위 노이즈는 √(nε²)에 비례. 둘의 비율 √n이 차원 클수록 벌어짐. ImageNet 150,000차원에서 적대적 공격이 무작위보다 약 387배 효과적.</p>
+
+        <p><strong>Q9. 전이성(transferability)이란?</strong> 모델 A에서 만든 적대적 예제가 다른 모델 B에서도 같은 방향으로 오류를 일으킴. 다른 아키텍처, 다른 학습 데이터로 학습한 모델 사이에서도 작동. 선형 가설의 자연스러운 결론 — 데이터 위에서 비슷한 선형 함수에 수렴하기 때문.</p>
+
+        <p><strong>Q10. 적대적 훈련의 핵심 식은?</strong> L_adv = α · L(x) + (1−α) · L(x̃). α는 정상 손실과 적대적 손실의 혼합 비율.</p>
+
+        <p><strong>Q11. 적대적 훈련이 일반 정확도도 개선하는 이유는?</strong> 1차 근사로 L(x̃) ≈ L(x) + ε‖∇<sub>x</sub> L‖₁. 즉 적대적 손실 = 정상 손실 + L1 입력 기울기 정칙화. 모델이 입력 변화에 덜 민감해져 일반 자연 노이즈에도 견고. MNIST에서 0.94% → 0.84%로 개선.</p>
+
+        <p><strong>Q12. RBF 네트워크는 왜 적대적 예제에 견고한가?</strong> 비선형이 강해서 1차 테일러 근사가 깨짐. 또한 입력이 학습 데이터 중심에서 멀어지면 활성이 0에 가까워져 "모름" 응답. 자신 있는 오답을 만들기 어려움.</p>
+
+        <p><strong>Q13. RBF의 단점은?</strong> 일반 정확도가 매우 낮음(MNIST에서 ~55%). 비선형이 강해 기울기 소실이 심하고 학습 자체가 어려움. 큰 데이터셋에서 사실상 불가능.</p>
+
+        <p><strong>Q14. FGSM 이후 등장한 더 강한 공격은?</strong> PGD(Projected Gradient Descent) — FGSM을 K번 반복하고 ε 공으로 투영. 매 걸음 새 기울기 계산. C&amp;W(Carlini &amp; Wagner) — ε 자체를 최소화하는 별개 최적화.</p>
+
+        <p><strong>Q15. 적대적 견고성과 일반 정확도가 같은 문제인가?</strong> 아니다. 일반 테스트 정확도 99%인 모델도 적대적 정확도는 5% 미만일 수 있다. 두 지표는 다른 코인. 일반 정규화(L2, dropout)는 일반 정확도를 개선하지만 적대적 견고성을 크게 늘리지 못함.</p>
+      </div>
+
+      <h2>가장 자주 범하는 5개 함정</h2>
+
+      <div class="prose">
+        <p><strong>함정 1 — ∇<sub>x</sub> L vs ∇<sub>θ</sub> L 혼동.</strong> 일반 학습은 모델 가중치 θ에 대한 기울기를 쓰지만, FGSM은 입력 x에 대한 기울기를 쓴다. 같은 역전파지만 목적이 다르다. 시험에서 ∇<sub>θ</sub> L을 쓰면 자동으로 0점.</p>
+
+        <p><strong>함정 2 — sign(σ(z) − y)의 부호.</strong> y = 1일 때 σ(z) − y는 음수, 그래서 sign(∇<sub>x</sub> L) = −sign(w). y = 0일 때는 양수, sign(∇<sub>x</sub> L) = +sign(w). 부호가 정답에 따라 뒤집힌다. 미분으로 검증 필수.</p>
+
+        <p><strong>함정 3 — ε이 너무 작아 라벨이 안 뒤집힘.</strong> FGSM 한 걸음으로 ε이 너무 작으면 손실은 증가하지만 라벨이 안 뒤집힐 수 있다. 시험 문제가 "ε에서 라벨이 뒤집히는가"를 물으면 σ(새 z)가 0.5를 넘는지 확인. 안 넘으면 "ε이 부족하다"고 답.</p>
+
+        <p><strong>함정 4 — 표적 vs 비표적 공식 혼동.</strong> 비표적: x̃ = x + ε · sign(∇<sub>x</sub> L(θ, x, y)) (정답 손실 키움). 표적: x̃ = x − ε · sign(∇<sub>x</sub> L(θ, x, y′)) (표적 손실 줄임, 부호 반대). 시험에서 "표적 공격"이 명시되면 부호를 정확히.</p>
+
+        <p><strong>함정 5 — 클립(clipping) 잊기.</strong> 적대적 입력 x̃ = x + ε · sign(∇<sub>x</sub> L)이 픽셀 값 [0, 1] 범위를 벗어날 수 있다. 정확한 답은 x̃ = clip(x + ε · sign(∇<sub>x</sub> L), 0, 1). 시험에서 클립을 안 적어도 큰 감점은 없지만 명시하면 정확함.</p>
+      </div>
+
+      <h2>한 줄로 본 논문 전체 구조</h2>
+
+      <table style="width:100%;max-width:var(--measure);margin:1.4rem auto;border-collapse:collapse;font-size:.88rem;">
+        <thead><tr style="background:var(--paper-2);">
+          <th style="padding:.5rem .7rem;text-align:left;border-bottom:1px solid var(--line);">절</th>
+          <th style="padding:.5rem .7rem;text-align:left;border-bottom:1px solid var(--line);">핵심 메시지</th>
+        </tr></thead>
+        <tbody>
+          <tr><td style="padding:.45rem .7rem;border-bottom:1px solid var(--line-soft);">1 도입</td><td style="padding:.45rem .7rem;border-bottom:1px solid var(--line-soft);">적대적 예제 현상 소개, panda 그림</td></tr>
+          <tr><td style="padding:.45rem .7rem;border-bottom:1px solid var(--line-soft);">2 관련 연구</td><td style="padding:.45rem .7rem;border-bottom:1px solid var(--line-soft);">Szegedy 등 선행 연구, 기존 가설 (비선형 + 과적합)</td></tr>
+          <tr><td style="padding:.45rem .7rem;border-bottom:1px solid var(--line-soft);">3 선형 설명</td><td style="padding:.45rem .7rem;border-bottom:1px solid var(--line-soft);">선형 모델 wᵀ(x+δ), ε · sign(w), n·ε 누적</td></tr>
+          <tr><td style="padding:.45rem .7rem;border-bottom:1px solid var(--line-soft);">4 비선형 모델로 확장</td><td style="padding:.45rem .7rem;border-bottom:1px solid var(--line-soft);">ReLU·LSTM·maxout이 지역 선형. FGSM 도입.</td></tr>
+          <tr><td style="padding:.45rem .7rem;border-bottom:1px solid var(--line-soft);">5 선형 모델 실험</td><td style="padding:.45rem .7rem;border-bottom:1px solid var(--line-soft);">로지스틱 회귀, softmax 회귀에서 FGSM 실험</td></tr>
+          <tr><td style="padding:.45rem .7rem;border-bottom:1px solid var(--line-soft);">6 심층 모델 실험</td><td style="padding:.45rem .7rem;border-bottom:1px solid var(--line-soft);">maxout, GoogLeNet에서 FGSM 결과</td></tr>
+          <tr><td style="padding:.45rem .7rem;border-bottom:1px solid var(--line-soft);">7 적대적 훈련</td><td style="padding:.45rem .7rem;border-bottom:1px solid var(--line-soft);">L_adv = αL(x) + (1−α)L(x̃). MNIST 0.94 → 0.84</td></tr>
+          <tr><td style="padding:.45rem .7rem;border-bottom:1px solid var(--line-soft);">8 RBF</td><td style="padding:.45rem .7rem;border-bottom:1px solid var(--line-soft);">RBF가 견고하지만 학습 어려움. trade-off 명시.</td></tr>
+          <tr><td style="padding:.45rem .7rem;border-bottom:1px solid var(--line-soft);">9 다른 정칙화</td><td style="padding:.45rem .7rem;border-bottom:1px solid var(--line-soft);">L2, dropout이 적대적 견고성에 크게 기여하지 않음</td></tr>
+          <tr><td style="padding:.45rem .7rem;">10 결론</td><td style="padding:.45rem .7rem;">적대적 예제는 선형 모델의 본질적 약점, 적대적 훈련이 부분적 답</td></tr>
+        </tbody>
+      </table>
+
+      <h2>시험장에서 한 줄로 답하는 연습</h2>
+      <p>아래 5개 문제는 시험에서 그대로 나올 가능성이 가장 높은 질문이다. 30초 안에 한 줄로 답할 수 있는지 자신에게 묻자.</p>
+
+      <div class="prose">
+        <p><strong>연습 1.</strong> "FGSM 공식을 쓰고 각 기호를 한 줄로 설명하시오." → x̃ = x + ε · sign(∇<sub>x</sub> L(θ, x, y)). x = 입력, ε = ∞-노름 예산, sign = 부호 함수, ∇<sub>x</sub> L = 입력에 대한 손실 기울기, θ = 모델 가중치 (고정).</p>
+
+        <p><strong>연습 2.</strong> "이 논문이 제시하는 적대적 예제의 진짜 원인은?" → 신경망이 너무 비선형이라서가 아니라, 입력 공간에서 지역적으로 선형(piecewise linear)이라서. ReLU·LSTM·maxout이 모두 지역 선형이라는 공통 설계 원리 때문.</p>
+
+        <p><strong>연습 3.</strong> "적대적 훈련 손실 함수를 쓰고, 왜 일반 정확도가 좋아지는지 한 줄로 설명." → L_adv = αL(x) + (1−α)L(x̃). 1차 근사로 입력 기울기 L1 정칙화와 동치이므로 입력 노이즈 전반에 대한 견고성이 늘어남.</p>
+
+        <p><strong>연습 4.</strong> "FGSM에서 부호만 가져가는 수학적 이유는?" → ∞-노름 제약 ‖δ‖<sub>∞</sub> ≤ ε 아래에서 wᵀδ를 최대화하는 닫힌 해가 정확히 ε · sign(w). 각 차원이 독립이라 양쪽 끝까지 가는 것이 최적.</p>
+
+        <p><strong>연습 5.</strong> "x = (1.0, 0.5), w = (0.6, −0.8), b = 0.1, y = 1, ε = 0.1에서 FGSM 적대적 입력은?" → z = 0.3, σ(z) ≈ 0.574, ∂L/∂z = σ−y ≈ −0.426. ∇<sub>x</sub> L = ∂L/∂z · w ≈ (−0.256, +0.341). sign = (−1, +1). δ = ε · sign = (−0.1, +0.1). x̃ = (0.9, 0.6).</p>
+      </div>
+
+      <h2>마지막 한 줄</h2>
+      <p>FGSM 시험에서 가장 중요한 한 줄은 이것이다. <strong>"x̃ = x + ε · sign(∇<sub>x</sub> L)이라는 한 줄짜리 공식이 ∞-노름 제약 아래 1차 손실 근사의 닫힌 해이고, 그것이 가능한 이유는 신경망이 입력 공간에서 지역적으로 선형이기 때문이다. 같은 공식을 학습에 거꾸로 섞으면 입력 기울기 정칙화 효과로 모델이 적대적 입력과 일반 노이즈 모두에 더 견고해진다."</strong> 이 한 줄을 외워두면 시험 70%는 답할 수 있다.</p>
+
+      <p>시험을 잘 보길. 12개 장의 모든 내용이 이 한 페이지에 압축되어 있으니 시험 직전에 다시 한 번 훑고 가자. 표지로 돌아가려면 <a href="index.html">여기</a>로.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  window.addEventListener('load', () => { NST.buildNav('12'); });
+</script>
+<script src="assets/widgets.js"></script>
+</body>
+</html>

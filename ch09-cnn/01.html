@@ -3,11 +3,30 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>09 / 01 / 왜 완전연결은 안 되는가</title>
+<title>Ch.09 · 01 이미지에 완전연결은 왜 안 되는가</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .param-stage { display: grid; grid-template-columns: 1.1fr 1fr; gap: 1.2rem; padding: 1.6rem 1.4rem 1rem; align-items: center; }
+  .param-stage canvas { display: block; width: 100%; max-width: 380px; height: 260px; border-radius: 8px; border: 1px solid var(--line); background: #fff; margin: 0 auto; }
+  .param-info { font-family: var(--mono); font-size: .84rem; line-height: 1.75; color: var(--ink-soft); padding: 1rem 1.1rem; background: var(--paper-2); border-radius: 8px; }
+  .param-info .row { display: flex; justify-content: space-between; padding: .35rem 0; border-bottom: 1px dashed var(--line-soft); }
+  .param-info .row:last-child { border-bottom: none; }
+  .param-info .row b { color: var(--ink); font-weight: 600; }
+  .param-info .big { font-size: 1.4rem; font-weight: 700; letter-spacing: .02em; }
+  .param-info .col-fc { color: var(--structure); }
+  .param-info .col-cv { color: var(--style); }
+  .param-info .ratio { margin-top: .8rem; padding-top: .8rem; border-top: 1px solid var(--line); font-size: .95rem; }
+  .param-info .ratio b { color: var(--synth); font-size: 1.15rem; }
+  .param-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 1.4rem; padding: 1rem 1.2rem; border-top: 1px solid var(--line-soft); background: var(--paper); font-size: .88rem; }
+  .param-controls label { display: flex; flex-direction: column; gap: .25rem; min-width: 160px; flex: 1; }
+  .param-controls label span { color: var(--ink-soft); font-family: var(--mono); font-size: .78rem; letter-spacing: .04em; }
+  .param-controls label span b { color: var(--ink); font-weight: 600; }
+  .param-controls input[type=range] { width: 100%; accent-color: var(--structure); }
+  @media (max-width: 720px) { .param-stage { grid-template-columns: 1fr; } }
+</style>
 </head>
 <body>
 <div class="scroll-progress"></div>
@@ -18,68 +37,91 @@
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Sub-chapter 01 / 출발점</span>
-      <h1>왜 이미지에 <span class="t-style">완전연결</span>은<br>안 되는가</h1>
-      <p class="lede">파라미터가 많으면 좋은 것 아닌가. 이미지에서는 정반대다. 한 장의 사진을 완전연결로 처리하려고 하면, 가중치 개수가 “약 43억”에서 시작한다.</p>
+      <span class="kicker">Ch.09 · Sub 01 · 왜 합성곱이 필요한가</span>
+      <h1>이미지에 <span class="t-structure">완전연결</span>은<br>왜 <span class="t-style">안 되는가</span></h1>
+      <p class="lede">256x256 이미지 한 장에 완전연결 한 층을 쌓으면 가중치가 43억 개다. 같은 일을 3x3 합성곱은 9개로 한다. 이 5억분의 1의 차이가 어디서 나오는지, 그리고 그 절감이 왜 그냥 "효율"이 아니라 "이미지에서는 사실상 필수"인지가 9장 전체의 출발점이다.</p>
     </header>
 
     <div class="prose">
-      <p>9장의 모든 이야기는 한 가지 위기에서 시작한다. <strong>완전연결(fully connected) 네트워크는 이미지에 적용하는 순간 파라미터가 폭발한다</strong>는 사실이다. 6장에서 본 다층 퍼셉트론은 입력의 모든 원소와 출력의 모든 원소를 서로 잇는다. 표 형식 데이터처럼 입력 차원이 작을 때는 이게 가장 일반적이고 강력한 선택이지만, 이미지처럼 차원이 큰 입력에서는 같은 구조가 곧바로 무너진다.</p>
+      <p>9장의 첫 질문은 거꾸로 읽는 것이 좋다. <em>"왜 합성곱이 필요한가"</em> 대신, <strong>"왜 우리가 늘 쓰던 완전연결(Fully Connected, FC) 층을 이미지에 그대로 쓰면 안 되는가"</strong>라고 물어 보자. 6장과 7장에서 우리는 입력 벡터(vector)를 받아 가중치 행렬(weight matrix) <span class="term">$\mathbf{W}$</span>을 곱하고 편향(bias) <span class="term">$\mathbf{b}$</span>를 더한 뒤, 비선형 함수(nonlinearity)를 거치는 한 층의 모양을 익혔다. 식 하나로 정리하면 <span class="term">$\mathbf{h} = f(\mathbf{W}\mathbf{x} + \mathbf{b})$</span>이다. 이 식은 입력의 모든 원소가 출력의 모든 원소에 영향을 줄 수 있다는, 가장 일반적이고 가장 무지(無知)한 가정을 깔고 있다. 일반성은 큰 장점처럼 들리지만, 이미지에서는 곧장 문제로 바뀐다.</p>
 
-      <p>아주 작은 예부터 보자. 256×256 픽셀 흑백 이미지 한 장을 입력으로 받아, 같은 크기의 출력을 내는 완전연결 층을 만든다고 하자. 입력 차원은 $256 \times 256 = 65{,}536$이다. 출력도 같은 차원이라면, 둘을 잇는 가중치 행렬의 크기는 다음과 같다.</p>
+      <h2>완전연결의 가중치 수는 입출력의 곱이다</h2>
+      <p>가중치 행렬 <span class="term">$\mathbf{W}$</span>의 크기는 정확히 <em>(출력 차원 × 입력 차원)</em>이다. 입력이 $n$차원이고 출력이 $m$차원이면 $\mathbf{W} \in \mathbb{R}^{m \times n}$, 가중치 수는 $m \cdot n$개다. 차원이 둘 다 작으면 별 문제가 없다. 가령 손글씨 숫자(MNIST) 28x28 이미지를 784차원 벡터로 펴서, 다음 층 128차원으로 보내는 보통의 한 층은 $128 \times 784 = 100{,}352$개. 100만 개 미만이고 노트북에서도 거뜬히 돈다.</p>
 
-      <div class="math-block">$$ W \in \mathbb{R}^{65{,}536 \times 65{,}536} \quad \Rightarrow \quad |W| \approx 4.29 \times 10^{9} $$</div>
-      <p class="math-note">완전연결 1개 층의 가중치 약 42억 9천만 개. RGB 컬러라면 약 3배.</p>
+      <p>그런데 입력 이미지를 살짝만 키워 보자. 컬러 사진 한 장은 보통 256x256 픽셀에 RGB 3채널, 즉 입력 차원이 <span class="term">$3 \times 256 \times 256 = 196{,}608$</span>이다. 이걸 받은 첫 은닉층(hidden layer)이 같은 크기의 특징맵을 출력한다고 하자. 출력 차원도 약 20만이다. 그러면 한 층의 가중치 수는 다음과 같다.</p>
 
-      <p>이 숫자가 왜 위기인가. 첫째, 메모리. 부동소수점 32비트로 약 17GB. 단일 GPU 메모리로는 한 층조차 올리지 못한다. 둘째, 학습 데이터. 일반화 이론은 “파라미터 수와 표본 수가 비슷한 수준이어야 과적합이 통제된다”는 거친 기준을 준다. 42억 개 파라미터를 안정적으로 학습시키려면 수억 장 이상의 라벨링된 이미지가 필요하지만, 그런 데이터는 ImageNet조차 갖고 있지 않다. 셋째, 계산. 한 번의 곱셈은 작지만 42억 번을 매 forward, backward마다 반복하면 학습이 사실상 불가능해진다.</p>
+      <div class="math-block">$$ N_{\mathrm{FC}} = m \cdot n \approx (1.97 \times 10^5)^2 \approx 3.87 \times 10^{10} $$</div>
+      <p class="math-note">m은 출력 차원, n은 입력 차원. 둘 다 약 20만이면 곱은 약 387억. 즉 가중치만 약 400억 개.</p>
+
+      <p>책에서는 더 작은 단일 채널을 가정해 약 <strong>43억 개</strong>로 잡는다. 컬러까지 고려하면 그 9배다. 어느 쪽이든 GPU 한 대로는 학습은커녕 메모리에 올리는 것도 불가능한 수치다. 4바이트 float32로 따져도 약 170GB가 필요하다. 이미지 한 장당 가중치 메모리가 170GB라는 말은, 한 장을 더 잘 보겠다고 데이터센터 한 대를 통째로 사야 한다는 뜻이다.</p>
+
+      <h2>"파라미터가 많다"가 정확히 어떤 문제인가</h2>
+      <p>파라미터가 많아서 생기는 문제는 막연한 "느려진다"가 아니다. 세 가지가 동시에 터진다. 첫째는 <strong>메모리</strong>다. 학습 중에는 가중치, 그 기울기(gradient), 옵티마이저(optimizer)가 들고 다니는 모멘텀(momentum) 같은 통계까지 보통 가중치의 3-4배 메모리가 필요하다. 둘째는 <strong>계산</strong>이다. 가중치 한 개당 곱셈과 덧셈이 한 번씩이므로, 가중치가 백 배가 되면 계산도 백 배가 된다. 셋째이자 가장 본질적인 것은 <strong>일반화(generalization)</strong>다. 7장에서 본 편향-분산(bias-variance) 관점에서 파라미터가 많으면 분산이 커진다. 즉 훈련 데이터에는 잘 맞추지만 새로운 데이터에는 못 맞춘다.</p>
+
+      <p>특히 세 번째가 중요하다. 같은 작업을 더 적은 파라미터로 해낼 수 있다면, 단순히 자원만 아끼는 것이 아니라 <em>같은 데이터로도 더 잘 일반화하는 모델</em>이 된다. 이 관점이 9장 전체를 관통하는 줄기다. CNN이 빠른 것은 결과일 뿐, 더 본질적인 이유는 CNN의 구조가 "이미지에서 어차피 필요 없는 자유도"를 미리 잘라 버려 분산을 낮춰 준다는 데 있다.</p>
 
       <div class="analogy">
-        완전연결 네트워크가 이미지를 처리하는 모습은, <b>“모든 픽셀이 모든 픽셀에게 한 번씩 말을 거는 회의실”</b>과 같다. 65,536명이 한 자리에 모여 “네가 어떤 색이면 나는 어떤 색이어야 하나?”를 서로에게 묻는다. 회의는 끝나지 않는다. 그런데 사진을 볼 때 우리가 정말 그렇게 보는가? 오른쪽 위 구석 픽셀과 왼쪽 아래 구석 픽셀이 서로에 대해 직접 의견을 나눌 일이 거의 없다. 자연 이미지에서 의미 있는 관계는 거의 항상 <b>가까운 픽셀들 사이</b>에서 일어난다.
+        완전연결을 <b>"이미지 전체를 한 번에 통째로 외우려는 학생"</b>이라고 하면, 합성곱은 <b>"이미지 위를 작은 돋보기로 차근차근 훑는 학생"</b>이다. 통째로 외우는 학생은 시험 문제가 똑같이 나오면 만점이지만, 그림이 살짝만 옮겨가도 못 푼다. 돋보기 학생은 같은 돋보기 하나로 어디든 본다. 외울 정보는 돋보기 하나, 시험에 어떤 위치가 나와도 같은 돋보기로 답을 찾는다. 어느 쪽이 시험을 잘 볼지는 자명하다.
       </div>
 
-      <p>여기서 9장의 결정적 통찰이 등장한다. 자연 이미지가 가진 두 가지 구조적 특성을 모델에 미리 박아 넣을 수 있다면, 회의실 규모를 극적으로 줄이면서도 같은 일을 할 수 있다. 그 두 가지가 <strong>국소성(locality)</strong>과 <strong>이동 등가성(translation equivariance)</strong>이다. 가까운 픽셀끼리만 상호작용하게 하고, 어디에서든 같은 패턴은 같은 방식으로 보게 만든다는 두 가정이다.</p>
+      <h2>합성곱이 같은 일을 어떻게 9개의 수로 하는가</h2>
+      <p>완전연결의 약 43억 개에 대응되는 합성곱의 수는 충격적으로 작다. 3x3 커널(kernel) 하나라면 가중치는 정확히 <strong>9개</strong>다. 채널을 고려해 입력 채널 3, 출력 채널 64를 가정해도 <span class="term">$3 \times 3 \times 3 \times 64 = 1{,}728$</span>개, 약 2천 개에 불과하다. 가중치 수의 비율을 적어 보면 5억분의 1 수준이다.</p>
 
-      <h2>같은 일을 합성곱은 9개로 한다</h2>
+      <div class="math-block">$$ \frac{N_{\mathrm{FC}}}{N_{\mathrm{Conv}}} = \frac{m \cdot n}{C_{\mathrm{in}} \cdot k_h \cdot k_w \cdot C_{\mathrm{out}}} \approx \frac{3.87 \times 10^{10}}{1{,}728} \approx 2.24 \times 10^{7} $$</div>
+      <p class="math-note">m·n은 완전연결 가중치 수, C_in·k_h·k_w·C_out은 합성곱 가중치 수. 컬러 256x256, 출력 채널 64 가정에서 약 2천만 배 차이.</p>
 
-      <p>위와 똑같은 “256×256 입력 → 256×256 출력” 변환을 합성곱 층으로 처리한다고 해 보자. 3×3 커널 하나를 입력 위에 미끄러뜨리며 모든 위치에서 같은 가중합을 적는다. 이 한 층이 학습해야 할 가중치는 단 9개다.</p>
+      <p>이 식이 말하는 것은 한 줄로 요약된다. <strong>완전연결의 파라미터 수는 입력의 공간 크기에 좌우되지만, 합성곱의 파라미터 수는 공간 크기와 무관하다.</strong> 이미지가 256x256이든 4096x4096이든 합성곱 가중치 수는 똑같다. 공간 크기가 늘어나도 같은 커널을 더 많이 미끄러뜨리기만 하면 된다. 그래서 큰 이미지일수록 합성곱의 이점이 폭발적으로 커진다.</p>
 
-      <div class="math-block">$$ K \in \mathbb{R}^{3 \times 3} \quad \Rightarrow \quad |K| = 9 $$</div>
-      <p class="math-note">3×3 단일 채널 커널 1개의 파라미터 수. 편향까지 합쳐도 10개.</p>
+      <h2>그런데 이것이 어떻게 "잘 작동"하는가</h2>
+      <p>합리적인 의심이 든다. 가중치를 5억분의 1로 줄였는데도 어떻게 인식 성능이 떨어지지 않는가. 더 나아가 왜 오히려 더 좋아지는가. 이 의문이 9장이 답하는 핵심 질문이다. 미리 답을 살짝 흘리면, 합성곱이 잘라 버린 자유도가 이미지에서는 어차피 쓸모없는 자유도였기 때문이다.</p>
 
-      <p>완전연결의 42억과 합성곱의 9. 비율은 약 $4.77 \times 10^{8}$, 어림잡아 <strong>5억분의 1</strong>이다. 이 차이가 어디서 나오는지 아래 위젯으로 직접 본다. 슬라이더를 움직이면 입력 크기에 따라 두 방식의 파라미터 수가 어떻게 갈라지는지가 한눈에 드러난다.</p>
+      <p>완전연결 층은 "왼쪽 위 픽셀과 오른쪽 아래 픽셀 사이에 직접 가중치가 있다"는 가능성을 열어 둔다. 합성곱은 그 가능성을 잘라 버린다. 자연 이미지에서 왼쪽 위 픽셀과 오른쪽 아래 픽셀의 직접 관계는 거의 의미가 없다. 의미는 늘 가까운 픽셀끼리 모여 있다. 또한 완전연결 층은 "이미지 왼쪽에서 본 고양이 귀와 오른쪽에서 본 고양이 귀는 별개의 가중치로 학습한다"고 가정한다. 합성곱은 그 가정도 잘라 버린다. 고양이 귀는 어디에 있든 고양이 귀다. 같은 커널 하나로 어디서든 찾는다.</p>
+
+      <p>이 두 가지 "잘라 버림"이 바로 <span class="t-style">국소성(locality)</span>과 <span class="t-style">이동 등가성(equivariance to translation)</span>이라는 사전(prior)이다. 9장이 합성곱을 소개할 때 굳이 <em>"무한히 강한 사전을 건 완전연결"</em>이라고 부르는 이유는, 합성곱이 결국 완전연결 가중치 공간 안에서 사전이 허용하지 않는 모든 가중치 배치를 확률 0으로 잘라 버리는 셈이기 때문이다. 7장의 L2 정칙화(L2 regularization)가 가중치를 부드럽게 줄이는 약한 사전이라면, 합성곱의 구조적 제약은 허용되지 않는 가중치 자체를 원천 봉쇄하는 강한 사전이다.</p>
+
+      <p>아래 위젯은 입력 크기, 출력 채널, 커널 크기를 슬라이더로 바꾸면서 완전연결과 합성곱의 파라미터 수가 어떻게 갈라지는지 직접 본다. 파라미터 수의 비율이 슬라이더 한 칸에 어떻게 폭발적으로 바뀌는지가 관전 포인트다.</p>
     </div>
 
     <div class="widget">
       <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 01</span><span>완전연결 vs 합성곱 — 파라미터 폭발 슬라이더</span></div>
-        <div id="paramExplode"></div>
+        <div class="widget-label"><span class="lab-no">위젯 01</span><span>완전연결 vs 합성곱 — 파라미터 수의 갈림길</span></div>
+        <div id="paramView" class="param-stage">
+          <canvas id="paramCanvas" width="760" height="520"></canvas>
+          <div class="param-info" id="paramInfo"></div>
+        </div>
+        <div class="param-controls">
+          <label><span>입력 한 변 <b id="lblW">256</b> px</span><input type="range" id="ctlW" min="28" max="512" step="4" value="256"></label>
+          <label><span>채널 수 <b id="lblC">3</b></span><input type="range" id="ctlC" min="1" max="3" step="1" value="3"></label>
+          <label><span>출력 채널 <b id="lblO">64</b></span><input type="range" id="ctlO" min="8" max="256" step="8" value="64"></label>
+          <label><span>커널 한 변 <b id="lblK">3</b></span><input type="range" id="ctlK" min="1" max="11" step="2" value="3"></label>
+        </div>
       </div>
-      <p class="widget-cap">왼쪽 막대는 완전연결 층, 오른쪽 막대는 같은 입력에 3×3 커널 1개를 적용한 합성곱 층의 파라미터 수다. 입력 크기를 32에서 512까지 움직여 보면, 완전연결은 4승으로 폭발하고 합성곱은 9에 고정된다. 같은 일을 하는 데 필요한 학습 자원이 얼마나 다른지 보여 준다.</p>
+      <p class="widget-cap">왼쪽 막대그래프는 두 방식의 파라미터 수를 같은 로그 축에서 비교한다. 입력을 작게 줄여 28(MNIST 크기)에 두면 완전연결도 비교적 작아 보이지만, 256까지 키우면 두 막대의 높이 차이가 한눈에 폭발한다. 출력 채널이나 커널 크기를 늘려도 합성곱은 선형으로 늘 뿐, 입력 크기와 무관하게 작다.</p>
     </div>
 
     <div class="prose">
-      <h2>이 차이가 왜 “공짜”가 아닌가</h2>
+      <h2>좌표를 펼치는 순간 잃는 것 — 공간 구조</h2>
+      <p>완전연결이 이미지에 부적합한 또 다른 이유는 파라미터 수만이 아니다. 완전연결 층은 입력을 벡터로 받기 때문에, 이미지를 한 줄로 펴서 넣는다. 28x28 이미지를 784차원 벡터로 만드는 그 흔한 <em>flatten</em> 연산을 떠올려 보자. 이 한 줄을 그으면, 같은 행 안의 옆 픽셀과 다른 행의 같은 열 픽셀 사이의 거리가 형식적으로 같아진다. 펼쳐 놓은 입력에서는 이웃이 누구인지가 사라진다.</p>
 
-      <p>이 5억분의 1이 거저 얻은 것은 아니라는 점이 9장에서 가장 중요한 단서 중 하나다. 합성곱 층은 두 가지 가정을 모델 구조에 새기는 대가로 그 효율을 얻는다.</p>
+      <p>완전연결 층이 학습으로 그 이웃 관계를 다시 찾아내야 하는데, 이는 한 번 잃은 정보를 가중치로 재발견하라는 매우 비효율적인 요구다. 100만 장의 이미지가 있어야 겨우 흉내를 낸다. 반면 합성곱 층은 입력을 펼치지 않는다. 2차원 격자 위에서 커널을 이동하므로 이웃 관계가 처음부터 보존된다. 모델은 "이웃끼리 관계가 있다"는 발견에 데이터를 쓸 필요가 없고, 그 데이터를 패턴을 더 정교하게 다듬는 데 쓸 수 있다. 이것이 표본 효율성(sample efficiency)의 본질이다.</p>
 
-      <div class="symbols"><tbody>
-        <tr><td>국소성</td><td>한 출력 픽셀이 입력의 작은 창(예: 3×3) 안에서만 정보를 모은다. 멀리 떨어진 픽셀의 직접 영향은 0이다.</td></tr>
-        <tr><td>이동 등가성</td><td>이미지의 왼쪽 위에서 의미 있는 에지 패턴은 오른쪽 아래에서도 같은 방식으로 의미 있다. 위치에 무관하게 같은 가중치를 쓴다.</td></tr>
-      </tbody></div>
+      <h2>완전연결이 결국 안 쓰이는 건 아니다</h2>
+      <p>오해를 막기 위해 한 가지 짚어 두면, 9장이 완전연결을 폐기하라는 장은 아니다. 실제 CNN은 입력에 가까운 층(저수준 특징을 잡는 층)에서는 합성곱을 쓰고, 마지막에 분류기로 갈 때는 완전연결 층을 여전히 쓴다. LeNet-5, AlexNet, VGG 모두 그렇다. 이유는 단순하다. 분류 단계의 입력 차원은 이미 합성곱과 풀링을 거치며 충분히 작아져 있기 때문에, 완전연결의 파라미터 폭발이 더 이상 문제 되지 않는다. 또한 분류기는 "어디에 있는가"보다 "무엇인가"가 중요하므로, 공간 구조를 굳이 보존할 이유도 없다.</p>
 
-      <p>이 두 가정은 자연 이미지에 거의 항상 들어맞기 때문에, 합성곱은 이미지에서 압도적으로 효율적이다. 그러나 이 가정이 깨지는 데이터, 예를 들어 표 형식 데이터(각 칼럼이 서로 무관한 의미)나 그래프 구조 데이터에는 같은 합성곱이 오히려 해롭다. 9장은 이 점을 <em>“CNN은 완전연결 네트워크에 매우 강한 사전(prior)을 건 것”</em>이라는 한 줄로 요약한다. 이 관점은 다음 sub-chapter에서 합성곱의 정의를 풀고 나면 더 분명해진다.</p>
+      <p>오히려 ResNet 이후 등장한 글로벌 평균 풀링(global average pooling) 기반 분류기는 분류기의 완전연결 층마저 거의 없애는 방향으로 진화했다. 하지만 이 발전 역시 9장의 출발점인 "입력에 가까울수록 완전연결을 피하라"는 원칙 위에서 이루어진 것이다. 입력 차원이 큰 곳에서 완전연결을 쓰지 않는다는 원칙은 변하지 않는다.</p>
 
-      <h2>편향-분산으로 다시 보기</h2>
+      <h3>핵심 정리 — 이것만은 기억하자</h3>
+      <ul class="checklist">
+        <li>완전연결의 가중치 수는 <em>(출력 차원 × 입력 차원)</em>. 입력의 공간 크기에 좌우된다.</li>
+        <li>256x256x3 이미지를 같은 크기 특징맵으로 보내는 완전연결 한 층은 약 400억 가중치, 단일 채널로 잡아도 약 43억.</li>
+        <li>3x3 합성곱은 채널 고려해도 약 1,700개. 비율은 약 5억분의 1.</li>
+        <li>합성곱은 공간 크기와 무관한 파라미터 수를 가진다. 큰 이미지일수록 이점이 커진다.</li>
+        <li>완전연결이 안 되는 이유는 메모리·계산만이 아니라 일반화. 분산이 너무 커진다.</li>
+        <li>합성곱은 "이미지에서 어차피 쓸모없는 자유도(먼 픽셀 간 관계, 위치별 별도 가중치)"를 잘라 버려 분산을 낮춘다.</li>
+        <li>이 잘라 버림이 바로 국소성과 이동 등가성이라는 사전(prior). 합성곱 = 완전연결에 무한히 강한 사전을 건 모델.</li>
+      </ul>
 
-      <p>5장의 <em>편향-분산 트레이드오프</em> 언어로 옮겨 보면 이 차이가 더 명확해진다. 완전연결은 가설 공간(hypothesis space)이 매우 넓다. 어떤 가중치 배치라도 허용한다. 그래서 편향(bias)은 낮고 분산(variance)은 높다. 적은 데이터로 학습하면 잡음까지 외워 버린다.</p>
-
-      <p>합성곱은 정반대다. “국소적이고 이동에 등가인” 가중치 배치만 허용하고, 그 밖은 사실상 확률 0으로 배제한다. 가설 공간이 좁아졌으므로 편향은 높아지지만, 분산은 극적으로 낮아진다. 자연 이미지가 그 좁은 공간 안에 거의 항상 들어 있기 때문에, 이 편향 증가는 사실상 손해가 아니다. 7장의 정칙화가 가중치를 <em>“부드럽게” 줄여서</em> 같은 효과를 노렸다면, CNN은 처음부터 가중치 배치를 <em>구조적으로 잘라낸다</em>.</p>
-
-      <div class="analogy">
-        7장의 L2 정칙화는 <b>“가능한 모든 사전을 사 두고, 무거운 것일수록 들고 다니기 힘들게”</b> 만드는 식이다. CNN의 구조적 제약은 <b>“한국어-영어 사전 하나만 들고 출발”</b>하는 식이다. 한국어-영어 번역이라는 과업이라면 후자가 훨씬 빠르고 정확하다. 영어-스페인어 번역이라면 후자는 무용지물이다. CNN의 사전이 “자연 이미지에 맞다”는 게 바로 이 한국어-영어 비유의 핵심이다.
-      </div>
-
-      <p>요약하면, 이번 sub-chapter의 결론은 두 줄이다. <strong>(1) 완전연결은 이미지에서 파라미터 폭발로 망가진다. (2) 합성곱은 국소성과 이동 등가성이라는 두 강한 사전을 모델에 새겨 같은 일을 5억분의 1의 가중치로 해낸다.</strong> 다음 sub-chapter는 그 “합성곱”이 실제로 무엇을 계산하는지, 슬라이드, 곱, 합 세 단계로 직접 풀어 본다.</p>
+      <p>다음 sub-chapter에서는 합성곱 연산이 정확히 무엇인지, 슬라이드·곱·합이라는 세 동작을 손으로 따라가며 정의를 세운다. 정의에 들어가기 전 이 sub-chapter에서 잡아 둘 한 줄은 <em>"이미지에는 더 적은 파라미터로 같은 일을 할 수 있는 길이 있고, 그 길은 데이터의 구조를 모델에 미리 새겨 넣는 것"</em>이다.</p>
     </div>
 
     <nav class="ch-foot"></nav>
@@ -87,127 +129,160 @@
 </div>
 
 <script>
-  // ─── 공통 nav 구성 (ch09 전용) ─────────────────────────
-  const SUBS = [
-    { no: '01', t: '왜 완전연결은 안 되는가' },
-    { no: '02', t: '합성곱의 정의' },
-    { no: '03', t: 'CNN의 3대 핵심 속성' },
-    { no: '04', t: '풀링 — 평행이동 불변성' },
-    { no: '05', t: '신경과학적 기원' },
-    { no: '06', t: '출력 크기, 스트라이드, 패딩' },
-    { no: '07', t: '대표 아키텍처 계보' },
-    { no: '08', t: '시험 대비' },
+  const CHAPTERS = [
+    { no:'01', t:'완전연결의 파라미터 폭발' },
+    { no:'02', t:'합성곱이란 무엇인가' },
+    { no:'03', t:'1D 합성곱 — 시간 신호' },
+    { no:'04', t:'2D 합성곱 — 이미지 커널' },
+    { no:'05', t:'희소 상호작용' },
+    { no:'06', t:'파라미터 공유' },
+    { no:'07', t:'변환 등가성' },
+    { no:'08', t:'풀링 — max vs avg' },
+    { no:'09', t:'신경과학적 기원' },
+    { no:'10', t:'출력 크기 공식' },
+    { no:'11', t:'수용 영역' },
+    { no:'12', t:'아키텍처 1 — LeNet, AlexNet' },
+    { no:'13', t:'아키텍처 2 — VGG, Inception' },
+    { no:'14', t:'아키텍처 3 — ResNet' },
+    { no:'15', t:'시험 대비 — 30+ 질문' },
   ];
-  function buildNav(cur) {
-    const tb = document.querySelector('.topbar');
-    if (tb) tb.innerHTML =
-      '<a class="home" href="index.html">← Chapter 09 / 합성곱 신경망</a>' +
-      '<span class="ch-mini">SUB ' + cur + ' / 08</span>';
-    const ol = document.querySelector('.ch-nav ol');
-    if (ol) ol.innerHTML = SUBS.map(c =>
-      '<li><a href="' + c.no + '.html"' + (c.no === cur ? ' class="current"' : '') + '>' + c.t + '</a></li>').join('');
-    const foot = document.querySelector('.ch-foot');
-    if (foot) {
-      const i = SUBS.findIndex(c => c.no === cur);
-      const prev = i > 0 ? SUBS[i - 1] : { no: '', t: '표지로', _href: 'index.html' };
-      const next = i < SUBS.length - 1 ? SUBS[i + 1] : { no: '', t: '표지로', _href: 'index.html' };
-      const hp = prev._href || (prev.no + '.html');
-      const hn = next._href || (next.no + '.html');
-      foot.innerHTML =
-        '<a href="' + hp + '"><div class="dir">← 이전</div><div class="ti">' + prev.t + '</div></a>' +
-        '<a href="' + hn + '" class="next"><div class="dir">다음 →</div><div class="ti">' + next.t + '</div></a>';
-    }
-  }
-  function initScroll() {
-    const bar = document.querySelector('.scroll-progress');
-    if (!bar) return;
-    const on = () => {
-      const h = document.documentElement;
-      const max = h.scrollHeight - h.clientHeight;
-      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
-    };
-    document.addEventListener('scroll', on, { passive: true }); on();
-  }
+  const CUR = '01';
 
-  // ─── 위젯 01: 파라미터 폭발 슬라이더 ───────────────────
-  function paramExplodeWidget(host) {
-    const css = getComputedStyle(document.documentElement);
-    const COL = {
-      structure: css.getPropertyValue('--structure').trim() || '#2D5B7A',
-      style: css.getPropertyValue('--style').trim() || '#C0492E',
-      ink: css.getPropertyValue('--ink-soft').trim() || '#5A5247',
-      faint: css.getPropertyValue('--ink-faint').trim() || '#8E8576',
-    };
-    host.innerHTML =
-      '<div style="padding:1.4rem 1.4rem 1.2rem;background:#fff;">' +
-      '  <div style="display:flex;gap:1rem;align-items:flex-end;">' +
-      '    <div style="flex:1;text-align:center;">' +
-      '      <div id="bFC" style="display:flex;flex-direction:column-reverse;align-items:center;height:240px;justify-content:flex-start;">' +
-      '        <div style="width:80%;background:' + COL.style + ';border-radius:4px 4px 0 0;transition:.25s var(--ease);" id="barFC"></div>' +
-      '      </div>' +
-      '      <div style="font-family:var(--mono);font-size:.74rem;margin-top:.5rem;color:' + COL.style + ';">완전연결 (FC)</div>' +
-      '      <div id="numFC" style="font-family:var(--mono);font-size:1.1rem;margin-top:.2rem;color:' + COL.style + ';font-weight:600;"></div>' +
-      '    </div>' +
-      '    <div style="flex:1;text-align:center;">' +
-      '      <div id="bCV" style="display:flex;flex-direction:column-reverse;align-items:center;height:240px;justify-content:flex-start;">' +
-      '        <div style="width:80%;background:' + COL.structure + ';border-radius:4px 4px 0 0;transition:.25s var(--ease);" id="barCV"></div>' +
-      '      </div>' +
-      '      <div style="font-family:var(--mono);font-size:.74rem;margin-top:.5rem;color:' + COL.structure + ';">합성곱 3×3 (CV)</div>' +
-      '      <div id="numCV" style="font-family:var(--mono);font-size:1.1rem;margin-top:.2rem;color:' + COL.structure + ';font-weight:600;"></div>' +
-      '    </div>' +
-      '  </div>' +
-      '  <div style="margin-top:1.4rem;padding-top:1rem;border-top:1px solid var(--line-soft);">' +
-      '    <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:.74rem;color:' + COL.ink + ';">' +
-      '      <span>입력 크기 n × n</span><span id="szLabel" style="color:' + COL.style + ';font-weight:600;"></span>' +
-      '    </div>' +
-      '    <input type="range" id="sz" min="32" max="512" step="32" value="256" style="width:100%;margin:.5rem 0;">' +
-      '    <div id="ratio" style="text-align:center;font-family:var(--mono);font-size:.84rem;color:' + COL.faint + ';margin-top:.3rem;"></div>' +
-      '  </div>' +
-      '</div>';
+  document.querySelector('.topbar').innerHTML =
+    '<a class="home" href="index.html">← Ch.09 CNN 표지</a>' +
+    '<span class="ch-mini">SUB ' + CUR + ' / 15</span>';
+  document.querySelector('.ch-nav ol').innerHTML = CHAPTERS.map(c =>
+    '<li><a href="' + c.no + '.html"' + (c.no===CUR?' class="current"':'') + '>' + c.t + '</a></li>').join('');
+  const idx = CHAPTERS.findIndex(c=>c.no===CUR);
+  const prev = idx>0 ? CHAPTERS[idx-1] : { no:'', t:'표지로', _:'index.html' };
+  const next = idx<CHAPTERS.length-1 ? CHAPTERS[idx+1] : { no:'', t:'표지로', _:'index.html' };
+  document.querySelector('.ch-foot').innerHTML =
+    '<a href="' + (prev._ || prev.no+'.html') + '"><div class="dir">← 이전</div><div class="ti">' + prev.t + '</div></a>' +
+    '<a href="' + (next._ || next.no+'.html') + '" class="next"><div class="dir">다음 →</div><div class="ti">' + next.t + '</div></a>';
 
-    const sz = document.getElementById('sz');
-    const szLabel = document.getElementById('szLabel');
-    const barFC = document.getElementById('barFC');
-    const barCV = document.getElementById('barCV');
-    const numFC = document.getElementById('numFC');
-    const numCV = document.getElementById('numCV');
-    const ratio = document.getElementById('ratio');
-
-    function fmt(n) {
-      if (n >= 1e9) return (n / 1e9).toFixed(2) + '×10⁹';
-      if (n >= 1e6) return (n / 1e6).toFixed(2) + '×10⁶';
-      if (n >= 1e3) return (n / 1e3).toFixed(2) + '×10³';
-      return String(n);
-    }
-    function fmtRatio(r) {
-      if (r >= 1e9) return (r / 1e9).toFixed(2) + '억';
-      if (r >= 1e6) return (r / 1e6).toFixed(2) + '백만';
-      if (r >= 1e3) return (r / 1e3).toFixed(2) + '천';
-      return r.toFixed(0);
-    }
-    function update() {
-      const n = +sz.value;
-      const fc = n * n * n * n;     // n^2 * n^2
-      const cv = 9;
-      szLabel.textContent = n + ' × ' + n;
-      // log-scale 시각화 (FC 막대 = log(fc)/log(fcMax))
-      const fcMax = 512 * 512 * 512 * 512;
-      const hFC = Math.max(2, Math.log10(fc + 1) / Math.log10(fcMax + 1) * 220);
-      const hCV = Math.max(2, Math.log10(cv + 1) / Math.log10(fcMax + 1) * 220);
-      barFC.style.height = hFC + 'px';
-      barCV.style.height = hCV + 'px';
-      numFC.textContent = fmt(fc) + ' 개';
-      numCV.textContent = '9 개';
-      ratio.innerHTML = '비율: 합성곱이 완전연결의 <b style="color:' + COL.structure + ';">1 / ' + fmtRatio(fc / cv) + '</b> 수준';
-    }
-    sz.addEventListener('input', update); update();
-  }
+  const bar = document.querySelector('.scroll-progress');
+  document.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max > 0 ? (h.scrollTop/max)*100 : 0) + '%';
+  }, { passive: true });
 
   window.addEventListener('load', () => {
-    buildNav('01'); initScroll();
-    const p = document.getElementById('paramExplode');
-    if (p) paramExplodeWidget(p);
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{ left:'$$', right:'$$', display:true }, { left:'$', right:'$', display:false }],
+        throwOnError: false,
+      });
+    }
   });
+
+  // ---------- 위젯: 파라미터 수 비교 ----------
+  const cvs = document.getElementById('paramCanvas');
+  const ctx = cvs.getContext('2d');
+  const info = document.getElementById('paramInfo');
+  const ctlW = document.getElementById('ctlW');
+  const ctlC = document.getElementById('ctlC');
+  const ctlO = document.getElementById('ctlO');
+  const ctlK = document.getElementById('ctlK');
+  const lblW = document.getElementById('lblW');
+  const lblC = document.getElementById('lblC');
+  const lblO = document.getElementById('lblO');
+  const lblK = document.getElementById('lblK');
+
+  function fmt(n) {
+    if (n < 1000) return n.toLocaleString();
+    if (n < 1e6) return (n/1e3).toFixed(1) + '천';
+    if (n < 1e9) return (n/1e6).toFixed(2) + '백만';
+    if (n < 1e12) return (n/1e9).toFixed(2) + '십억';
+    return (n/1e12).toFixed(2) + '조';
+  }
+  function fmtRatio(r) {
+    if (r < 1000) return r.toFixed(1) + '배';
+    if (r < 1e6) return (r/1e3).toFixed(1) + '천 배';
+    if (r < 1e9) return (r/1e6).toFixed(2) + '백만 배';
+    return (r/1e9).toFixed(2) + '십억 배';
+  }
+
+  function draw() {
+    const W = +ctlW.value, C = +ctlC.value, O = +ctlO.value, K = +ctlK.value;
+    lblW.textContent = W; lblC.textContent = C; lblO.textContent = O; lblK.textContent = K;
+    const n_in = W * W * C;
+    const n_out = W * W * O;
+    const fc = n_in * n_out;
+    const conv = C * K * K * O;
+    const ratio = fc / conv;
+
+    ctx.clearRect(0,0,cvs.width,cvs.height);
+    const margin = { l: 80, r: 30, t: 50, b: 60 };
+    const w = cvs.width - margin.l - margin.r;
+    const h = cvs.height - margin.t - margin.b;
+
+    ctx.strokeStyle = '#8E8576'; ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(margin.l, margin.t);
+    ctx.lineTo(margin.l, margin.t + h);
+    ctx.lineTo(margin.l + w, margin.t + h);
+    ctx.stroke();
+
+    const logMin = 0, logMax = 12;
+    function ly(v) {
+      const lv = Math.log10(Math.max(v, 1));
+      const t = (lv - logMin) / (logMax - logMin);
+      return margin.t + h - t * h;
+    }
+
+    ctx.strokeStyle = 'rgba(38,34,28,0.06)'; ctx.lineWidth = 1;
+    ctx.font = '500 11px Spline Sans Mono, monospace'; ctx.fillStyle = '#8E8576';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    for (let i = 0; i <= 12; i += 2) {
+      const y = margin.t + h - (i / 12) * h;
+      ctx.beginPath(); ctx.moveTo(margin.l, y); ctx.lineTo(margin.l + w, y); ctx.stroke();
+      ctx.fillText('10^' + i, margin.l - 8, y);
+    }
+
+    const barW = w / 3.2;
+    const xFC = margin.l + w * 0.18;
+    const xCV = margin.l + w * 0.58;
+
+    ctx.fillStyle = '#2D5B7A';
+    const yFC = ly(fc);
+    ctx.fillRect(xFC, yFC, barW, margin.t + h - yFC);
+    ctx.fillStyle = '#C0492E';
+    const yCV = ly(conv);
+    ctx.fillRect(xCV, yCV, barW, margin.t + h - yCV);
+
+    ctx.font = '600 14px Spline Sans Mono, monospace';
+    ctx.fillStyle = '#26221C';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.fillText('완전연결', xFC + barW/2, yFC - 8);
+    ctx.fillText('합성곱', xCV + barW/2, yCV - 8);
+
+    ctx.font = '500 12px Spline Sans Mono, monospace';
+    ctx.fillStyle = '#5A5247';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText(fmt(fc), xFC + barW/2, margin.t + h + 6);
+    ctx.fillText(fmt(conv), xCV + barW/2, margin.t + h + 6);
+
+    ctx.font = '500 11px Spline Sans Mono, monospace';
+    ctx.fillStyle = '#8E8576';
+    ctx.fillText('m·n', xFC + barW/2, margin.t + h + 26);
+    ctx.fillText('C·K·K·O', xCV + barW/2, margin.t + h + 26);
+
+    ctx.font = '600 13px Spline Sans Mono, monospace';
+    ctx.fillStyle = '#26221C';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('가중치 수 (로그 스케일)', margin.l, 16);
+
+    info.innerHTML =
+      '<div class="row"><span>입력 차원 n</span><b>' + fmt(n_in) + '</b></div>' +
+      '<div class="row"><span>출력 차원 m</span><b>' + fmt(n_out) + '</b></div>' +
+      '<div class="row col-fc"><span>완전연결 m·n</span><b class="big">' + fmt(fc) + '</b></div>' +
+      '<div class="row col-cv"><span>합성곱 C·K²·O</span><b class="big">' + fmt(conv) + '</b></div>' +
+      '<div class="ratio">완전연결이 합성곱보다 <b>' + fmtRatio(ratio) + '</b> 더 많은 가중치를 쓴다.</div>';
+  }
+
+  [ctlW, ctlC, ctlO, ctlK].forEach(el => el.addEventListener('input', draw));
+  draw();
 </script>
 </body>
 </html>

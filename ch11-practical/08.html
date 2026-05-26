@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>11.08 · 디버깅 결정 트리 — 무엇부터 의심하는가</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .dbg-tree { padding: 1.4rem 1.2rem; display: flex; flex-direction: column; gap: .7rem; }
+  .dbg-node { padding: 1rem 1.2rem; background: #fff; border: 1px solid var(--line); border-radius: 9px; transition: all .15s var(--ease); }
+  .dbg-node.q { background: linear-gradient(180deg, var(--paper-2), #fff); border-left: 3px solid var(--structure); }
+  .dbg-node.q .q-title { font-family: var(--serif); font-size: 1.05rem; color: var(--ink); margin-bottom: .6rem; }
+  .dbg-node .opts { display: flex; gap: .5rem; flex-wrap: wrap; }
+  .dbg-node .opt { font-family: var(--mono); font-size: .8rem; padding: .45rem .85rem; border: 1px solid var(--line); border-radius: 6px; background: #fff; cursor: pointer; color: var(--ink-soft); transition: all .15s; }
+  .dbg-node .opt:hover { background: var(--paper-2); border-color: var(--structure-lo); }
+  .dbg-node .opt.sel { background: var(--structure); color: #fff; border-color: var(--structure); }
+  .dbg-action { padding: 1rem 1.2rem; background: var(--paper-2); border-left: 3px solid var(--style); border-radius: 0 9px 9px 0; font-size: .92rem; line-height: 1.6; color: var(--ink); }
+  .dbg-action h5 { margin: 0 0 .4rem; font-family: var(--serif); font-size: 1.05rem; color: var(--style); }
+  .dbg-action .why { font-family: var(--mono); font-size: .78rem; color: var(--ink-soft); margin-top: .5rem; }
+
+  .tool-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: .8rem; max-width: var(--measure); margin: 1.4rem auto; padding-inline: 1.4rem; }
+  .tool-card { padding: 1rem 1.1rem; background: #fff; border: 1px solid var(--line); border-radius: 10px; border-top: 3px solid var(--style); }
+  .tool-card h6 { margin: 0 0 .4rem; font-family: var(--serif); font-size: 1.02rem; color: var(--ink); }
+  .tool-card .which { font-family: var(--mono); font-size: .7rem; color: var(--structure); letter-spacing: .04em; margin-bottom: .35rem; }
+  .tool-card p { margin: 0; font-size: .87rem; color: var(--ink-soft); line-height: 1.55; }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-chapter 08 · 가설 한 개, 실험 한 번</span>
+      <h1>증상부터 시작해,<br><span class="t-style">가장 싼 도구</span>로 의심을 좁힌다</h1>
+      <p class="lede">모든 절차를 따랐는데도 모델이 안 될 때 — 책의 마지막 권고는 디버깅이다. 적응형 부품끼리 서로의 결함을 보완하는 모델에서, 어디가 진짜 망가졌는지 찾는 다섯 가지 표준 도구.</p>
+    </header>
+
+    <div class="prose">
+      <p>11장의 마지막 절은 디버깅이다. 책이 직설적으로 인정하는 사실 — <em>딥러닝 모델은 디버깅하기 어렵다.</em> 왜인가. 가중치, 활성, 옵티마이저, 정칙화, 데이터 전처리 등 <strong>적응형 부품이 너무 많아서 한 부품의 결함을 다른 부품이 부분적으로 보완</strong>하기 때문이다. 결과적으로 "성능이 나쁘다"는 신호만 있고, 어느 부품이 원인인지 안 드러난다.</p>
+
+      <div class="analogy">
+        <b>오케스트라 비유.</b> 100명의 연주자 중 한 명이 1초 늦게 들어왔다고 하자. 듣는 사람은 "뭔가 어긋났다"는 막연한 느낌만 받는다. 누가 늦었는지 듣기로는 모른다. 그런데 다른 연주자들이 무의식적으로 그 사람에게 맞춰 박자를 조금 늦추면 — 듣기에는 더 부드러워지지만 문제는 그대로다. 딥러닝 모델도 똑같다 — "좋아 보이지만 진짜 문제는 여전히 있는" 상태가 가능하다.
+      </div>
+
+      <p>그래서 책은 <strong>한 번에 한 가설</strong>이라는 메타 원칙을 다시 강조한다. 동시에 다섯 가지 도구를 바꾸지 말고, 한 가설을 세운 다음 그 가설만 검증할 한 가지 변화를 준다. 그 결과로 가설이 맞는지 틀린지 확인한다.</p>
+
+      <h2>디버깅 5종 도구 — 책의 표준</h2>
+      <p>책 11.5절이 제시하는 표준 디버깅 도구 다섯 가지다. 각각 어떤 종류의 결함을 잡아내는지가 다르다.</p>
+
+      <div class="tool-grid">
+        <div class="tool-card"><div class="which">도구 1</div><h6>실제 입력에 모델 시각화</h6><p>모델 출력을 실제 입력 데이터에 띄워 본다. 분류기는 자신 있게 한 답이 정답인지, 검출기는 박스가 객체를 잘 감싸는지를 눈으로 확인. <b>입력 처리 버그(채널 순서·정규화·크롭) 잡기</b>.</p></div>
+        <div class="tool-card"><div class="which">도구 2</div><h6>고신뢰 오답 정렬</h6><p>모델이 가장 자신 있게 틀린 답을 모아 본다. Street View 사례에서 이 도구 하나가 "크롭이 한 자리를 잘랐다"는 진단을 만들었다. <b>모델의 진짜 약점이 시스템적으로 드러난다</b>.</p></div>
+        <div class="tool-card"><div class="which">도구 3</div><h6>Tiny dataset에 과적합</h6><p>5-10개 예제만으로 학습. 훈련 손실이 0에 가까이 내려가야 정상. 안 내려가면 모델·옵티마이저·손실 함수 어딘가에 <b>소프트웨어 버그</b>. 데이터 부족이 아니다.</p></div>
+        <div class="tool-card"><div class="which">도구 4</div><h6>자동미분 vs 유한차분 비교</h6><p>같은 점에서 PyTorch/TF 자동미분의 그래디언트와 $(f(\theta+\epsilon) - f(\theta-\epsilon)) / 2\epsilon$ 형태의 유한차분이 일치하는지 확인. <b>커스텀 레이어·손실 함수의 미분 구현 오류</b>.</p></div>
+        <div class="tool-card"><div class="which">도구 5</div><h6>활성·기울기 히스토그램</h6><p>각 층의 활성값과 기울기 분포를 시각화. <b>포화(saturation), 기울기 소실·폭발, dead ReLU, BatchNorm 통계 이상</b>을 동시에 잡는다.</p></div>
+      </div>
+
+      <h2>증상에서 도구로 — 결정 트리</h2>
+      <p>디버깅의 핵심은 <em>증상에서 시작해서 가장 싸게 진단할 수 있는 도구로 의심을 좁히는 것</em>이다. 책의 5종 도구는 각각 효과는 다르고 비용도 다르다. tiny dataset 과적합 테스트는 5분이면 끝나고 결정적인 정보를 준다. 활성 히스토그램은 큰 모델이면 시각화에 시간이 더 걸린다. 그래서 같은 증상을 두고도 어떤 도구로 먼저 의심할지가 결정 트리로 정해진다.</p>
+
+      <p>아래 위젯에서 가장 자주 보는 증상부터 시작해 보자. "훈련 손실이 충분히 낮은가"라는 첫 질문이 모든 디버깅의 출발점이다. 그 답에 따라 다음 의심 영역이 갈리고, 그 영역을 진단할 가장 싼 도구가 자동 추천된다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 08</span><span>디버깅 결정 트리 · 증상에 따라 다음 도구가 결정된다</span></div>
+        <div class="dbg-tree" id="tree"></div>
+      </div>
+      <p class="widget-cap">옵션을 누르면 그 답에 맞는 다음 도구와 그 도구를 쓰는 이유가 펼쳐진다. 결정 트리의 핵심은 <b>증상 → 의심 가능한 원인 → 그 원인을 가장 적은 비용으로 확인할 수 있는 도구</b>의 매핑이다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>왜 한 번에 한 가설인가</h2>
+      <p>책이 디버깅 절에서 가장 강조하는 메타 원칙은 "한 번에 한 가설"이다. 동시에 학습률을 바꾸고, 정칙화를 추가하고, 옵티마이저를 교체하면 — 결과가 좋아져도 무엇이 좋아지게 한 건지 모른다. 다음 사이클에서 어느 것을 유지해야 할지 결정할 수 없다.</p>
+
+      <p>이 원칙은 단순한 좋은 습관이 아니라 <strong>학습 가능성의 전제 조건</strong>이다. 부품들이 서로의 결함을 가린다는 사실(01 sub에서 본) 때문에, 한 번에 여러 변경을 하면 신호와 잡음을 구별하는 게 사실상 불가능해진다. 모델이 좋아진 진짜 이유 vs 두 변경의 우연한 상호작용 vs 그냥 운 좋은 표본의 차이를 갈라낼 수 없다.</p>
+
+      <h2>고신뢰 오답이 특히 강한 이유</h2>
+      <p>5종 도구 중 하나만 강조하라면 책은 <strong>고신뢰 오답(high-confidence mistakes) 정렬</strong>을 첫 번째로 꼽을 것이다. Street View 사례에서 이 도구 하나가 "주소가 잘려서 한 자리가 빠졌다"는 진단을 만들었고, 그 진단 하나로 인간 수준 정확도에 도달했다.</p>
+
+      <p>이 도구가 왜 그렇게 강한가. 모델이 "자신 없이 틀린 답"은 어차피 모델이 혼란스러웠던 입력이라 정보가 적다. 같은 종류의 입력을 더 모아 학습해도 별 변화 없다. <strong>"자신만만하게 틀린 답"</strong>이야말로 모델이 무엇을 "당연하다"고 잘못 믿고 있는지를 드러낸다. Street View에서 한 자리가 잘린 사진을 모델은 의심 없이 "1234"라고 읽는다 — 그 "의심 없음"이 단서다. 모델이 "1234가 확실하다"고 말한 사진들을 모아 보니 모두 4자리 주소의 끝 자리가 잘려 있더라는 패턴이 보였다.</p>
+
+      <p>실무에서 이 도구는 단순히 "softmax 확률 상위 N개 오답"을 출력하는 것으로 시작한다. 그 N개를 사람이 직접 본다. 공통된 패턴을 찾는다(같은 크롭 영역, 같은 시간대, 같은 카메라). 그 패턴이 데이터 쪽에 있는지 모델 쪽에 있는지를 가른다. 보통 데이터 쪽에 있다 — 전처리, 라벨, 분포의 문제.</p>
+
+      <h2>Tiny dataset 과적합 — 가장 결정적인 1차 테스트</h2>
+      <p>이 도구가 결정적인 이유는 단순하다. 모델이 5-10개 예제에 과적합 안 된다면 모델·옵티마이저·손실 함수·데이터 파이프라인 어딘가에 <strong>구현 버그</strong>가 있다. 더 큰 데이터를 모아 봤자, 더 큰 모델을 써 봤자 의미 없다. 이 테스트가 통과돼야 그 다음 단계가 의미를 갖는다.</p>
+
+      <p>구체적 절차: 데이터셋에서 5-10개 예제를 무작위로 골라(또는 한 클래스당 2-3개씩) 그것만 가지고 100-1000 epoch 학습. 훈련 손실이 0에 가까이(이론적으로 0이 가능한 손실 함수라면) 내려가야 한다. 안 내려가면 — 어딘가에 버그.</p>
+
+      <p>가장 흔한 버그 위치: 손실 함수 정의(softmax 두 번 적용·라벨 인코딩 어긋남), 데이터 로더(축 순서 뒤집힘·정규화 누락), 옵티마이저(zero_grad 안 부름·gradient 끊김), 모델 정의(detach 잘못 위치). tiny dataset 테스트는 이 모든 버그를 한 번에 잡아낸다.</p>
+
+      <h2>활성·기울기 히스토그램이 잡는 결함들</h2>
+      <p>책은 이 도구를 vanishing/exploding gradient 탐지용으로 권하지만, 실제로는 더 많은 결함을 잡는다.</p>
+
+      <ul>
+        <li><strong>Dead ReLU</strong> — ReLU 입력이 학습 초기에 모두 음수가 되어 출력·기울기가 모두 0인 뉴런이 영구히 죽는 현상. 활성 히스토그램에서 0에 거대한 봉우리, 양수 영역이 비어 있으면 즉시 보임.</li>
+        <li><strong>Sigmoid/tanh 포화(saturation)</strong> — 출력이 양 극단에 몰리면 기울기가 거의 0. 히스토그램에서 가장자리 두 봉우리가 크면 문제.</li>
+        <li><strong>가중치 초기화 불량</strong> — 학습 초기 활성이 너무 크거나 작으면 그 자체로 학습이 망가짐. 첫 epoch 활성 분산으로 He/Xavier 초기화가 제대로 됐는지 확인.</li>
+        <li><strong>BatchNorm 통계 이상</strong> — running mean/var가 비정상이면 추론 시 학습 때와 다른 결과. 학습/추론 모드 간 활성 분포 차이로 확인.</li>
+        <li><strong>학습률 미스매치</strong> — 학습률이 너무 크면 기울기 분포가 점점 넓어지고, 너무 작으면 거의 0에 머묾. 폭발·소실의 약한 형태.</li>
+        <li><strong>Dropout 모드 토글 실수</strong> — train()/eval() 모드 토글 누락. 활성 분포가 학습 epoch 사이에 너무 일정하면 의심.</li>
+      </ul>
+
+      <p>이 모든 결함의 공통점은 <em>"부품끼리 서로 보완해서 손실 곡선만으로는 안 보인다"</em>는 것이다. 히스토그램은 모델 내부의 통계적 건강 상태를 직접 들여다보는 거의 유일한 도구다. PyTorch라면 TensorBoard의 histogram summary로, 직접 plotting하려면 matplotlib의 hist() 함수로 한 줄에 그릴 수 있다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUB = [
+    { no:'01', t:'절차가 알고리즘보다 중요한 이유' },
+    { no:'02', t:'성능 지표 선택' },
+    { no:'03', t:'정밀도·재현율·F1·AUC' },
+    { no:'04', t:'기본 베이스라인' },
+    { no:'05', t:'데이터 vs 모델 키우기' },
+    { no:'06', t:'하이퍼파라미터 1 — grid vs random' },
+    { no:'07', t:'하이퍼파라미터 2 — 베이지안' },
+    { no:'08', t:'디버깅 결정 트리' },
+    { no:'09', t:'실패 모드 분류' },
+    { no:'10', t:'실전 워크플로우' },
+    { no:'11', t:'시험 대비' },
+  ];
+  const CUR = '08';
+
+  document.querySelector('.topbar').innerHTML =
+    `<a class="home" href="index.html">← Ch.11 실용적 방법론</a>` +
+    `<span class="ch-mini">SUB ${CUR} / ${SUB.length}</span>`;
+  document.querySelector('.ch-nav ol').innerHTML = SUB.map(c =>
+    `<li><a href="${c.no}.html" ${c.no === CUR ? 'class="current"' : ''}>${c.t}</a></li>`).join('');
+  const i = SUB.findIndex(c => c.no === CUR);
+  const prev = i > 0 ? SUB[i-1] : { no:'', t:'챕터 표지로' };
+  const next = i < SUB.length-1 ? SUB[i+1] : { no:'', t:'챕터 표지로' };
+  document.querySelector('.ch-foot').innerHTML =
+    `<a href="${prev.no ? prev.no + '.html' : 'index.html'}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+    `<a href="${next.no ? next.no + '.html' : 'index.html'}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+
+  const bar = document.querySelector('.scroll-progress');
+  window.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max > 0 ? (h.scrollTop/max)*100 : 0) + '%';
+  }, { passive: true });
+
+  // 디버깅 결정 트리
+  const TREE = {
+    q: 'Q1. 훈련 손실(training loss)이 충분히 낮은가? (베이스라인 대비)',
+    opts: [
+      { label: '아니오 (훈련부터 안 내려감)', next: {
+        q: 'Q1a. tiny dataset 5-10개에서도 훈련 손실이 0 근처로 안 내려가는가?',
+        opts: [
+          { label: '그렇다 (tiny에서도 안 됨)', action: {
+            title: '소프트웨어 버그를 의심',
+            body: '데이터 부족이나 모델 용량 문제가 아니다. <b>코드 어딘가에 버그가 있다.</b> 손실 함수가 잘못 정의됐거나, 라벨이 잘못 들어가거나, 그래디언트 계산이 끊겼거나(detach·no_grad), 옵티마이저 업데이트가 적용되지 않거나(zero_grad·step 누락), 또는 데이터 로더에서 축 순서가 뒤집혔거나.',
+            why: '도구 · <b>자동미분 vs 유한차분 비교</b>로 그래디언트 구현 확인. <b>실제 입력에 모델 시각화</b>로 입력 처리 확인. 코드 한 줄씩 sanity check.'
+          }},
+          { label: '아니다 (tiny엔 됨, 큰 데이터선 안 됨)', action: {
+            title: '모델 용량 부족 또는 학습률 문제',
+            body: '코드는 정상이다. 모델이 더 큰 데이터의 패턴을 잡을 만큼의 용량이 없거나, 학습률·옵티마이저가 잘못 잡혀 손실이 정체했다.',
+            why: '도구 · <b>활성·기울기 히스토그램</b>으로 dead ReLU·기울기 소실 확인. <b>학습률 로그스케일로 5-7회</b> 재탐색. 그래도 안 되면 모델 깊이/너비 증가.'
+          }},
+        ]
+      }},
+      { label: '예 (훈련은 낮음)', next: {
+        q: 'Q2. 검증 손실(validation loss)도 비슷하게 낮은가?',
+        opts: [
+          { label: '예 (두 줄 모두 낮음)', action: {
+            title: '베이스라인 완성',
+            body: '훈련과 검증 모두 낮다. <b>모델이 일반화에 성공했다.</b> 이 모델을 제출하거나 배포 가능. 더 짜내려면 베이즈 오차와의 격차를 확인.',
+            why: '도구 · 더 이상 디버깅 단계가 아니다. <b>지표 자체</b>를 재정의하거나 다른 지표를 추가해 모델의 약점을 새로 정의하라.'
+          }},
+          { label: '아니오 (훈련은 낮은데 검증은 높음)', action: {
+            title: '과대적합 — 일반화 격차',
+            body: '모델이 훈련 데이터의 노이즈까지 외웠다. <b>일반화 격차가 크다.</b> 이때 두 처방이 가능하다 — 정칙화를 강화하거나 데이터를 더 모으거나.',
+            why: '도구 · <b>고신뢰 오답 정렬</b>로 모델이 어떤 종류에서 자신 있게 틀리는지 확인 (입력의 특정 부분군이 부족할 수 있음). 처방 · <b>Dropout / weight decay 증가</b>, 안 되면 <b>데이터 증강 또는 신규 수집</b>. 한 번에 한 가지만.'
+          }},
+          { label: '검증이 훈련보다 낮음 (이상)', action: {
+            title: '데이터 누수(leakage) 의심',
+            body: '거의 안 일어나는 조합. <b>검증 세트에 훈련 정보가 새어 들어갔을 가능성</b>. 같은 사용자의 데이터가 양쪽에 있거나, 시간 순서 없이 무작위 분할했거나, 검증 세트가 너무 쉬운 예제만 모았거나.',
+            why: '도구 · 데이터 분할을 다시 점검. <b>group K-fold(같은 그룹은 한쪽으로)</b>, <b>시간 분할(과거→미래)</b>, <b>분포 비교(훈련·검증 클래스 비율)</b>. 모델 수정 전에 분할부터.'
+          }},
+        ]
+      }},
+    ]
+  };
+
+  function renderTree(node, parent, depth) {
+    if (node.q) {
+      const q = document.createElement('div');
+      q.className = 'dbg-node q';
+      q.innerHTML = `<div class="q-title">${node.q}</div><div class="opts"></div>`;
+      parent.appendChild(q);
+      const optsEl = q.querySelector('.opts');
+      node.opts.forEach(o => {
+        const b = document.createElement('div');
+        b.className = 'opt'; b.textContent = o.label;
+        b.addEventListener('click', () => {
+          let next = q.nextElementSibling;
+          while (next) { const n2 = next.nextElementSibling; next.remove(); next = n2; }
+          optsEl.querySelectorAll('.opt').forEach(x => x.classList.remove('sel'));
+          b.classList.add('sel');
+          if (o.next) renderTree(o.next, parent, depth + 1);
+          else if (o.action) {
+            const a = document.createElement('div');
+            a.className = 'dbg-action';
+            a.innerHTML = `<h5>${o.action.title}</h5><p>${o.action.body}</p><div class="why">${o.action.why}</div>`;
+            parent.appendChild(a);
+          }
+        });
+        optsEl.appendChild(b);
+      });
+    }
+  }
+  renderTree(TREE, document.getElementById('tree'), 0);
+
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) renderMathInElement(document.body, {
+      delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}], throwOnError:false
+    });
+  });
+</script>
+</body>
+</html>

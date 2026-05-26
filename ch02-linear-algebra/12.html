@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>12 · 행렬 미적분 — 역전파의 다리</title>
+<link rel="stylesheet" href="./assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 12 · Ch.6 역전파(Backpropagation)로 가는 다리</span>
+      <h1>행렬 미적분 —<br><span class="t-style">역전파의 다리</span></h1>
+      <p class="lede">함수가 벡터를 입력받고 벡터를 출력할 때, 그 “미분”은 무엇일까? 자코비안과 헤시안이 답이다. 그리고 그것이 역전파의 뿌리다.</p>
+    </header>
+
+    <div class="prose">
+      <p>지금까지 행렬을 “정적인 표현 도구”로 보았다. 그러나 신경망은 학습 중 가중치가 “움직인다”. 그 움직임을 정의하려면 “행렬에 대한 미분(differentiation)”이 필요하다. 이 sub의 한 줄은 다음이다. <strong>벡터-입력 함수의 미분은 자코비안(Jacobian) 행렬이고, 스칼라-출력 함수의 2차 미분은 헤시안(Hessian) 행렬이다. 두 행렬이 신경망의 역전파(backpropagation)와 2차 최적화(2nd-order optimization)를 가능하게 한다.</strong></p>
+
+      <h2>기울기(gradient) — 스칼라 함수에서 벡터로</h2>
+      <p>함수 $f: \mathbb{R}^n \to \mathbb{R}$이 벡터를 입력받고 스칼라를 출력한다(예: 손실 함수). 이 함수의 기울기 $\nabla f$는 각 입력 변수에 대한 편미분을 모은 벡터다.</p>
+
+      <div class="math-block">$$ \nabla f(\mathbf{x}) = \begin{pmatrix} \frac{\partial f}{\partial x_1} \\ \frac{\partial f}{\partial x_2} \\ \vdots \\ \frac{\partial f}{\partial x_n} \end{pmatrix} \in \mathbb{R}^n $$</div>
+      <p class="math-note">∇f = nabla f. 각 자리가 “해당 입력을 조금 늘리면 f가 얼마나 변하는가”.</p>
+
+      <p>기울기의 의미는 “$f$를 가장 빠르게 증가시키는 방향”이다. 그래서 “경사하강법(gradient descent)”은 가중치를 “기울기의 반대 방향”으로 조금씩 움직여 손실을 줄인다.</p>
+
+      <div class="math-block">$$ \mathbf{x}_{t+1} = \mathbf{x}_t - \eta \nabla f(\mathbf{x}_t) $$</div>
+      <p class="math-note">η = 학습률(learning rate). 기울기의 반대로 한 걸음.</p>
+
+      <p>그래서 기울기를 정확하게 계산하는 일이 “학습”의 핵심이다.</p>
+
+      <div class="analogy">
+        <b>안개 낀 산에서 내려가는 일</b>을 떠올려 보자. 시야가 30cm밖에 안 보이지만, 발 밑의 “경사가 가장 가파른 방향”은 알 수 있다. 그 방향의 반대로 한 걸음 내려가고, 다시 발 밑을 더듬어 또 가파른 방향의 반대로 한 걸음. 이렇게 하다 보면 어느덧 골짜기에 도착한다. 손실 함수를 산이라고 보면, 기울기가 “발 밑의 경사 방향”이다.
+      </div>
+
+      <h2>자코비안(Jacobian) — 벡터-입력 벡터-출력 함수의 미분</h2>
+      <p>함수가 벡터를 입력받고 벡터를 출력할 때($f: \mathbb{R}^n \to \mathbb{R}^m$), 그 미분은 “행렬”이 된다. 이를 자코비안(Jacobian)이라고 한다.</p>
+
+      <div class="math-block">$$ J_{ij} = \frac{\partial f_i}{\partial x_j}, \quad J \in \mathbb{R}^{m \times n} $$</div>
+      <p class="math-note">i행 j열 = i번째 출력을 j번째 입력으로 편미분. 출력 × 입력 차원의 행렬.</p>
+
+      <p>자코비안을 시각화하면 다음과 같다. 각 행이 “하나의 출력 좌표에 대한 기울기”, 각 열이 “하나의 입력 좌표의 변화가 모든 출력에 미치는 영향”. 즉 자코비안 한 장에 “출력 × 입력의 모든 1차 관계”가 정리되어 있다.</p>
+
+      <div class="example">
+        <b>신경망 한 층의 자코비안</b>. 한 층 $\mathbf{y} = f(W\mathbf{x} + \mathbf{b})$의 입력 $\mathbf{x}$에 대한 자코비안은 $J = \text{diag}(f'(\mathbf{z})) \cdot W$다. 여기서 $\mathbf{z} = W\mathbf{x} + \mathbf{b}$. 즉 “활성화 함수의 미분을 대각 행렬로 적고, 그 다음에 가중치 행렬을 곱한” 모양이다. ReLU의 경우 미분이 0 또는 1뿐이므로 이 자코비안은 매우 희소(sparse)하다.
+      </div>
+
+      <h2>연쇄법칙(chain rule)과 역전파</h2>
+      <p>여러 함수가 합성된 식 $f(g(\mathbf{x}))$의 미분은 “연쇄법칙(chain rule)”으로 푼다. 행렬 미적분에서 연쇄법칙은 매우 깔끔하게 자코비안 곱으로 표현된다.</p>
+
+      <div class="math-block">$$ \frac{\partial f(g(\mathbf{x}))}{\partial \mathbf{x}} = J_f \cdot J_g $$</div>
+      <p class="math-note">합성 함수의 자코비안 = 바깥 함수의 자코비안 × 안쪽 함수의 자코비안. 행렬 곱.</p>
+
+      <p>그래서 신경망처럼 $L$개의 층이 합성된 식의 미분은 “자코비안 $L$개의 곱”이 된다. 이 곱을 “끝에서부터 거꾸로 계산”하는 알고리즘이 바로 <strong>역전파(backpropagation)</strong>다. Chapter 6의 주제다.</p>
+
+      <p>왜 거꾸로 계산할까? 손실은 “마지막 한 스칼라”다. 그러므로 “손실 → 출력 → 마지막 층 가중치 → ... → 첫 층 가중치”의 흐름으로 거꾸로 계산하면, 매 단계마다 “벡터 × 행렬 곱”(저렴함)을 하면 된다. 만약 앞에서 뒤로 계산했다면 매 단계마다 “행렬 × 행렬 곱”(비쌈)이 필요해진다.</p>
+
+      <div class="analogy">
+        <b>도미노 효과의 역추적</b>을 떠올려 보자. 마지막 도미노 한 개가 쓰러졌을 때, “이 도미노가 쓰러진 게 어느 처음 도미노 때문인가?”를 알고 싶다고 하자. 마지막에서 한 칸씩 거꾸로 추적해 가면, 각 단계에서 “바로 앞 도미노만 보면 된다”. 만약 처음 도미노부터 모든 가능한 경로를 추적하면 비용이 폭발한다. 역전파가 “손실에서 시작해 거꾸로” 가는 이유다.
+      </div>
+
+      <h2>VJP와 JVP — 신경망에서 실제로 계산되는 것</h2>
+      <p>실무 자동 미분(automatic differentiation)은 자코비안 전체를 만들지 않는다. 대신 두 가지 “벡터-행렬 곱”만 계산한다.</p>
+
+      <ul>
+        <li><strong>VJP (vector-Jacobian product)</strong>: 행벡터 × 자코비안. 역전파의 한 걸음.</li>
+        <li><strong>JVP (Jacobian-vector product)</strong>: 자코비안 × 열벡터. 순전파 미분의 한 걸음.</li>
+      </ul>
+
+      <p>둘 다 “자코비안 전체를 메모리에 적지 않고” 결과만 효율적으로 계산한다. 왜냐하면 큰 신경망에서 자코비안은 매우 거대한 행렬이 되어(예: $10^6 \times 10^6$) 그대로는 다룰 수 없기 때문이다. 그러나 그 자코비안과 어떤 벡터의 곱은 단계별 행렬 곱으로 풀린다.</p>
+
+      <div class="math-block">$$ \text{VJP}(\mathbf{v}) = \mathbf{v}^\top J $$</div>
+      <p class="math-note">손실의 기울기 v를 자코비안 뒤에서 곱함 → 한 층 거슬러 올라간 기울기.</p>
+
+      <h2>헤시안(Hessian) — 2차 미분 행렬</h2>
+      <p>스칼라 함수 $f: \mathbb{R}^n \to \mathbb{R}$의 2차 도함수도 정리해 두자. 각 $\partial^2 f / (\partial x_i \partial x_j)$를 $(i, j)$ 자리에 적은 $n \times n$ 행렬을 “헤시안(Hessian)”이라고 한다.</p>
+
+      <div class="math-block">$$ H_{ij} = \frac{\partial^2 f}{\partial x_i \partial x_j} $$</div>
+      <p class="math-note">i행 j열 = f를 x_i, x_j 순서로 두 번 편미분. Clairaut 정리로 대칭.</p>
+
+      <p>중요한 사실은 “충분히 매끄러운(smooth) 함수의 헤시안은 항상 대칭”이라는 점이다(Clairaut의 정리 또는 Schwarz의 정리). 그러므로 <a href="09.html">sub 09</a>의 모든 대칭 행렬 도구가 헤시안에 적용된다. 고유값들이 “함수의 곡률(curvature)”을 알려 준다.</p>
+
+      <h3>헤시안의 의미 — 곡률</h3>
+      <ul>
+        <li>모든 고유값 양수 → 함수가 “위로 볼록(convex)”, 그 점은 국소 최솟점.</li>
+        <li>모든 고유값 음수 → 함수가 “아래로 볼록”, 그 점은 국소 최댓점.</li>
+        <li>섞여 있음 → “안장점(saddle point)” — 어떤 방향으론 최저, 어떤 방향으론 최고.</li>
+      </ul>
+
+      <p>최적화에서 헤시안을 알면 “이 점에서 어떤 방향으로 빠르게 내려갈 수 있는가”를 정확하게 계산할 수 있다. 뉴턴 방법(Newton's method)이 그 답이다.</p>
+
+      <div class="math-block">$$ \mathbf{x}_{t+1} = \mathbf{x}_t - H^{-1} \nabla f(\mathbf{x}_t) $$</div>
+      <p class="math-note">기울기 대신 “헤시안의 역행렬을 곱한 기울기”. 한 걸음에 정확한 방향.</p>
+
+      <p>뉴턴 방법은 “경사하강법보다 빠르다”는 강점이 있지만, 헤시안을 계산하고 역행렬까지 구해야 하므로 매 스텝의 비용이 매우 크다($O(n^3)$). 그래서 실제 딥러닝에서는 “헤시안의 근사”(예: BFGS, Adam의 모멘텀 항)를 쓴다. 신경망의 매개변수가 수억 개라 풀헤시안은 다룰 수 없기 때문이다.</p>
+
+      <div class="example">
+        <b>안장점이 딥러닝의 진짜 적</b>. 고차원 비볼록 손실 함수에서는 “국소 최저점”보다 “안장점”이 훨씬 흔하다. 차원이 1000이라면 한 점이 진짜 최저점이 되려면 1000개 방향 모두 곡률이 양수여야 하는데, 그럴 확률은 매우 낮다. 대부분의 “기울기가 0인 점”은 안장점이다. 그래서 SGD에 약간의 노이즈를 더해 안장점에서 빠져나오게 하는 트릭들이 발전했다.
+      </div>
+
+      <h2>자주 쓰이는 행렬 미분 공식</h2>
+      <p>딥러닝에서 가장 자주 등장하는 몇 가지 공식을 정리해 둔다.</p>
+
+      <h3>① 선형 함수</h3>
+      <div class="math-block">$$ \frac{\partial (\mathbf{a}^\top \mathbf{x})}{\partial \mathbf{x}} = \mathbf{a}, \quad \frac{\partial (A\mathbf{x})}{\partial \mathbf{x}} = A $$</div>
+      <p class="math-note">스칼라 함수의 기울기는 a, 벡터 함수의 자코비안은 A.</p>
+
+      <h3>② 이차 형식</h3>
+      <div class="math-block">$$ \frac{\partial (\mathbf{x}^\top A \mathbf{x})}{\partial \mathbf{x}} = (A + A^\top)\mathbf{x} $$</div>
+      <p class="math-note">A가 대칭이면 (A + Aᵀ) = 2A이므로 기울기는 2Ax.</p>
+
+      <h3>③ L2 노름의 제곱</h3>
+      <div class="math-block">$$ \frac{\partial \|\mathbf{x}\|_2^2}{\partial \mathbf{x}} = 2\mathbf{x} $$</div>
+      <p class="math-note">‖x‖² = xᵀx. ②번 공식의 A = I 경우.</p>
+
+      <p>이 세 공식만 손에 익혀도 거의 모든 손실 함수의 기울기를 직접 유도할 수 있다.</p>
+
+      <div class="example">
+        <b>MSE 손실의 기울기</b>. 손실 $\mathcal{L} = \frac{1}{2}\|X\boldsymbol{\beta} - \mathbf{y}\|_2^2$. $\boldsymbol{\beta}$에 대한 기울기는 위 공식들로 $\nabla \mathcal{L} = X^\top(X\boldsymbol{\beta} - \mathbf{y})$. 이 식을 0으로 두면 $X^\top X \boldsymbol{\beta} = X^\top \mathbf{y}$, 즉 정규방정식(normal equation). 풀랭크면 $\boldsymbol{\beta} = (X^\top X)^{-1} X^\top \mathbf{y}$. 여기에 의사역행렬 정의를 적용하면 $\boldsymbol{\beta} = X^{+}\mathbf{y}$로 똑같이 나온다. <a href="11.html">sub 11</a>과 일관된다.
+      </div>
+
+      <h2>딥러닝 layer의 행렬 미적분 — 정리</h2>
+      <p>완전 연결(fully connected) 한 층 $\mathbf{y} = W\mathbf{x}$에서 가중치 $W$에 대한 손실의 기울기를 구해 보자. 손실이 다음 층에서 “기울기 $\delta = \partial \mathcal{L}/\partial \mathbf{y}$”로 내려왔다고 하자. 연쇄법칙으로 다음이 나온다.</p>
+
+      <div class="math-block">$$ \frac{\partial \mathcal{L}}{\partial W} = \delta \mathbf{x}^\top, \quad \frac{\partial \mathcal{L}}{\partial \mathbf{x}} = W^\top \delta $$</div>
+      <p class="math-note">W의 기울기 = 출력 기울기 × 입력의 전치 (바깥곱). x의 기울기 = Wᵀ × 출력 기울기.</p>
+
+      <p>두 식이 행렬과 전치 행렬의 대칭적 사용을 정확하게 보여 준다. <strong>$W$의 곱으로 정보가 앞으로 흐를 때는 $W\mathbf{x}$, 기울기가 뒤로 흐를 때는 $W^\top \delta$.</strong> 이 “앞은 W, 뒤는 Wᵀ”의 대칭 구조가 역전파 전체를 관통한다. <a href="04.html">sub 04</a>의 $(AB)^\top = B^\top A^\top$ 공식이 여기서 빛을 발한다.</p>
+
+      <h2>딥러닝 책의 다음 장으로</h2>
+      <p>이 sub의 모든 도구가 합쳐져 Chapter 6의 “역전파” 알고리즘이 된다. 자코비안의 곱과 연쇄법칙으로 손실의 기울기를 모든 가중치까지 효율적으로 전파하는 방법이다. 그리고 Chapter 4의 “수치 계산”, Chapter 8의 “학습 최적화”에서 헤시안의 근사와 그 응용이 본격적으로 다루어진다.</p>
+
+      <div class="analogy">
+        <b>요리의 황금 비율 찾기</b>를 떠올려 보자. 한 번 만들어 본 후 “단맛이 너무 강하다”라는 정보(손실)를 받았다고 하자. 그 정보로부터 “설탕을 얼마나 줄여야 하는가”(설탕 가중치의 기울기), “소금을 얼마나 더 넣어야 하는가”(소금의 기울기)를 계산해 다음 시도에서 조절한다. 행렬 미적분은 이 모든 “결과로부터 원인을 거꾸로 추적”하는 과정의 수학적 언어다.
+      </div>
+
+      <h2>이번 sub의 한 줄 요약</h2>
+      <p>“자코비안 = 미분의 행렬화. 헤시안 = 곡률의 행렬화. 두 행렬이 역전파와 2차 최적화를 가능하게 한다.” 이로써 Ch.2의 모든 본문이 끝났다. <a href="13.html">마지막 sub</a>은 시험 직전 30분으로 한 바퀴 도는 체크리스트와 예상 질문 20개+를 담았다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script src="./assets/widgets.js"></script>
+<script>
+  window.addEventListener('load', () => { NST.buildNav('12'); });
+</script>
+</body>
+</html>

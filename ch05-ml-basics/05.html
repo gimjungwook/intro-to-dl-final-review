@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>05 · 베이지안 추정과 MAP</title>
+<title>05 · 편향-분산 분해</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -18,91 +18,69 @@
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Section 05 · 사전이 정칙화로 화한다</span>
-      <h1>매개변수는 한 점이 아니라<br><span class="t-structure">분포</span>다 — <span class="t-style">베이지안</span>의 관점</h1>
-      <p class="lede">빈도주의(frequentist)는 매개변수 θ를 모르는 고정된 한 점으로 본다. 베이지안은 θ 자체를 분포로 본다. 데이터가 들어오기 전의 믿음(사전 prior)이 데이터(우도 likelihood)와 결합해 갱신된 믿음(사후 posterior)이 된다. 이 갱신 규칙이 베이즈 정리이고, 정칙화의 진짜 정체다.</p>
+      <span class="kicker">Section 05 · 같은 오차를 두 갈래로 가르기</span>
+      <h1><span class="t-structure">편향</span>과 <span class="t-style">분산</span> 분해</h1>
+      <p class="lede">앞 장의 U자 곡선은 일반화 오차의 모양을 보여주었다. 이 장은 그 오차의 정체를 둘로 가른다. 단순한 모델이 잘못 맞히는 이유는 편향이고, 복잡한 모델이 잘못 맞히는 이유는 분산이다.</p>
     </header>
 
     <div class="prose">
-      <p>4절의 MLE는 강력하지만 약점이 있다. 동전 3번 던져 3번 다 앞면이면 $p = 1$로 추정한다. 데이터가 부족할 때 MLE는 종종 극단적인 답을 준다. 게다가 MLE는 우리가 "이 동전은 양면이 거의 비슷할 가능성이 높다"라고 사전에 갖고 있던 합리적 믿음을 전혀 반영하지 못한다.</p>
+      <p>같은 일반화 오차를 두 가지 다른 종류의 잘못으로 분해할 수 있다는 사실이 이 장의 핵심 통찰이다. 어떤 입력 $x_0$에서 진짜 정답이 $f^*(x_0)$이고, 우리가 학습한 모델의 예측이 $f_D(x_0)$이라 하자(여기서 $D$는 우리가 학습에 사용한 훈련 데이터). 우리가 가진 훈련 데이터 $D$는 진짜 분포에서 뽑힌 표본이므로 여러 번 새로 표본을 뽑으면 매번 약간 다른 데이터가 나오고, 따라서 학습된 모델 $f_D$도 매번 약간 다르다. 이 무작위성을 포함해서 예측의 평균제곱오차를 적분해 보면, 다음과 같이 정확히 세 항으로 분해된다.</p>
 
-      <p>베이지안 접근은 이 두 문제를 한 번에 해결한다. 매개변수 $\theta$를 한 점이 아니라 <strong>분포</strong>로 본다. 데이터가 없을 때의 분포가 <strong>사전(prior)</strong> $p(\theta)$이고, 데이터를 본 뒤 갱신된 분포가 <strong>사후(posterior)</strong> $p(\theta|x)$다. 이 둘을 연결하는 것이 베이즈 정리다.</p>
+      <div class="math-block">$$ \mathbb{E}_D\bigl[(f_D(x_0) - y_0)^2\bigr] = \underbrace{(\bar{f}(x_0) - f^*(x_0))^2}_{\text{편향}^2} + \underbrace{\mathbb{E}_D\bigl[(f_D(x_0) - \bar{f}(x_0))^2\bigr]}_{\text{분산}} + \underbrace{\sigma^2}_{\text{잡음}} $$</div>
+      <p class="math-note">$\bar{f}(x_0) = \mathbb{E}_D[f_D(x_0)]$는 데이터를 무한 번 다시 뽑아 학습한 모델들의 예측의 평균. $\sigma^2$은 라벨에 본질적으로 박혀 있는 잡음 분산.</p>
 
-      <div class="math-block">$$ p(\theta|x_1,\dots,x_m) \;=\; \frac{p(x_1,\dots,x_m|\theta)\, p(\theta)}{p(x_1,\dots,x_m)} \;\propto\; \underbrace{p(x_1,\dots,x_m|\theta)}_{\text{우도}} \cdot \underbrace{p(\theta)}_{\text{사전}} $$</div>
-      <p class="math-note">분모 $p(x_1,\dots,x_m)$는 $\theta$에 의존하지 않는 정규화 상수. 그래서 $\theta$를 비교할 땐 분자만 보면 충분. "사후 ∝ 우도 × 사전"은 베이지안 사고의 핵심 슬로건.</p>
+      <p>식을 풀어 읽어 보자. 첫 항 편향²(bias squared)은 "평균적인 예측이 진짜 정답에서 얼마나 떨어졌는가"다. 데이터를 다르게 뽑아도 모델이 늘 같은 방향으로 빗나간다면, 그 빗남의 평균이 편향이다. 둘째 항 분산(variance)은 "데이터를 다르게 뽑을 때마다 예측이 얼마나 들썩이는가"다. 모델이 데이터에 따라 크게 출렁이면 분산이 크다. 셋째 항 잡음 분산(noise variance) $\sigma^2$는 라벨 자체에 박혀 있는 환원할 수 없는 오차다. 같은 $x$가 두 번 측정되어도 다른 $y$가 나올 수 있고, 이 차이는 어떤 모델로도 줄일 수 없다.</p>
 
-      <h2>왜 "분포"가 더 정직한가</h2>
-      <p>MLE는 "내 최선의 추정은 $\hat{\theta} = 0.65$"라고 말한다. 한 점이다. 그러나 그 답이 얼마나 확실한지에 대한 정보는 없다. 데이터가 3개일 때의 0.65와 3000개일 때의 0.65는 같은 숫자지만 신뢰도가 완전히 다르다.</p>
+      <h2>왜 셋으로 정확히 갈라지는가</h2>
+      <p>식 (1)의 분해는 마법처럼 보이지만, 사실은 두 가지 평균(데이터 $D$에 대한 평균과 잡음에 대한 평균)을 적용해 교차항이 0이 되기 때문에 깔끔하게 떨어진다. 핵심 단계는 다음과 같다. 먼저 $f_D(x_0) - y_0$를 $\bigl(f_D(x_0) - \bar{f}(x_0)\bigr) + \bigl(\bar{f}(x_0) - f^*(x_0)\bigr) + \bigl(f^*(x_0) - y_0\bigr)$로 분해한다. 그리고 이것을 제곱한 뒤 데이터에 대한 기대값을 취한다. 첫 항의 제곱은 분산, 둘째 항의 제곱은 편향², 셋째 항의 제곱은 잡음이다. 그리고 세 교차항은 평균을 취하는 순간 모두 0이 되도록 항이 골라져 있다. 이 분해는 수식의 사고 실험이며, 실제로 무한 번 데이터를 뽑아 보지 않고도 모델이 "어느 쪽 잘못"을 더 많이 하는지 가늠하는 도구가 된다.</p>
 
-      <p>베이지안 사후 분포는 그 신뢰도를 함께 표현한다. 데이터가 적으면 사후 분포가 넓게 퍼져 있고(불확실성 큼), 많으면 좁게 모인다(불확실성 작음). 같은 평균에서도 분포 모양이 달라서 "얼마나 믿을 만한가"를 한눈에 본다.</p>
+      <h2>편향과 분산의 트레이드오프</h2>
+      <p>편향과 분산은 일반적으로 서로 반대 방향으로 움직인다. 모델이 단순할수록(예: 선형회귀) 편향은 크고 분산은 작다. 모델이 복잡할수록(예: 9차 다항이나 큰 신경망) 편향은 작고 분산은 크다. 그래서 총 오차 = 편향² + 분산 + 잡음의 곡선은 단순함의 한쪽 끝과 복잡함의 한쪽 끝에서 모두 높고, 가운데 어디쯤에 최저점이 있다. 이 최저점이 sweet spot이며, 모든 정칙화·검증·교차검증의 목표는 이 점을 찾는 일이다.</p>
 
-      <div class="analogy">
-        법정 추리 비유 (Mom Test 식). 빈도주의 검사는 "범인은 김씨다"라고 한 명을 지목한다. 베이지안 검사는 "김씨가 범인일 확률 73%, 박씨가 18%, 다른 사람이 9%"라고 모든 후보에 확률을 매긴다. 새 증거가 들어오면 그 확률 분포가 갱신된다. 베이즈 정리는 그 갱신을 어떻게 정확히 하는지 알려주는 산수 규칙이다.
-      </div>
-    </div>
-
-    <h2 style="max-width: var(--measure); margin-inline: auto; padding-inline: 1.4rem">위젯 — 베이지안 vs 빈도주의</h2>
-
-    <div class="prose">
-      <p>가장 단순한 예: 동전 던지기. 진짜 앞면 확률은 $\theta = 0.65$지만 우리는 모른다. 사전 $p(\theta) = \mathrm{Beta}(\alpha, \alpha)$로 둔다 ($\alpha=1$이면 균등분포, $\alpha$가 커질수록 0.5 근처에 집중). 관측을 늘려가며 사전·우도·사후가 어떻게 움직이는지 본다.</p>
+      <p>또 하나 기억할 사실은, 잡음 분산 $\sigma^2$는 어떤 모델로도 줄일 수 없는 하한이라는 점이다. 만약 라벨이 $y = f^*(x) + \epsilon$이고 $\epsilon$의 분산이 $\sigma^2 = 0.1$이라면, 어떤 학습 알고리즘도 일반화 오차를 0.1 미만으로 만들 수 없다. 이를 베이즈 오차(Bayes error) 또는 환원 불가능한 오차(irreducible error)라 한다. "이 데이터셋에서 더는 성능이 안 오릅니다"라는 보고를 받았을 때, 그 한계가 모델의 잘못인지 데이터의 본질인지 구분하는 사고 도구가 바로 이 잡음 분산이다.</p>
     </div>
 
     <div class="widget">
       <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 01</span><span>베이지안 사후 vs 빈도주의 MLE — 동전 던지기</span></div>
-        <div id="bf"></div>
+        <div class="widget-label"><span class="lab-no">위젯 05</span><span>편향-분산 트레이드오프 — 모델 복잡도 슬라이더</span></div>
+        <div id="bv"></div>
       </div>
-      <p class="widget-cap">N=0이면 사후 = 사전이다 (데이터가 없으니 믿음이 그대로). N이 늘수록 사후가 우도 쪽으로 끌려가고, 사전의 영향은 줄어든다. α를 키우면 "사전이 강해서" 더 많은 데이터가 있어야 사후가 우도에 흡수된다. 세 점추정(MLE/MAP/사후평균)이 N과 α에 따라 어떻게 갈라지고 다시 합쳐지는지 확인.</p>
+      <p class="widget-cap">슬라이더로 모델 복잡도 c를 움직이면 편향²(파랑)은 단조 감소하고 분산(주황)은 단조 증가한다. 두 곡선의 합 + 잡음 하한(점선)이 총 오차(황토)다. 총 오차가 최저인 sweet spot이 모든 정칙화의 목표 지점이다.</p>
     </div>
 
-    <h2 style="max-width: var(--measure); margin-inline: auto; padding-inline: 1.4rem">사후에서 한 점을 뽑는다 — MAP</h2>
-
     <div class="prose">
-      <p>완전한 베이지안은 매개변수를 분포로 두고 예측할 때도 적분(주변화)을 한다. 그러나 실용적으로는 한 점만 뽑아 쓰는 경우가 많다. 가장 흔한 방법이 <strong>MAP (Maximum A Posteriori) 추정</strong>이다.</p>
+      <h2>편향과 분산을 어떻게 진단하는가</h2>
+      <p>실무에서 학습된 모델이 편향 문제인지 분산 문제인지 판단하는 표준 절차가 있다. 훈련 오차와 검증 오차를 둘 다 측정한 뒤, 인간 수준의 오차(또는 베이즈 오차의 추정치)와 비교한다. 훈련 오차가 인간 오차에 비해 많이 크면 편향이 큰 상태(과소적합)이고, 훈련 오차는 작지만 검증 오차가 훨씬 큰 상태면 분산이 큰 상태(과적합)이다. 둘 다 크면 둘 다 문제이고, 둘 다 작으면 좋은 모델이다. 이 진단 결과에 따라 처방이 달라진다.</p>
 
-      <div class="math-block">$$ \theta_{\text{MAP}} \;=\; \arg\max_\theta\, p(\theta|x) \;=\; \arg\max_\theta\, \big[\log p(x|\theta) + \log p(\theta)\big] $$</div>
-      <p class="math-note">사후 분포의 최댓값(mode)을 고른다. 우변은 두 로그 항의 합 — 우도 로그 + 사전 로그. 우도 로그는 MLE 항, 사전 로그가 바로 정칙화 항이 된다.</p>
+      <p>편향이 큰 경우의 처방은 모델을 키우거나, 더 표현력 있는 특징을 만들거나, 손실 함수를 다시 설계하거나, 학습을 더 오래 시키는 것이다. 분산이 큰 경우의 처방은 데이터를 더 모으거나, 정칙화를 더 강하게 걸거나, 모델을 작게 만들거나, 앙상블(ensemble)을 쓰는 것이다. 데이터 증강(data augmentation)은 분산을 줄이는 효과적인 도구다. 같은 그림을 약간 회전·뒤집기·자르기로 변형해서 사실상 데이터 크기를 키우는 효과가 있기 때문이다.</p>
 
-      <h2>MLE와 MAP의 결정적 차이</h2>
-      <p>두 추정자의 식을 옆에 놓으면 단 하나가 다르다.</p>
-      <div class="math-block">$$
-        \theta_{\text{MLE}} = \arg\max_\theta\, \log p(x|\theta)
-        \qquad\text{vs}\qquad
-        \theta_{\text{MAP}} = \arg\max_\theta\, \log p(x|\theta) + \log p(\theta)
-      $$</div>
-      <p class="math-note">차이는 $\log p(\theta)$ 항 하나. 이 항이 "데이터에 무관하게 우리가 좋아하는 θ는 무엇인가"를 인코딩한다. 사전이 균등분포면 $\log p(\theta)$가 상수가 되어 MLE = MAP.</p>
+      <h2>앙상블이 분산을 줄이는 직관</h2>
+      <p>같은 가설 공간 안에서 여러 모델을 학습시키고 그 예측을 평균하면 일반적으로 일반화 오차가 줄어든다. 그 이유가 정확히 분산 항의 감소에 있다. $M$개의 모델 $f_1, \ldots, f_M$의 예측을 평균한 $\bar{f}(x) = \frac{1}{M}\sum_m f_m(x)$의 분산은, 모델들이 독립적이라면 단일 모델 분산의 $\frac{1}{M}$로 줄어든다. 편향은 그대로다(모델들이 같은 편향을 가지면). 그래서 앙상블은 편향을 그대로 두고 분산만 깎는 도구이며, 분산이 큰 모델(예: 깊은 트리)에 특히 효과적이다. 랜덤 포레스트(random forest)는 이 원리를 직접 활용하는 알고리즘이다.</p>
 
-      <p>MAP는 베이지안과 빈도주의의 절충점이다. 분포 전체를 다루지 않지만, 사전을 통해 "데이터 외부의 지식"을 반영한다. 그리고 그 사전이 곧 정칙화 항이 된다는 점이 핵심이다 — 다음 절에서 이것을 정확히 본다.</p>
+      <p>신경망에서도 같은 원리가 작동한다. 같은 신경망을 다른 초기값으로 여러 번 학습시키고 예측을 평균하거나, 학습 중간 단계의 가중치 스냅샷을 평균하는 "Polyak 평균" 같은 기법이 모두 같은 의미다. 드롭아웃(dropout)도 매번 다른 부분망에서 예측한 것을 평균하는 효과로 볼 수 있고, 이는 다음 sub-chapter들에서 다시 등장한다.</p>
 
-      <h2>베이지안 예측 (full predictive)</h2>
-      <p>완전한 베이지안은 점추정 없이 사후 분포 전체로 예측을 한다. 새 입력 $x_{\text{new}}$의 라벨 $y_{\text{new}}$를 예측할 때:</p>
-      <div class="math-block">$$ p(y_{\text{new}}|x_{\text{new}}, x_{1:m}) \;=\; \int p(y_{\text{new}}|x_{\text{new}}, \theta)\, p(\theta|x_{1:m})\, d\theta $$</div>
-      <p class="math-note">모든 가능한 θ로 예측한 다음, 그 θ가 얼마나 그럴듯한지(사후)로 가중평균. 한 점이 아니라 분포로 답한다 — 따라서 신뢰구간도 자연스럽게 함께 나온다.</p>
+      <div class="analogy">
+        편향과 분산을 <b>화살 쏘기</b>에 비유한 그림이 고전적이다. 표적의 정중앙이 진짜 정답이고 화살 한 발이 한 번의 학습이다. 편향이 큰 모델은 화살이 모두 같은 쪽으로 몰리지만 정중앙에서 멀다(체계적으로 빗나간다). 분산이 큰 모델은 화살이 정중앙 주변에 흩뿌려진다(어떤 화살은 잘 맞히지만 평균하면 흔들린다). 둘 다 작은 모델만이 화살이 정중앙 근처에 빽빽하게 모인다.
+      </div>
 
-      <p>이 적분은 대부분의 경우 닫힌 형식이 없어 MCMC, 변분추론(VI) 같은 근사 기법이 필요하다. 딥러닝에서는 보통 적분을 포기하고 MAP 한 점만 쓰는 경우가 많다 (Ch.7의 정칙화 = MAP의 사전 항).</p>
+      <h2>이 분해의 한계 — 회귀에서만 깔끔하다</h2>
+      <p>위에서 본 분해 (편향² + 분산 + 잡음)는 손실이 제곱 오차일 때 정확히 떨어진다. 분류처럼 손실이 0/1 또는 교차엔트로피인 경우에는 분해가 깔끔하지 않다. 그러나 직관은 거의 그대로 유지된다. "단순할수록 체계적으로 빗나가고, 복잡할수록 표본에 따라 출렁인다"는 원리는 모든 학습 알고리즘에 적용된다. 시험에서는 정확한 수식은 회귀(제곱 오차)에 한정해 적되, 직관은 분류에도 적용될 수 있음을 짚어 주면 좋다.</p>
 
-      <h2>실용적 정리 — 셋의 관계</h2>
-      <ul style="padding-left: 1.4rem">
-        <li><strong>MLE</strong>: 사전 없음 (또는 균등 사전). 데이터가 많을 때 자연스러운 선택.</li>
-        <li><strong>MAP</strong>: 사후의 최댓값 한 점. 사전이 정칙화 항으로 들어감.</li>
-        <li><strong>베이지안 사후평균/예측</strong>: 분포 전체. 가장 정직한 추정이지만 계산이 어려움.</li>
-      </ul>
-
-      <p>딥러닝에서 흔히 쓰는 "L2 정칙화 = 가우시안 사전의 MAP"이라는 등식이 바로 이 절과 다음 절을 잇는 다리다. <a href="06.html">Sec.6 정칙화</a>에서 그 등식을 정확히 유도한다.</p>
+      <p>다음 장은 일반화 오차를 또 다른 시점에서 — 데이터 크기 N에 따른 학습 곡선(learning curve)의 형태로 — 본다. 모델 크기를 고정한 채 데이터 크기만 바꿔도 편향과 분산은 함께 움직이며, 이 곡선은 "데이터를 더 모을지 모델을 다시 설계할지"를 결정하는 실무 도구다.</p>
     </div>
 
     <nav class="ch-foot"></nav>
   </main>
 </div>
 
-<script src="../assets/widgets.js"></script>
-<script src="widgets-ch05.js"></script>
 <script>
   window.addEventListener('load', () => {
     NST.buildNav('05');
-    const bf = document.getElementById('bf');
-    NST.onVisible(bf, () => NST.bayesFreq(bf));
+    const t = document.getElementById('bv');
+    NST.onVisible(t, () => NST.biasVariance(t));
   });
 </script>
+<script src="../assets/widgets.js"></script>
+<script src="widgets-ch05.js"></script>
 </body>
 </html>

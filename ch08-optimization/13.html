@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>13 · 배치 정규화 1 — 층간 입력 분포 안정화</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .bn-stage { padding: 1.2rem 1.1rem 0.6rem; }
+  #bnCanvas { width: 100%; height: 440px; display: block; background: #fff; border: 1px solid var(--line); border-radius: 8px; }
+  .bn-read { display: flex; flex-wrap: wrap; gap: 1.2rem; padding: 0.4rem 1.1rem 1rem; font-family: var(--mono); font-size: .78rem; color: var(--ink-soft); }
+  .bn-read span b { color: var(--ink); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a class="home" href="index.html">← Ch.08 최적화</a>
+  <span class="ch-mini">SUB 13 / 17</span>
+</div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol id="navlist"></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 13 · 매 층의 입력을 강제로 정규화한다</span>
+      <h1>1층 기둥의 흔들림이<br><span class="t-style">20층 옥상</span>까지 가지 못하게</h1>
+      <p class="lede">배치 정규화는 엄밀히 말하면 최적화 알고리즘이 아니다. 매 층의 입력을 (H−μ)/σ로 재정규화하는 재파라미터화다. 그런데 이 한 가지 변환이 깊은 네트워크 학습을 극적으로 쉽게 만든다.</p>
+    </header>
+
+    <div class="prose">
+
+      <p>12번 절에서 좋은 초기화로 활성값 분산을 일정하게 맞춰도, 학습이 진행되면서 그 균형이 깨진다는 사실을 본다. 어떤 층의 가중치가 업데이트되면, 그 층의 출력 분포가 바뀐다. 그 출력은 다음 층의 입력이므로, 다음 층은 새 입력 분포에 다시 적응해야 한다. 이 연쇄 효과가 깊은 네트워크에서 학습을 매우 어렵게 만든다.</p>
+
+      <p>2015년 Ioffe & Szegedy가 제안한 <strong>배치 정규화(batch normalization, BN)</strong>는 이 문제를 정면으로 푼다. 매 미니배치마다 각 층의 입력을 평균 0, 분산 1로 강제로 재정규화한다. 그러고 나서 학습 가능한 스케일 $\gamma$와 시프트 $\beta$로 다시 적응한다. 이 한 가지 변환이 깊은 네트워크의 학습 속도를 극적으로 빠르게 만들고, 학습률을 더 크게 잡을 수 있게 한다.</p>
+
+      <p>이 절(13)은 BN의 식과 그것이 왜 작동하는지를 본다. 다음 절(14)은 BN이 만드는 두 가지 실전적 효과 — 학습률을 키울 수 있는 이유와 작은 배치에서의 함정 — 를 본다.</p>
+
+      <h2>내부 공변량 이동(Internal Covariate Shift) — 무엇이 문제인가</h2>
+
+      <p>깊은 네트워크에서 학습이 어려운 이유 중 하나는 <strong>내부 공변량 이동(internal covariate shift)</strong>이다. 이 용어가 의미하는 바를 한 줄로 적으면 이렇다 — "한 층의 가중치 업데이트가 그 위 모든 층의 입력 분포를 바꾼다."</p>
+
+      <p>왜 이것이 문제인가? 모든 옵티마이저는 "이 층의 입력 분포는 안정적이다"라는 가정 하에 가중치를 조정한다. 만약 아래 층의 업데이트로 인해 이 층의 입력 분포가 매 스텝마다 바뀐다면, 이 층은 같은 입력 분포에 대해 일관되게 학습할 수 없다. 매번 새로운 분포에 적응하느라 학습이 느려진다.</p>
+
+      <div class="analogy">
+        20층짜리 건물을 짓는다고 하자. 1층 기둥을 한 쪽으로 조금 옮기면, 20층의 위치가 크게 달라진다. 1층이 매일 흔들리면 20층은 영원히 완성되지 못한다. <b>BN은 각 층 사이에 "유연한 보정 장치"를 두어, 아래 층의 흔들림이 위 층에 그대로 전달되지 않게 한다.</b> 위 층은 항상 평균 0, 분산 1로 정규화된 입력을 받으므로, 아래 층이 어떻게 변하든 상관없이 일관되게 학습할 수 있다.
+      </div>
+
+      <h2>BN의 식 — 평균 빼기, 분산으로 나누기, 다시 스케일</h2>
+
+      <p>한 미니배치 $\{x^{(1)}, x^{(2)}, \ldots, x^{(m)}\}$에서, BN은 다음 네 단계를 적용한다.</p>
+
+      <div class="math-block">$$ \mu_B = \frac{1}{m} \sum_{i=1}^m x^{(i)} $$</div>
+      <p class="math-note">미니배치 평균. 각 특징 차원마다 따로 계산.</p>
+
+      <div class="math-block">$$ \sigma_B^2 = \frac{1}{m} \sum_{i=1}^m (x^{(i)} - \mu_B)^2 $$</div>
+      <p class="math-note">미니배치 분산. 각 특징 차원마다 따로 계산.</p>
+
+      <div class="math-block">$$ \hat{x}^{(i)} = \frac{x^{(i)} - \mu_B}{\sqrt{\sigma_B^2 + \delta}} $$</div>
+      <p class="math-note">정규화. 평균 0, 분산 1로 표준화. δ는 0 나누기 방지용.</p>
+
+      <div class="math-block">$$ y^{(i)} = \gamma\, \hat{x}^{(i)} + \beta $$</div>
+      <p class="math-note">스케일과 시프트. γ와 β는 학습 가능한 파라미터. 정규화 후 다시 자유로운 분포로 변환할 수 있게.</p>
+
+      <h2>왜 γ와 β가 필요한가 — 모순처럼 보이는 설계</h2>
+
+      <p>위 식에서 모순처럼 보이는 부분이 있다. 세 번째 단계에서 평균을 0, 분산을 1로 강제로 맞추는데, 네 번째 단계에서 다시 $\gamma$와 $\beta$로 평균과 분산을 자유롭게 조절한다. 왜 한 단계로 안 되는가? 그냥 $\gamma$와 $\beta$만 학습하면 안 되는가?</p>
+
+      <p>핵심은 다음과 같다. <strong>BN 이전</strong>에는 각 층의 출력 분포가 그 층 이전의 모든 가중치 — 수천만 개 — 의 복잡한 함수였다. 출력 분포를 약간 바꾸려면 이 많은 가중치를 동시에 조정해야 했고, 그 조정이 다른 층에도 영향을 미쳤다.</p>
+
+      <p><strong>BN 이후</strong>에는 출력의 평균이 $\beta$ 하나, 분산이 $\gamma$ 하나만으로 결정된다. 이 두 파라미터는 다른 모든 가중치와 독립적이다. 그래서 옵티마이저가 "이 층의 출력을 조금 더 크게" 또는 "조금 더 평균을 양수로"하고 싶을 때, 다른 가중치를 건드리지 않고 $\gamma, \beta$만 바꾸면 된다.</p>
+
+      <div class="math-block">$$ \mathbb{E}[y] = \beta, \quad \mathrm{Var}(y) = \gamma^2 $$</div>
+      <p class="math-note">BN 후 출력의 평균과 분산은 γ, β로만 결정됨. 다른 가중치와 독립.</p>
+
+      <p>이것이 BN의 진짜 마법이다. 단순히 분포를 정규화하는 게 아니라, <strong>분포의 자유도를 명확한 두 파라미터로 격리</strong>한다. 옵티마이저는 분포 조정과 함수 학습을 분리해서 다룰 수 있다.</p>
+
+      <h2>역전파에 포함되는 정규화 — 단순 평균 빼기가 아니다</h2>
+
+      <p>BN의 한 가지 중요한 디테일은, 정규화 단계 자체가 역전파 그래프에 포함된다는 것이다. 즉 $\mu_B$와 $\sigma_B^2$을 계산하고 그것으로 나누는 과정 자체를 미분한다.</p>
+
+      <p>이것이 왜 중요한가? 만약 BN을 "전처리"처럼 다뤄 역전파 외부에서 계산하면, 학습이 "출력의 평균을 양수로 늘려라" 같은 헛된 방향으로 흐를 수 있다. 그 방향으로 가중치를 옮겨도, BN이 다음 스텝에서 다시 평균을 0으로 만들어 버린다. 그러면 학습 신호가 낭비된다.</p>
+
+      <p>역전파가 정규화를 미분하면, 옵티마이저는 "출력의 평균은 어차피 BN이 통제하니까, 그 방향의 기울기는 무시한다"를 자동으로 깨닫는다. 결과적으로 의미 있는 방향(분류 정확도를 올리는 방향)으로만 학습이 진행된다.</p>
+
+      <h2>BN을 어디에 끼우는가 — Conv와 활성화 사이</h2>
+
+      <p>실전 네트워크에서 BN은 보통 다음 순서로 끼운다. 컨볼루션(또는 완전연결) → BN → 활성화 함수(ReLU 등). 즉 BN이 활성화 직전에 들어간다. 이 순서가 표준이 된 것은 BN 논문의 권고이지만, 후속 연구에서는 활성화 뒤에 BN을 두는 것이 더 좋다는 보고도 있다. ResNet v2가 그 예다. 이 미묘한 차이가 0.5%포인트 정도의 정확도 차이를 만들기도 한다.</p>
+
+      <p>한 가지 중요한 디테일은, BN을 쓸 때 그 직전 층의 편향(bias)을 제거하는 것이 표준이다. 이유는 단순하다. BN의 첫 단계가 평균을 빼는 것이므로, 그 이전 층의 편향은 어떤 값이든 무효화된다. 그래서 BN과 함께 쓰는 conv·linear 층은 `bias=False`로 설정한다. 약간의 메모리와 계산이 절약된다.</p>
+
+      <h2>BN의 실험적 발견 — 단지 공변량 이동 해결만이 아니다</h2>
+
+      <p>흥미로운 사실 하나. 2018년 Santurkar 등의 연구는 BN이 작동하는 진짜 이유가 "내부 공변량 이동 해결"이 아닐 수 있다고 주장했다. 그들의 실험에서는 BN을 켠 후에도 입력 분포가 여전히 흔들렸지만, 학습은 더 잘 되었다. 그래서 그들은 BN의 진짜 효과를 "손실 함수의 매끄러움(smoothness) 개선"으로 재해석했다.</p>
+
+      <p>BN이 켜진 손실 표면은 매끄러워지고, 기울기가 더 신뢰할 만해진다. 즉 한 스텝 멀리 가도 비용이 안정적으로 예측된다. 그래서 큰 학습률에서도 안정적인 학습이 가능해진다는 것이다. 이 해석은 BN의 효과를 더 깊이 이해하게 해준다. 그러나 "공변량 이동" 직관도 여전히 실용적으로 유용하다 — 두 관점은 보완적이다.</p>
+
+      <h2>위젯 — BN 켜고 끄기로 학습 곡선 비교</h2>
+
+      <p>아래 위젯은 BN을 켰을 때와 껐을 때 깊은 네트워크의 학습 곡선이 어떻게 다른지 시뮬레이션한다. BN을 끄면 학습이 매우 느리거나 발산하지만, 켜면 빠르게 수렴한다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 13</span><span>BN 켜기/끄기 — 깊은 네트워크의 학습 곡선</span></div>
+        <div class="bn-stage">
+          <canvas id="bnCanvas" width="800" height="500"></canvas>
+        </div>
+        <div class="bn-read">
+          <span>학습률 ε = <b id="readLR">0.05</b></span>
+          <span>네트워크 깊이 = <b id="readDepth">20</b></span>
+          <span>BN 상태 = <b id="readBN">켜짐</b></span>
+        </div>
+        <div class="widget-controls">
+          <div class="slider">
+            <label>학습률 ε <b id="lrValBN">0.05</b></label>
+            <input id="lrSlideBN" type="range" min="0.005" max="0.3" value="0.05" step="0.005">
+          </div>
+          <div class="slider">
+            <label>네트워크 깊이 <b id="depthVal">20</b></label>
+            <input id="depthSlide" type="range" min="3" max="40" value="20" step="1">
+          </div>
+          <button class="btn ghost on" id="bnOn">BN ON</button>
+          <button class="btn ghost" id="bnOff">BN OFF</button>
+        </div>
+      </div>
+      <p class="widget-cap">BN ON: 학습률을 0.2까지 키워도 안정적 수렴. BN OFF: 학습률 0.05 정도부터 깊은 네트워크가 발산. 같은 학습률로 BN을 켜면 수렴 속도도 빨라진다. 깊이가 깊어질수록 BN의 효과가 극적이다.</p>
+    </div>
+
+    <div class="prose">
+
+      <h2>시험 답안 핵심</h2>
+
+      <p>배치 정규화가 시험에 나오면 다음 네 가지를 적자. 첫째, <strong>(H − μ)/σ로 평균 0, 분산 1 정규화 + γ, β로 재스케일</strong>. 둘째, <strong>내부 공변량 이동 완화 — 아래 층 변화가 위 층에 영향 안 미침</strong>. 셋째, <strong>γ, β로 분포 자유도를 두 파라미터로 격리</strong>. 넷째, <strong>정규화 자체가 역전파 그래프에 포함</strong>.</p>
+    </div>
+
+    <nav class="ch-foot" id="chFoot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'순수 vs ML 최적화' }, { no:'02', t:'학습의 장애물' }, { no:'03', t:'미니배치 SGD 1' }, { no:'04', t:'미니배치 SGD 2' },
+    { no:'05', t:'학습률의 의미' }, { no:'06', t:'모멘텀 1' }, { no:'07', t:'모멘텀 2 (네스테로프)' }, { no:'08', t:'적응 1 (AdaGrad)' },
+    { no:'09', t:'적응 2 (RMSProp)' }, { no:'10', t:'적응 3 (Adam)' }, { no:'11', t:'초기화 1 (대칭성)' }, { no:'12', t:'초기화 2 (Xavier·He)' },
+    { no:'13', t:'배치 정규화 1' }, { no:'14', t:'배치 정규화 2' }, { no:'15', t:'학습률 스케줄' }, { no:'16', t:'기울기 클리핑' },
+    { no:'17', t:'시험 대비' },
+  ];
+  const CUR = '13';
+  const navlist = document.getElementById('navlist');
+  SUBS.forEach(s => { const li = document.createElement('li'); li.innerHTML = `<a href="${s.no}.html"${s.no===CUR?' class="current"':''}>${s.t}</a>`; navlist.appendChild(li); });
+  const chFoot = document.getElementById('chFoot');
+  const idx = SUBS.findIndex(s => s.no === CUR);
+  const prev = idx > 0 ? SUBS[idx-1] : { no:'index', t:'표지로' };
+  const next = idx < SUBS.length-1 ? SUBS[idx+1] : { no:'index', t:'표지로' };
+  chFoot.innerHTML = `<a href="${prev.no}.html"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` + `<a href="${next.no}.html" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
+        throwOnError: false,
+      });
+    }
+  });
+
+  // BN 위젯 - 학습 곡선 시뮬레이션
+  (function() {
+    const css = getComputedStyle(document.documentElement);
+    const C = {
+      structure: css.getPropertyValue('--structure').trim() || '#2D5B7A',
+      style: css.getPropertyValue('--style').trim() || '#C0492E',
+      faint: css.getPropertyValue('--ink-faint').trim() || '#8E8576',
+      line: '#d8d2c4',
+    };
+    const cvs = document.getElementById('bnCanvas');
+    const lrSlide = document.getElementById('lrSlideBN');
+    const lrVal = document.getElementById('lrValBN');
+    const depthSlide = document.getElementById('depthSlide');
+    const depthVal = document.getElementById('depthVal');
+    const readLR = document.getElementById('readLR');
+    const readDepth = document.getElementById('readDepth');
+    const readBN = document.getElementById('readBN');
+    const bnOnBtn = document.getElementById('bnOn');
+    const bnOffBtn = document.getElementById('bnOff');
+
+    let bnOn = true;
+    bnOnBtn.addEventListener('click', () => { bnOn = true; bnOnBtn.classList.add('on'); bnOffBtn.classList.remove('on'); });
+    bnOffBtn.addEventListener('click', () => { bnOn = false; bnOffBtn.classList.add('on'); bnOnBtn.classList.remove('on'); });
+
+    // 학습 곡선 시뮬레이션 (정확한 NN 시뮬레이션 대신 간단한 분석적 모델)
+    function simulate(lr, depth, useBN) {
+      const N = 200;
+      const losses = [];
+      let loss = 1.0;
+      // BN이 켜진 경우 학습이 더 빠르고 발산이 어려움
+      // BN이 꺼진 경우 깊이가 깊을수록 발산 위험 증가
+      const baseRate = useBN ? 0.04 : 0.02 * Math.exp(-depth/30);
+      const divThreshold = useBN ? 0.3 : 0.5 / Math.max(1, depth/10);
+      for (let t = 0; t < N; t++) {
+        if (lr > divThreshold) {
+          // 발산
+          loss *= 1.05;
+        } else {
+          const noise = (Math.random()-0.5) * (useBN ? 0.01 : 0.04);
+          const reduction = lr * baseRate * loss + noise;
+          loss = Math.max(0.001, loss - reduction);
+        }
+        losses.push(Math.min(2.5, loss));
+      }
+      return losses;
+    }
+
+    function draw() {
+      const ctx = cvs.getContext('2d');
+      const W = cvs.width, H = cvs.height;
+      ctx.clearRect(0,0,W,H);
+      ctx.strokeStyle = C.line; ctx.strokeRect(0.5,0.5,W-1,H-1);
+      const lr = +lrSlide.value;
+      const depth = +depthSlide.value;
+
+      const lossesOn = simulate(lr, depth, true);
+      const lossesOff = simulate(lr, depth, false);
+      const N = lossesOn.length;
+      const X = i => 60 + i/(N-1) * (W-80);
+      const Y = l => H - 50 - l / 2.5 * (H-80);
+
+      // grid
+      ctx.strokeStyle = C.line; ctx.globalAlpha = 0.5;
+      for (let i = 0; i <= 5; i++) {
+        ctx.beginPath();
+        ctx.moveTo(60, Y(i*0.5)); ctx.lineTo(W-20, Y(i*0.5));
+        ctx.stroke();
+        ctx.fillStyle = C.faint; ctx.font='10px monospace';
+        ctx.fillText((i*0.5).toFixed(1), 30, Y(i*0.5)+4);
+      }
+      ctx.globalAlpha = 1.0;
+
+      // BN OFF (회색)
+      ctx.strokeStyle = C.faint; ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      lossesOff.forEach((l, i) => { if (i===0) ctx.moveTo(X(i), Y(l)); else ctx.lineTo(X(i), Y(l)); });
+      ctx.stroke();
+      // BN ON (강조 색)
+      ctx.strokeStyle = bnOn ? C.style : C.structure;
+      ctx.lineWidth = 2.4;
+      const traj = bnOn ? lossesOn : lossesOff;
+      ctx.beginPath();
+      traj.forEach((l, i) => { if (i===0) ctx.moveTo(X(i), Y(l)); else ctx.lineTo(X(i), Y(l)); });
+      ctx.stroke();
+
+      ctx.fillStyle = C.faint; ctx.font='12px monospace';
+      ctx.fillText('주황 = BN '+(bnOn?'ON':'OFF')+' (현재), 회색 = 다른 설정', 60, 24);
+      ctx.fillText('y = 손실, x = 스텝', 60, 42);
+      ctx.fillText(`깊이 ${depth}, 학습률 ${lr.toFixed(3)}`, 60, 60);
+    }
+
+    function loop() {
+      const lr = +lrSlide.value;
+      const depth = +depthSlide.value;
+      lrVal.textContent = lr.toFixed(3);
+      depthVal.textContent = depth;
+      readLR.textContent = lr.toFixed(3);
+      readDepth.textContent = depth;
+      readBN.textContent = bnOn ? '켜짐' : '꺼짐';
+      draw();
+      requestAnimationFrame(loop);
+    }
+    loop();
+  })();
+</script>
+</body>
+</html>

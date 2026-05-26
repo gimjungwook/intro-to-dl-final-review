@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>04 · Q·K·V — 도서관 비유</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Chapter 04 · 비유로 먼저</span>
+      <h1>Q·K·V 1 —<br><span class="t-synth">도서관</span>에서 책을 찾는 방식</h1>
+      <p class="lede">Transformer 논문에서 가장 자주 등장하지만, 가장 자주 막히는 세 글자가 Q, K, V다. 이 장은 수식을 들이대지 않고, 도서관에서 책을 찾는 일상 경험으로 그 의미를 그림처럼 잡는다.</p>
+    </header>
+
+    <div class="prose">
+      <p>앞 장까지의 이야기를 떠올려 보자. Attention은 "한 토큰의 새 표현 = 다른 토큰들의 가중 평균"이고, 그 가중치는 두 토큰 벡터의 내적과 softmax로 만들어진다. 여기까지는 좋다. 그런데 한 가지 어색함이 남는다. <strong>같은 벡터 하나가 너무 많은 역할을 한다</strong>는 것이다.</p>
+
+      <p>구체적으로 보자. "cat"이라는 토큰 벡터 $x_{\text{cat}}$이 있다. 이 벡터는 (1) "내가 무엇을 보고 싶은지" 표현하는 역할도 하고, (2) "내가 다른 토큰에 의해 발견될 때 쓰는 표지" 역할도 하고, (3) "내가 다른 토큰에게 실제로 전달하는 내용" 역할도 한다. 한 벡터가 이 세 가지를 모두 하려면 무리가 따른다. 마치 한 사람이 도서관에서 검색어를 입력하고, 동시에 자기가 책장에 꽂혀 있는 책의 표지가 되고, 또 동시에 책의 본문 내용까지 되는 격이다.</p>
+
+      <div class="analogy">
+        <b>도서관에 가서 "고양이 키우는 법"을 찾는다고 해 보자.</b> 세 가지가 등장한다 — (1) 내가 머릿속에 떠올린 <b>검색어</b> "고양이 키우는 법". (2) 책장에 꽂힌 각 책의 <b>표지</b>(제목, 표제어). (3) 책 안의 실제 <b>본문 내용</b>. 우리는 검색어와 책 표지를 비교해서 어느 책을 펼칠지 정한 다음, 펼친 책에서 본문을 읽는다. 표지로 매칭하고, 본문에서 정보를 얻는다.
+      </div>
+
+      <p>이 비유에서 핵심은 <strong>"매칭에 쓰는 것"</strong>과 <strong>"실제로 가져오는 것"</strong>이 다르다는 점이다. 책 표지는 매칭을 위한 압축된 신호이고, 본문은 정작 우리가 얻고 싶은 내용이다. 만약 책 표지가 곧 본문이라면(즉 책 한 권이 표지 한 줄짜리라면) 검색은 매우 빈약해진다.</p>
+
+      <h2>세 역할의 이름 — Query, Key, Value</h2>
+      <p>이 세 역할에 영어 이름을 붙인 것이 바로 Q, K, V다.</p>
+
+      <p><span class="t-synth"><strong>Query (질의, 쿼리)</strong></span> — 내가 지금 찾고 있는 것. "고양이 키우는 법을 알고 싶다"라는 검색 의도. Transformer에서는 "이 토큰의 새 표현을 만들기 위해 어떤 종류의 정보가 필요한가"라는 질문 벡터다.</p>
+
+      <p><span class="t-structure"><strong>Key (키, 표지)</strong></span> — 각 책이 자기 자신을 알리는 표제어. 책의 표지·제목·태그. Transformer에서는 "이 토큰이 어떤 종류의 정보를 제공할 수 있는가"라는 광고 벡터다.</p>
+
+      <p><span class="t-style"><strong>Value (값, 본문)</strong></span> — 책의 실제 본문 내용. Transformer에서는 "이 토큰이 실제로 전달하는 내용"의 벡터다.</p>
+
+      <p>이 셋의 분리가 왜 강력한가. <em>매칭 기준과 전달 내용이 분리되면, 모델이 "어떤 식으로 광고할지"와 "어떤 식으로 정보를 줄지"를 따로 학습할 수 있기 때문</em>이다. 한 토큰 "cat"이 동사에게는 "나는 명사다"라는 표지(Key)로 자기를 알리는 동시에, 형용사에게는 "나는 작고 푹신한 생명체다"라는 본문(Value)으로 정보를 전달할 수 있다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 04</span><span>도서관 — Query·Key·Value 매칭과 가중 평균</span></div>
+        <div id="lq"></div>
+      </div>
+      <p class="widget-cap">왼쪽의 검색자(Query)가 오른쪽 책장의 각 책의 표지(Key)와 비교해 유사도를 얻는다. 그 유사도를 가중치 삼아 본문(Value)들을 평균낸 것이 최종 결과다. 책 A의 표지가 가장 매칭이 좋아 본문 V_A의 기여가 크다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>한 시퀀스 안에서 모든 토큰이 동시에 검색자이자 책</h2>
+      <p>지금까지 비유는 "한 사람 한 책장"이었다. Transformer에서는 한 가지 멋진 비틀기가 일어난다. <strong>같은 시퀀스 안의 모든 토큰이 동시에 검색자이자 책이다.</strong></p>
+
+      <p>이게 무슨 말인가. 한 문장 "The cat sat on the mat"이 있다고 하자. 토큰 "cat"의 입장에서는, 자기는 "고양이 정보가 필요해"라는 Query를 던지는 검색자다. 그러나 동시에 다른 토큰 "sat"의 입장에서는, "cat"은 "나는 행위의 주체가 될 수 있는 명사야"라는 Key 표지를 들고 책장에 꽂혀 있는 책이다. 같은 토큰이 한 번은 검색자 역할, 한 번은 책 역할을 한다. 그것도 동시에.</p>
+
+      <div class="analogy">
+        <b>스터디 모임 비유 ─</b> 6명이 둘러앉은 스터디 모임을 상상해 보자. 한 사람이 "내가 풀다 막힌 이 문제를 누가 도와줄 수 있나?"라고 묻는다(Query). 나머지 5명은 각자 자신의 강점을 표지처럼 들고 있다 — "나는 미적분에 강해", "나는 코딩에 강해" 등(Key). 묻는 사람은 자기 질문과 각 사람의 강점을 비교해서 가장 잘 맞는 사람의 답(Value)을 더 많이 듣는다. 그리고 잠시 후, <b>다른 사람이 묻는 차례</b>가 오면 방금 묻던 사람이 이번엔 자기 강점을 들고 책 역할을 한다. 6명이 동시에 6번 검색을 하는 셈이다.
+      </div>
+
+      <p>Transformer는 이 동시 검색을 행렬 한 번의 곱셈으로 수행한다. 길이 6의 시퀀스라면, 6명의 Query를 한 줄씩 쌓아 $6 \times d$ 행렬 $Q$로 만들고, 6명의 Key를 쌓아 $6 \times d$ 행렬 $K$로 만든다. 그러면 $QK^\top$이라는 $6 \times 6$ 행렬은 "$i$번째 사람이 $j$번째 사람의 강점과 얼마나 매칭되는가"의 점수표가 된다. 한 번의 행렬 곱셈으로 36개의 모든 쌍이 동시에 계산된다.</p>
+
+      <h2>왜 Q와 K를 따로 둘까 — 자가 매칭의 함정</h2>
+      <p>한 가지 자주 묻는 질문 — "Q와 K가 같은 입력에서 나오는데, 굳이 두 벡터로 따로 만들 필요가 있나? 그냥 토큰 벡터끼리 내적하면 안 되나?"</p>
+
+      <p>답은 이렇다. 만약 Q = K라면, 한 토큰은 자기 자신과의 매칭이 항상 최고 점수가 된다. 모든 토큰이 자기 자신만 보는 자가 사랑 상태가 된다. 모델이 "다른 토큰에서 무엇을 얻을지"가 아니라 "자기 자신을 어떻게 반복할지"만 학습한다. 결과는 정보 손실이다.</p>
+
+      <p>Q와 K를 서로 다른 가중치 행렬로 변환하면 — 다음 장에서 보겠지만 $Q = XW_Q, K = XW_K$ — 같은 입력에서 출발하더라도 두 벡터는 서로 다른 방향을 가리킨다. 그래서 자가 매칭이 자동으로 가장 높은 점수가 되지 않고, 모델이 "어떤 종류의 정보를 어디서 가져와야 가장 유익한가"를 자유롭게 학습할 수 있다.</p>
+
+      <h2>이 장에서 기억할 그림 한 장</h2>
+      <p>Query = 검색어, Key = 표지, Value = 본문. 한 시퀀스 안의 모든 토큰이 동시에 셋 모두를 가지고 있다. 같은 토큰이 한 사이클 안에서 검색자도 되고 책도 된다. 다음 장에서 이 세 벡터를 어떻게 만들어 내는지 — 즉 수식 — 를 본다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  window.addEventListener('load', () => {
+    TFR.buildNav('04');
+    const l = document.getElementById('lq');
+    TFR.onVisible(l, () => TFR.libraryQKV(l));
+  });
+</script>
+<script src="assets/widgets.js"></script>
+</body>
+</html>

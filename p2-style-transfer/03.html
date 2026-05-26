@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>03 · 콘텐츠 손실</title>
+<link rel="stylesheet" href="assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Chapter 03 · 구조를 지키는 수식</span>
+      <h1><span class="t-structure">콘텐츠 손실</span> —<br>사진의 뼈대를 유지하는 법</h1>
+      <p class="lede">깊은 층은 픽셀을 버리고 구조만 남긴다. 그 사실을 재구성으로 확인하고, “구조가 비슷하다”를 하나의 숫자로 만든다.</p>
+    </header>
+
+    <div class="prose">
+      <p>2장에서 깊은 층일수록 픽셀 세부보다 장면 구조를 담는다고 했다. 논문은 이 주장을 말로 하지 않고 <strong>재구성(reconstruction) 실험</strong>으로 증명한다. 어떤 이미지를 VGG에 넣고 특정 층의 반응만 저장한 뒤, <em>그 반응을 다시 만들어 내는 이미지</em>를 거꾸로 찾아본다.</p>
+      <p>아래 위젯의 슬라이더가 그 실험이다. 얕은 층(conv1_1) 반응만 맞추면 거의 원본 픽셀이 복원된다. 그러나 깊은 층(conv4_2, conv5_1)으로 갈수록 세부 픽셀은 사라지고 큰 구조와 배치만 남는다. 직접 슬라이더를 끝까지 밀어 보라.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 03</span><span>층별 재구성 — 깊을수록 픽셀은 사라지고 구조만 남는다</span></div>
+        <div id="recon"></div>
+      </div>
+      <p class="widget-cap">왼쪽 이미지는 “이 층의 반응만 보고 복원한 그림”이다. 얕은 층은 사진에 가깝고, 깊은 층은 윤곽과 배치만 남는 추상화에 가깝다. 오른쪽 막대는 원본과의 픽셀 차이 — 깊을수록 픽셀은 달라도(막대가 길어도) 구조는 보존된다.</p>
+    </div>
+
+    <div class="prose">
+      <p>그래서 Gatys et al.은 <strong>콘텐츠 표현(content representation)을 깊은 층의 feature map으로</strong> 잡는다. “내용”이란 정확한 색상값이 아니라 장면의 구조이기 때문이다. 한동대 캠퍼스 사진을 반 고흐 스타일로 바꾼다고 할 때, 건물과 길의 배치는 남아야 하지만 원래 픽셀 색상까지 그대로 남을 필요는 없다.</p>
+
+      <h2>“구조가 비슷하다”를 수식으로</h2>
+      <p>이제 첫 번째 실제 손실이 나온다. 콘텐츠 이미지를 $p$, 생성 이미지를 $x$라 하자. 두 이미지를 같은 VGG에 넣고, 특정 깊은 층 $l$에서 나온 feature map을 비교한다. 논문은 콘텐츠 이미지 $p$의 표현을 $P^l$, 생성 이미지 $x$의 표현을 $F^l$로 쓴다.</p>
+      <div class="math-block">$$ P^l = \phi_l(p) \qquad\qquad F^l = \phi_l(x) $$</div>
+      <p class="math-note">φ_l(·) = 이미지를 VGG에 넣었을 때 l층에서 나오는 표현.</p>
+      <p>$\phi_l(\cdot)$는 “이미지를 VGG에 통과시켜 $l$층에서 꺼낸 반응”을 뜻한다. 우리의 목표는 단순하다. 생성 이미지의 표현 $F^l$이 콘텐츠 이미지의 표현 $P^l$과 <strong>비슷해지도록</strong> 만드는 것. 그 “비슷한 정도”를 재는 것이 콘텐츠 손실이다.</p>
+
+      <div class="math-block">$$ \mathcal{L}_{content}(p, x, l) = \frac{1}{2}\sum_{i,j}\left(F_{ij}^{l} - P_{ij}^{l}\right)^2 $$</div>
+
+      <p>처음 보면 복잡하지만, 한 조각씩 떼어 읽으면 평범한 “차이의 제곱합”이다.</p>
+      <table class="symbols">
+        <tr><td>$F_{ij}^{l}$</td><td>생성 이미지가 $l$층 $i$번 필터 $j$ 위치에서 만든 반응</td></tr>
+        <tr><td>$P_{ij}^{l}$</td><td>콘텐츠 이미지가 같은 자리에서 만든 반응</td></tr>
+        <tr><td>$F-P$</td><td>두 이미지의 특징 차이</td></tr>
+        <tr><td>$(F-P)^2$</td><td>차이를 양수로 만들고, 큰 차이를 더 크게 벌점화</td></tr>
+        <tr><td>$\sum_{i,j}$</td><td>모든 필터와 모든 위치의 차이를 합산</td></tr>
+        <tr><td>$\frac{1}{2}$</td><td>미분할 때 제곱의 2가 깔끔히 약분되도록 붙인 상수</td></tr>
+      </table>
+
+      <div class="analogy">
+        두 사람이 같은 방을 묘사한 <b>평면도 두 장</b>을 겹쳐 놓고, 어긋난 부분마다 빨간 펜으로 표시한다고 하자. 어긋남이 클수록 더 진하게 칠한다(제곱). 빨간 자국의 총량이 곧 콘텐츠 손실이다. 자국이 적다 = 두 평면도의 배치가 닮았다 = 깊은 층이 보기에 두 이미지의 구조가 비슷하다.
+      </div>
+
+      <p>이 손실이 작다는 것은 픽셀 하나하나가 같다는 뜻이 아니다. <strong>깊은 층이 보기에 고수준 구조가 비슷하다</strong>는 뜻이다. 바로 그래서 콘텐츠는 지키되 색·질감은 자유롭게 바꿀 여지가 생긴다.</p>
+
+      <h2>어느 방향으로 픽셀을 고칠까: 기울기</h2>
+      <p>논문은 이 손실을 줄이기 위해 역전파(back-propagation)를 쓴다. 콘텐츠 손실을 feature map 반응 $F_{ij}^{l}$에 대해 미분하면 다음과 같은 조각난(piecewise) 형태가 된다.</p>
+      <div class="math-block">$$ \frac{\partial \mathcal{L}_{content}}{\partial F_{ij}^{l}} = \begin{cases} \left(F^l - P^l\right)_{ij} & \text{if } F_{ij}^{l} > 0 \\[4pt] 0 & \text{if } F_{ij}^{l} < 0 \end{cases} $$</div>
+
+      <p>윗줄은 직관 그대로다. <strong>생성 이미지의 반응이 콘텐츠 이미지보다 큰 만큼, 그 차이가 곧 수정 신호</strong>가 된다. 차이가 크면 크게 고치고, 차이가 0이면 고칠 필요가 없다. 아랫줄의 $0$은 VGG 내부의 ReLU 활성화 때문이다 — 해당 뉴런이 꺼져 있으면($F<0$이라 ReLU가 0으로 막으면) 그 경로로는 기울기가 흐르지 않는다.</p>
+      <p>발표에서 이 수식을 증명할 필요는 없다. 다만 핵심 문장 하나는 말해야 한다.</p>
+      <p style="font-family:var(--serif);font-style:italic;font-size:1.12rem;color:var(--ink-soft);text-align:center;margin:1.6rem auto;">“생성 이미지가 깊은 층에서 콘텐츠 이미지와 다르게 반응하는 만큼, 그 차이를 줄이는 방향으로 픽셀을 움직인다.”</p>
+      <p>지금까지가 “구조를 지키는” 절반이다. 다음 두 장은 나머지 절반, 즉 <span class="t-style">스타일을 입히는</span> 쪽을 다룬다. 먼저 4장에서 스타일을 Gram 행렬로 표현하고, 5장에서 그것을 손실로 만든 뒤 콘텐츠 손실과 합친다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  window.addEventListener('load', () => {
+    NST.buildNav('03');
+    const r = document.getElementById('recon');
+    NST.onVisible(r, () => NST.reconstruct(r));
+  });
+</script>
+<script src="assets/widgets.js"></script>
+</body>
+</html>

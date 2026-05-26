@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sub 14 · 역전파 3 — 손계산 (2-2-1 MLP, 1 epoch) · Ch.06</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 14 · 시험 핵심 — 손으로 끝까지 풀어 보기</span>
+      <h1>역전파 3 — <span class="t-style">손계산</span><br>(2-2-1 MLP, 1 epoch)</h1>
+      <p class="lede">아주 작은 망에서 순전파 한 번과 역전파 한 번을 손으로 끝까지 따라간다. 시험에서 가장 자주 나오는 형태이고, 한 번이라도 직접 손으로 풀어 보면 식 6.44부터 6.57까지가 완전히 다른 의미로 보인다.</p>
+    </header>
+
+    <div class="prose">
+      <p>이 절은 직전 세 절(11-13)에서 본 모든 것을 한 번의 손계산으로 모은다. 망의 크기는 가장 작은 다층 구조 — 입력 2, 은닉 2, 출력 1. 활성화는 은닉층에서 ReLU, 출력층에서 sigmoid. 비용은 binary cross-entropy. 데이터는 한 샘플 (입력 $\mathbf{x} = (1, 0)$, 정답 $t = 1$). 학습률 $\eta = 0.1$. 가중치는 시연용 작은 값으로 미리 정해 둔다.</p>
+
+      <h2>설정 — 망 구조와 초기 가중치</h2>
+      <p>망의 구조와 모든 초기값을 한 번에 정리하자.</p>
+
+      <table class="symbols">
+        <tr><td>입력</td><td>$x_1 = 1, \ x_2 = 0$</td></tr>
+        <tr><td>정답</td><td>$t = 1$</td></tr>
+        <tr><td>은닉층 가중치 $W^{(1)}$</td><td>$\begin{pmatrix} 0.5 & -0.4 \\ 0.3 & 0.8 \end{pmatrix}$ (행 = 은닉 뉴런, 열 = 입력)</td></tr>
+        <tr><td>은닉층 편향 $\mathbf{b}^{(1)}$</td><td>$(0.1, -0.2)^\top$</td></tr>
+        <tr><td>출력층 가중치 $\mathbf{w}^{(2)}$</td><td>$(0.6, -0.7)^\top$</td></tr>
+        <tr><td>출력층 편향 $b^{(2)}$</td><td>$0.05$</td></tr>
+        <tr><td>학습률</td><td>$\eta = 0.1$</td></tr>
+        <tr><td>은닉 활성화</td><td>ReLU</td></tr>
+        <tr><td>출력 활성화</td><td>sigmoid</td></tr>
+        <tr><td>비용 함수</td><td>BCE (binary cross-entropy)</td></tr>
+      </table>
+
+      <h2>1단계 — 순전파: 은닉층 계산</h2>
+      <p>은닉 뉴런 두 개의 활성 전 값 $z_1, z_2$를 계산한다.</p>
+      <div class="math-block">$$ z_1 = W^{(1)}_{11} x_1 + W^{(1)}_{12} x_2 + b^{(1)}_1 = 0.5 \cdot 1 + (-0.4) \cdot 0 + 0.1 = 0.6 $$</div>
+      <p class="math-note">은닉 뉴런 1의 활성 전 값.</p>
+
+      <div class="math-block">$$ z_2 = W^{(1)}_{21} x_1 + W^{(1)}_{22} x_2 + b^{(1)}_2 = 0.3 \cdot 1 + 0.8 \cdot 0 + (-0.2) = 0.1 $$</div>
+      <p class="math-note">은닉 뉴런 2의 활성 전 값.</p>
+
+      <p>이제 ReLU를 적용한다. $\text{ReLU}(z) = \max(0, z)$.</p>
+      <div class="math-block">$$ h_1 = \text{ReLU}(0.6) = 0.6, \quad h_2 = \text{ReLU}(0.1) = 0.1 $$</div>
+      <p class="math-note">두 값 모두 양수라 ReLU는 그대로 통과. 만약 음수였다면 0.</p>
+
+      <h2>2단계 — 순전파: 출력층 계산</h2>
+      <p>출력층의 활성 전 값 $u$를 계산한다.</p>
+      <div class="math-block">$$ u = w^{(2)}_1 h_1 + w^{(2)}_2 h_2 + b^{(2)} = 0.6 \cdot 0.6 + (-0.7) \cdot 0.1 + 0.05 = 0.36 - 0.07 + 0.05 = 0.34 $$</div>
+      <p class="math-note">출력층 logit. sigmoid에 들어가기 전 값.</p>
+
+      <p>이제 sigmoid를 적용해 예측 확률 $\hat{y}$를 얻는다.</p>
+      <div class="math-block">$$ \hat{y} = \sigma(0.34) = \frac{1}{1 + e^{-0.34}} \approx \frac{1}{1 + 0.712} \approx 0.584 $$</div>
+      <p class="math-note">예측 확률 약 0.584. 정답 t=1과 비교해 예측이 약간 약하다.</p>
+
+      <h2>3단계 — 손실 계산</h2>
+      <p>BCE를 적용한다. $t=1$이므로 비용은 $L = -\log \hat{y}$ 한 항만 남는다.</p>
+      <div class="math-block">$$ L = -t \log \hat{y} - (1-t) \log(1 - \hat{y}) = -1 \cdot \log(0.584) - 0 \cdot \log(0.416) = -\log(0.584) \approx 0.538 $$</div>
+      <p class="math-note">L ≈ 0.538. 예측이 정답 1에 더 가까워질수록 L → 0.</p>
+
+      <h2>4단계 — 역전파: 출력층의 기울기 ($\partial L / \partial u$)</h2>
+      <p>9절에서 본 sigmoid + BCE의 깔끔한 미분을 사용한다.</p>
+      <div class="math-block">$$ \delta_u = \frac{\partial L}{\partial u} = \hat{y} - t = 0.584 - 1 = -0.416 $$</div>
+      <p class="math-note">예측 - 정답. 음수 = "u를 더 크게 만들어야 한다"는 신호. 활성화 미분 + BCE 미분이 완전히 상쇄되어 한 줄로 끝.</p>
+
+      <p>이 깔끔함이 9절에서 본 sigmoid + BCE 짝짓기의 핵심 이점이다. sigmoid의 복잡한 $\sigma'(u) = \sigma(u)(1-\sigma(u))$ 항이 BCE의 $1/\hat{y}$ 항과 상쇄되어, 결과적으로 "예측 - 정답"만 남는다. 만약 MSE를 썼다면 여기서 $\sigma'(u) = 0.584 \cdot 0.416 \approx 0.243$이 추가로 곱해져, 학습 신호가 약 4배 줄어들었을 것이다.</p>
+
+      <h2>5단계 — 역전파: 출력층 파라미터의 기울기</h2>
+      <p>출력층의 가중치 $w^{(2)}_j$와 편향 $b^{(2)}$의 기울기. $u = w^{(2)}_1 h_1 + w^{(2)}_2 h_2 + b^{(2)}$이므로:</p>
+      <div class="math-block">$$ \frac{\partial L}{\partial w^{(2)}_j} = \frac{\partial L}{\partial u} \cdot \frac{\partial u}{\partial w^{(2)}_j} = \delta_u \cdot h_j $$</div>
+      <p class="math-note">출력 단위의 δ에 그 가중치가 곱해지는 은닉 활성을 곱한다.</p>
+
+      <p>수치를 넣으면:</p>
+      <div class="math-block">$$ \frac{\partial L}{\partial w^{(2)}_1} = -0.416 \cdot 0.6 = -0.250 $$</div>
+      <div class="math-block">$$ \frac{\partial L}{\partial w^{(2)}_2} = -0.416 \cdot 0.1 = -0.042 $$</div>
+      <div class="math-block">$$ \frac{\partial L}{\partial b^{(2)}} = \delta_u = -0.416 $$</div>
+      <p class="math-note">편향은 입력 1로 보면 되므로 그냥 δ_u.</p>
+
+      <h2>6단계 — 역전파: 은닉층의 기울기 ($\delta_z$로 흐르기)</h2>
+      <p>은닉 활성 $h_j$에 대한 기울기를 먼저 계산한다. 출력층이 두 은닉 뉴런 모두로부터 입력을 받았으므로, 각 은닉 뉴런의 기울기는 출력 단위의 $\delta_u$에 해당 가중치를 곱한 것이다.</p>
+      <div class="math-block">$$ \frac{\partial L}{\partial h_1} = \delta_u \cdot w^{(2)}_1 = -0.416 \cdot 0.6 = -0.250 $$</div>
+      <div class="math-block">$$ \frac{\partial L}{\partial h_2} = \delta_u \cdot w^{(2)}_2 = -0.416 \cdot (-0.7) = 0.291 $$</div>
+      <p class="math-note">출력 단위 → 은닉 단위로의 신호 역방향 흐름. 가중치 부호에 따라 부호가 바뀐다.</p>
+
+      <p>이제 ReLU의 미분을 거쳐 활성 전 값 $z_j$에 대한 기울기로 변환. ReLU의 미분은 양수 영역에서 1, 음수 영역에서 0이다.</p>
+      <div class="math-block">$$ \delta_{z_1} = \frac{\partial L}{\partial z_1} = \frac{\partial L}{\partial h_1} \cdot \text{ReLU}'(z_1) = -0.250 \cdot 1 = -0.250 \quad (z_1 = 0.6 > 0) $$</div>
+      <div class="math-block">$$ \delta_{z_2} = \frac{\partial L}{\partial z_2} = \frac{\partial L}{\partial h_2} \cdot \text{ReLU}'(z_2) = 0.291 \cdot 1 = 0.291 \quad (z_2 = 0.1 > 0) $$</div>
+      <p class="math-note">두 z 모두 양수라 ReLU 미분이 1. 그래서 ∂L/∂h가 그대로 통과. 만약 z가 음수였다면 ReLU 미분이 0이 되어 신호가 끊긴다(dying ReLU의 위험).</p>
+
+      <h2>7단계 — 역전파: 은닉층 파라미터의 기울기</h2>
+      <p>은닉층의 가중치 $W^{(1)}_{jk}$와 편향 $b^{(1)}_j$의 기울기. $z_j = \sum_k W^{(1)}_{jk} x_k + b^{(1)}_j$이므로:</p>
+      <div class="math-block">$$ \frac{\partial L}{\partial W^{(1)}_{jk}} = \delta_{z_j} \cdot x_k $$</div>
+      <p class="math-note">은닉 단위 j의 δ에 그 가중치가 보는 입력 x_k를 곱한다.</p>
+
+      <p>수치를 넣으면(은닉 뉴런 1의 가중치):</p>
+      <div class="math-block">$$ \frac{\partial L}{\partial W^{(1)}_{11}} = \delta_{z_1} \cdot x_1 = -0.250 \cdot 1 = -0.250 $$</div>
+      <div class="math-block">$$ \frac{\partial L}{\partial W^{(1)}_{12}} = \delta_{z_1} \cdot x_2 = -0.250 \cdot 0 = 0 $$</div>
+      <p class="math-note">x_2가 0이므로 W^(1)_12에는 학습 신호가 0. 이 입력이 들어왔을 때만큼은 이 가중치가 학습되지 않는다.</p>
+
+      <p>은닉 뉴런 2의 가중치:</p>
+      <div class="math-block">$$ \frac{\partial L}{\partial W^{(1)}_{21}} = \delta_{z_2} \cdot x_1 = 0.291 \cdot 1 = 0.291 $$</div>
+      <div class="math-block">$$ \frac{\partial L}{\partial W^{(1)}_{22}} = \delta_{z_2} \cdot x_2 = 0.291 \cdot 0 = 0 $$</div>
+
+      <p>편향들:</p>
+      <div class="math-block">$$ \frac{\partial L}{\partial b^{(1)}_1} = \delta_{z_1} = -0.250, \quad \frac{\partial L}{\partial b^{(1)}_2} = \delta_{z_2} = 0.291 $$</div>
+
+      <h2>8단계 — 가중치 업데이트 (SGD 한 걸음)</h2>
+      <p>이제 모든 기울기가 모였다. 학습률 $\eta = 0.1$로 SGD 한 걸음을 진행한다. 업데이트 규칙은 $\theta_{\text{new}} = \theta_{\text{old}} - \eta \cdot \partial L / \partial \theta$.</p>
+
+      <p>출력층 가중치:</p>
+      <div class="math-block">$$ w^{(2)}_1: 0.6 - 0.1 \cdot (-0.250) = 0.6 + 0.025 = 0.625 $$</div>
+      <div class="math-block">$$ w^{(2)}_2: -0.7 - 0.1 \cdot (-0.042) = -0.7 + 0.0042 = -0.6958 $$</div>
+      <div class="math-block">$$ b^{(2)}: 0.05 - 0.1 \cdot (-0.416) = 0.05 + 0.0416 = 0.0916 $$</div>
+
+      <p>은닉층 가중치 (값 변화 있는 것만):</p>
+      <div class="math-block">$$ W^{(1)}_{11}: 0.5 - 0.1 \cdot (-0.250) = 0.5 + 0.025 = 0.525 $$</div>
+      <div class="math-block">$$ W^{(1)}_{21}: 0.3 - 0.1 \cdot 0.291 = 0.3 - 0.0291 = 0.2709 $$</div>
+      <div class="math-block">$$ b^{(1)}_1: 0.1 - 0.1 \cdot (-0.250) = 0.1 + 0.025 = 0.125 $$</div>
+      <div class="math-block">$$ b^{(1)}_2: -0.2 - 0.1 \cdot 0.291 = -0.2 - 0.0291 = -0.2291 $$</div>
+
+      <p>($W^{(1)}_{12}, W^{(1)}_{22}$는 입력 $x_2 = 0$ 때문에 기울기가 0이라 변하지 않는다.)</p>
+
+      <h2>9단계 — 검증: 새 가중치로 다시 순전파</h2>
+      <p>가중치가 잘 업데이트됐는지 확인하려면 새 가중치로 같은 입력을 다시 순전파해 보면 된다.</p>
+      <div class="math-block">$$ z_1^{\text{new}} = 0.525 \cdot 1 + (-0.4) \cdot 0 + 0.125 = 0.65, \quad h_1^{\text{new}} = 0.65 $$</div>
+      <div class="math-block">$$ z_2^{\text{new}} = 0.2709 \cdot 1 + 0.8 \cdot 0 + (-0.2291) = 0.0418, \quad h_2^{\text{new}} = 0.0418 $$</div>
+      <div class="math-block">$$ u^{\text{new}} = 0.625 \cdot 0.65 + (-0.6958) \cdot 0.0418 + 0.0916 = 0.4062 - 0.0291 + 0.0916 = 0.4687 $$</div>
+      <div class="math-block">$$ \hat{y}^{\text{new}} = \sigma(0.4687) \approx 0.615 $$</div>
+      <p class="math-note">새 예측 확률 ≈ 0.615. 이전 0.584보다 정답 1에 더 가깝다.</p>
+
+      <p>새 손실은 $L^{\text{new}} = -\log(0.615) \approx 0.486$이다. 이전의 $0.538$에서 감소했다. <strong>학습이 정상적으로 진행됐다는 증거다.</strong> 한 epoch (한 샘플)만으로도 손실이 약 0.05만큼 줄었다. 수백, 수천 epoch을 반복하면 손실은 점점 0에 가까워진다(다만 정규화나 학습률 스케줄링 없이는 과적합으로 빠질 수 있다).</p>
+
+      <h2>아래 위젯에서 단계별로 다시 — 직접 보면서</h2>
+      <p>위의 모든 계산이 위젯에서 단계별로 실행된다. "다음 단계" 버튼을 누르면 순전파 → 손실 계산 → 출력층 역전파 → 은닉층 역전파 → 가중치 업데이트가 차례로 진행되고, 각 단계의 수식과 수치가 그래프 위에 표시된다. 같은 값이 손계산과 위젯에서 일치하는지 확인하라.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 14</span><span>역전파 손계산 — 2-2-1 MLP, 1 epoch 단계별</span></div>
+        <div id="hc"></div>
+      </div>
+      <p class="widget-cap">각 단계: 순전파 은닉 → 순전파 출력 → 손실 → 출력 δ → 은닉 δ → 가중치 갱신. 그래프 노드 위에 값과 δ가 함께 표시된다. 손으로 계산한 값과 정확히 같은지 확인.</p>
+    </div>
+
+    <div class="prose">
+      <h2>이 손계산에서 잡아야 할 패턴</h2>
+      <p>위 9단계가 어떤 망에서나 똑같이 반복되는 동작이다. 핵심 패턴을 한 번 더 추출하자.</p>
+
+      <ol>
+        <li><strong>순전파는 행렬 곱 + 활성화의 반복.</strong> 깊이가 깊을수록 단계가 많아질 뿐 구조는 같다.</li>
+        <li><strong>역전파의 출발점은 sigmoid + BCE 또는 softmax + CE의 깔끔한 미분 $\hat{y} - y$.</strong> 이 한 줄에서 시작.</li>
+        <li><strong>중간 층의 δ는 "다음 층의 δ × 다음 층의 가중치 × 현재 층 활성화의 미분".</strong> 이 세 가지의 곱.</li>
+        <li><strong>한 가중치의 기울기 = 그 가중치의 출력측 δ × 그 가중치의 입력측 활성값.</strong> 항상.</li>
+        <li><strong>SGD: 새 파라미터 = 옛 파라미터 - 학습률 × 기울기.</strong> 모든 옵티마이저의 기본 골격.</li>
+      </ol>
+
+      <p>이 다섯 가지 패턴만 머릿속에 있으면, 어떤 망에서든 손계산이 가능하다. 시험에서 비슷한 문제가 나오면 위 패턴을 단계별로 적용하면 된다. 핵심은 <strong>기호와 첨자를 명확히 구분하면서 천천히 적는 것</strong>이다. 머리로 한꺼번에 계산하려 하면 부호 실수, 첨자 혼동이 매우 자주 일어난다.</p>
+
+      <h2>시험에서 자주 묻는 변형</h2>
+      <p>위 손계산의 변형으로 자주 묻는 형태들이다.</p>
+      <ul>
+        <li><strong>다른 활성화 함수</strong>: ReLU 대신 sigmoid, tanh를 쓰면 미분 항이 $\sigma'(z) = \sigma(z)(1-\sigma(z))$ 또는 $1 - \tanh^2(z)$로 바뀐다. 패턴 자체는 같다.</li>
+        <li><strong>다른 손실 함수</strong>: BCE 대신 MSE를 쓰면 $\delta_u = (\hat{y} - t) \cdot \sigma'(u)$로 바뀐다(추가 항이 곱해진다).</li>
+        <li><strong>다른 입력 / 정답</strong>: 입력과 정답 값이 달라져도 패턴은 동일. 산술만 다시.</li>
+        <li><strong>여러 에포크</strong>: 같은 절차를 새 가중치로 반복.</li>
+        <li><strong>다중 클래스</strong>: sigmoid 대신 softmax, BCE 대신 CE. 출력 차원이 늘어남.</li>
+      </ul>
+
+      <h2>지금 잡아 둘 그림</h2>
+      <ol>
+        <li><strong>2-2-1 MLP는 가장 작은 다층 망.</strong> 손계산이 손가락에 잡힌다.</li>
+        <li><strong>순전파 9단계 패턴.</strong> 망 구조가 같으면 같은 단계가 반복.</li>
+        <li><strong>1 epoch만으로도 손실이 감소.</strong> 학습이 정상이라는 검증.</li>
+        <li><strong>입력이 0이면 그 가중치의 학습 신호도 0.</strong> 데이터 다양성의 중요성.</li>
+        <li><strong>ReLU 음수 영역은 학습 신호 0.</strong> Dying ReLU 위험.</li>
+      </ol>
+      <p>다음 절은 이 손계산의 마지막 작은 디테일 — 깊은 sigmoid 망에서 왜 기울기가 0이 되는가, 즉 기울기 소실(vanishing gradient)의 정량적 모습을 본다. 그것이 7장 정칙화와 8장 최적화의 동기다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script src="widgets.js"></script>
+<script>
+  window.addEventListener('load', () => {
+    CH6.buildNav('14');
+    const h = document.getElementById('hc');
+    CH6.onVisible(h, () => CH6.handCalc(h));
+  });
+</script>
+</body>
+</html>

@@ -3,20 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ch.02 · 02 행렬 곱과 선형 변환</title>
-<link rel="stylesheet" href="../assets/site.css">
+<title>02 · 스칼라·벡터·행렬·텐서</title>
+<link rel="stylesheet" href="./assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
-<style>
-  .lin-stage { display: grid; grid-template-columns: 1fr; padding: 1.4rem 1.4rem 0; gap: 1rem; align-items: center; }
-  .lin-stage canvas { display: block; width: 100%; max-width: 560px; margin: 0 auto; background: #fff; border-radius: 8px; border: 1px solid var(--line); }
-  .lin-matrix { font-family: var(--mono); font-size: .92rem; text-align: center; color: var(--ink-soft); line-height: 1.7; padding-bottom: .4rem; }
-  .lin-matrix .det { color: var(--style); font-weight: 600; }
-  .lin-presets { display: flex; gap: .4rem; flex-wrap: wrap; justify-content: center; padding: .8rem 1.2rem; }
-  .ctrl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem 1.2rem; padding: .8rem 1.2rem 1.2rem; }
-  @media (max-width: 600px) { .ctrl-grid { grid-template-columns: 1fr; } }
-</style>
 </head>
 <body>
 <div class="scroll-progress"></div>
@@ -27,277 +18,105 @@
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Ch.02 · Sub 02 · 신경망의 한 층이 하는 일</span>
-      <h1>행렬 곱은 <span class="t-style">기하학적 변환</span>이다,<br>숫자판의 곱셈 규칙이 아니다</h1>
-      <p class="lede">행렬 A에 벡터 x를 곱하면 무슨 일이 일어나는가. 답은 "x를 회전시키거나 늘리거나 비틀어 새 위치로 옮긴다"이다. 이 한 문장을 손가락으로 만질 수 있게 되면, 신경망의 가중치가 무엇을 학습하는지 보인다.</p>
+      <span class="kicker">Sub 02 · 데이터를 담는 4단계 그릇</span>
+      <h1>스칼라·벡터·<br>행렬·<span class="t-structure">텐서</span></h1>
+      <p class="lede">차원이 늘어난다는 것은 복잡해진다는 뜻이 아니라, 더 많은 구조를 한 번에 담는다는 뜻이다. 그릇의 모양이 데이터의 의미를 정한다.</p>
     </header>
 
     <div class="prose">
-      <p>행렬과 벡터의 곱 $\mathbf{A}\mathbf{x}$를 처음 배울 때는 보통 다음과 같은 계산 규칙으로 본다.</p>
+      <p>선형대수의 첫 번째 결정은 “이 데이터를 어떤 그릇에 담을 것인가”다. 그릇은 모두 네 종류다. 가장 작은 것부터 가장 큰 것까지 — <strong>스칼라(scalar), 벡터(vector), 행렬(matrix), 텐서(tensor)</strong>. 이 네 가지는 “양이 늘어나는 단순한 확장”이 아니라, “차원(dimension)이라는 축이 하나씩 더 붙는 본질적 격차”다. 차원이 하나 늘어날 때마다 그릇은 새로운 방향으로 데이터를 정렬할 수 있게 된다.</p>
 
-      <div class="math-block">$$ (\mathbf{A}\mathbf{x})_i = \sum_{j=1}^{n} A_{i,j} \, x_j $$</div>
-      <p class="math-note">출력 i번째 성분은 A의 i번째 행과 x의 내적.</p>
+      <h2>스칼라(Scalar) — 숫자 하나</h2>
+      <p>가장 단순한 그릇은 <strong>스칼라</strong>, 즉 숫자 하나다. 표기는 보통 이탤릭(italic) 소문자로 쓴다.</p>
 
-      <p>이 규칙은 정확하지만, 답이 무엇을 뜻하는지 알려 주지 않는다. 같은 식을 다른 각도에서 다시 보자. 행렬 $\mathbf{A}$의 <em>열</em>들을 $\mathbf{a}_1, \mathbf{a}_2, \dots, \mathbf{a}_n$이라 부르면 곱을 다음과 같이 쓸 수 있다.</p>
+      <div class="math-block">$$ s \in \mathbb{R} $$</div>
+      <p class="math-note">s는 실수(real number) 한 개. ℝ은 실수 집합 전체.</p>
 
-      <div class="math-block">$$ \mathbf{A}\mathbf{x} = x_1 \mathbf{a}_1 + x_2 \mathbf{a}_2 + \cdots + x_n \mathbf{a}_n $$</div>
-      <p class="math-note">출력은 A의 열들을 x의 성분만큼 가중합한 결과.</p>
-
-      <p>이 두 번째 식이 훨씬 더 많은 것을 말해 준다. 입력 벡터 $\mathbf{x}$의 각 성분 $x_j$는 <strong>“열 $\mathbf{a}_j$ 방향으로 얼마나 갈지를 정하는 다이얼”</strong>이고, 결과는 그 다이얼들로 결정된 한 점이다. 즉, 행렬 $\mathbf{A}$는 <em>새 좌표계를 정의하고</em>, 곱셈은 입력을 그 새 좌표계에서 다시 그린다.</p>
-
-      <h2>2차원에서 직접 보자</h2>
-      <p>가장 간단한 경우는 $2 \times 2$ 행렬이다. 이 경우 $\mathbf{A}$는 2차원 평면을 다른 2차원 평면으로 옮기는 변환이다. 평면 위의 모든 점이 어디로 가는지 한 번에 보려면, <strong>단위 사각형</strong> $\{(0,0), (1,0), (1,1), (0,1)\}$이 어디로 옮겨지는지만 보면 된다. 행렬의 첫 번째 열이 $(1,0)$이 가는 자리, 두 번째 열이 $(0,1)$이 가는 자리이기 때문이다.</p>
-
-      <p>아래 위젯에서 슬라이더로 행렬의 네 성분을 직접 바꿔 보자. 회색 격자는 원래 좌표계, <span style="color: var(--style); font-weight: 600;">주홍색 격자</span>는 변환된 좌표계다. 단위 사각형이 어떤 평행사변형으로 바뀌는지, 그 면적(=행렬식의 절댓값)이 어떻게 변하는지 확인하라.</p>
-    </div>
-
-    <div class="widget">
-      <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 02</span><span>2x2 행렬 = 2D 선형 변환</span></div>
-        <div class="lin-stage">
-          <div class="lin-matrix" id="linMat"></div>
-          <canvas id="linCanvas" width="900" height="540"></canvas>
-        </div>
-        <div class="lin-presets">
-          <button class="btn ghost on" data-preset="identity">단위 (I)</button>
-          <button class="btn ghost" data-preset="scale">스케일 2배</button>
-          <button class="btn ghost" data-preset="rotate">45° 회전</button>
-          <button class="btn ghost" data-preset="shear">수평 전단</button>
-          <button class="btn ghost" data-preset="reflect">y축 반사</button>
-          <button class="btn ghost" data-preset="degenerate">랭크 1 (특이)</button>
-        </div>
-        <div class="ctrl-grid">
-          <div class="slider"><label>A₁₁ <b id="va11">1.00</b></label><input type="range" id="a11" min="-2" max="2" step="0.05" value="1"></div>
-          <div class="slider"><label>A₁₂ <b id="va12">0.00</b></label><input type="range" id="a12" min="-2" max="2" step="0.05" value="0"></div>
-          <div class="slider"><label>A₂₁ <b id="va21">0.00</b></label><input type="range" id="a21" min="-2" max="2" step="0.05" value="0"></div>
-          <div class="slider"><label>A₂₂ <b id="va22">1.00</b></label><input type="range" id="a22" min="-2" max="2" step="0.05" value="1"></div>
-        </div>
-      </div>
-      <p class="widget-cap">슬라이더로 행렬의 네 성분을 직접 만져 보자. 첫째 열이 (1,0)의 목적지, 둘째 열이 (0,1)의 목적지다. <b>det(A)</b>의 절댓값은 변환된 사각형의 넓이, 부호는 방향이 뒤집혔는지(반사 여부)를 알려 준다. 0이면 평면이 직선으로 짜부라진다 — 그것이 <b>특이행렬(singular matrix)</b>이고 역행렬이 없다.</p>
-    </div>
-
-    <div class="prose">
-      <h2>네 가지 변환의 정체</h2>
-      <p>위 위젯에서 만들 수 있는 변환은 본질적으로 네 종류의 조합이다. 각각이 어떤 행렬 모양인지 익혀 두면 식만 보고도 무엇을 하는지 즉시 읽을 수 있다.</p>
-
-      <table class="symbols">
-        <tr><td>스케일</td><td>$\begin{pmatrix} s_x & 0 \\ 0 & s_y \end{pmatrix}$ — 각 축을 $s_x, s_y$배 늘리거나 줄인다. 행렬식 $= s_x s_y$.</td></tr>
-        <tr><td>회전</td><td>$\begin{pmatrix} \cos\theta & -\sin\theta \\ \sin\theta & \cos\theta \end{pmatrix}$ — 평면을 $\theta$만큼 돌린다. 행렬식 $=1$, 길이·각도 보존.</td></tr>
-        <tr><td>전단(shear)</td><td>$\begin{pmatrix} 1 & k \\ 0 & 1 \end{pmatrix}$ — 평행사변형으로 비스듬히 누른다. 행렬식 $=1$, 면적 보존.</td></tr>
-        <tr><td>반사</td><td>$\begin{pmatrix} -1 & 0 \\ 0 & 1 \end{pmatrix}$ — 한 축을 뒤집는다. 행렬식 $=-1$ (음수는 “뒤집힘”의 신호).</td></tr>
-      </table>
+      <p>여기서 $\mathbb{R}$은 실수(real number) 전체를 모아 둔 집합 기호다. 만약 정수만 다룬다면 $\mathbb{Z}$, 자연수만 다룬다면 $\mathbb{N}$이라고 쓴다. 딥러닝에서 스칼라가 등장하는 자리는 보통 “학습률(learning rate) 0.001”이나 “정칙화 계수 $\lambda$ = 0.01” 같은 하이퍼파라미터(hyperparameter)다. 하나의 숫자로 충분한 정보, 즉 “이 모델의 성격을 한 다이얼로 조절하고 싶다”는 의도가 있을 때 스칼라가 쓰인다.</p>
 
       <div class="analogy">
-        행렬은 평면 위에 놓인 <b>고무 시트</b>를 잡고 비트는 손과 같다. 각 손가락의 움직임(행렬의 한 열)이 시트의 한 모서리를 새 위치로 끌고 간다. 회전은 시트 전체를 돌리고, 스케일은 잡아 늘이고, 전단은 비스듬히 민다. 행렬식의 절댓값은 <b>시트 면적이 몇 배가 되었는가</b>이고, 부호는 <b>시트가 뒤집혔는가</b>이다.
+        스칼라는 <b>온도계의 눈금 하나</b>다. “지금 기온 23도”라는 정보를 담으려면 숫자 하나면 충분하다. 방향도, 위치도, 종류도 따로 적을 필요가 없다. 정보의 크기가 “하나의 다이얼”로 표현되는 모든 것이 스칼라다.
       </div>
 
-      <h2>특이 행렬과 역행렬의 의미</h2>
-      <p>위젯에서 “랭크 1” 프리셋을 눌러 보면, 단위 사각형이 직선으로 짜부라진다. 이때 행렬식은 0이고, <strong>이 변환은 되돌릴 수 없다</strong>. 왜인가? 한번 직선으로 눌린 점들은 원래 평면 어느 자리에서 왔는지 구별할 수 없기 때문이다. 정보가 사라졌으므로 복원이 불가능하다.</p>
+      <h2>벡터(Vector) — 숫자의 순서 있는 목록</h2>
+      <p>두 번째 그릇은 <strong>벡터</strong>다. 벡터는 “순서가 있는 숫자 목록”이다. 표기는 굵은 소문자.</p>
 
-      <div class="math-block">$$ \mathbf{A}^{-1} \mathbf{A} = \mathbf{I}, \quad \mathbf{A} \mathbf{A}^{-1} = \mathbf{I} $$</div>
-      <p class="math-note">역행렬은 A의 변환을 정확히 되돌리는 행렬. 모든 A가 가지진 않는다.</p>
+      <div class="math-block">$$ \mathbf{v} \in \mathbb{R}^n, \quad \mathbf{v} = \begin{pmatrix} v_1 \\ v_2 \\ \vdots \\ v_n \end{pmatrix} $$</div>
+      <p class="math-note">n = 벡터의 차원(원소 개수). 위 아래로 적힌 형태가 열벡터(column vector).</p>
 
-      <p>역행렬 $\mathbf{A}^{-1}$은 <em>“$\mathbf{A}$가 한 변환을 정확히 되돌리는 또 다른 변환”</em>이다. 평면을 짜부라뜨리지 않는 변환만 되돌릴 수 있다. 짜부라뜨림이 일어나는 정확한 조건은 <strong>열들이 선형 독립(Linearly Independent)이 아닐 때</strong>다. 한 열이 다른 열의 배수면, 그 두 열이 만드는 평면은 평면이 아니라 직선이다.</p>
+      <p>$\mathbb{R}^n$은 “실수 $n$개를 순서대로 묶은 것”이다. 여기서 $n$이 바뀌면 “몇 차원 공간의 점이냐”가 바뀐다. 2차원 벡터 $(3, 4)$는 평면 위의 점이고, 3차원 벡터 $(3, 4, 5)$는 공간 위의 점이다. 100차원 벡터는 그림으로 그릴 수는 없지만, 같은 방식으로 “100차원 공간 위의 점 하나”로 생각하면 된다.</p>
 
-      <h2>신경망의 한 층이 실제로 하는 일</h2>
-      <p>다시 한 층의 식으로 돌아가자.</p>
-      <div class="math-block">$$ \mathbf{h} = f(\mathbf{W}\mathbf{x} + \mathbf{b}) $$</div>
+      <p><strong>중요한 것은 ‘순서가 있다’는 점이다.</strong> $(3, 4)$와 $(4, 3)$은 같은 두 숫자를 담고 있어도 다른 벡터다. 왜냐하면 첫 번째 자리와 두 번째 자리가 의미하는 “축”이 서로 다르기 때문이다. 첫 번째 자리는 가로축(x), 두 번째 자리는 세로축(y)이라고 약속해 두었다면, $(3, 4)$는 오른쪽으로 3 위로 4 떨어진 점이고, $(4, 3)$은 오른쪽으로 4 위로 3 떨어진 점이다.</p>
 
-      <p>이제 이 식을 다음과 같이 읽을 수 있다. <strong>$\mathbf{W}\mathbf{x}$는 입력 공간을 다른 표현 공간으로 회전·확대·전단하는 선형 변환</strong>이다. $\mathbf{b}$는 그 결과를 평행이동(translation)한다. 그 다음 비선형 함수 $f$가 공간을 굽혀서, 선형 변환만으로는 불가능한 영역 구분(decision boundary)을 만들어 낸다.</p>
+      <div class="example">
+        <b>딥러닝에서 가장 흔히 만나는 벡터</b>들. ① 28×28 손글씨 이미지를 한 줄로 펴면 <b>784차원 벡터</b>. ② “안녕하세요”라는 단어를 임베딩(embedding)으로 표현하면 보통 <b>300차원 또는 768차원 벡터</b>. ③ 신경망의 마지막 출력으로 “이 사진이 강아지인지 고양이인지 … 1000가지 중에 무엇인지”의 점수를 담으면 <b>1000차원 벡터</b>. ④ 사용자의 영화 평점 100편을 한 줄로 모으면 <b>100차원 벡터</b>. 각 자리가 “무엇을 의미하는가”는 사람이 정한 약속이다.
+      </div>
 
-      <p>다층 신경망의 깊이가 강력한 이유도 여기서 시작된다. 각 층의 선형 변환과 비선형 굽힘이 차곡차곡 쌓이면, <em>원래 데이터에서 분리되지 않던 클래스들이 어느 깊이에서는 한 직선으로 잘릴 만큼 “펴진다”</em>. 이것이 표현 학습(Representation Learning)의 기하학적 그림이다.</p>
+      <h2>행렬(Matrix) — 숫자의 2차원 배열</h2>
+      <p>세 번째 그릇은 <strong>행렬</strong>이다. 행렬은 “숫자를 가로 세로로 정렬한 표”다. 표기는 굵은 대문자.</p>
 
-      <h3>핵심 정리 — 이것만은 기억하자</h3>
-      <ul class="checklist">
-        <li>행렬 곱 $\mathbf{A}\mathbf{x}$는 입력을 A의 열들이 정의하는 새 좌표계로 옮긴다.</li>
-        <li>$2 \times 2$ 행렬의 첫째 열이 $(1,0)$의 목적지, 둘째 열이 $(0,1)$의 목적지다.</li>
-        <li>$|\det(\mathbf{A})|$ = 변환 후 넓이 배율. 부호 $=$ 방향 뒤집힘 여부.</li>
-        <li>$\det = 0$이면 정보가 사라진다(특이행렬, 역행렬 없음).</li>
-        <li>신경망의 한 층은 선형 변환 + 평행이동 + 비선형 굽힘이다.</li>
-      </ul>
+      <div class="math-block">$$ A \in \mathbb{R}^{m \times n}, \quad A = \begin{pmatrix} a_{11} & a_{12} & \cdots & a_{1n} \\ a_{21} & a_{22} & \cdots & a_{2n} \\ \vdots & & \ddots & \vdots \\ a_{m1} & a_{m2} & \cdots & a_{mn} \end{pmatrix} $$</div>
+      <p class="math-note">m = 행 개수(가로 줄), n = 열 개수(세로 줄). a_{ij}는 i행 j열의 원소.</p>
+
+      <p>여기서 $m \times n$은 “행이 $m$개, 열이 $n$개”라는 뜻이다. 즉 $A$는 가로로 $n$칸, 세로로 $m$줄짜리 표다. 한 원소는 $a_{ij}$로 적는데, 첫 번째 첨자가 행(row), 두 번째 첨자가 열(column)이다. 이 순서는 절대 헷갈리면 안 된다. <strong>“RC 코딩 — Row first, Column next”</strong>라고 외워도 좋다.</p>
+
+      <p>행렬이 벡터와 본질적으로 다른 점은, 행렬은 “데이터를 두 가지 기준으로 정렬할 수 있다”는 것이다. 행에는 하나의 의미를, 열에는 다른 의미를 부여할 수 있다. 행과 열의 약속을 어떻게 두느냐에 따라 같은 숫자 더미가 전혀 다른 의미를 띤다.</p>
+
+      <div class="example">
+        한동대학교 22000168 학생 김정욱의 한 학기 성적을 적는다고 해 보자. <b>행 = 과목</b>, <b>열 = 시험 종류</b>로 약속하면, 행렬 $A \in \mathbb{R}^{6\times 3}$에 “6개 과목 × (중간, 기말, 과제) 3종류 점수”가 들어간다. $a_{31}$은 “세 번째 과목의 중간고사 점수”다. 반대로 행과 열의 약속을 바꾸면(행=시험 종류, 열=과목), 같은 숫자라도 행렬의 모양과 의미가 뒤집힌다. 행렬은 “표”라는 그릇이지, 표 안의 숫자 자체가 아니다.
+      </div>
+
+      <h2>설계 행렬 — 딥러닝에서 가장 흔한 모양</h2>
+      <p>딥러닝에서 만나는 가장 흔한 행렬은 <strong>설계 행렬(design matrix)</strong>이다. 설계 행렬에서는 “행 = 데이터 한 개(샘플), 열 = 그 데이터의 특징(feature)”이다.</p>
+
+      <div class="math-block">$$ X \in \mathbb{R}^{N \times d} $$</div>
+      <p class="math-note">N = 데이터 샘플 개수, d = 한 샘플의 특징(feature) 개수.</p>
+
+      <p>예를 들어 MNIST 손글씨 데이터를 60000장 모았다면 $N = 60000$이고, 각 이미지를 펴면 $d = 784$이므로 $X \in \mathbb{R}^{60000 \times 784}$가 된다. 이 약속은 거의 모든 딥러닝 라이브러리에서 동일하다(PyTorch, TensorFlow, scikit-learn). 즉 <strong>“데이터를 한 행으로 적는다”</strong>는 약속을 머리에 박아 두면, 코드의 모든 텐서 모양이 즉시 해석된다.</p>
+
+      <h2>텐서(Tensor) — 3차원 이상의 일반화</h2>
+      <p>마지막 그릇은 <strong>텐서</strong>다. 텐서는 행렬을 한 차원 더 일반화한 것이다. 표기는 캘리그래픽(calligraphic) 글자 $\mathcal{T}$를 자주 쓴다.</p>
+
+      <div class="math-block">$$ \mathcal{T} \in \mathbb{R}^{d_1 \times d_2 \times d_3 \times \cdots \times d_k} $$</div>
+      <p class="math-note">차원 축이 k개. k가 0이면 스칼라, 1이면 벡터, 2이면 행렬, 3 이상이면 텐서.</p>
+
+      <p>즉 텐서는 “스칼라/벡터/행렬을 모두 포함하는 일반 그릇”이다. 차원이 0인 텐서는 스칼라, 1차원 텐서는 벡터, 2차원 텐서는 행렬, 그리고 3차원 이상부터 “텐서다운 텐서”가 된다. 딥러닝 라이브러리들은 모든 데이터를 일관되게 텐서로 다룬다. 그래서 코드에서 자주 만나는 `tensor.shape`은 위의 $(d_1, d_2, \ldots, d_k)$를 그대로 적어 둔 튜플이다.</p>
+
+      <div class="example">
+        <b>이미지 한 장</b>: 컬러 이미지 한 장은 $\mathbb{R}^{H \times W \times 3}$ 텐서다. $H$ = 높이, $W$ = 너비, $3$ = (R, G, B) 색 채널. <b>이미지 배치</b>: 학습 시 한 번에 64장을 묶으면 $\mathbb{R}^{64 \times H \times W \times 3}$ 4차원 텐서. <b>동영상</b>: 프레임이 30장이면 그 위에 시간 축이 또 붙어 $\mathbb{R}^{B \times T \times H \times W \times 3}$ 5차원 텐서가 된다. 각 축이 어떤 의미인지 명확히 약속하는 순간 텐서는 “복잡한 것”이 아니라 “질서 있는 것”이 된다.
+      </div>
+
+      <div class="analogy">
+        텐서를 <b>도서관의 책장</b>이라고 생각하면 쉽다. 책 한 권은 스칼라, 한 줄로 꽂힌 책들은 벡터, 한 책장(여러 줄)은 행렬, 도서관 전체(여러 책장)는 3차원 텐서, 여러 도서관이 모인 시스템은 4차원 텐서다. 차원이 늘어난다는 건 “책이 늘어난다”가 아니라 “책을 정리하는 새로운 기준 축이 하나 더 생긴다”는 뜻이다. 그릇이 잘 정돈되어 있으면, 어떤 책을 찾고 싶을 때 “세 번째 책장의 두 번째 줄의 다섯 번째 책”처럼 인덱스(index)로 정확히 짚을 수 있다.
+      </div>
+
+      <h2>차원 = 자유도 = 표현력</h2>
+      <p>왜 차원을 늘리는 것이 의미 있을까? 한 가지 직관은 “자유도(degree of freedom)”다. 1차원 벡터는 하나의 다이얼로 조절되고, 2차원 벡터는 두 개의 독립된 다이얼로 조절된다. 차원이 늘면 그만큼 “표현할 수 있는 서로 다른 상태”의 수가 늘어난다. 신경망이 깊고 넓을수록 가중치 행렬의 크기가 커지는 이유도 같다. 표현하고 싶은 패턴이 다양할수록, 그 패턴들을 모두 담을 그릇이 더 커야 하기 때문이다.</p>
+
+      <p>다만 차원이 무작정 클수록 좋은 것은 아니다. 차원이 너무 크면 “비어 있는 공간”이 너무 많아져서 학습이 어려워진다(차원의 저주, curse of dimensionality, Chapter 5에서 다룬다). 그래서 실무에서는 “문제를 표현하기에 충분한 만큼만 차원을 둔다”는 균형 감각이 필요하다.</p>
+
+      <div class="example">
+        <b>매개변수 개수 = 그릇 크기</b>. 입력 784차원, 은닉 128개인 첫 층의 $W \in \mathbb{R}^{128 \times 784}$는 100,352개의 학습 가능 매개변수를 가진다. 두 번째 층 $W \in \mathbb{R}^{64 \times 128}$은 8,192개. 모델이 “크다”는 말의 거의 모든 비중을 이런 행렬·텐서들이 차지한다. 대형 언어 모델은 1750억(GPT-3) 또는 그 이상의 매개변수를 가지는데, 이 모든 숫자가 거대한 행렬과 텐서 안에 정렬되어 있다.
+      </div>
+
+      <h2>전치(Transpose) — 행과 열 바꾸기</h2>
+      <p>마지막으로 이 sub에서 한 가지 더 짚어 둔다. <strong>전치(transpose)</strong>는 행렬의 행과 열을 바꾸는 연산이다. $A \in \mathbb{R}^{m \times n}$이면 $A^\top \in \mathbb{R}^{n \times m}$이다. 정의는 단순하다.</p>
+
+      <div class="math-block">$$ (A^\top)_{ij} = A_{ji} $$</div>
+      <p class="math-note">i번째 행 j번째 열의 원소는, 원래 행렬의 j번째 행 i번째 열의 원소.</p>
+
+      <p>기호 조작처럼 보이지만 의미는 “어느 방향을 기준으로 정보를 읽을 것인가를 바꾸는 행동”이다. 위의 성적 예시에서, 행이 과목인 행렬을 전치하면 행이 시험 종류가 된다. 학생별 보고서를 만들 때는 “행 = 학생”이 편하고, 시험별 통계를 낼 때는 “행 = 시험”이 편하다. 같은 데이터라도 어느 축을 우선으로 읽느냐에 따라 손이 더 가는지가 갈린다.</p>
+
+      <p>벡터에서도 전치가 자주 쓰인다. 열벡터 $\mathbf{v}$를 한 줄로 누이면 행벡터 $\mathbf{v}^\top$이 된다. 이 사소해 보이는 차이가 다음 sub의 <strong>점 곱(dot product)</strong>을 깔끔하게 적게 해 준다. <a href="03.html">다음 sub</a>에서 바로 등장한다.</p>
     </div>
 
     <nav class="ch-foot"></nav>
   </main>
 </div>
 
+<script src="./assets/widgets.js"></script>
 <script>
-  const CHAPTERS = [
-    { no:'01', t:'스칼라·벡터·행렬·텐서' },
-    { no:'02', t:'행렬 곱과 선형 변환' },
-    { no:'03', t:'노름과 거리' },
-    { no:'04', t:'특수 행렬과 직교성' },
-    { no:'05', t:'고유분해' },
-    { no:'06', t:'SVD — 특이값분해' },
-    { no:'07', t:'시험 대비 — 핵심 정리' },
-  ];
-  const CUR = '02';
-  document.querySelector('.topbar').innerHTML =
-    `<a class="home" href="index.html">← Ch.02 선형대수 표지</a>` +
-    `<span class="ch-mini">SUB ${CUR} / 07</span>`;
-  document.querySelector('.ch-nav ol').innerHTML = CHAPTERS.map(c =>
-    `<li><a href="${c.no}.html" ${c.no===CUR?'class="current"':''}>${c.t}</a></li>`).join('');
-  const idx = CHAPTERS.findIndex(c=>c.no===CUR);
-  const prev = idx>0 ? CHAPTERS[idx-1] : { no:'', t:'표지로', _:'index.html' };
-  const next = idx<CHAPTERS.length-1 ? CHAPTERS[idx+1] : { no:'', t:'표지로', _:'index.html' };
-  document.querySelector('.ch-foot').innerHTML =
-    `<a href="${prev._ || prev.no+'.html'}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
-    `<a href="${next._ || next.no+'.html'}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
-  const bar = document.querySelector('.scroll-progress');
-  document.addEventListener('scroll', () => {
-    const h = document.documentElement;
-    const max = h.scrollHeight - h.clientHeight;
-    bar.style.width = (max > 0 ? (h.scrollTop/max)*100 : 0) + '%';
-  }, { passive: true });
-  window.addEventListener('load', () => {
-    if (window.renderMathInElement) {
-      renderMathInElement(document.body, {
-        delimiters: [{ left:'$$', right:'$$', display:true }, { left:'$', right:'$', display:false }],
-        throwOnError: false,
-      });
-    }
-  });
-
-  // ---------- 위젯: 2D 선형 변환 ----------
-  const canvas = document.getElementById('linCanvas');
-  const ctx = canvas.getContext('2d');
-  const matEl = document.getElementById('linMat');
-  const A = { 11: 1, 12: 0, 21: 0, 22: 1 };
-  const sliders = ['a11','a12','a21','a22'].map(id => document.getElementById(id));
-  const labels = ['va11','va12','va21','va22'].map(id => document.getElementById(id));
-
-  function setMat(a11, a12, a21, a22) {
-    A[11]=a11; A[12]=a12; A[21]=a21; A[22]=a22;
-    sliders[0].value = a11; sliders[1].value = a12; sliders[2].value = a21; sliders[3].value = a22;
-    redraw();
-  }
-
-  function applyA(x, y) {
-    return [A[11]*x + A[12]*y, A[21]*x + A[22]*y];
-  }
-
-  function redraw() {
-    const W = canvas.width, H = canvas.height;
-    ctx.clearRect(0, 0, W, H);
-    // 좌표계 중심 = 캔버스 중심, 1 단위 = 80px
-    const cx = W/2, cy = H/2;
-    const S = 80;
-    function px(x) { return cx + x * S; }
-    function py(y) { return cy - y * S; }
-
-    // 원본 격자 (회색)
-    ctx.strokeStyle = 'rgba(38,34,28,.08)'; ctx.lineWidth = 1;
-    for (let i = -6; i <= 6; i++) {
-      ctx.beginPath(); ctx.moveTo(px(i), py(-4)); ctx.lineTo(px(i), py(4)); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(px(-6), py(i)); ctx.lineTo(px(6), py(i)); ctx.stroke();
-    }
-    // 원본 축 (조금 진하게)
-    ctx.strokeStyle = 'rgba(38,34,28,.25)'; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.moveTo(px(-6), py(0)); ctx.lineTo(px(6), py(0)); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(px(0), py(-4)); ctx.lineTo(px(0), py(4)); ctx.stroke();
-
-    // 변환된 격자 (주홍)
-    ctx.strokeStyle = 'rgba(192,73,46,.18)'; ctx.lineWidth = 1;
-    for (let i = -4; i <= 4; i++) {
-      // 수직선 (x=i, y변화)
-      ctx.beginPath();
-      for (let j = -4; j <= 4; j += .25) {
-        const [tx, ty] = applyA(i, j);
-        if (j === -4) ctx.moveTo(px(tx), py(ty)); else ctx.lineTo(px(tx), py(ty));
-      }
-      ctx.stroke();
-      // 수평선 (y=i)
-      ctx.beginPath();
-      for (let j = -4; j <= 4; j += .25) {
-        const [tx, ty] = applyA(j, i);
-        if (j === -4) ctx.moveTo(px(tx), py(ty)); else ctx.lineTo(px(tx), py(ty));
-      }
-      ctx.stroke();
-    }
-
-    // 원본 단위 사각형 (회색 점선)
-    ctx.strokeStyle = 'rgba(38,34,28,.45)'; ctx.lineWidth = 1.5;
-    ctx.setLineDash([4,3]);
-    ctx.beginPath();
-    ctx.moveTo(px(0), py(0)); ctx.lineTo(px(1), py(0)); ctx.lineTo(px(1), py(1)); ctx.lineTo(px(0), py(1)); ctx.closePath();
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // 변환된 단위 사각형 (주홍 채움)
-    const c00 = [px(0), py(0)];
-    const [t10x, t10y] = applyA(1, 0); const c10 = [px(t10x), py(t10y)];
-    const [t11x, t11y] = applyA(1, 1); const c11 = [px(t11x), py(t11y)];
-    const [t01x, t01y] = applyA(0, 1); const c01 = [px(t01x), py(t01y)];
-    ctx.fillStyle = 'rgba(192,73,46,.16)';
-    ctx.strokeStyle = '#C0492E'; ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(...c00); ctx.lineTo(...c10); ctx.lineTo(...c11); ctx.lineTo(...c01); ctx.closePath();
-    ctx.fill(); ctx.stroke();
-
-    // 기저 벡터 두 개 화살표
-    function arrow(x1, y1, x2, y2, color) {
-      ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 2.5;
-      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
-      const ang = Math.atan2(y2-y1, x2-x1);
-      const al = 11;
-      ctx.beginPath();
-      ctx.moveTo(x2, y2);
-      ctx.lineTo(x2 - al*Math.cos(ang-0.4), y2 - al*Math.sin(ang-0.4));
-      ctx.lineTo(x2 - al*Math.cos(ang+0.4), y2 - al*Math.sin(ang+0.4));
-      ctx.closePath(); ctx.fill();
-    }
-    arrow(px(0), py(0), c10[0], c10[1], '#2D5B7A');  // A·(1,0)
-    arrow(px(0), py(0), c01[0], c01[1], '#A47B2E');  // A·(0,1)
-
-    // 라벨
-    ctx.font = '600 13px Spline Sans Mono, monospace';
-    ctx.fillStyle = '#2D5B7A';
-    ctx.fillText('A·(1,0)', c10[0] + 7, c10[1] - 4);
-    ctx.fillStyle = '#A47B2E';
-    ctx.fillText('A·(0,1)', c01[0] + 7, c01[1] - 4);
-
-    // 행렬식
-    const det = A[11]*A[22] - A[12]*A[21];
-    matEl.innerHTML =
-      `A = [ ${A[11].toFixed(2)},  ${A[12].toFixed(2)} ;  ${A[21].toFixed(2)},  ${A[22].toFixed(2)} ]   ` +
-      `<span class="det">det(A) = ${det.toFixed(3)}</span>` +
-      (Math.abs(det) < 0.02 ? `  <span style="color:var(--style)">— 특이행렬 (역행렬 없음)</span>` :
-       det < 0 ? `  <span style="color:var(--style-lo)">— 방향 뒤집힘</span>` : '');
-
-    labels[0].textContent = A[11].toFixed(2);
-    labels[1].textContent = A[12].toFixed(2);
-    labels[2].textContent = A[21].toFixed(2);
-    labels[3].textContent = A[22].toFixed(2);
-  }
-
-  sliders.forEach((s, i) => {
-    s.addEventListener('input', () => {
-      const keys = [11,12,21,22];
-      A[keys[i]] = parseFloat(s.value);
-      // 프리셋 버튼 off
-      document.querySelectorAll('.lin-presets .btn').forEach(b => b.classList.remove('on'));
-      redraw();
-    });
-  });
-
-  const PRESETS = {
-    identity:    [1, 0, 0, 1],
-    scale:       [2, 0, 0, 2],
-    rotate:      [Math.cos(Math.PI/4), -Math.sin(Math.PI/4), Math.sin(Math.PI/4), Math.cos(Math.PI/4)],
-    shear:       [1, 0.8, 0, 1],
-    reflect:     [-1, 0, 0, 1],
-    degenerate:  [1, 1, 0.5, 0.5],
-  };
-  document.querySelectorAll('.lin-presets .btn').forEach(b => {
-    b.addEventListener('click', () => {
-      document.querySelectorAll('.lin-presets .btn').forEach(x=>x.classList.remove('on'));
-      b.classList.add('on');
-      const p = PRESETS[b.dataset.preset];
-      setMat(p[0], p[1], p[2], p[3]);
-    });
-  });
-
-  redraw();
+  window.addEventListener('load', () => { NST.buildNav('02'); });
 </script>
 </body>
 </html>

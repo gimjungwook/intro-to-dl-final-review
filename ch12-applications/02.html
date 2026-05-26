@@ -3,326 +3,254 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>12.02 · 음성 인식 — 시퀀스로의 변환</title>
+<title>12 / 02 / 대규모 비전 분류 1</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
-  .speech-stage { padding: 1.3rem 1.1rem 1rem; display: grid; grid-template-rows: auto auto auto auto; gap: .9rem; }
-  .speech-row { display: grid; grid-template-columns: 5.5rem 1fr; gap: .9rem; align-items: center; }
-  .speech-row .lab { font-family: var(--mono); font-size: .68rem; letter-spacing: .12em; color: var(--ink-faint); text-align: right; line-height: 1.4; }
-  .speech-row .lab b { display: block; color: var(--style); font-size: .76rem; letter-spacing: .14em; }
-  .speech-vis { background: #fff; border: 1px solid var(--line); border-radius: 8px; height: 78px; position: relative; overflow: hidden; }
-  .speech-vis canvas { display: block; width: 100%; height: 100%; }
-  .speech-vis .vlabel { position: absolute; left: 8px; top: 6px; font-family: var(--mono); font-size: .62rem; color: var(--ink-faint); pointer-events: none; }
-  .speech-text { background: var(--paper-2); padding: 1rem 1.2rem; border-radius: 8px; font-family: var(--serif); font-size: 1.15rem; color: var(--ink); border-left: 3px solid var(--synth); }
-  .speech-text .typed { color: var(--style); font-weight: 600; }
-  .speech-ctrl { display: flex; gap: 1rem; justify-content: center; padding: .8rem 1.1rem; border-top: 1px solid var(--line-soft); background: var(--paper); font-size: .85rem; }
-  .speech-ctrl .btn-row { display: flex; gap: .4rem; }
-  .speech-arrow { text-align: center; color: var(--ink-faint); font-family: var(--mono); font-size: .8rem; margin: -.3rem 0; }
-
-  .era-tl { max-width: var(--measure); margin: 1.5rem auto; }
-  .era-row { display: grid; grid-template-columns: 5rem 1fr 4rem; gap: .8rem; align-items: baseline; padding: .55rem 0; border-bottom: 1px solid var(--line-soft); font-size: .92rem; }
-  .era-row .yr { font-family: var(--mono); font-size: .78rem; color: var(--style); }
-  .era-row .what { color: var(--ink); }
-  .era-row .what b { color: var(--structure); }
-  .era-row .per { font-family: var(--mono); font-size: .76rem; color: var(--ink-faint); text-align: right; }
+  .vis-pipe { display: grid; grid-template-columns: repeat(5, 1fr); gap: .55rem; padding: 1.4rem 1.2rem 1rem; }
+  .vis-stage { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: .8rem .7rem .9rem; text-align: center; cursor: pointer; transition: .18s var(--ease); position: relative; }
+  .vis-stage:hover { transform: translateY(-3px); border-color: var(--structure); box-shadow: var(--shadow-plate); }
+  .vis-stage.on { border-color: var(--style); background: linear-gradient(180deg,#fff,var(--style-bg)); }
+  .vis-stage .vn { font-family: var(--mono); font-size: .68rem; letter-spacing: .12em; color: var(--ink-faint); }
+  .vis-stage .vt { font-family: var(--serif); font-size: .95rem; margin: .3rem 0 .4rem; line-height: 1.25; color: var(--ink); }
+  .vis-stage canvas { display: block; width: 100%; height: 80px; border-radius: 6px; background: var(--paper-2); margin: .3rem 0; }
+  .vis-stage .vk { font-family: var(--mono); font-size: .62rem; color: var(--structure); margin-top: .25rem; }
+  .vis-info { max-width: var(--measure); margin: .4rem auto 0; padding: 1rem 1.2rem; border-radius: 9px; background: var(--paper-2); border: 1px solid var(--line-soft); font-size: .92rem; color: var(--ink-soft); line-height: 1.55; min-height: 5rem; }
+  .vis-info b { color: var(--ink); }
+  @media (max-width: 720px) { .vis-pipe { grid-template-columns: repeat(2, 1fr); } }
 </style>
 </head>
 <body>
 <div class="scroll-progress"></div>
-<div class="topbar">
-  <a class="home" href="index.html">← Chapter 12 표지</a>
-  <span class="ch-mini">12.02 · 음성 인식</span>
-</div>
+<div class="topbar"></div>
 
 <div class="ch-layout">
-  <aside class="ch-nav"><nav><ol id="navlist"></ol></nav></aside>
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Sub-chapter 02 · 시간이 한 축으로 들어온다</span>
-      <h1>음성 인식 —<br>파형에서 <span class="t-style">텍스트</span>까지</h1>
-      <p class="lede">음성은 비전과 달리 입력이 “시간”이라는 한 축을 갖는다. 그 결과 한 발성에 정답 길이가 매번 다르고, 입력 프레임과 출력 글자가 1:1로 정렬되지 않는다. 이 한 가지 차이가 CTC라는 새 손실 함수와 RNN/Transformer 본체로 이어진다.</p>
+      <span class="kicker">Sub-chapter 02 / 비전 1</span>
+      <h1><span class="t-style">CNN의 본거지</span>,<br>대규모 비전 분류</h1>
+      <p class="lede">컴퓨터 비전은 책이 “전통적 딥러닝 응용”이라 부르는 영역이다. ImageNet 분류 워크플로를 다섯 단계로 풀어, 입력 정돈부터 본체까지의 한 사이클을 직접 만져 본다.</p>
     </header>
 
     <div class="prose">
-      <p>음성 인식(Automatic Speech Recognition, ASR)의 입력은 마이크가 받은 <strong>파형(waveform)</strong>이다. 시간에 따라 공기 압력이 어떻게 출렁였는지를 초당 16,000개(16 kHz) 정도의 숫자로 적은 1차원 시계열이다. 출력은 “안녕하세요” 같은 글자열 또는 음소열이다. 입력의 길이는 발화마다 다르고, 출력의 길이도 다르며, 두 길이가 서로 같지도 않다. 비전 분류가 “입력 하나 → 라벨 하나”였다면 음성은 <strong>“가변 길이 입력 → 가변 길이 출력”</strong>이라는 본질적으로 더 어려운 매핑이다.</p>
+      <p>12장이 다섯 도메인 중 비전을 먼저 펼치는 이유는 단순하다. 합성곱 신경망(Convolutional Neural Network, CNN)이 가장 잘 작동하는 자리이고, 9장에서 만든 부품이 거의 그대로 응용으로 옮겨 가는 가장 깔끔한 예이기 때문이다. 그러나 같은 CNN을 그냥 던져서는 ImageNet 같은 대규모 데이터에서 좋은 성능이 나오지 않는다. 입력을 어떻게 정돈하고, 어떤 증강을 거치고, 어떤 정규화를 적용하는지가 모델의 본체 못지않게 중요하다. 이 sub에서는 비전 분류 워크플로의 다섯 단계를 차례로 풀어 보고, 다음 sub에서 그 단계들의 “실전 트릭”(증강과 전이학습)을 깊이 본다.</p>
 
-      <p>아래 위젯에서 파형이 어떻게 스펙트로그램으로 변환되고, 그 위에서 RNN이 시간을 따라 음소 확률을 뱉으며, 그 확률열이 텍스트로 디코딩되는지를 단계별로 본다.</p>
+      <h2>객체 인식 — 비전 응용의 표본</h2>
+
+      <p>책에서 컴퓨터 비전이라 부르는 영역은 사실 매우 넓다. 객체 인식(object recognition)뿐 아니라 광학 문자 인식(optical character recognition, OCR), 영상 복원(image restoration), 노이즈 제거(denoising), 초해상(super-resolution), 장면 이해(scene understanding)까지 포함한다. 그러나 12장이 다루는 “비전 응용의 표본”은 객체 인식이다. 입력 이미지 한 장이 어떤 범주(category)에 속하는지를 결정하는 분류 문제다. 이 문제가 표본이 된 이유는 두 가지다. 첫째, ImageNet이라는 표준 벤치마크(benchmark)가 존재한다. 둘째, 분류 정확도가 시각 인식의 다른 과제로 거의 그대로 전이된다 — 즉 분류기를 잘 만들면 분할(segmentation), 검출(detection), 캡션(captioning)에도 유리하다.</p>
+
+      <p>ImageNet의 ImageNet 대규모 시각 인식 도전(Large Scale Visual Recognition Challenge, LSVRC)이 2012년 AlexNet에서 16.4%의 top-5 오류율을 보이며 직전 해 26.2%에서 크게 떨어진 사건이 “딥러닝의 비전 시대”의 출발점으로 자주 인용된다. 그 뒤 VGG, GoogLeNet, ResNet으로 이어지며 top-5 오류가 사람 수준(약 5%)을 넘어섰다. 이 사건은 단지 모델 성능 이야기가 아니라, <strong>“입력 정돈과 증강을 충분히 잘 하면 같은 형태의 CNN으로도 인식 정확도가 사람 수준에 도달한다”</strong>는 응용 워크플로의 가능성을 증명한 사건이다.</p>
+
+      <div class="analogy">
+        ImageNet의 의미는, <b>“이 정도 데이터면 이 정도 모델로 이 정도가 된다”</b>라는 비전 분야의 척도(scale)를 표준화한 데 있다. ImageNet이 없던 시기 비전 연구는 각자 다른 데이터셋과 다른 평가 방식을 써서 발표마다 성능을 직접 비교하기 어려웠다. ImageNet은 모든 팀이 같은 1,000개 범주, 같은 120만 장 훈련, 같은 평가 함수를 공유하게 만들었다. 이 표준화 자체가 응용 워크플로의 핵심 인프라다.
+      </div>
+
+      <h2>비전 분류 5단 파이프라인</h2>
+
+      <p>책이 비전 응용의 표준 절차로 소개하는 다섯 단계는 다음과 같다. 각 단계는 12장이 명시적으로 짚는 구성요소이고, 시험에서 “이 단계는 무엇을 하는가”를 묻기 좋은 자리다. 아래 위젯에서 단계를 클릭하면 그 단계가 입력 이미지에 어떤 변환을 가하는지 직접 본다.</p>
     </div>
 
     <div class="widget">
       <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 12.02</span><span>음성 인식 파이프라인 — 재생을 누르면 파형이 단계별로 흐른다</span></div>
-        <div class="speech-stage">
-          <div class="speech-row">
-            <div class="lab"><b>1. 파형</b>x(t)<br>16 kHz</div>
-            <div class="speech-vis"><span class="vlabel">amplitude · time</span><canvas id="wfCanvas"></canvas></div>
-          </div>
-          <div class="speech-arrow">↓ 단시간 푸리에 변환 (STFT) · 25 ms 창</div>
-          <div class="speech-row">
-            <div class="lab"><b>2. 스펙트로그램</b>freq × time</div>
-            <div class="speech-vis"><span class="vlabel">log-mel · 80 bins</span><canvas id="spCanvas"></canvas></div>
-          </div>
-          <div class="speech-arrow">↓ 음향 모델 (RNN / Transformer + CTC)</div>
-          <div class="speech-row">
-            <div class="lab"><b>3. 음소 확률</b>p(c<sub>t</sub>)</div>
-            <div class="speech-vis"><span class="vlabel">P(phoneme | time)</span><canvas id="prCanvas"></canvas></div>
-          </div>
-          <div class="speech-arrow">↓ 빔 서치 디코딩 (CTC blank 제거 · 중복 병합)</div>
-          <div class="speech-row">
-            <div class="lab"><b>4. 출력</b>텍스트</div>
-            <div class="speech-text" id="spOut">안녕하세요</div>
-          </div>
-        </div>
-        <div class="speech-ctrl">
-          <div class="btn-row">
-            <button class="btn" id="btnPlay">▶ 재생</button>
-            <button class="btn ghost" id="btnReset">↺ 리셋</button>
-          </div>
-        </div>
+        <div class="widget-label"><span class="lab-no">위젯 01</span><span>비전 분류 5단 파이프라인</span></div>
+        <div class="vis-pipe" id="visPipe"></div>
       </div>
-      <p class="widget-cap">스펙트로그램의 가로축은 시간, 세로축은 주파수 대역(보통 80개의 멜 필터뱅크)이다. 밝은 가로 띠가 모음의 “포먼트(formant)”이고, 짧은 수직 펄스가 자음의 파열·마찰이다. RNN은 이 2D 이미지를 왼쪽에서 오른쪽으로 훑으며 각 시점에 어떤 음소일 확률이 가장 높은지를 출력한다.</p>
+      <div class="vis-info" id="visInfo"></div>
+      <p class="widget-cap">각 단계의 카드를 클릭하면, 입력 이미지에 그 단계가 가해진 모습을 우측 캔버스에 그리고, 아래 상자에 그 단계의 목적과 책 본문의 설명을 보여 준다. 1번 단계의 “원본”을 누른 뒤 차례로 클릭하면, 5번에 도달할 때까지 변환이 누적된다.</p>
     </div>
 
     <div class="prose">
-      <h2>왜 파형을 직접 안 쓰고 스펙트로그램으로 바꾸는가</h2>
-      <p>이론적으로는 1초짜리 16 kHz 파형을 그대로 RNN에 넣어도 된다. 실제로는 거의 안 그런다. 두 가지 이유다. 첫째, <strong>16,000 길이의 시계열은 너무 길어서</strong> RNN의 시간 펼치기(BPTT)가 메모리·기울기 측면에서 견디지 못한다. 둘째, 사람이 음성을 알아듣는 데 정말 중요한 것은 “이 순간 어떤 주파수 대역에 에너지가 얼마나 있는가”이지 “이 순간 공기 압력의 정확한 부호”가 아니다. 즉 <em>위상</em>의 사소한 차이는 라벨을 안 바꾼다. 그래서 위상은 버리고 진폭만 남기는 변환을 먼저 거친다.</p>
+      <h2>입력 정돈 — 같은 모양, 같은 범위</h2>
 
-      <div class="math-block">$$ X(\tau, f) = \sum_{n} x[n]\, w[n - \tau]\, e^{-j 2\pi f n} $$</div>
-      <p class="math-note">단시간 푸리에 변환(STFT). w는 25 ms 정도의 짧은 창(Hamming), τ는 창의 중심 위치, f는 주파수.</p>
+      <p>워크플로 첫 단계는 입력 정돈이다. 인터넷에서 모은 이미지는 해상도, 종횡비(aspect ratio), 색 공간(color space), 평균 밝기가 제각각이다. 이 변동을 모델이 “학습해서 무시”하게 하려면 데이터가 많이 필요하다. 대신 우리는 한 발 앞서 입력을 같은 모양으로 맞춘다. ImageNet에서는 가장 짧은 변이 256픽셀이 되도록 비례 축소한 뒤 중앙에서 224×224 또는 227×227을 잘라낸다. 이렇게 자른 이미지는 다시 정수 픽셀값(0-255)을 부동소수점(0-1)으로 옮기고, ImageNet 전체에서 계산해 둔 채널별 평균을 뺀다(평균 빼기, mean subtraction). 평균을 빼면 입력 분포가 0 주위에 모이는데, 그것은 6장에서 본 ReLU와 8장에서 본 SGD가 더 안정적으로 작동하는 영역이다.</p>
 
-      <p>이 식이 하는 일은 “짧은 창을 시간축에서 한 칸씩 밀면서, 그 창 안의 신호를 주파수 성분으로 분해”하는 것이다. 결과 $X(\tau, f)$는 “시간 τ에서 주파수 f에 에너지가 얼마나 있는가”라는 2D 격자, 즉 <strong>스펙트로그램</strong>이다. 보통 80개 정도의 멜 필터뱅크(mel filter bank)로 주파수 축을 더 줄여서 인간 청각에 맞춘 “log-mel spectrogram”을 쓴다.</p>
+      <div class="math-block">$$ x' = \frac{x - \mu_{\text{train}}}{\sigma_{\text{train}}} $$</div>
+      <p class="math-note">전체 학습 데이터의 채널별 평균 μ와 표준편차 σ로 정규화. 책은 평균 빼기를 표준 정규화로 부른다.</p>
+
+      <p>한 단계 더 들어가면 대비 정규화(contrast normalization)가 있다. 전역 대비 정규화(global contrast normalization, GCN)는 한 이미지 전체에서 평균과 표준편차를 빼고 나누어 어두운 사진과 밝은 사진을 같은 영역에 모은다. 국소 대비 정규화(local contrast normalization, LCN)는 각 픽셀 주위의 작은 창에서 평균과 표준편차를 빼고 나누어 같은 이미지 안의 어두운 영역과 밝은 영역을 함께 다룰 수 있게 한다. 이 정규화는 모델이 “밝기 차이”라는 의미 없는 변동을 학습해서 거르는 부담을 덜어 준다.</p>
+
+      <h2>왜 증강이 정칙화와 같은 효과를 내는가</h2>
+
+      <p>워크플로 두 번째 단계인 데이터 증강(data augmentation)은 같은 이미지를 약간씩 다르게 변형해 학습 표본 수를 늘리는 기법이다. ImageNet의 표준 증강은 다음과 같다. 좌우 뒤집기(horizontal flip), 무작위 자르기(random crop), 색 흔들기(color jittering), 작은 회전과 이동. 한 장의 원본에서 사실상 수십 수백 장의 변형 사본을 만들 수 있고, 그 사본들은 모두 같은 라벨을 공유한다.</p>
+
+      <p>증강이 왜 작동하는가. 7장 정칙화의 언어로 옮기면 답이 분명해진다. 정칙화는 모델이 학습할 수 있는 가설 공간(hypothesis space)을 좁히는 일이고, 증강은 그 가설 공간 위에 “이 변형들은 같은 라벨이어야 한다”는 등가 관계(equivalence relation)를 추가로 박아 넣는 일이다. 모델은 좌우를 뒤집어도 같은 고양이로 분류해야 하고, 색을 약간 흔들어도 같은 고양이여야 한다. 이 제약을 만족하는 모델은 증강하지 않은 데이터만 본 모델보다 일반화가 좋다. 책이 이 효과를 “증강은 정칙화의 한 형태”라고 단언하는 이유다.</p>
 
       <div class="analogy">
-        파형은 <b>“시간 위에 길게 쓴 일기”</b>다. 너무 자세해서 끝까지 읽기 힘들다. 스펙트로그램은 <b>“같은 일기를 표로 요약한 것”</b>이다. 가로는 날짜, 세로는 “기분·체력·식욕” 같은 항목. 표가 일기보다 짧지만, 결정적인 패턴(어느 항목이 언제 솟구쳤나)은 그대로 보인다. RNN이 일기보다 표를 훨씬 잘 읽는다.
+        증강은 모델에게 <b>“이 변형은 의미가 같다”라는 손짓을 미리 알려주는 것</b>이다. 아기에게 고양이 사진을 보여줄 때 정면, 옆, 위에서 본 사진을 함께 보여 주면 더 빨리 “고양이”라는 범주를 잡는다. CNN도 마찬가지다. 좌우 뒤집은 고양이를 같은 라벨로 학습하면, 모델이 좌우 대칭성을 직접 발견할 시간을 줄여 준다.
       </div>
 
-      <h2>왜 음소 정렬이 어려운가, 그리고 CTC가 등장하는 이유</h2>
-      <p>스펙트로그램이 “시간 × 주파수”의 2D 격자라면, 모델 본체로 2D 합성곱이 자연스럽게 들어온다(책 후반부의 트릭). 하지만 핵심 문제는 본체가 아니라 <strong>출력 정렬(alignment)</strong>이다. 100 프레임짜리 스펙트로그램에서 “안녕하세요”(5글자)를 뽑으려면, 어떤 프레임이 어떤 글자에 대응하는지 학습 데이터에 적혀 있어야 한다. 그런데 실제 데이터는 “이 음성 파일의 정답 텍스트는 안녕하세요다”라는 식의 가벼운 라벨일 뿐, “3번 프레임은 ‘안’의 시작” 같은 정렬은 없다.</p>
+      <h2>본체 — 합성곱과 풀링의 누적</h2>
 
-      <p>이 문제를 푸는 것이 <strong>Connectionist Temporal Classification (CTC)</strong> 손실이다. CTC는 “빈 토큰(blank, ϕ)”을 알파벳에 추가한 뒤, 모든 가능한 프레임-글자 정렬 경로를 동시에 고려한다.</p>
+      <p>3번 단계인 본체는 9장에서 풀이한 CNN 그대로다. 합성곱(convolution) 층이 작은 창의 가중합으로 국소 패턴을 잡고, 활성 함수(activation function, 보통 정류 선형 단위(rectified linear unit, ReLU))가 비선형성을 더하고, 풀링(pooling)이 작은 평행이동에 둔감하게 만들고, 이 묶음을 깊게 쌓는다. AlexNet은 5개의 합성곱 블록과 3개의 완전연결(fully connected) 층을, VGG는 16-19개의 3×3 합성곱과 풀링을, ResNet은 잔차 연결(residual connection)을 통해 100층 이상의 합성곱을 쌓아 올렸다. 이 “더 깊게, 더 자주”라는 추이가 비전 응용의 모델 부분이다.</p>
 
-      <div class="math-block">$$ p(\text{“안녕”} \mid X) = \sum_{\pi \in \mathcal{B}^{-1}(\text{“안녕”})} \prod_{t=1}^{T} p(\pi_t \mid X) $$</div>
-      <p class="math-note">π = 길이 T의 프레임별 출력열(blank 포함). 𝓑 = blank 제거 + 중복 병합 함수. 𝓑(<code>ϕϕ안안ϕ녕ϕ</code>) = “안녕”.</p>
+      <h2>출력 — 1000-way 소프트맥스</h2>
 
-      <p>왜 이 형태인가? <strong>“안녕”을 만들어 낼 수 있는 프레임 단위 출력열은 무한히 많다.</strong> ‘안’이 2프레임 동안 이어졌을 수도 있고 5프레임 동안 이어졌을 수도 있다. 모델이 정확히 어떤 정렬을 골라야 하는지는 알 수 없으므로, <em>모든 가능한 정렬의 확률을 더해서</em> “이 음성이 ‘안녕’일 확률”을 정의한다. blank 토큰은 “지금 이 프레임에서는 어떤 글자도 새로 시작하지 않음”이라는 뜻으로, 글자가 늘어진 부분과 정말 비어 있는 부분을 구분해 준다. 이 합을 효율적으로 계산하는 알고리즘이 동적 계획법(HMM의 forward 알고리즘과 같은 구조)이다.</p>
+      <p>4번 단계인 출력은 1,000개 범주에 대한 소프트맥스(softmax) 분포다. 본체의 마지막 특징 벡터 $h$ 위에 선형 층 $W$와 편향 $b$를 얹어 점수(logit)를 만들고, 그것을 소프트맥스로 확률로 바꾼다.</p>
 
-      <h2>한 페이지 역사 — GMM-HMM에서 end-to-end까지</h2>
-      <p>책은 음성 인식의 신경망 도입 역사를 짧게 짚는다. 이 흐름을 외워 두면 시험에서 “신경망이 음성에 끼친 영향”을 물었을 때 곧장 답할 수 있다.</p>
+      <div class="math-block">$$ p(y = c \mid x) = \frac{\exp(W_c^\top h + b_c)}{\sum_{c'=1}^{1000} \exp(W_{c'}^\top h + b_{c'})} $$</div>
+      <p class="math-note">출력 분포는 5장의 다중 클래스 최대우도(multi-class maximum likelihood)와 같다. 도메인이 비전이라 해서 학습 목적이 달라지지 않는다.</p>
 
-      <div class="era-tl">
-        <div class="era-row"><span class="yr">~ 2009</span><span class="what"><b>GMM-HMM</b> 가우시안 혼합으로 음향 모델링, HMM으로 음소 시퀀스</span><span class="per">TIMIT 26%</span></div>
-        <div class="era-row"><span class="yr">2010</span><span class="what"><b>DNN-HMM</b> HMM은 유지, GMM 자리에 RBM으로 사전훈련한 깊은 신경망</span><span class="per">20.7%</span></div>
-        <div class="era-row"><span class="yr">2012</span><span class="what">사전훈련 폐기 · <b>ReLU + dropout</b>으로 충분</span><span class="per">~18%</span></div>
-        <div class="era-row"><span class="yr">2014</span><span class="what"><b>End-to-end 깊은 LSTM + CTC</b> HMM 완전 제거, 정렬도 모델이 학습</span><span class="per">17.7%</span></div>
-        <div class="era-row"><span class="yr">2015+</span><span class="what">스펙트로그램을 이미지로 보고 <b>2D 합성곱</b> 추가</span><span class="per">↓ 추가</span></div>
-      </div>
+      <p>학습은 음의 로그우도(negative log-likelihood) 손실을 미니배치 SGD로 줄이는 것으로 충분하다. 어휘 크기가 1,000이라 NLP처럼 계층적 소프트맥스가 필요하지 않다.</p>
 
-      <p>이 흐름의 한 줄 메시지는 분명하다. <strong>딥러닝은 “손으로 정의한 중간 단계”를 하나씩 모델 안으로 빨아들였다.</strong> GMM이 신경망에 먹혔고, HMM이 CTC에 먹혔다. 모델이 더 커질수록, 입력에서 출력까지의 변환 사슬에서 사람이 만든 부품이 줄어든다. 이 패턴은 NLP의 “단어 임베딩 → 인코더-디코더 → Transformer”에서도, 비전의 “SIFT/HOG → CNN → ViT”에서도 똑같이 반복된다.</p>
+      <h2>한 줄 결론</h2>
 
-      <h2>비전과의 진짜 차이는 “데이터 증강”에서 드러난다</h2>
-      <p>음성 인식이 비전과 본질적으로 다른 지점이 하나 더 있다. <strong>증강의 의미가 다르다.</strong> 비전에서 좌우 반전은 거의 공짜로 학습 데이터를 두 배로 늘려 주지만, 음성에서는 “안녕”을 거꾸로 재생하면 다른 단어가 된다. 음성에서는 대신 다음 같은 증강이 표준이다.</p>
-
-      <ul>
-        <li><strong>속도 변화(speed perturbation)</strong> — 1초짜리 발화를 0.9-1.1초로 늘이거나 줄인다. 같은 단어가 다른 길이로 발음된 데이터를 흉내낸다.</li>
-        <li><strong>볼륨·소음 추가</strong> — 식당 소음, 자동차 소음을 합성한다. 실제 환경에 강건해진다.</li>
-        <li><strong>SpecAugment</strong> — 스펙트로그램 위에서 시간 한 토막과 주파수 한 토막을 마스킹한다. 모델이 특정 시간·특정 주파수에 과도하게 의존하는 것을 막는다.</li>
-      </ul>
-
-      <p>핵심 차이는 이것이다. 비전에서 증강은 <strong>“공간적 대칭성”</strong>(좌우 대칭 등)을 이용한다. 음성에서 증강은 <strong>“라벨이 시간 길이·소음·국소 정보에 강건해야 한다”</strong>는 음향 도메인의 사전 지식을 이용한다. 같은 “증강”이라는 단어를 써도, 도메인이 다른 사전 지식을 주입한다는 점이 6장의 마지막 시험 질문(Q2)의 답이다.</p>
-
-      <p>다음 장에서는 같은 “시퀀스를 시퀀스로 매핑하는 문제”를 NLP로 옮긴다. NLP에서는 입력 시퀀스 자체가 이미 이산 토큰열이라 “스펙트로그램 같은 사전 변환”이 필요 없고, 대신 임베딩과 어텐션이 그 자리를 채운다.</p>
+      <p>비전 응용의 핵심은 “좋은 CNN 본체 + 잘 정돈된 입력 + 충분한 증강 + 보통의 소프트맥스”의 결합이다. 모델 자체보다 입력 정돈과 증강에서 성과가 갈리는 자리가 많다. 다음 sub에서는 그 입력 측의 “실전 트릭” — 색 변형 증강, 대비 정규화의 세부, 그리고 ImageNet에서 출발하는 전이학습(transfer learning) — 을 깊게 본다.</p>
     </div>
 
-    <nav class="ch-foot">
-      <a href="01.html"><span class="dir">← Prev</span><div class="ti">01 · 비전 분류</div></a>
-      <a href="03.html" class="next"><span class="dir">Next →</span><div class="ti">03 · 자연어 처리</div></a>
-    </nav>
+    <nav class="ch-foot"></nav>
   </main>
 </div>
 
 <script>
   const SUBS = [
-    ['01','대규모 비전 분류'],
-    ['02','음성 인식'],
-    ['03','자연어 처리'],
-    ['04','추천 시스템'],
-    ['05','강화학습 응용'],
-    ['06','시험 대비'],
+    { no: '01', t: '응용 챕터의 의미' },
+    { no: '02', t: '대규모 비전 분류 1 — ImageNet' },
+    { no: '03', t: '대규모 비전 분류 2 — 증강·전이학습' },
+    { no: '04', t: '음성 인식 — 파형 → 스펙트로그램' },
+    { no: '05', t: 'NLP 1 — 단어 임베딩' },
+    { no: '06', t: 'NLP 2 — 분포 가설·임베딩 산수' },
+    { no: '07', t: 'NLP 3 — 언어 모델·번역·어텐션' },
+    { no: '08', t: '추천 시스템 — 협업 필터링' },
+    { no: '09', t: '강화학습 — agent-environment 루프' },
+    { no: '10', t: '공통 교훈 — 표상 위의 단순 산수' },
+    { no: '11', t: '시험 대비' },
   ];
-  const here = '02';
-  const navlist = document.getElementById('navlist');
-  SUBS.forEach(([no, t]) => {
-    const li = document.createElement('li');
-    const a = document.createElement('a');
-    a.href = no + '.html';
-    a.textContent = t;
-    if (no === here) a.classList.add('current');
-    li.appendChild(a); navlist.appendChild(li);
-  });
+  function buildNav(cur) {
+    const tb = document.querySelector('.topbar');
+    if (tb) tb.innerHTML =
+      '<a class="home" href="index.html">← Chapter 12 / 응용</a>' +
+      '<span class="ch-mini">SUB ' + cur + ' / 11</span>';
+    const ol = document.querySelector('.ch-nav ol');
+    if (ol) ol.innerHTML = SUBS.map(c =>
+      '<li><a href="' + c.no + '.html"' + (c.no === cur ? ' class="current"' : '') + '>' + c.t + '</a></li>').join('');
+    const foot = document.querySelector('.ch-foot');
+    if (foot) {
+      const i = SUBS.findIndex(c => c.no === cur);
+      const prev = i > 0 ? SUBS[i - 1] : { no: '', t: '표지로', _href: 'index.html' };
+      const next = i < SUBS.length - 1 ? SUBS[i + 1] : { no: '', t: '표지로', _href: 'index.html' };
+      const hp = prev._href || (prev.no + '.html');
+      const hn = next._href || (next.no + '.html');
+      foot.innerHTML =
+        '<a href="' + hp + '"><div class="dir">← 이전</div><div class="ti">' + prev.t + '</div></a>' +
+        '<a href="' + hn + '" class="next"><div class="dir">다음 →</div><div class="ti">' + next.t + '</div></a>';
+    }
+  }
+  function initScroll() {
+    const bar = document.querySelector('.scroll-progress');
+    if (!bar) return;
+    const on = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    document.addEventListener('scroll', on, { passive: true }); on();
+  }
 
-  const prog = document.querySelector('.scroll-progress');
-  window.addEventListener('scroll', () => {
-    const h = document.documentElement;
-    prog.style.width = (h.scrollTop / (h.scrollHeight - h.clientHeight) * 100) + '%';
-  });
+  // ─── 위젯 01: 비전 5단 파이프라인 ───
+  function visPipeWidget(host) {
+    const STAGES = [
+      { n: '01', t: '원본 정돈', k: 'resize 224', info: '<b>입력 정돈.</b> 인터넷의 이미지는 크기와 종횡비가 제각각이다. 가장 짧은 변이 256이 되도록 비례 축소하고 중앙에서 224×224를 잘라낸다. 모델이 받기 좋은 모양으로 통일하는 첫 단계다.' },
+      { n: '02', t: '평균 빼기', k: 'x − μ_train', info: '<b>정규화.</b> ImageNet 전체에서 계산해 둔 채널별 평균을 픽셀에서 빼서 입력 분포를 0 주위에 모은다. ReLU와 SGD가 더 안정적으로 작동하는 영역으로 옮기는 일.' },
+      { n: '03', t: '증강', k: 'flip · crop · color', info: '<b>데이터 증강.</b> 좌우 뒤집기, 무작위 자르기, 색 흔들기로 같은 라벨의 변형 사본을 만든다. “이 변형은 의미가 같다”는 등가 관계를 모델 학습에 박는 정칙화의 한 형태.' },
+      { n: '04', t: 'CNN 본체', k: 'conv + ReLU + pool ×N', info: '<b>본체 학습.</b> 9장의 CNN을 그대로 깊게 쌓는다. AlexNet 5블록, VGG 16-19층, ResNet 100층 이상. 합성곱이 국소 패턴을 잡고, 풀링이 작은 평행이동에 둔감하게 만든다.' },
+      { n: '05', t: '소프트맥스', k: '1000-way softmax', info: '<b>출력 분해.</b> 1,000개 범주에 대한 소프트맥스 분포. 음의 로그우도 손실로 학습한다. 5장의 다중 클래스 최대우도와 정확히 같은 형태다.' },
+    ];
+    host.innerHTML = STAGES.map(s =>
+      '<div class="vis-stage" data-no="' + s.n + '">' +
+      '  <div class="vn">STAGE ' + s.n + '</div>' +
+      '  <div class="vt">' + s.t + '</div>' +
+      '  <canvas></canvas>' +
+      '  <div class="vk">' + s.k + '</div>' +
+      '</div>').join('');
+
+    function paint(ctx, stage) {
+      const w = ctx.canvas.width, h = ctx.canvas.height;
+      ctx.clearRect(0, 0, w, h);
+      if (stage === 1 || stage === 2 || stage === 3) {
+        // 가짜 고양이 윤곽 (타원 두 개 + 삼각 귀)
+        ctx.fillStyle = stage === 2 ? '#777' : '#C9A06A';
+        ctx.beginPath(); ctx.ellipse(w*0.5, h*0.6, w*0.32, h*0.28, 0, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(w*0.5, h*0.32, w*0.18, h*0.18, 0, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(w*0.36, h*0.22); ctx.lineTo(w*0.42, h*0.06); ctx.lineTo(w*0.5, h*0.22); ctx.closePath(); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(w*0.5, h*0.22); ctx.lineTo(w*0.58, h*0.06); ctx.lineTo(w*0.64, h*0.22); ctx.closePath(); ctx.fill();
+        // 눈
+        ctx.fillStyle = '#2D5B7A';
+        ctx.beginPath(); ctx.arc(w*0.45, h*0.32, 2, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(w*0.56, h*0.32, 2, 0, Math.PI*2); ctx.fill();
+        if (stage === 2) {
+          // 평균 빼기 시각: 회색조로
+          ctx.fillStyle = 'rgba(38,34,28,0.04)';
+          ctx.fillRect(0, 0, w, h);
+        }
+        if (stage === 3) {
+          // 증강 시각: 좌우 뒤집힘 표시 + 자르기 박스
+          ctx.strokeStyle = '#C0492E'; ctx.setLineDash([3,3]); ctx.lineWidth = 1.5;
+          ctx.strokeRect(w*0.15, h*0.18, w*0.55, h*0.66);
+          ctx.setLineDash([]);
+          ctx.fillStyle = '#C0492E'; ctx.font = '9px monospace';
+          ctx.fillText('flip · crop', 4, h-5);
+        }
+      } else if (stage === 4) {
+        // CNN 본체: 줄무늬 격자(feature map)
+        for (let i = 0; i < 8; i++) {
+          for (let j = 0; j < 5; j++) {
+            const v = ((i*7 + j*3) % 9) / 9;
+            ctx.fillStyle = `rgba(45,91,122,${0.2 + v*0.6})`;
+            ctx.fillRect(j*(w/5) + 1, i*(h/8) + 1, w/5 - 2, h/8 - 2);
+          }
+        }
+        ctx.fillStyle = 'rgba(192,73,46,0.9)'; ctx.font = '9px monospace';
+        ctx.fillText('conv → ReLU → pool', 4, h-5);
+      } else if (stage === 5) {
+        // 소프트맥스 막대 (5개 범주만 시각, 1순위 강조)
+        const bars = [0.78, 0.14, 0.04, 0.02, 0.02];
+        const labels = ['cat', 'dog', 'fox', 'lynx', 'rab'];
+        const barW = (w - 16) / bars.length;
+        bars.forEach((p, k) => {
+          const bh = p * (h - 22);
+          ctx.fillStyle = k === 0 ? '#C0492E' : 'rgba(45,91,122,0.55)';
+          ctx.fillRect(8 + k*barW + 2, h - 8 - bh, barW - 4, bh);
+          ctx.fillStyle = '#5A5247'; ctx.font = '8px monospace';
+          ctx.fillText(labels[k], 8 + k*barW + 4, h - 1);
+        });
+      }
+    }
+
+    const info = document.getElementById('visInfo');
+    let cur = 1;
+    function draw() {
+      host.querySelectorAll('.vis-stage').forEach((el, i) => {
+        const cv = el.querySelector('canvas');
+        if (!cv.width) { cv.width = cv.clientWidth; cv.height = 80; }
+        paint(cv.getContext('2d'), i + 1);
+        el.classList.toggle('on', (i + 1) === cur);
+      });
+      info.innerHTML = STAGES[cur - 1].info;
+    }
+    host.addEventListener('click', e => {
+      const t = e.target.closest('.vis-stage');
+      if (!t) return;
+      cur = parseInt(t.dataset.no, 10);
+      draw();
+    });
+    window.addEventListener('resize', () => {
+      host.querySelectorAll('.vis-stage canvas').forEach(c => c.width = 0);
+      draw();
+    });
+    draw();
+  }
 
   window.addEventListener('load', () => {
-    if (window.renderMathInElement) {
-      renderMathInElement(document.body, {
-        delimiters: [
-          {left: '$$', right: '$$', display: true},
-          {left: '$', right: '$', display: false},
-        ],
-        throwOnError: false,
-      });
-    }
+    buildNav('02'); initScroll();
+    const p = document.getElementById('visPipe');
+    if (p) visPipeWidget(p);
   });
-
-  // ====== 음성 위젯 ======
-  function setupSpeech() {
-    const wfC = document.getElementById('wfCanvas');
-    const spC = document.getElementById('spCanvas');
-    const prC = document.getElementById('prCanvas');
-    const out = document.getElementById('spOut');
-    [wfC, spC, prC].forEach(c => {
-      const dpr = Math.min(2, window.devicePixelRatio || 1);
-      const w = c.parentElement.clientWidth, h = c.parentElement.clientHeight;
-      c.width = w * dpr; c.height = h * dpr;
-      c.getContext('2d').setTransform(dpr,0,0,dpr,0,0);
-    });
-    const wfx = wfC.getContext('2d');
-    const spx = spC.getContext('2d');
-    const prx = prC.getContext('2d');
-
-    // 가짜 파형: "안녕하세요" 5음절 = 5개 envelope
-    const T = 500;
-    const syllables = ['안','녕','하','세','요'];
-    const envelopes = [];
-    for (let i = 0; i < 5; i++) {
-      envelopes.push({ center: 50 + i * 90, width: 30, freq: 0.3 + i * 0.08 });
-    }
-    function amp(t) {
-      let a = 0;
-      envelopes.forEach(e => {
-        const d = (t - e.center) / e.width;
-        a += Math.exp(-d*d) * Math.sin(t * e.freq + e.center) * 0.7;
-      });
-      return a;
-    }
-
-    // 스펙트로그램: 멜 80 bin, 시간 T
-    const F = 32;
-    function spec(t, f) {
-      let s = 0;
-      envelopes.forEach((e, i) => {
-        const d = (t - e.center) / e.width;
-        const env = Math.exp(-d*d);
-        const fc = 6 + i * 4; // 음절마다 다른 중심 주파수
-        const fd = (f - fc) / 4;
-        s += env * Math.exp(-fd*fd);
-      });
-      return Math.min(1, s);
-    }
-
-    // 음소 확률 (CTC blank 포함 가상)
-    const phonemes = ['ϕ','ㅏㄴ','ϕ','ㄴㅕㅇ','ϕ','ㅎㅏ','ϕ','ㅅㅔ','ϕ','ㅛ','ϕ'];
-    const P = 11;
-    function probAt(t, p) {
-      // 각 음소 시점이 envelopes과 어울리도록
-      const peakAt = [0, 50, 90, 140, 180, 230, 280, 320, 370, 410, 470];
-      const sigma = 22;
-      const d = (t - peakAt[p]) / sigma;
-      return Math.exp(-d*d);
-    }
-
-    let playProgress = 0;
-    let playing = false;
-    let raf = null;
-
-    function drawAll(prog) {
-      const w = wfC.clientWidth, h = wfC.clientHeight;
-      // 1. 파형
-      wfx.clearRect(0,0,w,h);
-      wfx.strokeStyle = 'rgba(45, 91, 122, 0.85)';
-      wfx.lineWidth = 1;
-      wfx.beginPath();
-      const maxT = Math.floor(T * prog);
-      for (let t = 0; t < maxT; t++) {
-        const x = (t / T) * w;
-        const y = h/2 - amp(t) * (h * 0.38);
-        if (t === 0) wfx.moveTo(x, y); else wfx.lineTo(x, y);
-      }
-      wfx.stroke();
-      // 진행선
-      wfx.strokeStyle = 'rgba(192, 73, 46, 0.6)';
-      wfx.lineWidth = 1.5;
-      wfx.beginPath();
-      const px = (maxT / T) * w;
-      wfx.moveTo(px, 0); wfx.lineTo(px, h);
-      wfx.stroke();
-
-      // 2. 스펙트로그램
-      spx.clearRect(0,0,w,h);
-      const cellW = w / T;
-      const cellH = h / F;
-      for (let t = 0; t < maxT; t += 2) {
-        for (let f = 0; f < F; f++) {
-          const v = spec(t, f);
-          if (v < 0.05) continue;
-          spx.fillStyle = `rgba(192, 73, 46, ${v})`;
-          spx.fillRect(t * cellW, (F - 1 - f) * cellH, cellW * 2 + 0.5, cellH + 0.5);
-        }
-      }
-
-      // 3. 음소 확률 — 색깔별 라인
-      prx.clearRect(0,0,w,h);
-      const palette = ['#8E8576','#2D5B7A','#8E8576','#C0492E','#8E8576','#A47B2E','#8E8576','#2D5B7A','#8E8576','#C0492E','#8E8576'];
-      for (let p = 0; p < P; p++) {
-        prx.strokeStyle = palette[p];
-        prx.lineWidth = p % 2 === 0 ? 0.8 : 1.6;
-        prx.globalAlpha = p % 2 === 0 ? 0.4 : 0.95;
-        prx.beginPath();
-        for (let t = 0; t < maxT; t += 3) {
-          const x = (t / T) * w;
-          const y = h - probAt(t, p) * (h * 0.9);
-          if (t === 0) prx.moveTo(x, y); else prx.lineTo(x, y);
-        }
-        prx.stroke();
-      }
-      prx.globalAlpha = 1;
-
-      // 4. 출력 텍스트: 진행도에 따라 한 글자씩
-      const idx = Math.min(5, Math.floor(prog * 6));
-      const full = '안녕하세요';
-      out.innerHTML = `<span class="typed">${full.slice(0, idx)}</span><span style="color: var(--ink-faint)">${full.slice(idx)}</span>`;
-    }
-
-    drawAll(1);  // 초기 상태 = 전체
-
-    function play() {
-      playProgress = 0;
-      playing = true;
-      function step() {
-        if (!playing) return;
-        playProgress += 0.012;
-        if (playProgress >= 1) { playProgress = 1; playing = false; }
-        drawAll(playProgress);
-        if (playing) raf = requestAnimationFrame(step);
-      }
-      step();
-    }
-    function reset() {
-      playing = false; if (raf) cancelAnimationFrame(raf);
-      drawAll(1);
-    }
-    document.getElementById('btnPlay').addEventListener('click', play);
-    document.getElementById('btnReset').addEventListener('click', reset);
-  }
-  window.addEventListener('load', setupSpeech);
 </script>
 </body>
 </html>
+</content>
+</invoke>

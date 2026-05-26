@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>06 · 최적화와 구현 선택</title>
+<link rel="stylesheet" href="assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Chapter 06 · 학습이 아니라 최적화</span>
+      <h1>모델이 아니라<br><span class="t-synth">이미지</span>를 바꾼다</h1>
+      <p class="lede">이 논문에서 VGG의 가중치는 한 번도 바뀌지 않는다. 바뀌는 것은 오직 생성 이미지의 픽셀이다. 그 차이가 전부를 가른다.</p>
+    </header>
+
+    <div class="prose">
+      <p>이 논문에서 가장 헷갈리기 쉬운 지점은 <strong>“학습(training)”과 “최적화(optimization)”의 차이</strong>다. 보통의 딥러닝에서는 데이터를 보고 모델의 가중치를 바꾼다. 그런데 여기서는 VGG-19의 가중치를 처음부터 끝까지 <span class="t-structure">고정</span>한다. 바뀌는 것은 오직 생성 이미지 $x$의 픽셀이다.</p>
+
+      <p>절차는 이렇게 돈다. 노이즈로 시작한 생성 이미지를 VGG에 넣어 콘텐츠 손실과 스타일 손실을 재고, 그 합(전체 손실)을 줄이는 방향으로 픽셀을 조금 고치고, 다시 넣는다. 이 고리를 수백 번 반복하면 노이즈가 점점 “구조는 사진, 질감은 그림”인 이미지로 조각된다. 아래 위젯에서 그 과정을 직접 감아 보라 — 슬라이더를 끌면 반복 횟수 $t$에 따라 난수 노이즈($t=0$)가 목표 이미지를 향해 수렴해 가고, 오른쪽 손실 곡선이 그에 맞춰 떨어진다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 06</span><span>픽셀 경사하강 — 노이즈가 목표로 수렴한다</span></div>
+        <div id="opt"></div>
+      </div>
+      <p class="widget-cap">왼쪽은 반복 $t$에서의 생성 이미지, 오른쪽은 전체 손실의 추이다(검은 점이 현재 $t$). 네트워크는 고정이고, 매 스텝 “손실이 줄어드는 방향”으로 픽셀만 움직인다. 슬라이더를 앞뒤로 감으면 같은 지점은 항상 같은 모습으로 재현된다. (여기서는 직관을 위해 목표 이미지로 직접 수렴시키지만, 실제 논문은 콘텐츠·스타일 손실의 기울기로 같은 일을 한다.)</p>
+    </div>
+
+    <div class="prose">
+      <h2>두 줄의 수식이 가르는 것</h2>
+      <p>생성 이미지는 반복적으로 업데이트된다. 이것이 핵심 수식이다.</p>
+      <div class="math-block">$$ x_{t+1} = x_t - \eta\,\frac{\partial \mathcal{L}_{total}}{\partial x_t} $$</div>
+      <p class="math-note">t = 반복 횟수, η = 업데이트 크기(학습률). ∂L/∂x = 픽셀을 어느 방향으로 바꾸면 손실이 주는지 알려주는 기울기.</p>
+      <p>$\eta$는 한 걸음의 크기이고, $\frac{\partial \mathcal{L}_{total}}{\partial x_t}$는 “현재 픽셀을 어느 방향으로 밀면 전체 손실이 줄어드는가”를 가리키는 기울기다. 빼기(−)인 이유는 손실을 <em>줄이는</em> 방향, 즉 기울기의 반대 방향으로 가야 하기 때문이다.</p>
+
+      <p>여기서 일반적인 학습과 나란히 놓고 보면 차이가 또렷해진다. 보통의 딥러닝은 손실을 줄이려고 모델 가중치 $\theta$를 바꾼다.</p>
+      <div class="math-block">$$ \theta_{t+1} = \theta_t - \eta\,\frac{\partial \mathcal{L}}{\partial \theta_t} \qquad\text{(보통의 학습 — 모델을 바꿈)} $$</div>
+      <p>하지만 이 논문은 $\theta$가 아니라 $x$를 바꾼다.</p>
+      <div class="math-block">$$ x_{t+1} = x_t - \eta\,\frac{\partial \mathcal{L}}{\partial x_t} \qquad\text{(이 논문 — 이미지를 바꿈)} $$</div>
+
+      <div class="analogy">
+        보통의 학습이 <b>요리사를 훈련시키는 일</b>이라면, 이 논문은 <b>요리사는 그대로 두고 접시 위의 음식을 계속 다시 플레이팅하는 일</b>이다. 평가 기준(요리사의 혀 = 고정된 VGG)은 바뀌지 않는다. 그 혀가 “더 콘텐츠답게, 더 스타일답게”라고 채점할 때마다, 우리는 접시(픽셀)만 손본다.
+      </div>
+
+      <p>발표에서 이 한 줄을 꼭 말하면 된다. <strong>“VGG를 학습시키는 것이 아니라, VGG가 주는 손실을 기준으로 이미지를 조각한다.”</strong></p>
+
+      <h2>왜 VGG이고, 왜 average pooling인가</h2>
+      <p>논문은 2장에서 본 <strong>VGG-19</strong>를 쓴다. 왜 하필 이 그물인가? 구조가 단순해 층별 해석이 쉽고, 무엇보다 객체 인식 학습을 통해 계층적 시각 표현을 잘 형성했기 때문이다. 객체 인식을 잘하려면 네트워크는 조명·색상·작은 위치 변화에는 어느 정도 둔감하면서 물체의 구조에는 민감해야 한다. 바로 이 성질 — 무엇이 본질(구조)이고 무엇이 표면(질감)인지 이미 학습으로 분리해 둔 점 — 이 콘텐츠와 스타일을 따로 다루는 데 그대로 도움이 된다.</p>
+      <p>또 하나의 구현 세부는 max pooling 대신 <strong>average pooling</strong>을 쓴 점이다. max pooling은 영역 안에서 가장 큰 값 하나만 고른다 — 분류에는 좋지만, 이미지를 부드럽게 고쳐야 하는 생성에서는 신호가 한 점에만 몰려 거칠게 작동한다. average pooling은 영역 전체의 평균을 쓰므로 기울기가 더 넓게 퍼지고, 최적화 과정이 더 매끄러워진다.</p>
+      <div class="analogy">
+        max pooling은 <b>반에서 1등 점수만 보고 학급을 평가</b>하는 것과 같다. 한 명만 신경 쓰면 되니 빠르지만 거칠다. average pooling은 <b>반 평균을 보는 것</b> — 모든 학생의 변화가 조금씩 반영되어, 이미지를 한 군데가 아니라 전체적으로 부드럽게 다듬게 된다.
+      </div>
+
+      <h2>전체 파이프라인을 한 번에</h2>
+      <p>지금까지를 하나로 이으면 이렇다. 세 이미지($p$, $a$, $x$)가 모두 <strong>같은 고정 VGG</strong>를 통과한다. 콘텐츠 이미지는 깊은 층에서 $P^l$을, 스타일 이미지는 여러 층에서 $A^l$을 내놓고 — 이 둘은 변하지 않는 <em>목표</em>다. 생성 이미지만이 $F^l$과 $G^l$을 내놓으며, 콘텐츠 손실 + 스타일 손실 = 전체 손실을 만들고, 그 기울기로 픽셀이 갱신된다. 그 고리가 닫히면 한 바퀴다.</p>
+      <div class="pipe">
+        <div class="pipe-card in"><div class="pipe-sym">$p \;\rightarrow\; P^l$</div><div class="pipe-txt"><b>콘텐츠 이미지</b>가 VGG의 깊은 층을 지나 표현 $P^l$이 된다. 한 번 계산되면 변하지 않는 <span class="t-structure">콘텐츠 목표</span>다.</div></div>
+        <div class="pipe-card sty"><div class="pipe-sym">$a \;\rightarrow\; A^l$</div><div class="pipe-txt"><b>스타일 이미지</b>가 여러 층을 지나 Gram 행렬 $A^l$이 된다. 역시 변하지 않는 <span class="t-style">스타일 목표</span>다.</div></div>
+        <div class="pipe-card gen"><div class="pipe-sym">$x \;\rightarrow\; F^l,\; G^l$</div><div class="pipe-txt"><b>생성 이미지</b>가 같은 VGG를 지나 $F^l$과 $G^l$을 동시에 낸다. 이 셋 중 매 반복 바뀌는 <span class="t-synth">유일한 대상</span>이다.</div></div>
+        <div class="pipe-arrow">↓</div>
+        <div class="pipe-card loss"><div class="pipe-sym">$\mathcal{L}_{total} = \alpha\,\mathcal{L}_{content} + \beta\,\mathcal{L}_{style}$</div><div class="pipe-txt">$F^l$과 $P^l$의 차이(콘텐츠 손실), $G^l$과 $A^l$의 차이(스타일 손실)를 $\alpha,\beta$로 저울질해 더한 <b>전체 손실</b>.</div></div>
+        <div class="pipe-arrow">↓</div>
+        <div class="pipe-card gen"><div class="pipe-sym">$x \;\leftarrow\; x - \eta\,\dfrac{\partial \mathcal{L}_{total}}{\partial x}$</div><div class="pipe-txt">전체 손실의 기울기 방향으로 <b>생성 이미지 픽셀을 한 걸음</b> 움직인다. VGG 가중치는 손대지 않는다.</div></div>
+        <div class="pipe-loop">↺ 이 고리를 수백 번 반복 — 갱신된 $x$를 들고 다시 맨 위로</div>
+      </div>
+      <p>이 그림에서 VGG는 세 이미지를 모두 통과시키지만 <strong>가중치는 결코 바뀌지 않는다.</strong> 마지막 결과는 콘텐츠 이미지와 깊은 층 표현이 닮고, 스타일 이미지와 Gram 행렬이 닮은 한 장의 이미지다. 다음 장에서는 이 방법의 <span class="t-style">한계</span>와, 오늘날의 생성 모델과의 관계를 정리하고 발표 준비로 마무리한다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  window.addEventListener('load', () => {
+    NST.buildNav('06');
+    const o = document.getElementById('opt');
+    NST.onVisible(o, () => NST.optimize(o));
+  });
+</script>
+<script src="assets/widgets.js"></script>
+</body>
+</html>

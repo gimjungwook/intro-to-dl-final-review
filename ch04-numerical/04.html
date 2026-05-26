@@ -3,24 +3,23 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ch.04 · 04 · 헤시안과 2계 방법</title>
+<title>Ch.04 · 04 · logsumexp 트릭 — 안정화 수식 유도</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
-  .hn-stage { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1.2rem 1.1rem 1rem; }
-  @media (max-width: 720px) { .hn-stage { grid-template-columns: 1fr; } }
-  .hn-col { background: #fff; border: 1px solid var(--line-soft); border-radius: 10px; padding: .6rem; }
-  .hn-col h5 { margin: 0 0 .5rem; padding: 0 .3rem; font-family: var(--mono); font-size: .7rem; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-faint); display: flex; justify-content: space-between; align-items: center; }
-  .hn-col.gd h5 { color: var(--style); }
-  .hn-col.nt h5 { color: var(--structure); }
-  .hn-col canvas { display: block; width: 100%; aspect-ratio: 1 / 1; border-radius: 6px; }
-  .hn-meta { display: flex; justify-content: space-between; gap: .6rem; padding: .5rem .4rem 0; font-family: var(--mono); font-size: .72rem; color: var(--ink-soft); }
-  .hn-meta b { color: var(--ink); }
-
-  .scope { display: flex; gap: .35rem; flex-wrap: wrap; padding: 0 .3rem; }
-  .scope .btn.ghost.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .lse-table { width: 100%; max-width: var(--measure); margin: 1.4rem auto; border-collapse: collapse; font-size: .9rem; }
+  .lse-table th { font-family: var(--mono); font-size: .68rem; text-transform: uppercase; letter-spacing: .12em; color: var(--ink-faint); text-align: left; padding: .6rem .7rem; border-bottom: 1px solid var(--line); }
+  .lse-table td { padding: .65rem .7rem; border-bottom: 1px solid var(--line-soft); font-family: var(--mono); font-size: .82rem; vertical-align: top; }
+  .lse-table td:first-child { color: var(--ink-faint); width: 30%; }
+  .lse-table td:nth-child(2) { color: var(--structure); }
+  .lse-table td:nth-child(3) { color: var(--style); }
+  .lse-stage { padding: 1.4rem 1.1rem 1rem; display: grid; grid-template-columns: 1fr; gap: .8rem; }
+  .lse-step { background: #fff; border: 1px solid var(--line-soft); border-left: 3px solid var(--structure); border-radius: 8px; padding: .9rem 1.1rem; }
+  .lse-step h6 { margin: 0 0 .4rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; color: var(--structure); }
+  .lse-step .eq { font-family: var(--mono); font-size: .98rem; color: var(--ink); padding: .4rem 0; }
+  .lse-step .why { font-size: .85rem; color: var(--ink-soft); line-height: 1.55; }
 </style>
 </head>
 <body>
@@ -32,99 +31,106 @@
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Sub-Chapter 04 · 헤시안과 2계 방법</span>
-      <h1><span class="t-structure">곡률</span>까지 알면<br>한 번에 점프할 수 있다</h1>
-      <p class="lede">기울기는 "어디로 가야 줄어드는가"만 알려 준다. 헤시안은 한 단계 더 가서 "지금 가는 방향이 앞으로도 좋을지"를 알려 준다. 그 정보를 쓰면 한 번에 큰 점프(뉴턴법)가 가능하지만, 모든 비용이 무료는 아니다.</p>
+      <span class="kicker">Sub-Chapter 04 · 한 줄로 폭주를 막다</span>
+      <h1>logsumexp 트릭과<br><span class="t-synth">안정화 수식의 유도</span></h1>
+      <p class="lede">3절의 max 빼기는 softmax만의 잔재주처럼 보이지만, 더 일반적인 패턴인 logsumexp의 한 사례다. 이 절은 logsumexp가 왜 거의 모든 확률 모델의 핵심 식인지, 그리고 그 안정화가 어떻게 한 줄로 유도되는지를 단계별로 풀이한다.</p>
     </header>
 
     <div class="prose">
-      <p>앞 장에서 본 단순 경사하강은 한 번에 한 발씩 내려가는 1계 방법(first-order method)이다. 그러나 함수가 어떤 방향으로는 가파르고 다른 방향으로는 완만한 경우, 1계 방법은 학습률 하나로 두 마리 토끼를 잡을 수 없다. 곡률을 알아야 한다. 그 곡률이 바로 <strong>헤시안</strong>이다.</p>
+      <p>3절에서 softmax를 안전하게 짜는 한 줄 — "입력에서 최댓값을 빼라" — 를 봤다. 그 트릭이 softmax에만 적용되는 것은 아니다. 자연 지수가 들어간 거의 모든 식에서 같은 패턴이 작동한다. 그 일반화된 형태를 한 양으로 요약한 것이 <strong>logsumexp(LSE)</strong>다. 정의는 단순하다.</p>
 
-      <h2>야코비안과 헤시안 — 한 줄로</h2>
-      <p>먼저 야코비안(Jacobian)부터 정리하자. 벡터 입력, 벡터 출력 함수 $\mathbf{f}: \mathbb{R}^n \to \mathbb{R}^m$의 모든 편미분을 모은 $m \times n$ 행렬이다.</p>
+      <div class="math-block">$$ \mathrm{LSE}(x) \;=\; \log \sum_{i=1}^{n} e^{x_i} $$</div>
+      <p class="math-note">x = (x_1, ..., x_n)는 임의의 실수 벡터. LSE(x)는 자연 지수들의 합에 다시 로그를 씌운 한 스칼라.</p>
 
-      <div class="math-block">$$ J_{ij} \;=\; \frac{\partial f_i}{\partial x_j}, \quad J \in \mathbb{R}^{m \times n} $$</div>
-      <p class="math-note">신경망의 한 층이 입력 벡터를 출력 벡터로 보낼 때의 1계 정보. 역전파(backprop)에서 핵심.</p>
+      <p>이 양이 왜 그렇게 중요한가. 답은 확률 모델의 가장 중요한 두 자리 — 정규화(normalization)와 로그 우도(log-likelihood) — 모두에서 똑같이 등장하기 때문이다. 분류 모델에서 한 클래스 $y$의 정답 확률은 $p_y = \tfrac{e^{x_y}}{\sum_j e^{x_j}}$이고, 이 확률의 로그는 다음과 같이 LSE와 직접 묶인다.</p>
 
-      <p>이제 헤시안(Hessian)이다. 스칼라 출력 함수 $f: \mathbb{R}^n \to \mathbb{R}$의 모든 2차 편미분을 모은 $n \times n$ 행렬이다.</p>
+      <div class="math-block">$$ \log p_y \;=\; \log \frac{e^{x_y}}{\sum_j e^{x_j}} \;=\; x_y \;-\; \log \sum_j e^{x_j} \;=\; x_y - \mathrm{LSE}(x) $$</div>
+      <p class="math-note">분자와 분모를 분리하고 로그의 성질을 쓰면, 정답 logit에서 LSE를 빼는 형태가 된다.</p>
 
-      <div class="math-block">$$ H_{ij} \;=\; \frac{\partial^2 f}{\partial x_i \, \partial x_j}, \quad H \in \mathbb{R}^{n \times n} $$</div>
-      <p class="math-note">두 번째 미분의 모음. 슈바르츠 정리에 의해 대칭. 곡률 정보를 담는다.</p>
+      <p>이 식이 분류 모델의 음의 로그 우도 손실(negative log-likelihood loss), 즉 교차 엔트로피 손실의 핵심이다. 학습할 때 우리는 $-\log p_y = \mathrm{LSE}(x) - x_y$를 최소화한다. 그런데 LSE를 식 그대로 구현하면 똑같은 softmax 폭주를 만난다. $e^{x_i}$ 어느 하나가 오버플로하면 합이 $\infty$가 되고, 그 로그도 $\infty$가 된다. 모든 $e^{x_i}$가 언더플로하면 합이 0이 되고, $\log 0 = -\infty$가 튄다. 어느 방향이든 학습은 죽는다.</p>
 
-      <p>왜 이것이 곡률인가. 한 점 $\mathbf{x}$ 근처에서 $f$를 2차 테일러 전개하면 다음과 같다.</p>
+      <h2>유도 — 한 줄짜리 트릭</h2>
+      <p>안정화는 3절과 같은 발상이다. 합 안의 모든 항에 같은 상수를 곱해 두고, 그 상수를 로그 밖으로 꺼낸다.</p>
 
-      <div class="math-block">$$ f(\mathbf{x} + \boldsymbol{\delta}) \;\approx\; f(\mathbf{x}) \;+\; \boldsymbol{\delta}^\top \nabla f \;+\; \tfrac{1}{2} \boldsymbol{\delta}^\top H \boldsymbol{\delta} $$</div>
-      <p class="math-note">1차항은 기울기 방향의 변화, 2차항은 곡률 정보. δ는 작은 변위.</p>
+      <div class="lse-stage">
+        <div class="lse-step">
+          <h6>STEP 1 — 시작 식</h6>
+          <div class="eq">$$ \mathrm{LSE}(x) \;=\; \log \sum_i e^{x_i} $$</div>
+          <div class="why">정의 그대로. 큰 x_i가 있으면 e^{x_i}가 오버플로하고, 모든 x_i가 작으면 합이 0이 되어 log가 −∞로 떨어진다.</div>
+        </div>
+        <div class="lse-step">
+          <h6>STEP 2 — m = max x_i 정의</h6>
+          <div class="eq">$$ m \;=\; \max_i x_i, \qquad e^{x_i} \;=\; e^{m} \cdot e^{x_i - m} $$</div>
+          <div class="why">각 e^{x_i}를 m과 x_i−m으로 인수분해. m을 공통으로 끌어내기 위해서다. 수학적으로는 항등식이다.</div>
+        </div>
+        <div class="lse-step">
+          <h6>STEP 3 — 합에서 e^m을 끌어내기</h6>
+          <div class="eq">$$ \sum_i e^{x_i} \;=\; \sum_i e^{m} \cdot e^{x_i - m} \;=\; e^{m} \cdot \sum_i e^{x_i - m} $$</div>
+          <div class="why">e^m은 i와 무관한 상수이므로 합 밖으로 빠진다. 이제 안쪽의 합 안에는 0 이하의 지수만 남는다.</div>
+        </div>
+        <div class="lse-step">
+          <h6>STEP 4 — 로그의 곱 분해</h6>
+          <div class="eq">$$ \log \big( e^{m} \cdot \sum_i e^{x_i - m} \big) \;=\; m \;+\; \log \sum_i e^{x_i - m} $$</div>
+          <div class="why">로그의 성질 log(AB) = log A + log B를 쓰고 log e^m = m을 적용. m은 그냥 더해 두면 된다.</div>
+        </div>
+        <div class="lse-step">
+          <h6>STEP 5 — 안정화된 LSE</h6>
+          <div class="eq">$$ \mathrm{LSE}(x) \;=\; m \;+\; \log \sum_i e^{x_i - m}, \qquad m = \max_i x_i $$</div>
+          <div class="why">안쪽의 지수 인자가 모두 0 이하 → 오버플로 없음. 적어도 한 항은 e^0 = 1이라 합 ≥ 1 → log가 −∞로 떨어지지 않음.</div>
+        </div>
+      </div>
 
-      <p>2차항 $\tfrac{1}{2} \boldsymbol{\delta}^\top H \boldsymbol{\delta}$는 방향 $\boldsymbol{\delta}$에 따라 함수가 얼마나 빠르게 휘는지 알려 준다. 어떤 방향에서는 위로 볼록(positive curvature, 그릇 모양)하고, 다른 방향에서는 아래로 볼록(negative curvature, 언덕 모양)할 수 있다. 이를 한 숫자로 요약하면 <strong>$H$의 고윳값</strong>이다.</p>
-
-      <ul>
-        <li>모든 고윳값 &gt; 0 → 모든 방향에서 위로 볼록 → <strong>국소 최소</strong></li>
-        <li>모든 고윳값 &lt; 0 → 모든 방향에서 아래로 볼록 → <strong>국소 최대</strong></li>
-        <li>일부는 양, 일부는 음 → <strong>안장점</strong> (saddle point)</li>
-        <li>일부 고윳값이 정확히 0 → 결정 불가, 더 높은 차수 필요</li>
-      </ul>
-
-      <p>이 분류가 왜 중요한가. 앞 장에서 경사하강이 멈춘 점이 진짜 최소인지 안장점인지 1계 정보만으로는 구별할 수 없다고 했다. 헤시안의 고윳값 부호가 그 구별을 가능하게 한다. 고차원 딥러닝 손실 표면에서 안장점이 국소최소보다 훨씬 흔하다는 것이 최근 연구의 결과이고, 그래서 2계 정보의 진단 가치는 항상 살아 있다.</p>
-
-      <h2>뉴턴 방법 — 2차 근사의 최솟값으로 한 번에 점프</h2>
-      <p>2차 근사가 정확하다고 믿고 그 근사함수의 최솟값으로 한 번에 가 보자. 2차항 $\tfrac{1}{2} \boldsymbol{\delta}^\top H \boldsymbol{\delta} + \boldsymbol{\delta}^\top \nabla f$를 $\boldsymbol{\delta}$로 미분해 0으로 두면, $H \boldsymbol{\delta} + \nabla f = 0$이다. 정리하면 다음 업데이트 식이 나온다.</p>
-
-      <div class="math-block">$$ \mathbf{x}_{k+1} \;=\; \mathbf{x}_k \;-\; H^{-1}(\mathbf{x}_k) \, \nabla f(\mathbf{x}_k) $$</div>
-      <p class="math-note">기울기에 헤시안 역행렬을 곱한 방향으로 점프. 학습률 ε가 없다.</p>
-
-      <p>왜 이 형태가 강력한가. 함수가 진짜 이차식이라면 한 스텝에 정확히 최솟값에 도달한다. 일반적인 경우에도 최솟값 근처에서는 2차 근사가 잘 맞기 때문에, 1계 방법보다 훨씬 적은 스텝으로 수렴한다. 그리고 학습률 ε를 따로 잡을 필요가 없다. $H^{-1}$ 자체가 각 방향마다 적절한 스케일을 자동으로 부여하기 때문이다. 사실상 헤시안이 조건수 문제를 자체적으로 보정해 준다.</p>
+      <p>이 5단계는 한 줄짜리 수식 변형이지만 각각의 의미가 분명하다. <strong>step 2</strong>는 모든 지수에 공통의 큰 상수 $e^m$을 곱한 형태로 다시 쓰는 일이다. <strong>step 3</strong>은 그 상수를 합 밖으로 꺼낸다. <strong>step 4</strong>는 로그의 분해로 곱을 합으로 바꾼다. <strong>step 5</strong>는 결과를 정리한다. 다섯 줄 모두 등가 변환이라 답이 바뀌지 않는다. 그러나 컴퓨터 위에서는 결정적인 차이가 있다 — <em>중간에 등장하는 가장 큰 수가 $\sum_i e^{x_i - m}$이며, 이 값은 항상 $n$ 이하다</em>. $n$이 어휘 크기처럼 큰 값(예: 5만)이라 해도 $\log 50000 \approx 11$로, float32 범위 안에 안전하게 들어간다.</p>
 
       <div class="analogy">
-        <b>지도를 가진 등산</b>이다. 1계 방법은 발 밑의 경사만 보고 한 걸음씩 내려가는 안개 속 등산이라면, 뉴턴법은 주변 지형의 등고선 지도를 들고 골짜기의 가장 낮은 점이 어디인지 직접 가리키고 한 번에 점프하는 등산이다. 단, 그 지도가 정확하다는 전제하에.
+        오케스트라가 합주를 할 때, 모든 악기의 음량을 그대로 더하면 가장 큰 트럼펫 소리에 묻혀 다른 소리가 모두 사라진다. 그래서 지휘자는 먼저 "트럼펫의 기준 음량을 0으로 놓고, 나머지 악기들을 그 기준 아래에서 측정하자"라고 정한다. 그 뒤에 측정된 각 악기의 상대 음량을 합하고, 마지막에 트럼펫의 기준 음량을 다시 더하면 전체 합주 음량이 된다. <b>최댓값을 기준으로 잡고 나머지를 상대값으로 다루는 발상</b>이 logsumexp 트릭의 정수다.
       </div>
+
+      <h2>위젯 — 한 입력에서의 비교</h2>
+      <p>아래 위젯에서 $x = (x_1, x_2, x_3, x_4, x_5)$를 슬라이더로 옮기면, naive LSE와 stable LSE의 결과가 어떻게 갈라지는지 한눈에 보인다. 입력을 크게 (예: 모두 +1000) 또는 작게 (예: 모두 −1000) 밀면, naive 쪽이 곧장 $\infty$나 $-\infty$로 떨어지지만 stable 쪽은 항상 의미 있는 유한한 값을 낸다.</p>
     </div>
 
     <div class="widget">
       <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 04</span><span>GD vs Newton — 같은 시작점, 다른 궤적</span></div>
-        <div class="hn-stage">
-          <div class="hn-col gd">
-            <h5><span>경사하강 (1계)</span><span id="hnGdStat">—</span></h5>
-            <canvas id="hnGd"></canvas>
-            <div class="hn-meta"><span>스텝 <b id="hnGdSteps">0</b></span><span>‖∇f‖ <b id="hnGdGn">—</b></span></div>
-          </div>
-          <div class="hn-col nt">
-            <h5><span>뉴턴법 (2계)</span><span id="hnNtStat">—</span></h5>
-            <canvas id="hnNt"></canvas>
-            <div class="hn-meta"><span>스텝 <b id="hnNtSteps">0</b></span><span>‖∇f‖ <b id="hnNtGn">—</b></span></div>
-          </div>
-        </div>
+        <div class="widget-label"><span class="lab-no">위젯 04</span><span>logsumexp — 같은 입력에서 두 가지 계산</span></div>
+        <table class="lse-table">
+          <thead><tr><th>입력</th><th>naive: log Σ e^{x_i}</th><th>stable: m + log Σ e^{x_i−m}</th></tr></thead>
+          <tbody id="lseBody"></tbody>
+        </table>
         <div class="widget-controls">
-          <div class="slider"><label>등고선 종횡비 (조건수 √κ) <b id="hnAspect">3.0</b></label><input type="range" id="hnA" min="10" max="80" value="30" step="1"></div>
-          <div class="slider"><label>경사하강 학습률 ε <b id="hnLRLab">0.06</b></label><input type="range" id="hnLR" min="1" max="50" value="6" step="1"></div>
-          <div class="scope">
-            <button class="btn ghost on" data-scope="bowl">그릇 (양정치)</button>
-            <button class="btn ghost" data-scope="saddle">안장점</button>
-          </div>
-          <button class="btn" id="hnRun">처음부터 다시</button>
+          <div class="slider"><label>입력 1 <b id="ll1">+2.0</b></label><input type="range" id="lr1" min="-1200" max="1200" value="20" step="5"></div>
+          <div class="slider"><label>입력 2 <b id="ll2">+1.0</b></label><input type="range" id="lr2" min="-1200" max="1200" value="10" step="5"></div>
+          <div class="slider"><label>입력 3 <b id="ll3">+0.0</b></label><input type="range" id="lr3" min="-1200" max="1200" value="0" step="5"></div>
+          <div class="slider"><label>입력 4 <b id="ll4">−1.0</b></label><input type="range" id="lr4" min="-1200" max="1200" value="-10" step="5"></div>
+          <div class="slider"><label>입력 5 <b id="ll5">−2.0</b></label><input type="range" id="lr5" min="-1200" max="1200" value="-20" step="5"></div>
+          <button class="btn" id="lBig">전부 +1000</button>
+          <button class="btn ghost" id="lSmall">전부 −1000</button>
+          <button class="btn ghost" id="lReset">초기값</button>
         </div>
       </div>
-      <p class="widget-cap">그릇 모양에서 같은 시작점·같은 종횡비 조건에서, 1계 경사하강은 지그재그로 여러 스텝을 거치지만 뉴턴법은 한두 스텝 만에 중심에 도달한다. 그러나 <b>안장점</b> 함수에서는 뉴턴법이 오히려 안장점으로 빨려 들어 정지하는 경우가 생긴다. 뉴턴은 만능이 아니다.</p>
+      <p class="widget-cap">두 식은 수학적으로 정확히 같다. 그러나 naive 쪽은 큰 입력에서 ∞, 작은 입력에서 −∞로 무너지고, stable 쪽은 항상 의미 있는 값을 낸다. PyTorch의 <code>torch.logsumexp</code>는 stable 형태로 구현되어 있다.</p>
     </div>
 
     <div class="prose">
-      <h2>왜 딥러닝에서 뉴턴법이 안 쓰이는가</h2>
-      <p>그렇게 강력해 보이는 뉴턴법이 왜 실제 딥러닝 학습에서는 거의 안 쓰이는지 정리하자.</p>
+      <h2>왜 PyTorch가 이미 해 주는 일을 알아야 하는가</h2>
+      <p>실용적으로 우리는 logsumexp를 직접 짤 일이 거의 없다. PyTorch의 <code>torch.logsumexp(x, dim)</code>, <code>torch.nn.functional.log_softmax(x, dim)</code>, <code>torch.nn.CrossEntropyLoss</code> 모두 내부에서 max 빼기를 이미 한다. 그런데도 이 절을 길게 풀이하는 이유는 두 가지다.</p>
 
-      <ul>
-        <li><strong>비용</strong> — 헤시안 $H$를 만들려면 $n^2$개의 원소를, 역행렬을 구하려면 $\mathcal{O}(n^3)$ 연산이 필요하다. 신경망의 파라미터 수 $n$이 수억 단위인 현대 모델에서는 헤시안을 메모리에 올리는 것조차 불가능하다.</li>
-        <li><strong>안장점 함정</strong> — 위의 위젯에서 보듯, 뉴턴법은 1계 조건 $\nabla f = 0$을 만족하는 모든 점을 "최적" 후보로 본다. 그래서 안장점에도 똑같이 빨려 든다. 1계 방법은 적어도 지나가는 안장점은 잘 통과하는 경우가 많다.</li>
-        <li><strong>$H$가 양정치가 아닐 때</strong> — 역행렬이 발산하거나 잘못된 방향으로 점프할 수 있다. 그래서 실전에서는 $H$ 대신 양정치를 보장하는 근사(예: BFGS의 양정치 갱신, Gauss-Newton의 $J^\top J$ 근사)를 쓴다.</li>
-      </ul>
+      <p>첫째, <strong>새로운 손실 함수를 직접 짤 때</strong>다. 연구자는 종종 표준 라이브러리에 없는 특이한 손실을 새로 정의한다. 예를 들어 Focal Loss, Contrastive Loss, InfoNCE Loss, Wasserstein Loss 등은 모두 어딘가에서 자연 지수와 로그가 등장한다. 이때 안정화를 깜빡하면 같은 사고가 반복된다. logsumexp 트릭을 알고 있는 사람만이 "이 위치에 max 빼기를 넣어야 안전하다"를 자동으로 떠올린다.</p>
 
-      <p>그래서 현대 딥러닝은 1계 방법(SGD, Adam 등)을 주축으로 쓰고, 헤시안 정보는 <em>대각 근사</em>나 <em>벡터-곱 형태(Hessian-vector product)</em>로만 간접 활용한다. Adam의 $v_t$(이차 모멘트)는 사실 헤시안의 대각 성분을 통계적으로 근사하는 것으로 해석되기도 한다.</p>
+      <p>둘째, <strong>학습이 NaN으로 죽었을 때 원인을 추적하기 위해서</strong>다. 학습 로그에 갑자기 NaN이 나오면, 그 원인이 어느 줄에 있는지를 찾아야 한다. 후보의 거의 대부분은 "exp가 들어간 식 중 어디"다. 이 절의 유도가 머릿속에 있으면, 후보를 빠르게 좁힐 수 있다. 새 코드를 짜서 다른 라이브러리를 따라할 때도 마찬가지다.</p>
 
-      <h2>한 줄 요약 — 1계와 2계의 자리</h2>
-      <p>1계 정보는 <strong>방향</strong>을 알려 준다. 2계 정보는 <strong>스케일과 곡률</strong>을 알려 준다. 학습률을 자동으로 보정하고 싶다면, 또는 멈춘 점이 진짜 최소인지 안장점인지 가르고 싶다면, 어떤 형태로든 2계 정보가 들어와야 한다. 모멘텀, Adam, 배치 정규화 같은 현대 옵티마이저들이 사실은 2계 정보를 싸게 흉내 내는 장치라는 관점이 가능하다.</p>
+      <h2>다른 사례 — log-sigmoid, KL divergence</h2>
+      <p>같은 트릭은 다른 곳에서도 변주된다. 한 가지 자주 보는 형태가 log-sigmoid이다.</p>
+
+      <div class="math-block">$$ \log \sigma(x) \;=\; \log \frac{1}{1 + e^{-x}} \;=\; -\log(1 + e^{-x}) \;=\; -\mathrm{softplus}(-x) $$</div>
+      <p class="math-note">softplus(z) = log(1 + e^z). 이 양도 같은 logsumexp 트릭으로 안정화된다.</p>
+
+      <p>$x$가 매우 큰 양수일 때 $e^{-x}$는 언더플로하여 0이 되고, $\log 1 = 0$이라 결과는 0에 가깝다. 정확하다. 그러나 $x$가 매우 큰 음수일 때 $e^{-x}$는 오버플로하여 $\infty$가 되고, $\log \infty = \infty$가 튄다. 이때 안정화 형태는 max(0, −x) 트릭이다. 일반적으로 $\log(1 + e^{z}) = \max(0, z) + \log(1 + e^{-|z|})$. 이 형태는 양수 쪽과 음수 쪽 모두에서 안전하다. PyTorch의 <code>F.softplus</code>도 이 형태를 쓴다.</p>
+
+      <p>KL 발산(KL divergence) $D_\mathrm{KL}(p \| q) = \sum_i p_i \log \tfrac{p_i}{q_i}$도 비슷한 패턴이다. $q_i = 0$이면 $\log 0 = -\infty$가 나오므로, 실제 구현에서는 항상 $q_i + \epsilon$을 분모에 두거나 $\log q_i$를 직접 계산하지 않고 logsumexp 형태로 풀어 쓴다. KL 발산이 들어간 변분 자동 인코더(variational autoencoder)나 강화학습의 TRPO/PPO 손실에서 이 안정화는 핵심이다.</p>
 
       <h2>다음으로</h2>
-      <p>지금까지는 제약이 없는 최소화 문제였다. 그러나 실제 문제는 종종 "해가 어떤 집합 안에 있어야 한다"는 조건을 동반한다. 가중치의 노름을 제한하거나, 확률 분포의 합이 1이 되어야 하거나. 다음 장에서는 <strong>제약 최적화</strong>의 핵심 도구인 KKT 조건을 직관적으로 본다.</p>
+      <p>지금까지는 부동소수점의 표현 한계와 그것을 우회하는 대수적 재배열을 봤다. 다음 절부터는 두 번째 수치 함정인 <strong>조건수(condition number)</strong>로 넘어간다. 이번에는 한 값의 표현 한계가 아니라, 행렬 연산이 입력의 미세한 흔들림을 출력의 큰 흔들림으로 증폭시키는 문제다. 그리고 그것이 신경망 최적화에서 어떤 모양으로 나타나는지 — 등고선이 좁은 타원이 될 때 경사하강이 왜 지그재그가 되는지 — 를 본다.</p>
     </div>
 
     <nav class="ch-foot"></nav>
@@ -133,18 +139,23 @@
 
 <script>
   const SUBS = [
-    { no:'01', t:'부동소수점의 함정' },
-    { no:'02', t:'잘못된 조건수' },
-    { no:'03', t:'경사 기반 최적화' },
-    { no:'04', t:'헤시안과 2계 방법' },
-    { no:'05', t:'제약 최적화와 KKT' },
-    { no:'06', t:'시험 대비' },
+    { no:'01', t:'왜 수치 계산이 ML의 발목을 잡는가' },
+    { no:'02', t:'부동소수점 — IEEE 754의 좁은 자' },
+    { no:'03', t:'언더플로 / 오버플로 — softmax는 왜 터지는가' },
+    { no:'04', t:'logsumexp 트릭 — 안정화 수식 유도' },
+    { no:'05', t:'조건수 1 — 행렬은 답을 얼마나 흔드는가' },
+    { no:'06', t:'조건수 2 — 최적화의 지그재그' },
+    { no:'07', t:'경사하강법의 본질' },
+    { no:'08', t:'2계 방법 — 헤시안과 뉴턴법' },
+    { no:'09', t:'학습률의 의미' },
+    { no:'10', t:'제약 최적화 — 라그랑주와 KKT' },
+    { no:'11', t:'시험 대비' },
   ];
   function buildNav(current) {
     const tb = document.querySelector('.topbar');
     if (tb) tb.innerHTML =
       `<a class="home" href="index.html">← Ch.04 수치 계산</a>` +
-      `<span class="ch-mini">SUB ${current} / 06</span>`;
+      `<span class="ch-mini">SUB ${current} / 11</span>`;
     const ol = document.querySelector('.ch-nav ol');
     if (ol) ol.innerHTML = SUBS.map(s =>
       `<li><a href="${s.no}.html" ${s.no === current ? 'class="current"' : ''}>${s.t}</a></li>`).join('');
@@ -169,264 +180,61 @@
     }
   }
 
-  // ===== 위젯: GD vs Newton =====
-  let scope = 'bowl';
-  let runId = 0;
-
-  // 함수: 그릇 f = 0.5*(x² + a² y²), 안장 f = 0.5*x² − 0.5*a*y²
-  function gradFn(x, y, a) {
-    if (scope === 'bowl') return [x, a*a*y];
-    return [x, -a*y];
+  function fmt(x) {
+    if (Number.isNaN(x)) return '<em style="color:var(--style)">NaN</em>';
+    if (!isFinite(x)) return '<em style="color:var(--style)">' + (x > 0 ? '+∞' : '−∞') + '</em>';
+    return x.toFixed(4);
   }
-  function hessFn(a) {
-    if (scope === 'bowl') return [[1, 0], [0, a*a]];
-    return [[1, 0], [0, -a]];
+  function lseNaive(xs) {
+    const exps = xs.map(x => Math.exp(x));
+    const sum = exps.reduce((a,b) => a+b, 0);
+    return Math.log(sum);
   }
-  function invHess2x2(H) {
-    const det = H[0][0]*H[1][1] - H[0][1]*H[1][0];
-    if (Math.abs(det) < 1e-9) return null;
-    return [[H[1][1]/det, -H[0][1]/det], [-H[1][0]/det, H[0][0]/det]];
+  function lseStable(xs) {
+    const m = Math.max.apply(null, xs);
+    const sum = xs.reduce((a,b) => a + Math.exp(b - m), 0);
+    return m + Math.log(sum);
   }
-
-  function setupOne(id) {
-    const c = document.getElementById(id);
-    const rect = c.getBoundingClientRect();
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    c.width = rect.width * dpr;
-    c.height = rect.height * dpr;
-    const ctx = c.getContext('2d');
-    ctx.setTransform(dpr,0,0,dpr,0,0);
-    return { ctx, w: rect.width, h: rect.height };
-  }
-
-  function drawContours(ctx, w, h, a) {
-    ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = '#FAF7F0'; ctx.fillRect(0, 0, w, h);
-    const cx = w/2, cy = h/2;
-    const scale = Math.min(w, h) * 0.42;
-
-    if (scope === 'bowl') {
-      const levels = [0.05, 0.15, 0.3, 0.5, 0.8, 1.1];
-      levels.forEach((c, idx) => {
-        ctx.strokeStyle = `rgba(45, 91, 122, ${0.13 + idx * 0.07})`;
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        for (let t = 0; t <= Math.PI*2 + 0.01; t += 0.04) {
-          const x = Math.sqrt(2*c) * Math.cos(t);
-          const y = Math.sqrt(2*c) * Math.sin(t) / a;
-          const px = cx + x * scale;
-          const py = cy - y * scale;
-          if (t === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
-        }
-        ctx.closePath(); ctx.stroke();
-      });
-    } else {
-      // saddle: f = 0.5*x² − 0.5*a*y² → 쌍곡선 등고선
-      const levels = [-0.6, -0.3, -0.1, 0, 0.1, 0.3, 0.6];
-      levels.forEach((c, idx) => {
-        const alpha = 0.18 + Math.abs(c)*0.3;
-        ctx.strokeStyle = c > 0 ? `rgba(45, 91, 122, ${alpha})` : `rgba(192, 73, 46, ${alpha})`;
-        ctx.lineWidth = 1;
-        if (c === 0) {
-          // y = ±x/√a 직선
-          ctx.strokeStyle = 'rgba(38,34,28,0.18)';
-          ctx.setLineDash([4,3]);
-          for (const sign of [1, -1]) {
-            ctx.beginPath();
-            ctx.moveTo(cx - scale, cy + sign * scale / Math.sqrt(a));
-            ctx.lineTo(cx + scale, cy - sign * scale / Math.sqrt(a));
-            ctx.stroke();
-          }
-          ctx.setLineDash([]);
-        } else {
-          // x²/2c − a y²/2c = ±1
-          // 양수 c: x² − a y² = 2c (좌우 가지)
-          // 음수 c: −x² + a y² = −2c → 위아래 가지
-          ctx.beginPath();
-          let started = false;
-          for (let t = -1.5; t <= 1.5; t += 0.04) {
-            if (c > 0) {
-              const x2 = 2*c + a*t*t;
-              if (x2 < 0) continue;
-              const x = Math.sqrt(x2);
-              for (const sx of [1, -1]) {
-                const px = cx + sx * x * scale * 0.6;
-                const py = cy - t * scale;
-                if (Math.abs(px-cx) > scale || Math.abs(py-cy) > scale) continue;
-                if (!started) { ctx.moveTo(px, py); started = true; } else { ctx.lineTo(px, py); }
-              }
-            } else {
-              const y2 = (-2*c + t*t) / a;
-              if (y2 < 0) continue;
-              const y = Math.sqrt(y2);
-              for (const sy of [1, -1]) {
-                const px = cx + t * scale;
-                const py = cy - sy * y * scale * 0.6;
-                if (Math.abs(px-cx) > scale || Math.abs(py-cy) > scale) continue;
-                if (!started) { ctx.moveTo(px, py); started = true; } else { ctx.lineTo(px, py); }
-              }
-            }
-          }
-          ctx.stroke();
-        }
-      });
-    }
-    ctx.fillStyle = '#26221C';
-    ctx.beginPath(); ctx.arc(cx, cy, 3, 0, Math.PI*2); ctx.fill();
-    return { cx, cy, scale };
-  }
-
-  function drawTrail(ctx, geom, trail, color) {
-    ctx.strokeStyle = color + '70';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    trail.forEach((p, i) => {
-      const px = geom.cx + p.x * geom.scale;
-      const py = geom.cy - p.y * geom.scale;
-      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  function render() {
+    const ids = ['lr1','lr2','lr3','lr4','lr5'];
+    const xs = ids.map(id => parseFloat(document.getElementById(id).value) / 10);
+    xs.forEach((v, i) => {
+      const lab = document.getElementById('ll' + (i+1));
+      lab.textContent = (v >= 0 ? '+' : '') + v.toFixed(1);
     });
-    ctx.stroke();
-    trail.forEach((p, i) => {
-      const px = geom.cx + p.x * geom.scale;
-      const py = geom.cy - p.y * geom.scale;
-      const isLast = i === trail.length - 1;
-      ctx.fillStyle = isLast ? color : color + '90';
-      ctx.beginPath(); ctx.arc(px, py, isLast ? 4.5 : 2.5, 0, Math.PI*2); ctx.fill();
+    const n = lseNaive(xs);
+    const s = lseStable(xs);
+    const body = document.getElementById('lseBody');
+    let html = '';
+    xs.forEach((v, i) => {
+      html += `<tr><td>x_${i+1} = ${v.toFixed(2)}</td><td colspan="2"></td></tr>`;
     });
-    // 시작점 라벨
-    if (trail.length > 0) {
-      ctx.fillStyle = '#26221C';
-      ctx.font = '11px "Spline Sans Mono", monospace';
-      const px = geom.cx + trail[0].x * geom.scale;
-      const py = geom.cy - trail[0].y * geom.scale;
-      ctx.fillText('x₀', px + 6, py - 6);
-    }
+    html += `<tr style="border-top:2px solid var(--line)"><td><b>결과</b></td><td>${fmt(n)}</td><td>${fmt(s)}</td></tr>`;
+    body.innerHTML = html;
   }
-
-  function run() {
-    runId++;
-    const myId = runId;
-    const a = parseFloat(document.getElementById('hnA').value) / 10;
-    const lr = parseFloat(document.getElementById('hnLR').value) / 100;
-    document.getElementById('hnAspect').textContent = a.toFixed(1);
-    document.getElementById('hnLRLab').textContent = lr.toFixed(2);
-
-    const gd = setupOne('hnGd');
-    const nt = setupOne('hnNt');
-
-    const start = { x: -0.85, y: 0.3 / Math.max(a, 1) };
-
-    let gdTrail = [{ ...start }];
-    let ntTrail = [{ ...start }];
-    let gdSteps = 0, ntSteps = 0;
-    let gdDone = false, ntDone = false;
-
-    function tick() {
-      if (myId !== runId) return;
-
-      if (!gdDone) {
-        const last = gdTrail[gdTrail.length-1];
-        const [gx, gy] = gradFn(last.x, last.y, a);
-        const nx = last.x - lr * gx;
-        const ny = last.y - lr * gy;
-        const dist = Math.hypot(nx, ny);
-        if (!isFinite(dist) || dist > 50) {
-          gdDone = true;
-          document.getElementById('hnGdStat').textContent = '발산';
-        } else {
-          gdTrail.push({ x: nx, y: ny });
-          gdSteps++;
-          if (Math.hypot(gx, gy) < 0.005 && gdSteps > 1) {
-            gdDone = true;
-            document.getElementById('hnGdStat').textContent = scope === 'saddle' ? '안장점 도달' : '수렴';
-          }
-          if (gdSteps > 300) {
-            gdDone = true;
-            document.getElementById('hnGdStat').textContent = '>300';
-          }
-        }
-        document.getElementById('hnGdSteps').textContent = gdSteps;
-        const lastG = gradFn(gdTrail[gdTrail.length-1].x, gdTrail[gdTrail.length-1].y, a);
-        document.getElementById('hnGdGn').textContent = isFinite(Math.hypot(lastG[0], lastG[1])) ? Math.hypot(lastG[0], lastG[1]).toFixed(3) : '∞';
-      }
-
-      if (!ntDone) {
-        const last = ntTrail[ntTrail.length-1];
-        const [gx, gy] = gradFn(last.x, last.y, a);
-        const H = hessFn(a);
-        const Hinv = invHess2x2(H);
-        if (!Hinv) {
-          ntDone = true;
-          document.getElementById('hnNtStat').textContent = 'H 특이';
-        } else {
-          // 뉴턴 스텝을 작게 분할해서 보여주기 (시각화용 — 사실 1스텝에 끝나지만)
-          const dx = -(Hinv[0][0]*gx + Hinv[0][1]*gy);
-          const dy = -(Hinv[1][0]*gx + Hinv[1][1]*gy);
-          const subSteps = 6;
-          if (!ntDone) {
-            const t = Math.min(1, (ntSteps % subSteps + 1) / subSteps);
-            const nx = last.x + dx * t;
-            const ny = last.y + dy * t;
-            ntTrail[ntTrail.length-1] = ntTrail[ntTrail.length-1]; // 유지
-            // 보간 진행 시 trail 끝을 이동
-            const baseTrail = ntTrail.slice(0, ntTrail.length - (ntSteps % subSteps > 0 ? 1 : 0));
-            // 깔끔하게: subSteps마다 하나씩 추가
-            if (ntSteps % subSteps === subSteps - 1 || subSteps === 1) {
-              ntTrail.push({ x: last.x + dx, y: last.y + dy });
-            } else {
-              // 마지막 점만 갱신
-              if (ntTrail.length > baseTrail.length) {
-                ntTrail[ntTrail.length-1] = { x: nx, y: ny };
-              } else {
-                ntTrail.push({ x: nx, y: ny });
-              }
-            }
-          }
-          ntSteps++;
-          const trueDist = Math.hypot(dx, dy);
-          if (trueDist < 0.005 || ntSteps > 60) {
-            ntDone = true;
-            const finalG = gradFn(ntTrail[ntTrail.length-1].x, ntTrail[ntTrail.length-1].y, a);
-            const eig = scope === 'bowl' ? '+,+' : '+,−';
-            document.getElementById('hnNtStat').textContent = scope === 'saddle' ? '안장점 정지' : '한 번에 수렴';
-            document.getElementById('hnNtGn').textContent = Math.hypot(finalG[0], finalG[1]).toFixed(3);
-          }
-        }
-        document.getElementById('hnNtSteps').textContent = Math.floor(ntSteps / 6);
-      }
-
-      // redraw
-      let geom1 = drawContours(gd.ctx, gd.w, gd.h, a);
-      drawTrail(gd.ctx, geom1, gdTrail, '#C0492E');
-      let geom2 = drawContours(nt.ctx, nt.w, nt.h, a);
-      drawTrail(nt.ctx, geom2, ntTrail, '#2D5B7A');
-
-      if (!gdDone || !ntDone) setTimeout(tick, 50);
-    }
-    document.getElementById('hnGdStat').textContent = '진행';
-    document.getElementById('hnNtStat').textContent = '진행';
-    tick();
-  }
-
   window.addEventListener('load', () => {
     buildNav('04');
-    document.getElementById('hnA').addEventListener('input', () => {
-      document.getElementById('hnAspect').textContent = (parseFloat(document.getElementById('hnA').value) / 10).toFixed(1);
-    });
-    document.getElementById('hnLR').addEventListener('input', () => {
-      document.getElementById('hnLRLab').textContent = (parseFloat(document.getElementById('hnLR').value) / 100).toFixed(2);
-    });
-    document.getElementById('hnRun').addEventListener('click', run);
-    document.querySelectorAll('.scope .btn').forEach(b => {
-      b.addEventListener('click', () => {
-        document.querySelectorAll('.scope .btn').forEach(x => x.classList.remove('on'));
-        b.classList.add('on');
-        scope = b.dataset.scope;
-        run();
+    ['lr1','lr2','lr3','lr4','lr5'].forEach(id =>
+      document.getElementById(id).addEventListener('input', render));
+    document.getElementById('lBig').addEventListener('click', () => {
+      [['lr1',1200],['lr2',1100],['lr3',1000],['lr4',1100],['lr5',1200]].forEach(([id,v]) => {
+        document.getElementById(id).value = v;
       });
+      render();
     });
-    window.addEventListener('resize', run);
-    setTimeout(run, 100);
+    document.getElementById('lSmall').addEventListener('click', () => {
+      [['lr1',-1200],['lr2',-1100],['lr3',-1000],['lr4',-1100],['lr5',-1200]].forEach(([id,v]) => {
+        document.getElementById(id).value = v;
+      });
+      render();
+    });
+    document.getElementById('lReset').addEventListener('click', () => {
+      [['lr1',20],['lr2',10],['lr3',0],['lr4',-10],['lr5',-20]].forEach(([id,v]) => {
+        document.getElementById(id).value = v;
+      });
+      render();
+    });
+    render();
     if (window.renderMathInElement) {
       renderMathInElement(document.body, {
         delimiters: [

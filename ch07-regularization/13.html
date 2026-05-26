@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sub 13 · 드롭아웃의 앙상블 해석 · Ch.07</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .deriv { max-width: var(--measure); margin: 1.4rem auto; padding: 1.1rem 1.4rem; background: var(--paper-2); border: 1px solid var(--line-soft); border-radius: 9px; }
+  .deriv .lbl { font-family: var(--mono); font-size: .7rem; letter-spacing: .12em; color: var(--style); margin-bottom: .35rem; }
+  .deriv .why { font-size: .88rem; color: var(--ink-soft); line-height: 1.6; margin-top: .35rem; }
+  .ens-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: .4rem; max-width: var(--measure); margin: 1.4rem auto; padding: 0 1.4rem; }
+  .ens-cell { aspect-ratio: 1; border-radius: 6px; background: var(--paper-2); border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: .56rem; color: var(--ink-faint); position: relative; }
+  .ens-cell.on { background: var(--ink); color: var(--paper-2); border-color: var(--ink); }
+  .ens-cell.off { background: var(--paper-sink); color: var(--ink-faint); }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 13 · 시험 4순위 — 2^n 부분 모형의 평균</span>
+      <h1>드롭아웃의 <span class="t-style">앙상블 해석</span></h1>
+      <p class="lede">드롭아웃은 2^n개의 부분 신경망을 동시에 훈련하는 것과 같다. 추론은 그들의 기하 평균. 배깅과의 닮음과 차이.</p>
+    </header>
+
+    <div class="prose">
+      <p>12sub에서 드롭아웃의 절차와 직관을 봤다. 이 sub에서는 드롭아웃을 더 깊게 해석한다 — <strong>앙상블(ensemble) 시점</strong>. 이 시점에서 드롭아웃은 단순한 노이즈 주입이 아니라, 지수적으로 많은 부분 모형을 동시에 훈련하는 효율적 장치가 된다.</p>
+
+      <p>이 해석은 7장에서 가장 우아한 결과 중 하나이며, 시험에서 "드롭아웃과 앙상블 학습의 관계를 설명하시오" 형태로 자주 나온다.</p>
+
+      <h2>1. 가능한 부분 신경망의 수 — 2^n</h2>
+
+      <p>$n$개의 뉴런을 가진 신경망에서 드롭아웃은 각 뉴런을 독립적으로 비활성화한다. 따라서 가능한 활성/비활성 조합은 $2^n$가지다. 각 조합은 서로 다른 "부분 신경망(sub-network)"이다.</p>
+
+      <p>구체적인 예로 $n = 100$개 뉴런이면 $2^{100} \approx 10^{30}$개의 부분 신경망이 존재한다. 우주의 모든 원자 수보다 많다. 한 모형 안에 $10^{30}$개의 다른 모형이 잠재해 있다. 드롭아웃 학습은 매 미니배치마다 이 중 하나를 무작위로 뽑아 그 부분 신경망을 학습한다.</p>
+
+      <div class="ens-grid">
+        <div class="ens-cell on">m1</div>
+        <div class="ens-cell on">m2</div>
+        <div class="ens-cell off">m3</div>
+        <div class="ens-cell on">m4</div>
+        <div class="ens-cell off">m5</div>
+        <div class="ens-cell on">m6</div>
+        <div class="ens-cell on">m7</div>
+        <div class="ens-cell off">m8</div>
+      </div>
+
+      <p>위 그림은 8개 뉴런의 한 가지 마스크 조합을 보여 준다. 한 학습 스텝마다 이 마스크가 새로 뽑힌다. 즉 매 스텝마다 다른 부분 신경망이 학습되는 셈이다.</p>
+
+      <h2>2. 핵심 통찰 — 가중치 공유</h2>
+
+      <p>"$2^n$개의 부분 신경망을 학습한다"는 말이 진짜 의미를 가지려면 한 가지 더 봐야 한다. 이 부분 신경망들은 <strong>가중치를 공유한다</strong>. 한 마스크에서 뉴런 5번이 활성이고 다른 마스크에서도 활성이면, 그 뉴런의 가중치는 두 부분 신경망에서 같다.</p>
+
+      <p>이게 드롭아웃이 배깅(bagging) 같은 일반 앙상블과 다른 점이다.</p>
+
+      <ul>
+        <li><strong>배깅</strong>: $T$개의 모형을 각각 독립적으로 학습. 가중치 공유 없음. $T$개 모형의 파라미터 합계는 단일 모형의 $T$배.</li>
+        <li><strong>드롭아웃</strong>: $2^n$개의 부분 모형이 모두 같은 가중치 풀(weight pool)에서 가중치를 뽑아 씀. 파라미터 수는 단일 모형과 같음.</li>
+      </ul>
+
+      <p>드롭아웃은 메모리·계산 효율 면에서 배깅보다 훨씬 우월하다. $2^n$개 모형을 명시적으로 학습할 수 없지만, 가중치 공유 덕분에 한 모형의 가중치만 갱신하면 모든 부분 신경망이 동시에 갱신된다.</p>
+
+      <div class="analogy">
+        <b>한 명의 연주자가 같은 악기로 1만 가지 곡을 연습</b>하는 것과, <b>1만 명의 연주자가 각자 다른 곡을 연습</b>하는 것의 차이다. 후자(배깅)는 더 다양한 표현이 가능하지만 자원이 1만 배 든다. 전자(드롭아웃)는 한 연주자의 손이 여러 곡에 모두 능숙해져야 하는 제약 안에서 학습하지만, 자원은 한 명분. 효율은 압도적이다.
+      </div>
+
+      <h2>3. 추론 시 평균 예측 — 기하 평균 근사</h2>
+
+      <p>이제 가장 우아한 부분이다. 학습이 끝나면 우리는 사실 $2^n$개의 부분 모형을 학습한 것이다. 추론은 이들의 평균이어야 한다 — 어느 한 부분 모형이 아니라 모두의 의견을 묻는 것이 앙상블의 원리다. 정확한 평균을 구하려면 $2^n$번 forward pass를 해야 한다 — 불가능.</p>
+
+      <p>대신 드롭아웃은 한 번의 forward pass(모든 뉴런 활성, 가중치에 $(1-p)$ 곱)로 이 평균을 <strong>근사</strong>한다. 그 근사가 어떻게 정당화되는가? 부분 모형들의 <em>기하 평균(geometric mean)</em>을 사용한다는 점이 핵심이다.</p>
+
+      <div class="deriv">
+        <span class="lbl">유도 1 · 기하 평균의 근사</span>
+        <p class="why">$\mu \in \{0,1\}^n$를 마스크라 하자. 부분 모형의 예측 분포가 $p(\mathrm{y}|x, \mu)$일 때, 모든 마스크의 기하 평균은:</p>
+        <div class="math-block">$$ p_{\mathrm{geo}}(\mathrm{y}|x) \;=\; \frac{1}{Z}\,\prod_\mu p(\mathrm{y}|x, \mu)^{1/2^n} $$</div>
+        <p class="why">여기서 $Z$는 정규화 상수. 소프트맥스 출력 + 로그 우도의 경우, 위 기하 평균은 "각 부분 모형의 로짓을 평균하고 다시 소프트맥스 한 것"과 같다. 그리고 선형 모형에서 그 평균 로짓은 "모든 가중치에 $(1-p)$를 곱한 단일 모형의 로짓"과 정확히 일치한다.</p>
+      </div>
+
+      <p>이 등가성은 선형 모형에서 정확하고, 비선형 신경망에서는 근사다. 그러나 실험적으로 이 근사가 매우 잘 작동한다 — ImageNet 분류기에서 명시적 평균($2^n$ 대신 1000번 정도 샘플링 후 산술 평균)과 거의 같은 정확도를 낸다.</p>
+
+      <h2>4. 산술 평균 vs 기하 평균 — 왜 후자인가</h2>
+
+      <p>왜 산술 평균이 아니라 기하 평균인가? 답은 분포의 정규화에 있다.</p>
+
+      <ul>
+        <li><strong>산술 평균</strong>: $\bar p = \frac{1}{T}\sum_t p(\mathrm{y}|x, \mu_t)$. 직관적이지만, 단일 모형의 가중치 스케일링으로 효율적으로 계산하기 어려움.</li>
+        <li><strong>기하 평균</strong>: $\bar p \propto \prod_t p(\mathrm{y}|x, \mu_t)^{1/T}$. 로그를 취하면 산술 평균과 비슷한 형태가 되어, 로짓을 평균한 후 소프트맥스를 다시 적용하는 것과 같다 — 가중치 스케일링으로 효율적 계산 가능.</li>
+      </ul>
+
+      <p>실전에서 두 평균은 비슷한 예측을 만든다. 기하 평균이 더 보수적이다(낮은 확률 클래스를 더 강하게 누름). 분류 정확도 측면에서 큰 차이는 없다. 드롭아웃이 기하 평균을 쓰는 가장 큰 이유는 효율 — 단 한 번의 forward pass로 평균을 근사할 수 있다는 점이다.</p>
+
+      <h2>5. 배깅과의 비교 — 한 표로</h2>
+
+      <table class="symbols">
+        <tr><td><b>구성 단위</b></td><td>배깅: $T$개 독립 모형 / 드롭아웃: $2^n$개 부분 모형</td></tr>
+        <tr><td><b>가중치</b></td><td>배깅: 모형별 독립 / 드롭아웃: 모든 부분 모형이 공유</td></tr>
+        <tr><td><b>학습</b></td><td>배깅: 각 모형을 부트스트랩 데이터로 / 드롭아웃: 매 미니배치에 무작위 마스크</td></tr>
+        <tr><td><b>추론</b></td><td>배깅: $T$개 모형의 산술 평균 / 드롭아웃: 단일 forward pass로 기하 평균 근사</td></tr>
+        <tr><td><b>메모리</b></td><td>배깅: 단일의 $T$배 / 드롭아웃: 단일과 같음</td></tr>
+        <tr><td><b>계산</b></td><td>배깅: 추론 시 $T$배 / 드롭아웃: 추론 시 같음(스케일링만)</td></tr>
+      </table>
+
+      <p>배깅이 다양성(diversity) 측면에서 우월하다 — 독립 모형은 서로 매우 다른 가설을 학습할 수 있다. 드롭아웃은 가중치 공유 때문에 부분 모형들이 서로 너무 비슷하다(어떤 마스크든 같은 가중치 풀에서 뽑힘). 그래서 드롭아웃의 앙상블 효과는 배깅보다 약하다 — 하지만 비용이 압도적으로 낮다.</p>
+
+      <h2>6. 드롭아웃과 가중치 노이즈의 다른 시점 연결</h2>
+
+      <p>드롭아웃을 가중치 측면에서 다시 보자. $h_i = \sum_j w_{ij}\, x_j$일 때 드롭아웃은 $h_i$의 일부 항을 $(m_j/(1-p))\, w_{ij}\, x_j$로 만든다. 이를 가중치 측면에서 다시 쓰면 $w_{ij} \to (m_j/(1-p))\, w_{ij}$ — 즉 가중치 자체에 무작위 곱셈 노이즈를 가하는 것과 같다.</p>
+
+      <p>이 시점에서 드롭아웃은 8sub의 가중치 노이즈와 사촌 관계가 된다. 차이는 노이즈의 분포 — 가우시안 노이즈 대신 베르누이 곱셈 노이즈. 선형 모형에서 두 노이즈는 모두 L2와 유사한 효과를 만들고, 비선형에서는 약간 다른 방향으로 일반화를 돕는다.</p>
+
+      <h2>7. 한 줄 정리</h2>
+
+      <p>드롭아웃의 가장 깊은 해석은 <strong>$2^n$개의 부분 신경망이 가중치를 공유하며 동시에 학습되는 효율적 앙상블</strong>이다. 추론 시 가중치 스케일링은 이 부분 모형들의 기하 평균을 한 번의 forward pass로 근사한다. 배깅과 비교하면 다양성은 약하지만 비용이 압도적으로 낮다. 시험에서 "드롭아웃은 어떻게 앙상블 학습인가"를 묻는다면 (1) $2^n$ 부분 모형, (2) 가중치 공유, (3) 기하 평균 근사 — 이 세 항목을 답하면 된다.</p>
+
+      <p>다음 sub에서는 7장의 마지막 주제 — 적대적 훈련(adversarial training)을 본다. 사람 눈에는 같은 입력이 모형에는 다른 결정을 만든다는 충격적 사실, 그리고 그것을 정칙화로 잡는 방법이 마지막 sub의 주제다. 이건 P1 FGSM 발표와 직접 연결된다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script src="widgets.js"></script>
+<script>
+window.addEventListener('load', () => {
+  CH7.buildNav('13');
+  if (window.renderMathInElement) {
+    renderMathInElement(document.body, {
+      delimiters: [
+        { left: '$$', right: '$$', display: true },
+        { left: '$', right: '$', display: false },
+      ],
+      throwOnError: false,
+    });
+  }
+});
+</script>
+</body>
+</html>

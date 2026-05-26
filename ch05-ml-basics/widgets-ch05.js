@@ -1,23 +1,31 @@
 /* ============================================================
-   Ch.5 Machine Learning Basics — 챕터 전용 위젯
+   Ch.5 Machine Learning Basics — 챕터 전용 위젯 (DEEP REWRITE)
    디자인 시스템은 ../assets/site.css 와 ../assets/widgets.js 의
-   토큰/유틸리티를 그대로 따른다. 여기서는 Ch.5 고유 위젯과
-   NST.CHAPTERS 재정의 (이 챕터 안의 sub-chapter 목차)만 추가한다.
+   토큰/유틸리티를 그대로 따른다. Ch.5 sub-chapter 14개에 맞춰
+   NST.CHAPTERS 재정의 + 챕터별 위젯을 모아 둔다.
    ============================================================ */
 (function () {
   'use strict';
   if (!window.NST) window.NST = {};
   const NST = window.NST;
 
-  // Ch.5 sub-chapter 목차로 NST.CHAPTERS 를 override
+  // ---------- Sub-chapter 목차 (15개) ----------
   NST.CHAPTERS = [
-    { no: '01', t: '학습 알고리즘의 정의 (T·P·E)', f: '01.html' },
-    { no: '02', t: '용량·과적합·과소적합', f: '02.html' },
-    { no: '03', t: '편향-분산 분해', f: '03.html' },
-    { no: '04', t: '최대우도 추정 (MLE)', f: '04.html' },
-    { no: '05', t: '베이지안 추정과 MAP', f: '05.html' },
-    { no: '06', t: '정칙화 — 가중치 감쇠', f: '06.html' },
-    { no: '07', t: '시험 대비 — Q&A · 체크리스트', f: '07.html' },
+    { no: '01', t: '학습 알고리즘이란 — T·P·E 삼각형', f: '01.html' },
+    { no: '02', t: '학습의 세 갈래 — 지도·비지도·강화', f: '02.html' },
+    { no: '03', t: '용량과 가설 공간', f: '03.html' },
+    { no: '04', t: '과적합과 과소적합', f: '04.html' },
+    { no: '05', t: '편향-분산 분해', f: '05.html' },
+    { no: '06', t: '학습 곡선', f: '06.html' },
+    { no: '07', t: '검증·테스트 분할과 교차검증', f: '07.html' },
+    { no: '08', t: '손실 함수와 경험적 위험 (ERM)', f: '08.html' },
+    { no: '09', t: '최대우도 추정 (MLE)', f: '09.html' },
+    { no: '10', t: 'MLE = 교차 엔트로피', f: '10.html' },
+    { no: '11', t: '베이지안 추정 — 분포로 답하기', f: '11.html' },
+    { no: '12', t: 'MAP 추정 — 정칙화로 가는 다리', f: '12.html' },
+    { no: '13', t: '정칙화 도입 — 가우시안 사전 = L2', f: '13.html' },
+    { no: '14', t: '그라디언트 학습의 한계 — Ch.8 예고', f: '14.html' },
+    { no: '15', t: '시험 대비 — Q&A 20선', f: '15.html' },
   ];
 
   // buildNav 를 ch05 전용으로 재정의 (상위 home 링크가 ch05 표지)
@@ -26,7 +34,7 @@
     const tb = document.querySelector('.topbar');
     if (tb) tb.innerHTML =
       `<a class="home" href="index.html">← Ch.5 기계학습 기초</a>` +
-      `<span class="ch-mini">SECTION ${currentNo} / 07</span>`;
+      `<span class="ch-mini">SECTION ${currentNo} / 15</span>`;
     const ol = document.querySelector('.ch-nav ol');
     if (ol) ol.innerHTML = NST.CHAPTERS.map(c =>
       `<li><a href="${c.f}" ${c.no === currentNo ? 'class="current"' : ''}>${c.t}</a></li>`).join('');
@@ -44,26 +52,14 @@
   // ---------------- 유틸 ----------------
   function clamp(x, a, b) { return Math.min(b, Math.max(a, x)); }
   function lerp(a, b, t) { return a + (b - a) * t; }
-  function gaussian(m, s) {
-    // Box-Muller
-    const u = 1 - Math.random(), v = Math.random();
-    return m + s * Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
-  }
-  // 결정적 시드 RNG (위젯 재현성)
-  function seeded(seed) {
-    let s = seed >>> 0;
-    return function () { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
-  }
-  function seededGaussian(rng) {
-    const u = 1 - rng(), v = rng();
-    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
-  }
+  function seeded(seed) { let s = seed >>> 0; return function () { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
+  function seededGaussian(rng) { const u = 1 - rng(), v = rng(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
 
-  // 색
   const css = getComputedStyle(document.documentElement);
   const C = {
     paper: css.getPropertyValue('--paper').trim() || '#FAF7F0',
     paper2: css.getPropertyValue('--paper-2').trim() || '#F3EEE3',
+    paperSink: css.getPropertyValue('--paper-sink').trim() || '#EDE6D7',
     ink: css.getPropertyValue('--ink').trim() || '#26221C',
     inkSoft: css.getPropertyValue('--ink-soft').trim() || '#5A5247',
     inkFaint: css.getPropertyValue('--ink-faint').trim() || '#8E8576',
@@ -74,793 +70,1028 @@
     synth: css.getPropertyValue('--synth').trim() || '#A47B2E',
   };
 
-  // 캔버스용 축 그리기 헬퍼
+  // 캔버스 축 그리기 헬퍼
   function drawAxes(ctx, W, H, opts) {
     opts = opts || {};
-    const padL = opts.padL || 38, padR = opts.padR || 14, padT = opts.padT || 14, padB = opts.padB || 28;
+    const padL = opts.padL || 42, padR = opts.padR || 14, padT = opts.padT || 16, padB = opts.padB || 30;
     ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
-    // grid
     ctx.strokeStyle = 'rgba(38,34,28,.06)'; ctx.lineWidth = 1;
     const innerW = W - padL - padR, innerH = H - padT - padB;
-    for (let i = 0; i <= 4; i++) {
-      const y = padT + innerH * i / 4;
-      ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(W - padR, y); ctx.stroke();
-    }
-    for (let i = 0; i <= 5; i++) {
-      const x = padL + innerW * i / 5;
-      ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, H - padB); ctx.stroke();
-    }
-    // axes
+    for (let i = 0; i <= 4; i++) { const y = padT + innerH * i / 4; ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(W - padR, y); ctx.stroke(); }
+    for (let i = 0; i <= 5; i++) { const x = padL + innerW * i / 5; ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, H - padB); ctx.stroke(); }
     ctx.strokeStyle = 'rgba(38,34,28,.35)'; ctx.lineWidth = 1.2;
     ctx.beginPath(); ctx.moveTo(padL, padT); ctx.lineTo(padL, H - padB); ctx.lineTo(W - padR, H - padB); ctx.stroke();
-    // labels
     ctx.fillStyle = C.inkFaint; ctx.font = '11px "Spline Sans Mono", monospace';
     if (opts.xLabel) { ctx.textAlign = 'right'; ctx.fillText(opts.xLabel, W - padR, H - 8); }
-    if (opts.yLabel) { ctx.save(); ctx.translate(10, padT + 6); ctx.rotate(-Math.PI / 2); ctx.textAlign = 'right'; ctx.fillText(opts.yLabel, 0, 0); ctx.restore(); }
+    if (opts.yLabel) { ctx.save(); ctx.translate(12, padT + 6); ctx.rotate(-Math.PI / 2); ctx.textAlign = 'right'; ctx.fillText(opts.yLabel, 0, 0); ctx.restore(); }
     return { padL, padR, padT, padB, innerW, innerH };
   }
 
-  /* ============================================================
-     CH05 위젯 01 — 편향-분산 트레이드오프
-     슬라이더: 모델 복잡도 (다항식 차수 1..15)
-     출력: 편향² · 분산 · 잡음(상수) · 총 오차 막대 + 곡선
-     ============================================================ */
-  NST.biasVariance = function (root) {
-    let degree = 5;
-    const MAX_DEG = 15;
-    // 모형: 편향² = (1/d)^1.3 처럼 감소, 분산 = 0.04 * d 처럼 증가, 잡음 = 0.20
-    function decompose(d) {
-      const bias2 = 0.85 / Math.pow(d, 1.05);
-      const variance = 0.02 + 0.015 * Math.pow(d, 1.25);
-      const noise = 0.20;
-      return { bias2, variance, noise, total: bias2 + variance + noise };
-    }
+  function mkCanvas(w, h) {
+    const cv = document.createElement('canvas');
+    const dpr = Math.min(devicePixelRatio || 1, 2);
+    cv.width = w * dpr; cv.height = h * dpr; cv.style.width = w + 'px'; cv.style.height = h + 'px';
+    const ctx = cv.getContext('2d'); ctx.scale(dpr, dpr);
+    return { cv, ctx };
+  }
 
-    root.innerHTML = `
-      <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:0;align-items:stretch">
-        <div style="padding:1.2rem 1.1rem 0.6rem"><canvas class="bv-curve" width="520" height="320"></canvas></div>
-        <div style="padding:1.2rem 1.1rem 0.6rem;border-left:1px solid var(--line-soft)">
-          <div class="bv-read" style="font-family:var(--mono);font-size:.78rem;color:var(--ink-soft);line-height:1.6"></div>
-          <canvas class="bv-bars" width="380" height="240" style="margin-top:0.7rem;width:100%;max-width:380px"></canvas>
-        </div>
-      </div>`;
-
-    const curveCv = root.querySelector('.bv-curve'); curveCv.style.maxWidth = '100%'; curveCv.style.height = 'auto';
-    const barsCv = root.querySelector('.bv-bars');
-    const readEl = root.querySelector('.bv-read');
-
-    function drawCurve() {
-      const W = curveCv.width, H = curveCv.height;
-      const ctx = curveCv.getContext('2d');
-      const ax = drawAxes(ctx, W, H, { xLabel: '모델 복잡도 d →', yLabel: '오차' });
-      // 곡선들
-      function plot(fn, col, dashed) {
-        ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.setLineDash(dashed ? [5, 4] : []);
-        ctx.beginPath();
-        for (let i = 0; i <= 100; i++) {
-          const d = 1 + (MAX_DEG - 1) * i / 100;
-          const y = fn(d);
-          const px = ax.padL + ax.innerW * (i / 100);
-          const py = ax.padT + ax.innerH * (1 - clamp(y / 1.4, 0, 1));
-          i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
-        }
-        ctx.stroke();
-        ctx.setLineDash([]);
-      }
-      plot(d => decompose(d).bias2, C.structure);
-      plot(d => decompose(d).variance, C.style);
-      plot(d => decompose(d).total, C.ink, false);
-      plot(d => decompose(d).noise, C.inkFaint, true);
-
-      // 현재 위치 수직선 + 표식
-      const frac = (degree - 1) / (MAX_DEG - 1);
-      const px = ax.padL + ax.innerW * frac;
-      ctx.strokeStyle = 'rgba(38,34,28,.35)'; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
-      ctx.beginPath(); ctx.moveTo(px, ax.padT); ctx.lineTo(px, H - ax.padB); ctx.stroke();
-      ctx.setLineDash([]);
-      const d0 = decompose(degree);
-      ctx.fillStyle = C.ink;
-      const py = ax.padT + ax.innerH * (1 - clamp(d0.total / 1.4, 0, 1));
-      ctx.beginPath(); ctx.arc(px, py, 4.5, 0, 7); ctx.fill();
-
-      // 범례
-      ctx.font = '11px "Spline Sans Mono", monospace';
-      ctx.textAlign = 'left';
-      const items = [
-        ['편향²', C.structure], ['분산', C.style], ['총 오차', C.ink], ['잡음 (환원불가)', C.inkFaint],
-      ];
-      let lx = ax.padL + 8, ly = ax.padT + 14;
-      items.forEach(([lab, col]) => {
-        ctx.fillStyle = col; ctx.fillRect(lx, ly - 8, 12, 3); ctx.fillStyle = C.inkSoft;
-        ctx.fillText(lab, lx + 18, ly);
-        ly += 16;
-      });
-
-      // 최적 표시
-      let best = 1, bestV = Infinity;
-      for (let d = 1; d <= MAX_DEG; d += 0.1) { const v = decompose(d).total; if (v < bestV) { bestV = v; best = d; } }
-      const bx = ax.padL + ax.innerW * ((best - 1) / (MAX_DEG - 1));
-      const by = ax.padT + ax.innerH * (1 - clamp(bestV / 1.4, 0, 1));
-      ctx.strokeStyle = C.synth; ctx.setLineDash([2, 3]); ctx.beginPath(); ctx.arc(bx, by, 9, 0, 7); ctx.stroke();
-      ctx.setLineDash([]); ctx.fillStyle = C.synth;
-      ctx.fillText(`최적 d≈${best.toFixed(1)}`, bx + 12, by - 6);
-    }
-
-    function drawBars() {
-      const W = barsCv.width, H = barsCv.height;
-      const ctx = barsCv.getContext('2d');
-      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
-      const d0 = decompose(degree);
-      const items = [
-        ['편향²', d0.bias2, C.structure],
-        ['분산', d0.variance, C.style],
-        ['잡음', d0.noise, C.inkFaint],
-        ['총합 = E', d0.total, C.ink],
-      ];
-      const maxV = 1.3;
-      const padL = 70, padR = 20, padT = 22, padB = 18;
-      const innerW = W - padL - padR, innerH = H - padT - padB;
-      const bh = (innerH - 12) / items.length;
-      ctx.font = '11px "Spline Sans Mono", monospace';
-      items.forEach((it, i) => {
-        const [lab, v, col] = it;
-        const y = padT + i * (bh + 4);
-        // 라벨
-        ctx.fillStyle = C.inkSoft; ctx.textAlign = 'right'; ctx.fillText(lab, padL - 6, y + bh / 2 + 4);
-        // 막대 배경
-        ctx.fillStyle = C.paper2; ctx.fillRect(padL, y, innerW, bh);
-        // 막대 값
-        ctx.fillStyle = col; const w = innerW * (v / maxV); ctx.fillRect(padL, y, w, bh);
-        // 수치
-        ctx.fillStyle = '#fff'; ctx.textAlign = 'left'; ctx.fillText(v.toFixed(3), padL + 6, y + bh / 2 + 4);
-      });
-      ctx.fillStyle = C.inkFaint; ctx.textAlign = 'left'; ctx.fillText('E[(y−ŷ)²] 분해', padL, 14);
-    }
-
-    function update() {
-      drawCurve(); drawBars();
-      const d0 = decompose(degree);
-      const judg = degree <= 2 ? '과소적합 — 모델이 단순해 편향이 큼' :
-                   degree >= 12 ? '과적합 — 분산이 폭증, 잡음을 외움' :
-                   '균형대 — 편향과 분산이 비슷한 영역';
-      readEl.innerHTML = `
-        <div style="font-size:.92rem;color:var(--ink)">d = <b>${degree}</b> · 총 오차 <b>${d0.total.toFixed(3)}</b></div>
-        <div style="margin-top:.35rem">${judg}</div>
-        <div style="margin-top:.6rem;color:var(--ink-faint)">
-          분해: <span style="color:${C.structure}">bias² ${d0.bias2.toFixed(3)}</span>
-          + <span style="color:${C.style}">var ${d0.variance.toFixed(3)}</span>
-          + <span>noise ${d0.noise.toFixed(2)}</span>
-        </div>`;
-    }
-
+  function makeControls(html) {
     const ctr = document.createElement('div'); ctr.className = 'widget-controls';
-    ctr.innerHTML = `
-      <div class="slider"><label>모델 복잡도 d <b class="dv">${degree}</b> / ${MAX_DEG}</label>
-        <input type="range" min="1" max="${MAX_DEG}" value="${degree}"></div>
-      <span style="font-size:.78rem;color:var(--ink-faint)">← 단순 (과소적합) · 복잡 (과적합) →</span>`;
-    root.appendChild(ctr);
-    const sl = ctr.querySelector('input'), dv = ctr.querySelector('.dv');
-    sl.addEventListener('input', () => { degree = +sl.value; dv.textContent = degree; update(); });
-    update();
-  };
+    ctr.innerHTML = html; return ctr;
+  }
 
   /* ============================================================
-     CH05 위젯 02 — 학습 곡선
-     슬라이더: 훈련 데이터 크기 m (5..500)
-     출력: 훈련 오차 ↑, 검증 오차 ↓, 일반화 격차
+     WIDGET 01 — T·P·E 삼각형 (sub-chapter 01)
+     세 꼭짓점을 호버하면 그 요소가 빠졌을 때 무엇이 모호해지는지.
      ============================================================ */
-  NST.learningCurve = function (root) {
-    let m = 30;
-    const MIN = 5, MAX = 500, NOISE = 0.18;
-    // 모형: 훈련 오차 = noise * (1 - exp(-m/40))  (작을 땐 외워서 0, 클수록 jitter 누적)
-    //       검증 오차 = noise + 0.7 * exp(-m / 90)
-    function err(m) {
-      const tr = NOISE * (1 - Math.exp(-m / 60)) + 0.02;
-      const va = NOISE + 0.85 * Math.exp(-m / 80);
-      return { tr, va, gap: va - tr };
-    }
+  NST.tpeTriangle = function (root) {
+    const W = 720, H = 360;
+    const { cv, ctx } = mkCanvas(W, H);
+    root.appendChild(cv);
 
-    root.innerHTML = `
-      <div style="padding:1.4rem 1.1rem 0.6rem">
-        <canvas class="lc-cv" width="780" height="320" style="max-width:100%;height:auto"></canvas>
-      </div>
-      <div class="lc-read" style="padding:0 1.2rem 0.8rem;font-family:var(--mono);font-size:.82rem;color:var(--ink-soft)"></div>`;
-    const cv = root.querySelector('.lc-cv');
-    const readEl = root.querySelector('.lc-read');
+    const verts = [
+      { x: 360, y: 60, label: 'T — 과업', desc: '무엇을 맞혀야 하는가. 분류·회귀·생성·번역·군집화 등.', miss: 'T가 없으면: 무엇을 잘하려는지 정의 불가. P·E를 정해도 방향이 없다.' },
+      { x: 130, y: 290, label: 'P — 성능척도', desc: '얼마나 잘했는지 재는 기준. 정확도·MSE·로그우도·BLEU 등.', miss: 'P가 없으면: 더 좋아졌는지 판단 불가. 학습=점수 최적화인데 점수가 없다.' },
+      { x: 590, y: 290, label: 'E — 경험', desc: '알고리즘이 접하는 데이터. 지도·비지도·강화의 형태.', miss: 'E가 없으면: 어디서 패턴을 추출할지 불명. T·P만으로는 학습 불가능.' },
+    ];
 
-    function draw() {
-      const W = cv.width, H = cv.height;
-      const ctx = cv.getContext('2d');
-      const ax = drawAxes(ctx, W, H, { xLabel: '훈련 데이터 크기 m →', yLabel: '오차' });
-      const xat = mm => ax.padL + ax.innerW * (mm - MIN) / (MAX - MIN);
-      const yat = e => ax.padT + ax.innerH * (1 - clamp(e / 1.1, 0, 1));
-      // 격차 영역 (훈련 ~ 검증 사이)
-      ctx.fillStyle = 'rgba(192,73,46,.10)';
+    let hov = -1;
+
+    function render() {
+      ctx.fillStyle = C.paper2; ctx.fillRect(0, 0, W, H);
+      // 삼각형 변
+      ctx.strokeStyle = C.inkFaint; ctx.lineWidth = 1.4;
       ctx.beginPath();
-      for (let i = 0; i <= 100; i++) { const mm = MIN + (MAX - MIN) * i / 100; ctx.lineTo(xat(mm), yat(err(mm).va)); }
-      for (let i = 100; i >= 0; i--) { const mm = MIN + (MAX - MIN) * i / 100; ctx.lineTo(xat(mm), yat(err(mm).tr)); }
-      ctx.closePath(); ctx.fill();
-      // 두 곡선
-      function plot(fn, col, label) {
-        ctx.strokeStyle = col; ctx.lineWidth = 2.2; ctx.beginPath();
-        for (let i = 0; i <= 100; i++) {
-          const mm = MIN + (MAX - MIN) * i / 100;
-          const px = xat(mm), py = yat(fn(mm));
-          i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
-        }
-        ctx.stroke();
-      }
-      plot(mm => err(mm).tr, C.structure);
-      plot(mm => err(mm).va, C.style);
-      // 베이즈 한계 (잡음)
-      ctx.strokeStyle = C.inkFaint; ctx.setLineDash([4, 4]); ctx.lineWidth = 1.4;
-      ctx.beginPath(); ctx.moveTo(ax.padL, yat(NOISE)); ctx.lineTo(W - ax.padR, yat(NOISE)); ctx.stroke();
-      ctx.setLineDash([]);
-      // 현재 위치
-      const e0 = err(m);
-      ctx.strokeStyle = 'rgba(38,34,28,.4)'; ctx.setLineDash([3, 3]);
-      ctx.beginPath(); ctx.moveTo(xat(m), ax.padT); ctx.lineTo(xat(m), H - ax.padB); ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.fillStyle = C.structure; ctx.beginPath(); ctx.arc(xat(m), yat(e0.tr), 4, 0, 7); ctx.fill();
-      ctx.fillStyle = C.style; ctx.beginPath(); ctx.arc(xat(m), yat(e0.va), 4, 0, 7); ctx.fill();
-      // 범례
-      ctx.font = '11px "Spline Sans Mono", monospace';
-      ctx.textAlign = 'left';
-      const items = [['훈련 오차', C.structure], ['검증 오차', C.style], ['베이즈 한계 (잡음)', C.inkFaint]];
-      let lx = W - ax.padR - 160, ly = ax.padT + 14;
-      items.forEach(([lab, col]) => {
-        ctx.fillStyle = col; ctx.fillRect(lx, ly - 7, 12, 3); ctx.fillStyle = C.inkSoft; ctx.fillText(lab, lx + 18, ly);
-        ly += 16;
+      ctx.moveTo(verts[0].x, verts[0].y);
+      ctx.lineTo(verts[1].x, verts[1].y);
+      ctx.lineTo(verts[2].x, verts[2].y);
+      ctx.closePath(); ctx.stroke();
+
+      // 변 라벨
+      ctx.fillStyle = C.inkSoft; ctx.font = '12px "Spline Sans Mono", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('— 채점 기준이 학습 방향을 정한다 —', 360, 180);
+
+      // 꼭짓점
+      const cols = [C.structure, C.style, C.synth];
+      verts.forEach((v, i) => {
+        ctx.fillStyle = hov === i ? cols[i] : '#fff';
+        ctx.strokeStyle = cols[i]; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(v.x, v.y, 30, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = hov === i ? '#fff' : cols[i];
+        ctx.font = '600 14px "Fraunces", serif'; ctx.textAlign = 'center';
+        ctx.fillText(v.label.split(' — ')[0], v.x, v.y + 5);
       });
-      // m 값 라벨
-      ctx.fillStyle = C.ink; ctx.font = '12px "Spline Sans Mono", monospace';
-      ctx.textAlign = 'center'; ctx.fillText('m=' + m, xat(m), ax.padT + 10);
-    }
 
-    function update() {
-      draw();
-      const e0 = err(m);
-      const phase = m < 20 ? '데이터 부족 — 격차 큼 (분산 지배)' :
-                    m > 250 ? '포화 영역 — 두 곡선이 잡음 한계로 수렴' :
-                    '진행 영역 — 격차가 빠르게 줄어듦';
-      readEl.innerHTML = `
-        m = <b style="color:var(--ink)">${m}</b> · 훈련 <b style="color:${C.structure}">${e0.tr.toFixed(3)}</b>
-        · 검증 <b style="color:${C.style}">${e0.va.toFixed(3)}</b>
-        · 격차 <b>${e0.gap.toFixed(3)}</b><br>
-        <span style="color:var(--ink-faint)">${phase}</span>`;
-    }
-
-    const ctr = document.createElement('div'); ctr.className = 'widget-controls';
-    ctr.innerHTML = `
-      <div class="slider"><label>훈련 데이터 크기 m <b class="mv">${m}</b></label>
-        <input type="range" min="${MIN}" max="${MAX}" value="${m}"></div>
-      <span style="font-size:.78rem;color:var(--ink-faint)">데이터가 늘수록 훈련↑, 검증↓ → 두 선이 가까워지며 잡음 한계로 수렴</span>`;
-    root.appendChild(ctr);
-    const sl = ctr.querySelector('input'), mv = ctr.querySelector('.mv');
-    sl.addEventListener('input', () => { m = +sl.value; mv.textContent = m; update(); });
-    update();
-  };
-
-  /* ============================================================
-     CH05 위젯 03 — MLE = NLL 최소화 동치
-     슬라이더: 정규분포 평균 μ (관측 데이터 고정)
-     출력: 우도 L(μ), 로그우도 ln L(μ), 음의 로그우도 -ln L(μ)
-     ============================================================ */
-  NST.mleNll = function (root) {
-    // 결정적 관측 데이터 (μ=2.0, σ=1.0 분포에서 뽑은 12개)
-    const rng = seeded(20260604);
-    const xs = [];
-    for (let i = 0; i < 12; i++) xs.push(2.0 + seededGaussian(rng) * 1.0);
-    const trueMu = xs.reduce((a, b) => a + b, 0) / xs.length; // 표본평균 = MLE
-    const SIG = 1.0;
-    let mu = 0.5;
-
-    function logLik(mu) {
-      // ln L = sum( -0.5 ln(2π σ²) - (x-μ)² / (2σ²) )
-      const c = -0.5 * Math.log(2 * Math.PI * SIG * SIG);
-      let s = 0;
-      for (const x of xs) s += c - (x - mu) ** 2 / (2 * SIG * SIG);
-      return s;
-    }
-
-    root.innerHTML = `
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
-        <div style="padding:1.2rem 1.1rem 0.4rem;border-right:1px solid var(--line-soft)">
-          <canvas class="mle-pdf" width="420" height="280" style="max-width:100%;height:auto"></canvas>
-        </div>
-        <div style="padding:1.2rem 1.1rem 0.4rem">
-          <canvas class="mle-nll" width="420" height="280" style="max-width:100%;height:auto"></canvas>
-        </div>
-      </div>
-      <div class="mle-read" style="padding:0 1.2rem 0.8rem;font-family:var(--mono);font-size:.82rem;color:var(--ink-soft);line-height:1.6"></div>`;
-
-    const pdfCv = root.querySelector('.mle-pdf'), nllCv = root.querySelector('.mle-nll');
-    const readEl = root.querySelector('.mle-read');
-    const MU_MIN = -1.5, MU_MAX = 5.5;
-
-    function drawPdf() {
-      const W = pdfCv.width, H = pdfCv.height;
-      const ctx = pdfCv.getContext('2d');
-      const ax = drawAxes(ctx, W, H, { xLabel: 'x', yLabel: 'p(x|μ,σ²)' });
-      const xat = x => ax.padL + ax.innerW * (x - MU_MIN) / (MU_MAX - MU_MIN);
-      const yat = y => ax.padT + ax.innerH * (1 - clamp(y / 0.55, 0, 1));
-      // 현재 μ 의 정규분포
-      ctx.strokeStyle = C.structure; ctx.lineWidth = 2; ctx.beginPath();
-      for (let i = 0; i <= 200; i++) {
-        const x = MU_MIN + (MU_MAX - MU_MIN) * i / 200;
-        const y = Math.exp(-Math.pow(x - mu, 2) / 2) / Math.sqrt(2 * Math.PI);
-        const px = xat(x), py = yat(y);
-        i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+      // 설명창
+      ctx.fillStyle = '#fff'; ctx.strokeStyle = C.inkFaint; ctx.lineWidth = 1;
+      ctx.fillRect(40, H - 80, W - 80, 64); ctx.strokeRect(40, H - 80, W - 80, 64);
+      ctx.fillStyle = C.ink; ctx.font = '600 13px "Fraunces", serif'; ctx.textAlign = 'left';
+      if (hov >= 0) {
+        ctx.fillText(verts[hov].label, 56, H - 60);
+        ctx.fillStyle = C.inkSoft; ctx.font = '12.5px "Pretendard", sans-serif';
+        ctx.fillText(verts[hov].desc, 56, H - 42);
+        ctx.fillStyle = cols[hov];
+        ctx.fillText(verts[hov].miss, 56, H - 24);
+      } else {
+        ctx.fillText('T·P·E 꼭짓점에 마우스를 올리면 그 요소가 빠졌을 때의 결과가 나타난다.', 56, H - 48);
       }
-      ctx.stroke();
-      // 관측 데이터: 각 점에서 확률 밀도값으로 stem
-      xs.forEach(x => {
-        const y = Math.exp(-Math.pow(x - mu, 2) / 2) / Math.sqrt(2 * Math.PI);
-        const px = xat(x), py = yat(y);
-        ctx.strokeStyle = 'rgba(192,73,46,.4)'; ctx.lineWidth = 1.5;
-        ctx.beginPath(); ctx.moveTo(px, H - ax.padB); ctx.lineTo(px, py); ctx.stroke();
-        ctx.fillStyle = C.style; ctx.beginPath(); ctx.arc(px, py, 3.2, 0, 7); ctx.fill();
-      });
-      // μ 표시
-      ctx.strokeStyle = 'rgba(38,34,28,.5)'; ctx.setLineDash([3, 3]);
-      ctx.beginPath(); ctx.moveTo(xat(mu), ax.padT); ctx.lineTo(xat(mu), H - ax.padB); ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.fillStyle = C.ink; ctx.font = '11px "Spline Sans Mono", monospace';
-      ctx.textAlign = 'center'; ctx.fillText('μ=' + mu.toFixed(2), xat(mu), ax.padT + 12);
-      // 범례
-      ctx.textAlign = 'left'; ctx.fillStyle = C.inkFaint;
-      ctx.fillText('• 점 = 관측 데이터 위치의 밀도값', ax.padL + 6, H - 8);
     }
 
-    function drawNll() {
-      const W = nllCv.width, H = nllCv.height;
-      const ctx = nllCv.getContext('2d');
-      const ax = drawAxes(ctx, W, H, { xLabel: 'μ →', yLabel: '−ln L(μ)' });
-      // -lnL 곡선
-      let minL = Infinity, maxL = -Infinity;
-      const samples = [];
-      for (let i = 0; i <= 200; i++) {
-        const mm = MU_MIN + (MU_MAX - MU_MIN) * i / 200;
-        const v = -logLik(mm);
-        samples.push([mm, v]);
-        if (v < minL) minL = v; if (v > maxL) maxL = v;
-      }
-      const yat = v => ax.padT + ax.innerH * ((v - minL) / (maxL - minL + 1e-9));
-      const xat = mm => ax.padL + ax.innerW * (mm - MU_MIN) / (MU_MAX - MU_MIN);
-      ctx.strokeStyle = C.style; ctx.lineWidth = 2; ctx.beginPath();
-      samples.forEach(([mm, v], i) => { const p = xat(mm), q = yat(v); i ? ctx.lineTo(p, q) : ctx.moveTo(p, q); });
-      ctx.stroke();
-      // 현재 μ
-      ctx.strokeStyle = 'rgba(38,34,28,.4)'; ctx.setLineDash([3, 3]);
-      const cx = xat(mu); ctx.beginPath(); ctx.moveTo(cx, ax.padT); ctx.lineTo(cx, H - ax.padB); ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.fillStyle = C.ink; ctx.beginPath(); ctx.arc(cx, yat(-logLik(mu)), 5, 0, 7); ctx.fill();
-      // 최소(=MLE) 표시
-      ctx.fillStyle = C.synth; ctx.beginPath(); ctx.arc(xat(trueMu), yat(-logLik(trueMu)), 6, 0, 7); ctx.fill();
-      ctx.fillStyle = C.synth; ctx.font = '11px "Spline Sans Mono", monospace';
-      ctx.textAlign = 'center'; ctx.fillText('μ_MLE = ' + trueMu.toFixed(2), xat(trueMu), yat(-logLik(trueMu)) - 10);
-    }
-
-    function update() {
-      drawPdf(); drawNll();
-      const L = Math.exp(logLik(mu));      // L 자체
-      const lnL = logLik(mu);
-      const nll = -lnL;
-      const dirHint = mu < trueMu - 0.05 ? '오른쪽으로 가면 더 적합 (−lnL ↓)' :
-                       mu > trueMu + 0.05 ? '왼쪽으로 가면 더 적합 (−lnL ↓)' :
-                       '거의 MLE 위치 — 음의 로그우도가 최소';
-      readEl.innerHTML = `
-        μ = <b style="color:var(--ink)">${mu.toFixed(2)}</b>
-        · L(μ) = <b style="color:${C.structure}">${L.toExponential(2)}</b>
-        · −ln L(μ) = <b style="color:${C.style}">${nll.toFixed(2)}</b><br>
-        <span style="color:var(--ink-faint)">${dirHint} · 표본평균(=MLE) ≈ ${trueMu.toFixed(3)}</span>`;
-    }
-
-    const ctr = document.createElement('div'); ctr.className = 'widget-controls';
-    ctr.innerHTML = `
-      <div class="slider"><label>모형 평균 μ <b class="mv">${mu.toFixed(2)}</b></label>
-        <input type="range" min="${MU_MIN * 100}" max="${MU_MAX * 100}" step="5" value="${mu * 100}"></div>
-      <button class="btn ghost mle-jump">μ_MLE 로 점프</button>
-      <span style="font-size:.78rem;color:var(--ink-faint)">L 최대 ↔ −ln L 최소 (단조 변환이라 같은 해)</span>`;
-    root.appendChild(ctr);
-    const sl = ctr.querySelector('input'), mv = ctr.querySelector('.mv');
-    sl.addEventListener('input', () => { mu = +sl.value / 100; mv.textContent = mu.toFixed(2); update(); });
-    ctr.querySelector('.mle-jump').addEventListener('click', () => {
-      mu = trueMu; sl.value = Math.round(mu * 100); mv.textContent = mu.toFixed(2); update();
+    cv.addEventListener('mousemove', (e) => {
+      const r = cv.getBoundingClientRect();
+      const mx = e.clientX - r.left, my = e.clientY - r.top;
+      let h = -1;
+      verts.forEach((v, i) => { if ((mx - v.x) ** 2 + (my - v.y) ** 2 < 36 * 36) h = i; });
+      if (h !== hov) { hov = h; render(); }
     });
-    update();
+    cv.addEventListener('mouseleave', () => { hov = -1; render(); });
+
+    render();
   };
 
   /* ============================================================
-     CH05 위젯 04 — 다항식 차수 vs 과적합
-     슬라이더: 다항식 차수 d (1..15)
-     데이터: y = sin(x) + noise, 10 점
-     출력: 데이터 점 + 적합 곡선 + 훈련/검증 오차
+     WIDGET 02 — 지도·비지도·강화 분류 슬라이드쇼 (sub-chapter 02)
      ============================================================ */
-  NST.polyFit = function (root) {
-    let degree = 3;
-    const MAX_DEG = 15;
-    const rng = seeded(20260605);
-    // 진짜 함수: y = sin(1.2 x)
-    function trueFn(x) { return Math.sin(1.2 * x); }
-    // 훈련 데이터 12점 (x ∈ [-3, 3])
-    const N_TR = 12, NOISE = 0.22;
-    const xtr = [], ytr = [];
-    for (let i = 0; i < N_TR; i++) {
-      const x = -3 + 6 * (i + 0.5) / N_TR + (rng() - 0.5) * 0.25;
-      xtr.push(x); ytr.push(trueFn(x) + seededGaussian(rng) * NOISE);
-    }
-    // 검증 데이터 60점 (촘촘히)
-    const xva = [], yva = [];
-    for (let i = 0; i < 60; i++) {
-      const x = -3 + 6 * (i + 0.5) / 60;
-      xva.push(x); yva.push(trueFn(x) + seededGaussian(rng) * NOISE);
+  NST.learningTypes = function (root) {
+    const W = 720, H = 320;
+    const { cv, ctx } = mkCanvas(W, H);
+    root.appendChild(cv);
+
+    const slides = [
+      {
+        name: '지도학습 (Supervised)', col: C.structure,
+        draw: (ctx) => {
+          ctx.font = '600 14px "Fraunces", serif'; ctx.fillStyle = C.structure; ctx.textAlign = 'left';
+          ctx.fillText('입력 + 정답 라벨', 40, 36);
+          ctx.font = '12.5px "Pretendard"'; ctx.fillStyle = C.inkSoft;
+          ctx.fillText('데이터: {(x, y)}. 예: (메일 본문, 스팸/정상)', 40, 56);
+          // 점들 + 라벨
+          const rng = seeded(7); const pts = [];
+          for (let i = 0; i < 26; i++) { pts.push({ x: rng() * 600 + 60, y: rng() * 160 + 90, c: rng() < 0.5 }); }
+          pts.forEach(p => {
+            ctx.fillStyle = p.c ? C.structure : C.style;
+            ctx.beginPath(); ctx.arc(p.x, p.y, 7, 0, 7); ctx.fill();
+          });
+          // 결정 경계
+          ctx.strokeStyle = C.ink; ctx.lineWidth = 1.4; ctx.setLineDash([4, 3]);
+          ctx.beginPath(); ctx.moveTo(60, 230); ctx.lineTo(680, 100); ctx.stroke(); ctx.setLineDash([]);
+          ctx.fillStyle = C.inkFaint; ctx.font = '11px "Spline Sans Mono"';
+          ctx.fillText('파랑=class1 / 주황=class2 · 점선=학습된 결정 경계', 40, 280);
+        }
+      },
+      {
+        name: '비지도학습 (Unsupervised)', col: C.synth,
+        draw: (ctx) => {
+          ctx.font = '600 14px "Fraunces", serif'; ctx.fillStyle = C.synth; ctx.textAlign = 'left';
+          ctx.fillText('입력만, 라벨 없음', 40, 36);
+          ctx.font = '12.5px "Pretendard"'; ctx.fillStyle = C.inkSoft;
+          ctx.fillText('데이터: {x}. 예: 고객 행동 로그, 사진들만. 군집·차원축소·밀도추정.', 40, 56);
+          // 3 개 군집
+          const rng = seeded(11);
+          const centers = [{ x: 180, y: 150 }, { x: 380, y: 200 }, { x: 560, y: 130 }];
+          const cols = [C.structure, C.style, C.synth];
+          centers.forEach((c, k) => {
+            for (let i = 0; i < 16; i++) {
+              const a = rng() * Math.PI * 2, r = rng() * 50;
+              ctx.fillStyle = cols[k] + '55';
+              ctx.beginPath(); ctx.arc(c.x + Math.cos(a) * r, c.y + Math.sin(a) * r, 6, 0, 7); ctx.fill();
+            }
+            ctx.fillStyle = cols[k];
+            ctx.beginPath(); ctx.arc(c.x, c.y, 8, 0, 7); ctx.fill();
+            ctx.fillStyle = '#fff'; ctx.font = '11px "Spline Sans Mono"'; ctx.textAlign = 'center';
+            ctx.fillText('μ' + (k + 1), c.x, c.y + 4);
+          });
+          ctx.textAlign = 'left'; ctx.fillStyle = C.inkFaint; ctx.font = '11px "Spline Sans Mono"';
+          ctx.fillText('알고리즘이 라벨 없이 군집 중심 μ를 찾아낸다 (예: k-means)', 40, 280);
+        }
+      },
+      {
+        name: '강화학습 (Reinforcement)', col: C.style,
+        draw: (ctx) => {
+          ctx.font = '600 14px "Fraunces", serif'; ctx.fillStyle = C.style; ctx.textAlign = 'left';
+          ctx.fillText('환경 · 보상 · 행동 루프', 40, 36);
+          ctx.font = '12.5px "Pretendard"'; ctx.fillStyle = C.inkSoft;
+          ctx.fillText('데이터: 상호작용. 정답 라벨 대신 보상(reward) 신호.', 40, 56);
+          // 박스 다이어그램
+          const boxes = [
+            { x: 80, y: 110, w: 140, h: 80, t: '에이전트', c: C.structure },
+            { x: 500, y: 110, w: 140, h: 80, t: '환경', c: C.synth },
+          ];
+          boxes.forEach(b => {
+            ctx.fillStyle = b.c + '22'; ctx.strokeStyle = b.c; ctx.lineWidth = 1.5;
+            ctx.fillRect(b.x, b.y, b.w, b.h); ctx.strokeRect(b.x, b.y, b.w, b.h);
+            ctx.fillStyle = b.c; ctx.font = '600 14px "Fraunces"'; ctx.textAlign = 'center';
+            ctx.fillText(b.t, b.x + b.w / 2, b.y + b.h / 2 + 5);
+          });
+          // 화살표
+          ctx.strokeStyle = C.ink; ctx.fillStyle = C.ink; ctx.lineWidth = 1.4;
+          ctx.beginPath(); ctx.moveTo(220, 130); ctx.lineTo(500, 130); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(500, 130); ctx.lineTo(490, 125); ctx.lineTo(490, 135); ctx.fill();
+          ctx.font = '11px "Spline Sans Mono"'; ctx.textAlign = 'center';
+          ctx.fillText('행동 a_t', 360, 122);
+
+          ctx.beginPath(); ctx.moveTo(500, 170); ctx.lineTo(220, 170); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(220, 170); ctx.lineTo(230, 165); ctx.lineTo(230, 175); ctx.fill();
+          ctx.fillText('상태 s_{t+1}, 보상 r_{t+1}', 360, 188);
+          ctx.textAlign = 'left'; ctx.fillStyle = C.inkFaint;
+          ctx.fillText('정답은 없고, 누적 보상을 최대화하는 정책 π(a|s)를 찾는다.', 40, 260);
+        }
+      },
+    ];
+
+    let idx = 0;
+    function render() {
+      ctx.fillStyle = C.paper2; ctx.fillRect(0, 0, W, H);
+      slides[idx].draw(ctx);
     }
 
-    // 정규방정식으로 다항식 회귀 (간단·소형)
-    function solvePoly(xs, ys, d) {
-      const N = xs.length, K = d + 1;
-      // X^T X 와 X^T y
-      const A = []; for (let i = 0; i < K; i++) { const r = new Float64Array(K); A.push(r); }
-      const b = new Float64Array(K);
-      const sumX = new Float64Array(2 * K - 1);
-      for (let n = 0; n < N; n++) {
-        let p = 1;
-        for (let k = 0; k < 2 * K - 1; k++) { sumX[k] += p; p *= xs[n]; }
-        let p2 = 1;
-        for (let k = 0; k < K; k++) { b[k] += ys[n] * p2; p2 *= xs[n]; }
-      }
-      for (let i = 0; i < K; i++) for (let j = 0; j < K; j++) A[i][j] = sumX[i + j];
+    const ctr = makeControls(`
+      <div class="toggle-row">
+        ${slides.map((s, i) => `<button class="btn lt-btn" data-i="${i}">${s.name}</button>`).join('')}
+      </div>
+      <span style="font-size:.8rem;color:var(--ink-faint)">세 학습 패러다임을 같은 캔버스에서 비교한다. 클릭으로 전환.</span>`);
+    root.appendChild(ctr);
+    ctr.querySelectorAll('.lt-btn').forEach(b => {
+      b.addEventListener('click', () => { idx = +b.dataset.i; render(); });
+    });
+    render();
+  };
+
+  /* ============================================================
+     WIDGET 03 — 다항식 차수 vs 과적합 (sub-chapter 03·04 공용)
+     차수 슬라이더로 가설 공간 크기와 과적합 시각화.
+     ============================================================ */
+  NST.polyCapacity = function (root) {
+    const W = 720, H = 380;
+    const { cv, ctx } = mkCanvas(W, H);
+    root.appendChild(cv);
+
+    // 진짜 함수 f(x) = sin(2π x) + 작은 노이즈
+    const rng = seeded(42);
+    const N = 14;
+    const xs = [], ys = [];
+    for (let i = 0; i < N; i++) {
+      const x = i / (N - 1);
+      xs.push(x);
+      ys.push(Math.sin(2 * Math.PI * x) + seededGaussian(rng) * 0.18);
+    }
+
+    // 최소제곱 다항식 회귀
+    function fit(deg) {
+      const M = deg + 1;
+      const X = []; for (let i = 0; i < N; i++) { const row = []; for (let j = 0; j < M; j++) row.push(Math.pow(xs[i], j)); X.push(row); }
+      // 정규방정식 (X^T X) w = X^T y
+      const XtX = []; for (let i = 0; i < M; i++) { const r = []; for (let j = 0; j < M; j++) { let s = 0; for (let k = 0; k < N; k++) s += X[k][i] * X[k][j]; r.push(s); } XtX.push(r); }
+      const Xty = []; for (let i = 0; i < M; i++) { let s = 0; for (let k = 0; k < N; k++) s += X[k][i] * ys[k]; Xty.push(s); }
+      // 정칙화로 수치 안정
+      for (let i = 0; i < M; i++) XtX[i][i] += 1e-8;
       // 가우스 소거
-      const aug = []; for (let i = 0; i < K; i++) { aug.push(new Float64Array(K + 1)); for (let j = 0; j < K; j++) aug[i][j] = A[i][j]; aug[i][K] = b[i]; }
-      for (let p = 0; p < K; p++) {
-        let pv = p;
-        for (let r = p + 1; r < K; r++) if (Math.abs(aug[r][p]) > Math.abs(aug[pv][p])) pv = r;
-        [aug[p], aug[pv]] = [aug[pv], aug[p]];
-        const piv = aug[p][p]; if (Math.abs(piv) < 1e-12) continue;
-        for (let j = p; j <= K; j++) aug[p][j] /= piv;
-        for (let r = 0; r < K; r++) if (r !== p) {
-          const f = aug[r][p]; if (!f) continue;
-          for (let j = p; j <= K; j++) aug[r][j] -= f * aug[p][j];
+      const A = XtX.map((r, i) => r.concat([Xty[i]]));
+      for (let i = 0; i < M; i++) {
+        let mx = i; for (let k = i + 1; k < M; k++) if (Math.abs(A[k][i]) > Math.abs(A[mx][i])) mx = k;
+        [A[i], A[mx]] = [A[mx], A[i]];
+        for (let k = i + 1; k < M; k++) {
+          const f = A[k][i] / A[i][i];
+          for (let j = i; j <= M; j++) A[k][j] -= f * A[i][j];
         }
       }
-      const w = new Float64Array(K);
-      for (let i = 0; i < K; i++) w[i] = aug[i][K];
+      const w = new Array(M).fill(0);
+      for (let i = M - 1; i >= 0; i--) {
+        let s = A[i][M]; for (let j = i + 1; j < M; j++) s -= A[i][j] * w[j]; w[i] = s / A[i][i];
+      }
       return w;
     }
-    function evalPoly(w, x) { let s = 0, p = 1; for (let k = 0; k < w.length; k++) { s += w[k] * p; p *= x; } return s; }
 
-    root.innerHTML = `
-      <div style="padding:1.4rem 1.1rem 0.6rem">
-        <canvas class="pf-cv" width="800" height="340" style="max-width:100%;height:auto"></canvas>
-      </div>
-      <div class="pf-read" style="padding:0 1.2rem 0.8rem;font-family:var(--mono);font-size:.82rem;color:var(--ink-soft);line-height:1.6"></div>`;
-    const cv = root.querySelector('.pf-cv');
-    const readEl = root.querySelector('.pf-read');
+    function predict(w, x) { let s = 0; for (let j = 0; j < w.length; j++) s += w[j] * Math.pow(x, j); return s; }
 
-    function draw() {
-      const W = cv.width, H = cv.height;
-      const ctx = cv.getContext('2d');
-      const ax = drawAxes(ctx, W, H, { xLabel: 'x', yLabel: 'y' });
-      const xat = x => ax.padL + ax.innerW * (x + 3) / 6;
-      const yat = y => ax.padT + ax.innerH * (1 - (y + 2) / 4);
+    function render(deg) {
+      const ax = drawAxes(ctx, W, H, { xLabel: 'x', yLabel: 'y', padL: 50 });
+      const xToPix = (x) => ax.padL + x * ax.innerW;
+      const yToPix = (y) => ax.padT + (1 - (y + 1.5) / 3) * ax.innerH;
 
       // 진짜 함수
-      ctx.strokeStyle = C.inkFaint; ctx.lineWidth = 1.6; ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = C.structureLo; ctx.lineWidth = 2; ctx.setLineDash([4, 4]);
       ctx.beginPath();
       for (let i = 0; i <= 200; i++) {
-        const x = -3 + 6 * i / 200, y = trueFn(x);
-        const px = xat(x), py = yat(y);
+        const x = i / 200, y = Math.sin(2 * Math.PI * x);
+        const px = xToPix(x), py = yToPix(y);
         i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
       }
       ctx.stroke(); ctx.setLineDash([]);
 
-      // 다항식 적합
-      const w = solvePoly(xtr, ytr, degree);
-      ctx.strokeStyle = C.structure; ctx.lineWidth = 2.4; ctx.beginPath();
-      for (let i = 0; i <= 300; i++) {
-        const x = -3 + 6 * i / 300, y = evalPoly(w, x);
-        const px = xat(x), py = yat(clamp(y, -2.2, 2.2));
+      // 적합 곡선
+      const w = fit(deg);
+      ctx.strokeStyle = C.style; ctx.lineWidth = 2.4; ctx.beginPath();
+      for (let i = 0; i <= 200; i++) {
+        const x = i / 200, y = predict(w, x);
+        const px = xToPix(x), py = yToPix(clamp(y, -2, 2));
         i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
       }
       ctx.stroke();
 
-      // 훈련 점
+      // 데이터 점
+      ctx.fillStyle = C.ink;
+      xs.forEach((x, i) => { ctx.beginPath(); ctx.arc(xToPix(x), yToPix(ys[i]), 4.5, 0, 7); ctx.fill(); });
+
+      // 훈련 오차
+      let mse = 0; for (let i = 0; i < N; i++) { const e = ys[i] - predict(w, xs[i]); mse += e * e; } mse /= N;
+      // 일반화 오차 (진짜 함수로 추정)
+      let mseGen = 0; const M = 200;
+      for (let i = 0; i < M; i++) { const x = i / M; const e = Math.sin(2 * Math.PI * x) - predict(w, x); mseGen += e * e; } mseGen /= M;
+
+      ctx.fillStyle = C.ink; ctx.font = '12px "Spline Sans Mono"'; ctx.textAlign = 'left';
+      ctx.fillText(`차수 d = ${deg}`, W - 200, 30);
       ctx.fillStyle = C.style;
-      xtr.forEach((x, i) => { ctx.beginPath(); ctx.arc(xat(x), yat(ytr[i]), 4.5, 0, 7); ctx.fill(); });
+      ctx.fillText(`훈련 MSE = ${mse.toFixed(3)}`, W - 200, 48);
+      ctx.fillStyle = C.structure;
+      ctx.fillText(`일반화 MSE ≈ ${mseGen.toFixed(3)}`, W - 200, 66);
 
-      // 손실
-      let trErr = 0, vaErr = 0;
-      xtr.forEach((x, i) => { trErr += (evalPoly(w, x) - ytr[i]) ** 2; });
-      xva.forEach((x, i) => { vaErr += (evalPoly(w, x) - yva[i]) ** 2; });
-      trErr /= xtr.length; vaErr /= xva.length;
-
-      // 범례
-      ctx.font = '11px "Spline Sans Mono", monospace';
-      const items = [['적합 곡선 (차수 ' + degree + ')', C.structure], ['훈련 데이터 점', C.style], ['진짜 함수 sin(1.2x)', C.inkFaint]];
-      ctx.textAlign = 'left';
-      let lx = ax.padL + 6, ly = ax.padT + 14;
-      items.forEach(([lab, col]) => {
-        ctx.fillStyle = col; ctx.fillRect(lx, ly - 7, 12, 3); ctx.fillStyle = C.inkSoft; ctx.fillText(lab, lx + 18, ly);
-        ly += 16;
-      });
-
-      return { trErr, vaErr };
+      // 진단
+      ctx.fillStyle = C.inkSoft; ctx.font = '11px "Pretendard"';
+      let diag = '';
+      if (deg <= 1) diag = '용량 부족 — 과소적합';
+      else if (deg <= 4) diag = '적정 — 일반화 양호';
+      else if (deg <= 8) diag = '과잉 — 잡음을 외우기 시작';
+      else diag = '심한 과적합 — 곡선이 데이터를 통과';
+      ctx.fillText(diag, W - 200, 84);
     }
 
-    function update() {
-      const { trErr, vaErr } = draw();
-      const verdict = degree <= 2 ? '과소적합 — 곡선이 데이터를 따라가지 못함' :
-                      degree >= 10 ? '과적합 — 곡선이 잡음까지 따라가며 진동' :
-                      '적절 — 진짜 함수와 거의 일치';
-      readEl.innerHTML = `
-        차수 d = <b style="color:var(--ink)">${degree}</b>
-        · 훈련 MSE <b style="color:${C.style}">${trErr.toFixed(3)}</b>
-        · 검증 MSE <b style="color:${C.structure}">${vaErr.toFixed(3)}</b><br>
-        <span style="color:var(--ink-faint)">${verdict}</span>`;
-    }
-
-    const ctr = document.createElement('div'); ctr.className = 'widget-controls';
-    ctr.innerHTML = `
-      <div class="slider"><label>다항식 차수 d <b class="dv">${degree}</b> / ${MAX_DEG}</label>
-        <input type="range" min="1" max="${MAX_DEG}" value="${degree}"></div>
-      <span style="font-size:.78rem;color:var(--ink-faint)">차수↑ → 훈련 MSE는 계속 줄지만 검증 MSE는 U자 곡선</span>`;
+    const ctr = makeControls(`
+      <div class="slider"><label>다항식 차수 d (capacity) <b class="iv">3</b></label>
+        <input type="range" min="0" max="12" value="3"></div>
+      <span style="font-size:.8rem;color:var(--ink-faint)">d가 작으면 직선만 그릴 수 있어 과소적합, d가 너무 크면 모든 점을 통과하지만 잡음까지 외운다.</span>`);
     root.appendChild(ctr);
-    const sl = ctr.querySelector('input'), dv = ctr.querySelector('.dv');
-    sl.addEventListener('input', () => { degree = +sl.value; dv.textContent = degree; update(); });
-    update();
+    const sl = ctr.querySelector('input'), iv = ctr.querySelector('.iv');
+    sl.addEventListener('input', () => { iv.textContent = sl.value; render(+sl.value); });
+    render(3);
   };
 
   /* ============================================================
-     CH05 위젯 05 — 베이지안 vs 빈도주의 예측
-     슬라이더: 관측 횟수 N (베르누이 동전 던지기, 앞면 비율 추정)
-              사전 강도 α (Beta(α,α) prior)
-     출력: 사전·우도·사후 분포 + 점추정 vs 분포 추정 비교
+     WIDGET 04 — 편향-분산 트레이드오프 (sub-chapter 05)
+     모델 복잡도 슬라이더 → bias², variance, total error 곡선.
      ============================================================ */
-  NST.bayesFreq = function (root) {
-    let N = 8, alpha = 2.0;
-    const TRUE_P = 0.65;
-    const rng = seeded(20260603);
-    // 결정적 동전 결과: TRUE_P 비율로 1
-    const flips = [];
-    for (let i = 0; i < 200; i++) flips.push(rng() < TRUE_P ? 1 : 0);
+  NST.biasVariance = function (root) {
+    const W = 720, H = 380;
+    const { cv, ctx } = mkCanvas(W, H);
+    root.appendChild(cv);
 
-    function beta(x, a, b) {
-      // 정규화 안 된 PDF 형태 (max 정규화는 그릴 때)
+    // 분석적 모델: bias² = (a/(c+ε))², variance = b·c, total = bias² + var + noise
+    function render(focus) {
+      const ax = drawAxes(ctx, W, H, { xLabel: '모델 복잡도 (capacity)', yLabel: '오차', padL: 48 });
+      const xToPix = (x) => ax.padL + x * ax.innerW;
+      const yToPix = (y) => ax.padT + (1 - y / 1.6) * ax.innerH;
+
+      const noise = 0.18;
+      const fBias = (c) => Math.pow(1.1 / (c + 0.2), 2);
+      const fVar = (c) => 0.05 + 0.15 * Math.pow(c, 1.5);
+      const fTot = (c) => fBias(c) + fVar(c) + noise;
+
+      function draw(fn, col, label, lw) {
+        ctx.strokeStyle = col; ctx.lineWidth = lw || 2; ctx.beginPath();
+        for (let i = 0; i <= 200; i++) {
+          const c = i / 200 * 1.0, y = fn(c);
+          const px = xToPix(i / 200), py = yToPix(clamp(y, 0, 1.6));
+          i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+        }
+        ctx.stroke();
+      }
+      draw(fBias, C.structure, 'bias²');
+      draw(fVar, C.style, 'variance');
+      draw(fTot, C.synth, 'total', 3);
+      // noise floor
+      ctx.strokeStyle = C.inkFaint; ctx.setLineDash([3, 3]); ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(ax.padL, yToPix(noise)); ctx.lineTo(W - ax.padR, yToPix(noise)); ctx.stroke(); ctx.setLineDash([]);
+
+      // 현재 지점
+      const c = focus, b2 = fBias(c), va = fVar(c), to = fTot(c);
+      ctx.strokeStyle = C.ink; ctx.lineWidth = 1.2; ctx.setLineDash([2, 3]);
+      ctx.beginPath(); ctx.moveTo(xToPix(c), ax.padT); ctx.lineTo(xToPix(c), H - ax.padB); ctx.stroke(); ctx.setLineDash([]);
+
+      [{ y: b2, col: C.structure }, { y: va, col: C.style }, { y: to, col: C.synth }].forEach(p => {
+        ctx.fillStyle = p.col; ctx.beginPath(); ctx.arc(xToPix(c), yToPix(p.y), 5, 0, 7); ctx.fill();
+      });
+
+      // 범례
+      ctx.font = '12px "Spline Sans Mono"'; ctx.textAlign = 'left';
+      ctx.fillStyle = C.structure; ctx.fillText('— bias²  ' + b2.toFixed(3), W - 200, 28);
+      ctx.fillStyle = C.style; ctx.fillText('— variance  ' + va.toFixed(3), W - 200, 46);
+      ctx.fillStyle = C.synth; ctx.fillText('— total  ' + to.toFixed(3), W - 200, 64);
+      ctx.fillStyle = C.inkFaint; ctx.fillText('--- 잡음 하한 ' + noise.toFixed(2), W - 200, 82);
+
+      // sweet spot
+      let bestC = 0, bestY = Infinity;
+      for (let i = 0; i <= 200; i++) { const cc = i / 200; const y = fTot(cc); if (y < bestY) { bestY = y; bestC = cc; } }
+      ctx.fillStyle = C.ink; ctx.font = '11px "Pretendard"';
+      ctx.fillText(`최적 복잡도 ≈ ${bestC.toFixed(2)} · 최저 total ≈ ${bestY.toFixed(3)}`, 56, H - 8);
+    }
+
+    const ctr = makeControls(`
+      <div class="slider"><label>모델 복잡도 c <b class="iv">0.40</b></label>
+        <input type="range" min="0.02" max="1.0" step="0.02" value="0.40"></div>
+      <span style="font-size:.8rem;color:var(--ink-faint)">왼쪽으로 갈수록 단순 모델(bias 큼), 오른쪽으로 갈수록 복잡 모델(variance 큼). 총 오차의 최저점이 sweet spot.</span>`);
+    root.appendChild(ctr);
+    const sl = ctr.querySelector('input'), iv = ctr.querySelector('.iv');
+    sl.addEventListener('input', () => { iv.textContent = (+sl.value).toFixed(2); render(+sl.value); });
+    render(0.40);
+  };
+
+  /* ============================================================
+     WIDGET 05 — 학습 곡선 (sub-chapter 06)
+     데이터 크기 N 슬라이더 → 훈련 오차 ↑ 검증 오차 ↓ 수렴.
+     ============================================================ */
+  NST.learningCurve = function (root) {
+    const W = 720, H = 360;
+    const { cv, ctx } = mkCanvas(W, H);
+    root.appendChild(cv);
+
+    function render(maxN) {
+      const ax = drawAxes(ctx, W, H, { xLabel: '훈련 데이터 크기 N', yLabel: '오차', padL: 48 });
+      const xToPix = (x) => ax.padL + x * ax.innerW;
+      const yToPix = (y) => ax.padT + (1 - y / 1.2) * ax.innerH;
+
+      // 곡선: train ↑, val ↓ , 차이 = 일반화 갭
+      const fTrain = (n) => 0.05 + 0.5 / (1 + Math.exp(-0.06 * (n - 10))) * 0.85; // 점점 어려워짐
+      const fVal = (n) => 0.95 - 0.55 / (1 + Math.exp(-0.05 * (n - 20)));
+
+      function draw(fn, col, label) {
+        ctx.strokeStyle = col; ctx.lineWidth = 2.4; ctx.beginPath();
+        for (let i = 0; i <= maxN; i += 2) {
+          const px = xToPix(i / 200), py = yToPix(clamp(fn(i), 0, 1.2));
+          i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+      }
+      draw(fTrain, C.structure);
+      draw(fVal, C.style);
+
+      // 일반화 갭 음영
+      ctx.fillStyle = C.synth + '28'; ctx.beginPath();
+      for (let i = 0; i <= maxN; i += 2) { const px = xToPix(i / 200), py = yToPix(fTrain(i)); i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py); }
+      for (let i = maxN; i >= 0; i -= 2) { const px = xToPix(i / 200), py = yToPix(fVal(i)); ctx.lineTo(px, py); }
+      ctx.closePath(); ctx.fill();
+
+      // 범례
+      ctx.font = '12px "Spline Sans Mono"'; ctx.textAlign = 'left';
+      ctx.fillStyle = C.structure; ctx.fillText('— 훈련 오차', W - 180, 28);
+      ctx.fillStyle = C.style; ctx.fillText('— 검증 오차', W - 180, 46);
+      ctx.fillStyle = C.synth; ctx.fillText('■ 일반화 갭', W - 180, 64);
+
+      ctx.fillStyle = C.ink; ctx.font = '12px "Spline Sans Mono"';
+      ctx.fillText(`N = ${maxN}  ·  train ${fTrain(maxN).toFixed(3)}  ·  val ${fVal(maxN).toFixed(3)}  ·  gap ${(fVal(maxN) - fTrain(maxN)).toFixed(3)}`, 50, H - 8);
+    }
+
+    const ctr = makeControls(`
+      <div class="slider"><label>훈련 데이터 크기 N <b class="iv">100</b></label>
+        <input type="range" min="2" max="200" value="100"></div>
+      <span style="font-size:.8rem;color:var(--ink-faint)">N이 작을 때 훈련은 쉽고 검증은 어렵다(큰 갭). N이 커질수록 둘이 가까워지고, 갭이 일반화 한계를 시사한다.</span>`);
+    root.appendChild(ctr);
+    const sl = ctr.querySelector('input'), iv = ctr.querySelector('.iv');
+    sl.addEventListener('input', () => { iv.textContent = sl.value; render(+sl.value); });
+    render(100);
+  };
+
+  /* ============================================================
+     WIDGET 06 — 교차검증 k 슬라이더 (sub-chapter 07)
+     데이터 100개를 k폴드로 시각화.
+     ============================================================ */
+  NST.crossVal = function (root) {
+    const W = 720, H = 320;
+    const { cv, ctx } = mkCanvas(W, H);
+    root.appendChild(cv);
+
+    function render(k) {
+      ctx.fillStyle = C.paper2; ctx.fillRect(0, 0, W, H);
+      const padL = 60, padT = 36, padR = 16;
+      const innerW = W - padL - padR;
+      const cells = 40;
+      const cellW = innerW / cells;
+      const rowH = (H - padT - 36) / k;
+
+      ctx.fillStyle = C.ink; ctx.font = '600 13px "Fraunces"'; ctx.textAlign = 'left';
+      ctx.fillText(`k = ${k} (k-Fold Cross Validation)`, padL, 22);
+
+      for (let r = 0; r < k; r++) {
+        ctx.fillStyle = C.inkFaint; ctx.font = '11px "Spline Sans Mono"'; ctx.textAlign = 'right';
+        ctx.fillText(`fold ${r + 1}`, padL - 8, padT + rowH * r + rowH / 2 + 4);
+        const foldSize = cells / k;
+        const valStart = Math.floor(foldSize * r);
+        const valEnd = Math.floor(foldSize * (r + 1));
+        for (let c = 0; c < cells; c++) {
+          const isVal = c >= valStart && c < valEnd;
+          ctx.fillStyle = isVal ? C.style : C.structure + '88';
+          ctx.fillRect(padL + cellW * c + 1, padT + rowH * r + 1, cellW - 2, rowH - 4);
+        }
+      }
+      ctx.fillStyle = C.structure; ctx.font = '11px "Spline Sans Mono"'; ctx.textAlign = 'left';
+      ctx.fillText('■ 훈련', padL, H - 18);
+      ctx.fillStyle = C.style; ctx.fillText('■ 검증', padL + 80, H - 18);
+      ctx.fillStyle = C.inkFaint;
+      ctx.fillText(`각 fold마다 다른 1/k 구간을 검증, 나머지로 훈련 → k개 점수의 평균을 보고함. k=N이면 LOOCV.`, padL + 160, H - 18);
+    }
+
+    const ctr = makeControls(`
+      <div class="slider"><label>분할 수 k <b class="iv">5</b></label>
+        <input type="range" min="2" max="10" value="5"></div>
+      <span style="font-size:.8rem;color:var(--ink-faint)">k가 클수록 평균이 안정적이지만 계산 k배. k=5나 k=10이 표준. k=N이면 leave-one-out.</span>`);
+    root.appendChild(ctr);
+    const sl = ctr.querySelector('input'), iv = ctr.querySelector('.iv');
+    sl.addEventListener('input', () => { iv.textContent = sl.value; render(+sl.value); });
+    render(5);
+  };
+
+  /* ============================================================
+     WIDGET 07 — MLE = NLL 동치 시연 (sub-chapter 09·10)
+     데이터 점에 가우시안을 맞출 때 우도 ↑ 와 NLL ↓ 가 동일.
+     ============================================================ */
+  NST.mleNll = function (root) {
+    const W = 720, H = 380;
+    const { cv, ctx } = mkCanvas(W, H);
+    root.appendChild(cv);
+
+    // 데이터: 평균 1.2, 표준편차 0.6의 작은 표본
+    const data = [0.4, 0.7, 0.9, 1.1, 1.2, 1.3, 1.4, 1.6, 1.8, 2.1];
+
+    function logLik(mu, sigma) {
+      let s = 0;
+      for (const x of data) {
+        const z = (x - mu) / sigma;
+        s += -0.5 * Math.log(2 * Math.PI) - Math.log(sigma) - 0.5 * z * z;
+      }
+      return s;
+    }
+
+    function render(mu) {
+      const ax = drawAxes(ctx, W, H, { xLabel: 'x  /  μ', yLabel: 'p(x|μ,σ)', padL: 50 });
+      const xToPix = (x) => ax.padL + (x / 3.5) * ax.innerW;
+      const yToPix = (y) => ax.padT + (1 - y / 0.9) * ax.innerH;
+
+      const sigma = 0.55;
+      // 가우시안 곡선
+      ctx.strokeStyle = C.style; ctx.lineWidth = 2; ctx.beginPath();
+      for (let i = 0; i <= 200; i++) {
+        const x = i / 200 * 3.5;
+        const y = Math.exp(-0.5 * Math.pow((x - mu) / sigma, 2)) / (sigma * Math.sqrt(2 * Math.PI));
+        const px = xToPix(x), py = yToPix(clamp(y, 0, 0.9));
+        i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+      }
+      ctx.stroke();
+
+      // 데이터 점 + 우도 막대
+      data.forEach(x => {
+        const px = xToPix(x);
+        ctx.fillStyle = C.ink; ctx.beginPath(); ctx.arc(px, H - ax.padB, 4, 0, 7); ctx.fill();
+        const y = Math.exp(-0.5 * Math.pow((x - mu) / sigma, 2)) / (sigma * Math.sqrt(2 * Math.PI));
+        ctx.strokeStyle = C.synth; ctx.lineWidth = 1.4; ctx.setLineDash([2, 2]);
+        ctx.beginPath(); ctx.moveTo(px, H - ax.padB); ctx.lineTo(px, yToPix(y)); ctx.stroke(); ctx.setLineDash([]);
+        ctx.fillStyle = C.synth; ctx.beginPath(); ctx.arc(px, yToPix(y), 3, 0, 7); ctx.fill();
+      });
+
+      const ll = logLik(mu, sigma);
+      ctx.fillStyle = C.ink; ctx.font = '12px "Spline Sans Mono"'; ctx.textAlign = 'left';
+      ctx.fillText(`μ = ${mu.toFixed(2)}, σ = ${sigma.toFixed(2)}`, W - 220, 28);
+      ctx.fillStyle = C.style;
+      ctx.fillText(`log L(μ) = ${ll.toFixed(2)}`, W - 220, 48);
+      ctx.fillStyle = C.structure;
+      ctx.fillText(`NLL = ${(-ll).toFixed(2)}`, W - 220, 66);
+
+      // 막대 표시
+      const llBar = clamp((ll + 20) / 20, 0, 1);
+      ctx.fillStyle = C.style + '55'; ctx.fillRect(W - 220, 78, 160 * llBar, 8);
+      ctx.strokeStyle = C.style; ctx.strokeRect(W - 220, 78, 160, 8);
+
+      // 데이터 평균
+      const mean = data.reduce((a, b) => a + b) / data.length;
+      ctx.fillStyle = C.inkFaint; ctx.font = '11px "Pretendard"';
+      ctx.fillText(`데이터 평균 = ${mean.toFixed(3)} (= MLE 정답 μ̂)`, W - 220, 102);
+
+      // 정답 표시
+      const px = xToPix(mean);
+      ctx.strokeStyle = C.synth; ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
+      ctx.beginPath(); ctx.moveTo(px, ax.padT); ctx.lineTo(px, H - ax.padB); ctx.stroke(); ctx.setLineDash([]);
+    }
+
+    const ctr = makeControls(`
+      <div class="slider"><label>가우시안 중심 μ <b class="iv">1.20</b></label>
+        <input type="range" min="0.2" max="2.6" step="0.02" value="1.20"></div>
+      <span style="font-size:.8rem;color:var(--ink-faint)">데이터 점들이 가장 잘 설명되는 μ가 MLE 정답. 우도 ↑ = NLL ↓ . 두 곡선의 정점은 정확히 데이터 평균에서 만난다.</span>`);
+    root.appendChild(ctr);
+    const sl = ctr.querySelector('input'), iv = ctr.querySelector('.iv');
+    sl.addEventListener('input', () => { iv.textContent = (+sl.value).toFixed(2); render(+sl.value); });
+    render(1.20);
+  };
+
+  /* ============================================================
+     WIDGET 08 — 베이지안 사전 → 사후 (sub-chapter 11·12)
+     동전 던지기 예. 사전(Beta) + 데이터 → 사후(Beta).
+     ============================================================ */
+  NST.bayesPosterior = function (root) {
+    const W = 720, H = 360;
+    const { cv, ctx } = mkCanvas(W, H);
+    root.appendChild(cv);
+
+    // Beta(α, β) PDF (정규화 무시한 형태로 시각화)
+    function betaPdf(x, a, b) {
+      if (x <= 0 || x >= 1) return 0;
       return Math.pow(x, a - 1) * Math.pow(1 - x, b - 1);
     }
-    function lnGamma(z) {
-      // Lanczos 근사
-      const g = 7, p = [0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313, -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
-      if (z < 0.5) return Math.log(Math.PI / Math.sin(Math.PI * z)) - lnGamma(1 - z);
-      z -= 1; let a = p[0];
-      const t = z + g + 0.5;
-      for (let i = 1; i < g + 2; i++) a += p[i] / (z + i);
-      return 0.5 * Math.log(2 * Math.PI) + (z + 0.5) * Math.log(t) - t + Math.log(a);
-    }
-    function betaPdfNorm(x, a, b) {
-      // log B(a,b)
-      const lnB = lnGamma(a) + lnGamma(b) - lnGamma(a + b);
-      return Math.exp((a - 1) * Math.log(x + 1e-12) + (b - 1) * Math.log(1 - x + 1e-12) - lnB);
+
+    function logBeta(a, b) {
+      // 간단 근사: log B(a,b) = lgamma(a) + lgamma(b) - lgamma(a+b)
+      function lgamma(z) {
+        // Stirling 근사
+        return (z - 0.5) * Math.log(z) - z + 0.5 * Math.log(2 * Math.PI) + 1 / (12 * z);
+      }
+      return lgamma(a) + lgamma(b) - lgamma(a + b);
     }
 
-    root.innerHTML = `
-      <div style="padding:1.4rem 1.1rem 0.6rem">
-        <canvas class="bf-cv" width="800" height="340" style="max-width:100%;height:auto"></canvas>
-      </div>
-      <div class="bf-read" style="padding:0 1.2rem 0.8rem;font-family:var(--mono);font-size:.82rem;color:var(--ink-soft);line-height:1.6"></div>`;
-    const cv = root.querySelector('.bf-cv');
-    const readEl = root.querySelector('.bf-read');
+    function normalize(fn, a, b) {
+      let mx = 0;
+      for (let i = 1; i < 100; i++) { mx = Math.max(mx, fn(i / 100, a, b)); }
+      return mx;
+    }
 
-    function head() { let h = 0; for (let i = 0; i < N; i++) h += flips[i]; return h; }
+    function render(alpha, beta, H_obs, T_obs) {
+      const ax = drawAxes(ctx, W, H, { xLabel: 'θ (앞면 확률)', yLabel: 'p(θ)', padL: 50 });
+      const xToPix = (x) => ax.padL + x * ax.innerW;
+      const yToPix = (y) => ax.padT + (1 - y) * ax.innerH;
 
-    function draw() {
-      const W = cv.width, H = cv.height;
-      const ctx = cv.getContext('2d');
-      const ax = drawAxes(ctx, W, H, { xLabel: 'θ (앞면 확률)', yLabel: '밀도' });
-      const h = head(), t = N - h;
-      // 분포들
-      // 사전: Beta(α, α)
-      // 우도(베르누이): θ^h (1-θ)^t  (정규화 안 함 — 비례)
-      // 사후: Beta(α+h, α+t)
-      const xat = x => ax.padL + ax.innerW * x;
-      let maxY = 0;
-      const samples = 200;
-      const prior = [], lik = [], post = [];
-      for (let i = 0; i <= samples; i++) {
-        const x = i / samples;
-        prior.push(betaPdfNorm(x, alpha, alpha));
-        lik.push(Math.pow(x, h) * Math.pow(1 - x, t));
-        post.push(betaPdfNorm(x, alpha + h, alpha + t));
+      // 사전 Beta(alpha, beta)
+      const mxPrior = normalize(betaPdf, alpha, beta);
+      ctx.strokeStyle = C.structureLo; ctx.lineWidth = 2; ctx.setLineDash([5, 4]);
+      ctx.beginPath();
+      for (let i = 1; i < 200; i++) {
+        const x = i / 200, y = betaPdf(x, alpha, beta) / mxPrior;
+        const px = xToPix(x), py = yToPix(y * 0.9);
+        i === 1 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
       }
-      const likMax = Math.max(...lik), likScale = Math.max(...post) / (likMax || 1) * 0.8;
-      const likN = lik.map(v => v * likScale);
-      maxY = Math.max(...prior, ...likN, ...post) * 1.05;
-      const yat = y => ax.padT + ax.innerH * (1 - y / maxY);
+      ctx.stroke(); ctx.setLineDash([]);
 
-      function plot(arr, col, dashed, fill) {
-        ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.setLineDash(dashed ? [4, 4] : []);
-        if (fill) {
-          ctx.fillStyle = fill;
-          ctx.beginPath();
-          ctx.moveTo(ax.padL, H - ax.padB);
-          arr.forEach((y, i) => { ctx.lineTo(xat(i / samples), yat(y)); });
-          ctx.lineTo(W - ax.padR, H - ax.padB); ctx.closePath(); ctx.fill();
-        }
-        ctx.beginPath();
-        arr.forEach((y, i) => { const p = xat(i / samples), q = yat(y); i ? ctx.lineTo(p, q) : ctx.moveTo(p, q); });
-        ctx.stroke();
-        ctx.setLineDash([]);
+      // 사후 Beta(alpha + H, beta + T)
+      const a2 = alpha + H_obs, b2 = beta + T_obs;
+      const mxPost = normalize(betaPdf, a2, b2);
+      ctx.strokeStyle = C.style; ctx.lineWidth = 2.6;
+      ctx.beginPath();
+      for (let i = 1; i < 200; i++) {
+        const x = i / 200, y = betaPdf(x, a2, b2) / mxPost;
+        const px = xToPix(x), py = yToPix(y * 0.9);
+        i === 1 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
       }
-      plot(prior, C.inkFaint, true);
-      plot(likN, C.style, false, 'rgba(192,73,46,.10)');
-      plot(post, C.structure, false, 'rgba(45,91,122,.13)');
+      ctx.stroke();
 
-      // 점추정들
-      const mleP = N > 0 ? h / N : 0.5;
-      const mapP = (alpha + h - 1) / (alpha * 2 + N - 2);
-      const meanP = (alpha + h) / (alpha * 2 + N);
-      // 수직선
-      function vline(x, col, label) {
-        ctx.strokeStyle = col; ctx.lineWidth = 1.6; ctx.setLineDash([5, 4]);
-        ctx.beginPath(); ctx.moveTo(xat(x), ax.padT + 4); ctx.lineTo(xat(x), H - ax.padB); ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.fillStyle = col; ctx.font = '10px "Spline Sans Mono", monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText(label + ' ' + x.toFixed(2), xat(x), ax.padT + 12);
-      }
-      vline(TRUE_P, C.inkFaint, '진실 θ');
-      vline(mleP, C.style, 'MLE');
-      vline(mapP, C.synth, 'MAP');
-      vline(meanP, C.structure, '사후평균');
+      // 데이터 표시
+      const mle = H_obs / (H_obs + T_obs || 1);
+      const mapTheta = (a2 - 1) / (a2 + b2 - 2);
+      ctx.strokeStyle = C.synth; ctx.setLineDash([3, 3]); ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(xToPix(mle), ax.padT); ctx.lineTo(xToPix(mle), H - ax.padB); ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = C.ink; ctx.font = '12px "Spline Sans Mono"'; ctx.textAlign = 'left';
+      ctx.fillText(`사전 Beta(${alpha}, ${beta})  →  사후 Beta(${a2}, ${b2})`, 56, 28);
+      ctx.fillStyle = C.style;
+      ctx.fillText(`MAP θ ≈ ${mapTheta.toFixed(3)}`, 56, 48);
+      ctx.fillStyle = C.synth;
+      ctx.fillText(`MLE θ̂ = H/(H+T) = ${mle.toFixed(3)}  (H=${H_obs}, T=${T_obs})`, 56, 66);
+
       // 범례
-      ctx.font = '11px "Spline Sans Mono", monospace';
-      const items = [['사전 Beta(α,α) (빈도주의 무지)', C.inkFaint], ['우도 (스케일됨)', C.style], ['사후 Beta(α+h, α+t)', C.structure]];
-      ctx.textAlign = 'left';
-      let lx = ax.padL + 6, ly = ax.padT + 14;
-      items.forEach(([lab, col]) => {
-        ctx.fillStyle = col; ctx.fillRect(lx, ly - 7, 12, 3); ctx.fillStyle = C.inkSoft; ctx.fillText(lab, lx + 18, ly);
-        ly += 16;
-      });
-      return { h, t, mleP, mapP, meanP };
+      ctx.fillStyle = C.structureLo; ctx.fillText('--- 사전 p(θ)', W - 180, 28);
+      ctx.fillStyle = C.style; ctx.fillText('— 사후 p(θ|D)', W - 180, 46);
+      ctx.fillStyle = C.synth; ctx.fillText('--- MLE', W - 180, 64);
     }
 
-    function update() {
-      const r = draw();
-      const ratio = r.h + '/' + N;
-      const note = N <= 3 ? '데이터 부족 — 사후가 사전 형태를 거의 닮음' :
-                   N >= 50 ? '데이터 풍부 — 사후가 우도에 흡수, MAP≈MLE 로 수렴' :
-                   '중간 — 사전과 우도가 함께 사후를 만든다';
-      readEl.innerHTML = `
-        N = <b>${N}</b>, 앞면 = <b>${ratio}</b>, 사전 강도 α = <b>${alpha.toFixed(1)}</b><br>
-        <b style="color:${C.style}">빈도주의 MLE</b> = ${r.mleP.toFixed(3)}
-        · <b style="color:${C.synth}">MAP</b> = ${r.mapP.toFixed(3)}
-        · <b style="color:${C.structure}">베이즈 사후평균</b> = ${r.meanP.toFixed(3)}
-        · 진실 = ${TRUE_P}<br>
-        <span style="color:var(--ink-faint)">${note}</span>`;
-    }
-
-    const ctr = document.createElement('div'); ctr.className = 'widget-controls';
-    ctr.innerHTML = `
-      <div class="slider"><label>관측 횟수 N <b class="nv">${N}</b></label>
-        <input type="range" class="s-style" min="0" max="200" value="${N}"></div>
-      <div class="slider"><label>사전 강도 α <b class="av">${alpha.toFixed(1)}</b></label>
-        <input type="range" class="s-structure" min="5" max="200" step="5" value="${alpha * 10}"></div>`;
+    const ctr = makeControls(`
+      <div class="slider"><label>사전 α <b class="iv1">2</b></label>
+        <input type="range" min="1" max="20" value="2" class="ia"></div>
+      <div class="slider"><label>사전 β <b class="iv2">2</b></label>
+        <input type="range" min="1" max="20" value="2" class="ib"></div>
+      <div class="slider"><label>관측 앞면 H <b class="iv3">6</b></label>
+        <input type="range" min="0" max="40" value="6" class="ih"></div>
+      <div class="slider"><label>관측 뒷면 T <b class="iv4">4</b></label>
+        <input type="range" min="0" max="40" value="4" class="it"></div>
+      <span style="font-size:.8rem;color:var(--ink-faint)">사전이 평평할수록(α=β=1) 사후가 데이터를 그대로 따른다. 사전이 좁을수록 사후가 사전 쪽으로 끌려간다(정칙화 효과).</span>`);
     root.appendChild(ctr);
-    const [sl1, sl2] = ctr.querySelectorAll('input');
-    const nv = ctr.querySelector('.nv'), av = ctr.querySelector('.av');
-    sl1.addEventListener('input', () => { N = +sl1.value; nv.textContent = N; update(); });
-    sl2.addEventListener('input', () => { alpha = +sl2.value / 10; av.textContent = alpha.toFixed(1); update(); });
-    update();
+
+    function read() {
+      const a = +ctr.querySelector('.ia').value;
+      const b = +ctr.querySelector('.ib').value;
+      const h = +ctr.querySelector('.ih').value;
+      const t = +ctr.querySelector('.it').value;
+      ctr.querySelector('.iv1').textContent = a;
+      ctr.querySelector('.iv2').textContent = b;
+      ctr.querySelector('.iv3').textContent = h;
+      ctr.querySelector('.iv4').textContent = t;
+      render(a, b, h, t);
+    }
+    ctr.querySelectorAll('input').forEach(i => i.addEventListener('input', read));
+    read();
   };
 
   /* ============================================================
-     CH05 위젯 06 (선택) — k-NN 분류 직관
-     슬라이더: k (1..30), 데이터 점 개수 고정
-     출력: 결정 경계 (배경 색칠) + 점들
+     WIDGET 09 — 가우시안 사전 = L2 정칙화 (sub-chapter 13)
+     사전 분산 σ₀² 슬라이더 → 가중치 분포 + 적합 곡선 변화.
      ============================================================ */
-  NST.knn = function (root) {
-    let k = 5;
-    const rng = seeded(20260606);
-    // 2D 두 클래스 (가우시안 두 묶음)
-    const pts = [];
-    for (let i = 0; i < 35; i++) pts.push({ x: -1 + seededGaussian(rng) * 0.6, y: -1 + seededGaussian(rng) * 0.6, c: 0 });
-    for (let i = 0; i < 35; i++) pts.push({ x: 1 + seededGaussian(rng) * 0.6, y: 0.7 + seededGaussian(rng) * 0.6, c: 1 });
-    // 약간 섞기 (잡음)
-    for (let i = 0; i < 8; i++) pts.push({ x: (rng() - 0.5) * 4, y: (rng() - 0.5) * 4, c: rng() < 0.5 ? 0 : 1 });
+  NST.l2AsGaussianPrior = function (root) {
+    const W = 720, H = 380;
+    const { cv, ctx } = mkCanvas(W, H);
+    root.appendChild(cv);
 
-    root.innerHTML = `
-      <div style="padding:1.2rem 1.1rem 0.6rem">
-        <canvas class="kn-cv" width="640" height="320" style="max-width:100%;height:auto;display:block;margin:0 auto"></canvas>
-      </div>
-      <div class="kn-read" style="padding:0 1.2rem 0.8rem;font-family:var(--mono);font-size:.82rem;color:var(--ink-soft);line-height:1.6"></div>`;
-    const cv = root.querySelector('.kn-cv');
-    const readEl = root.querySelector('.kn-read');
+    const rng = seeded(11);
+    const N = 12;
+    const xs = [], ys = [];
+    for (let i = 0; i < N; i++) { const x = i / (N - 1); xs.push(x); ys.push(Math.sin(2 * Math.PI * x) + seededGaussian(rng) * 0.25); }
 
-    function classify(x, y, kk) {
-      // 모든 점 거리 계산
-      const ds = pts.map(p => [(p.x - x) ** 2 + (p.y - y) ** 2, p.c]);
-      ds.sort((a, b) => a[0] - b[0]);
-      let s = 0; for (let i = 0; i < kk; i++) s += ds[i][1];
-      return s / kk; // 0 = 클래스 0, 1 = 클래스 1, 사이 = 확률
-    }
-
-    function draw() {
-      const W = cv.width, H = cv.height;
-      const ctx = cv.getContext('2d');
-      const X_MIN = -3, X_MAX = 3, Y_MIN = -2.2, Y_MAX = 2.2;
-      const xat = x => (x - X_MIN) / (X_MAX - X_MIN) * W;
-      const yat = y => (Y_MAX - y) / (Y_MAX - Y_MIN) * H;
-      // 배경 결정 영역
-      const STEP = 6;
-      for (let py = 0; py < H; py += STEP) {
-        for (let px = 0; px < W; px += STEP) {
-          const x = X_MIN + (X_MAX - X_MIN) * (px / W);
-          const y = Y_MAX - (Y_MAX - Y_MIN) * (py / H);
-          const p = classify(x, y, k);
-          // 0 → structure-bg, 1 → style-bg
-          const r0 = 45 / 255, g0 = 91 / 255, b0 = 122 / 255;
-          const r1 = 192 / 255, g1 = 73 / 255, b1 = 46 / 255;
-          const rr = lerp(r0, r1, p), gg = lerp(g0, g1, p), bb = lerp(b0, b1, p);
-          ctx.fillStyle = `rgba(${(rr * 255) | 0},${(gg * 255) | 0},${(bb * 255) | 0},0.16)`;
-          ctx.fillRect(px, py, STEP + 0.5, STEP + 0.5);
-        }
+    function fitRidge(deg, lambda) {
+      const M = deg + 1;
+      const X = []; for (let i = 0; i < N; i++) { const r = []; for (let j = 0; j < M; j++) r.push(Math.pow(xs[i], j)); X.push(r); }
+      const XtX = []; for (let i = 0; i < M; i++) { const r = []; for (let j = 0; j < M; j++) { let s = 0; for (let k = 0; k < N; k++) s += X[k][i] * X[k][j]; r.push(s); } XtX.push(r); }
+      const Xty = []; for (let i = 0; i < M; i++) { let s = 0; for (let k = 0; k < N; k++) s += X[k][i] * ys[k]; Xty.push(s); }
+      for (let i = 0; i < M; i++) XtX[i][i] += lambda;
+      const A = XtX.map((r, i) => r.concat([Xty[i]]));
+      for (let i = 0; i < M; i++) {
+        let mx = i; for (let k = i + 1; k < M; k++) if (Math.abs(A[k][i]) > Math.abs(A[mx][i])) mx = k;
+        [A[i], A[mx]] = [A[mx], A[i]];
+        for (let k = i + 1; k < M; k++) { const f = A[k][i] / A[i][i]; for (let j = i; j <= M; j++) A[k][j] -= f * A[i][j]; }
       }
-      // 결정 경계 (0.5 등고선 근사)
-      ctx.strokeStyle = 'rgba(38,34,28,.5)'; ctx.lineWidth = 1.6;
-      for (let py = 0; py < H; py += STEP * 2) {
-        let prev = null;
-        for (let px = 0; px < W; px += STEP) {
-          const x = X_MIN + (X_MAX - X_MIN) * (px / W);
-          const y = Y_MAX - (Y_MAX - Y_MIN) * (py / H);
-          const p = classify(x, y, k);
-          if (prev !== null && (prev - 0.5) * (p - 0.5) < 0) {
-            ctx.fillRect(px - STEP / 2, py - 1, 2, 2);
-          }
-          prev = p;
-        }
+      const w = new Array(M).fill(0);
+      for (let i = M - 1; i >= 0; i--) { let s = A[i][M]; for (let j = i + 1; j < M; j++) s -= A[i][j] * w[j]; w[i] = s / A[i][i]; }
+      return w;
+    }
+    function pred(w, x) { let s = 0; for (let j = 0; j < w.length; j++) s += w[j] * Math.pow(x, j); return s; }
+
+    function render(logSigma2) {
+      // λ = σ²_noise / σ²_prior. σ_noise=0.25 가정.
+      const sigmaPrior2 = Math.pow(10, logSigma2);
+      const lambda = 0.0625 / sigmaPrior2;
+      const deg = 10;
+      const w = fitRidge(deg, lambda);
+
+      ctx.fillStyle = C.paper2; ctx.fillRect(0, 0, W, H);
+      // 좌측: 적합 곡선
+      const ax = drawAxes(ctx, W / 2, H, { xLabel: 'x', yLabel: 'y', padL: 50 });
+      const xP = (x) => ax.padL + x * ax.innerW;
+      const yP = (y) => ax.padT + (1 - (y + 1.5) / 3) * ax.innerH;
+
+      // 진짜 함수
+      ctx.strokeStyle = C.structureLo; ctx.lineWidth = 1.6; ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      for (let i = 0; i <= 200; i++) { const x = i / 200, y = Math.sin(2 * Math.PI * x); i ? ctx.lineTo(xP(x), yP(y)) : ctx.moveTo(xP(x), yP(y)); }
+      ctx.stroke(); ctx.setLineDash([]);
+      // 적합
+      ctx.strokeStyle = C.style; ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      for (let i = 0; i <= 200; i++) { const x = i / 200, y = pred(w, x); i ? ctx.lineTo(xP(x), yP(clamp(y, -2, 2))) : ctx.moveTo(xP(x), yP(clamp(y, -2, 2))); }
+      ctx.stroke();
+      // 데이터
+      ctx.fillStyle = C.ink; xs.forEach((x, i) => { ctx.beginPath(); ctx.arc(xP(x), yP(ys[i]), 4, 0, 7); ctx.fill(); });
+
+      // 우측: 가중치 막대
+      const rx = W / 2 + 30, ry = 30, rw = W / 2 - 60, rh = H - 80;
+      ctx.fillStyle = '#fff'; ctx.fillRect(rx, ry, rw, rh);
+      ctx.strokeStyle = C.inkFaint; ctx.strokeRect(rx, ry, rw, rh);
+      const M = w.length;
+      const bw = (rw - 20) / M;
+      const maxW = Math.max(0.1, ...w.map(Math.abs));
+      const mid = ry + rh / 2;
+      ctx.strokeStyle = C.inkFaint; ctx.beginPath(); ctx.moveTo(rx, mid); ctx.lineTo(rx + rw, mid); ctx.stroke();
+      for (let i = 0; i < M; i++) {
+        const h = (w[i] / maxW) * (rh / 2 - 12);
+        ctx.fillStyle = w[i] >= 0 ? C.structure : C.style;
+        ctx.fillRect(rx + 10 + bw * i, mid - h, bw - 4, h);
       }
-      // 점들
-      pts.forEach(p => {
-        const px = xat(p.x), py = yat(p.y);
-        ctx.fillStyle = p.c === 0 ? C.structure : C.style;
-        ctx.beginPath(); ctx.arc(px, py, 4.5, 0, 7); ctx.fill();
-        ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.2; ctx.stroke();
-      });
-      // 라벨
-      ctx.font = '11px "Spline Sans Mono", monospace';
-      ctx.fillStyle = C.inkSoft;
-      ctx.fillText('• 클래스 0', 12, 18); ctx.fillStyle = C.structure; ctx.fillRect(78, 12, 8, 8);
-      ctx.fillStyle = C.inkSoft;
-      ctx.fillText('• 클래스 1', 100, 18); ctx.fillStyle = C.style; ctx.fillRect(166, 12, 8, 8);
+      ctx.fillStyle = C.ink; ctx.font = '12px "Spline Sans Mono"'; ctx.textAlign = 'left';
+      ctx.fillText('가중치 w_j (j=0..10)', rx + 10, 24);
+
+      // 정보
+      const norm2 = w.reduce((s, x) => s + x * x, 0);
+      ctx.fillStyle = C.ink; ctx.font = '12px "Spline Sans Mono"'; ctx.textAlign = 'left';
+      ctx.fillText(`σ²_prior = ${sigmaPrior2.toFixed(3)}  →  λ = ${lambda.toFixed(3)}`, 56, H - 24);
+      ctx.fillStyle = C.style;
+      ctx.fillText(`‖w‖² = ${norm2.toFixed(2)}`, 56, H - 8);
     }
 
-    function update() {
-      draw();
-      const note = k === 1 ? 'k=1 — 경계가 들쭉날쭉, 잡음에 민감 (분산↑ · 편향↓)' :
-                   k >= 25 ? '큰 k — 경계가 거의 직선, 미세 구조 무시 (편향↑ · 분산↓)' :
-                   '중간 k — 부드러운 경계, 균형';
-      readEl.innerHTML = `k = <b>${k}</b><br><span style="color:var(--ink-faint)">${note}</span>`;
-    }
-
-    const ctr = document.createElement('div'); ctr.className = 'widget-controls';
-    ctr.innerHTML = `
-      <div class="slider"><label>k (이웃 수) <b class="kv">${k}</b></label>
-        <input type="range" min="1" max="30" value="${k}"></div>
-      <span style="font-size:.78rem;color:var(--ink-faint)">k는 모델 용량을 거꾸로 조절한다: k↓ = 용량↑</span>`;
+    const ctr = makeControls(`
+      <div class="slider"><label>가우시안 사전 분산 log₁₀(σ²_prior) <b class="iv">0.0</b></label>
+        <input type="range" min="-2" max="2" step="0.1" value="0.0"></div>
+      <span style="font-size:.8rem;color:var(--ink-faint)">σ²이 작으면 사전이 0 근처로 좁아 λ가 커지고 → 강한 L2 정칙화. σ²이 크면 사전이 평평해져 λ가 작아지고 → MLE에 가까워진다.</span>`);
     root.appendChild(ctr);
-    const sl = ctr.querySelector('input'), kv = ctr.querySelector('.kv');
-    sl.addEventListener('input', () => { k = +sl.value; kv.textContent = k; update(); });
-    update();
+    const sl = ctr.querySelector('input'), iv = ctr.querySelector('.iv');
+    sl.addEventListener('input', () => { iv.textContent = (+sl.value).toFixed(1); render(+sl.value); });
+    render(0.0);
   };
 
-  /* ---------- Q&A 아코디언 (공유: ../assets/widgets.js 의 NST.accordion 이용 가능) ---------- */
-  if (!NST.accordion) {
-    NST.accordion = function (root) {
-      root.querySelectorAll('.qa').forEach(qa => {
-        const q = qa.querySelector('.qa-q');
-        q.addEventListener('click', () => qa.classList.toggle('open'));
-      });
+  /* ============================================================
+     WIDGET 10 — 손실 함수 가족 (sub-chapter 08)
+     같은 데이터, 다른 손실 (MSE, MAE, Huber, log-loss).
+     ============================================================ */
+  NST.lossFamily = function (root) {
+    const W = 720, H = 320;
+    const { cv, ctx } = mkCanvas(W, H);
+    root.appendChild(cv);
+
+    const losses = {
+      mse: { name: 'MSE  L = (y−ŷ)²', col: C.structure, fn: (e) => e * e },
+      mae: { name: 'MAE  L = |y−ŷ|', col: C.style, fn: (e) => Math.abs(e) },
+      huber: { name: 'Huber δ=1', col: C.synth, fn: (e) => Math.abs(e) <= 1 ? 0.5 * e * e : Math.abs(e) - 0.5 },
+      ce: { name: '교차엔트로피 (이진)', col: C.styleLo, fn: (e) => { const p = 1 / (1 + Math.exp(-e * 3)); return -Math.log(clamp(p, 1e-6, 1 - 1e-6)); } },
     };
-  }
+
+    let active = { mse: true, mae: true, huber: true, ce: false };
+
+    function render() {
+      const ax = drawAxes(ctx, W, H, { xLabel: '오차 e = y − ŷ', yLabel: '손실 L', padL: 48 });
+      const xToPix = (e) => ax.padL + ((e + 3) / 6) * ax.innerW;
+      const yToPix = (y) => ax.padT + (1 - y / 6) * ax.innerH;
+
+      Object.entries(losses).forEach(([k, L]) => {
+        if (!active[k]) return;
+        ctx.strokeStyle = L.col; ctx.lineWidth = 2.2; ctx.beginPath();
+        for (let i = 0; i <= 200; i++) {
+          const e = -3 + (i / 200) * 6;
+          const y = clamp(L.fn(e), 0, 6);
+          const px = xToPix(e), py = yToPix(y);
+          i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+        }
+        ctx.stroke();
+      });
+      ctx.font = '12px "Spline Sans Mono"'; ctx.textAlign = 'left';
+      let yo = 28;
+      Object.entries(losses).forEach(([k, L]) => {
+        ctx.fillStyle = active[k] ? L.col : C.inkFaint;
+        ctx.fillText((active[k] ? '— ' : '· ') + L.name, W - 240, yo); yo += 18;
+      });
+    }
+
+    const ctr = makeControls(`
+      <div class="toggle-row">
+        ${Object.entries(losses).map(([k, L]) => `<button class="btn lo-btn" data-k="${k}">${L.name.split(' ')[0]}</button>`).join('')}
+      </div>
+      <span style="font-size:.8rem;color:var(--ink-faint)">버튼으로 각 손실 곡선을 켜고 끈다. MSE는 큰 오차를 강하게 벌하고, MAE는 모든 오차를 같은 기울기로 벌한다. Huber는 둘의 절충, 교차엔트로피는 확률 예측에 쓴다.</span>`);
+    root.appendChild(ctr);
+    ctr.querySelectorAll('.lo-btn').forEach(b => {
+      b.addEventListener('click', () => { active[b.dataset.k] = !active[b.dataset.k]; render(); });
+    });
+    render();
+  };
+
+  /* ============================================================
+     WIDGET 11 — 용량과 표현 가능한 함수 (sub-chapter 03)
+     선형 / 다항 / 신경망 — 가설 공간 크기 비교.
+     ============================================================ */
+  NST.hypothesisSpace = function (root) {
+    const W = 720, H = 320;
+    const { cv, ctx } = mkCanvas(W, H);
+    root.appendChild(cv);
+
+    const families = {
+      linear: { name: '선형 f(x)=ax+b', col: C.structure, samples: (rng) => () => { const a = (rng() - 0.5) * 3, b = (rng() - 0.5) * 2; return (x) => a * x + b; } },
+      poly: { name: '3차 다항', col: C.style, samples: (rng) => () => { const a = (rng() - 0.5) * 6, b = (rng() - 0.5) * 4, c = (rng() - 0.5) * 2, d = (rng() - 0.5) * 1; return (x) => a * Math.pow(x, 3) + b * Math.pow(x, 2) + c * x + d; } },
+      mlp: {
+        name: '1-층 신경망 (h=6)', col: C.synth, samples: (rng) => () => {
+          const w1 = []; const b1 = []; const w2 = []; const b2 = (rng() - 0.5) * 2;
+          for (let i = 0; i < 6; i++) { w1.push((rng() - 0.5) * 6); b1.push((rng() - 0.5) * 3); w2.push((rng() - 0.5) * 3); }
+          return (x) => { let s = b2; for (let i = 0; i < 6; i++) s += w2[i] * Math.max(0, w1[i] * x + b1[i]); return s; };
+        }
+      },
+    };
+
+    let family = 'linear';
+
+    function render() {
+      const ax = drawAxes(ctx, W, H, { xLabel: 'x', yLabel: 'f(x)', padL: 48 });
+      const xP = (x) => ax.padL + ((x + 1) / 2) * ax.innerW;
+      const yP = (y) => ax.padT + (1 - (y + 4) / 8) * ax.innerH;
+      const fam = families[family];
+      const rng = seeded(3);
+      const mk = fam.samples(rng);
+      for (let s = 0; s < 12; s++) {
+        const f = mk();
+        ctx.strokeStyle = fam.col + Math.floor(60 + Math.random() * 100).toString(16); ctx.globalAlpha = 0.55;
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        for (let i = 0; i <= 100; i++) { const x = -1 + (i / 100) * 2; const y = clamp(f(x), -5, 5); i ? ctx.lineTo(xP(x), yP(y)) : ctx.moveTo(xP(x), yP(y)); }
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = C.ink; ctx.font = '13px "Fraunces"'; ctx.textAlign = 'left';
+      ctx.fillText(`가설 공간: ${fam.name}`, 56, 24);
+      ctx.fillStyle = C.inkFaint; ctx.font = '11px "Pretendard"';
+      const hint = { linear: '두 개의 자유도(기울기·절편). 표현력이 가장 작다.', poly: '네 개의 자유도. 곡선을 그릴 수 있다.', mlp: '여섯 개 ReLU 유닛 + 출력층. 자유도 25개.' };
+      ctx.fillText(hint[family], 56, H - 8);
+    }
+
+    const ctr = makeControls(`
+      <div class="toggle-row">
+        ${Object.entries(families).map(([k, f]) => `<button class="btn hs-btn" data-k="${k}">${f.name}</button>`).join('')}
+      </div>
+      <span style="font-size:.8rem;color:var(--ink-faint)">같은 입력 구간에서 각 가설 공간이 그려낼 수 있는 함수 12개를 무작위 표본으로 본다. 표현력의 차이가 눈으로 드러난다.</span>`);
+    root.appendChild(ctr);
+    ctr.querySelectorAll('.hs-btn').forEach(b => { b.addEventListener('click', () => { family = b.dataset.k; render(); }); });
+    render();
+  };
+
+  /* ============================================================
+     WIDGET 12 — 그라디언트 학습의 한계 풍경 (sub-chapter 14)
+     비볼록 손실 곡선 위에서 출발점을 바꿔가며 경사하강을 돌려
+     국소 최소·안장점·전역 최소가 어떻게 갈리는지 시연.
+     ============================================================ */
+  NST.gradLandscape = function (root) {
+    const W = 720, H = 380;
+    const { cv, ctx } = mkCanvas(W, H);
+    root.appendChild(cv);
+
+    // 비볼록 1차원 손실 J(θ) = sin(3θ)·0.4 + (θ-1.0)²·0.18 + 0.25
+    // 국소 최소 두 개와 안장점 같은 평탄 구간을 동시에 가진다.
+    function J(t) { return 0.4 * Math.sin(3 * t) + 0.18 * (t - 1.0) * (t - 1.0) + 0.25; }
+    function dJ(t) { return 0.4 * 3 * Math.cos(3 * t) + 0.36 * (t - 1.0); }
+
+    // 손실 풍경의 정의역
+    const TMIN = -2.6, TMAX = 3.6;
+    function tToPx(ax, t) { return ax.padL + ((t - TMIN) / (TMAX - TMIN)) * ax.innerW; }
+    function jToPx(ax, j) { return ax.padT + (1 - (j - 0.0) / 1.6) * ax.innerH; }
+
+    // 경사하강 궤적 계산 (학습률 lr, 최대 60 스텝)
+    function trajectory(t0, lr, steps) {
+      const path = [{ t: t0, j: J(t0) }];
+      let t = t0;
+      for (let i = 0; i < steps; i++) {
+        const g = dJ(t);
+        t = t - lr * g;
+        if (t < TMIN) t = TMIN; if (t > TMAX) t = TMAX;
+        path.push({ t, j: J(t) });
+        if (Math.abs(g) < 1e-4) break;
+      }
+      return path;
+    }
+
+    function render(t0, lr) {
+      const ax = drawAxes(ctx, W, H, { xLabel: '매개변수 θ', yLabel: '손실 J(θ)', padL: 50 });
+
+      // 풍경 음영 (먼저 채우고 그 위에 윤곽선)
+      ctx.fillStyle = C.structureLo + '18'; ctx.beginPath();
+      for (let i = 0; i <= 240; i++) {
+        const t = TMIN + (i / 240) * (TMAX - TMIN);
+        const px = tToPx(ax, t), py = jToPx(ax, clamp(J(t), 0, 1.6));
+        i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+      }
+      ctx.lineTo(tToPx(ax, TMAX), jToPx(ax, 0));
+      ctx.lineTo(tToPx(ax, TMIN), jToPx(ax, 0));
+      ctx.closePath(); ctx.fill();
+
+      // 손실 풍경 곡선
+      ctx.strokeStyle = C.inkSoft; ctx.lineWidth = 2; ctx.beginPath();
+      for (let i = 0; i <= 240; i++) {
+        const t = TMIN + (i / 240) * (TMAX - TMIN);
+        const px = tToPx(ax, t), py = jToPx(ax, clamp(J(t), 0, 1.6));
+        i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+      }
+      ctx.stroke();
+
+      // 주요 임계점 표시
+      // 수치적으로 dJ=0 을 찾아 마커
+      const critical = [];
+      let prev = dJ(TMIN);
+      for (let i = 1; i <= 600; i++) {
+        const t = TMIN + (i / 600) * (TMAX - TMIN);
+        const cur = dJ(t);
+        if (prev * cur < 0) critical.push(t - (TMAX - TMIN) / 1200);
+        prev = cur;
+      }
+      let globalT = critical[0] || 0, globalJ = J(globalT);
+      critical.forEach(t => { if (J(t) < globalJ) { globalT = t; globalJ = J(t); } });
+      critical.forEach(t => {
+        const j = J(t);
+        const isGlobal = Math.abs(t - globalT) < 0.05;
+        ctx.fillStyle = isGlobal ? C.style : C.synth;
+        ctx.beginPath(); ctx.arc(tToPx(ax, t), jToPx(ax, j), isGlobal ? 6 : 4.5, 0, 7); ctx.fill();
+        ctx.font = '10px "Spline Sans Mono", monospace'; ctx.fillStyle = isGlobal ? C.style : C.inkFaint;
+        ctx.textAlign = 'center';
+        ctx.fillText(isGlobal ? '전역' : '국소', tToPx(ax, t), jToPx(ax, j) + 18);
+      });
+
+      // 경사하강 궤적
+      const path = trajectory(t0, lr, 60);
+      ctx.strokeStyle = C.structure; ctx.lineWidth = 1.6; ctx.beginPath();
+      path.forEach((p, i) => {
+        const px = tToPx(ax, p.t), py = jToPx(ax, clamp(p.j, 0, 1.6));
+        i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+      });
+      ctx.stroke();
+
+      // 시작점 + 끝점
+      const s = path[0], e = path[path.length - 1];
+      ctx.fillStyle = C.inkSoft;
+      ctx.beginPath(); ctx.arc(tToPx(ax, s.t), jToPx(ax, s.j), 5, 0, 7); ctx.fill();
+      ctx.fillStyle = C.structure;
+      ctx.beginPath(); ctx.arc(tToPx(ax, e.t), jToPx(ax, e.j), 6, 0, 7); ctx.fill();
+
+      // 라벨 + 진단
+      ctx.font = '12px "Spline Sans Mono", monospace'; ctx.textAlign = 'left';
+      ctx.fillStyle = C.ink;
+      ctx.fillText(`출발 θ₀ = ${t0.toFixed(2)} ,  학습률 lr = ${lr.toFixed(2)}`, 56, 24);
+      ctx.fillStyle = C.structure;
+      ctx.fillText(`수렴 θ ≈ ${e.t.toFixed(2)}  ,  J ≈ ${e.j.toFixed(3)}`, 56, 42);
+
+      // 전역 정답과 거리
+      const dist = Math.abs(e.t - globalT);
+      ctx.fillStyle = dist < 0.15 ? C.style : C.synth;
+      const note = dist < 0.15 ? '전역 최소에 도달했다.'
+        : Math.abs(dJ(e.t)) < 1e-3 ? '국소 최소에 갇혔다 (혹은 안장점에 머물렀다).'
+        : '아직 수렴 중이다 — 스텝을 더 돌리거나 학습률을 키워야 한다.';
+      ctx.fillText(note, 56, 60);
+    }
+
+    const ctr = makeControls(`
+      <div class="slider"><label>출발점 θ₀ <b class="iv1">-2.0</b></label>
+        <input type="range" min="-2.6" max="3.6" step="0.05" value="-2.0" class="it"></div>
+      <div class="slider"><label>학습률 lr <b class="iv2">0.10</b></label>
+        <input type="range" min="0.01" max="0.40" step="0.01" value="0.10" class="ir"></div>
+      <span style="font-size:.8rem;color:var(--ink-faint)">θ₀를 좌·우로 옮기면 같은 학습률으로 시작해도 다른 최소로 흘러간다. 한 풍경 안에 국소 최소 여러 개가 있으면 경사하강이 어느 골짜기에 빠질지 미리 알 수 없다.</span>`);
+    root.appendChild(ctr);
+    function read() {
+      const t = +ctr.querySelector('.it').value;
+      const r = +ctr.querySelector('.ir').value;
+      ctr.querySelector('.iv1').textContent = t.toFixed(2);
+      ctr.querySelector('.iv2').textContent = r.toFixed(2);
+      render(t, r);
+    }
+    ctr.querySelectorAll('input').forEach(i => i.addEventListener('input', read));
+    read();
+  };
+
+  /* ============================================================
+     WIDGET 13 — 시험 대비 Q&A 아코디언 (sub-chapter 15)
+     ============================================================ */
+  NST.accordion = function (root) {
+    root.querySelectorAll('.qa').forEach(qa => {
+      const q = qa.querySelector('.qa-q');
+      q.addEventListener('click', () => qa.classList.toggle('open'));
+    });
+  };
+
+  /* 자동 부팅 */
+  document.addEventListener('DOMContentLoaded', function () {
+    if (typeof NST.initChrome === 'function') NST.initChrome();
+    if (window.renderMathInElement && typeof NST.renderMath === 'function') NST.renderMath();
+    else window.addEventListener('load', function () { if (typeof NST.renderMath === 'function') NST.renderMath(); });
+  });
 })();

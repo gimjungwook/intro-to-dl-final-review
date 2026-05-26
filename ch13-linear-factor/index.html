@@ -3,20 +3,24 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Chapter 13 · 선형 요소 모델 — 인터랙티브 복습</title>
+<title>Chapter 13 / 선형 요소 모델 — 인터랙티브 복습</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
   .masthead { position: relative; max-width: var(--wide); margin: 0 auto; padding: 1.5rem 1.4rem 0; }
+  .home-link { display: inline-flex; align-items: center; gap: .35rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .12em; color: var(--ink-faint); text-decoration: none; padding: .35rem .6rem; margin-bottom: .9rem; border-radius: 6px; border: 1px solid var(--line-soft); transition: all .15s var(--ease); }
+  .home-link:hover { color: var(--ink); border-color: var(--line); background: var(--paper-2); }
   .hero-wrap { position: relative; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: linear-gradient(180deg,#fff,var(--paper-2)); box-shadow: var(--shadow-plate); }
-  #hero { display: block; width: 100%; height: 380px; }
+  #hero { display: block; width: 100%; }
   .hero-cap { position: absolute; left: 1.2rem; bottom: 1rem; font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; color: var(--ink-faint); pointer-events: none; }
   .hero-cap b { color: var(--structure); } .hero-cap em { color: var(--style); font-style: normal; }
+
   .title-block { max-width: var(--wide); margin: 2.4rem auto 0; padding-inline: 1.4rem; }
   .title-block .kicker { display: block; margin-bottom: 1rem; }
-  .title-block h1 { font-size: clamp(2.6rem, 7vw, 5rem); margin: 0; line-height: 1.05; }
+  .title-block h1 { font-size: clamp(2.6rem, 7vw, 5rem); margin: 0; line-height: 1.06; }
   .title-block h1 em { color: var(--style); font-style: normal; }
   .paper-meta { display: flex; flex-wrap: wrap; gap: .5rem 1.6rem; margin-top: 1.4rem; font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); letter-spacing: .02em; }
   .paper-meta span b { color: var(--ink); font-weight: 500; }
@@ -31,15 +35,14 @@
   .plate .spectrum i { display: block; height: 100%; }
   .plate .go { margin-top: 1rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; color: var(--style); opacity: 0; transform: translateX(-4px); transition: .2s var(--ease); }
   .plate:hover .go { opacity: 1; transform: translateX(0); }
-  .plate .kw { margin-top: .8rem; font-family: var(--mono); font-size: .68rem; color: var(--ink-faint); letter-spacing: .04em; }
 
   .section-intro { max-width: var(--measure); margin: 1rem auto 0; padding-inline: 1.4rem; }
   .section-intro h2 { margin-top: 1rem; }
   .twopole { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; max-width: var(--measure); margin: 1.6rem auto; padding-inline: 1.4rem; }
   .pole { padding: 1.1rem 1.2rem; border-radius: 11px; }
-  .pole.s1 { background: var(--structure-bg); } .pole.s2 { background: var(--style-bg); }
+  .pole.s1 { background: var(--style-bg); } .pole.s2 { background: var(--structure-bg); }
   .pole h4 { margin: 0 0 .4rem; font-family: var(--serif); font-size: 1.1rem; }
-  .pole.s1 h4 { color: var(--structure); } .pole.s2 h4 { color: var(--style); }
+  .pole.s1 h4 { color: var(--style); } .pole.s2 h4 { color: var(--structure); }
   .pole p { margin: 0; font-size: .9rem; color: var(--ink-soft); line-height: 1.5; }
   @media (max-width: 560px){ .twopole{ grid-template-columns: 1fr; } }
 
@@ -58,32 +61,33 @@
 <body>
 
 <header class="masthead">
+  <a class="home-link" href="../index.html">← 기말고사 인터랙티브 복습</a>
   <div class="hero-wrap">
     <canvas id="hero"></canvas>
-    <div class="hero-cap"><b>관측 — 고차원 점구름</b> ↔ <em>잠재 — 저차원 평면</em> · 마우스 드래그</div>
+    <div class="hero-cap"><b>관측 데이터 (구름)</b> ↔ <em>숨은 요소 (저차원 축)</em> / 마우스를 움직여 보세요</div>
   </div>
 </header>
 
 <div class="title-block">
-  <span class="kicker">Deep Learning Book · Chapter 13 · Linear Factor Models</span>
-  <h1>관측 뒤에 숨은<br><em>몇 개의 원인</em>을 찾아내기</h1>
+  <span class="kicker">Deep Learning Book / Chapter 13 / Linear Factor Models</span>
+  <h1>관측의 뒤에는<br><em>몇 개의 숨은 다이얼</em>이 있다</h1>
   <div class="paper-meta">
-    <span><b>딥러닝 개론</b> 기말고사 인터랙티브</span>
-    <span>제작 <b>김정욱</b></span>
-    <span>분량 <b>약 35분</b></span>
-    <span>위젯 <b>5개</b></span>
+    <span><b>딥러닝 개론</b> 기말고사 인터랙티브 복습</span>
+    <span>저자 <b>Goodfellow, Bengio, Courville (2016)</b></span>
+    <span>읽는 시간 <b>약 80분</b></span>
+    <span>D-day <b>2026-06-04</b></span>
   </div>
 </div>
 
 <section class="section-intro">
   <h2>한 문장으로</h2>
-  <p>이 장은 <strong>"우리가 관측하는 고차원 데이터 뒤에는 사실 몇 개의 보이지 않는 원인(잠재 변수, latent variable)이 있고, 관측은 그 원인들의 <em>선형</em> 조합에 잡음을 더한 것"</strong>이라는 단 하나의 발상으로 통일된다. 모델이 달라지는 이유는 그 잠재 변수의 분포에 어떤 가정을 거느냐, 그 차이뿐이다.</p>
-  <p>처음 읽을 때 가장 중요한 점은, 이 장이 <em>"새 신경망을 가르치는"</em> 장이 <strong>아니라</strong>는 것이다. 이 장은 <span class="t-synth">생성 모델(generative model)</span>의 가장 단순한 분파를 다루며, Part III 전체 — 오토인코더, 표상 학습, 그리고 그 너머의 VAE·확산 모델 — 가 어떤 자리에서 출발하는지를 보여주는 <strong>출발선</strong>이다.</p>
+  <p>Chapter 13은 책이 처음으로 <strong>생성 모델(generative model)</strong>이라는 큰 가족에 발을 들이는 장이다. 가장 단순한 형태인 <em>선형 요소 모델(linear factor model)</em>로 시작하는데, 한 줄로 요약하면 <strong>"관측된 데이터 x는 우리가 직접 못 보는 몇 개의 숨은 요소(latent factor) h를 선형으로 섞고 잡음을 더해서 만들어졌다"</strong>는 가정이다.</p>
+  <p>이 단순한 가정 하나에서 요소 분석(Factor Analysis), 확률적 PCA(Probabilistic PCA), PCA(Principal Component Analysis), ICA(Independent Component Analysis), 희소 코딩(sparse coding), 슬로우 피처 분석(Slow Feature Analysis)이 모두 갈라져 나온다. 갈라지는 분기점은 단 두 곳이다 — <em>"숨은 요소 h에 어떤 분포를 가정하는가"</em>와 <em>"잡음을 어떻게 다루는가"</em>. 이 두 다이얼을 어떻게 돌리느냐가 모델의 성격을 결정한다.</p>
 </section>
 
 <div class="twopole">
-  <div class="pole s1"><h4>잠재 변수 (원인)</h4><p>$h$. 관측되지 않는 소수의 원인. 분포 $p(h)$의 모양이 이 모델 가족의 정체성을 결정한다. 가우시안이면 FA/PPCA, 비가우시안이면 ICA, 희소면 희소 코딩.</p></div>
-  <div class="pole s2"><h4>관측 변수 (결과)</h4><p>$x = Wh + b + \text{noise}$. 잠재 원인들의 <strong>선형</strong> 조합에 잡음이 더해진 결과. $W$의 열들이 "사전(dictionary)"이라는 의미 단위가 된다.</p></div>
+  <div class="pole s1"><h4>잠재 (Latent · 못 보는 원인)</h4><p>관측 뒤에서 데이터를 만들어 내는 몇 개의 숨은 다이얼. h라는 짧은 벡터로 표현된다. h에 어떤 사전 분포(prior)를 가정하느냐 — 가우시안, 비가우시안, 희소, 천천히 변함 — 가 모델을 가른다. 이 사이트에서 <b>웜한 주홍</b>으로 표시된다.</p></div>
+  <div class="pole s2"><h4>관측 (Observed · 우리가 본 결과)</h4><p>실제로 우리 손에 들어오는 데이터 x. 픽셀, 음파, 평점, 신호. 모델은 "h가 어떻게 섞여서 x가 됐는가"라는 선형 사상 x = Wh + b + 잡음 을 가정한다. 이 사이트에서 <b>차분한 파랑</b>으로 표시된다.</p></div>
 </div>
 
 <section class="plates" id="plates"></section>
@@ -94,164 +98,127 @@
 </section>
 
 <footer class="colophon">
-  <p>이 해설은 Goodfellow, Bengio, Courville의 Deep Learning Book Chapter 13 (Linear Factor Models)을 바텀업으로 다시 쓴 것이다. 잠재 변수의 직관에서 출발해 가우시안 가정(FA·PPCA), 비가우시안 가정(ICA), 희소 가정(희소 코딩), 그리고 매니폴드 해석까지 단계별로 쌓아 올린다. 모든 수식은 "왜 그 형태인가"를 함께 설명한다.</p>
+  <p>이 해설은 Goodfellow, Bengio, Courville(2016) 13장 "Linear Factor Models"를 바탕으로 재구성한 시험 대비 자료다. 12개 sub-chapter로 나눠 잠재 변수의 직관에서 시작해 PCA, ICA, 희소 코딩, 슬로우 피처 분석, 매니폴드(manifold)까지 단계적으로 쌓는다. 각 절은 "왜 이 모델이 그런 모양인가"를 비유와 위젯으로 풀고, 시험 대비 마지막 절에 15-20개 자가점검 카드를 둔다. 위젯은 PCA 2D 투영, ICA-PCA 축 비교, 희소 코딩 사전 시각화, 요소 분석 잠재 to 관측 흐름, 매니폴드 평면 vs 곡면, 칵테일 파티 신호 분리 등으로 직접 만져 본다.</p>
   <p class="src">
-    원서 · <a href="https://www.deeplearningbook.org/contents/linear_factors.html">deeplearningbook.org/contents/linear_factors.html</a><br>
-    과제 통합 요약 · <a href="../../../03-과제-제출/IntroToDL_Week9_22000168.md">IntroToDL_Week9_22000168.md</a><br>
-    상위 인덱스 · <a href="../index.html">기말고사 인터랙티브 표지</a>
+    원문 / <a href="https://www.deeplearningbook.org/contents/linear_factors.html">deeplearningbook.org/linear_factors</a><br>
+    과제 노트 / <a href="../../../03-과제-제출/IntroToDL_Week9_22000168.md">IntroToDL_Week9_22000168.md (Ch.13-14)</a><br>
+    인접 장 / <a href="../ch12-applications/index.html">Ch.12 응용</a> · <a href="../ch14-autoencoder/index.html">Ch.14 오토인코더</a> · <a href="../ch15-representation/index.html">Ch.15 표상학습</a>
   </p>
 </footer>
 
 <script>
-  const CHAPTERS = [
-    { no:'01', t:'잠재 변수 모델 — 관측 뒤에 무엇이 있는가', d:'몇 개의 보이지 않는 원인이 모든 관측의 상관을 설명한다는 발상. 공통 템플릿 $x = Wh + b + \\text{noise}$와 $p(h)$가 모델의 정체성을 만드는 이유.', sp:['structure-lo','structure'] },
-    { no:'02', t:'요소 분석(FA)과 확률적 PCA — 가우시안 잠재공간', d:'잠재 변수에 가우시안 사전을 깐다. FA는 차원별 잡음, PPCA는 등방 잡음. 사후 분포가 닫힌 형태로 풀린다는 사실이 모든 단순함의 뿌리.', sp:['structure','synth'] },
-    { no:'03', t:'ICA — 가우시안이 아닌 독립 신호 분리', d:'칵테일 파티 문제. 가우시안 가정으로는 회전 모호성 때문에 원천 분리가 원리적으로 불가능하다. 비가우시안성은 ICA의 산소.', sp:['style','synth'] },
-    { no:'04', t:'희소 코딩 — 사전(dictionary)이라는 표상', d:'Laplace/Cauchy 같은 첨예한 사전이 $h$의 거의 모든 성분을 0에 붙인다. 추론은 매번 최적화로, 그 대가로 V1 단순세포처럼 생긴 사전을 얻는다.', sp:['style','style-lo'] },
-    { no:'05', t:'평평한 매니폴드 — Ch.14·15로 가는 다리', d:'선형 요소 모델은 결국 데이터에 평평한 저차원 부분공간을 끼워 맞춘다. 휘어진 매니폴드에는 무력하다는 한계가, 다음 장 오토인코더의 동기.', sp:['structure','style','synth'] },
-    { no:'06', t:'시험 대비 — 한 장 요약과 예상 문제', d:'PCA/PPCA/FA/ICA/희소 코딩의 분포 가정 비교표. 회전 모호성·등방 잡음·사전·매니폴드 한계의 한 줄 답안. Ch.14로 가는 다리.', sp:['ink-soft','ink'] },
+  const SUBCHAPTERS = [
+    { no:'01', t:'잠재 변수 모델의 직관 — 관측 뒤에는 무엇이 있는가', d:'키와 몸무게라는 두 관측 뒤에 "체격"이라는 숨은 다이얼이 있다는 그림. 잠재 변수(latent variable)와 관측 변수(observed variable)의 정확한 구분, 그리고 "생성 이야기(generative story)"라는 사고법.', sp:['style','synth'] },
+    { no:'02', t:'생성 모델 vs 판별 모델 — 책의 후반부가 갈라지는 지점', d:'1-12장의 분류기는 모두 판별 모델(discriminative model)이었다. 13장부터 생성 모델(generative model)로 옮겨가는 이유. p(x)와 p(y|x)의 차이가 실제 어떤 작업을 가능하게 하는가.', sp:['structure','synth'] },
+    { no:'03', t:'요소 분석(FA) — 가우시안 잠재 공간의 첫 모델', d:'h ~ N(0, I), x = Wh + b + 잡음. 각 관측 차원마다 자기 잔차 분산을 가질 수 있는 "가장 표현력 있는 가우시안 가족". 왜 가우시안에서 시작하는가, 무엇을 못 잡는가.', sp:['style'] },
+    { no:'04', t:'확률적 PCA — 요소 분석을 더 좁히면 PCA로 가는 다리', d:'요소 분석에서 잡음을 등방(isotropic)으로 좁히면 확률적 PCA(probabilistic PCA, PPCA)가 된다. 잡음 분산이 0으로 가면 전통 PCA로 수렴한다는 정확한 진술과 그 의미.', sp:['structure','style'] },
+    { no:'05', t:'전통 PCA — 분산을 최대로 잡는 직선 찾기', d:'확률적 시각이 아닌 기하적 시각의 PCA. "데이터가 가장 멀리 흩어진 방향을 찾아 그 직선 위에 사영(project)한다." 공분산 행렬의 고유분해(eigendecomposition) 한 줄 풀이.', sp:['structure'] },
+    { no:'06', t:'PCA의 한계 — 가우시안 가정과 선형성이 잡지 못하는 것', d:'PCA가 두 개의 음원을 분리하지 못하는 이유. 가우시안 가정이 회전 모호성(rotational ambiguity)을 부른다는 사실, 그리고 선형성이 휘어진 매니폴드를 못 따라간다는 사실.', sp:['style','synth'] },
+    { no:'07', t:'ICA — 칵테일 파티에서 음원 분리하기', d:'독립 성분 분석(Independent Component Analysis). 세 사람이 동시에 말하는 칵테일 파티에서 두 마이크의 녹음만으로 각 사람의 목소리를 분리하는 문제. 왜 비가우시안 가정이 핵심인가.', sp:['style'] },
+    { no:'08', t:'희소 코딩 1 — 사전(dictionary)과 희소 표상', d:'h가 대부분 0이고 몇 개만 켜진다는 사전 가정. 자연 이미지에서 V1 단순 세포(V1 simple cell)와 닮은 가버 필터(Gabor filter)가 자연스럽게 나타나는 이유. Laplace prior가 어떻게 희소성을 강제하는가.', sp:['synth'] },
+    { no:'09', t:'희소 코딩 2 — ISTA, 압축 감지, 인코더 없음의 대가', d:'희소 코딩에는 학습된 인코더(encoder)가 없다. 매 입력마다 ISTA(iterative shrinkage-thresholding algorithm)로 h를 푼다. 압축 감지(compressed sensing)와의 깊은 관계.', sp:['style','synth'] },
+    { no:'10', t:'슬로우 피처 분석 — 시간에 천천히 변하는 특징', d:'영상에서 "자동차의 위치"는 빠르게 변하고 "자동차의 정체성"은 천천히 변한다는 직관. 시간에 천천히 변하는 특징을 우선적으로 뽑는 슬로우 피처 분석(Slow Feature Analysis, SFA).', sp:['structure-lo','style'] },
+    { no:'11', t:'매니폴드의 첫 등장 — 고차원 점들의 저차원 곡면', d:'선형 요소 모델은 모두 평면(flat affine subspace)을 데이터에 끼워 맞춘다. 실제 데이터는 휘어진 매니폴드 위에 있다. 평면 vs 곡면을 직접 비교하며, 14장 오토인코더로 가는 다리를 놓는다.', sp:['structure','style','synth'] },
+    { no:'12', t:'시험 대비 — 핵심 구분, 예상 질문 카드 17장', d:'요소 분석 vs PPCA vs PCA 비교표, ICA와 PCA가 갈라지는 한 줄, 희소 코딩이 V1과 닮는 이유, 매니폴드와 평면의 차이. 시험 직전에 한 번 더 훑을 자가점검 17장.', sp:['ink'] },
   ];
-  const colMap = { structure:'var(--structure)', 'structure-lo':'var(--structure-lo)', style:'var(--style)', 'style-lo':'var(--style-lo)', synth:'var(--synth)', ink:'var(--ink)', 'ink-soft':'var(--ink-soft)' };
+  const colMap = { structure:'var(--structure)', 'structure-lo':'var(--structure-lo)', style:'var(--style)', 'style-lo':'var(--style-lo)', synth:'var(--synth)', ink:'var(--ink-soft)' };
   const platesEl = document.getElementById('plates');
   const flowEl = document.getElementById('pathflow');
-  CHAPTERS.forEach((c, idx) => {
+  SUBCHAPTERS.forEach((c, idx) => {
     const sp = c.sp.length === 1 ? [c.sp[0], c.sp[0]] : c.sp;
     const a = document.createElement('a');
     a.className = 'plate'; a.href = c.no + '.html';
-    a.innerHTML = `
-      <div class="spectrum">${sp.map(s=>`<i style="flex:1;background:${colMap[s]}"></i>`).join('')}</div>
-      <span class="pno">SUB-CHAPTER ${c.no}</span>
-      <h3>${c.t}</h3>
-      <p>${c.d}</p>
-      <span class="go">읽기 →</span>`;
+    a.innerHTML =
+      '<div class="spectrum">' + sp.map(s => '<i style="flex:1;background:' + colMap[s] + '"></i>').join('') + '</div>' +
+      '<span class="pno">SUB ' + c.no + '</span>' +
+      '<h3>' + c.t + '</h3>' +
+      '<p>' + c.d + '</p>' +
+      '<span class="go">읽기 →</span>';
     platesEl.appendChild(a);
 
     const f = document.createElement('a'); f.href = c.no + '.html';
-    f.innerHTML = `<b>${c.no}</b> ${c.t.split('—')[0].trim()}`;
+    const shortTitle = c.t.split('—')[0].trim().slice(0, 14);
+    f.innerHTML = '<b>' + c.no + '</b> ' + shortTitle + '…';
     flowEl.appendChild(f);
-    if (idx < CHAPTERS.length - 1) { const s = document.createElement('span'); s.className='arr'; s.textContent='→'; flowEl.appendChild(s); }
+    if (idx < SUBCHAPTERS.length - 1) { const s = document.createElement('span'); s.className='arr'; s.textContent='→'; flowEl.appendChild(s); }
   });
 
-  // 히어로 — 3D 점구름이 평평한 매니폴드(저차원 평면)에 사영
+  // Hero: 비등방 가우시안 구름 + 두 주성분 축
   window.addEventListener('load', () => {
+    if (!window.THREE || !document.getElementById('hero')) return;
     const canvas = document.getElementById('hero');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    const wrap = canvas.parentElement;
+    const css = getComputedStyle(document.documentElement);
+    const C = {
+      structure: css.getPropertyValue('--structure').trim() || '#2D5B7A',
+      style: css.getPropertyValue('--style').trim() || '#C0492E',
+      synth: css.getPropertyValue('--synth').trim() || '#A47B2E',
+    };
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    const scene = new THREE.Scene();
+    const cam = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+    cam.position.set(0, 0, 3.0);
+
+    const N = 1400;
+    const pos = new Float32Array(N * 3);
+    const col = new Float32Array(N * 3);
+    function gauss() {
+      let u = 0, v = 0;
+      while (u === 0) u = Math.random();
+      while (v === 0) v = Math.random();
+      return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+    }
+    function hex(s){ return [parseInt(s.slice(1,3),16)/255, parseInt(s.slice(3,5),16)/255, parseInt(s.slice(5,7),16)/255]; }
+    const cStyle = hex(C.style), cStruct = hex(C.structure);
+    for (let i = 0; i < N; i++) {
+      const a = gauss() * 0.7;
+      const b = gauss() * 0.15;
+      const c = gauss() * 0.08;
+      pos[i*3] = a; pos[i*3+1] = b; pos[i*3+2] = c;
+      const t = Math.min(1, Math.abs(a) / 1.6);
+      col[i*3]   = cStruct[0]*(1-t) + cStyle[0]*t;
+      col[i*3+1] = cStruct[1]*(1-t) + cStyle[1]*t;
+      col[i*3+2] = cStruct[2]*(1-t) + cStyle[2]*t;
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    const mat = new THREE.PointsMaterial({ size: 0.022, vertexColors: true, transparent: true, opacity: 0.85 });
+    const points = new THREE.Points(geo, mat);
+    scene.add(points);
+
+    const ax1 = new THREE.ArrowHelper(new THREE.Vector3(1,0,0), new THREE.Vector3(0,0,0), 1.5, 0xC0492E, 0.12, 0.07); scene.add(ax1);
+    const ax2 = new THREE.ArrowHelper(new THREE.Vector3(0,1,0), new THREE.Vector3(0,0,0), 0.5, 0x2D5B7A, 0.1, 0.06); scene.add(ax2);
+
+    let mx = 0, my = 0;
+    wrap.addEventListener('mousemove', (e) => {
+      const r = wrap.getBoundingClientRect();
+      mx = ((e.clientX - r.left) / r.width - 0.5) * 2;
+      my = ((e.clientY - r.top) / r.height - 0.5) * 2;
+    });
+
     function resize() {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      const w = canvas.clientWidth, h = 380;
-      canvas.width = w * dpr; canvas.height = h * dpr;
-      ctx.setTransform(dpr,0,0,dpr,0,0);
+      const w = wrap.clientWidth;
+      const h = Math.min(w * 0.46, 460);
+      canvas.style.height = h + 'px';
+      renderer.setSize(w, h, false);
+      cam.aspect = w / h;
+      cam.updateProjectionMatrix();
     }
     resize();
     window.addEventListener('resize', resize);
 
-    // N개의 점: 3D에서 평면에 가까이 분포 (잠재 = 2D 평면)
-    const N = 400;
-    const pts = [];
-    function rand() { return Math.random() * 2 - 1; }
-    for (let i = 0; i < N; i++) {
-      // 잠재 좌표 (2D 평면 위 분포 — 가우시안 변형)
-      const h1 = (Math.random() + Math.random() + Math.random() - 1.5) * 1.4;
-      const h2 = (Math.random() + Math.random() + Math.random() - 1.5) * 0.7;
-      // 3D 관측 = W·h + noise (W는 임의 직교 기저)
-      const w1 = [0.95, 0.18, 0.25];
-      const w2 = [-0.15, 0.86, 0.48];
-      const noise = 0.18;
-      const x = h1*w1[0] + h2*w2[0] + rand()*noise;
-      const y = h1*w1[1] + h2*w2[1] + rand()*noise;
-      const z = h1*w1[2] + h2*w2[2] + rand()*noise;
-      pts.push({ h1, h2, x, y, z });
+    function tick(t) {
+      t *= 0.001;
+      points.rotation.y = t * 0.22 + mx * 0.6;
+      points.rotation.x = Math.sin(t * 0.18) * 0.18 + my * 0.4;
+      ax1.rotation.copy(points.rotation);
+      ax2.rotation.copy(points.rotation);
+      renderer.render(scene, cam);
+      requestAnimationFrame(tick);
     }
-
-    let target = 0; // 0 = 3D 관측 / 1 = 2D 잠재 (평면 위로 사영)
-    let drag = false, dragX = 0, sx = 0;
-    canvas.addEventListener('pointerdown', (e) => { drag = true; dragX = e.clientX; sx = target; });
-    window.addEventListener('pointermove', (e) => { if (!drag) return; target = Math.max(0, Math.min(1, sx + (e.clientX - dragX) / canvas.clientWidth)); });
-    window.addEventListener('pointerup', () => { drag = false; });
-
-    let t0 = 0;
-    function draw() {
-      t0 += 0.005;
-      const w = canvas.clientWidth, h = 380;
-      ctx.clearRect(0,0,w,h);
-      ctx.fillStyle = '#FAF7F0'; ctx.fillRect(0,0,w,h);
-
-      // 부드러운 자동 진동
-      const auto = drag ? target : 0.5 + 0.45 * Math.sin(t0 * 0.6);
-
-      const cx = w/2, cy = h/2;
-      const scale = Math.min(w, h) * 0.18;
-
-      // 카메라 회전 (Y축)
-      const ry = (auto - 0.5) * 0.9 + Math.sin(t0 * 0.3) * 0.2;
-      const cosY = Math.cos(ry), sinY = Math.sin(ry);
-
-      // 평면(잠재)을 그릴 사변형의 모서리들 (h1, h2 ∈ [-2.5, 2.5])
-      const planeCorners = [
-        [-2.5,-2.5], [2.5,-2.5], [2.5,2.5], [-2.5,2.5]
-      ];
-      function projPlane(h1, h2) {
-        const w1 = [0.95, 0.18, 0.25];
-        const w2 = [-0.15, 0.86, 0.48];
-        return [
-          h1*w1[0] + h2*w2[0],
-          h1*w1[1] + h2*w2[1],
-          h1*w1[2] + h2*w2[2]
-        ];
-      }
-      function project(x, y, z) {
-        // Y 회전 후 단순 직교 투영
-        const xr = x * cosY + z * sinY;
-        const zr = -x * sinY + z * cosY;
-        return [cx + xr * scale, cy - y * scale, zr];
-      }
-
-      // 평면 그리기 (사변형)
-      ctx.strokeStyle = `rgba(192, 73, 46, ${0.20 + 0.5 * auto})`;
-      ctx.fillStyle = `rgba(192, 73, 46, ${0.04 + 0.10 * auto})`;
-      ctx.beginPath();
-      planeCorners.forEach(([h1,h2], i) => {
-        const [X, Y, Z] = projPlane(h1, h2);
-        const [px, py] = project(X, Y, Z);
-        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
-      });
-      ctx.closePath();
-      ctx.fill();
-      ctx.lineWidth = 1.2;
-      ctx.stroke();
-
-      // 점들
-      const drawn = [];
-      for (let i = 0; i < N; i++) {
-        const p = pts[i];
-        // 잠재 평면 위 좌표 (사영된 위치)
-        const [PX, PY, PZ] = projPlane(p.h1, p.h2);
-        // 보간: t=0 관측 위치, t=1 잠재 평면 위 위치
-        const x = p.x * (1 - auto) + PX * auto;
-        const y = p.y * (1 - auto) + PY * auto;
-        const z = p.z * (1 - auto) + PZ * auto;
-        const [px, py, pz] = project(x, y, z);
-        drawn.push({ px, py, pz, p });
-      }
-      drawn.sort((a,b) => a.pz - b.pz);
-      drawn.forEach(({ px, py, pz, p }) => {
-        const depth = (pz + 2) / 4;
-        const r = 2 + depth * 1.6;
-        const alpha = 0.45 + depth * 0.45;
-        ctx.fillStyle = `rgba(45, 91, 122, ${alpha})`;
-        ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI*2); ctx.fill();
-      });
-
-      // 라벨
-      ctx.fillStyle = '#8E8576';
-      ctx.font = '11px "Spline Sans Mono", monospace';
-      const label = auto < 0.3 ? 'x ∈ R³ (관측)' : auto > 0.7 ? 'h ∈ R² (잠재)' : 'x ≈ Wh + noise';
-      ctx.fillText(label, 14, h - 14);
-
-      requestAnimationFrame(draw);
-    }
-    draw();
+    requestAnimationFrame(tick);
   });
 </script>
 </body>

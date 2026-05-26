@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>06 · 마스크 언어 모델 (MLM)</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="assets/bert.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Chapter 06 · 사전훈련 1 — 마스크 언어 모델</span>
+      <h1><span class="t-mask">가린 자리</span>에서만 손실을 매기는<br>BERT 의 첫 번째 가짜 시험</h1>
+      <p class="lede">2장에서 발상의 큰 그림을 봤다. 이 장은 그 발상을 “구체적인 알고리즘”으로 완전히 풀어 본다. 어떤 자리를 가릴지, 가린 자리에서 정확히 무엇을 어떻게 예측할지, 손실은 어떻게 계산할지. 작은 디테일이 BERT 의 학습을 좌우한다.</p>
+    </header>
+
+    <div class="prose">
+      <h2>1. MLM 의 한 줄 정의</h2>
+      <p>먼저 한 문장으로 못 박자.</p>
+      <div class="def-box mask-side">
+        <div class="deft">정의</div>
+        <p>입력 토큰의 15% 를 무작위로 선택한 뒤, 그 자리의 80% 는 [MASK] 로, 10% 는 무작위 단어로, 10% 는 그대로 둔다. BERT 의 마지막 층 출력 중 <b>선택된 자리에서만</b> 원래 단어를 정답으로 하는 교차 엔트로피(cross-entropy) 손실을 계산한다.</p>
+      </div>
+
+      <p>이 한 문장에 BERT 의 본질이 다 들어 있다. 이제 그 한 문장을 다섯 부분으로 쪼개 하나씩 보자. 어떻게 자리를 고르는지(2절), 어떻게 가리는지(3절), 어떻게 예측하는지(4절), 어떻게 손실을 매기는지(5절), 왜 그렇게 정했는지(6절).</p>
+
+      <h2>2. 어떤 자리를 가리는가</h2>
+      <p>한 입력 시퀀스 안에서 가릴 자리를 정하는 절차는 다음과 같다.</p>
+      <ol style="font-size:.95rem; color:var(--ink-soft); line-height:1.7;">
+        <li>입력 시퀀스 안의 토큰 중에서 특수 토큰([CLS], [SEP]) 을 제외한 일반 토큰들의 인덱스 집합을 만든다.</li>
+        <li>그 인덱스 중 <b>15%</b> 를 균등 확률로 무작위 선택한다. (예: 길이 100 의 시퀀스라면 약 15 개의 자리)</li>
+        <li>선택된 자리들이 “가린 자리” 집합 $M$ 이다.</li>
+      </ol>
+
+      <p>왜 하필 15% 인가? BERT 논문은 이 숫자를 다양한 비율과 비교해 실험적으로 정했다. 너무 낮으면(예: 5%) 한 문장당 학습 신호가 너무 적어 사전훈련이 너무 느려진다. 너무 높으면(예: 50%) 가린 자리가 너무 많아 남은 문맥만으로는 추론이 어려워진다. 15% 가 두 효과의 균형점이었다.</p>
+
+      <div class="analogy">
+        영어 시험 빈칸 채우기 문제를 생각해 보자. 1줄짜리 문장에 빈칸이 1개면 풀기 쉽지만 한 문장당 1개의 학습만 일어난다. 빈칸이 5개면 학습량은 5배지만 문맥이 너무 빈약해 학생이 추측하지 못한다. 학생의 학습 효율이 가장 좋은 비율이 있다 — 그게 15% 라는 것이다.
+      </div>
+
+      <h2>3. 어떻게 가리는가 — 8:1:1 의 비밀</h2>
+      <p>선택된 15% 의 자리를 모두 [MASK] 로 바꾸지는 않는다. 그 자리들 안에서 다시 한 번 무작위로 8:1:1 로 갈라진다.</p>
+      <ul style="font-size:.95rem; color:var(--ink-soft); line-height:1.7;">
+        <li><b>80%</b> — [MASK] 로 교체. 예: “my dog is cute” → “my dog is [MASK]”</li>
+        <li><b>10%</b> — 어휘집에서 무작위로 뽑은 다른 토큰으로 교체. 예: “my dog is cute” → “my dog is apple”</li>
+        <li><b>10%</b> — 원래 토큰 그대로. 예: “my dog is cute” → “my dog is cute” (단, 손실은 여전히 그 자리에서 계산)</li>
+      </ul>
+
+      <p>왜 이렇게 세 갈래로 나누는지는 5장에서 짧게 짚었다. 다시 한 번 풀어 보자.</p>
+
+      <p><strong>① 사전훈련-미세조정 불일치(pretrain-finetune discrepancy) 완화.</strong> [MASK] 만 100% 쓰면 모델은 “[MASK] 자리에서만 추론하는 패턴”을 익힌다. 그러나 미세조정 시에는 [MASK] 가 없는 입력만 들어온다. 모델은 “이제 모든 자리가 진짜 단어”라는 변화에 적응해야 한다. 10% 를 원래 단어 그대로 두면, 모델은 사전훈련 단계에서도 “안 가린 자리도 가끔은 예측 대상”이라는 습관을 들인다. 미세조정 시의 불일치가 줄어든다.</p>
+
+      <p><strong>② 노이즈 강건성(robustness to noise) 확보.</strong> 10% 를 무작위 단어로 바꾸면, 모델은 “입력에 등장한 단어를 무작정 믿어서는 안 된다”는 사실을 배운다. 즉 “주변 문맥과 어울리지 않는 단어”도 의심할 수 있게 된다. 이건 미세조정 시 입력에 오타나 노이즈가 섞여 있을 때 모델이 무너지지 않는 데 도움이 된다.</p>
+
+      <p><strong>③ 모든 토큰을 강제로 예측 가능하게 함.</strong> 모델은 “이 자리가 [MASK] 다”라는 신호를 미리 받지 못한다. 그러므로 입력의 모든 자리에서 “이 자리의 단어가 진짜 맞는가”를 어느 정도 평가할 수 있어야 한다. 이게 모든 자리에 대한 풍부한 양방향 표현을 학습하도록 유도한다.</p>
+
+      <h2>4. 어떻게 예측하는가 — 출력 어휘 분포</h2>
+      <p>가린 자리들이 표시된 입력 시퀀스가 12층 인코더를 통과하면, 마지막 층의 출력은 다시 $T \times H$ 행렬이다. 즉 모든 자리에서 768 차원 벡터를 한 개씩 얻는다. 이제 우리는 “가린 자리” 의 벡터만 떼어 내, 어휘집 전체에 대한 확률 분포로 바꿔야 한다.</p>
+
+      <p>이를 위해 BERT 는 출력 위에 작은 “MLM 머리(head)”를 둔다.</p>
+      <ol style="font-size:.95rem; color:var(--ink-soft); line-height:1.7;">
+        <li>가린 자리 $i$ 의 마지막 층 벡터를 $h_i \in \mathbb{R}^H$ 라 하자.</li>
+        <li>한 번의 선형 변환과 GELU 와 LayerNorm 을 거친다: $h_i' = \text{LayerNorm}(\text{GELU}(h_i W_1 + b_1))$.</li>
+        <li>마지막으로 어휘집 크기의 출력 가중치를 곱한다: $\text{logits}_i = h_i' \, E_{\text{tok}}^\top + b$.</li>
+      </ol>
+
+      <p>마지막 줄의 트릭이 흥미롭다. 출력 가중치 행렬로 “입력 토큰 임베딩 테이블 $E_{\text{tok}}$ 을 전치(transpose)한 것” 을 그대로 쓴다. 이걸 가중치 결합(weight tying) 이라고 한다. 두 가지 이점이 있다 — 파라미터를 절약하고(어휘집 크기 30,522 × 768 = 약 2,300만 파라미터가 한 번만 등장), 입력과 출력 표현 공간을 일관되게 유지한다.</p>
+
+      <div class="math-block">$$ P(x_i \mid x_{\setminus M}) = \frac{\exp(h_i' \cdot E_{\text{tok}}(x_i) + b_{x_i})}{\sum_{v=1}^{V} \exp(h_i' \cdot E_{\text{tok}}(v) + b_v)} $$</div>
+      <p class="math-note">분자는 정답 단어 $x_i$ 의 점수, 분모는 어휘집의 모든 단어 점수의 합. 흔히 말하는 softmax.</p>
+
+      <h2>5. 손실 함수 — 가린 자리에서만 합한다</h2>
+      <p>이제 손실 함수를 본격적으로 적어 보자.</p>
+      <div class="math-block">$$ \mathcal{L}_{\text{MLM}} = - \sum_{i \in M} \log P\bigl(x_i \,\big|\, x_{\setminus M}\bigr) $$</div>
+      <p class="math-note">$M$ 은 가린 자리 집합, $x_{\setminus M}$ 은 가린 자리들이 [MASK]/무작위/원래 로 처리된 입력. 합은 한 시퀀스에 대한 것이고, 배치 평균은 그 위에서 한 번 더 취한다.</p>
+
+      <p>중요한 점을 다시 한 번. <strong>가리지 않은 자리에서는 손실이 발생하지 않는다.</strong> 일반적인 언어 모델 손실은 모든 자리에서 다음 단어 예측을 시키므로 한 시퀀스당 $T$ 개의 항목이 손실에 들어가지만, MLM 은 $|M| \approx 0.15T$ 개만 들어간다. 그래서 같은 데이터량을 보더라도 BERT 는 일반 LM 보다 학습이 약 6.7배 느리다(15% 만 신호를 쓰니까). 이 점이 BERT 가 GPT 보다 사전훈련 비용이 더 큰 한 가지 이유다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 04</span><span>MLM 마스킹 데모 — 토큰을 클릭해 가려 보자</span></div>
+        <div id="mlm"></div>
+      </div>
+      <p class="widget-cap">기본 상태는 “cat”과 “mat”이 가려져 있다. 토큰을 클릭하면 가리거나 풀 수 있다. 가린 자리에서 BERT 는 어휘집 30,522 개 단어 중 어느 단어가 올 확률이 높은지를 출력한다. 위 그래프는 그중 상위 5개 후보의 확률(예시 값)이다. 정답에 가까울수록 손실이 작다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>6. 왜 “일반적인” 양방향 LM 은 안 되는가 — 한 번 더</h2>
+      <p>여기서 2장에서 본 “자명한 해” 문제를 다시 짚어 두자. 만약 BERT 의 손실이 “모든 자리에서 그 자리의 단어 예측” 이었다면 어떻게 됐을까?</p>
+
+      <p>모델은 입력으로 토큰 $x_i$ 자체를 본다. 그리고 출력으로 $x_i$ 를 예측해야 한다. 양방향 어텐션은 모든 자리를 보므로, “$i$ 번 자리에서 $i$ 번 자리를 봐서 그 단어를 출력하라”는 것이 모델이 배워야 할 가장 단순한 함수다. 즉 “항등 함수(identity function)”를 학습하는 것으로 손실이 0 에 도달한다. 이건 학습이 아니라 복사다.</p>
+
+      <p>MLM 의 천재성은 정확히 이 문제를 우회한 데 있다. 가린 자리에는 $x_i$ 자체가 없다(또는 무작위 다른 단어가 있다, 또는 원래 단어가 있지만 어디가 가린 자리인지 모델은 모른다). 그러므로 모델은 항등 함수로 점수를 얻을 수 없고, 좌우 문맥을 활용해 추론하는 진짜 양방향 표현을 학습하게 된다.</p>
+
+      <h2>7. MLM 학습이 “언어 이해” 와 연결되는 이유</h2>
+      <p>마지막으로 직관적인 한 문장. <em>“다음 단어 맞히기” 와 “가린 단어 맞히기”는 둘 다 텍스트 안에 정답이 들어 있는 자가지도 학습이지만, 후자가 더 강력한 표현을 만든다.</em> 왜인가?</p>
+
+      <p>“다음 단어 맞히기”는 “지금까지 본 모든 단어로부터 다음 단어를 예측”하는 일이다. 즉 한 방향의 정보 흐름만 사용한다. “가린 단어 맞히기”는 “좌우의 모든 단어로부터 가운데 단어를 예측”하는 일이다. 양 방향의 정보 흐름을 모두 사용한다. 후자가 더 풍부한 문맥 정보를 활용하므로, 학습되는 표현도 더 풍부하다.</p>
+
+      <div class="def-box synth-side">
+        <div class="deft">한 줄 정리</div>
+        <p>MLM 은 <b>“정답을 직접 보지 못하게 만든”</b> 양방향 자가지도 학습이다. 이 한 가지 트릭이 트랜스포머 인코더의 양방향성을 진짜로 활성화시켰다.</p>
+      </div>
+
+      <h2>8. 다음 — NSP 라는 두 번째 가짜 시험</h2>
+      <p>BERT 의 사전훈련에는 MLM 외에 두 번째 손실이 있다 — 다음 문장 예측(Next Sentence Prediction, NSP). 다음 장에서 이 손실의 정의와, 후속 논문(RoBERTa)에서 “사실 필요 없었다”고 비판받게 되는 사연을 다룬다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script src="assets/bert.js"></script>
+<script>
+  window.addEventListener('load', () => {
+    BERT.buildNav('06');
+    const m = document.getElementById('mlm');
+    BERT.onVisible(m, () => BERT.mlmDemo(m));
+  });
+</script>
+</body>
+</html>

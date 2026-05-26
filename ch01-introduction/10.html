@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>10 · 폭발 2 — 계산 — Chapter 1</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .comp-stage { padding: 1.4rem 1rem 1rem; }
+  .comp-chart { display: block; width: 100%; max-width: 640px; margin: 0 auto; background: #fff; border-radius: 8px; border: 1px solid var(--line-soft); }
+  .comp-readout { max-width: var(--measure); margin: 0 auto; padding: 1rem 1.4rem; min-height: 5rem; background: var(--paper-2); border-radius: 8px; }
+  .comp-readout h5 { margin: 0 0 .3rem; font-family: var(--serif); font-size: 1rem; color: var(--ink); }
+  .comp-readout p { margin: 0; font-size: .9rem; color: var(--ink-soft); line-height: 1.55; }
+  .cpu-vs-gpu { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1.4rem 1rem 1rem; }
+  .cpu-vs-gpu .card { padding: 1rem; border: 1px solid var(--line); border-radius: 9px; background: #fff; }
+  .cpu-vs-gpu .card h5 { margin: 0 0 .5rem; font-family: var(--serif); font-size: 1rem; }
+  .cpu-vs-gpu .card.cpu h5 { color: var(--style); }
+  .cpu-vs-gpu .card.gpu h5 { color: var(--structure); }
+  .cpu-vs-gpu .card .grid { display: grid; gap: 4px; margin: .8rem 0; }
+  .cpu-vs-gpu .card.cpu .grid { grid-template-columns: repeat(4, 1fr); }
+  .cpu-vs-gpu .card.gpu .grid { grid-template-columns: repeat(16, 1fr); }
+  .cpu-vs-gpu .card .core { aspect-ratio: 1; background: var(--paper-sink); border-radius: 3px; transition: background .2s; }
+  .cpu-vs-gpu .card .core.work { background: var(--structure); }
+  .cpu-vs-gpu .card .desc { font-size: .82rem; color: var(--ink-soft); line-height: 1.5; margin: 0; }
+  @media (max-width: 640px) { .cpu-vs-gpu { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-Chapter 10 · 세 폭발 중 두 번째</span>
+      <h1>계산의 가속 — <span class="t-style">CPU 한 대</span>에서<br>GPU 클러스터까지</h1>
+      <p class="lede">데이터가 풍부해도 계산할 수 없으면 학습은 불가능하다. 같은 알고리즘이 1990년대 모델 크기에서는 죽었고, 같은 알고리즘이 2010년대 GPU 위에서는 살아났다. 계산의 가속이 어떻게 일어났고, 왜 GPU가 결정적이었는지를 본다.</p>
+    </header>
+
+    <div class="prose">
+      <p>딥러닝의 부흥을 일으킨 두 번째 외부 조건은 계산이다. 정확히는, <strong>병렬 계산(parallel computing)</strong>의 폭발적 가속이다. CPU의 속도(clock speed)는 2000년대 중반 이후 거의 멈췄다. 한 코어가 1초에 처리할 수 있는 명령의 수는 더 이상 빨라지지 않았다. 그런데도 딥러닝의 학습 속도는 매년 가속됐다. 그 차이가 GPU와 분산 학습(distributed training)에서 왔다.</p>
+
+      <p>GPU(graphics processing unit)는 원래 게임의 3D 그래픽 렌더링을 위해 만들어진 하드웨어다. 그런데 그래픽 렌더링과 신경망 학습이 똑같이 <em>대량의 행렬 곱셈(matrix multiplication)</em>을 필요로 한다는 사실이 2000년대 중반에 발견됐다. NVIDIA가 2007년 CUDA라는 프로그래밍 인터페이스를 공개하면서, 일반 연구자가 GPU를 신경망 학습에 쓸 수 있게 됐다. 이 한 가지 사건이 딥러닝 부흥의 기반을 만들었다.</p>
+
+      <h2>왜 GPU가 CPU보다 신경망 학습에 압도적으로 좋은가</h2>
+
+      <p>CPU와 GPU의 핵심 차이는 한 줄로 이렇다. <strong>CPU는 적은 코어가 복잡한 일을 빠르게 한다. GPU는 많은 코어가 단순한 일을 동시에 한다.</strong> 신경망 학습의 핵심 연산은 행렬 곱셈이고, 행렬 곱셈은 본질적으로 같은 종류의 단순한 곱셈과 덧셈을 수천 번 동시에 하는 일이다. 이 일은 CPU의 4-16개 코어보다, GPU의 수천 개 코어가 압도적으로 잘한다.</p>
+
+      <div class="analogy">
+        <b>편지의 봉투를 채우는 두 가지 방법.</b> 똑똑한 직원 한 명이 한 통씩 정성껏 봉투를 채우는 방법(CPU)과, 평범한 직원 100명이 동시에 한 통씩 채우는 방법(GPU)이 있다. 100통을 채워야 한다면 후자가 압도적으로 빠르다. 신경망의 학습도 봉투 채우기와 비슷하다. 같은 단순한 일(곱셈과 덧셈)을 대량으로 해야 하므로, 많은 평범한 일꾼이 동시에 일하는 GPU 구조가 더 적합하다.
+      </div>
+
+      <p>구체적으로 2012년 AlexNet 학습을 비교해 보자. 같은 모델을 CPU 한 대로 학습시키면 약 6주가 걸렸다. NVIDIA GTX 580 GPU 2장으로 학습하면 약 6일이 걸렸다. 약 7배 빠르다. 2020년대의 TPU(tensor processing unit)나 H100 GPU는 같은 일을 몇 시간 안에 끝낸다. 같은 알고리즘인데 학습 시간이 100배, 1000배 단축됐다. 이 단축이 곧 "한 명의 연구자가 더 많은 실험을 할 수 있다"를 뜻하고, 그것이 누적되어 분야의 가속도가 된다.</p>
+
+      <p>아래 위젯에서 CPU와 GPU의 차이를 시각적으로 비교한다. CPU는 4-8개 코어가 순차적으로 일하는 모습이, GPU는 수십 개 코어가 동시에 일하는 모습이 보인다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 11</span><span>CPU vs GPU · 같은 일을 다르게 한다</span></div>
+        <div class="cpu-vs-gpu">
+          <div class="card cpu">
+            <h5>CPU · 적은 코어, 복잡한 일</h5>
+            <div class="grid" id="cpu-grid"></div>
+            <p class="desc">8개 코어. 각 코어가 강력하지만, 한 번에 한 일씩 순차적으로 처리한다. 분기 예측, 명령 재배열 같은 복잡한 일을 잘한다. 행렬 곱셈에는 비효율적.</p>
+          </div>
+          <div class="card gpu">
+            <h5>GPU · 많은 코어, 단순한 일</h5>
+            <div class="grid" id="gpu-grid"></div>
+            <p class="desc">128개 코어 (실제는 수천 개). 각 코어가 단순하지만, 모두 동시에 같은 종류의 곱셈을 처리한다. 행렬 곱셈처럼 "같은 일을 대량으로" 하는 데 압도적으로 효율적.</p>
+          </div>
+        </div>
+        <div style="text-align:center;padding:0 1rem 1rem;">
+          <button class="btn" id="comp-step">한 스텝 시뮬레이션</button>
+        </div>
+      </div>
+      <p class="widget-cap">버튼을 누르면 두 구조에서 같은 작업(48개의 곱셈)을 처리하는 데 걸리는 단계 수가 시뮬레이션된다. CPU는 단계가 누적되고, GPU는 거의 한 번에 끝난다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>계산력의 가속 — 매년 약 10배</h2>
+
+      <p>딥러닝에 쓰이는 계산력을 추적한 OpenAI의 2018년 보고서는 충격적이었다. 2012년 AlexNet에서 2018년 AlphaGo Zero까지 6년 동안, 최대 규모 학습에 쓰인 계산력은 30만 배 늘었다. 매년 약 10배의 가속이다. 이는 무어의 법칙(매 18개월에 2배)보다 훨씬 빠르다. 어떻게 가능했는가? 무어의 법칙 자체에 더해, 다음 세 가지가 누적됐다.</p>
+
+      <ul style="max-width:var(--measure);margin:0 auto;padding-left:2rem;line-height:1.8;font-size:.94rem;color:var(--ink-soft);">
+        <li><strong>전용 하드웨어</strong>: GPU에서 TPU로, TPU에서 신경망 전용 ASIC으로. 같은 와트(watt)로 더 많은 행렬 곱셈을 한다.</li>
+        <li><strong>분산 학습</strong>: 한 장의 GPU 대신 수백, 수천 장을 동시에 사용. 네트워크와 동기화 기법이 성숙해지면서 가능해졌다.</li>
+        <li><strong>혼합 정밀도 학습(mixed precision training)</strong>: 32비트 부동소수점 대신 16비트 또는 8비트를 사용. 같은 메모리에 두 배 더 큰 모델을 올릴 수 있고, 계산도 두 배 빨라진다.</li>
+      </ul>
+
+      <p>이 세 가지가 누적되어 매년 10배의 가속을 만들었다. 다만 2020년 이후로는 이 가속이 다소 둔화됐다. 단일 GPU의 성능 향상이 한계에 가까워지고 있고, 분산 학습의 네트워크 비용이 점점 커지고 있다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 12</span><span>학습 계산력의 진화 · petaFLOP/s-days</span></div>
+        <div class="comp-stage">
+          <canvas id="comp-chart" class="comp-chart" width="640" height="260"></canvas>
+        </div>
+        <div class="comp-readout" id="comp-read">
+          <h5>곡선 위 점에 마우스를 올려 보세요</h5>
+          <p>OpenAI 보고서 기반. y축은 petaFLOP/s-days (페타플롭의 하루치 계산량). 로그 스케일이다.</p>
+        </div>
+      </div>
+      <p class="widget-cap">2012년 AlexNet은 약 0.01 PF/s-day. 2018년 AlphaGo Zero는 약 1,860 PF/s-day. 6년 만에 약 30만 배.</p>
+    </div>
+
+    <div class="prose">
+      <h2>알고리즘과 계산의 관계 — 둘 중 무엇이 더 중요한가</h2>
+
+      <p>이 질문은 딥러닝 학계의 오래된 논쟁 중 하나다. 한쪽에서는 "더 좋은 알고리즘이 본질"이라고 본다. 다른 한쪽에서는 "스케일이 알고리즘 개선을 압도한다"고 본다. 2018년 Rich Sutton의 에세이 "The Bitter Lesson"이 이 논쟁을 극명하게 표현했다. 그의 주장은 이렇다. <strong>"AI 연구의 70년 역사를 돌아보면, 인간이 손으로 짠 영리한 방법은 거의 모두 계산력과 일반 학습 방법(general learning method)의 가속에 의해 추월됐다."</strong></p>
+
+      <p>이 주장이 옳다면, 우리는 영리한 모델 구조나 손으로 짠 특징보다, 단순한 알고리즘 + 큰 계산력을 선호해야 한다는 결론이 나온다. 실제로 GPT-3, GPT-4 등 현대 LLM들은 비교적 단순한 Transformer 구조에 엄청난 계산력을 부어서 만든 것이다. 이 패턴이 2010-2025년 동안 거의 모든 분야에서 반복됐다.</p>
+
+      <p>하지만 한 가지 단서가 있다. <em>"단순한 알고리즘"도 처음에 누군가가 만들어야 한다.</em> Transformer를 발명한 것은 사람이지 계산이 아니다. 계산의 가속은 좋은 알고리즘의 잠재력을 풀어내지만, 알고리즘 자체를 만들어 주지는 않는다. 그래서 실제 연구는 두 가지를 함께 추구한다 — 더 좋은 알고리즘과 더 큰 스케일.</p>
+
+      <div class="analogy">
+        <b>경주마와 트랙.</b> 경주의 결과는 말의 능력과 트랙의 길이 두 가지에 달려 있다. 능력이 비슷한 말이라면 더 긴 트랙이 결과를 가른다. 하지만 트랙이 아무리 길어도 말 자체가 없으면 경주가 안 된다. 좋은 알고리즘 = 좋은 말, 큰 계산 = 긴 트랙. 둘 다 필요하지만, 트랙이 짧으면 좋은 말도 빛나지 못한다. 1990년대가 그랬다.
+      </div>
+
+      <h2>계산의 환경적 비용 — 새로운 제약</h2>
+
+      <p>한 가지 더, 최근 들어 계산의 환경적 비용이 새로운 제약으로 떠오르고 있다. GPT-4 한 번의 학습에 수십 GWh의 전기가 쓰인다는 추산이 있다. 한 도시의 며칠 분 전기 사용량이다. CO2 배출량으로 환산하면 수천 명의 사람이 일 년 동안 배출하는 양이다. 그래서 "더 작은 모델로 같은 성능"을 추구하는 효율 연구가 점점 중요해지고 있다. 지식 증류(knowledge distillation), 양자화(quantization), 희소화(sparsification) 같은 기법이 이 흐름이다.</p>
+
+      <div class="analogy">
+        <b>발전소와 도시.</b> 큰 도시가 성장하려면 발전소도 함께 커져야 한다. 도시는 그대로 두고 발전소만 키워도 잉여 전력이 낭비되고, 발전소를 안 키우면 도시가 정전된다. 둘은 같이 가야 한다. 딥러닝의 모델·데이터(도시)와 계산력(발전소)도 정확히 같다. 어느 한쪽만 가속되면 다른 쪽이 곧 병목이 된다.
+      </div>
+
+      <p>이 sub-chapter의 정리. <strong>"계산력의 가속이 데이터 폭발과 짝을 이뤄 딥러닝의 부흥을 가능하게 했다. 알고리즘만으로는 부족하고, 계산만으로도 부족하다. 두 축이 같이 가야 폭발이 일어난다."</strong> 다음 sub-chapter에서는 세 번째 폭발 — 모델 크기 자체의 증가 — 를 본다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+const SUBS = [
+  { no:'01', t:'표상의 문제' },
+  { no:'02', t:'AI · ML · 표상학습 · DL' },
+  { no:'03', t:'표상학습이란 무엇인가' },
+  { no:'04', t:'깊이 1 — 표상의 사다리' },
+  { no:'05', t:'깊이 2 — 합성성' },
+  { no:'06', t:'역사 1 — 사이버네틱스' },
+  { no:'07', t:'역사 2 — 연결주의' },
+  { no:'08', t:'역사 3 — 부활과 폭발' },
+  { no:'09', t:'폭발 1 — 데이터' },
+  { no:'10', t:'폭발 2 — 계산' },
+  { no:'11', t:'폭발 3 — 모델 크기' },
+  { no:'12', t:'응용 — 어디까지' },
+  { no:'13', t:'시험 대비 체크리스트' },
+];
+function buildNav(cur) {
+  const ol = document.querySelector('.ch-nav ol');
+  ol.innerHTML = SUBS.map(s =>
+    `<li><a href="${s.no}.html"${s.no===cur?' class="current"':''}>${s.t}</a></li>`).join('');
+  document.querySelector('.topbar').innerHTML =
+    `<a class="home" href="index.html">← Ch.01 표지</a><span class="ch-mini">SUB ${cur} / 13</span>`;
+  const i = SUBS.findIndex(s => s.no === cur);
+  const prev = i > 0 ? SUBS[i-1] : { no:'', t:'챕터 표지로' };
+  const next = i < SUBS.length-1 ? SUBS[i+1] : { no:'', t:'챕터 표지로' };
+  const ph = prev.no ? prev.no+'.html' : 'index.html';
+  const nh = next.no ? next.no+'.html' : 'index.html';
+  document.querySelector('.ch-foot').innerHTML =
+    `<a href="${ph}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+    `<a href="${nh}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+}
+function progressBar() {
+  const bar = document.querySelector('.scroll-progress');
+  document.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max>0 ? (h.scrollTop/max)*100 : 0) + '%';
+  }, { passive: true });
+}
+
+function buildGrids() {
+  const cpu = document.getElementById('cpu-grid');
+  const gpu = document.getElementById('gpu-grid');
+  for (let i = 0; i < 8; i++) {
+    const c = document.createElement('div'); c.className = 'core'; cpu.appendChild(c);
+  }
+  for (let i = 0; i < 128; i++) {
+    const c = document.createElement('div'); c.className = 'core'; gpu.appendChild(c);
+  }
+}
+
+let cpuStep = 0, gpuStep = 0;
+function simulate() {
+  // CPU: 8 코어가 6번 일해야 48 작업 처리 → 한 스텝씩 진행
+  cpuStep = Math.min(cpuStep + 1, 6);
+  const cpu = document.getElementById('cpu-grid').children;
+  for (let i = 0; i < cpu.length; i++) {
+    cpu[i].classList.toggle('work', cpuStep > 0);
+  }
+  // GPU: 128 코어가 한 번에 48 작업 다 처리 → 한 스텝이면 끝
+  gpuStep = Math.min(gpuStep + 1, 1);
+  const gpu = document.getElementById('gpu-grid').children;
+  for (let i = 0; i < 48; i++) {
+    gpu[i].classList.toggle('work', gpuStep > 0);
+  }
+  if (cpuStep === 6 && gpuStep === 1) {
+    setTimeout(() => {
+      cpuStep = 0; gpuStep = 0;
+      Array.from(cpu).forEach(c => c.classList.remove('work'));
+      Array.from(gpu).forEach(c => c.classList.remove('work'));
+    }, 2000);
+  }
+}
+
+const COMP = [
+  { yr:2012, n:0.01, name:'AlexNet', desc:'2장의 GTX 580 GPU. 6일 학습.' },
+  { yr:2014, n:0.21, name:'GoogLeNet', desc:'22층 Inception 구조. ImageNet 1위.' },
+  { yr:2014, n:0.5, name:'VGG-16', desc:'단순한 3x3 컨볼루션 16층 누적.' },
+  { yr:2015, n:0.96, name:'ResNet-50', desc:'스킵 연결로 152층까지 가능해짐.' },
+  { yr:2016, n:46, name:'AlphaGo Lee', desc:'이세돌과의 대국. 1,920 CPU + 280 GPU.' },
+  { yr:2017, n:1860, name:'AlphaGo Zero', desc:'사람의 기보 없이 self-play로 학습. 64 TPU.' },
+  { yr:2018, n:4000, name:'BERT-Large', desc:'Transformer encoder 3.4억 파라미터.' },
+  { yr:2020, n:18000, name:'GPT-3', desc:'1,750억 파라미터. 10,000 GPU 수개월.' },
+  { yr:2022, n:50000, name:'PaLM 540B', desc:'Google의 5,400억 파라미터 모델.' },
+];
+
+function drawCompChart() {
+  const cv = document.getElementById('comp-chart');
+  const ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  ctx.clearRect(0,0,W,H);
+  const minY = 2010, maxY = 2024;
+  const minLog = -2, maxLog = 5;
+  const pad = 40;
+  function px(y) { return pad + ((y - minY) / (maxY - minY)) * (W - 2*pad); }
+  function py(n) { const l = Math.log10(n); return H - pad - ((l - minLog) / (maxLog - minLog)) * (H - 2*pad); }
+  ctx.strokeStyle = 'rgba(38,34,28,.08)';
+  ctx.lineWidth = 1;
+  for (let l = minLog; l <= maxLog; l++) {
+    const y = py(Math.pow(10, l));
+    ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(W-pad, y); ctx.stroke();
+    ctx.fillStyle = 'rgba(94,82,71,.6)'; ctx.font = '9px monospace';
+    ctx.fillText('10^' + l, 4, y+3);
+  }
+  for (let y = minY; y <= maxY; y += 2) {
+    const x = px(y);
+    ctx.beginPath(); ctx.moveTo(x, pad); ctx.lineTo(x, H-pad); ctx.stroke();
+    ctx.fillStyle = 'rgba(94,82,71,.6)'; ctx.font = '9px monospace';
+    ctx.fillText(y, x-12, H-pad+14);
+  }
+  ctx.strokeStyle = 'rgba(38,34,28,.35)';
+  ctx.beginPath(); ctx.moveTo(pad, H-pad); ctx.lineTo(W-pad, H-pad); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(pad, pad); ctx.lineTo(pad, H-pad); ctx.stroke();
+  // 트렌드
+  const xs = COMP.map(d => d.yr);
+  const ys = COMP.map(d => Math.log10(d.n));
+  const mx = xs.reduce((a,b)=>a+b)/xs.length;
+  const my = ys.reduce((a,b)=>a+b)/ys.length;
+  const num = xs.reduce((a,_,i) => a + (xs[i]-mx)*(ys[i]-my), 0);
+  const den = xs.reduce((a,_,i) => a + Math.pow(xs[i]-mx,2), 0);
+  const slope = num/den;
+  const intercept = my - slope*mx;
+  ctx.strokeStyle = 'rgba(192,73,46,.4)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([4,3]);
+  ctx.beginPath();
+  ctx.moveTo(px(minY), py(Math.pow(10, slope*minY + intercept)));
+  ctx.lineTo(px(maxY), py(Math.pow(10, slope*maxY + intercept)));
+  ctx.stroke();
+  ctx.setLineDash([]);
+  // 점
+  COMP.forEach(d => {
+    const x = px(d.yr), y = py(d.n);
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--style').trim();
+    ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = 'rgba(38,34,28,.8)';
+    ctx.font = '9px monospace';
+    ctx.fillText(d.name.split(' ')[0], x+7, y-3);
+  });
+  cv._points = COMP.map(d => ({ x: px(d.yr), y: py(d.n), data: d }));
+}
+
+window.addEventListener('load', () => {
+  buildNav('10');
+  progressBar();
+  buildGrids();
+  document.getElementById('comp-step').addEventListener('click', simulate);
+  drawCompChart();
+  const cv = document.getElementById('comp-chart');
+  cv.addEventListener('mousemove', e => {
+    const r = cv.getBoundingClientRect();
+    const mx = (e.clientX - r.left) * (cv.width / r.width);
+    const my = (e.clientY - r.top) * (cv.height / r.height);
+    let best = null, bd = 30;
+    for (const p of cv._points) {
+      const d = Math.hypot(p.x - mx, p.y - my);
+      if (d < bd) { bd = d; best = p.data; }
+    }
+    if (best) {
+      const rd = document.getElementById('comp-read');
+      rd.innerHTML = `<h5>${best.yr} · ${best.name} · ${best.n} PF/s-day</h5><p>${best.desc}</p>`;
+    }
+  });
+});
+</script>
+</body>
+</html>

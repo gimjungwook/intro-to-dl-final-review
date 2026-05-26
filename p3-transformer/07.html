@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>07 · 왜 √d_k로 나누나</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Chapter 07 · 한 줄의 진짜 이유</span>
+      <h1>왜 <span class="t-style">√d_k</span>로<br>나누어 주는가</h1>
+      <p class="lede">"$\sqrt{d_k}$로 나누세요"는 외우기 쉽지만, 그 한 줄을 빠뜨리면 학습이 멈춘다. 이 장은 그 이유를 분산 계산과 그래디언트 흐름의 두 각도에서 본다.</p>
+    </header>
+
+    <div class="prose">
+      <p>한 줄 요약을 먼저 두자. <strong>"$d_k$가 크면 $QK^\top$의 분산이 $d_k$만큼 커지고, 그러면 softmax가 한 점에 쏠려 그래디언트가 거의 0이 된다. 그래서 $\sqrt{d_k}$로 나누어 분산을 1 수준으로 되돌린다."</strong> 이제 이 한 줄을 단계별로 풀어 본다.</p>
+
+      <h2>1. 내적의 분산은 왜 $d_k$에 비례하는가</h2>
+      <p>다시 한 번 내적의 정의를 적자.</p>
+
+      <div class="math-block">$$ q \cdot k \;=\; \sum_{d=1}^{d_k} q_d \, k_d $$</div>
+      <p class="math-note">$q, k$ = 두 벡터. $d_k$ = 벡터의 길이. 결과는 $d_k$개의 곱셈을 더한 스칼라.</p>
+
+      <p>이제 한 가정 — 학습 초기에 $q$와 $k$의 각 성분이 평균 0, 분산 1의 독립 분포라고 하자. 가중치를 정규분포 $\mathcal{N}(0, 1)$로 초기화하므로 합리적 가정이다. 그러면 한 항 $q_d k_d$의 분산은 어떨까.</p>
+
+      <p>독립이고 평균이 0인 두 변수의 곱의 분산은 두 분산의 곱이다 — $\text{Var}(q_d k_d) = \text{Var}(q_d) \cdot \text{Var}(k_d) = 1 \cdot 1 = 1$. 이는 확률론의 표준 결과다.</p>
+
+      <p>그리고 독립인 변수들의 합의 분산은 분산의 합이다. $d_k$개의 항을 더하므로,</p>
+
+      <div class="math-block">$$ \text{Var}(q \cdot k) \;=\; \sum_{d=1}^{d_k} \text{Var}(q_d k_d) \;=\; d_k $$</div>
+      <p class="math-note">결론 — 내적의 분산은 $d_k$. 표준편차는 $\sqrt{d_k}$.</p>
+
+      <p>즉 $d_k = 64$라면, $QK^\top$의 한 원소는 평균 0, 표준편차 8 정도의 분포를 따른다. 어떤 위치에서는 16, 24, -20 같은 큰 절대값이 자연스럽게 나온다.</p>
+
+      <h2>2. softmax는 큰 값에 매우 민감하다</h2>
+      <p>softmax는 입력 값들 중 가장 큰 값에 지수적으로 민감하다. 단순한 예를 보자. 점수가 (10, 9, 8, 7)이라면 어떻게 될까. softmax는 다음과 같이 계산한다.</p>
+
+      <div class="math-block">$$ \frac{e^{10}}{e^{10} + e^{9} + e^{8} + e^{7}} \;\approx\; \frac{22026}{22026 + 8103 + 2981 + 1097} \;\approx\; 0.643 $$</div>
+      <p class="math-note">차이가 1씩만 있어도 가장 큰 값이 64%의 가중치를 가져간다.</p>
+
+      <p>점수 사이의 차이가 2가 되면 가장 큰 값은 약 84%, 차이가 4면 약 98%로 가버린다. 즉 <strong>점수의 표준편차가 8 정도라면, 가장 큰 점수가 다른 점수보다 8 이상 큰 것이 흔하고, softmax는 거의 one-hot에 가까운 분포를 만든다</strong>.</p>
+
+      <p>이 자체는 "잘 매칭되는 한 토큰에 집중한다"는 점에서 그럴듯해 보일 수 있지만, 학습 초기에는 가중치가 무작위라 어느 토큰이 "정답"인지 모른다. 그런데 softmax가 임의의 한 토큰에 99%를 몰아주면, 모델은 그 토큰에만 의존하는 잘못된 학습을 시작한다.</p>
+
+      <h2>3. 진짜 문제 — 그래디언트가 거의 0이 된다</h2>
+      <p>여기까지가 직관적 동기였다면, 이제 진짜 기술적 이유를 본다. softmax의 출력 $A_i$를 입력 $s_i$에 대해 미분하면 다음과 같다.</p>
+
+      <div class="math-block">$$ \frac{\partial A_i}{\partial s_j} \;=\; A_i (\delta_{ij} - A_j) $$</div>
+      <p class="math-note">$\delta_{ij}$ = 크로네커 델타($i=j$면 1, 아니면 0). $A_i, A_j$ = softmax 출력 확률.</p>
+
+      <p>softmax가 거의 one-hot 상태라면 — 즉 어떤 $A_i \approx 1$이고 나머지 $A_j \approx 0$이라면 — 위 미분값은 어떻게 될까. $A_i (1 - A_i) \approx 0$, 그리고 $A_i \cdot A_j \approx 0$이다. 모든 부분이 거의 0이다.</p>
+
+      <p>이것이 핵심 문제다. <strong>softmax가 포화(saturation) 상태가 되면 그래디언트가 거의 0이 된다.</strong> 역전파로 가중치를 업데이트할 신호가 도달하지 않는다. 학습이 멈춰 버린다. 비유로 말하면, 시험에서 학생이 너무 확신을 가지고 한 답을 골랐는데 그게 틀렸다고 해도, 그 학생에게 "다른 답을 고려해 봐"라는 교정 신호를 거의 줄 수 없는 것과 같다.</p>
+
+      <p>$\sqrt{d_k}$로 나누는 한 줄은 이 포화를 막는다. 내적의 분산을 1 수준으로 되돌리면, softmax는 부드러운 분포를 만들고, 그래디언트는 양의 값을 유지한다. 모델이 천천히, 안정적으로 배운다.</p>
+
+      <div class="analogy">
+        <b>대화의 음량 비유 ─</b> 너무 큰 소리로 외치면 한 사람의 목소리만 들리고 다른 사람들의 목소리는 묻혀 버린다. 적당한 음량으로 모두 말하면 서로 의견 교환이 가능하다. $\sqrt{d_k}$로 나누기는 "모든 점수가 적당한 음량을 갖도록 마이크를 조절하는 것"이다. 그래야 모든 토큰의 의견(그래디언트)이 모델에 도달한다.
+      </div>
+
+      <h2>4. 왜 정확히 $\sqrt{d_k}$인가 — 다른 상수면 안 되나</h2>
+      <p>이 질문도 자주 나온다. 위 분산 계산을 떠올리면 답이 보인다. $QK^\top$의 표준편차는 $\sqrt{d_k}$다. 만약 $d_k$로 나누면 표준편차가 $1/\sqrt{d_k}$로 너무 작아져 softmax가 거의 균등 분포가 된다 — 모든 토큰을 똑같이 보는 상태. 만약 1로 나누면(나누지 않으면) 앞서 본 포화 문제가 생긴다. $\sqrt{d_k}$가 정확히 "표준편차를 1로 맞추는" 양이고, 그래서 그게 표준이 된다.</p>
+
+      <p>물론 실험적으로는 다른 상수를 써도 어느 정도 작동한다. 그러나 $\sqrt{d_k}$가 이론적으로 가장 깔끔하고 — 어떤 $d_k$를 골라도 동일한 효과를 — 보장한다.</p>
+
+      <h2>5. 추론 단계에서는 어떨까</h2>
+      <p>한 가지 미세한 질문. 학습이 끝난 모델은 가중치가 정해져 있고, $q, k$의 분산이 더 이상 1이 아닐 수 있다. 그래도 $\sqrt{d_k}$로 나누는가? 답은 "그대로 나눈다"다. 모델은 $\sqrt{d_k}$로 나눠진 점수에 적응되어 학습되었기 때문에, 추론 단계에서도 같은 식을 쓴다. 분산이 정확히 1이 아니어도, 학습 단계에서의 안정화 덕분에 작동한다.</p>
+
+      <h2>이 장에서 기억할 한 줄</h2>
+      <p>$\sqrt{d_k}$로 나누지 않으면 — $d_k$가 클수록 — softmax가 한 점에 쏠리고 그래디언트가 거의 0이 되어 학습이 멈춘다. 그 한 줄의 나눗셈은 분산을 1 수준으로 되돌려 학습이 안정적으로 일어나게 만드는 단순하지만 결정적 보정이다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  window.addEventListener('load', () => {
+    TFR.buildNav('07');
+  });
+</script>
+<script src="assets/widgets.js"></script>
+</body>
+</html>

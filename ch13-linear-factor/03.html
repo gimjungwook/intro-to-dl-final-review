@@ -3,328 +3,293 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>03 · ICA — 비가우시안 독립 신호 분리</title>
+<title>13 / 03 / 요소 분석 (Factor Analysis)</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
-  .ica-stage { display: grid; grid-template-columns: 1fr; padding: 1.4rem 1.1rem .6rem; }
-  .ica-stage canvas { display: block; width: 100%; height: 380px; border-radius: 9px; border: 1px solid var(--line); background: #fff; }
-  .ica-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; padding: 1rem 1.1rem; align-items: end; }
-  @media (max-width: 600px) { .ica-controls { grid-template-columns: 1fr; } }
-  .ica-toggle { display: flex; gap: .5rem; flex-wrap: wrap; }
-  .ica-toggle button { flex: 1; min-width: 120px; padding: .65rem 1rem; border-radius: 8px; border: 1px solid var(--line); background: #fff; color: var(--ink-soft); font-family: var(--mono); font-size: .8rem; cursor: pointer; transition: .15s; }
-  .ica-toggle button.on { background: var(--style); color: #fff; border-color: var(--style); }
-  .ica-meta { font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); }
-  .ica-meta .lbl { display: block; font-size: .66rem; color: var(--ink-faint); letter-spacing: .12em; text-transform: uppercase; margin-bottom: .2rem; }
+  .fa-stage { padding: 1.4rem 1.1rem 1rem; display: grid; grid-template-columns: auto auto auto; gap: 1.2rem; justify-content: center; align-items: center; }
+  @media (max-width:720px){ .fa-stage{ grid-template-columns:1fr; } }
+  .fa-col { display: flex; flex-direction: column; gap: .45rem; align-items: center; }
+  .fa-col h5 { margin: 0; font-family: var(--mono); font-size: .7rem; letter-spacing: .12em; color: var(--ink-faint); text-transform: uppercase; }
+  .fa-col canvas { display: block; border-radius: 8px; border: 1px solid var(--line); background: #fff; }
+  .fa-arr { font-family: var(--mono); font-size: 1.1rem; color: var(--synth); padding: 0 .2rem; align-self: center; }
+  .fa-formula { font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); text-align: center; padding: 0 .3rem; }
+  .fa-formula b { color: var(--style); }
+  .fa-ctr { padding: .85rem 1rem; border-top: 1px solid var(--line-soft); background: var(--paper); display: flex; gap: 1.4rem; flex-wrap: wrap; align-items: center; justify-content: center; }
 </style>
 </head>
 <body>
 <div class="scroll-progress"></div>
-<div class="topbar">
-  <a class="home" href="index.html">← Chapter 13 · 선형 요소 모델</a>
-  <span class="ch-mini">SUB-CHAPTER 03 / 06</span>
-</div>
+<div class="topbar"></div>
 
 <div class="ch-layout">
-  <aside class="ch-nav"><nav><ol>
-    <li><a href="01.html">잠재 변수 모델</a></li>
-    <li><a href="02.html">요소 분석과 확률적 PCA</a></li>
-    <li><a href="03.html" class="current">ICA — 비가우시안 독립</a></li>
-    <li><a href="04.html">희소 코딩</a></li>
-    <li><a href="05.html">평평한 매니폴드</a></li>
-    <li><a href="06.html">시험 대비 요약</a></li>
-  </ol></nav></aside>
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Sub-Chapter 03 · 칵테일 파티 문제</span>
-      <h1>가우시안을 벗으면<br><span class="t-style">진짜 원천</span>이 보인다</h1>
-      <p class="lede">PCA는 직교성으로 만족하지만, 그 직교 방향이 진짜 원인이라는 보장은 없다. ICA는 잠재의 비가우시안성을 무기로, 회전 모호성을 깨고 원천 신호를 복원한다.</p>
+      <span class="kicker">Sub-chapter 03 / 가족의 시작</span>
+      <h1>요소 분석 —<br>가장 표현력 있는 <span class="t-style">가우시안 가족</span></h1>
+      <p class="lede">선형 요소 모델 가족의 가장 넓은 멤버. 잠재는 단위 가우시안, 잡음은 차원마다 다른 가우시안. 이 단순한 가정 하나로 이미 키-몸무게부터 인격 검사까지 다양한 데이터를 설명할 수 있다.</p>
     </header>
 
     <div class="prose">
-      <p>지금까지의 모델 — FA와 PPCA — 의 공통점은 <strong>잠재 변수가 가우시안</strong>이라는 점이었다. 이 가정이 적분을 깔끔하게 만들어 주었다. 그런데 같은 가정이 <strong>치명적인 한계</strong>를 가져온다는 사실이 ICA의 출발점이다.</p>
+      <p>이제 sub 01에서 본 생성 이야기에 정확한 옷을 입혀 본다. 가장 먼저 다룰 모델은 <strong>요소 분석(Factor Analysis, FA)</strong>이다. 이름이 무겁게 들리지만 실은 sub 01에서 본 키-몸무게 예시의 직접적인 일반화다. 1904년 심리학자 Spearman이 학생들의 여러 과목 성적 뒤에 "일반 지능 g"라는 단일 잠재 요소가 있다는 가설을 검증하려고 고안한 것이 그 시초다. 그러니까 요소 분석은 통계학에서 가장 오래된 잠재 변수 모델 중 하나다.</p>
 
-      <h2>가우시안 잠재는 회전 모호성을 안고 있다</h2>
+      <p>요소 분석의 정확한 가정은 다음 세 줄로 적힌다. 책에서는 이 세 줄이 어디서 나왔는지 별로 설명하지 않으므로, 한 줄씩 풀어 보자.</p>
 
-      <p>관측 모델이 $x = Wh$ 이고 $h \sim \mathcal{N}(0, I)$ 라고 하자. 어떤 직교 회전 행렬 $R$ ($R R^\top = I$)을 끼워 넣어 다음과 같이 다시 쓸 수 있다.</p>
+      <div class="math-block">$$ \mathbf{h} \sim \mathcal{N}(\mathbf{0}, \mathbf{I}) $$</div>
+      <p class="math-note">잠재 변수 $\mathbf{h}$는 평균 0, 공분산이 단위 행렬 $\mathbf{I}$인 가우시안에서 뽑힌다. 각 잠재 차원이 독립이고 분산이 1이라는 약속.</p>
 
-      <div class="math-block">$$ x = W h = W R^\top R h = (W R^\top)(R h) = W' h' $$</div>
-      <p class="math-note">새로운 잠재 h' = Rh와 새로운 가중치 W' = WR^T를 정의하면 같은 x가 나온다.</p>
+      <div class="math-block">$$ \mathbf{x} = \mathbf{Wh} + \mathbf{b} + \boldsymbol{\epsilon}, \quad \boldsymbol{\epsilon} \sim \mathcal{N}(\mathbf{0}, \boldsymbol{\Psi}) $$</div>
+      <p class="math-note">관측 $\mathbf{x}$는 잠재의 선형 사상에 평균 $\mathbf{b}$를 더하고 잡음 $\boldsymbol{\epsilon}$을 얹어 만든다. 잡음은 평균 0, 공분산이 <em>대각 행렬</em> $\boldsymbol{\Psi}$인 가우시안.</p>
 
-      <p>여기서 결정적인 사실은, <strong>$h' = R h$ 역시 평균 0, 공분산 $I$인 가우시안</strong>이라는 점이다. 가우시안 분포는 직교 회전에 대해 정확히 자기 자신으로 돌아간다. 그러므로 데이터만 봐서는 $W$ 인지 $W' = W R^\top$ 인지 <strong>구분할 수 없다</strong>. 회전 자유도가 통째로 남아 있다.</p>
+      <div class="math-block">$$ p(\mathbf{x}) = \mathcal{N}(\mathbf{x}; \, \mathbf{b}, \, \mathbf{WW}^\top + \boldsymbol{\Psi}) $$</div>
+      <p class="math-note">위 두 줄에서 $\mathbf{h}$를 적분 소거하면 $\mathbf{x}$ 자체의 주변 분포(marginal)가 다시 가우시안으로 떨어진다. 평균은 $\mathbf{b}$, 공분산은 $\mathbf{WW}^\top + \boldsymbol{\Psi}$. 이 한 줄이 요소 분석의 핵심 결과다.</p>
 
-      <div class="analogy">
-        <b>왜 이게 문제인가?</b> "이 데이터를 만든 진짜 원천 신호는 무엇인가"를 묻고 싶을 때 — 즉 칵테일 파티에서 사람 A의 목소리와 사람 B의 목소리를 마이크 녹음에서 갈라내고 싶을 때 — 가우시안 가정으로는 <b>원리적으로</b> 갈라낼 수가 없다. 어떤 회전으로 섞어 놓아도 모델 입장에서는 똑같이 좋아 보이기 때문이다. PCA가 찾는 주성분 방향은 통계적으로 가장 분산이 큰 직교 축일 뿐, 진짜 사람 A와 사람 B의 목소리 방향이라는 보장이 없다.
+      <h2>세 가정을 하나씩 뜯어 보기 — 왜 이런 모양인가</h2>
+
+      <p>각 줄이 왜 그렇게 생겼는지 풀어 보자. 첫 줄, $\mathbf{h} \sim \mathcal{N}(\mathbf{0}, \mathbf{I})$. 잠재가 가우시안이라는 가정은 일단 가우시안이 다루기 쉽다는 실용적인 이유가 가장 크다. 평균이 0이라는 것은 잠재의 "기준점"을 0으로 잡았다는 약속이고(평균이 0이 아니어도 $\mathbf{b}$에 흡수된다), 분산이 1이라는 것은 잠재의 단위(스케일)를 1로 잡았다는 약속이다(다른 스케일이어도 $\mathbf{W}$가 흡수한다). 즉 첫 줄은 <em>"잠재의 좌표계는 우리가 임의로 정했다"</em>는 정규화 약속이다. 모델이 학습하는 모든 의미는 $\mathbf{W}$와 $\boldsymbol{\Psi}$에 담긴다.</p>
+
+      <p>둘째 줄, $\mathbf{x} = \mathbf{Wh} + \mathbf{b} + \boldsymbol{\epsilon}$. $\mathbf{W}$는 잠재 공간(차원 $k$)에서 관측 공간(차원 $d$)으로 가는 $d \times k$ 행렬이다. 보통 $k \ll d$이다 — 잠재가 관측보다 훨씬 적다. 이 행렬의 각 열이 "잠재 차원 한 개를 켰을 때 관측이 어떻게 움직이는가"의 방향을 나타낸다. 예를 들어 키-몸무게 예에서 "체격" 잠재 한 개를 켜면 $\mathbf{W}$의 첫 열은 $(8, 6)^\top$ 같은 모양이 된다 — 체격 한 단위가 키 8cm와 몸무게 6kg를 동시에 움직인다는 뜻.</p>
+
+      <p>잡음 $\boldsymbol{\epsilon}$이 핵심이다. 요소 분석의 정체성은 <strong>잡음 공분산 $\boldsymbol{\Psi}$가 대각 행렬</strong>이라는 데 있다. 대각이라는 말은 차원끼리 상관이 없다는 뜻이다. 즉 키의 잔차 잡음과 몸무게의 잔차 잡음은 서로 독립이다. 그러나 각 대각 원소(차원별 분산)는 서로 달라도 된다. 키의 잡음 분산이 4 cm²이고 몸무게의 잡음 분산이 9 kg²여도 괜찮다. 이게 요소 분석이 확률적 PCA보다 약간 더 유연한 이유다 — 차원마다 다른 잔차 분산을 허용한다.</p>
+
+      <div class="key-point">
+        <p>요소 분석의 본질은 한 줄로 요약된다. <em>"관측들 사이의 모든 상관관계는 공유된 잠재 $\mathbf{h}$로부터만 나오며, 그 잠재로 설명되지 않는 나머지는 차원마다 독립인 잡음이다."</em> 이 가정이 곧 "공통 요인 + 고유 잡음" 분해라는 요소 분석의 별칭의 출처다.</p>
       </div>
 
-      <h2>비가우시안 — 회전 자유도를 깨는 무기</h2>
+      <h2>주변 분포가 왜 다시 가우시안이 되는가</h2>
 
-      <p>ICA(<strong>Independent Component Analysis</strong>, 독립 성분 분석)는 정확히 이 회전 모호성을 깨려고 가정 하나를 바꾼다. 잠재 변수가 <strong>비가우시안</strong>이고 서로 <strong>통계적으로 독립</strong>이라고 본다.</p>
+      <p>셋째 줄, $p(\mathbf{x}) = \mathcal{N}(\mathbf{b}, \mathbf{WW}^\top + \boldsymbol{\Psi})$. 이 결과가 어디서 왔는지 직관으로만 풀어 보자. 가우시안 분포에 선형 변환을 가하면 결과도 가우시안이다. $\mathbf{h}$가 가우시안이고 그 위에 선형 변환 $\mathbf{Wh}$를 가했으니 $\mathbf{Wh}$도 가우시안이다. 그 평균은 $\mathbf{W} \cdot \mathbf{0} = \mathbf{0}$, 공분산은 $\mathbf{W} \cdot \mathbf{I} \cdot \mathbf{W}^\top = \mathbf{WW}^\top$. 여기에 평균 $\mathbf{b}$와 독립 가우시안 잡음 $\boldsymbol{\epsilon}$을 더하면, 평균은 $\mathbf{b}$로, 공분산은 두 공분산의 합 $\mathbf{WW}^\top + \boldsymbol{\Psi}$로 덧셈된다. 그래서 $\mathbf{x}$의 주변 분포가 그 평균과 공분산을 가진 가우시안이 되는 것이다.</p>
 
-      <div class="math-block">$$ p(h) = \prod_{k=1}^{K} p_k(h_k), \quad p_k \text{ is non-Gaussian} $$</div>
-      <p class="math-note">잠재 각 성분이 서로 독립이며, 그 주변 분포가 가우시안이 아니다. 보통 첨예한 모양(Laplace, logistic) 또는 평평한 모양을 가정한다.</p>
+      <p>이 공분산 분해 $\mathbf{WW}^\top + \boldsymbol{\Psi}$는 요소 분석을 이해하는 핵심 그림이다. 데이터의 공분산 행렬 전체를 <strong>"공유 부분 ($\mathbf{WW}^\top$) + 고유 부분 ($\boldsymbol{\Psi}$)"</strong>로 쪼개는 것이다. 공유 부분은 잠재가 만들어낸 차원 간 상관이고, 고유 부분은 차원별 잡음이다. 학습은 이 두 부분을 데이터로부터 추정하는 일이다. 최대우도(maximum likelihood)로 풀면 EM 알고리즘(Expectation-Maximization)이 자연스럽게 나온다.</p>
 
-      <p>왜 비가우시안이 회전 모호성을 깰까? 가우시안이 아닌 두 독립 신호를 임의의 직교 회전으로 섞으면, 그 혼합은 <strong>덜 비가우시안</strong>해진다. 중심극한정리(central limit theorem)의 효과로, 독립적인 것들을 더할수록 결과는 점점 더 가우시안에 가까워지기 때문이다. 그러므로 데이터를 다양한 방향으로 회전시키며 "어느 방향이 가장 비가우시안한가"를 측정하면 — 그 방향이 바로 원래 독립 원천이 놓여 있던 방향이다.</p>
-
-      <div class="analogy">
-        <b>비가우시안성 = 신호의 지문이다.</b> 음성, 음악, EEG 같은 자연 신호들은 보통 비가우시안하다 — 한참 조용하다가 갑자기 큰 값이 튀는 패턴(첨예한 분포)을 가진다. 이런 신호 두 개를 마이크가 섞어 녹음하면, 그 혼합 신호는 두 첨예함이 더해져 좀 더 매끄러운(즉 더 가우시안한) 분포를 띤다. ICA는 이 매끄러워진 혼합을 다시 "최대한 첨예한" 방향으로 풀어 헤쳐서, 원래의 두 신호를 복원한다.
-      </div>
-    </div>
-
-    <div class="widget">
-      <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 03</span><span>ICA vs PCA — 같은 데이터, 다른 분해</span></div>
-        <div class="ica-stage">
-          <canvas id="ica"></canvas>
-        </div>
-        <div class="ica-controls">
-          <div class="ica-toggle">
-            <button id="m-pca" class="on">PCA — 분산 최대 직교</button>
-            <button id="m-ica">ICA — 비가우시안 독립</button>
+      <div class="widget">
+        <div class="widget-frame">
+          <div class="widget-label"><span class="lab-no">위젯 03</span><span>잠재 h → 관측 x · 요소 분석 생성 흐름</span></div>
+          <div class="fa-stage">
+            <div class="fa-col">
+              <h5>잠재 h (k=2)</h5>
+              <canvas id="faH" width="180" height="220"></canvas>
+              <span class="fa-formula"><b>h ~ N(0, I)</b></span>
+            </div>
+            <div class="fa-arr">→ W · h + b →</div>
+            <div class="fa-col">
+              <h5>잠정 관측 Wh+b</h5>
+              <canvas id="faWh" width="180" height="220"></canvas>
+              <span class="fa-formula">평면 위의 점</span>
+            </div>
+            <div class="fa-arr">+ ε →</div>
+            <div class="fa-col">
+              <h5>최종 관측 x</h5>
+              <canvas id="faX" width="180" height="220"></canvas>
+              <span class="fa-formula"><b>ε ~ N(0, Ψ)</b> 대각</span>
+            </div>
           </div>
-          <div class="ica-meta">
-            <span class="lbl">원천 분포</span>
-            <b id="src-type">Laplace (첨예, 비가우시안)</b>
-            <br><span class="lbl">방향 일치도</span>
-            <b id="ica-match">PCA: 회전 자유 — 원천 못 맞춤</b>
+          <div class="fa-ctr">
+            <div class="slider">
+              <label>잡음 강도 Ψ<b id="psiVal">0.30</b></label>
+              <input type="range" id="psiSlider" min="0" max="1.5" step="0.01" value="0.3">
+            </div>
+            <div class="slider">
+              <label>샘플 다시 뽑기</label>
+              <button class="btn" id="faResample">Resample</button>
+            </div>
           </div>
         </div>
+        <p class="widget-cap">왼쪽: 잠재 두 차원에서 뽑힌 점들(가우시안 구름). 가운데: 그 점들을 W로 선형 변환한 결과 — 관측 공간(3차원으로 가정한 후 2차원으로 사영) 위의 한 평면에 점들이 정확히 놓인다. 오른쪽: 그 평면에 잡음을 차원마다 다른 강도로 더한 결과 — 평면 주변에 흩어진다. 잡음 슬라이더를 0으로 놓으면 잡음 없는 PPCA(극한 PCA), 0보다 크면 요소 분석.</p>
       </div>
-      <p class="widget-cap">두 개의 비가우시안 독립 원천 $s_1, s_2$를 만든 뒤, 임의의 행렬 $A$로 섞어 관측 $x = As$를 얻는다. <b>파란 점</b>이 관측. PCA는 이 점들의 공분산을 대각화해서 직교 두 축(주황 실선)을 그린다 — 데이터의 분산이 큰 방향과 그 직교 방향. ICA는 다른 기준 — 비가우시안성 극대화 — 으로 두 축(보라 실선)을 찾는다. 진짜 원천 방향(연두 점선)과 비교하면, PCA는 어긋나는 반면 ICA는 거의 정확히 정렬된다는 것을 볼 수 있다.</p>
+
+      <h2>요소 분석으로 풀 수 있는 일 — 인격 검사의 5요인 모형</h2>
+
+      <p>요소 분석이 가장 유명하게 쓰인 곳은 심리학의 "5요인 인격 모형(Big Five)"이다. 사람의 인격을 묻는 수백 개 문항(외향성, 친절함, 충동성, 책임감 등)에 대한 점수가 있을 때, 그 점수들의 공분산 구조에 요소 분석을 적용하면 다섯 개의 잠재 요인이 떠오른다 — 개방성, 성실성, 외향성, 친화성, 신경증. 수백 개 문항이 결국 다섯 개의 다이얼로 환원된다는 것이 이 모형의 주장이고, 그 환원의 기술적 도구가 요소 분석이다.</p>
+
+      <p>비슷한 패턴이 여러 분야에 있다. 경제학에서 수십 개 거시지표 뒤에 두세 개의 "경기 사이클" 요인을 찾을 때, 금융에서 수천 개 주식 수익률 뒤에 "시장 요인", "사이즈 요인", "가치 요인" 등을 찾을 때(Fama-French 3요인 모형) 모두 요소 분석의 변종을 쓴다. 공통 원리는 같다 — 많은 관측 사이의 상관이 사실은 적은 수의 숨은 다이얼에서 나온다는 가정.</p>
+
+      <h2>요소 분석이 못하는 것</h2>
+
+      <p>요소 분석의 가정이 강하고 깔끔한 만큼, 그 가정이 깨지는 상황이 분명하다. 세 가지가 가장 자주 문제가 된다.</p>
+
+      <p>첫째, <strong>잠재의 가우시안성</strong>. 만약 실제 잠재가 가우시안이 아니라면 — 예를 들어 음원 분리 문제에서 각 음원의 진폭이 라플라스(Laplace) 분포에 가깝다면 — 요소 분석은 그 음원들을 정확히 분리하지 못한다. 이게 sub 07에서 다룰 ICA가 등장한 이유다. ICA는 잠재가 비가우시안이라는 가정으로 이 한계를 푼다.</p>
+
+      <p>둘째, <strong>잡음의 가우시안성과 대각성</strong>. 실제 데이터에서 잔차 잡음이 가우시안이 아니거나 차원 간에 상관이 있을 수 있다. 그러면 요소 분석의 공분산 분해 $\mathbf{WW}^\top + \boldsymbol{\Psi}$가 어색하게 맞춰진다. 모델이 잠재 차원을 늘려서 잡음의 상관까지 잠재로 흡수해 버리는 일이 생긴다.</p>
+
+      <p>셋째이자 가장 본질적인 한계, <strong>선형성</strong>. 요소 분석은 잠재에서 관측으로 가는 사상이 선형이라고 가정한다. 즉 데이터가 잠재 공간의 평면(affine subspace) 위에 놓여 있다고 본다. 실제 데이터, 특히 자연 이미지나 음성처럼 복잡한 데이터는 평면이 아니라 휘어진 매니폴드 위에 있다. 평면으로 휘어진 표면을 근사하는 데는 한계가 있다. 이 한계가 sub 11에서 다룰 매니폴드 이야기로 이어지고, 14장 오토인코더가 이 한계를 비선형으로 푸는 방식이 된다.</p>
+
+      <h2>학습 — EM 알고리즘 한 줄 소개</h2>
+
+      <p>모델 파라미터 $\mathbf{W}, \mathbf{b}, \boldsymbol{\Psi}$를 어떻게 학습하는가. 가장 표준적인 방법은 최대우도 추정인데, 직접 우도를 미분해서 풀려고 하면 닫힌 해가 없다. 대신 책이 다른 장에서 다루는 EM(Expectation-Maximization) 알고리즘이 쓰인다. EM의 직관은 단순하다 — 모르는 두 양($\mathbf{h}$의 사후분포와 파라미터)을 번갈아 가며 추정한다. E-step에서는 현재 파라미터로 각 $\mathbf{x}$에 대한 $\mathbf{h}$의 사후분포(가우시안이므로 평균과 공분산만)를 구하고, M-step에서는 그 사후분포 아래에서 우도를 최대화하는 $\mathbf{W}, \mathbf{b}, \boldsymbol{\Psi}$를 닫힌 형태로 갱신한다. 두 단계를 우도가 수렴할 때까지 반복한다.</p>
+
+      <p>실제로는 작은 $k$에 대해서는 매우 빨리 수렴하고, 큰 $k$에서는 PCA로 초기화하면 잘 작동한다. 시험에서 EM의 세부 갱신식을 묻는 일은 거의 없으므로, "최대우도 + EM"이라는 한 줄 정도로 알아 두면 충분하다.</p>
+
+      <p>다음 절에서는 요소 분석의 잡음 공분산 $\boldsymbol{\Psi}$를 가장 단순한 모양 — 모든 차원에서 같은 값 $\sigma^2 \mathbf{I}$ — 으로 좁힌 모델, 확률적 PCA를 본다. 그 좁힘이 어떻게 PCA로 가는 다리가 되는지가 핵심이다.</p>
     </div>
 
-    <div class="prose">
-      <h2>ICA는 단일 알고리즘이 아니라 가족이다</h2>
-
-      <p>ICA를 처음 만날 때 흔히 가지는 오해는 "ICA = 어떤 한 알고리즘"이라는 것이다. 실제로 ICA는 <strong>여러 알고리즘들의 가족</strong>이다. 모두 같은 목적 — 비가우시안성 극대화 또는 동등한 기준 — 을 추구하지만, 그 측정 방법은 다양하다.</p>
-
-      <ul>
-        <li><strong>첨도(kurtosis) 기반.</strong> 분포의 첨예함을 직접 재서 그것을 최대화한다. 외부 잡음에 약하다.</li>
-        <li><strong>FastICA (negentropy 기반).</strong> 가우시안과의 거리(음의 엔트로피)를 근사 함수로 측정하여 최대화한다. 빠르고 안정적이다.</li>
-        <li><strong>최대우도 ICA.</strong> 잠재 사전을 명시적으로 깔고($p_k$) MLE로 직접 푼다. 사전 선택이 결과에 영향을 준다.</li>
-        <li><strong>Infomax.</strong> 비선형 변환 후 출력 엔트로피를 최대화한다. 신경과학과 연결된 해석을 가진다.</li>
-      </ul>
-
-      <p>책의 핵심 메시지는 "특정 알고리즘이 아니라, 잠재의 사전 분포가 모델이 무엇을 갈라낼 수 있는지를 결정한다"는 것이다. 비가우시안 사전이라는 가정만으로 회전 모호성이 깨지고, 진짜 원천이 회복 가능해진다 — 이것이 ICA의 본질이다.</p>
-
-      <h2>전처리 — 화이트닝(whitening)</h2>
-
-      <p>실전에서 ICA는 거의 항상 두 단계로 수행된다. 먼저 데이터에 PCA로 화이트닝(whitening)을 가해 공분산을 단위행렬로 만든 뒤, 그 위에서 직교 회전만 추가로 찾으면 ICA가 끝난다. 왜인가? 화이트닝 후에는 모든 직교 회전이 공분산을 보존하므로, 남은 자유도가 정확히 우리가 비가우시안성으로 깨려는 그 직교 회전 자유도와 일치한다.</p>
-
-      <div class="math-block">$$ \tilde{x} = D^{-1/2} U^\top x, \qquad \mathrm{Cov}(\tilde{x}) = I $$</div>
-      <p class="math-note">UDU^T는 데이터 공분산의 고유분해. 화이트닝 후 공분산이 단위행렬이 되어, 남은 자유도는 직교 회전뿐이다.</p>
-
-      <p>이 분해 — PCA로 2차 통계 정리, ICA로 더 높은 차원 통계로 직교 자유도 깨기 — 는 ICA가 PCA의 "확장"이 아니라 "그 다음 단계"임을 분명히 보여 준다. PCA는 분포의 평균과 공분산만 본다. ICA는 그 너머의 비가우시안 정보 — 첨도, 더 높은 모먼트, 음의 엔트로피 — 까지 동원해서, 가우시안 가정으로는 결코 얻을 수 없던 분리를 얻어낸다.</p>
-
-      <h2>한계 — 무엇은 회복되지 않는가</h2>
-
-      <p>ICA가 모든 모호성을 푸는 것은 아니다. 두 가지 자유도는 원리적으로 남는다.</p>
-
-      <ul>
-        <li><strong>크기(scale).</strong> $s_k$를 두 배로 늘리고 $W$의 그 열을 절반으로 줄이면 같은 $x$가 나온다.</li>
-        <li><strong>순서(permutation).</strong> 원천들의 번호를 바꾸어도 관측은 같다.</li>
-      </ul>
-
-      <p>실전에서 이 두 자유도는 데이터의 의미(어느 신호가 "사람 A의 목소리"인지 등)로 후처리해서 해결한다.</p>
-
-      <p>다음 장에서는 잠재의 사전을 또 다른 방향으로 더 극단화한다. 가우시안도 아니고, 단지 비가우시안인 정도가 아니라, <strong>거의 모든 성분이 0이고 가끔만 살아나는</strong> 사전 — 희소 코딩으로 간다.</p>
-    </div>
-
-    <nav class="ch-foot">
-      <a href="02.html"><div class="dir">← 이전</div><div class="ti">요소 분석과 확률적 PCA</div></a>
-      <a href="04.html" class="next"><div class="dir">다음 →</div><div class="ti">희소 코딩</div></a>
-    </nav>
+    <nav class="ch-foot"></nav>
   </main>
 </div>
 
 <script>
-  window.addEventListener('load', () => {
+  const SUBS = [
+    { no:'01', t:'잠재 변수의 직관' },
+    { no:'02', t:'생성 vs 판별 모델' },
+    { no:'03', t:'요소 분석 (FA)' },
+    { no:'04', t:'확률적 PCA' },
+    { no:'05', t:'전통 PCA' },
+    { no:'06', t:'PCA의 한계' },
+    { no:'07', t:'ICA — 칵테일 파티' },
+    { no:'08', t:'희소 코딩 1' },
+    { no:'09', t:'희소 코딩 2 — ISTA' },
+    { no:'10', t:'슬로우 피처 분석' },
+    { no:'11', t:'매니폴드의 첫 등장' },
+    { no:'12', t:'시험 대비' },
+  ];
+  function buildNav(cur) {
+    const tb = document.querySelector('.topbar');
+    if (tb) tb.innerHTML =
+      '<a class="home" href="index.html">← Chapter 13 / 선형 요소 모델</a>' +
+      '<span class="ch-mini">SUB ' + cur + ' / 12</span>';
+    const ol = document.querySelector('.ch-nav ol');
+    if (ol) ol.innerHTML = SUBS.map(c =>
+      '<li><a href="' + c.no + '.html"' + (c.no === cur ? ' class="current"' : '') + '>' + c.t + '</a></li>').join('');
+    const foot = document.querySelector('.ch-foot');
+    if (foot) {
+      const i = SUBS.findIndex(c => c.no === cur);
+      const prev = i > 0 ? SUBS[i - 1] : { no: '', t: '표지로', _href: 'index.html' };
+      const next = i < SUBS.length - 1 ? SUBS[i + 1] : { no: '', t: '표지로', _href: 'index.html' };
+      const hp = prev._href || (prev.no + '.html');
+      const hn = next._href || (next.no + '.html');
+      foot.innerHTML =
+        '<a href="' + hp + '"><div class="dir">← 이전</div><div class="ti">' + prev.t + '</div></a>' +
+        '<a href="' + hn + '" class="next"><div class="dir">다음 →</div><div class="ti">' + next.t + '</div></a>';
+    }
+  }
+  function initScroll() {
     const bar = document.querySelector('.scroll-progress');
-    const onScroll = () => {
+    if (!bar) return;
+    const on = () => {
       const h = document.documentElement;
       const max = h.scrollHeight - h.clientHeight;
       bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
     };
-    document.addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
-
+    document.addEventListener('scroll', on, { passive: true }); on();
+  }
+  function initKatex() {
     if (window.renderMathInElement) {
       renderMathInElement(document.body, {
-        delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }],
+        delimiters: [
+          { left: '$$', right: '$$', display: true },
+          { left: '$', right: '$', display: false },
+        ],
         throwOnError: false,
       });
     }
+  }
+  function widget03() {
+    const css = getComputedStyle(document.documentElement);
+    const C = {
+      style: css.getPropertyValue('--style').trim() || '#C0492E',
+      structure: css.getPropertyValue('--structure').trim() || '#2D5B7A',
+      synth: css.getPropertyValue('--synth').trim() || '#A47B2E',
+      faint: css.getPropertyValue('--ink-faint').trim() || '#8E8576',
+      paper2: css.getPropertyValue('--paper-2').trim() || '#F3EEE3',
+    };
+    const cH = document.getElementById('faH');
+    const cWh = document.getElementById('faWh');
+    const cX = document.getElementById('faX');
+    const ps = document.getElementById('psiSlider');
+    const pv = document.getElementById('psiVal');
+    const rs = document.getElementById('faResample');
+    if (!cH || !cWh || !cX) return;
 
-    // ============================ ICA vs PCA ============================
-    const canvas = document.getElementById('ica');
-    const ctx = canvas.getContext('2d');
-    function resize() {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      const w = canvas.clientWidth, h = 380;
-      canvas.width = w * dpr; canvas.height = h * dpr;
-      ctx.setTransform(dpr,0,0,dpr,0,0);
+    function gauss(){ let u=0,v=0; while(u===0)u=Math.random(); while(v===0)v=Math.random(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+    let H = []; // 잠재
+    function sampleH() {
+      H = [];
+      for (let i = 0; i < 80; i++) H.push({ h1: gauss(), h2: gauss() });
     }
-    resize();
-    window.addEventListener('resize', resize);
+    sampleH();
 
-    // 라플라스 분포에서 샘플 (비가우시안, 첨예)
-    function laplace() {
-      const u = Math.random() - 0.5;
-      return -Math.sign(u) * Math.log(1 - 2 * Math.abs(u));
-    }
-
-    // 두 독립 원천 (라플라스), 임의 행렬 A로 혼합
-    const N = 320;
-    const A = [[Math.cos(0.5), -Math.sin(1.1)], [Math.sin(0.5), Math.cos(1.1)]];
-    // 정규화
-    const s11 = A[0][0], s12 = A[0][1], s21 = A[1][0], s22 = A[1][1];
-
-    const data = [];
-    const srcs = [];
-    for (let i = 0; i < N; i++) {
-      const s1 = laplace() * 0.6;
-      const s2 = laplace() * 0.6;
-      srcs.push([s1, s2]);
-      const x = s11 * s1 + s12 * s2;
-      const y = s21 * s1 + s22 * s2;
-      data.push({ x, y });
-    }
-    // 중심 정렬
-    const mx = data.reduce((s,p)=>s+p.x,0)/N, my = data.reduce((s,p)=>s+p.y,0)/N;
-    data.forEach(p => { p.x -= mx; p.y -= my; });
-
-    // PCA — 공분산 행렬의 고유분해
-    let cxx = 0, cyy = 0, cxy = 0;
-    data.forEach(p => { cxx += p.x*p.x; cyy += p.y*p.y; cxy += p.x*p.y; });
-    cxx /= N; cyy /= N; cxy /= N;
-    // 2x2 대칭 행렬 고유값
-    const tr = cxx + cyy, det = cxx * cyy - cxy * cxy;
-    const disc = Math.sqrt(tr*tr/4 - det);
-    const lam1 = tr/2 + disc, lam2 = tr/2 - disc;
-    // 첫 고유벡터
-    let pcaTheta;
-    if (Math.abs(cxy) > 1e-10) {
-      pcaTheta = Math.atan2(lam1 - cxx, cxy);
-    } else {
-      pcaTheta = cxx >= cyy ? 0 : Math.PI/2;
-    }
-
-    // ICA — 화이트닝 후 FastICA-like (단순 1단계)
-    // 화이트닝: 데이터를 단위 공분산으로
-    function whiten(pts) {
-      // 고유분해
-      const a = cxx, b = cxy, c = cxy, d = cyy;
-      const trc = a + d, dec = a*d - b*c;
-      const dx = Math.sqrt(Math.max(0, trc*trc/4 - dec));
-      const l1 = trc/2 + dx, l2 = trc/2 - dx;
-      const v1x = b, v1y = l1 - a;
-      const v1n = Math.hypot(v1x, v1y);
-      const ux = v1x / v1n, uy = v1y / v1n;
-      // 두 번째 고유벡터는 직교
-      const wx = -uy, wy = ux;
-      // 화이트닝 변환: pts -> (pts·u / sqrt(l1), pts·w / sqrt(l2))
-      return pts.map(p => ({
-        u: (p.x * ux + p.y * uy) / Math.sqrt(Math.max(l1, 1e-9)),
-        v: (p.x * wx + p.y * wy) / Math.sqrt(Math.max(l2, 1e-9)),
-        ux, uy, wx, wy, l1, l2
-      }));
-    }
-    const W = whiten(data);
-
-    // 화이트닝된 공간에서 회전 θ로 사영했을 때의 |kurt| 측정 → 최대화
-    function kurtAt(theta) {
-      const c = Math.cos(theta), s = Math.sin(theta);
-      let m2 = 0, m4 = 0;
-      W.forEach(p => {
-        const t = c * p.u + s * p.v;
-        m2 += t*t; m4 += t*t*t*t;
-      });
-      m2 /= N; m4 /= N;
-      // excess kurtosis
-      return Math.abs(m4 / (m2*m2) - 3);
-    }
-    let bestTheta = 0, bestK = -1;
-    for (let d = 0; d <= 180; d++) {
-      const k = kurtAt(d * Math.PI / 180);
-      if (k > bestK) { bestK = k; bestTheta = d * Math.PI / 180; }
-    }
-    // 화이트닝된 공간에서의 ICA 축을 원공간으로 되돌리기
-    const ux = W[0].ux, uy = W[0].uy, wx = W[0].wx, wy = W[0].wy;
-    const sl1 = Math.sqrt(Math.max(W[0].l1, 1e-9));
-    const sl2 = Math.sqrt(Math.max(W[0].l2, 1e-9));
-    const ct = Math.cos(bestTheta), st = Math.sin(bestTheta);
-    const icaAx1 = [ct * sl1 * ux + st * sl2 * wx, ct * sl1 * uy + st * sl2 * wy];
-    const ica1Theta = Math.atan2(icaAx1[1], icaAx1[0]);
-    const ica2Theta = ica1Theta + Math.PI/2; // 두 번째 축
-
-    // 진짜 원천 방향
-    const true1 = Math.atan2(A[1][0], A[0][0]); // 원천 s1 방향이 관측 공간에서 가리키는 방향
-    const true2 = Math.atan2(A[1][1], A[0][1]);
-
-    // 모드
-    let mode = 'pca';
-    const bPca = document.getElementById('m-pca'), bIca = document.getElementById('m-ica');
-    bPca.addEventListener('click', () => { mode = 'pca'; bPca.classList.add('on'); bIca.classList.remove('on'); draw(); });
-    bIca.addEventListener('click', () => { mode = 'ica'; bIca.classList.add('on'); bPca.classList.remove('on'); draw(); });
-
+    // W: 2D 잠재 → 3D 관측 (관측은 2D 시각화로 사영). 직관을 위해 W의 첫 열은 비스듬, 두 번째 열은 다른 방향.
     function draw() {
-      const w = canvas.clientWidth, h = 380;
-      ctx.clearRect(0,0,w,h);
-      ctx.fillStyle = '#FAF7F0'; ctx.fillRect(0,0,w,h);
+      const psi = parseFloat(ps.value);
+      pv.textContent = psi.toFixed(2);
 
-      const cx = w/2, cy = h/2;
-      const scale = Math.min(w, h) * 0.13;
-
-      // 축 가이드
-      ctx.strokeStyle = 'rgba(38,34,28,.10)';
-      ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(w, cy); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, h); ctx.stroke();
-
-      // 데이터 점
-      data.forEach(p => {
-        ctx.fillStyle = 'rgba(45, 91, 122, 0.6)';
-        ctx.beginPath(); ctx.arc(cx + p.x * scale, cy - p.y * scale, 2.4, 0, Math.PI*2); ctx.fill();
-      });
-
-      const L = Math.min(w, h) * 0.42;
-      function drawAxis(theta, color, dash, lw) {
-        ctx.strokeStyle = color;
-        ctx.lineWidth = lw;
-        ctx.setLineDash(dash || []);
-        ctx.beginPath();
-        const c = Math.cos(theta), s = Math.sin(theta);
-        ctx.moveTo(cx - c * L, cy + s * L);
-        ctx.lineTo(cx + c * L, cy - s * L);
-        ctx.stroke();
-        ctx.setLineDash([]);
+      // H 그리기
+      const hCtx = cH.getContext('2d');
+      hCtx.clearRect(0, 0, cH.width, cH.height);
+      hCtx.strokeStyle = C.paper2;
+      for (let i = -2; i <= 2; i++) {
+        const X = cH.width/2 + i * 38;
+        const Y = cH.height/2 - i * 38;
+        hCtx.beginPath(); hCtx.moveTo(X, 8); hCtx.lineTo(X, cH.height-8); hCtx.stroke();
+        hCtx.beginPath(); hCtx.moveTo(8, Y); hCtx.lineTo(cH.width-8, Y); hCtx.stroke();
+      }
+      hCtx.fillStyle = C.style + 'AA';
+      for (const p of H) {
+        hCtx.beginPath();
+        hCtx.arc(cH.width/2 + p.h1*38, cH.height/2 - p.h2*38, 3, 0, Math.PI*2);
+        hCtx.fill();
       }
 
-      // 진짜 원천 방향 (항상 그림)
-      drawAxis(true1, 'rgba(96, 140, 96, 0.8)', [4, 4], 2);
-      drawAxis(true2, 'rgba(96, 140, 96, 0.8)', [4, 4], 2);
-
-      if (mode === 'pca') {
-        drawAxis(pcaTheta, '#C0492E', [], 2.4);
-        drawAxis(pcaTheta + Math.PI/2, '#C0492E', [], 2.4);
-        document.getElementById('ica-match').textContent = 'PCA: 직교만 보장, 원천 방향과 어긋남';
-      } else {
-        drawAxis(ica1Theta, '#7747B5', [], 2.4);
-        drawAxis(ica2Theta, '#7747B5', [], 2.4);
-        document.getElementById('ica-match').textContent = 'ICA: 비가우시안성으로 원천 방향 회복';
+      // Wh 그리기 (평면)
+      const whCtx = cWh.getContext('2d');
+      whCtx.clearRect(0, 0, cWh.width, cWh.height);
+      whCtx.strokeStyle = C.paper2;
+      for (let i = -2; i <= 2; i++) {
+        whCtx.beginPath(); whCtx.moveTo(cWh.width/2 + i*36, 8); whCtx.lineTo(cWh.width/2 + i*36, cWh.height-8); whCtx.stroke();
+        whCtx.beginPath(); whCtx.moveTo(8, cWh.height/2 - i*36); whCtx.lineTo(cWh.width-8, cWh.height/2 - i*36); whCtx.stroke();
       }
+      // 점들이 정확히 한 직선 위에 (3D 평면을 2D로 사영하면 직선이 보이게)
+      whCtx.fillStyle = C.synth + 'AA';
+      const WhPts = [];
+      for (const p of H) {
+        // W = [[1.0, 0.3],[0.5, 0.9]] 같은 모양
+        const w1 = 1.0 * p.h1 + 0.3 * p.h2;
+        const w2 = 0.5 * p.h1 + 0.9 * p.h2;
+        const px = cWh.width/2 + w1*30;
+        const py = cWh.height/2 - w2*30;
+        WhPts.push({ px, py, w1, w2 });
+        whCtx.beginPath(); whCtx.arc(px, py, 3, 0, Math.PI*2); whCtx.fill();
+      }
+      // 평면 표시 (Wh의 두 주축)
+      whCtx.strokeStyle = C.synth; whCtx.lineWidth = 1;
+      whCtx.beginPath();
+      whCtx.moveTo(cWh.width/2 - 3*30, cWh.height/2 + 3*15);
+      whCtx.lineTo(cWh.width/2 + 3*30, cWh.height/2 - 3*15);
+      whCtx.stroke();
 
-      // 범례
-      ctx.fillStyle = '#8E8576';
-      ctx.font = '11px "Spline Sans Mono", monospace';
-      ctx.fillText('파란 점 = 관측 x = As (혼합)', 14, h - 30);
-      ctx.fillText('연두 점선 = 진짜 원천 방향 / ' + (mode === 'pca' ? '주황 = PCA 축' : '보라 = ICA 축'), 14, h - 14);
+      // X 그리기 (잡음 추가)
+      const xCtx = cX.getContext('2d');
+      xCtx.clearRect(0, 0, cX.width, cX.height);
+      xCtx.strokeStyle = C.paper2;
+      for (let i = -2; i <= 2; i++) {
+        xCtx.beginPath(); xCtx.moveTo(cX.width/2 + i*36, 8); xCtx.lineTo(cX.width/2 + i*36, cX.height-8); xCtx.stroke();
+        xCtx.beginPath(); xCtx.moveTo(8, cX.height/2 - i*36); xCtx.lineTo(cX.width-8, cX.height/2 - i*36); xCtx.stroke();
+      }
+      xCtx.fillStyle = C.structure + 'BB';
+      for (const p of WhPts) {
+        // 잡음: x1 차원에 psi*1.0, x2 차원에 psi*0.6 (대각 Ψ)
+        const e1 = gauss() * psi * 1.0;
+        const e2 = gauss() * psi * 0.6;
+        xCtx.beginPath();
+        xCtx.arc(p.px + e1*30, p.py - e2*30, 3, 0, Math.PI*2);
+        xCtx.fill();
+      }
+      // 실제 평면도 흐릿하게 표시
+      xCtx.strokeStyle = C.synth + '55';
+      xCtx.beginPath();
+      xCtx.moveTo(cX.width/2 - 3*30, cX.height/2 + 3*15);
+      xCtx.lineTo(cX.width/2 + 3*30, cX.height/2 - 3*15);
+      xCtx.stroke();
     }
+    ps.addEventListener('input', draw);
+    rs.addEventListener('click', () => { sampleH(); draw(); });
     draw();
-  });
+  }
+  window.addEventListener('load', () => { buildNav('03'); initScroll(); initKatex(); widget03(); });
 </script>
 </body>
 </html>

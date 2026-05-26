@@ -3,457 +3,145 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>05 · 데이터 증강 · 노이즈 주입 · 라벨 스무딩</title>
+<title>Sub 05 · L1 정칙화와 다이아몬드 등고선 · Ch.07</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
-  .topbar { position: sticky; top: 0; z-index: 40; display: flex; align-items: center; justify-content: space-between; padding: .8rem 1.4rem; background: rgba(250,247,240,.82); backdrop-filter: blur(12px) saturate(1.3); border-bottom: 1px solid var(--line-soft); }
-  .topbar .home { font-family: var(--mono); font-size: .76rem; letter-spacing: .1em; color: var(--ink-soft); text-decoration: none; }
-  .topbar .home:hover { color: var(--ink); }
-  .topbar .ch-mini { font-family: var(--mono); font-size: .72rem; letter-spacing: .14em; color: var(--ink-faint); }
-
-  .ch-layout { display: grid; grid-template-columns: 15rem 1fr; gap: 0; max-width: 68rem; margin-inline: auto; }
-  .ch-nav { position: sticky; top: 3.4rem; align-self: start; height: calc(100vh - 3.4rem); overflow-y: auto; padding: 2rem 1.2rem; border-right: 1px solid var(--line-soft); }
-  .ch-nav ol { list-style: none; margin: 0; padding: 0; counter-reset: ch; }
-  .ch-nav li { counter-increment: ch; margin: 0; }
-  .ch-nav a { display: grid; grid-template-columns: 1.7rem 1fr; gap: .5rem; align-items: baseline; padding: .5rem .5rem; border-radius: 7px; text-decoration: none; color: var(--ink-soft); font-size: .88rem; line-height: 1.35; transition: background .15s; }
-  .ch-nav a::before { content: counter(ch, decimal-leading-zero); font-family: var(--mono); font-size: .72rem; color: var(--ink-faint); }
-  .ch-nav a:hover { background: var(--paper-2); color: var(--ink); }
-  .ch-nav a.current { background: var(--ink); color: var(--paper); }
-  .ch-nav a.current::before { color: var(--style-lo); }
-  .ch-main { min-width: 0; padding: 3rem 0 6rem; }
-  .ch-head { max-width: var(--measure); margin: 0 auto 2.4rem; padding-inline: 1.4rem; }
-  .ch-head .kicker { margin-bottom: 1rem; display: block; }
-  .ch-head h1 { font-size: clamp(2rem, 5vw, 3.3rem); margin: 0 0 .8rem; }
-  .ch-head .lede { font-family: var(--serif); font-size: 1.22rem; font-style: italic; color: var(--ink-soft); line-height: 1.5; }
-  .ch-foot { display: flex; justify-content: space-between; gap: 1rem; max-width: var(--measure); margin: 4rem auto 0; padding-inline: 1.4rem; }
-  .ch-foot a { display: block; text-decoration: none; flex: 1; padding: 1rem 1.2rem; border: 1px solid var(--line); border-radius: 10px; transition: border-color .15s, transform .15s; }
-  .ch-foot a:hover { border-color: var(--style); transform: translateY(-2px); }
-  .ch-foot .dir { font-family: var(--mono); font-size: .7rem; letter-spacing: .14em; color: var(--ink-faint); text-transform: uppercase; }
-  .ch-foot .ti { font-family: var(--serif); font-size: 1.05rem; color: var(--ink); margin-top: .2rem; }
-  .ch-foot .next { text-align: right; }
-  @media (max-width: 760px) { .ch-layout { grid-template-columns: 1fr; } .ch-nav { display: none; } }
-
-  /* 증강·노이즈 위젯 */
-  .aug-stage { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1.2rem 1.1rem .8rem; }
-  @media (max-width: 720px) { .aug-stage { grid-template-columns: 1fr; } }
-  .aug-cell { background: var(--paper); border: 1px solid var(--line); border-radius: 9px; padding: .6rem; }
-  .aug-cell h5 { margin: 0 0 .4rem; font-family: var(--mono); font-size: .7rem; letter-spacing: .12em; color: var(--ink-faint); text-transform: uppercase; }
-  .aug-cell canvas { width: 100%; height: 250px; display: block; border-radius: 6px; background: #fff; }
-  .aug-readout { display: flex; gap: 1rem; flex-wrap: wrap; padding: 0.4rem 1.1rem 1rem; font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); }
-  .aug-readout span b { color: var(--ink); font-weight: 600; }
-  .noise-stage { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1.2rem 1.1rem .8rem; }
-  @media (max-width: 720px) { .noise-stage { grid-template-columns: 1fr; } }
-  .noise-cell { background: var(--paper); border: 1px solid var(--line); border-radius: 9px; padding: .6rem; }
-  .noise-cell h5 { margin: 0 0 .4rem; font-family: var(--mono); font-size: .7rem; letter-spacing: .12em; color: var(--ink-faint); text-transform: uppercase; }
-  .noise-cell canvas { width: 100%; height: 280px; display: block; border-radius: 6px; background: #fff; }
+  .sp-stage { padding: 1.2rem 1.2rem 1rem; }
+  .sp-cv { display: block; max-width: 100%; border-radius: 8px; border: 1px solid var(--line); background: var(--paper); margin: 0 auto; }
+  .sp-ctr { display: flex; gap: 1rem; padding: .9rem 1.1rem; border-top: 1px solid var(--line-soft); background: var(--paper); }
+  .sp-read { padding: .8rem 1.4rem; font-size: .9rem; color: var(--ink-soft); line-height: 1.55; }
+  .sp-read b { color: var(--ink); }
+  .deriv { max-width: var(--measure); margin: 1.4rem auto; padding: 1.1rem 1.4rem; background: var(--paper-2); border: 1px solid var(--line-soft); border-radius: 9px; }
+  .deriv .lbl { font-family: var(--mono); font-size: .7rem; letter-spacing: .12em; color: var(--style); margin-bottom: .35rem; }
+  .deriv .why { font-size: .88rem; color: var(--ink-soft); line-height: 1.6; margin-top: .35rem; }
 </style>
 </head>
 <body>
-<div class="topbar">
-  <a class="home" href="index.html">← Ch.07 정칙화</a>
-  <span class="ch-mini">SUB 05 / 07</span>
-</div>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
 
 <div class="ch-layout">
-  <aside class="ch-nav"><nav><ol id="navlist"></ol></nav></aside>
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Sub 05 · 입력·라벨 공간에서의 정칙화</span>
-      <h1>데이터를 흔들면,<br><span class="t-style">결정경계</span>가 부드러워진다</h1>
-      <p class="lede">데이터 증강은 가짜 데이터 복제가 아니다. "이 변형은 같은 의미"라는 사전지식을 모델에 주입하는 방법이다.</p>
+      <span class="kicker">Sub 05 · 시험 1순위 — 다이아몬드의 비밀</span>
+      <h1>L1 정칙화와 <span class="t-style">다이아몬드</span> 등고선</h1>
+      <p class="lede">L1은 왜 가중치를 정확히 0으로 만드는가. 답은 ‖θ‖₁ 등고선의 모양 — 축 위에 꼭짓점이 있다.</p>
     </header>
 
     <div class="prose">
-      <p>지금까지 다룬 정칙화 — L2, L1, 드롭아웃, 조기 종료 — 는 모두 모델의 파라미터나 학습 동역학을 건드린다. 그런데 정칙화의 또 다른 큰 갈래는 <strong>입력 데이터 자체</strong>를 건드린다. 이번 장에서는 그 갈래 세 가지를 본다.</p>
+      <p>L2와 L1은 한 글자만 다르다. 식만 보면 거의 같은 도구처럼 보인다.</p>
 
-      <ol>
-        <li><strong>데이터 증강(Data Augmentation)</strong> — 같은 의미의 변형된 입력을 만들어 학습셋을 확장.</li>
-        <li><strong>노이즈 주입(Noise Injection)</strong> — 입력·은닉표현·가중치에 작은 잡음을 더해 강건성을 학습.</li>
-        <li><strong>라벨 스무딩(Label Smoothing)</strong> — 정답 라벨을 약간 흐려서 과확신을 막음.</li>
-      </ol>
+      <div class="math-block">$$ \Omega_{L2}(\theta) \;=\; \frac{1}{2}\|\theta\|_2^2 \;=\; \frac{1}{2}\sum_i \theta_i^2 \qquad\Omega_{L1}(\theta) \;=\; \|\theta\|_1 \;=\; \sum_i |\theta_i| $$</div>
+      <p class="math-note">L2는 제곱 합, L1은 절댓값 합. 차이는 단지 지수 2냐 1이냐.</p>
 
-      <h2>데이터 증강 — 가짜 데이터가 아니라 불변성 주입</h2>
+      <p>그런데 이 작은 차이가 두 큰 차이를 만든다. 첫째, 결과 가중치의 모양 — L1은 많은 가중치를 <strong>정확히 0</strong>으로 보내고(희소해 sparse solution), L2는 모든 가중치를 작게 만들되 0으로 보내지는 않는다. 둘째, 미분 가능성 — L1은 가중치가 0인 지점에서 미분 불가능하므로 별도 처리(서브그라디언트 subgradient)가 필요하다. 이 sub의 목적은 첫 번째 차이가 왜 일어나는지를 기하학적으로 분명히 보는 것이다.</p>
 
-      <p>이미지에서 데이터 증강은 매우 자연스럽다. 고양이 사진을 좌우로 뒤집어도, 5도 회전해도, 약간 어둡게 해도 — 여전히 고양이다. 그러면 원본 한 장에서 여러 변형을 만들어 학습셋을 늘릴 수 있다.</p>
+      <h2>1. SGD 업데이트로 본 L1 — 정확히 0이 되는 메커니즘</h2>
 
-      <p>처음 보면 "데이터를 인위적으로 복제하는 꼼수"처럼 보일 수 있다. 하지만 본질은 그게 아니다. 데이터 증강의 핵심은 <strong>"이 변형은 라벨을 바꾸지 않는다"는 사전지식(prior knowledge)을 모델에 주입</strong>하는 것이다. 모델은 단순히 "이 픽셀 배열이면 고양이"가 아니라 "이 픽셀 배열의 회전·반전·밝기 변형까지 모두 고양이"라는 더 일반적인 규칙을 배우게 된다.</p>
+      <p>먼저 L2와 L1의 SGD 한 스텝을 직접 비교해 보자. 두 경우 모두 페널티의 기울기를 보면 차이가 보인다.</p>
 
-      <div class="analogy">
-        학생에게 같은 수학 개념을 한 표현으로만 가르치면, 시험에서 문장이 살짝 바뀌면 무너진다. 같은 개념을 그림, 수식, 일상 비유, 다른 단어로 다섯 가지 방식으로 설명하면 학생은 개념 자체를 배운다. <b>데이터 증강은 모델에게 "이 라벨은 이런 표면적 변형들의 공통점을 본 결과여야 한다"는 추상화를 강제한다.</b>
+      <div class="deriv">
+        <span class="lbl">유도 1 · L1의 페널티 기울기</span>
+        <div class="math-block">$$ \frac{\partial}{\partial \theta_i}\,|\theta_i| \;=\; \mathrm{sign}(\theta_i) \;=\; \begin{cases} +1 & \theta_i > 0 \\ -1 & \theta_i < 0 \\ [-1,+1] & \theta_i = 0 \end{cases} $$</div>
+        <p class="why">L2의 기울기는 α·θᵢ(가중치 크기에 비례) 였다. L1의 기울기는 부호만 본다 — 가중치가 크든 작든 같은 크기로 끌어당긴다.</p>
       </div>
 
-      <p>도메인별로 흔히 쓰는 증강은 다음과 같다.</p>
+      <p>이 차이가 결정적이다. L2는 가중치가 작아질수록 끌어당기는 힘도 작아진다 — θᵢ가 0.001이면 끌어당기는 힘은 0.001·α로 매우 작다. 그래서 0에 점근하기는 하지만 절대 도달하지는 않는다. 반면 L1은 θᵢ가 0.001이든 0.5든 같은 힘(α)으로 끌어당긴다. 그러므로 θᵢ가 충분히 작아지면 J의 기울기가 그 끌어당김을 못 이기고, <strong>가중치는 0에서 멈춰 머문다</strong>.</p>
+
+      <div class="deriv">
+        <span class="lbl">유도 2 · L1의 정확한 해 (단순화된 경우)</span>
+        <div class="math-block">$$ \tilde\theta_i^{(L1)} \;=\; \mathrm{sign}(\theta_i^*)\,\max\!\bigl(\,|\theta_i^*| - \alpha,\; 0\bigr) $$</div>
+        <p class="why">해의 절댓값이 α보다 작으면 정확히 0, 그렇지 않으면 α만큼 0 쪽으로 이동. 이 함수를 <strong>soft-thresholding</strong>이라 부른다. (직교 H 가정 하의 닫힌 형식 해)</p>
+      </div>
+
+      <p>이 식을 한 줄로 풀면: "정칙화 안 한 해가 α보다 크면 그만큼 0 쪽으로 깎고, α 이하면 그냥 0으로 만든다." L1이 0을 만드는 메커니즘이 정확히 여기 있다. 위 식이 L2의 비례 축소 $\lambda/(\lambda+\alpha)$와 어떻게 질적으로 다른지 보면, L2는 절대 0이 안 되지만 L1은 임계값 아래면 모두 0이다.</p>
+
+      <h2>2. 제약 시점 — 다이아몬드와 원의 기하학</h2>
+
+      <p>SGD 시점이 명확했다면, 이번엔 같은 결과를 <strong>기하학적으로</strong> 보자. 2sub에서 본 페널티 ↔ 제약 등가성을 다시 떠올린다.</p>
+
+      <div class="math-block">$$ \min_\theta \bigl[J(\theta) + \alpha\,\Omega(\theta)\bigr] \;\;\Longleftrightarrow\;\; \min_\theta J(\theta) \;\text{s.t.}\; \Omega(\theta) \le k $$</div>
+
+      <p>제약 영역 $\{\theta : \Omega(\theta) \le k\}$의 모양이 핵심이다. 2차원 (w₁, w₂) 평면에서 보자.</p>
 
       <ul>
-        <li><strong>이미지</strong>: 좌우 뒤집기(flip), 회전(rotation), 크롭(crop), 색상 지터(color jitter), CutMix, MixUp.</li>
-        <li><strong>음성</strong>: 시간 늘리기, 피치 변화, 잡음 추가, SpecAugment(스펙트로그램에서 시간·주파수 마스킹).</li>
-        <li><strong>텍스트</strong>: 동의어 치환, 역번역(back-translation), 토큰 삭제·삽입.</li>
+        <li><strong>L2 제약</strong>: $w_1^2 + w_2^2 \le k$. → <strong>원(circle)</strong>. 모든 방향으로 둥글고, 어디에도 뾰족한 부분이 없다.</li>
+        <li><strong>L1 제약</strong>: $|w_1| + |w_2| \le k$. → <strong>다이아몬드(diamond, ℓ₁-ball)</strong>. 축 위에 네 꼭짓점(±k, 0)과 (0, ±k)가 있다.</li>
       </ul>
 
-      <p>중요한 건 <strong>도메인 지식</strong>에 맞는 증강을 골라야 한다는 점이다. 글자 인식(OCR)에서 좌우 뒤집기는 라벨을 바꾼다(b ↔ d). 의료 영상에서 색상 지터는 진단 정보를 왜곡할 수 있다. 무작정 증강을 늘리면 오히려 해롭다.</p>
+      <p>이제 손실 함수 J(θ)의 등고선(타원형 모양)이 이 제약 영역의 어느 점에서 처음 닿는지를 생각해 보자. 등고선과 제약 영역이 처음 만나는 점이 정칙화된 해다.</p>
 
-      <h2>위젯 — 증강이 결정경계를 어떻게 부드럽게 만드는가</h2>
+      <p><strong>L2의 경우</strong>, 원은 모든 방향으로 매끄러우므로 등고선의 접선이 어디서든 원과 매끄럽게 만난다. 그 접점이 정확히 축 위에 있을 확률은 0에 가깝다. 즉 일반적으로 $w_1 \ne 0$이고 $w_2 \ne 0$.</p>
 
-      <p>아래 위젯은 작은 2D 분류 문제에서, 같은 데이터에 회전·반전·노이즈 증강을 적용했을 때와 안 했을 때의 결정경계를 비교한다. 같은 망 구조, 같은 학습 epoch인데도 증강을 켜면 경계가 훨씬 부드럽고 일반화 성능이 좋아진다.</p>
+      <p><strong>L1의 경우</strong>, 다이아몬드의 꼭짓점은 축 위에 있다. 등고선이 다이아몬드의 면(edge)이 아닌 <em>꼭짓점</em>에서 처음 만나면, 그 점은 한 축이 0인 점이다 — 즉 $w_1 = 0$ 또는 $w_2 = 0$. 그리고 꼭짓점은 다이아몬드의 면보다 "튀어나와" 있으므로, 등고선이 꼭짓점을 만날 확률이 매우 높다(특히 손실의 등고선이 축에 정렬되어 있지 않을 때).</p>
+
+      <div class="analogy">
+        <b>풍선을 다이아몬드 모양 받침대 위에서 부풀린다</b>고 생각해 보자(타원 등고선 = 풍선, 다이아몬드 = L1 제약). 풍선이 어떻게 부풀어도 결국 다이아몬드의 뾰족한 꼭짓점에 먼저 닿는다. 반면 받침대가 둥근 사발(원 = L2 제약)이라면 풍선은 사발 표면 어디에든 닿을 수 있고, 정확히 축 위에 닿을 가능성은 거의 없다. L1과 L2의 본질적 차이는 받침대 모양이다.
+      </div>
+
+      <p>고차원으로 가면 이 효과가 더 극적이다. n차원 L1-ball은 2n개의 꼭짓점을 가진다(각 축의 양·음 방향). 차원이 늘수록 꼭짓점이 더 "뾰족"해지고, 등고선이 꼭짓점에 닿을 확률이 더 높아진다. 즉 <strong>고차원 데이터에서 L1은 더 강력한 희소화 효과</strong>를 가진다.</p>
+
+      <h2>3. 베이지안 시점 — 라플라스 사전</h2>
+
+      <p>L2가 가우시안 사전이었듯이, L1은 <strong>라플라스 사전(Laplace prior)</strong>의 MAP 추정에서 자연스럽게 나온다.</p>
+
+      <div class="math-block">$$ p(\theta_i) \;=\; \frac{1}{2b}\exp\!\left(-\frac{|\theta_i|}{b}\right) $$</div>
+
+      <p>라플라스 분포는 0에서 뾰족한 봉우리를 가진다(가우시안은 0에서 부드러운 봉우리). 음의 로그를 취하면 $|θ_i|/b + \text{const}$ — 정확히 L1 페널티 형태. α = 1/b. 라플라스 사전의 의미는 "가중치 대부분은 0에 매우 가깝다(0에서 봉우리), 단 일부는 큰 값을 가질 수 있다(꼬리가 가우시안보다 두꺼움)."</p>
+
+      <div class="analogy">
+        <b>가우시안 사전</b>은 "모든 가중치가 적당히 작다"는 믿음, <b>라플라스 사전</b>은 "대부분의 가중치는 거의 0이지만 일부는 강하게 활성될 수 있다"는 믿음. 실제 자연·사회 시스템에서 후자가 더 자주 옳다 — 한두 가지 핵심 요인이 결과를 좌우하고 나머지는 거의 무관한 경우. 그래서 L1이 만드는 희소해는 단순히 수학적 결과가 아니라 <em>"중요한 특징만 골라낸다"는 모형 가설</em>의 표현이다.
+      </div>
     </div>
 
     <div class="widget">
       <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 05</span><span>데이터 증강 ON/OFF · 결정경계 비교</span></div>
-        <div class="aug-stage">
-          <div class="aug-cell">
-            <h5>증강 OFF — 원본 데이터만</h5>
-            <canvas id="augOff" width="500" height="380"></canvas>
-          </div>
-          <div class="aug-cell">
-            <h5>증강 ON — 회전 + 반전 + 노이즈</h5>
-            <canvas id="augOn" width="500" height="380"></canvas>
-          </div>
-        </div>
-        <div class="aug-readout">
-          <span>OFF 시험 정확도 = <b id="accOff">0%</b></span>
-          <span>ON 시험 정확도 = <b id="accOn">0%</b></span>
-          <span>증강 배수 = <b id="augX">5×</b></span>
-        </div>
-        <div class="widget-controls">
-          <div class="slider">
-            <label>회전 각도 ±θ <b id="rotLab">30°</b></label>
-            <input id="rotSlide" type="range" min="0" max="60" value="30" step="5">
-          </div>
-          <div class="slider">
-            <label>노이즈 σ <b id="nseLab">0.10</b></label>
-            <input id="nseSlide" type="range" min="0" max="0.3" value="0.1" step="0.02">
-          </div>
-          <button class="btn ghost" id="newAugBtn">새 데이터 + 재학습</button>
-        </div>
+        <div class="widget-label"><span class="lab-no">위젯 05</span><span>L1 희소성 — 가중치 100개 중 몇 개가 정확히 0이 되는가</span></div>
+        <div id="sp"></div>
       </div>
-      <p class="widget-cap">왼쪽: 원본 데이터만으로 학습한 망의 결정경계 — 종종 데이터 점 사이로 구불구불 새어 든다(과적합). 오른쪽: 같은 데이터를 회전·반전·노이즈로 5배 증강해 학습 — 경계가 더 매끄러워지고 시험 정확도가 올라간다.</p>
+      <p class="widget-cap">100개 가중치를 정규분포에서 추출한 뒤 L1 정칙화의 soft-thresholding을 적용. α를 키울수록 0이 된 가중치의 비율이 단조 증가. α=0이면 0%, α≥1.5면 거의 모두 0. 회색 막대 = 0인 가중치, 색 막대 = 살아남은 가중치(양수는 파랑, 음수는 빨강).</p>
     </div>
 
     <div class="prose">
-      <h2>노이즈 주입 — 어디에 넣느냐가 의미를 바꾼다</h2>
+      <h2>L1의 미분 불가능 지점 — 서브그라디언트</h2>
 
-      <p>잡음(noise)을 모델 학습 중에 일부러 넣는 것은 정칙화의 또 다른 큰 갈래다. 어디에 넣느냐에 따라 의미가 달라진다.</p>
+      <p>L1의 단점도 정직하게 짚어야 한다. $|θ|$는 θ=0에서 미분 불가능하다 — 좌극한 기울기 -1과 우극한 기울기 +1이 다르다. 일반 SGD가 매끄러운 기울기를 가정한다면 이 지점에서 어떻게 해야 하나?</p>
 
-      <h3>1. 입력 노이즈 — 데이터 증강의 일반화</h3>
+      <p>답은 <strong>서브그라디언트(subgradient)</strong>다. 미분 불가능한 지점에서 좌·우 기울기 사이의 임의의 값을 "기울기"로 채택한다. L1에서는 θ=0일 때 [-1, +1] 사이 아무 값이나 써도 된다. 실전에서는 0을 쓰면, 한 번 θ=0이 된 가중치는 J의 기울기 크기가 α를 넘지 않는 한 0에 머문다.</p>
 
-      <p>입력 $\mathbf{x}$에 작은 가우시안 잡음 $\boldsymbol{\eta}$를 더해 $\tilde{\mathbf{x}} = \mathbf{x} + \boldsymbol{\eta}$로 학습하면, 모델은 입력 근방에서 일관된 예측을 하도록 강제된다. 선형 회귀에서는 이것이 정확히 L2 정칙화와 동치다(공식 7.32 부근). 비선형 망에서는 정확한 동치는 깨지지만, 가중치를 작게 유지하는 압력이 비슷하게 작용한다.</p>
+      <p>이게 5절 첫 줄에서 본 soft-thresholding의 정확한 의미다. "α 미만의 데이터 기울기는 L1 페널티가 흡수해 가중치를 0에 머물게 한다." L2는 이런 임계값이 없다 — 아무리 작은 데이터 기울기도 가중치를 살짝 움직인다. L1은 명확한 0 vs 0이 아님의 분리를 만든다.</p>
 
-      <h3>2. 가중치 노이즈 — 베이지안 신경망과 연결</h3>
+      <h2>한 줄 정리</h2>
 
-      <p>가중치 $\mathbf{W}$에 잡음 $\boldsymbol{\eta} \sim \mathcal{N}(0, \sigma^2 \mathbf{I})$를 더해 학습하면, 모델은 가중치의 작은 변화에도 일관된 예측을 하도록 학습한다. 이것은 손실 함수에 "기울기 노름의 제곱"이라는 추가 항을 더하는 것과 비슷하다.</p>
+      <p>L1 정칙화의 본질은 "절댓값"이라는 비매끄러운 함수가 만드는 <strong>축 위의 꼭짓점</strong>이다. 이 꼭짓점에서 손실 등고선이 만날 때 가중치가 정확히 0이 된다. SGD 시점에서는 부호 기반 끌어당김이, 기하 시점에서는 다이아몬드 모서리가, 베이지안 시점에서는 라플라스 사전이 같은 한 가지 사실 — <em>L1은 자동 특징 선택기</em>임을 말해 준다.</p>
 
-      <div class="math-block">$$ \tilde{J}(\mathbf{W}) \approx J(\mathbf{W}) + \sigma^2 \mathbb{E}\big[\|\nabla_W \hat{y}\|^2\big] $$</div>
-      <p class="math-note">가중치 노이즈 ≈ 출력의 가중치에 대한 기울기 크기를 줄이는 효과.</p>
-
-      <h3>3. 출력 노이즈 (라벨 스무딩) — 과확신을 막는다</h3>
-
-      <p>이게 이번 장에서 가장 실용적이고 시험에 자주 나오는 기법이다. 분류 문제에서 정답은 보통 one-hot 인코딩이다 — 정답 클래스는 1, 나머지는 0. 그러면 softmax 출력은 정답에 대해 1에 도달하려고 가중치를 무한히 키운다(softmax는 절대 정확히 1을 출력할 수 없으므로). 이것은 가중치가 발산하는 한 형태의 과적합이다.</p>
-
-      <p>라벨 스무딩(label smoothing)은 정답 라벨을 약간 흐린다. $K$개 클래스, 스무딩 강도 $\epsilon$이면,</p>
-
-      <div class="math-block">$$ y_k^{\text{smooth}} = \begin{cases} 1 - \epsilon + \epsilon/K & \text{if } k = \text{정답} \\ \epsilon/K & \text{otherwise} \end{cases} $$</div>
-      <p class="math-note">정답에 1 대신 0.9를, 나머지 9개 클래스에 0 대신 약 0.011씩을 부여 (K=10, ε=0.1일 때).</p>
-
-      <p>왜 이렇게 하는가? 모델이 "정답은 무조건 100% 확신"이 아니라 "정답은 90% 확신, 나머지에도 약간의 가능성"이라는 더 겸손한 출력을 내도록 강제한다. 이게 정칙화가 되는 이유는, 가중치가 무한히 키울 동기를 잃기 때문이다. 또한 학습 동역학이 안정화되고, 모델 보정(calibration)이 좋아진다.</p>
-
-      <h2>위젯 — 가중치 노이즈가 결정경계를 어떻게 부드럽게 만드는가</h2>
+      <p>다음 sub에서는 L1과 L2를 한 화면에서 비교한다. 같은 손실 표면 위에서 두 정칙화가 어떻게 다른 해를 만드는지, 그리고 언제 어느 것을 쓸 것인가의 결정 기준을 본다.</p>
     </div>
 
-    <div class="widget">
-      <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 06</span><span>가중치 노이즈 σ · 결정경계 변화</span></div>
-        <div class="noise-stage">
-          <div class="noise-cell">
-            <h5>σ = 0 (노이즈 없음)</h5>
-            <canvas id="noise0" width="500" height="400"></canvas>
-          </div>
-          <div class="noise-cell">
-            <h5>σ = <span id="sigCur">0.20</span> (학습 시 가중치 노이즈)</h5>
-            <canvas id="noiseN" width="500" height="400"></canvas>
-          </div>
-        </div>
-        <div class="widget-controls">
-          <div class="slider">
-            <label>가중치 노이즈 표준편차 σ <b id="sigLab">0.20</b></label>
-            <input id="sigSlide" type="range" min="0" max="0.5" value="0.20" step="0.02">
-          </div>
-          <button class="btn ghost" id="resetNoiseBtn">초기화 & 재학습</button>
-        </div>
-      </div>
-      <p class="widget-cap">왼쪽: 보통 학습. 결정경계가 데이터 점 사이를 따라가며 들쭉날쭉. 오른쪽: 매 학습 스텝마다 가중치에 작은 가우시안 노이즈를 더해 학습. 같은 데이터, 같은 망인데도 경계가 더 매끄러워진다 — 노이즈가 강한 곡률을 평탄하게 만든다.</p>
-    </div>
-
-    <div class="prose">
-      <h2>한 줄로 정리</h2>
-
-      <p>이 세 기법은 모두 "데이터·입력·라벨 공간에서 자유도를 통제한다"는 점에서 같은 정신이다. 차이는 어디를 흔드느냐다.</p>
-
-      <div class="symbols">
-        <tr><td>데이터 증강</td><td>입력의 의미보존 변형을 학습셋에 추가. 불변성 사전지식 주입.</td></tr>
-        <tr><td>입력 노이즈</td><td>입력에 가우시안. 선형회귀에서 L2와 동치. 강건성 학습.</td></tr>
-        <tr><td>가중치 노이즈</td><td>학습 시 가중치에 가우시안. 기울기 노름 페널티와 유사.</td></tr>
-        <tr><td>라벨 스무딩</td><td>정답 라벨을 흐림. 가중치 발산을 막고 보정을 개선.</td></tr>
-      </div>
-
-      <p>다음 장에서는 정칙화의 가장 흥미로운 변종 — <strong>적대적 훈련</strong>을 본다. 입력 근방에서 모델을 일부러 무너뜨리는 작은 교란을 찾아내고, 그것을 학습에 포함시켜 강건성을 키우는 방법이다. P1에서 다뤘던 FGSM과 직접 연결된다.</p>
-    </div>
-
-    <nav class="ch-foot" id="chFoot"></nav>
+    <nav class="ch-foot"></nav>
   </main>
 </div>
 
+<script src="widgets.js"></script>
 <script>
-  const SUBS = [
-    { no:'01', t:'일반화 격차' },
-    { no:'02', t:'L1·L2 기하학' },
-    { no:'03', t:'드롭아웃 앙상블' },
-    { no:'04', t:'조기 종료 ~ L2' },
-    { no:'05', t:'데이터 증강·노이즈' },
-    { no:'06', t:'적대적 훈련' },
-    { no:'07', t:'시험 대비' },
-  ];
-  const CUR = '05';
-  const navlist = document.getElementById('navlist');
-  SUBS.forEach(s => {
-    const li = document.createElement('li');
-    li.innerHTML = `<a href="${s.no}.html"${s.no===CUR?' class="current"':''}>${s.t}</a>`;
-    navlist.appendChild(li);
-  });
-  const chFoot = document.getElementById('chFoot');
-  const idx = SUBS.findIndex(s => s.no === CUR);
-  const prev = idx > 0 ? SUBS[idx-1] : { no:'index', t:'표지로' };
-  const next = idx < SUBS.length-1 ? SUBS[idx+1] : { no:'index', t:'표지로' };
-  chFoot.innerHTML =
-    `<a href="${prev.no}.html"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
-    `<a href="${next.no}.html" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
-
-  window.addEventListener('load', () => {
-    if (window.renderMathInElement) {
-      renderMathInElement(document.body, {
-        delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
-        throwOnError: false,
-      });
-    }
-  });
-
-  // ----- 공유: 작은 망 학습 -----
-  const css = getComputedStyle(document.documentElement);
-  const C = {
-    structure: css.getPropertyValue('--structure').trim() || '#2D5B7A',
-    style: css.getPropertyValue('--style').trim() || '#C0492E',
-    ink: css.getPropertyValue('--ink').trim() || '#26221C',
-    faint: css.getPropertyValue('--ink-faint').trim() || '#8E8576',
-  };
-
-  let SEED = 42;
-  function rng() { SEED = (SEED * 9301 + 49297) % 233280; return SEED / 233280; }
-  function randn() { let s=0; for (let i=0;i<6;i++) s+=rng(); return (s-3)/1.225; }
-
-  function genMoons() {
-    const N = 50;
-    const pts = [];
-    for (let i = 0; i < N; i++) {
-      const t = rng() * Math.PI;
-      pts.push({ x: Math.cos(t) + randn()*0.13, y: Math.sin(t) + randn()*0.13, c: 0 });
-    }
-    for (let i = 0; i < N; i++) {
-      const t = rng() * Math.PI;
-      pts.push({ x: 1 - Math.cos(t) + randn()*0.13, y: -Math.sin(t) + 0.5 + randn()*0.13, c: 1 });
-    }
-    return pts;
+window.addEventListener('load', () => {
+  CH7.buildNav('05');
+  if (window.renderMathInElement) {
+    renderMathInElement(document.body, {
+      delimiters: [
+        { left: '$$', right: '$$', display: true },
+        { left: '$', right: '$', display: false },
+      ],
+      throwOnError: false,
+    });
   }
-
-  // 간단 망 2 -> H -> 1
-  function newNet(H = 10) {
-    const W1 = [], b1 = [];
-    for (let i = 0; i < H; i++) { W1.push([randn()*0.5, randn()*0.5]); b1.push(randn()*0.3); }
-    const W2 = [];
-    for (let i = 0; i < H; i++) W2.push(randn()*0.5);
-    return { W1, b1, W2, b2: randn()*0.2, H };
-  }
-  function forward(net, x, y) {
-    const h = new Array(net.H);
-    for (let i = 0; i < net.H; i++) h[i] = Math.tanh(net.W1[i][0]*x + net.W1[i][1]*y + net.b1[i]);
-    let z = net.b2;
-    for (let i = 0; i < net.H; i++) z += net.W2[i] * h[i];
-    return { p: 1/(1+Math.exp(-z)), h };
-  }
-  function trainNet(net, data, epochs, lr, weightNoise = 0) {
-    for (let ep = 0; ep < epochs; ep++) {
-      // 가중치 노이즈 적용 시 매 스텝마다 사본에 노이즈 더해 사용
-      let useNet = net;
-      if (weightNoise > 0) {
-        useNet = {
-          W1: net.W1.map(r => [r[0] + randn()*weightNoise, r[1] + randn()*weightNoise]),
-          b1: net.b1.map(b => b + randn()*weightNoise),
-          W2: net.W2.map(w => w + randn()*weightNoise),
-          b2: net.b2 + randn()*weightNoise,
-          H: net.H,
-        };
-      }
-      const gW1 = Array.from({length:net.H}, () => [0,0]);
-      const gb1 = new Array(net.H).fill(0);
-      const gW2 = new Array(net.H).fill(0);
-      let gb2 = 0;
-      for (const d of data) {
-        const out = forward(useNet, d.x, d.y);
-        const dL = out.p - d.c;
-        gb2 += dL;
-        for (let i = 0; i < net.H; i++) {
-          gW2[i] += dL * out.h[i];
-          const z = useNet.W1[i][0]*d.x + useNet.W1[i][1]*d.y + useNet.b1[i];
-          const sech2 = 1 - Math.tanh(z)**2;
-          const dh = dL * useNet.W2[i] * sech2;
-          gW1[i][0] += dh * d.x;
-          gW1[i][1] += dh * d.y;
-          gb1[i] += dh;
-        }
-      }
-      const N = data.length;
-      for (let i = 0; i < net.H; i++) {
-        net.W1[i][0] -= lr * gW1[i][0] / N;
-        net.W1[i][1] -= lr * gW1[i][1] / N;
-        net.b1[i] -= lr * gb1[i] / N;
-        net.W2[i] -= lr * gW2[i] / N;
-      }
-      net.b2 -= lr * gb2 / N;
-    }
-  }
-  function drawNet(canvas, net, data, dataAll) {
-    const ctx = canvas.getContext('2d');
-    const W = canvas.width, H_ = canvas.height;
-    ctx.clearRect(0, 0, W, H_);
-    const RES = 36;
-    const stepX = W / RES, stepY = H_ / RES;
-    function ix(px) { return -2 + px / W * 5; }
-    function iy(py) { return -2 + (1 - py / H_) * 5; }
-    for (let i = 0; i < RES; i++) for (let j = 0; j < RES; j++) {
-      const cx = i * stepX + stepX/2, cy = j * stepY + stepY/2;
-      const r = forward(net, ix(cx), iy(cy));
-      const p = r.p;
-      ctx.fillStyle = p < 0.5 ? `rgba(45, 91, 122, ${0.18 + (0.5-p)*0.32})` : `rgba(192, 73, 46, ${0.18 + (p-0.5)*0.32})`;
-      ctx.fillRect(cx - stepX/2, cy - stepY/2, stepX + 1, stepY + 1);
-    }
-    // 경계선
-    ctx.strokeStyle = '#222'; ctx.lineWidth = 1.3;
-    const N2 = 200;
-    for (let i = 0; i < N2; i++) {
-      const a = i / N2 * Math.PI * 2;
-      // 단순 추적 대신 격자 0.5 등고선
-    }
-    // 데이터
-    const showData = dataAll || data;
-    for (const d of showData) {
-      const xpx = (d.x + 2) / 5 * W;
-      const ypx = (1 - (d.y + 2) / 5) * H_;
-      if (xpx < 0 || xpx > W || ypx < 0 || ypx > H_) continue;
-      ctx.fillStyle = d.c === 0 ? C.structure : C.style;
-      ctx.beginPath(); ctx.arc(xpx, ypx, 2.5, 0, Math.PI*2); ctx.fill();
-    }
-  }
-  function testAcc(net, testData) {
-    let ok = 0;
-    for (const d of testData) {
-      const p = forward(net, d.x, d.y).p;
-      const yhat = p > 0.5 ? 1 : 0;
-      if (yhat === d.c) ok++;
-    }
-    return ok / testData.length;
-  }
-
-  // ----- 위젯 1: 증강 OFF vs ON -----
-  (function () {
-    const augOff = document.getElementById('augOff');
-    const augOn = document.getElementById('augOn');
-    const rotSlide = document.getElementById('rotSlide');
-    const nseSlide = document.getElementById('nseSlide');
-    const rotLab = document.getElementById('rotLab');
-    const nseLab = document.getElementById('nseLab');
-    const newAugBtn = document.getElementById('newAugBtn');
-    const accOff = document.getElementById('accOff');
-    const accOn = document.getElementById('accOn');
-
-    let DATA, TEST;
-    function generate() {
-      SEED = 100;
-      DATA = genMoons();
-      SEED = 999;
-      TEST = genMoons();
-    }
-    function augment(data, rotMax, sigma) {
-      const out = [...data];
-      const factor = 5;
-      for (let k = 0; k < factor - 1; k++) {
-        for (const d of data) {
-          const theta = (rng() - 0.5) * 2 * (rotMax * Math.PI / 180);
-          const ca = Math.cos(theta), sa = Math.sin(theta);
-          // 데이터 중심: 0.5, 0.25 (대략 중심)
-          const cx = 0.5, cy = 0.25;
-          const dx = d.x - cx, dy = d.y - cy;
-          let nx = ca*dx - sa*dy + cx + randn()*sigma;
-          let ny = sa*dx + ca*dy + cy + randn()*sigma;
-          // 반전 (50% 확률, y축)
-          if (rng() < 0.3) { nx = 1 - nx; }
-          out.push({ x: nx, y: ny, c: d.c });
-        }
-      }
-      return out;
-    }
-
-    function run() {
-      const rotMax = +rotSlide.value;
-      const sigma = +nseSlide.value;
-      rotLab.textContent = `${rotMax}°`;
-      nseLab.textContent = sigma.toFixed(2);
-      generate();
-      // OFF
-      SEED = 1; const netOff = newNet(10);
-      trainNet(netOff, DATA, 400, 0.1, 0);
-      drawNet(augOff, netOff, DATA);
-      accOff.textContent = (testAcc(netOff, TEST) * 100).toFixed(1) + '%';
-      // ON
-      SEED = 2; const netOn = newNet(10);
-      const augData = augment(DATA, rotMax, sigma);
-      trainNet(netOn, augData, 400, 0.1, 0);
-      drawNet(augOn, netOn, augData, DATA);
-      accOn.textContent = (testAcc(netOn, TEST) * 100).toFixed(1) + '%';
-    }
-    rotSlide.addEventListener('input', run);
-    nseSlide.addEventListener('input', run);
-    newAugBtn.addEventListener('click', run);
-    run();
-  })();
-
-  // ----- 위젯 2: 가중치 노이즈 0 vs σ -----
-  (function () {
-    const c0 = document.getElementById('noise0');
-    const cN = document.getElementById('noiseN');
-    const sigSlide = document.getElementById('sigSlide');
-    const sigLab = document.getElementById('sigLab');
-    const sigCur = document.getElementById('sigCur');
-    const resetBtn = document.getElementById('resetNoiseBtn');
-    function run() {
-      const sig = +sigSlide.value;
-      sigLab.textContent = sig.toFixed(2);
-      sigCur.textContent = sig.toFixed(2);
-      SEED = 500;
-      const D = genMoons();
-      SEED = 11; const n0 = newNet(12);
-      trainNet(n0, D, 350, 0.1, 0);
-      drawNet(c0, n0, D);
-      SEED = 11; const nN = newNet(12);
-      trainNet(nN, D, 350, 0.1, sig);
-      drawNet(cN, nN, D);
-    }
-    sigSlide.addEventListener('input', run);
-    resetBtn.addEventListener('click', run);
-    run();
-  })();
+  CH7.onVisible(document.getElementById('sp'), () => CH7.sparsity(document.getElementById('sp')));
+});
 </script>
 </body>
 </html>

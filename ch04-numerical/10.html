@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ch.04 · 10 · 제약 최적화 — 라그랑주와 KKT</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .kkt-stage { padding: 1rem 1rem 0.4rem; }
+  .kkt-canvas { display: block; width: 100%; height: 360px; background: var(--paper); border-radius: 8px; border: 1px solid var(--line-soft); }
+  .kkt-readout { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: .5rem; padding: .8rem 1rem .4rem; }
+  .kkt-readout .cell { background: #fff; border: 1px solid var(--line-soft); border-radius: 6px; padding: .55rem .8rem; }
+  .kkt-readout .cell .k { font-family: var(--mono); font-size: .7rem; letter-spacing: .1em; color: var(--ink-faint); text-transform: uppercase; }
+  .kkt-readout .cell .v { font-family: var(--mono); font-size: .95rem; color: var(--ink); }
+  .kkt-readout .cell.active { background: var(--style-bg); border-color: var(--style-lo); }
+  .kkt-readout .cell.active .v { color: var(--style); font-weight: 700; }
+  .kkt-readout .cell.inactive { background: var(--structure-bg); border-color: var(--structure-lo); }
+  .kkt-readout .cell.inactive .v { color: var(--structure); font-weight: 700; }
+  .kkt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; max-width: var(--measure); margin: 1.4rem auto; padding-inline: 1.4rem; }
+  @media (max-width: 720px) { .kkt-grid { grid-template-columns: 1fr; } }
+  .kkt-card { background: var(--paper-2); padding: 1rem 1.1rem; border-radius: 9px; border-left: 3px solid var(--ink-soft); }
+  .kkt-card h5 { margin: 0 0 .45rem; font-family: var(--serif); font-size: 1.04rem; color: var(--ink); }
+  .kkt-card.eq { border-left-color: var(--structure); }
+  .kkt-card.eq h5 { color: var(--structure); }
+  .kkt-card.ineq { border-left-color: var(--style); }
+  .kkt-card.ineq h5 { color: var(--style); }
+  .kkt-card p { margin: 0; font-size: .88rem; color: var(--ink-soft); line-height: 1.55; }
+  .kkt-card p code { font-family: var(--mono); background: rgba(38,34,28,.06); padding: .05em .35em; border-radius: 3px; }
+  .four-cond { max-width: var(--measure); margin: 1.4rem auto; padding-inline: 1.4rem; }
+  .four-cond .item { display: grid; grid-template-columns: 2.6rem 1fr; gap: .8rem; padding: .8rem 0; border-bottom: 1px solid var(--line-soft); }
+  .four-cond .item:last-child { border-bottom: none; }
+  .four-cond .num { font-family: var(--serif); font-size: 1.5rem; color: var(--style); font-style: italic; line-height: 1; padding-top: .25rem; }
+  .four-cond .body h5 { margin: 0 0 .25rem; font-size: .96rem; color: var(--ink); }
+  .four-cond .body p { margin: 0; font-size: .87rem; color: var(--ink-soft); line-height: 1.55; }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-Chapter 10 · 해를 가두기</span>
+      <h1>제약 최적화 —<br><span class="t-style">라그랑주</span>와 <span class="t-style">KKT</span> 직관</h1>
+      <p class="lede">지금까지의 모든 최적화는 자유 영역 — 모든 점에 갈 수 있다는 가정 — 위에서 일어났다. 그러나 현실의 많은 문제는 "해가 반드시 이 영역 안에 있어야 한다"는 제약을 동반한다. 라그랑주 승수(Lagrange multiplier)는 그 제약을 목적 함수 안으로 끌어들이는 도구이고, KKT 조건은 그 일을 부등식 제약까지 일반화한 골격이다.</p>
+    </header>
+
+    <div class="prose">
+      <p>제약(constraint)이 왜 필요한지부터 시작하자. 딥러닝에서 가중치의 노름(norm)을 제한하는 경우를 생각하자. 가중치 벡터 $\theta$의 L2 노름이 어떤 상수 $c$ 이하여야 한다는 제약 $\|\theta\|_2 \le c$ 아래에서 손실 $L(\theta)$를 최소화하고 싶다. 또는 확률 분포처럼 합이 1이어야 하는 변수들도 마찬가지다. 입자물리에서는 보존 법칙이, 경제학에서는 예산이, 머신러닝에서는 정칙화(regularization)나 안정성이 제약을 도입한다.</p>
+
+      <p>가장 단순한 형태부터 보자. 등식 제약(equality constraint) 하나가 있는 경우다. $g(\theta) = 0$이라는 한 줄의 등식 위에서 $L(\theta)$를 최소화한다고 하자. 가능한 해의 집합은 $g(\theta) = 0$이라는 면(surface)이고, 우리는 그 면 위에서 가장 낮은 $L$의 자리를 찾아야 한다. 자유 최적화처럼 $\nabla L = 0$을 풀 수는 없다. 그러면 면 위에 있다는 보장이 없기 때문이다.</p>
+
+      <h2>라그랑주 — 등식 제약을 목적 함수 안으로</h2>
+      <p>1700년대 라그랑주는 천재적인 관찰을 했다. 제약이 활성인 최적해에서는 <strong>목적 함수의 기울기와 제약 함수의 기울기가 평행</strong>해야 한다. 두 기울기가 평행하지 않다면, 제약 면 위에서 목적 함수를 더 줄일 수 있는 방향이 남아 있다는 뜻이기 때문이다.</p>
+
+      <p>이 직관을 그림으로 옮기면 이렇다. 평면 위에 $L$의 등고선들이 동심 타원처럼 그려져 있다. 제약 $g(\theta) = 0$은 그 평면을 가로지르는 한 선이다. 그 선과 $L$의 등고선이 비스듬히 만나는 자리라면, 등고선이 더 안쪽으로 들어가는 쪽으로 선을 따라가면 $L$이 줄어든다. 더 이상 줄일 수 없는 자리는 등고선이 선과 <em>접하는</em> 곳, 즉 두 곡선의 접선이 같은 자리다. 접선이 같다는 것은 법선(즉 기울기)이 평행하다는 뜻이다. 그래서 다음 식이 성립한다.</p>
+
+      <div class="math-block">$$ \nabla L(\theta^\ast) \;=\; \lambda \, \nabla g(\theta^\ast) $$</div>
+      <p class="math-note">두 기울기가 평행. 비례 상수 λ가 라그랑주 승수. λ의 값이 클수록 제약이 답을 더 강하게 잡아당겼다는 뜻.</p>
+
+      <p>여기 등장한 $\lambda$가 <strong>라그랑주 승수(Lagrange multiplier)</strong>다. 이름과 달리 단순한 비례 상수다. 그런데 이 한 변수를 더하면 등식 제약 최적화 전체를 <em>무제약</em> 최적화처럼 다룰 수 있다. 다음과 같이 <strong>라그랑지안(Lagrangian)</strong>이라는 새 함수를 정의한다.</p>
+
+      <div class="math-block">$$ \mathcal{L}(\theta, \lambda) \;=\; L(\theta) \;-\; \lambda \, g(\theta) $$</div>
+      <p class="math-note">목적 함수에서 제약 위반의 정도(g(θ))에 가격(λ)을 매겨 뺀 형태. λ는 미지수로 두고 함께 푼다.</p>
+
+      <p>이 라그랑지안에 대해 $\nabla_\theta \mathcal{L} = 0$과 $\partial \mathcal{L} / \partial \lambda = 0$을 풀면, 첫 식은 위의 평행 조건이 되고 둘째 식은 정확히 $g(\theta) = 0$ 즉 제약 그 자체를 다시 내놓는다. 결국 제약 최적화는 라그랑지안을 무제약으로 푸는 문제와 등가다. 이 변환의 위력은 다음과 같다. 첫째, 자유 최적화의 모든 도구(경사하강, 뉴턴법 등)를 그대로 쓸 수 있다. 둘째, $\lambda$ 자체가 의미를 갖는 양이 된다. 후술하겠지만 $\lambda$는 제약을 살짝 풀었을 때 목적 함수가 얼마나 좋아지는지를 나타내는 <em>그림자 가격(shadow price)</em>이다.</p>
+
+      <div class="analogy">
+        <b>물건을 살 때의 예산 제약을 생각하자.</b> 효용을 최대화하고 싶지만 예산이 10만 원이다. 라그랑주 승수 $\lambda$는 "예산을 1원 더 풀어 주면 효용이 얼마나 더 늘어나는가"의 비율이다. 그 비율을 알면, 효용 함수에서 "쓴 금액 × $\lambda$"를 빼는 새로운 목적 — 라그랑지안 — 을 자유 최적화로 풀 수 있다. 예산을 안 신경 쓰는 것처럼 보이지만, 사실 매 원에 $\lambda$만큼의 그림자 비용을 매겨서 신경 쓰는 것이다.
+      </div>
+
+      <h2>부등식 제약 — KKT의 등장</h2>
+      <p>등식 제약은 깔끔했다. 그러나 현실은 더 많이 부등식 제약(inequality constraint)이다. $h(\theta) \le 0$이라는 영역 안에서 $L(\theta)$를 최소화하는 문제다. 이때 두 가지 가능성이 갈린다.</p>
+
+      <p>첫째, 최적해가 영역의 <strong>내부(interior)</strong>에 있는 경우다. 즉 $h(\theta^\ast) < 0$이고 제약이 "여유"가 있다. 이 경우 제약은 사실상 무의미하다. 무제약 최적화의 답이 그대로 답이다. 라그랑주 승수에 해당하는 비례 상수 $\mu$는 0이다(제약이 답을 끌어당기지 않았으므로).</p>
+
+      <p>둘째, 최적해가 영역의 <strong>경계(boundary)</strong>에 있는 경우다. 즉 $h(\theta^\ast) = 0$이다. 이 경우는 등식 제약과 같이 다룰 수 있다. 즉 $\nabla L = \mu \nabla h$ 형태의 평행 조건이 성립한다. 그러나 이번에는 부호가 중요하다. $L$의 기울기가 영역 바깥(즉 $h$가 증가하는 쪽)을 향해야 한다. 만약 안쪽을 향한다면, 영역 안으로 더 들어가서 $L$을 더 줄일 수 있기 때문이다. 그래서 $\mu \ge 0$이라는 부호 제약이 추가된다.</p>
+
+      <p>이 두 가능성을 한꺼번에 표현하는 깔끔한 식이 <strong>상보적 여유 조건(complementary slackness)</strong>이다.</p>
+
+      <div class="math-block">$$ \mu \cdot h(\theta^\ast) \;=\; 0 $$</div>
+      <p class="math-note">μ와 h(θ*) 중 적어도 하나는 0. 둘 다 0이 될 수도 있지만, 둘 다 0이 아니면 안 된다. 제약이 활성(h=0)이면 μ가 살아 있고, 제약이 비활성(h<0)이면 μ=0.</p>
+
+      <p>이 식이 두 가능성을 한꺼번에 잡는다. $h(\theta^\ast) < 0$(여유)이면 $\mu = 0$이어야 하고, $\mu > 0$이면 $h(\theta^\ast) = 0$(활성)이어야 한다. 이 조건은 "제약이 답을 진짜로 끌어당기는가"라는 질문의 답이 두 경우뿐이라는 사실을 단 한 줄로 말한다.</p>
+
+      <h2>KKT 조건 — 네 줄로 적힌 모든 것</h2>
+      <p>등식 제약과 부등식 제약을 모두 포함하는 일반 문제 — $g_i(\theta) = 0$이 여러 개, $h_j(\theta) \le 0$이 여러 개 — 의 최적해 조건이 <strong>KKT 조건(Karush-Kuhn-Tucker conditions)</strong>이다. 네 줄이다.</p>
+
+      <div class="four-cond">
+        <div class="item"><span class="num">1</span><div class="body"><h5>정지 조건 (stationarity)</h5><p>일반화된 라그랑지안의 θ에 대한 기울기가 0이어야 한다. <code>∇L − Σ λ_i ∇g_i − Σ μ_j ∇h_j = 0</code>. 자유 최적화의 ∇L = 0이 제약의 기울기까지 합쳐 평형을 이룬다는 뜻.</p></div></div>
+        <div class="item"><span class="num">2</span><div class="body"><h5>원본 가능성 (primal feasibility)</h5><p>해 자체가 모든 제약을 만족해야 한다. <code>g_i(θ*) = 0</code> 모두, <code>h_j(θ*) ≤ 0</code> 모두. 너무 당연해 보이지만 KKT의 다른 조건만으로는 보장되지 않으므로 명시한다.</p></div></div>
+        <div class="item"><span class="num">3</span><div class="body"><h5>이중 가능성 (dual feasibility)</h5><p>부등식 제약의 승수는 0 이상이어야 한다. <code>μ_j ≥ 0</code>. 등식 제약의 λ_i는 부호 제한 없음. 부등식 승수가 음수면 그건 "L을 더 줄일 수 있는 방향을 막고 있다"는 모순.</p></div></div>
+        <div class="item"><span class="num">4</span><div class="body"><h5>상보적 여유 (complementary slackness)</h5><p>각 부등식에 대해 <code>μ_j · h_j(θ*) = 0</code>. 즉 제약이 활성이거나(h=0이고 μ가 살아 있음), 비활성이거나(μ=0). 두 가능성 사이의 깔끔한 가르마.</p></div></div>
+      </div>
+
+      <p>이 네 줄이 KKT의 전부다. 일반 볼록 문제(convex problem)에서는 KKT가 최적성의 <em>필요충분</em> 조건이다. 비볼록 문제(딥러닝의 손실 표면)에서는 필요 조건이지만 충분 조건은 아니다. 그래도 정지점을 찾는 데 필수적인 골격이다.</p>
+
+      <p>아래 위젯은 가장 간단한 2차원 부등식 제약 문제를 그림으로 보여준다. 목적 함수의 등고선(타원)과 제약 영역(원판) 사이에서 최적해가 어떻게 결정되는지, 그리고 원판의 크기를 줄였을 때 제약이 "여유"에서 "활성"으로 어떻게 전환되는지를 직접 본다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 10</span><span>KKT 그림 — 등고선과 제약 원판이 만나는 자리</span></div>
+        <div class="kkt-stage">
+          <canvas id="kktCv" class="kkt-canvas"></canvas>
+        </div>
+        <div class="kkt-readout">
+          <div class="cell"><div class="k">제약 반경 c</div><div class="v" id="kktC">—</div></div>
+          <div class="cell"><div class="k">무제약 최저점까지</div><div class="v" id="kktDist">—</div></div>
+          <div class="cell" id="kktStateCell"><div class="k">상태</div><div class="v" id="kktState">—</div></div>
+          <div class="cell"><div class="k">라그랑주 승수 μ</div><div class="v" id="kktMu">—</div></div>
+        </div>
+        <div class="widget-controls">
+          <div class="slider"><label>제약 반경 c <b id="cLab">0.50</b></label><input type="range" id="cSl" min="10" max="160" value="50" step="2"></div>
+          <div class="slider"><label>무제약 최저점 x* <b id="xstarLab">1.0</b></label><input type="range" id="xstarSl" min="0" max="20" value="10" step="1"></div>
+          <button class="btn" id="kktTight">제약 매우 빡빡 (c = 0.3)</button>
+          <button class="btn ghost" id="kktLoose">제약 여유 (c = 1.5)</button>
+        </div>
+      </div>
+      <p class="widget-cap">목적 함수 L(θ) = ½‖θ − θ*‖²의 등고선(파랑 타원)과 제약 영역 ‖θ‖ ≤ c(주황 원판). c가 충분히 크면 무제약 최저점 θ*가 원판 안에 있어 제약은 비활성(μ=0), 작으면 답이 원판 경계에 붙고 제약은 활성(μ>0). 슬라이더로 두 상황 사이의 전환을 직접 본다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>두 종류 제약, 두 종류 라그랑주</h2>
+
+      <div class="kkt-grid">
+        <div class="kkt-card eq">
+          <h5>등식 제약 g(θ) = 0</h5>
+          <p>해는 무조건 면 위에. 라그랑지안 <code>L − λg</code>. λ는 부호 제약 없음. 항상 활성이며 평형식 <code>∇L = λ∇g</code>가 성립.</p>
+        </div>
+        <div class="kkt-card ineq">
+          <h5>부등식 제약 h(θ) ≤ 0</h5>
+          <p>해는 영역 안 어디든. 라그랑지안 <code>L − μh</code>. μ ≥ 0. 활성이면 <code>∇L = μ∇h</code>와 <code>h = 0</code>, 비활성이면 <code>μ = 0</code>.</p>
+        </div>
+      </div>
+
+      <h2>딥러닝에서의 라그랑주·KKT</h2>
+      <p>라그랑주와 KKT는 추상적으로 보이지만 딥러닝 곳곳에 숨어 있다. 첫째, <strong>가중치 감쇠(weight decay)</strong>는 라그랑지안의 직접 적용이다. 가중치 노름을 어떤 상한 $c$ 이하로 묶는 제약 최적화를, 라그랑지안 형태인 $L + \lambda \|\theta\|_2^2$로 풀면 우리가 아는 L2 정칙화가 된다. 이 식에서 $\lambda$가 바로 라그랑주 승수다. 매번 $c$를 정하지 않고 $\lambda$를 직접 정하는 것이 실용적이라 그 형태로 자리잡았다.</p>
+
+      <p>둘째, <strong>서포트 벡터 머신(SVM)</strong>의 쌍대 문제(dual problem)는 KKT 조건에서 직접 유도된다. 마진을 최대화하는 분류기 학습은 부등식 제약 문제이고, KKT의 상보적 여유 조건으로부터 "마진 위의 점들만 분류 경계를 결정한다"는 서포트 벡터의 정의가 나온다.</p>
+
+      <p>셋째, <strong>볼록 정렬(projection onto convex set)</strong> 알고리즘은 KKT의 그림자에서 살아간다. 가중치를 매 step 갱신한 다음 일정 영역 안으로 투영하는 절차 — projected gradient descent — 는 라그랑주 변환과 등가다.</p>
+
+      <h2>한 줄로 — 자유와 제약의 다리</h2>
+      <p>라그랑주 승수의 본질은 <strong>제약을 비용으로 환산하는 환율</strong>이다. 제약 한 단위를 어겼을 때 목적 함수가 얼마나 좋아지는지를 나타내는 그림자 가격. 그 가격을 알면 제약을 무시한 자유 최적화처럼 풀 수 있고, 그 답이 원래 제약 문제의 답이 된다. KKT는 이 발상을 부등식까지 확장하면서, "제약이 활성인지 아닌지"를 상보적 여유라는 한 줄로 깔끔하게 묶는다. 네 줄로 모든 제약 최적화의 골격을 적을 수 있다는 것이 이 결과의 미적인 매력이다.</p>
+
+      <h2>다음으로</h2>
+      <p>이번 절로 Chapter 4의 본문이 끝났다. 부동소수점의 한계에서 출발해 조건수, 경사하강, 헤시안, 학습률, 제약 최적화까지 — 수치 계산이 학습을 어떻게 받쳐 주는지의 골격을 모두 봤다. 마지막 절은 시험 직전 30분에 한 번 더 통과시킬 빈출 카드들과 한 장 요약이다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'왜 수치 계산이 ML의 발목을 잡는가' },
+    { no:'02', t:'부동소수점 — IEEE 754의 좁은 자' },
+    { no:'03', t:'언더플로 / 오버플로 — softmax는 왜 터지는가' },
+    { no:'04', t:'logsumexp 트릭 — 안정화 수식 유도' },
+    { no:'05', t:'조건수 1 — 행렬은 답을 얼마나 흔드는가' },
+    { no:'06', t:'조건수 2 — 최적화의 지그재그' },
+    { no:'07', t:'경사하강법의 본질' },
+    { no:'08', t:'2계 방법 — 헤시안과 뉴턴법' },
+    { no:'09', t:'학습률의 의미' },
+    { no:'10', t:'제약 최적화 — 라그랑주와 KKT' },
+    { no:'11', t:'시험 대비' },
+  ];
+  function buildNav(current) {
+    const tb = document.querySelector('.topbar');
+    if (tb) tb.innerHTML =
+      `<a class="home" href="index.html">← Ch.04 수치 계산</a>` +
+      `<span class="ch-mini">SUB ${current} / 11</span>`;
+    const ol = document.querySelector('.ch-nav ol');
+    if (ol) ol.innerHTML = SUBS.map(s =>
+      `<li><a href="${s.no}.html" ${s.no === current ? 'class="current"' : ''}>${s.t}</a></li>`).join('');
+    const foot = document.querySelector('.ch-foot');
+    if (foot) {
+      const i = SUBS.findIndex(s => s.no === current);
+      const prev = i > 0 ? SUBS[i-1] : { no:'index', t:'표지로' };
+      const next = i < SUBS.length-1 ? SUBS[i+1] : { no:'index', t:'표지로' };
+      foot.innerHTML =
+        `<a href="${prev.no === 'index' ? 'index.html' : prev.no + '.html'}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+        `<a href="${next.no === 'index' ? 'index.html' : next.no + '.html'}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+    }
+    const bar = document.querySelector('.scroll-progress');
+    if (bar) {
+      const onScroll = () => {
+        const h = document.documentElement;
+        const max = h.scrollHeight - h.clientHeight;
+        bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+      };
+      document.addEventListener('scroll', onScroll, { passive: true });
+      onScroll();
+    }
+  }
+
+  // 위젯: L(θ) = ½‖θ − θ*‖², 제약: ‖θ‖ ≤ c
+  // 최적해: 무제약 답이 ‖θ*‖ ≤ c면 θ* 자체. 아니면 원판 경계에서 θ* 방향, 즉 θ = c·θ*/‖θ*‖
+  // 활성일 때 μ는 KKT: ∇L = θ-θ* = -μ·∇h, h = ‖θ‖²-c² → ∇h = 2θ
+  // 즉 θ - θ* = -2μ·θ → θ(1+2μ) = θ* → θ = θ*/(1+2μ), |θ| = c → 1+2μ = |θ*|/c → μ = (|θ*|/c - 1)/2
+  function render() {
+    const cRaw = parseFloat(document.getElementById('cSl').value);
+    const xstarRaw = parseFloat(document.getElementById('xstarSl').value);
+    const c = cRaw / 100;             // 0.10 ~ 1.60
+    const xstar = xstarRaw / 10;      // 0.0 ~ 2.0  (1D 무제약 최저점 위치, x축 위)
+    document.getElementById('cLab').textContent = c.toFixed(2);
+    document.getElementById('xstarLab').textContent = xstar.toFixed(1);
+
+    const dist = xstar;
+    const active = dist > c + 1e-9;
+    let mu = 0, solX = xstar;
+    if (active) {
+      mu = (dist / c - 1) / 2;
+      solX = c;
+    }
+    document.getElementById('kktDist').textContent = dist.toFixed(2);
+    document.getElementById('kktMu').textContent = mu < 1e-4 ? '0.000 (제약 비활성)' : mu.toFixed(3);
+    document.getElementById('kktC').textContent = c.toFixed(2);
+    const stateEl = document.getElementById('kktState');
+    const stateCellEl = document.getElementById('kktStateCell');
+    stateCellEl.className = 'cell';
+    if (active) {
+      stateEl.textContent = '제약 활성 (h = 0)';
+      stateCellEl.classList.add('active');
+    } else {
+      stateEl.textContent = '제약 비활성 (h < 0)';
+      stateCellEl.classList.add('inactive');
+    }
+
+    drawCanvas(c, xstar, solX, active);
+  }
+
+  function drawCanvas(c, xstar, solX, active) {
+    const canvas = document.getElementById('kktCv');
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    canvas.width = w * dpr; canvas.height = h * dpr;
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.fillStyle = '#FAF7F0'; ctx.fillRect(0,0,w,h);
+
+    const cx = w / 2, cy = h / 2;
+    const scale = Math.min(w, h) * 0.32;
+
+    // 축
+    ctx.strokeStyle = 'rgba(38,34,28,0.10)';
+    ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(w, cy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, h); ctx.stroke();
+
+    // 원점
+    ctx.fillStyle = 'rgba(38,34,28,0.5)';
+    ctx.beginPath(); ctx.arc(cx, cy, 2, 0, Math.PI*2); ctx.fill();
+
+    // 제약 영역: ‖θ‖ ≤ c, 즉 반경 c·scale의 원판
+    const r = c * scale;
+    // 채움
+    ctx.fillStyle = 'rgba(192, 73, 46, 0.10)';
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fill();
+    // 테두리
+    ctx.strokeStyle = 'rgba(192, 73, 46, 0.7)';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.stroke();
+
+    // 목적 등고선: ½‖θ - θ*‖² = lev → 반경 √(2 lev) 원, 중심 θ* = (xstar, 0)
+    const xstarPx = cx + xstar * scale, xstarPy = cy;
+    ctx.lineWidth = 1;
+    for (let lev = 1; lev <= 8; lev++) {
+      const cc = lev * 0.06;
+      const rl = Math.sqrt(2*cc) * scale;
+      ctx.strokeStyle = `rgba(45, 91, 122, ${0.10 + lev*0.045})`;
+      ctx.beginPath(); ctx.arc(xstarPx, xstarPy, rl, 0, Math.PI*2); ctx.stroke();
+    }
+
+    // 무제약 최저점 θ*
+    ctx.fillStyle = 'rgba(45, 91, 122, 0.95)';
+    ctx.beginPath(); ctx.arc(xstarPx, xstarPy, 5, 0, Math.PI*2); ctx.fill();
+
+    // 제약 최저점 (정답)
+    const solPx = cx + solX * scale, solPy = cy;
+    ctx.strokeStyle = active ? 'rgba(192, 73, 46, 0.95)' : 'rgba(45, 91, 122, 0.95)';
+    ctx.fillStyle = active ? 'rgba(192, 73, 46, 0.95)' : 'rgba(45, 91, 122, 0.95)';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(solPx, solPy, 7, 0, Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(solPx, solPy, 3.5, 0, Math.PI*2); ctx.fill();
+
+    // 활성일 때 두 기울기 평행 표시 — 화살표
+    if (active) {
+      // ∇L at sol = sol - θ* (왼쪽 방향)
+      const gradLx = solPx - xstarPx;
+      const gradLy = solPy - xstarPy;
+      const gn = Math.sqrt(gradLx*gradLx + gradLy*gradLy);
+      const ux = gradLx / gn, uy = gradLy / gn;
+      // ∇L 화살표 — 파랑, 안에서 밖으로
+      ctx.strokeStyle = 'rgba(45, 91, 122, 0.85)';
+      ctx.lineWidth = 1.8;
+      drawArrow(ctx, solPx, solPy, solPx + ux * 38, solPy + uy * 38, 6);
+      // ∇h 화살표 — 주황, 원의 바깥 향함 (= 2θ 방향)
+      ctx.strokeStyle = 'rgba(192, 73, 46, 0.85)';
+      const hdir_x = solPx - cx, hdir_y = solPy - cy;
+      const hn = Math.sqrt(hdir_x*hdir_x + hdir_y*hdir_y);
+      drawArrow(ctx, solPx, solPy, solPx + (hdir_x/hn) * 50, solPy + (hdir_y/hn) * 50, 6);
+      // 레이블
+      ctx.fillStyle = 'rgba(45, 91, 122, 0.95)';
+      ctx.font = '12px "Spline Sans Mono", monospace';
+      ctx.fillText('∇L', solPx + ux * 44, solPy + uy * 44 + 4);
+      ctx.fillStyle = 'rgba(192, 73, 46, 0.95)';
+      ctx.fillText('∇h', solPx + (hdir_x/hn) * 56, solPy + (hdir_y/hn) * 56 + 4);
+    }
+
+    // 텍스트
+    ctx.fillStyle = '#8E8576';
+    ctx.font = '11px "Spline Sans Mono", monospace';
+    ctx.fillText('파랑 등고선: L(θ) = ½‖θ − θ*‖²', 14, 18);
+    ctx.fillText('주황 원판: ‖θ‖ ≤ c (제약 영역)', 14, 34);
+    ctx.fillText(`θ* = (${xstar.toFixed(2)}, 0)   c = ${c.toFixed(2)}   해 = (${solX.toFixed(2)}, 0)`, 14, h - 14);
+  }
+
+  function drawArrow(ctx, x1, y1, x2, y2, head) {
+    ctx.beginPath();
+    ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+    ctx.stroke();
+    const a = Math.atan2(y2 - y1, x2 - x1);
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - head * Math.cos(a - 0.4), y2 - head * Math.sin(a - 0.4));
+    ctx.lineTo(x2 - head * Math.cos(a + 0.4), y2 - head * Math.sin(a + 0.4));
+    ctx.closePath();
+    ctx.fillStyle = ctx.strokeStyle;
+    ctx.fill();
+  }
+
+  window.addEventListener('load', () => {
+    buildNav('10');
+    document.getElementById('cSl').addEventListener('input', render);
+    document.getElementById('xstarSl').addEventListener('input', render);
+    document.getElementById('kktTight').addEventListener('click', () => {
+      document.getElementById('cSl').value = 30; render();
+    });
+    document.getElementById('kktLoose').addEventListener('click', () => {
+      document.getElementById('cSl').value = 150; render();
+    });
+    window.addEventListener('resize', render);
+    render();
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [
+          { left: '$$', right: '$$', display: true },
+          { left: '$',  right: '$',  display: false }
+        ]
+      });
+    }
+  });
+</script>
+</body>
+</html>

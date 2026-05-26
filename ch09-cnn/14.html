@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ch.09 · 14 아키텍처 3 — ResNet (잔차 연결)</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .res-stage { display: grid; grid-template-columns: 1fr 1fr; gap: 1.1rem; padding: 1.4rem 1.4rem 1rem; }
+  .res-cell { background: var(--paper); border: 1px solid var(--line); border-radius: 9px; padding: .85rem; }
+  .res-cell h5 { margin: 0 0 .4rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .12em; color: var(--ink-faint); text-transform: uppercase; }
+  .res-cell canvas { width: 100%; height: 240px; display: block; background: #fff; border-radius: 6px; border: 1px solid var(--line-soft); }
+  .res-cell svg { width: 100%; height: 240px; display: block; background: #fff; border-radius: 6px; border: 1px solid var(--line-soft); }
+  .res-cell .meta { font-family: var(--mono); font-size: .8rem; color: var(--ink-soft); margin-top: .5rem; line-height: 1.8; padding: .4rem .7rem; background: var(--paper-2); border-radius: 6px; }
+  .res-cell .meta b { color: var(--ink); }
+  .res-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; padding: .8rem 1.2rem 1rem; border-top: 1px solid var(--line-soft); background: var(--paper); font-size: .88rem; }
+  .res-controls label { display: flex; flex-direction: column; gap: .2rem; }
+  .res-controls label span { color: var(--ink-soft); font-family: var(--mono); font-size: .78rem; }
+  .res-controls label span b { color: var(--ink); font-weight: 600; }
+  .res-controls input[type=range] { width: 100%; accent-color: var(--style); }
+  @media (max-width: 720px) { .res-stage { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Ch.09 · Sub 14 · 아키텍처 (3/3)</span>
+      <h1>ResNet과 <span class="t-style">잔차 연결</span><br>152층 시대의 한 줄</h1>
+      <p class="lede">VGG 19층 이후 "더 깊이"가 자연스러운 다음 질문이었다. 그런데 50층, 100층 단순히 쌓으면 훈련 오차가 오히려 커진다. 과적합이 아니다 — 최적화 자체가 깨진다. F(x)+x라는 한 줄이 이 문제를 어떻게 풀었는가.</p>
+    </header>
+
+    <div class="prose">
+      <p>2014년 VGG와 GoogLeNet의 19-22층 도약 이후, "더 깊이"가 자연스러운 다음 단계로 보였다. 그러나 단순히 30, 50, 100층으로 늘리면 이상한 일이 일어났다. 깊을수록 좋아지기는커녕 — <strong>훈련 오차조차 더 커졌다.</strong> 이는 과적합이 아니다. 과적합은 훈련 오차는 낮은데 시험 오차가 높은 현상이다. 깊은 네트워크는 훈련 오차부터 망가졌다. 이것이 <strong>열화 문제(degradation problem)</strong>다.</p>
+
+      <h2>열화 문제 — 깊이가 자체로 적이 되는 경우</h2>
+
+      <p>2015년 He, Zhang, Ren, Sun (Microsoft Research)는 CIFAR-10에서 20층과 56층 네트워크를 비교했다. 결과는 직관과 정반대였다. 56층이 20층보다 훈련 오차도, 시험 오차도 더 높았다. 같은 구조를 단순히 깊이만 늘렸는데 결과가 나빠진 것이다.</p>
+
+      <p>왜 그런가. 한 가지 가정해 보자. 만약 56층 네트워크가 20층보다 나쁘다면, 그 56층 중 36층은 "아무것도 안 해도(항등 매핑) 더 나은" 셈이다. 즉 어떤 깊이부터는 추가 층이 <em>항등 매핑(identity mapping)</em>만 해 줘도 손해는 안 본다.</p>
+
+      <p>그런데 신경망이 그 항등 매핑을 배우는 게 어렵다는 게 핵심이다. 일반적인 합성곱 + ReLU 블록이 정확히 $y = x$를 출력하도록 가중치를 설정하기는 쉽지 않다. 무작위 초기화에서 출발한 가중치가 학습으로 그런 비자명한 항등 매핑에 도달하기는 어렵고, 그러는 동안 기울기가 흩어지거나 잘못 흘러 깊은 층이 학습 신호를 거의 못 받는다.</p>
+
+      <h2>잔차 학습 — F(x) + x의 한 줄</h2>
+
+      <p>He 등의 해법은 놀라울 정도로 단순하다. 한 블록이 입력에서 출력으로 가는 매핑 $H(x)$ 자체를 배우게 하지 말고, 그 매핑과 입력의 차이 — <strong>잔차(residual)</strong> $F(x) = H(x) - x$ — 만 배우게 하자. 그리고 입력 $x$는 지름길(shortcut/skip connection)로 그대로 더해 주자.</p>
+
+      <div class="math-block">$$ y = F(x; \{W_i\}) + x $$</div>
+      <p class="math-note">y는 한 잔차 블록의 출력. F(x)는 합성곱과 ReLU로 학습되는 잔차 함수. + x는 입력을 그대로 더하는 지름길.</p>
+
+      <p>이 한 줄이 왜 효과적인가. 두 가지 관점이 있다.</p>
+
+      <p><strong>관점 1 (학습 용이성):</strong> 추가 층이 "아무것도 안 해도 되는" 게 최적이라면, $F(x) = 0$만 배우면 된다. 모든 가중치를 0에 가깝게 만드는 것은 학습 알고리즘에게 매우 쉽다. 반면 일반 블록이 $H(x) = x$(항등 매핑)를 학습하는 것은 가중치를 정확한 비자명한 값으로 맞춰야 해서 훨씬 어렵다.</p>
+
+      <p><strong>관점 2 (기울기 흐름):</strong> 역전파 때 잔차 블록의 기울기는 다음과 같다.</p>
+
+      <div class="math-block">$$ \frac{\partial \mathcal{L}}{\partial x} = \frac{\partial \mathcal{L}}{\partial y} \cdot \left(1 + \frac{\partial F}{\partial x}\right) $$</div>
+      <p class="math-note">손실 L에 대한 입력 x의 기울기. + 1 항이 들어가 있어 ∂F/∂x가 0에 가까워도 기울기가 1로 흘러간다. 깊은 네트워크의 기울기 소실을 구조적으로 완화.</p>
+
+      <p>$1 + \partial F / \partial x$의 $+1$이 핵심이다. 잔차 블록은 기울기가 입력으로 흘러갈 때 "곱셈"이 아닌 "덧셈"의 경로를 만든다. $\partial F / \partial x$가 0에 가까워도 기울기가 1로 그대로 흘러간다. 이것이 100층 이상 깊은 네트워크의 학습을 가능하게 한다.</p>
+
+      <div class="analogy">
+        잔차 학습을 <b>기존 보고서를 고치는 편집자</b>로 비유하자. 일반 블록은 "백지에서 시작해 새 보고서를 쓰는 작가"다. 매번 처음부터 완성된 글을 만들어야 한다. 잔차 블록은 "이미 쓰여진 보고서에 빨간 펜으로 수정만 하는 편집자"다. 아무 수정도 필요 없다면 빨간 펜을 안 들면 된다 — 가장 쉬운 답. 작은 수정이면 작은 글만 쓰면 된다. 같은 일을 어느 쪽이 더 효율적으로 하는지는 자명하다.
+      </div>
+
+      <h2>ResNet 아키텍처 — 18, 34, 50, 101, 152층</h2>
+
+      <p>잔차 블록을 여러 개 쌓은 모델이 ResNet이다. 5가지 표준 변형이 있다.</p>
+
+      <table>
+        <thead><tr><th>모델</th><th>층수</th><th>블록 구조</th><th>가중치 수</th><th>top-5 오류 (ImageNet)</th></tr></thead>
+        <tbody>
+          <tr><td>ResNet-18</td><td>18</td><td>기본 블록 (3x3+3x3)</td><td>약 1{,}170만</td><td>10.7%</td></tr>
+          <tr><td>ResNet-34</td><td>34</td><td>기본 블록</td><td>약 2{,}170만</td><td>8.6%</td></tr>
+          <tr><td>ResNet-50</td><td>50</td><td>병목 블록 (1x1, 3x3, 1x1)</td><td>약 2{,}560만</td><td>7.0%</td></tr>
+          <tr><td>ResNet-101</td><td>101</td><td>병목 블록</td><td>약 4{,}450만</td><td>6.4%</td></tr>
+          <tr><td>ResNet-152</td><td>152</td><td>병목 블록</td><td>약 6{,}030만</td><td>5.7%</td></tr>
+        </tbody>
+      </table>
+
+      <p>50층 이상은 <strong>병목 블록(bottleneck block)</strong>을 쓴다. 1x1 합성곱으로 채널을 줄이고 → 3x3 합성곱으로 공간 처리 → 1x1 합성곱으로 채널을 다시 늘리는 구조다. 13번에서 본 Inception의 1x1 병목과 같은 아이디어. 가중치 수를 크게 줄이면서도 표현력을 유지한다.</p>
+
+      <p>ImageNet에서 ResNet-152는 ILSVRC 2015에서 top-5 오류 3.57%로 우승. <strong>인간의 분류 성능(약 5.1%)을 처음으로 초월한 모델</strong>이다. 그 후 모든 분류 모델의 베이스라인이 되었고, 잔차 연결은 거의 모든 현대 신경망(Transformer 포함)의 표준 부품이 되었다.</p>
+
+      <h2>잔차 블록의 두 가지 변형</h2>
+
+      <p>잔차 블록은 두 가지 표준 형태가 있다.</p>
+
+      <p><strong>기본 블록(basic block, ResNet-18/34용).</strong> 3x3 합성곱 + ReLU + 3x3 합성곱. 출력에 입력을 더하고 다시 ReLU. 가중치 수가 적당해 얕은 ResNet에 쓰인다.</p>
+
+      <p><strong>병목 블록(bottleneck block, ResNet-50/101/152용).</strong> 1x1 (채널 축소) + 3x3 + 1x1 (채널 복원). 3x3 합성곱이 줄어든 채널에서만 동작하므로 가중치 수가 크게 줄어든다. 예: 입력 256채널 → 1x1로 64로 → 3x3 → 1x1로 256으로. 같은 일을 256x256 = 65{,}536개 가중치 대신 256x64 + 64x64x9 + 64x256 = 53{,}248개로 한다.</p>
+
+      <h2>잔차 연결이 만든 후속 영향</h2>
+
+      <p>ResNet 이후 잔차 연결은 거의 모든 깊은 신경망의 표준이 되었다. 몇 가지만 꼽으면.</p>
+
+      <p><strong>DenseNet (2016).</strong> 잔차 연결을 한 단계 더 끌어올려, 각 층의 출력을 그 뒤 모든 층의 입력에 더해 준다. 기울기 흐름이 더 풍부하고 파라미터 효율이 더 좋다.</p>
+
+      <p><strong>Transformer (2017).</strong> 어텐션 메커니즘 위에 잔차 연결과 층 정규화(layer normalization)를 얹은 구조다. Transformer의 한 블록은 본질적으로 "어텐션 + 잔차 + 정규화 + FFN + 잔차 + 정규화"의 패턴이고, ResNet의 학습 안정화 통찰이 그대로 옮겨졌다.</p>
+
+      <p><strong>U-Net (2015).</strong> 의료 영상 분할 모델. 다운샘플링과 업샘플링 사이에 잔차와 비슷한 스킵 연결을 둬, 깊은 층의 의미와 얕은 층의 정확한 위치를 동시에 보존한다.</p>
+
+      <h2>왜 단순한 한 줄이 결정타가 되었나</h2>
+
+      <p>ResNet의 본질을 한 문장으로 요약하면, <strong>"학습이 어려운 문제를 학습이 쉬운 문제로 재정의한 것"</strong>이다. 항등 매핑 학습은 어렵지만, 0을 학습하는 것은 쉽다. 깊은 네트워크 자체가 어렵지만, "기존 입력에 작은 수정을 더하는" 깊은 네트워크는 학습이 쉽다.</p>
+
+      <p>이런 재정의는 과학에서 자주 보이는 패턴이다. 어려운 문제를 다른 좌표계로 옮기면 쉬워지는 — 푸리에 변환이 미분 방정식을 대수 방정식으로 바꾸는 것과 비슷하다. ResNet의 잔차 연결도 좌표계 변환의 한 종류로 볼 수 있다. 학습 알고리즘이 직접 다루기 쉬운 형태로 문제를 재배치한 것.</p>
+
+      <p>그래서 ResNet은 단순히 "더 깊은 CNN"이 아니라, "신경망 학습이라는 최적화 문제 자체를 재정의한 패러다임 전환"으로 평가된다. 책에서는 9장 끝에 ResNet을 한 절로 다루며 "이 단순한 변경이 100층 이상의 학습을 처음으로 안정시켰다"고 적는다.</p>
+
+      <p>아래 위젯에서 일반 블록과 잔차 블록을 비교한다. 슬라이더로 깊이를 늘리면, 일반 블록에서는 깊이가 어느 정도 넘어서면 학습이 깨지고, 잔차 블록은 계속 좋아지는 패턴이 시뮬레이션으로 확인된다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 14</span><span>일반 블록 vs 잔차 블록 — 깊이가 깊어질 때</span></div>
+        <div class="res-stage">
+          <div class="res-cell">
+            <h5>블록 구조 — 일반 vs 잔차</h5>
+            <svg viewBox="0 0 320 240">
+              <text x="60" y="14" font-family="Spline Sans Mono, monospace" font-size="10" fill="#8E8576">일반 블록</text>
+              <rect x="20" y="30" width="100" height="22" fill="#7BA7B9" rx="3" />
+              <text x="70" y="45" text-anchor="middle" font-family="Spline Sans Mono, monospace" font-size="9" fill="#fff">입력 x</text>
+              <line x1="70" y1="52" x2="70" y2="68" stroke="#8E8576" stroke-width="1.2" />
+              <rect x="20" y="68" width="100" height="22" fill="#C0492E" rx="3" />
+              <text x="70" y="83" text-anchor="middle" font-family="Spline Sans Mono, monospace" font-size="9" fill="#fff">Conv+ReLU</text>
+              <line x1="70" y1="90" x2="70" y2="106" stroke="#8E8576" stroke-width="1.2" />
+              <rect x="20" y="106" width="100" height="22" fill="#C0492E" rx="3" />
+              <text x="70" y="121" text-anchor="middle" font-family="Spline Sans Mono, monospace" font-size="9" fill="#fff">Conv+ReLU</text>
+              <line x1="70" y1="128" x2="70" y2="180" stroke="#8E8576" stroke-width="1.2" />
+              <rect x="20" y="180" width="100" height="22" fill="#7BA7B9" rx="3" />
+              <text x="70" y="195" text-anchor="middle" font-family="Spline Sans Mono, monospace" font-size="9" fill="#fff">출력 H(x)</text>
+
+              <text x="240" y="14" font-family="Spline Sans Mono, monospace" font-size="10" fill="#8E8576">잔차 블록</text>
+              <rect x="200" y="30" width="100" height="22" fill="#7BA7B9" rx="3" />
+              <text x="250" y="45" text-anchor="middle" font-family="Spline Sans Mono, monospace" font-size="9" fill="#fff">입력 x</text>
+              <line x1="250" y1="52" x2="250" y2="68" stroke="#8E8576" stroke-width="1.2" />
+              <rect x="200" y="68" width="100" height="22" fill="#C0492E" rx="3" />
+              <text x="250" y="83" text-anchor="middle" font-family="Spline Sans Mono, monospace" font-size="9" fill="#fff">Conv+ReLU</text>
+              <line x1="250" y1="90" x2="250" y2="106" stroke="#8E8576" stroke-width="1.2" />
+              <rect x="200" y="106" width="100" height="22" fill="#C0492E" rx="3" />
+              <text x="250" y="121" text-anchor="middle" font-family="Spline Sans Mono, monospace" font-size="9" fill="#fff">Conv → F(x)</text>
+              <line x1="250" y1="128" x2="250" y2="146" stroke="#8E8576" stroke-width="1.2" />
+              <circle cx="250" cy="156" r="10" fill="#9C6FA8" />
+              <text x="250" y="160" text-anchor="middle" font-family="Spline Sans Mono, monospace" font-size="12" fill="#fff">+</text>
+              <path d="M 300 41 Q 320 41 320 100 Q 320 156 264 156" stroke="#C0492E" stroke-width="1.8" fill="none" stroke-dasharray="5,3" />
+              <text x="324" y="100" font-family="Spline Sans Mono, monospace" font-size="9" fill="#C0492E" transform="rotate(90 324 100)">skip (x)</text>
+              <line x1="250" y1="166" x2="250" y2="180" stroke="#8E8576" stroke-width="1.2" />
+              <rect x="200" y="180" width="100" height="22" fill="#7BA7B9" rx="3" />
+              <text x="250" y="195" text-anchor="middle" font-family="Spline Sans Mono, monospace" font-size="9" fill="#fff">F(x) + x</text>
+            </svg>
+            <div class="meta">왼쪽 일반 블록은 입력에서 출력까지 합성곱 두 번을 거치며 <b>완전히 새로운 매핑 H(x)</b>를 학습. 오른쪽 잔차 블록은 합성곱이 <b>차이 F(x)만 학습</b>하고, 원본 x는 지름길로 우회. F(x)=0이 항등 매핑.</div>
+          </div>
+          <div class="res-cell">
+            <h5>깊이별 훈련 오차 시뮬레이션</h5>
+            <canvas id="cDepth"></canvas>
+            <div class="meta" id="metaDepth">—</div>
+          </div>
+        </div>
+        <div class="res-controls">
+          <label><span>네트워크 깊이 <b id="lblL">20</b>층</span><input type="range" id="ctlL" min="10" max="160" step="2" value="20"></label>
+        </div>
+      </div>
+      <p class="widget-cap">왼쪽 패널은 일반 블록과 잔차 블록의 구조 비교. 오른쪽은 깊이별 훈련 오차 시뮬레이션. 일반 네트워크(파랑)는 약 30층 이후 오차가 다시 커진다(열화). 잔차 네트워크(주홍)는 깊이가 깊어져도 계속 좋아진다. ResNet-152는 인간 분류 성능을 초월한 첫 모델.</p>
+    </div>
+
+    <div class="prose">
+      <h2>아키텍처 3 한 줄 정리</h2>
+      <ul class="checklist">
+        <li>열화 문제: 단순히 층을 더 쌓으면 <b>훈련 오차</b>도 더 커진다 (과적합 아님).</li>
+        <li>원인: 항등 매핑을 일반 합성곱 + ReLU 블록이 배우기 어렵다.</li>
+        <li>잔차 학습: H(x) 대신 F(x) = H(x) - x만 배우게 하고, x는 지름길로 더해 줌.</li>
+        <li>F(x) = 0이 항등 매핑이라 학습이 쉽다.</li>
+        <li>역전파 기울기에 +1 항이 생겨 기울기 소실 구조적 완화.</li>
+        <li>ResNet-152: ILSVRC 2015 top-5 오류 3.57% → <b>인간 분류 성능(5.1%)을 처음 초월</b>.</li>
+        <li>병목 블록(1x1-3x3-1x1): 50층 이상에서 가중치 수 절감.</li>
+        <li>잔차 연결은 이후 Transformer, DenseNet, U-Net 등 거의 모든 깊은 신경망의 표준.</li>
+      </ul>
+
+      <p>다음 15번에서는 1번에서 14번까지 본 모든 내용을 시험 직전에 다시 한 번 빠르게 훑는 30개 이상의 핵심 질문 체크리스트를 정리한다. 등가성 vs 불변성, 합성곱 vs 교차상관, CNN의 사전이 안 맞는 데이터 — 시험에 단골로 나오는 함정들을 모아 둔다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const CHAPTERS = [
+    { no:'01', t:'완전연결의 파라미터 폭발' },
+    { no:'02', t:'합성곱이란 무엇인가' },
+    { no:'03', t:'1D 합성곱 — 시간 신호' },
+    { no:'04', t:'2D 합성곱 — 이미지 커널' },
+    { no:'05', t:'희소 상호작용' },
+    { no:'06', t:'파라미터 공유' },
+    { no:'07', t:'변환 등가성' },
+    { no:'08', t:'풀링 — max vs avg' },
+    { no:'09', t:'신경과학적 기원' },
+    { no:'10', t:'출력 크기 공식' },
+    { no:'11', t:'수용 영역' },
+    { no:'12', t:'아키텍처 1 — LeNet, AlexNet' },
+    { no:'13', t:'아키텍처 2 — VGG, Inception' },
+    { no:'14', t:'아키텍처 3 — ResNet' },
+    { no:'15', t:'시험 대비 — 30+ 질문' },
+  ];
+  const CUR = '14';
+  document.querySelector('.topbar').innerHTML = '<a class="home" href="index.html">← Ch.09 CNN 표지</a><span class="ch-mini">SUB ' + CUR + ' / 15</span>';
+  document.querySelector('.ch-nav ol').innerHTML = CHAPTERS.map(c => '<li><a href="' + c.no + '.html"' + (c.no===CUR?' class="current"':'') + '>' + c.t + '</a></li>').join('');
+  const idx = CHAPTERS.findIndex(c=>c.no===CUR);
+  const prev = idx>0 ? CHAPTERS[idx-1] : { no:'', t:'표지로', _:'index.html' };
+  const next = idx<CHAPTERS.length-1 ? CHAPTERS[idx+1] : { no:'', t:'표지로', _:'index.html' };
+  document.querySelector('.ch-foot').innerHTML =
+    '<a href="' + (prev._||prev.no+'.html') + '"><div class="dir">← 이전</div><div class="ti">' + prev.t + '</div></a>' +
+    '<a href="' + (next._||next.no+'.html') + '" class="next"><div class="dir">다음 →</div><div class="ti">' + next.t + '</div></a>';
+
+  const bar = document.querySelector('.scroll-progress');
+  document.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max > 0 ? (h.scrollTop/max)*100 : 0) + '%';
+  }, { passive: true });
+
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, { delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}], throwOnError: false });
+    }
+  });
+
+  // 위젯: 깊이별 시뮬레이션
+  const cDepthEl = document.getElementById('cDepth');
+  const cDepth = cDepthEl.getContext('2d');
+  const metaDepth = document.getElementById('metaDepth');
+  const ctlL = document.getElementById('ctlL');
+  const lblL = document.getElementById('lblL');
+
+  function setup() {
+    const r = cDepthEl.getBoundingClientRect();
+    cDepthEl.width = Math.floor(r.width);
+    cDepthEl.height = 240;
+  }
+
+  function plainErr(L) {
+    // 단조 감소 → 어느 시점부터 증가 (열화)
+    const opt = 22;
+    return 0.45 * Math.exp(-L / 14) + 0.06 + Math.max(0, (L - opt) / 200);
+  }
+
+  function resErr(L) {
+    // 단조 감소
+    return 0.42 * Math.exp(-L / 30) + 0.045;
+  }
+
+  function draw() {
+    setup();
+    const L = +ctlL.value;
+    lblL.textContent = L;
+    const W = cDepthEl.width, H = cDepthEl.height;
+    cDepth.clearRect(0, 0, W, H);
+
+    const m = { l: 50, r: 18, t: 30, b: 40 };
+    cDepth.strokeStyle = '#d8d2c4'; cDepth.lineWidth = 1;
+    cDepth.beginPath();
+    cDepth.moveTo(m.l, m.t); cDepth.lineTo(m.l, H - m.b); cDepth.lineTo(W - m.r, H - m.b); cDepth.stroke();
+
+    const maxL = 160;
+    function px(l) { return m.l + (l / maxL) * (W - m.l - m.r); }
+    function py(e) { return H - m.b - e * 1.5 * (H - m.t - m.b); }
+
+    // axes labels
+    cDepth.font = '500 10px Spline Sans Mono, monospace'; cDepth.fillStyle = '#8E8576';
+    cDepth.textAlign = 'center'; cDepth.textBaseline = 'top';
+    [0, 50, 100, 150].forEach(v => cDepth.fillText('L=' + v, px(v), H - m.b + 6));
+    cDepth.textAlign = 'right'; cDepth.textBaseline = 'middle';
+    [0.0, 0.2, 0.4, 0.6].forEach(v => cDepth.fillText(v.toFixed(1), m.l - 6, py(v)));
+
+    // plain line
+    cDepth.strokeStyle = '#2D5B7A'; cDepth.lineWidth = 2;
+    cDepth.beginPath();
+    for (let l = 2; l <= maxL; l += 2) {
+      const x = px(l), y = py(plainErr(l));
+      if (l === 2) cDepth.moveTo(x, y); else cDepth.lineTo(x, y);
+    }
+    cDepth.stroke();
+    // res line
+    cDepth.strokeStyle = '#C0492E'; cDepth.lineWidth = 2;
+    cDepth.beginPath();
+    for (let l = 2; l <= maxL; l += 2) {
+      const x = px(l), y = py(resErr(l));
+      if (l === 2) cDepth.moveTo(x, y); else cDepth.lineTo(x, y);
+    }
+    cDepth.stroke();
+
+    // marker
+    cDepth.fillStyle = '#2D5B7A';
+    cDepth.beginPath(); cDepth.arc(px(L), py(plainErr(L)), 5, 0, Math.PI*2); cDepth.fill();
+    cDepth.fillStyle = '#C0492E';
+    cDepth.beginPath(); cDepth.arc(px(L), py(resErr(L)), 5, 0, Math.PI*2); cDepth.fill();
+
+    cDepth.textAlign = 'left'; cDepth.textBaseline = 'top';
+    cDepth.fillStyle = '#2D5B7A'; cDepth.fillText('Plain (일반)', W - 130, m.t);
+    cDepth.fillStyle = '#C0492E'; cDepth.fillText('ResNet (잔차)', W - 130, m.t + 16);
+
+    metaDepth.innerHTML = 'L=' + L + ': plain 훈련 오차 <b>' + plainErr(L).toFixed(3) + '</b> · ResNet 훈련 오차 <b>' + resErr(L).toFixed(3) + '</b>';
+  }
+
+  ctlL.addEventListener('input', draw);
+  window.addEventListener('resize', draw);
+  draw();
+</script>
+</body>
+</html>

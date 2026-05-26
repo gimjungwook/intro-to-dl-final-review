@@ -3,24 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Sub 02 · 다층 퍼셉트론 — 깊이가 가능하게 하는 것 · Ch.06</title>
+<title>Sub 02 · 단일 뉴런 — 선형 변환 + 비선형 활성 · Ch.06</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
-<style>
-  /* MLP 다이어그램 */
-  .mlp-diagram { max-width: var(--measure); margin: 1.6rem auto; padding: 1.2rem 1.4rem; background: linear-gradient(180deg,#fff,var(--paper-2)); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow-plate); }
-  .mlp-svg { width: 100%; height: auto; }
-  .mlp-legend { display: flex; flex-wrap: wrap; gap: 1.2rem; justify-content: center; margin-top: .9rem; font-family: var(--mono); font-size: .72rem; color: var(--ink-soft); }
-  .mlp-legend i { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: .35rem; vertical-align: -2px; }
-
-  /* 행렬 곱 미니 위젯 */
-  .matmul { max-width: var(--measure); margin: 1.4rem auto; padding: 1.1rem 1.4rem; background: var(--paper-2); border-radius: 10px; font-family: var(--mono); font-size: .9rem; line-height: 1.7; }
-  .matmul .row { display: grid; grid-template-columns: 1fr; gap: .3rem; }
-  .matmul code { background: #fff; padding: .15em .4em; border-radius: 4px; border: 1px solid var(--line-soft); }
-  .matmul .label { color: var(--ink-faint); font-size: .78rem; margin-top: .4rem; }
-</style>
 </head>
 <body>
 <div class="scroll-progress"></div>
@@ -31,149 +18,66 @@
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Sub 02 · 한 방향으로 흐르는 함수의 구조</span>
-      <h1>다층 퍼셉트론(MLP) —<br><span class="t-structure">깊이</span>가 가능하게 하는 것</h1>
-      <p class="lede">은닉층 하나는 입력을 새 좌표계로 옮기는 행렬 곱과 비선형 꺾임의 합성이다. 깊이는 그 합성을 여러 번 반복하는 일이다.</p>
+      <span class="kicker">Sub 02 · 신경망의 가장 작은 부품</span>
+      <h1>단일 뉴런 —<br><span class="t-structure">선형 변환</span> + <span class="t-style">비선형 활성</span></h1>
+      <p class="lede">신경망 전체를 이해하려면 먼저 가장 작은 부품을 분해해야 한다. 그 부품이 바로 하나의 뉴런(unit)이다. 이름은 "신경"이지만, 실제 동작은 두 단계의 매우 단순한 수학이다.</p>
     </header>
 
     <div class="prose">
-      <p>이전 절에서 “은닉층은 새 좌표계다”라는 그림을 잡았다. 이 절은 그 그림을 <strong>수식과 구조</strong>로 다시 그린다. 즉 다층 퍼셉트론(multilayer perceptron, MLP)이라는 기계의 내부를 들여다본다.</p>
+      <p>1절에서 보았듯이 단일 선형 모형은 XOR 같은 단순한 함수조차 풀지 못한다. 그렇다면 그 한계를 어떻게 넘는가. 답은 의외로 단순하다. <strong>선형 변환(linear transformation) 한 번에 비선형 함수(nonlinearity) 한 번을 붙인 작은 부품</strong>을 만들고, 그 부품을 여러 개 모으는 것이다. 이 부품 한 개를 우리는 단일 뉴런(unit, neuron)이라 부른다. 그리고 6장 전체에서 다루는 모든 신경망(MLP, CNN, RNN, Transformer까지)은 결국 이 부품을 어떻게 연결하느냐의 차이일 뿐이다.</p>
 
-      <h2>피드포워드 신경망 — 한 방향으로 흐르는 함수</h2>
-      <p>피드포워드 신경망(feedforward neural network)은 입력 $\mathbf{x}$를 출력 $\mathbf{y}$로 보내는 매핑 $\mathbf{y} = f(\mathbf{x}; \boldsymbol{\theta})$를 학습한다. 여기서 “feedforward”라는 이름은 <strong>정보가 입력에서 출력으로 한 방향으로만 흐른다</strong>는 뜻이다. 어떤 시점의 출력이 다음 시점의 입력으로 돌아가는 순환(feedback) 연결이 없다. 그래서 같은 입력은 항상 같은 출력을 낸다.</p>
+      <h2>뉴런 한 개의 정의 — 두 단계 수식</h2>
+      <p>입력으로 $d$개의 숫자 $x_1, x_2, \ldots, x_d$를 받는 뉴런 한 개의 계산은 정확히 두 단계로 나뉜다. 첫 번째 단계는 <strong>아핀 변환(affine transformation)</strong>이다. 입력 각각에 가중치(weight)를 곱하고, 모두 더한 다음, 편향(bias)을 더한다.</p>
+      <div class="math-block">$$ z = w_1 x_1 + w_2 x_2 + \cdots + w_d x_d + b = \mathbf{w}^\top \mathbf{x} + b $$</div>
+      <p class="math-note">z는 활성 전(pre-activation) 값. w는 가중치 벡터, x는 입력 벡터, b는 편향 스칼라.</p>
+
+      <p>여기서 $\mathbf{w}^\top \mathbf{x}$는 두 벡터의 내적(inner product, dot product)이다. 내적은 단순한 곱셈의 합이지만, 기하학적으로는 "입력 $\mathbf{x}$가 가중치 방향 $\mathbf{w}$에 얼마나 정렬되어 있는가"를 재는 자(尺)다. $\mathbf{x}$가 $\mathbf{w}$와 같은 방향이면 큰 양수, 반대 방향이면 큰 음수, 직교(perpendicular)하면 0이 된다. 즉 이 한 줄에 "입력이 뉴런이 좋아하는 패턴과 얼마나 비슷한가"라는 의미가 압축돼 있다.</p>
+
+      <p>두 번째 단계는 <strong>활성화 함수(activation function)</strong>다. 첫 단계의 결과 $z$에 어떤 비선형 함수 $g$를 씌운다.</p>
+      <div class="math-block">$$ a = g(z) = g(\mathbf{w}^\top \mathbf{x} + b) $$</div>
+      <p class="math-note">a는 뉴런의 최종 출력(activation). g는 sigmoid, tanh, ReLU 같은 비선형 함수.</p>
+
+      <p>이 두 단계가 끝이다. $z$를 활성 전(pre-activation, 또는 logit), $a$를 활성 후(activation)라 부른다. 두 변수 이름을 구분해서 외워두면 역전파에서 매우 도움이 된다. 왜냐하면 역전파는 $\partial L / \partial a$를 먼저 계산하고, 거기에 $g'(z)$를 곱해 $\partial L / \partial z$를 얻고, 다시 $\mathbf{x}$를 곱해 $\partial L / \partial \mathbf{w}$를 얻는 순서로 흐르기 때문이다(12-13절에서 다룬다).</p>
+
+      <h2>왜 "두 단계"인가 — 선형만 쌓으면 무너지는 이유</h2>
+      <p>한 가지 자연스러운 질문이 생긴다. <em>"활성화 함수 없이 그냥 선형 변환만 여러 층 쌓으면 안 되나?"</em> 이 질문의 답이 신경망의 두 단계 구조를 정당화한다. 선형 변환만 두 번 쌓으면 어떻게 되는지 직접 보자.</p>
+      <div class="math-block">$$ \mathbf{h} = W_1 \mathbf{x} + \mathbf{b}_1, \quad \mathbf{y} = W_2 \mathbf{h} + \mathbf{b}_2 $$</div>
+      <p class="math-note">두 층의 선형 변환을 연속으로 적용했다. W1, W2는 행렬, b는 편향 벡터.</p>
+
+      <p>두 식을 합치면 다음과 같다.</p>
+      <div class="math-block">$$ \mathbf{y} = W_2 (W_1 \mathbf{x} + \mathbf{b}_1) + \mathbf{b}_2 = (W_2 W_1) \mathbf{x} + (W_2 \mathbf{b}_1 + \mathbf{b}_2) $$</div>
+      <p class="math-note">행렬의 결합법칙. 결국 W' x + b' 꼴, 단일 선형 변환과 같다.</p>
+
+      <p>즉 활성화 함수가 없으면 $L$개의 층은 단 하나의 층 $W' = W_L W_{L-1} \cdots W_1$로 무너진다. 이것이 1절에서 본 단일 퍼셉트론과 동일한 표현력을 가진다는 뜻이다. 깊이가 의미를 가지려면 층 사이에 반드시 <strong>비선형 꺾임</strong>이 들어가야 한다. 활성화 함수는 그 꺾임을 담당한다. 깊이를 의미 있게 만드는 것은 가중치가 아니라 활성화 함수다.</p>
 
       <div class="analogy">
-        <b>공장의 일방통행 컨베이어 벨트</b>를 떠올려 보자. 원자재(입력)가 한쪽 끝에서 들어오면, 자르고, 조립하고, 칠하고, 포장하는 단계(은닉층)를 차례로 거쳐 완성품(출력)이 다른 쪽으로 나온다. 어느 단계의 결과를 앞 단계로 되돌리지 않는다. 이것이 피드포워드다. 반면 같은 자재를 일부 다시 입력으로 보내는 공장은 순환 신경망(RNN)에 가깝다 — 그건 10장에서 다룬다.
+        <b>레고 블록 하나를 떠올려 보자.</b> 한 블록의 모양 자체는 매우 단순하다(직육면체). 하지만 같은 블록을 수십, 수백 개를 다양한 방향으로 끼워 맞추면 자동차, 성, 사람 같은 복잡한 모양이 만들어진다. 단일 뉴런이 바로 그 레고 블록이다. 한 개는 사실상 직선 분류기 하나에 비선형 꺾임 하나가 붙은, 표현력이 미미한 부품이다. 그러나 수백 개를 층층이 끼워 맞추면, XOR은 물론이고 사람 얼굴, 음성, 자연어, 단백질 접힘까지 표현할 수 있는 거대한 함수가 된다. 그 결합력의 비밀이 바로 "선형 + 비선형"의 교대 구조다.
       </div>
 
-      <h2>한 층 = 행렬 곱 + 비선형 활성</h2>
-      <p>층(layer) 하나가 하는 일은 두 단계로 쪼개진다. 첫째, <strong>아핀 변환(affine transformation)</strong> — 입력 벡터에 가중치 행렬을 곱하고 편향을 더한다. 둘째, <strong>비선형 활성(nonlinear activation)</strong> — 각 성분에 ReLU 같은 꺾임을 적용한다.</p>
+      <h2>벡터 형태로 보면 한 줄이다 — 행렬 곱의 의미</h2>
+      <p>뉴런 한 개의 식 $z = \mathbf{w}^\top \mathbf{x} + b$는 스칼라지만, 한 층(layer) 안에 $m$개의 뉴런을 두면 식은 자연스럽게 행렬 형태가 된다. 각 뉴런 $i$가 자기 가중치 벡터 $\mathbf{w}_i$를 가지고 있다. 이 $m$개의 가중치 벡터를 행으로 쌓으면 가중치 행렬 $W \in \mathbb{R}^{m \times d}$가 된다.</p>
+      <div class="math-block">$$ \mathbf{z} = W \mathbf{x} + \mathbf{b}, \quad \mathbf{a} = g(\mathbf{z}) $$</div>
+      <p class="math-note">z는 m차원 벡터(층 안의 m개 뉴런의 활성 전 값). g는 성분별(element-wise)로 적용.</p>
 
-      <div class="math-block">$$ \mathbf{h}^{(l)} = g\!\left(W^{(l)} \mathbf{h}^{(l-1)} + \mathbf{b}^{(l)}\right) $$</div>
-      <p class="math-note">l번째 층의 출력 = (가중치 곱 + 편향) → 비선형 함수 g.</p>
+      <p>한 층의 모든 뉴런이 같은 입력 $\mathbf{x}$를 본다는 점이 중요하다. 각 뉴런은 자기 가중치 벡터(행렬 $W$의 한 행)로 자기만의 "선호 패턴"을 표현한다. 어떤 뉴런은 가로 모양에 민감하고, 어떤 뉴런은 세로 모양에 민감할 수 있다(이런 해석은 학습 후에 사후적으로 확인 가능). 행렬 곱 $W\mathbf{x}$는 이 모든 뉴런의 내적을 한 번에 계산하는 효율적인 연산이다. GPU가 신경망에서 빠른 이유의 절반은 이 행렬 곱이 매우 잘 병렬화되기 때문이다.</p>
 
-      <p>각 기호를 풀어 보면 이렇다.</p>
-      <table class="symbols">
-        <tr><td>$\mathbf{h}^{(l-1)}$</td><td>이전 층의 출력 (또는 $l=1$이면 입력 $\mathbf{x}$)</td></tr>
-        <tr><td>$W^{(l)}$</td><td>가중치 행렬. 행 = 새 좌표축의 개수, 열 = 이전 좌표축의 개수</td></tr>
-        <tr><td>$\mathbf{b}^{(l)}$</td><td>편향 벡터. 좌표축을 평행 이동</td></tr>
-        <tr><td>$g$</td><td>비선형 활성(ReLU 등). 그것이 없으면 전체가 선형으로 붕괴</td></tr>
-        <tr><td>$\mathbf{h}^{(l)}$</td><td>새 좌표계에서의 표현</td></tr>
-      </table>
+      <h2>편향(bias)의 진짜 역할 — 결정 경계의 평행 이동</h2>
+      <p>편향 $b$는 가중치만큼 자주 이야기되지는 않지만, 빠지면 뉴런의 표현력이 크게 줄어든다. 편향 없이 $z = \mathbf{w}^\top \mathbf{x}$만 있다고 가정해 보자. 이 식의 결정경계 $z = 0$은 항상 원점을 지나야 한다. 즉 원점에서 떨어진 데이터는 가르기 어려워진다. 편향을 더하면 $\mathbf{w}^\top \mathbf{x} = -b$가 되어, 결정경계가 $-b/\|\mathbf{w}\|$만큼 평행 이동한다. 즉 편향은 <strong>결정경계의 위치를 조절</strong>한다. 가중치 $\mathbf{w}$가 방향(orientation)을 정한다면, 편향은 위치(offset)를 정한다.</p>
 
-      <h2>가중치 행렬은 “회전·축척·반사”의 합성이다</h2>
-      <p>가중치 행렬 $W$를 그냥 “숫자들의 표”로 보지 말고 <strong>기하학적 변환</strong>으로 보자. 선형대수의 SVD(특이값 분해)로 보면 임의의 행렬 $W$는 “회전 → 축척(scaling) → 회전” 세 단계의 합성이다. 즉 가중치 행렬은 입력 공간을 회전시키고, 어떤 방향은 늘리고 어떤 방향은 줄인 뒤, 다시 회전시키는 일을 한다.</p>
+      <p>실제 구현에서는 편향을 별도 변수로 다루는 대신, 입력에 상수 1을 추가하고 가중치에 그에 해당하는 성분 하나를 더해서 통합해 쓰는 트릭이 자주 사용된다. 즉 $\tilde{\mathbf{x}} = (x_1, \ldots, x_d, 1)$, $\tilde{\mathbf{w}} = (w_1, \ldots, w_d, b)$로 쓰면 $z = \tilde{\mathbf{w}}^\top \tilde{\mathbf{x}}$가 된다. 수학적으로는 동일하지만, 코드를 쓸 때 편향만 따로 처리하는 번거로움이 사라진다.</p>
 
-      <p>이 변환에 편향 벡터를 더하면 평행 이동이 추가된다. 그래서 $W\mathbf{x} + \mathbf{b}$는 “회전 + 늘이기 + 회전 + 평행 이동” — 일반적인 아핀 변환이다. 평행 이동이 없으면 항상 원점을 지나야 해서 표현력이 떨어진다. 그래서 편향 b는 단순한 부록이 아니라 <strong>필수 자유도</strong>다.</p>
+      <h2>"뇌의 뉴런"과의 관계 — 비유는 약하다</h2>
+      <p>이 부품의 이름이 "neuron"이라서 많은 사람이 생물학적 뉴런과 비교하고 싶어 한다. 두 가지가 비슷한 점은 있다. 생물학적 뉴런도 여러 시냅스(synapse)로 입력을 받아 합산하고, 막 전위(membrane potential)가 어느 문턱(threshold)을 넘으면 활동전위(action potential)를 발사한다는 점에서 "가중합 + 비선형 발화"로 모델링할 수 있다. 1943년 McCulloch-Pitts 모델이 바로 이 비유에서 출발했다.</p>
 
-      <p>그 위에 비선형 활성 $g$가 들어가면, 직선들이 꺾인다. 이전 절의 XOR 예에서 본 것처럼, ReLU의 꺾임이 들어가는 순간 “접힌 종이”처럼 공간을 접을 수 있게 된다. 여기서 “접는다”는 표현은 비유가 아니라 실제 기하다 — ReLU는 입력 공간을 두 개의 반평면(half-plane)으로 나눠, 한쪽은 그대로 두고 다른 쪽은 0으로 눌러 접는다.</p>
+      <p>하지만 그 비유는 거기까지가 좋다. 실제 생물학적 뉴런은 시간(time)에 따라 발사 빈도(spike rate)가 바뀌고, 화학적 수용체(receptor)의 종류와 농도가 끊임없이 변하며, 신경 전달 물질(neurotransmitter)의 종류만 100개를 넘는다. 반면 우리가 다루는 단일 뉴런은 시간 차원이 없는 정적인 함수다. 그래서 6장 내내 우리는 "뉴런"이라는 말을 쓰지만, 실제로 머릿속에 그려야 할 그림은 뇌세포가 아니라 <strong>"내적 + 비선형 함수" 한 묶음</strong>이다. 신경망이 잘 작동하는 진짜 이유는 뇌를 흉내 냈기 때문이 아니라, 이 단순한 부품의 합성이 수학적으로 매우 강력한 함수 클래스를 만들기 때문이다(4절 만능 근사 정리).</p>
 
-      <h2>2-2-1 MLP를 행렬로 적기</h2>
-      <p>이전 절의 XOR MLP를 행렬로 다시 적어 보자. 입력 $\mathbf{x} = (x_1, x_2)$, 은닉 2개, 출력 1개.</p>
-      <div class="math-block">$$ \mathbf{h} = \text{ReLU}\!\left( W^{(1)} \mathbf{x} + \mathbf{b}^{(1)} \right), \qquad \hat y = \sigma\!\left( \mathbf{w}^{(2)\top} \mathbf{h} + b^{(2)} \right) $$</div>
-      <p class="math-note">은닉층은 ReLU, 출력층은 시그모이드(이진 분류).</p>
-
-      <div class="matmul">
-        <div class="row"><b>구체적 형태</b></div>
-        <div class="label">은닉층 가중치 W⁽¹⁾ — 2×2 행렬, 편향 b⁽¹⁾ — 2×1 벡터</div>
-        <div class="row"><code>W⁽¹⁾ = [[1, 1], [1, 1]],  b⁽¹⁾ = [-0.5, -1.5]</code></div>
-        <div class="label">출력층 가중치 w⁽²⁾ — 2×1 벡터, 편향 b⁽²⁾ — 스칼라</div>
-        <div class="row"><code>w⁽²⁾ = [1, -2],  b⁽²⁾ = -0.3</code></div>
-      </div>
-
-      <p>입력 $(x_1, x_2) = (1, 0)$을 통과시키면 이렇게 흐른다.</p>
+      <h2>지금 잡아 둘 그림 세 가지</h2>
       <ol>
-        <li>$W^{(1)} \mathbf{x} + \mathbf{b}^{(1)} = (1+0-0.5,\ 1+0-1.5) = (0.5, -1)$</li>
-        <li>ReLU → $\mathbf{h} = (0.5, 0)$</li>
-        <li>$\mathbf{w}^{(2)\top} \mathbf{h} + b^{(2)} = 1 \cdot 0.5 + (-2)\cdot 0 - 0.3 = 0.2$</li>
-        <li>시그모이드(0.2) ≈ 0.55 → 양성</li>
+        <li><strong>한 뉴런 = 내적 + 비선형 함수</strong>. 두 단계가 끝이다. 첫 단계는 입력이 가중치 방향에 얼마나 정렬됐는지, 두 번째 단계는 그 정렬도를 어떻게 변형해 다음으로 넘길지를 결정한다.</li>
+        <li><strong>한 층 = 행렬 곱 한 번 + 비선형 한 번</strong>. 층 안의 모든 뉴런이 같은 입력을 보지만, 각자 다른 가중치 벡터로 다른 특징을 본다.</li>
+        <li><strong>비선형성이 빠지면 깊이는 무너진다</strong>. 활성화 함수가 신경망의 표현력을 보장하는 진짜 주인공이다.</li>
       </ol>
-      <p>은닉 두 유닛이 같은 OR-like 합을 쓰지만 편향이 달라서, 하나는 “하나 이상 켜진 경우(OR)”에 반응하고 다른 하나는 “둘 다 켜진 경우(AND)”에 반응한다. 출력은 OR − 2·AND 형태가 되어 정확히 XOR을 흉내낸다. 이런 “OR과 AND의 차이로 XOR” 구성은 6장에서 가장 자주 나오는 미니 예제다.</p>
-
-      <h2>왜 다이어그램을 “레이어”로 그리는가</h2>
-      <p>피드포워드 신경망은 흔히 다음과 같이 그려진다.</p>
-    </div>
-
-    <div class="mlp-diagram">
-      <svg class="mlp-svg" viewBox="0 0 560 240" xmlns="http://www.w3.org/2000/svg">
-        <!-- 엣지 -->
-        <g stroke="#9aa3b0" stroke-width="1">
-          <!-- 입력→은닉 -->
-          <line x1="100" y1="80" x2="260" y2="60"/>
-          <line x1="100" y1="80" x2="260" y2="120"/>
-          <line x1="100" y1="80" x2="260" y2="180"/>
-          <line x1="100" y1="160" x2="260" y2="60"/>
-          <line x1="100" y1="160" x2="260" y2="120"/>
-          <line x1="100" y1="160" x2="260" y2="180"/>
-          <!-- 은닉→출력 -->
-          <line x1="260" y1="60" x2="460" y2="120"/>
-          <line x1="260" y1="120" x2="460" y2="120"/>
-          <line x1="260" y1="180" x2="460" y2="120"/>
-        </g>
-        <!-- 노드 -->
-        <g>
-          <circle cx="100" cy="80" r="22" fill="#F3EEE3" stroke="#2D5B7A" stroke-width="2"/>
-          <text x="100" y="86" text-anchor="middle" font-family="Fraunces, serif" font-size="16">x₁</text>
-          <circle cx="100" cy="160" r="22" fill="#F3EEE3" stroke="#2D5B7A" stroke-width="2"/>
-          <text x="100" y="166" text-anchor="middle" font-family="Fraunces, serif" font-size="16">x₂</text>
-          <circle cx="260" cy="60" r="22" fill="#fff" stroke="#A47B2E" stroke-width="2"/>
-          <text x="260" y="66" text-anchor="middle" font-family="Fraunces, serif" font-size="14">h₁</text>
-          <circle cx="260" cy="120" r="22" fill="#fff" stroke="#A47B2E" stroke-width="2"/>
-          <text x="260" y="126" text-anchor="middle" font-family="Fraunces, serif" font-size="14">h₂</text>
-          <circle cx="260" cy="180" r="22" fill="#fff" stroke="#A47B2E" stroke-width="2"/>
-          <text x="260" y="186" text-anchor="middle" font-family="Fraunces, serif" font-size="14">h₃</text>
-          <circle cx="460" cy="120" r="22" fill="#F3EEE3" stroke="#C0492E" stroke-width="2"/>
-          <text x="460" y="126" text-anchor="middle" font-family="Fraunces, serif" font-size="16">ŷ</text>
-        </g>
-        <!-- 층 이름 -->
-        <g font-family="Spline Sans Mono" font-size="11" fill="#8E8576">
-          <text x="100" y="225" text-anchor="middle">입력층</text>
-          <text x="260" y="225" text-anchor="middle">은닉층 (ReLU)</text>
-          <text x="460" y="225" text-anchor="middle">출력층 (σ)</text>
-        </g>
-      </svg>
-      <div class="mlp-legend">
-        <span><i style="background:#2D5B7A"></i>입력 — 데이터가 들어오는 자리</span>
-        <span><i style="background:#A47B2E"></i>은닉 — 새 좌표계의 축</span>
-        <span><i style="background:#C0492E"></i>출력 — 답을 내는 자리</span>
-      </div>
-    </div>
-
-    <div class="prose">
-      <p>이 그림이 잡아 주는 것은 두 가지다. 첫째, <strong>각 층 안의 뉴런은 같은 종류의 일을 한다.</strong> 그래서 “행렬 한 줄”로 표현할 수 있다. 둘째, <strong>층 사이에는 명확한 순서가 있고, 같은 층 안에서는 병렬</strong>이다. 이 사실이 GPU 가속을 가능하게 한다 — 한 층의 모든 뉴런을 한 번의 행렬 곱으로 계산할 수 있기 때문이다.</p>
-
-      <h2>은닉층은 “직접 감독되지 않는 표현 공간”이다</h2>
-      <p>출력층은 정답 데이터와 직접 연결된다. 모델이 무엇을 출력해야 하는지가 분명하다. 그런데 은닉층은 다르다. 데이터가 “첫 번째 은닉 뉴런은 반드시 에지(edge)를 검출하라” 같은 지시를 내려주지 않는다. 그래서 hidden — <em>숨겨진</em> 층이라고 부른다.</p>
-
-      <p>여기서 “숨겨진”의 의미를 정확히 잡는 것이 중요하다. <strong>은닉층의 활성값은 충분히 읽을 수 있다.</strong> 우리가 어떤 입력을 넣었을 때 각 은닉 뉴런이 얼마나 켜졌는지는 코드 한 줄로 출력 가능하다. “숨겨졌다”는 말은 접근 불가능하다는 뜻이 아니라, <em>직접 감독되는 목표가 없다</em>는 뜻이다.</p>
-
-      <p>이 특성이 딥러닝의 힘과 약점을 동시에 만든다. 힘은 — 모델이 정답을 맞히기 위해 중간 표현을 <strong>스스로 조직</strong>한다는 점. 이미지에서는 얕은 층이 에지/코너/질감을 잡고, 깊은 층이 부분 구조와 객체 개념을 잡는 경향이 나타난다. 텍스트에서는 단어 관계, 어순, 문맥적 역할이 점차 정리된다.</p>
-
-      <p>약점은 — 이 과정이 사람의 의미 라벨과 정확히 일치하지 않기 때문에 <strong>해석이 어렵다</strong>는 점. 학습된 모델 안에서 “여기 이 뉴런은 정확히 무엇을 검출하는가?”를 사람의 말로 옮기는 것은 별도의 연구 분야가 되어 있다(설명가능 AI, mechanistic interpretability). 학습 가능성과 해석 가능성은 분리된 문제다.</p>
-
-      <h2>층을 쌓는다 = 함수를 합성한다</h2>
-      <p>이제 깊이로 가자. 두 층짜리 MLP는 함수의 합성으로 적힌다.</p>
-      <div class="math-block">$$ f(\mathbf{x}) = f^{(3)}\!\left( f^{(2)}\!\left( f^{(1)}(\mathbf{x}) \right) \right) $$</div>
-      <p class="math-note">f⁽¹⁾, f⁽²⁾, f⁽³⁾가 차례로 적용된다. 각 단계가 “아핀 + 비선형”.</p>
-
-      <p>왜 합성인가? <em>한 층의 출력이 다음 층의 입력</em>이기 때문이다. 합성 함수 $f \circ g$의 깊이가 깊다는 것은 “단계적으로 정제”된다는 뜻이다. 1층은 거친 좌표 변환을, 2층은 그 위에서 다시 좌표를 정리하고, 3층은 또 그 위에서 다시 정리한다.</p>
-
-      <div class="analogy">
-        <b>이미지를 흑백 변환 → 윤곽 추출 → 다각형 단순화 → 도형 인식</b>으로 순차 처리하는 파이프라인을 생각해 보자. 각 단계는 앞 단계의 출력을 입력으로 받아 더 추상적인 표현으로 바꾼다. 깊이가 깊다는 건 이런 파이프라인의 단계 수가 많다는 것이고, 각 단계가 단순할수록 전체는 더 효율적으로 학습된다.
-      </div>
-
-      <p>이 단계적 합성이 왜 강력한지는 <a href="06.html">6절(만능 근사 정리)</a>에서 더 자세히 다룬다. 핵심만 미리 말해 두면 — <strong>얕은 모델이 같은 함수를 흉내내려면 지수적으로 더 많은 뉴런이 필요할 수 있다.</strong> 깊이는 “표현의 재사용”을 가능하게 한다.</p>
-
-      <h2>이 절이 잡아 준 그림</h2>
-      <ul>
-        <li><strong>한 층</strong> = 행렬 곱(아핀) + 비선형 활성. 두 단계의 합성.</li>
-        <li><strong>가중치 행렬</strong>은 회전·축척·반사의 합성, 즉 좌표 변환.</li>
-        <li><strong>편향</strong>은 평행 이동. 원점에 묶이지 않게 해주는 필수 자유도.</li>
-        <li><strong>은닉층</strong>은 직접 감독되지 않는 새 좌표계. 모델이 스스로 구성.</li>
-        <li><strong>깊이</strong> = 함수의 합성. 표현이 단계적으로 정제됨.</li>
-      </ul>
-
-      <p>다음 절에서는 “비선형 활성 $g$가 왜 그렇게 중요한가”를 더 정밀하게 본다. ReLU, sigmoid, tanh의 차이가 학습 가능성에 어떻게 영향을 미치는지가 핵심이다.</p>
+      <p>다음 절에서는 이 부품을 여러 개 모아 한 층을 만들고, 그 층을 여러 개 쌓아 만든 MLP가 어떻게 입력 공간 자체를 변환하는지 본다. XOR을 푼 그 구조를 더 일반적인 언어로 다시 본다.</p>
     </div>
 
     <nav class="ch-foot"></nav>

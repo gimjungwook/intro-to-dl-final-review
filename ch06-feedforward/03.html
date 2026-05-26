@@ -3,35 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Sub 03 · 활성화 함수 — ReLU가 이긴 이유 · Ch.06</title>
+<title>Sub 03 · MLP — 깊이가 표현 공간을 바꾸는 방법 · Ch.06</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
-<style>
-  .act-stage { display: grid; grid-template-columns: auto 1fr; gap: 1.4rem; padding: 1.4rem 1.2rem .8rem; align-items: start; }
-  .act-cv { display: block; border-radius: 8px; border: 1px solid var(--line); max-width: 100%; background: var(--paper); }
-  .act-read { display: flex; flex-direction: column; gap: .5rem; min-width: 180px; padding: .9rem 1rem; background: var(--paper-2); border-radius: 9px; }
-  .act-row { display: flex; justify-content: space-between; font-family: var(--mono); font-size: .82rem; color: var(--ink-soft); }
-  .act-row .lab { color: var(--ink-faint); }
-  .act-row b { color: var(--ink); }
-  .act-note { margin: .6rem 0 0; font-size: .82rem; color: var(--ink-soft); line-height: 1.5; padding-top: .6rem; border-top: 1px solid var(--line-soft); }
-  @media (max-width: 780px) { .act-stage { grid-template-columns: 1fr; } }
-
-  /* vanishing gradient */
-  .vg-stage { display: grid; grid-template-columns: auto 1fr; gap: 1.4rem; padding: 1.4rem 1.2rem .8rem; align-items: start; }
-  .vg-cv { display: block; border-radius: 8px; border: 1px solid var(--line); max-width: 100%; background: var(--paper); }
-  .vg-side { min-width: 200px; }
-  .vg-stat { padding: .8rem 1rem; background: #fff; border: 1px solid var(--line); border-radius: 8px; font-size: .88rem; line-height: 1.55; color: var(--ink-soft); margin-bottom: .6rem; }
-  .vg-stat b { color: var(--ink); }
-  .vg-note { font-size: .8rem; color: var(--ink-soft); line-height: 1.55; padding: .7rem .9rem; background: var(--paper-2); border-radius: 8px; }
-  @media (max-width: 780px) { .vg-stage { grid-template-columns: 1fr; } }
-
-  .compare { max-width: var(--measure); margin: 1.6rem auto; border-collapse: collapse; font-size: .9rem; }
-  .compare th, .compare td { padding: .6rem .8rem; border: 1px solid var(--line-soft); text-align: left; vertical-align: top; }
-  .compare th { background: var(--paper-2); color: var(--ink); font-weight: 600; font-family: var(--serif); }
-  .compare td:first-child { font-family: var(--mono); font-size: .85rem; color: var(--structure); white-space: nowrap; }
-</style>
 </head>
 <body>
 <div class="scroll-progress"></div>
@@ -42,126 +18,69 @@
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Sub 03 · 비선형성의 종류와 트레이드오프</span>
-      <h1>활성화 함수 —<br><span class="t-structure">ReLU</span>가 이긴 이유</h1>
-      <p class="lede">시그모이드는 왜 깊은 망에서 무너졌나. ReLU는 왜 단순한데도 강한가. 활성화 함수의 미분이 곧 학습 가능성이다.</p>
+      <span class="kicker">Sub 03 · 층을 쌓는 일의 진짜 의미</span>
+      <h1>MLP —<br><span class="t-structure">깊이</span>가 표현 공간을 <span class="t-style">바꾸는</span> 방법</h1>
+      <p class="lede">2절에서 한 뉴런과 한 층을 정의했다. 이제 그 층을 여러 개 쌓는다. "다층 퍼셉트론(multilayer perceptron, MLP)"이라는 이름은 거창하지만, 사실은 "선형 + 비선형 + 선형 + 비선형 + ..."의 반복일 뿐이다. 중요한 것은 이 반복이 만드는 기하학적 효과다.</p>
     </header>
 
     <div class="prose">
-      <p>이전 절에서 “비선형 활성 $g$가 없으면 깊이가 무의미해진다”를 짧게 짚었다. 이 절은 그 $g$의 선택이 어떻게 학습 가능성을 좌우하는지 정밀하게 본다. <strong>활성화 함수의 미분이 곧 역전파의 흐름 속도</strong>다. 그래서 활성화 함수를 잘못 고르면, 같은 데이터·같은 가중치라도 학습이 멈춰 버린다.</p>
+      <p>MLP는 가장 단순한 형태의 깊은 신경망이다. 입력층(input layer), 은닉층(hidden layer) 여러 개, 출력층(output layer)이 한 방향으로만 연결돼 있다. 같은 층 안의 뉴런끼리는 연결이 없고, 다음 층의 모든 뉴런과만 연결된다(이것을 fully connected, 완전 연결이라 부른다). 그래서 이 구조는 가장 단순한 의미의 <strong>피드포워드 네트워크(feedforward network)</strong>다. 루프(loop)도, 자기 연결(self-connection)도 없다. 입력에서 출력까지 한 번 흘러가면 끝이다.</p>
 
-      <h2>먼저 “왜 비선형이 필수인가”를 다시 못 박기</h2>
-      <p>층을 두 개 쌓되 활성화 함수가 선형(또는 없음)이라고 해보자.</p>
-      <div class="math-block">$$ \mathbf{h} = W^{(1)} \mathbf{x} + \mathbf{b}^{(1)}, \qquad \mathbf{y} = W^{(2)} \mathbf{h} + \mathbf{b}^{(2)} $$</div>
-      <p>대입하면 $\mathbf{y} = W^{(2)} W^{(1)} \mathbf{x} + (W^{(2)} \mathbf{b}^{(1)} + \mathbf{b}^{(2)})$이다. 새로운 행렬 $W' = W^{(2)} W^{(1)}$과 새로운 편향으로 다시 쓰면 그냥 <strong>하나의 선형 변환</strong>이다. 100층을 쌓아도 결과는 같다.</p>
+      <h2>L층 MLP의 수식 — 그저 합성함수</h2>
+      <p>$L$개의 은닉층을 가진 MLP를 쓰면 다음과 같다. 위 첨자 $(l)$은 층 번호다.</p>
+      <div class="math-block">$$ \mathbf{h}^{(0)} = \mathbf{x}, \quad \mathbf{h}^{(l)} = g^{(l)}(W^{(l)} \mathbf{h}^{(l-1)} + \mathbf{b}^{(l)}) \quad (l = 1, \ldots, L) $$</div>
+      <p class="math-note">h(0)은 입력, h(l)은 l번째 은닉층의 활성. 출력은 보통 마지막 층에서 활성화를 다르게 쓴다(8-10절).</p>
 
-      <p>그래서 비선형 활성화는 “장식”이 아니라 깊이가 의미를 가지게 만드는 <strong>접착제</strong>다. 직선들의 합성이 다시 직선이 되지 않게 막아 주는 꺾임이다.</p>
+      <p>이 식은 보기보다 더 단순하다. <em>"앞 층의 출력을 받아서, 행렬 곱 한 번 + 편향 더하기 + 활성화 한 번을 거친 결과를 내놓는다"</em>는 동작이 $L$번 반복될 뿐이다. 출력층까지 펼치면 다음과 같다.</p>
+      <div class="math-block">$$ f(\mathbf{x}) = g^{(L)} \big( W^{(L)} g^{(L-1)} \big( W^{(L-1)} \cdots g^{(1)}(W^{(1)} \mathbf{x} + \mathbf{b}^{(1)}) \cdots + \mathbf{b}^{(L-1)} \big) + \mathbf{b}^{(L)} \big) $$</div>
+      <p class="math-note">MLP는 결국 함수의 합성 f = g_L ∘ A_L ∘ g_{L-1} ∘ A_{L-1} ∘ ... ∘ g_1 ∘ A_1. A_l(x) = W_l x + b_l.</p>
 
-      <h2>고전적 선택지: sigmoid와 tanh</h2>
-      <div class="math-block">$$ \sigma(z) = \frac{1}{1 + e^{-z}}, \qquad \tanh(z) = \frac{e^z - e^{-z}}{e^z + e^{-z}} $$</div>
+      <p>즉 MLP는 <strong>"비선형 함수를 사이사이 끼워 넣은 행렬 곱들의 합성"</strong>이다. 학습이 결정하는 것은 $\{W^{(l)}, \mathbf{b}^{(l)}\}$의 값들이고, 활성화 함수의 종류는 사람이 미리 고른다.</p>
 
-      <p>1980-90년대에는 시그모이드(sigmoid)와 tanh가 표준이었다. 둘 다 부드러운 S자 곡선이고, 모든 점에서 미분 가능하다. 시그모이드는 $(0, 1)$ 사이로, tanh는 $(-1, 1)$ 사이로 출력을 누른다.</p>
-
-      <p>그런데 이 두 함수에는 치명적인 문제가 있다. <strong>입력이 크거나 작아지면 미분값이 0에 가까워진다.</strong> 시그모이드의 미분 최댓값은 0.25에 불과하고, 입력이 ±4만 넘어가도 미분은 사실상 0이다. 이를 <em>포화(saturation)</em>라고 부른다.</p>
-
-      <div class="analogy">
-        <b>경사가 거의 0에 가까운 평지 위의 공</b>을 떠올려 보자. 어디로 굴려야 더 낮은 곳으로 갈지 알 수 없다. 기울기가 0이면 학습 신호도 0이다. 시그모이드의 양 끝은 그런 평지다. 입력이 그쪽 영역에 들어가면 모델은 “여기서 어디로 가야 할지” 알 수가 없다.
-      </div>
-
-      <h2>ReLU — 단순함이 이긴 이유</h2>
-      <div class="math-block">$$ \text{ReLU}(z) = \max(0, z) $$</div>
-
-      <p>ReLU(Rectified Linear Unit)는 “음수면 0, 양수면 그대로”라는 한 줄짜리 함수다. 너무 단순해서 처음에는 “이게 진짜로 잘 될까?” 하는 의심을 받았다. 그런데 2012년 AlexNet 이후 ReLU가 사실상 표준이 되었다. 이유가 세 가지다.</p>
+      <h2>각 층은 입력 공간을 어떻게 비트는가</h2>
+      <p>2절에서 한 층의 식 $\mathbf{a} = g(W\mathbf{x} + \mathbf{b})$가 단순한 두 단계라고 했다. 하지만 이 한 층이 입력 공간을 어떻게 변형하는지를 자세히 보면, 깊이의 의미가 더 분명해진다. 한 층의 변환은 정확히 세 단계로 분해할 수 있다.</p>
 
       <ol>
-        <li><strong>양수 구간에서 미분이 정확히 1</strong> — 기울기가 죽지 않는다. 깊은 망을 통과해도 신호가 보존된다.</li>
-        <li><strong>계산이 극단적으로 가볍다</strong> — 비교 한 번. 시그모이드의 지수 함수보다 수십 배 빠르다.</li>
-        <li><strong>희소성(sparsity)</strong> — 음수 입력은 모두 0이 되므로, 자연스럽게 “관련 없는 뉴런을 끄는” 효과가 생긴다.</li>
+        <li><strong>회전과 확대축소(linear)</strong> — 가중치 행렬 $W$의 곱셈은 입력 공간을 회전(rotate)하고, 축을 따라 늘리거나 줄인다. SVD로 분해하면 $W = U\Sigma V^\top$, 즉 회전 한 번 + 축 스케일링 + 회전 한 번이다.</li>
+        <li><strong>평행 이동(translate)</strong> — 편향 $\mathbf{b}$를 더해 공간 전체를 옮긴다.</li>
+        <li><strong>접기(fold)</strong> — 활성화 함수 $g$는 직선이 아니다. ReLU는 음수 구간을 0으로 누른다. 이것은 공간의 한쪽을 다른 쪽 위로 "접는" 동작에 해당한다. sigmoid·tanh도 비슷하게 양쪽 끝을 눌러 가운데로 몰아넣는다.</li>
       </ol>
 
-      <p>물론 그림자도 있다. <strong>“죽은 ReLU(Dead ReLU)”</strong> 문제다. 학습 중에 어떤 뉴런이 한 번 모든 입력에서 음수만 받게 되면, 그 뉴런은 미분이 0이 되어 다시는 학습되지 않는다. 영원히 0만 출력하는 좀비 뉴런이 된다. 이 문제를 완화하기 위해 음수 구간에 작은 기울기를 두는 변종들이 나왔다.</p>
+      <p>이 세 단계가 한 층의 효과다. 그리고 이 세 단계가 $L$번 반복되면, 입력 공간은 회전-확대-평행이동-접기를 $L$번 반복적으로 거치며, 점차 <strong>다음 작업이 직선으로 풀릴 수 있는 모양</strong>으로 재배치된다. 마지막 출력층은 보통 단순한 선형 분류기 또는 회귀기인데, 그 단순한 출력층 앞에서 모든 은닉층이 "어려운 문제를 쉬운 문제로 바꿔주는" 일을 한다. 이것이 표현 학습(representation learning)이라는 말의 진짜 의미다.</p>
 
-      <h2>ReLU의 변종들 — 음수 구간을 조금 살리기</h2>
-      <ul>
-        <li><strong>Leaky ReLU</strong>: 음수에서 기울기 0.1로 작게 통과. $f(z) = z$ if $z > 0$ else $0.1z$. 죽은 ReLU 완화.</li>
-        <li><strong>PReLU (Parametric ReLU)</strong>: Leaky의 “0.1” 자리를 학습 가능한 파라미터로 둠. 데이터가 알아서 최적의 음수 기울기를 찾음.</li>
-        <li><strong>ELU (Exponential Linear Unit)</strong>: 음수에서 부드럽게 $-1$로 수렴. 출력 평균이 0 근처에 머물러 학습 안정성이 높아짐.</li>
-        <li><strong>GELU (Gaussian Error Linear Unit)</strong>: BERT, GPT의 표준. 음수도 살짝 통과시키되 확률적으로 부드럽게 누른다. ReLU의 “꺾임”이 둥글어진 형태.</li>
-        <li><strong>Maxout</strong>: 활성화 함수 자체의 형태를 학습. 여러 선형 함수의 max를 출력으로 사용. ReLU/Leaky/PReLU를 모두 특수 경우로 포함.</li>
-      </ul>
-
-      <h2>아래 위젯에서 직접 비교하기</h2>
-      <p>위젯에서 활성화 함수를 골라 그래프를 보고, 마우스로 곡선 위를 움직이면 그 점에서의 함수값과 미분값이 표시된다. 다른 활성화 함수들은 회색으로 배경에 깔려 비교가 쉽다. 점선은 도함수다.</p>
-      <p>특히 sigmoid를 선택하고 마우스를 $|z| > 3$ 영역으로 옮겨 보라. 함수값은 거의 0이나 1로 들러붙고, 도함수는 0.01 이하로 떨어진다. ReLU를 선택하면 양수 구간 어디서나 도함수가 정확히 1이다.</p>
-    </div>
-
-    <div class="widget">
-      <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 02</span><span>활성화 함수 — 그래프, 미분, 트레이드오프</span></div>
-        <div id="act"></div>
+      <div class="analogy">
+        <b>접고 펴기로 비유해 보자.</b> 종이를 한 번 접으면, 종이 위에 그려진 글씨 하나가 두 군데에 동시에 나타난다(원본 + 접힌 이미지). 두 번 접으면 4군데, 세 번 접으면 8군데. 즉 접기 한 번마다 표현되는 영역의 수가 두 배가 된다. 활성화 함수의 비선형 꺾임이 바로 이 "접기"다. 그래서 깊이가 한 단계 늘어날 때마다 신경망이 표현할 수 있는 함수의 복잡도는 지수적(exponentially)으로 증가할 수 있다(4절 만능 근사 정리, 6장 후반의 깊이 vs 너비 논의).
       </div>
-      <p class="widget-cap">실선은 활성화 함수, 점선은 그 도함수. 마우스로 호버하면 그 점의 (z, f, f′)이 표시된다. sigmoid·tanh는 양 끝에서 도함수가 0으로 무너지는 반면, ReLU는 양수 구간 어디서나 도함수가 1로 유지된다.</p>
-    </div>
 
-    <div class="prose">
-      <h2>비교 표 — 한눈에 보기</h2>
-      <table class="compare">
-        <tr><th>함수</th><th>장점</th><th>단점</th><th>주 사용처</th></tr>
-        <tr><td>sigmoid</td>
-            <td>출력이 확률 해석 가능 (0, 1). 미분 형태 단순.</td>
-            <td>양 끝 포화 → 기울기 소실. 출력 평균이 0이 아님.</td>
-            <td>이진 분류 <em>출력층</em> (은닉층 X)</td></tr>
-        <tr><td>tanh</td>
-            <td>0 중심 → sigmoid보다 학습 안정.</td>
-            <td>여전히 양 끝 포화. 깊은 망에서 한계.</td>
-            <td>RNN의 은닉(과거), 일부 LSTM 게이트</td></tr>
-        <tr><td>ReLU</td>
-            <td>양수 기울기 1로 보존. 계산 가벼움. 희소성.</td>
-            <td>음수 구간 죽음 (Dead ReLU). 출력 평균 0 아님.</td>
-            <td>CNN/MLP 은닉층 <em>기본 선택</em></td></tr>
-        <tr><td>Leaky ReLU</td>
-            <td>죽은 ReLU 완화. ReLU의 모든 장점 유지.</td>
-            <td>음수 기울기 값을 직접 골라야 함 (보통 0.01-0.1).</td>
-            <td>학습 불안정 시 대체</td></tr>
-        <tr><td>ELU</td>
-            <td>음수에서 부드러움. 출력 평균 0 근처.</td>
-            <td>지수 계산 → ReLU보다 무거움.</td>
-            <td>학습 안정성 우선 시</td></tr>
-        <tr><td>GELU</td>
-            <td>Transformer에서 검증된 성능. 부드러운 꺾임.</td>
-            <td>구현 복잡 (정확한 형태는 가우시안 CDF 기반).</td>
-            <td>BERT, GPT, Transformer 계열</td></tr>
-        <tr><td>Maxout</td>
-            <td>활성화 형태 자체를 학습.</td>
-            <td>파라미터 수 k배 증가.</td>
-            <td>특수 목적, 연구</td></tr>
-      </table>
+      <h2>은닉층은 "직접 감독되지 않는 표현 공간"이다</h2>
+      <p>출력층은 정답 데이터 $y$와 직접 짝이 지어진다. "이 입력에는 이 정답"이라는 신호가 명시적으로 있다. 그러나 은닉층 안의 뉴런들에는 그런 직접 감독(direct supervision)이 없다. 정답 라벨이 "1번 뉴런은 가로 에지를 잡아라, 2번 뉴런은 코를 잡아라"고 지시하지 않는다. 그래서 이 층들이 "은닉(hidden)"이라 불린다.</p>
 
-      <h2>기울기 소실(Vanishing Gradient) — 직접 보기</h2>
-      <p>왜 sigmoid가 깊은 망에서 무너졌는지, 두 번째 위젯에서 정량적으로 본다. 깊이 $L$의 망에서 같은 활성화 함수를 통과시키면서 각 층의 기울기 크기 $|g_l|$을 추적한다. sigmoid의 미분 최댓값이 0.25이므로, $L$층을 통과한 후 기울기는 최악의 경우 $0.25^L$로 줄어든다. $L=10$이면 약 $10^{-6}$. 학습 신호가 사실상 0이 된다.</p>
+      <p>"은닉"이라는 단어는 마치 보이지 않는다는 뜻처럼 들리지만, 실제로는 <strong>"직접 지정된 목표가 없다"</strong>는 뜻에 더 가깝다. 학습이 끝난 후 은닉 활성값을 들여다보는 일은 얼마든지 가능하고, 실제로 CNN의 깊은 층은 코, 눈, 바퀴 같은 의미적인 부분을 탐지한다는 사후 분석이 많이 있다. 그러나 학습 중에는 이 의미가 사람의 손으로 지정된 적이 없고, 모델이 정답을 맞히려고 노력하는 과정에서 <em>유리하다고 판단된 형태로 자발적으로 재배치된</em> 결과다.</p>
 
-      <p>슬라이더로 $L$을 1에서 20까지 늘려 보고, 활성화 함수를 sigmoid → tanh → ReLU로 바꿔 보라. sigmoid는 $L=8$만 되어도 마지막 층 기울기가 1e-3 이하로 떨어지는 반면, ReLU는 양수 영역에서 1을 그대로 유지한다.</p>
-    </div>
+      <p>이 점이 딥러닝과 전통 기계학습의 가장 큰 차이다. 전통 방법(예: SVM with hand-crafted features, HOG, SIFT)은 사람이 특징(feature)을 일일이 설계했다. 딥러닝은 그 설계를 <strong>학습 과정에 위임</strong>한다. 그래서 6장은 "신경망이 표현을 직접 학습한다"는 사상의 출발점이고, 7장 정칙화, 9장 CNN, 14장 오토인코더, 15장 표상 학습이 모두 이 사상의 확장이다.</p>
 
-    <div class="widget">
-      <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 03</span><span>Vanishing Gradient — 깊이별 기울기 크기</span></div>
-        <div id="vg"></div>
-      </div>
-      <p class="widget-cap">막대는 각 층의 기울기 크기. 빨강은 1e-3 이하 (사실상 0). 같은 z = 1.0에서 sigmoid는 6-8층만 통과해도 학습 신호가 사라지지만, ReLU는 양수 영역에서 기울기를 보존한다. 이것이 “ReLU 이후 깊은 망이 가능해졌다”의 정량적 의미다.</p>
-    </div>
+      <h2>2-2-1 MLP를 행렬로 다시 적기</h2>
+      <p>1절에서 본 XOR을 푸는 2-2-1 MLP를 행렬로 적어 보자. 입력 $\mathbf{x} = (x_1, x_2)^\top$, 은닉층 2개의 뉴런, 출력층 1개의 뉴런이라는 뜻이다.</p>
+      <div class="math-block">$$ \mathbf{h} = g(W^{(1)} \mathbf{x} + \mathbf{b}^{(1)}), \quad \hat{y} = g(\mathbf{w}^{(2)\top} \mathbf{h} + b^{(2)}) $$</div>
+      <p class="math-note">W(1)은 2×2 행렬, b(1)은 2차원 벡터. w(2)는 2차원 벡터, b(2)는 스칼라. 모두 합쳐 학습 가능한 파라미터는 2·2+2+2+1 = 9개.</p>
 
-    <div class="prose">
-      <h2>이 절이 잡아 준 그림</h2>
-      <ul>
-        <li><strong>비선형 활성은 필수다.</strong> 없으면 깊이가 의미를 잃는다.</li>
-        <li><strong>sigmoid·tanh는 양 끝 포화로 깊은 망에서 무너진다.</strong> 미분이 0에 가까워지면 학습 신호가 사라진다.</li>
-        <li><strong>ReLU의 강점 = 양수 구간 기울기 1.</strong> 깊은 망을 통과해도 신호가 보존된다.</li>
-        <li><strong>ReLU의 약점 = 죽은 뉴런.</strong> Leaky/PReLU/ELU/GELU가 그 그림자를 부분적으로 해결한다.</li>
-        <li><strong>출력층은 별개다.</strong> 은닉층은 ReLU 계열, 출력층은 과업에 맞춰 sigmoid/softmax/linear를 쓴다. 이 짝짓기는 다음 절에서.</li>
-      </ul>
+      <p>이 작은 모델이 1969년의 벽을 넘는다. 단지 9개의 학습 가능한 파라미터로, 선형 모형이 풀지 못한 XOR을 정확히 푼다. 1절 위젯의 MLP 모드가 정확히 이 구조를 보여 준 것이다. 그리고 14절의 손계산 예시도 이 2-2-1 구조 위에서 순전파와 역전파를 한 epoch 풀어 본다.</p>
 
-      <p>다음 절은 “출력층과 비용 함수가 왜 함께 설계되어야 하는가”를 본다. MLE라는 확률 원리에서 자연스럽게 떨어지는 짝의 미학.</p>
+      <h2>왜 "깊이"라는 단어가 중요한가</h2>
+      <p>학습 가능한 파라미터의 총 수를 늘리는 방법은 두 가지다. 하나는 <em>너비(width)</em>를 늘리는 것 — 한 층 안의 뉴런 수를 늘린다. 다른 하나는 <em>깊이(depth)</em>를 늘리는 것 — 층의 수를 늘린다. 둘은 비슷해 보이지만, 표현 효율의 관점에서는 완전히 다른 효과를 낸다.</p>
+
+      <p>너비를 늘리는 일은 같은 층에서 입력을 더 많은 방향으로 한꺼번에 보는 일이다. 표현력은 늘지만, 그 표현들끼리 합성되지는 않는다. 반면 깊이를 늘리는 일은 앞 층이 만든 표현을 <strong>다음 층이 다시 조합해서 새 표현을 만드는</strong> 일이다. 이 조합이 가능해진다는 점에서, 깊이는 단순히 파라미터 수를 늘리는 것 이상의 표현력을 제공한다.</p>
+
+      <p>예를 들어 한 층이 직선 한 줄을 그릴 수 있다면, 두 층은 그 직선들로 둘러싸인 영역의 조합을 표현할 수 있고, 세 층은 그 영역들의 조합의 조합을 표현할 수 있다. 깊이가 한 단계 늘 때마다 표현 가능한 함수의 종류가 지수적으로 늘어날 수 있다는 정리(Montufar et al. 2014)는 바로 이 직관을 수학적으로 뒷받침한다. 4절에서 만능 근사 정리(universal approximation theorem)와 함께 더 자세히 본다.</p>
+
+      <h2>지금 잡아 둘 그림</h2>
+      <ol>
+        <li><strong>MLP는 함수의 합성</strong>이다. $f = g_L \circ A_L \circ \cdots \circ g_1 \circ A_1$. 각 층은 회전+확대+평행이동+접기.</li>
+        <li><strong>각 은닉층은 입력 공간을 새 좌표계로 보낸다</strong>. 마지막 출력층 앞에서 문제가 "쉬운 형태"로 정렬돼 있도록.</li>
+        <li><strong>은닉층은 직접 감독되지 않는다</strong>. 의미는 학습 후에야 사후 해석 가능. 표현은 사람이 지정하지 않고 모델이 스스로 정한다.</li>
+        <li><strong>깊이는 너비와 다른 종류의 표현 효율을 준다</strong>. 표현의 재사용과 조합 가능성.</li>
+      </ol>
+      <p>다음 절에서는 "그렇다면 얼마나 깊고 얼마나 넓어야 하느냐"는 질문에 대한 이론적 답 — 만능 근사 정리를 본다. 그리고 그 정리가 흔히 오해되는 방식과, 그 오해가 어떻게 깊은 학습의 진짜 의미를 가려 왔는지를 살핀다.</p>
     </div>
 
     <nav class="ch-foot"></nav>
@@ -172,10 +91,6 @@
 <script>
   window.addEventListener('load', () => {
     CH6.buildNav('03');
-    const a = document.getElementById('act');
-    CH6.onVisible(a, () => CH6.activations(a));
-    const v = document.getElementById('vg');
-    CH6.onVisible(v, () => CH6.vanishing(v));
   });
 </script>
 </body>

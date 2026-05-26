@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>10 · LSTM 2 — cell state의 정보 고속도로</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .high-stage { padding: 1.4rem 1.2rem 1rem; }
+  .high-stage svg { width: 100%; height: auto; max-height: 360px; background: #fff; border: 1px solid var(--line); border-radius: 10px; display: block; }
+  .high-ctl { display: flex; flex-wrap: wrap; gap: 1.1rem; padding: 1rem 1.2rem; border-top: 1px solid var(--line-soft); background: var(--paper); font-size: .87rem; }
+  .high-ctl label { display: flex; flex-direction: column; gap: .25rem; min-width: 180px; flex: 1; }
+  .high-ctl label span { color: var(--ink-soft); font-family: var(--mono); font-size: .78rem; }
+  .high-ctl label span b { color: var(--ink); font-weight: 600; }
+  .high-ctl input[type=range] { width: 100%; accent-color: var(--structure); }
+  .high-legend { display: flex; gap: 1rem; font-family: var(--mono); font-size: .78rem; color: var(--ink-soft); padding: .5rem 1.2rem 0; }
+  .high-legend i { display: inline-block; width: 14px; height: 4px; vertical-align: middle; margin-right: .35rem; border-radius: 2px; }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar">
+  <a class="home" href="index.html">← Ch.10 표지</a>
+  <span class="ch-mini">SUB 10 / 14</span>
+</div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol id="navlist"></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-chapter 10 · cell state가 기울기를 살리는 방법</span>
+      <h1>cell state는<br><span class="t-structure">정보가 흐르는 고속도로</span>다</h1>
+      <p class="lede">앞 장(<a href="09.html">SUB 09</a>)에서 LSTM의 회로를 그렸다. 이번 장은 그 회로가 왜 작동하는지를 본다. 핵심은 한 줄로 압축된다 — <strong>"cell state $C_t$를 따라 흐르는 기울기에는, 기본 RNN을 무너뜨린 가중치 행렬 곱셈이 없다"</strong>. 같은 행렬이 시간만큼 곱해지는 곱셈 지옥이 사라지고, 대신 forget gate 값들이 시간만큼 곱해진다. forget gate가 1에 가까운 동안에는 기울기가 거의 그대로 보존되어, 100 단계, 1000 단계 떨어진 정보 사이에도 학습이 가능해진다. 이것이 LSTM이 장기 의존성(long-term dependency)을 잡는 진짜 이유다.</p>
+    </header>
+
+    <div class="prose">
+      <h2>다시 한 번 — cell state 갱신식</h2>
+      <p>SUB 09에서 본 cell state 갱신식을 다시 적어 보자. 이 한 줄이 이 장 전체의 주인공이다.</p>
+
+      <div class="math-block">$$C_t = f_t \odot C_{t-1} + i_t \odot \tilde C_t$$</div>
+      <p class="math-note">$f_t, i_t$는 0-1 게이트, $\tilde C_t$는 $\tanh$로 만든 후보 cell, $\odot$는 원소별 곱.</p>
+
+      <p>이 식을 기본 RNN의 갱신식 $h_t = \tanh(Wh_{t-1} + Ux_t + b)$와 나란히 놓고 비교해 보자. 두 식에는 결정적인 구조적 차이가 셋 있다. 첫째, LSTM 식의 오른쪽에는 <strong>$C_{t-1}$이 가중치 행렬을 통과하지 않는다</strong>. 단지 게이트 벡터 $f_t$와 원소별 곱이 곱해질 뿐이다. 둘째, 새 정보 $\tilde C_t$가 기존 정보 $C_{t-1}$에 <strong>덧셈으로 합쳐진다</strong>(기본 RNN은 모든 정보가 같은 가중치를 통과한 후 비선형 함수에 짓이겨진다). 셋째, $C_{t-1}$에서 $C_t$로 가는 경로에 <strong>비선형 활성화가 없다</strong>(기본 RNN은 $\tanh$로 매번 짓이긴다). 이 세 차이가 합쳐져, cell state라는 "정보 고속도로"가 만들어진다.</p>
+
+      <h2>고속도로 비유 — 왜 정보가 살아남는가</h2>
+      <div class="analogy">
+        한 도시에서 100km 떨어진 다른 도시까지 정보를 전달해야 한다고 하자. <b>기본 RNN의 방식</b>은 매 1km마다 사람을 한 명씩 두고, 그 사람이 정보를 다음 사람에게 직접 말로 전한다. 100명을 거치면 처음 정보는 거의 알아볼 수 없게 변형된다(말로 옮길 때마다 약간씩 변형되니까). <b>LSTM의 방식</b>은 100km 고속도로를 깔아 두고, 정보를 적은 종이를 차로 그대로 운반한다. 중간에 검문소(게이트)가 몇 개 있어 "이 종이를 통과시킬지" 결정하지만, 통과만 되면 종이 자체는 변형되지 않는다. 검문소가 모두 통과 결정을 내리면, 100km 떨어진 도시에 처음 적은 종이가 그대로 도착한다.
+      </div>
+
+      <p>이 비유에서 "차로 운반한다"는 부분이 cell state의 핵심이다. cell state는 시간 축을 따라 흐르되, 흐르는 동안 가중치 행렬에 곱해지지도 않고 비선형 함수에 짓이겨지지도 않는다. 단지 forget gate라는 "검문소"가 통과를 허용하면, 이전 cell state가 거의 그대로 다음 cell state로 흘러간다. 이것이 forget gate가 1에 가까울 때 LSTM의 기억이 거의 무한히 보존되는 이유다.</p>
+
+      <h2>기울기 흐름 — BPTT의 곱셈 지옥이 사라지는 이유</h2>
+      <p>이제 핵심을 본다. 시간 $T$에서 발생한 손실 $L$을 시간 $t$의 cell state $C_t$로 미분하려고 한다. 체인 룰을 적용하면 다음과 같다.</p>
+
+      <div class="math-block">$$\frac{\partial L}{\partial C_t} = \frac{\partial L}{\partial C_T} \cdot \prod_{k=t+1}^{T} \frac{\partial C_k}{\partial C_{k-1}}$$</div>
+      <p class="math-note">$T-t$번의 야코비안 곱. 이 곱이 폭발하거나 0으로 사라지면 학습 불가.</p>
+
+      <p>이 식의 형태는 기본 RNN의 BPTT와 똑같이 보인다. 그러나 그 안의 한 항 $\partial C_k / \partial C_{k-1}$이 LSTM에서는 매우 다르다. cell state 갱신식 $C_k = f_k \odot C_{k-1} + i_k \odot \tilde C_k$를 $C_{k-1}$로 미분하면 다음과 같다.</p>
+
+      <div class="math-block">$$\frac{\partial C_k}{\partial C_{k-1}} = \mathrm{diag}(f_k) + \text{(작은 보정항)}$$</div>
+      <p class="math-note">정확히는 $f_k, i_k, \tilde C_k$가 $h_{k-1}$을 통해 $C_{k-1}$에 약하게 의존하지만, 지배적인 항은 $\mathrm{diag}(f_k)$.</p>
+
+      <p>한 항이 $\mathrm{diag}(f_k)$이라는 사실이 모든 것을 바꾼다. 기본 RNN에서 이 항은 $W^\top \mathrm{diag}(\tanh'(h_k))$로, 가중치 행렬 $W$가 매번 들어간다. $W$의 가장 큰 특이값이 1보다 크면 폭발, 작으면 소실. 반면 LSTM에서는 단순히 forget gate 값들이 곱해진다. forget gate가 1에 가까우면 그 위치의 기울기는 보존되고, 0에 가까우면 그 위치의 기울기는 소실된다. 그런데 forget gate 값은 시그모이드 출력이므로 0과 1 사이이며, 데이터가 요구하는 동안에는 1에 가깝게 학습된다. 즉 "기억을 유지해야 할 때는 게이트가 1을 학습해, 그동안 기울기가 살아남는다."</p>
+
+      <p>여기서 결정적인 차이가 또 하나 있다. 기본 RNN의 $W$는 시간 단계와 상관없이 같은 행렬이므로, $W$가 폭발/소실을 결정하면 모든 시점에서 그 운명이 같다. LSTM의 $f_k$는 시점마다 다른 값을 가진다. 어떤 시점에는 1에 가까워 기억을 보존하고, 다른 시점에는 0에 가까워 기억을 지운다. 이 시점별 통제가 LSTM의 진짜 힘이다 — 모델이 "여기서는 기억해야 한다"와 "여기서는 잊어야 한다"를 학습을 통해 스스로 결정할 수 있다.</p>
+
+      <h2>"linear self-loop" — 한 단어로 요약</h2>
+      <p>교재(Goodfellow et al. 10장 10.10절)는 LSTM의 이 구조를 <strong>"제어된 자체 루프(controlled self-loop)"</strong>라고 부른다. 자체 루프란 어떤 변수가 자기 자신을 다음 시점의 자기 자신에 직접 더하는 구조다($C_t = C_{t-1} + \cdots$). 이 자체 루프가 forget gate에 의해 통제되므로(곱해지므로) "제어된"이라는 수식이 붙는다. 자체 루프의 가중치가 1에 매우 가까울 때 기울기가 거의 손실 없이 흐른다는 성질은, 어떤 신경망에서도 통용되는 원리다. ResNet의 잔차 연결(residual connection, $x_{l+1} = x_l + f(x_l)$)이 깊은 CNN의 학습을 살린 것과 정확히 같은 원리다 — 둘 다 "항등 경로(identity path)에 더하는 구조"가 기울기를 살린다.</p>
+
+      <p>이 관점에서 LSTM은 "시간 축의 ResNet"이라고 부를 만하다. 잔차 연결이 깊은 CNN의 깊이 방향 기울기를 살리는 것처럼, LSTM의 cell state 자체 루프는 깊은 RNN의 시간 방향 기울기를 살린다. 두 구조가 거의 동시기에 비슷한 원리로 등장한 것은 우연이 아니다 — 둘 다 "깊은 합성에서 항등 매핑이 가장 안전하다"는 동일한 통찰을 구현한 것이다.</p>
+
+      <h2>그러나 만능은 아니다 — forget gate의 함정</h2>
+      <p>LSTM이 장기 의존성을 잡는 능력은 forget gate가 1에 가깝게 학습될 때에만 발휘된다. forget gate가 0에 가깝게 학습되면 cell state는 매 단계 다시 쓰여, 기본 RNN과 다를 바 없는 곱셈 지옥에 빠진다. 실제로 LSTM도 매우 긴 시퀀스(1000 단계 이상)에서는 학습이 쉽지 않으며, 100-300 단계 정도가 안정적인 한계다.</p>
+
+      <p>또 다른 함정은 <strong>forget gate의 초기화</strong>다. 표준 초기화에서 시그모이드 출력은 0.5 근처에서 시작한다. 매 단계 0.5씩 곱하면 100 단계 후에는 $0.5^{100} \approx 7.9 \times 10^{-31}$이라는 거의 0이 된다. 이 때문에 실무에서는 forget gate의 편향 $b_f$를 양수(예: 1.0에서 2.0 사이)로 초기화하는 트릭을 쓴다. 그러면 시그모이드 출력이 0.7-0.9 근처에서 시작하여, 학습 초기부터 기억이 살아남기 쉬워진다. 이 트릭은 2015년 자레미바(Zaremba) 등이 보고한 LSTM 학습 안정화의 표준이다.</p>
+
+      <p>아래 위젯은 forget gate 값과 시퀀스 길이를 바꾸면서, $T$ 단계 전의 cell state가 현재까지 얼마나 살아남는지(즉 $\prod_k f_k$의 크기)를 보여 준다. forget gate가 0.99일 때와 0.90일 때의 100 단계 후 차이를 직접 확인해 보면, "1에 얼마나 가까운가"가 얼마나 결정적인지 알 수 있다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 10</span><span>cell state 정보 고속도로 — forget gate와 시퀀스 길이에 따른 기억 잔존율</span></div>
+        <div class="high-stage">
+          <svg id="highSvg" viewBox="0 0 720 320" preserveAspectRatio="xMidYMid meet"></svg>
+        </div>
+        <div class="high-legend">
+          <span><i style="background:#2D5B7A"></i>LSTM cell state: $\prod f_k$</span>
+          <span><i style="background:#C0492E"></i>기본 RNN: $|\lambda|^T$ (가중치 최대 특이값)</span>
+        </div>
+        <div class="high-ctl">
+          <label><span>forget gate $f_k$ 평균 <b id="lblFm">0.95</b></span><input type="range" id="ctlFm" min="0.5" max="1.0" step="0.005" value="0.95"></label>
+          <label><span>기본 RNN 특이값 $|\lambda|$ <b id="lblLm">0.9</b></span><input type="range" id="ctlLm" min="0.5" max="1.5" step="0.005" value="0.9"></label>
+          <label><span>시퀀스 길이 $T$ <b id="lblTm">100</b></span><input type="range" id="ctlTm" min="5" max="300" step="5" value="100"></label>
+        </div>
+      </div>
+      <p class="widget-cap">forget gate가 0.99이고 $T=100$이면 잔존율은 $0.99^{100} \approx 0.37$, 즉 37% 정도의 기억이 남는다. forget gate가 0.90이면 $0.90^{100} \approx 0.0027$로 거의 사라진다. 기본 RNN은 가중치 특이값이 1보다 조금만 작아도(0.99) 어차피 같은 운명이지만, 결정적으로 LSTM의 forget gate는 "필요할 때 1에 가깝게 학습"이 가능하므로 같은 잔존율을 데이터가 요구하는 차원에서만 유지할 수 있다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>다음 — 왜 GRU는 게이트를 두 개로 줄였는가</h2>
+      <p>LSTM은 세 게이트와 두 종류의 상태(cell·hidden)로 정보 고속도로를 만들었다. 매우 효과적이지만 매개변수가 기본 RNN의 약 4배. 2014년 조경현(Cho) 등이 제안한 GRU(Gated Recurrent Unit)는 "정말로 세 게이트가 다 필요한가"라는 질문에서 출발한다. 두 게이트만으로도 비슷한 효과를 얻을 수 있다면, 더 가벼운 모델이 더 빠르게 학습된다. 그 트레이드오프와 결정적 차이는 다음 장(<a href="11.html">SUB 11</a>)에서 본다.</p>
+
+      <h2>핵심 정리</h2>
+      <ul class="checklist">
+        <li>LSTM의 핵심은 cell state라는 "정보 고속도로". 가중치 행렬이 곱해지지 않고, 비선형 활성화도 통과하지 않는다.</li>
+        <li>cell state 갱신: $C_t = f_t \odot C_{t-1} + i_t \odot \tilde C_t$. 덧셈 + 게이트 곱. 행렬 곱 없음.</li>
+        <li>기울기 흐름: $\partial C_t / \partial C_{t-1} \approx \mathrm{diag}(f_t)$. 시점마다 다른 forget gate가 시점별로 기울기를 통과/차단.</li>
+        <li>forget gate가 1에 가까우면 기울기가 거의 보존. 데이터가 요구하면 모델이 스스로 1에 가깝게 학습 가능.</li>
+        <li>이 "제어된 자체 루프(controlled self-loop)" 원리는 ResNet의 잔차 연결과 정확히 같은 원리.</li>
+        <li>실무 트릭: forget gate 편향 $b_f$를 1.0에서 2.0 사이로 초기화. 시그모이드 출력이 0.7-0.9에서 시작.</li>
+        <li>LSTM도 1000 단계 이상에서는 학습이 어렵다. 100-300 단계가 안정적 한계. 그 너머는 어텐션이 답.</li>
+      </ul>
+    </div>
+
+    <nav class="ch-foot" id="chfoot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    ['01','왜 시퀀스에 FC·CNN은 부족한가'],['02','RNN의 기본 아이디어'],['03','시간 펼치기'],
+    ['04','매개변수 공유'],['05','BPTT 1 — 직관'],['06','BPTT 2 — 손계산'],
+    ['07','기울기 폭발과 소실'],['08','기울기 클리핑'],['09','LSTM 1 — 세 게이트'],
+    ['10','LSTM 2 — cell state'],['11','GRU'],['12','양방향 RNN'],
+    ['13','인코더-디코더'],['14','시험 대비'],
+  ];
+  const CUR = '10';
+  const ol = document.getElementById('navlist');
+  SUBS.forEach(([n,t]) => {
+    const li = document.createElement('li');
+    li.innerHTML = `<a href="${n}.html"${n===CUR?' class="current"':''}>${t}</a>`;
+    ol.appendChild(li);
+  });
+  const i = SUBS.findIndex(s=>s[0]===CUR);
+  const prev = i>0 ? SUBS[i-1] : ['','표지로'];
+  const next = i<SUBS.length-1 ? SUBS[i+1] : ['','표지로'];
+  document.getElementById('chfoot').innerHTML =
+    `<a href="${prev[0]?prev[0]+'.html':'index.html'}"><div class="dir">← 이전</div><div class="ti">${prev[1]}</div></a>` +
+    `<a href="${next[0]?next[0]+'.html':'index.html'}" class="next"><div class="dir">다음 →</div><div class="ti">${next[1]}</div></a>`;
+  const bar = document.querySelector('.scroll-progress');
+  document.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max>0 ? (h.scrollTop/max)*100 : 0) + '%';
+  }, { passive: true });
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) renderMathInElement(document.body, {
+      delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }],
+      throwOnError: false,
+    });
+  });
+
+  // ---------- 위젯: 잔존율 (LSTM vs RNN) 로그 ----------
+  const svg = document.getElementById('highSvg');
+  const ctlFm = document.getElementById('ctlFm');
+  const ctlLm = document.getElementById('ctlLm');
+  const ctlTm = document.getElementById('ctlTm');
+  const lblFm = document.getElementById('lblFm');
+  const lblLm = document.getElementById('lblLm');
+  const lblTm = document.getElementById('lblTm');
+
+  function drawHigh() {
+    const fm = parseFloat(ctlFm.value);
+    const lm = parseFloat(ctlLm.value);
+    const T = parseInt(ctlTm.value);
+    lblFm.textContent = fm.toFixed(3);
+    lblLm.textContent = lm.toFixed(3);
+    lblTm.textContent = T;
+
+    const W = 720, H = 320;
+    const M = { l: 70, r: 30, t: 30, b: 50 };
+    const PW = W - M.l - M.r;
+    const PH = H - M.t - M.b;
+
+    // y axis: log10
+    const logMin = -20, logMax = 4;
+    const ly = (v) => {
+      const lv = Math.log10(Math.max(Math.abs(v), 1e-30));
+      const t = (lv - logMin) / (logMax - logMin);
+      return M.t + PH - Math.max(0, Math.min(1, t)) * PH;
+    };
+    const xt = (i) => M.l + (i / T) * PW;
+
+    let s = `<rect width="${W}" height="${H}" fill="#fff" />`;
+    // grid & axes
+    s += `<line x1="${M.l}" y1="${M.t}" x2="${M.l}" y2="${M.t+PH}" stroke="#8E8576" stroke-width="1" />`;
+    s += `<line x1="${M.l}" y1="${M.t+PH}" x2="${M.l+PW}" y2="${M.t+PH}" stroke="#8E8576" stroke-width="1" />`;
+    for (let lv = logMin; lv <= logMax; lv += 4) {
+      const y = ly(Math.pow(10, lv));
+      s += `<line x1="${M.l}" y1="${y}" x2="${M.l+PW}" y2="${y}" stroke="#26221C" stroke-opacity="0.06" />`;
+      s += `<text x="${M.l-8}" y="${y+4}" fill="#8E8576" font-family="Spline Sans Mono, monospace" font-size="10" text-anchor="end">10^${lv}</text>`;
+    }
+    // x ticks
+    for (let i = 0; i <= T; i += Math.max(1, Math.round(T/8))) {
+      const x = xt(i);
+      s += `<line x1="${x}" y1="${M.t+PH}" x2="${x}" y2="${M.t+PH+4}" stroke="#8E8576" />`;
+      s += `<text x="${x}" y="${M.t+PH+18}" fill="#8E8576" font-family="Spline Sans Mono, monospace" font-size="10" text-anchor="middle">${i}</text>`;
+    }
+    s += `<text x="${M.l+PW/2}" y="${M.t+PH+40}" fill="#5A5247" font-family="Spline Sans Mono, monospace" font-size="11" text-anchor="middle">시간 단계 (시퀀스 길이)</text>`;
+
+    // LSTM line: prod f
+    let path1 = '';
+    for (let i = 0; i <= T; i++) {
+      const v = Math.pow(fm, i);
+      path1 += (i === 0 ? 'M' : 'L') + xt(i) + ',' + ly(v) + ' ';
+    }
+    s += `<path d="${path1}" stroke="#2D5B7A" stroke-width="2.5" fill="none" />`;
+
+    // RNN line: lambda^T
+    let path2 = '';
+    for (let i = 0; i <= T; i++) {
+      const v = Math.pow(lm, i);
+      path2 += (i === 0 ? 'M' : 'L') + xt(i) + ',' + ly(v) + ' ';
+    }
+    s += `<path d="${path2}" stroke="#C0492E" stroke-width="2.5" fill="none" stroke-dasharray="4,3" />`;
+
+    // markers at T
+    const vL = Math.pow(fm, T);
+    const vR = Math.pow(lm, T);
+    s += `<circle cx="${xt(T)}" cy="${ly(vL)}" r="4" fill="#2D5B7A" />`;
+    s += `<circle cx="${xt(T)}" cy="${ly(vR)}" r="4" fill="#C0492E" />`;
+    s += `<text x="${xt(T)-10}" y="${ly(vL)-8}" fill="#2D5B7A" font-family="Spline Sans Mono, monospace" font-size="11" text-anchor="end">${vL.toExponential(2)}</text>`;
+    s += `<text x="${xt(T)-10}" y="${ly(vR)+18}" fill="#C0492E" font-family="Spline Sans Mono, monospace" font-size="11" text-anchor="end">${vR.toExponential(2)}</text>`;
+
+    svg.innerHTML = s;
+  }
+  [ctlFm, ctlLm, ctlTm].forEach(el => el.addEventListener('input', drawHigh));
+  drawHigh();
+</script>
+</body>
+</html>

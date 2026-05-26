@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>11 · 초기화 1 — 대칭성 깨기와 모두 0 안 되는 이유</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .sym-stage { padding: 1.2rem 1.1rem 0.6rem; }
+  .sym-svg { display: block; width: 100%; max-width: 720px; margin: 0 auto; height: 320px; }
+  .sym-ctrl { display: flex; gap: 1rem; justify-content: center; padding: .6rem 1.1rem 1rem; flex-wrap: wrap; }
+  .sym-read { display: flex; flex-wrap: wrap; gap: 1.2rem; padding: 0.4rem 1.1rem 1rem; font-family: var(--mono); font-size: .78rem; color: var(--ink-soft); }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a class="home" href="index.html">← Ch.08 최적화</a>
+  <span class="ch-mini">SUB 11 / 17</span>
+</div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol id="navlist"></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 11 · 출발점이 학습의 전부를 결정한다</span>
+      <h1>모든 가중치를 0으로 두면<br><span class="t-style">100개 뉴런이 1개의 뉴런</span>처럼 작동한다</h1>
+      <p class="lede">신경망 초기화는 단순한 "랜덤 숫자 채우기"가 아니다. 가중치가 같으면 뉴런들이 평생 같은 함수를 배운다. 무작위 초기화는 이 운명을 깨는 첫 단추다.</p>
+    </header>
+
+    <div class="prose">
+
+      <p>지금까지 본 모든 옵티마이저(SGD부터 Adam까지)는 한 가지 암묵적인 가정을 한다 — "좋은 출발점 $\theta_0$가 주어졌다." 그러나 신경망에서는 출발점 자체가 학습의 성패를 좌우한다. 잘못된 초기화는 알고리즘이 아예 수렴하지 않거나, 수치적으로 폭주(NaN)하게 만든다.</p>
+
+      <p>이 절(11)과 다음 절(12)은 초기화의 두 원칙을 본다. 11번 절은 가장 기본적인 원칙 — <strong>대칭성 깨기(symmetry breaking)</strong>. 12번 절은 그 위에서 분산 균형을 맞추는 Xavier·He 같은 정교한 기법들. 둘은 모두 같은 직관에 뿌리를 둔다. 학습이 의미 있게 일어나려면, 출발점에서 뉴런들이 서로 다른 일을 하고 있어야 한다.</p>
+
+      <h2>왜 모든 가중치를 0으로 두면 안 되는가</h2>
+
+      <p>겉보기에 가장 자연스러운 초기화는 모든 가중치를 0으로 두는 것이다. 0은 어느 방향으로도 편향되지 않은 "중립" 출발점처럼 보인다. 그러나 신경망에서는 이것이 치명적인 실수다.</p>
+
+      <p>이유는 다음과 같다. 한 은닉층에 두 뉴런 $h_1, h_2$가 있다고 하자. 두 뉴런은 같은 입력층에서 신호를 받고, 같은 활성화 함수를 쓴다. 만약 두 뉴런의 가중치가 같다면 — 예: 모두 0이거나 모두 같은 상수 — 두 뉴런이 계산하는 출력도 같다.</p>
+
+      <p>이제 역전파로 두 뉴런이 받는 기울기를 보자. 출력층의 손실은 $h_1$과 $h_2$를 어떻게 구분하는지 모른다 — 둘이 똑같은 값을 내니까. 그래서 손실은 $h_1$과 $h_2$를 한 묶음으로 다룬다. 결과적으로 두 뉴런이 받는 기울기도 같다. 같은 기울기로 업데이트되면, 두 뉴런의 가중치는 영원히 같은 상태로 머문다.</p>
+
+      <div class="math-block">$$ w_1 = w_2 \;\Rightarrow\; h_1 = h_2 \;\Rightarrow\; \nabla_{w_1} L = \nabla_{w_2} L \;\Rightarrow\; w_1 = w_2 \;\Rightarrow\; \cdots $$</div>
+      <p class="math-note">대칭성의 고정점. 한번 같으면 영원히 같다. 100개 뉴런을 두어도 사실상 1개로 작동.</p>
+
+      <p>이 현상이 <strong>대칭성 고정점(symmetry fixed point)</strong>이다. 학습이 진행되어도 같은 값에서 빠져나오지 못한다. 100개의 뉴런이 있어도 사실상 한 개의 뉴런으로 작동하는 셈이다. 신경망의 표현력이 사라지고, 학습이 의미 있게 진행되지 않는다.</p>
+
+      <div class="analogy">
+        4명의 학생이 모두 똑같은 답안지를 베껴 쓰는 시험을 상상하자. 같은 정보, 같은 결정, 같은 답. 다음 시험에서도 답이 똑같다. 둘은 영원히 "같은 학생"이다. <b>무작위 초기화는 4명에게 처음에 약간 다른 시작 답안을 주는 일이다.</b> 다른 출발점에서 시작했기 때문에 학습을 거치면서 서로 다른 "전문 분야"를 갖게 된다.
+      </div>
+
+      <h2>해결책 — 무작위 초기화(random initialization)</h2>
+
+      <p>대칭성을 깨는 가장 단순한 방법은 가중치를 무작위로 초기화하는 것이다. 모든 가중치를 동일한 분포에서 독립적으로 뽑으면, 두 뉴런이 정확히 같은 가중치를 가질 확률은 0이다. 따라서 대칭성이 깨지고, 두 뉴런이 다른 함수를 학습할 가능성이 열린다.</p>
+
+      <p>무작위 초기화의 가장 단순한 형태는 가우시안(Gaussian) 또는 균등 분포(uniform)에서 작은 값을 뽑는 것이다. 예를 들어 $W \sim \mathcal{N}(0, 0.01^2)$ 같은 식이다. 이 방법은 대칭성을 깨주지만, 분산을 잘못 잡으면 또 다른 문제 — 활성값 폭발 또는 소실 — 가 생긴다. 12번 절에서 본다.</p>
+
+      <h2>편향(bias)은 0으로 두어도 되는 이유</h2>
+
+      <p>가중치와 달리 편향(bias)은 보통 0으로 초기화한다. 편향은 "모든 입력에 같은 상수를 더하는" 항이라 대칭성 문제를 일으키지 않기 때문이다. 두 뉴런의 가중치가 다르다면, 같은 편향 0을 더해도 두 뉴런의 출력은 다르다.</p>
+
+      <p>다만 두 가지 예외가 있다. 첫째, <strong>ReLU 은닉 유닛</strong>의 편향을 0.1 같은 작은 양수로 초기화하면, 초기에 ReLU가 활성 상태(양수 출력)를 유지해 기울기가 흐를 수 있다. 0이면 "죽은 ReLU(dead ReLU)" 문제로 영원히 활성화되지 않을 수 있다. 둘째, <strong>LSTM의 망각 게이트(forget gate)</strong> 편향은 1로 초기화하는 것이 권장된다. 초기에 게이트를 열어 두어 정보가 시간 방향으로 흐를 수 있게 한다.</p>
+
+      <h2>위젯 — 같은 초기화 vs 무작위 초기화</h2>
+
+      <p>아래 위젯은 두 시나리오를 시뮬레이션한다. 왼쪽은 4개 뉴런을 모두 같은 값으로 초기화한 경우, 오른쪽은 무작위로 초기화한 경우. 학습 슬라이더를 움직여 100스텝 동안 두 경우의 가중치가 어떻게 다르게 발전하는지 보라.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 11</span><span>대칭성 깨기 — 같은 초기화 vs 무작위 초기화</span></div>
+        <div class="sym-stage">
+          <svg class="sym-svg" id="symSvg" viewBox="0 0 560 320"></svg>
+        </div>
+        <div class="sym-ctrl">
+          <div class="slider" style="min-width: 280px;">
+            <label>학습 진행 (스텝) <b id="symStep">0</b> / 100</label>
+            <input type="range" id="symSlider" min="0" max="100" step="1" value="0">
+          </div>
+        </div>
+        <p class="sym-read" style="text-align:center; padding: 0 1rem 1rem;" id="symRead">슬라이더를 우측으로 움직여 학습을 진행시켜 보세요.</p>
+      </div>
+      <p class="widget-cap">왼쪽: 모든 가중치를 같은 값으로 초기화한 4 뉴런. 시간이 지나도 4 뉴런의 가중치 값이 항상 같다 — 즉 4개가 아닌 1개의 뉴런으로 작동. 오른쪽: 무작위 초기화. 4 뉴런이 각자 다른 "전문 분야"로 발달.</p>
+    </div>
+
+    <div class="prose">
+
+      <h2>대칭성 깨기만으로는 부족하다 — 분산 문제</h2>
+
+      <p>무작위 초기화로 대칭성을 깼다고 끝나는 게 아니다. 분산이 잘못되면 또 다른 문제가 생긴다.</p>
+
+      <p>가중치가 너무 크면, 순전파(forward propagation)에서 활성값이 층을 지날수록 폭발한다. 한 층에서 출력이 100배가 되면, 다음 층에서 다시 100배가 되어 10000배가 된다. 10층을 지나면 $100^{10}$배다. 곧 수치 한계를 넘어 발산한다. 동시에 역전파에서 기울기도 폭발한다.</p>
+
+      <p>반대로 가중치가 너무 작으면, 신호가 층을 거치며 소실된다. 한 층에서 출력이 0.01배가 되면, 10층 후에는 $0.01^{10} = 10^{-20}$배가 된다. 이 작은 신호로는 학습이 의미 있게 진행되지 않는다. 역전파의 기울기도 함께 사라진다.</p>
+
+      <p>그래서 무작위 초기화는 "어떤 분산으로?"라는 두 번째 질문을 낳는다. 이상적인 답은 <strong>"층을 지나도 활성값과 기울기의 분산이 유지되는 분산"</strong>이다. 이 조건을 만족시키는 공식이 12번 절에서 볼 Xavier(Glorot) 초기화와 He(Kaiming) 초기화다.</p>
+
+      <h2>시험 답안 핵심</h2>
+
+      <p>대칭성 깨기가 시험에 나오면 다음 세 가지를 적자. 첫째, <strong>같은 가중치 → 같은 출력 → 같은 기울기 → 영원히 같은 가중치 (고정점)</strong>. 둘째, <strong>100개 뉴런이 사실상 1개로 작동, 표현력 손실</strong>. 셋째, <strong>무작위 초기화로 깨야 함, 편향은 보통 0 (ReLU는 0.1, LSTM forget은 1 예외)</strong>.</p>
+    </div>
+
+    <nav class="ch-foot" id="chFoot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'순수 vs ML 최적화' }, { no:'02', t:'학습의 장애물' }, { no:'03', t:'미니배치 SGD 1' }, { no:'04', t:'미니배치 SGD 2' },
+    { no:'05', t:'학습률의 의미' }, { no:'06', t:'모멘텀 1' }, { no:'07', t:'모멘텀 2 (네스테로프)' }, { no:'08', t:'적응 1 (AdaGrad)' },
+    { no:'09', t:'적응 2 (RMSProp)' }, { no:'10', t:'적응 3 (Adam)' }, { no:'11', t:'초기화 1 (대칭성)' }, { no:'12', t:'초기화 2 (Xavier·He)' },
+    { no:'13', t:'배치 정규화 1' }, { no:'14', t:'배치 정규화 2' }, { no:'15', t:'학습률 스케줄' }, { no:'16', t:'기울기 클리핑' },
+    { no:'17', t:'시험 대비' },
+  ];
+  const CUR = '11';
+  const navlist = document.getElementById('navlist');
+  SUBS.forEach(s => { const li = document.createElement('li'); li.innerHTML = `<a href="${s.no}.html"${s.no===CUR?' class="current"':''}>${s.t}</a>`; navlist.appendChild(li); });
+  const chFoot = document.getElementById('chFoot');
+  const idx = SUBS.findIndex(s => s.no === CUR);
+  const prev = idx > 0 ? SUBS[idx-1] : { no:'index', t:'표지로' };
+  const next = idx < SUBS.length-1 ? SUBS[idx+1] : { no:'index', t:'표지로' };
+  chFoot.innerHTML = `<a href="${prev.no}.html"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` + `<a href="${next.no}.html" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
+        throwOnError: false,
+      });
+    }
+  });
+
+  // 대칭성 위젯
+  (function() {
+    const svg = document.getElementById('symSvg');
+    const slider = document.getElementById('symSlider');
+    const stepOut = document.getElementById('symStep');
+    const readOut = document.getElementById('symRead');
+
+    function simSame(steps) {
+      const traj = [];
+      for (let t = 0; t <= steps; t++) {
+        const w = 0.5 - 0.01 * t;
+        traj.push([w, w, w, w]);
+      }
+      return traj;
+    }
+    function simRandom(steps) {
+      const init = [0.3, -0.2, 0.6, -0.5];
+      const grads = [-0.005, 0.008, -0.012, 0.004];
+      const traj = [];
+      for (let t = 0; t <= steps; t++) {
+        traj.push(init.map((w, i) => w + grads[i] * t));
+      }
+      return traj;
+    }
+    const same = simSame(100);
+    const rand = simRandom(100);
+
+    function render() {
+      const step = parseInt(slider.value);
+      stepOut.textContent = step;
+      let html = '';
+      const leftCx = 140, rightCx = 420, cy = 80;
+      const r = 30;
+      html += `<text x="${leftCx}" y="30" font-family="Fraunces, serif" font-size="14" fill="#26221C" text-anchor="middle">동일 초기화 — 모두 같은 함수</text>`;
+      html += `<text x="${rightCx}" y="30" font-family="Fraunces, serif" font-size="14" fill="#26221C" text-anchor="middle">무작위 초기화 — 각자 다른 함수</text>`;
+      for (let i = 0; i < 4; i++) {
+        const lx = leftCx - 90 + i * 60;
+        const rx = rightCx - 90 + i * 60;
+        const w = same[step][i];
+        const colorVal = w > 0 ? '#2D5B7A' : '#C0492E';
+        const intensity = Math.min(1, Math.abs(w) / 0.6);
+        html += `<circle cx="${lx}" cy="${cy + 80}" r="${r}" fill="${colorVal}" opacity="${0.3 + intensity*0.7}" stroke="#fff" stroke-width="2"/>`;
+        html += `<text x="${lx}" y="${cy + 85}" font-family="Spline Sans Mono, monospace" font-size="11" fill="#fff" text-anchor="middle">${w.toFixed(2)}</text>`;
+        const wr = rand[step][i];
+        const colorValR = wr > 0 ? '#2D5B7A' : '#C0492E';
+        const intensityR = Math.min(1, Math.abs(wr) / 0.6);
+        html += `<circle cx="${rx}" cy="${cy + 80}" r="${r}" fill="${colorValR}" opacity="${0.3 + intensityR*0.7}" stroke="#fff" stroke-width="2"/>`;
+        html += `<text x="${rx}" y="${cy + 85}" font-family="Spline Sans Mono, monospace" font-size="11" fill="#fff" text-anchor="middle">${wr.toFixed(2)}</text>`;
+      }
+      // 화살표 (학습이 진행 중임을 표시)
+      if (step > 0) {
+        html += `<text x="${leftCx}" y="${cy + 150}" font-family="Spline Sans Mono, monospace" font-size="11" fill="#C0492E" text-anchor="middle">스텝 ${step}: 4 가중치 모두 같음 → 1개 뉴런</text>`;
+        html += `<text x="${rightCx}" y="${cy + 150}" font-family="Spline Sans Mono, monospace" font-size="11" fill="#2D5B7A" text-anchor="middle">스텝 ${step}: 가중치 서로 다름 → 4개 다른 뉴런</text>`;
+      }
+      svg.innerHTML = html;
+      if (step === 0) readOut.innerHTML = '학습 시작: 양쪽 모두 가중치가 보임.';
+      else if (step < 30) readOut.innerHTML = `<b>스텝 ${step}</b> — 같은 초기화 쪽 네 뉴런이 여전히 같은 값을 유지한다.`;
+      else if (step < 70) readOut.innerHTML = `<b>스텝 ${step}</b> — 무작위 초기화 쪽은 점점 다른 "전문 분야"로 발달. 같은 쪽은 영원히 한 뉴런.`;
+      else readOut.innerHTML = `<b>스텝 ${step}</b> — 무작위 쪽이 풍부한 표현을 가진 네 뉴런으로 발달. 같은 쪽은 어떤 학습을 해도 사실상 한 뉴런이다.`;
+    }
+    slider.addEventListener('input', render);
+    render();
+  })();
+</script>
+</body>
+</html>

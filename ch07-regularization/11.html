@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sub 11 · 조기 종료 ≈ L2 — 시간 위의 정칙화 · Ch.07</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .es-stage { padding: 1.2rem 1.2rem 1rem; }
+  .es-cv { display: block; max-width: 100%; border-radius: 8px; border: 1px solid var(--line); background: var(--paper); margin: 0 auto; }
+  .es-ctr { display: flex; gap: 1rem; flex-wrap: wrap; padding: .9rem 1.1rem; border-top: 1px solid var(--line-soft); background: var(--paper); }
+  .es-read { padding: .8rem 1.4rem; font-size: .9rem; color: var(--ink-soft); line-height: 1.55; }
+  .es-read b { color: var(--ink); }
+  .deriv { max-width: var(--measure); margin: 1.4rem auto; padding: 1.1rem 1.4rem; background: var(--paper-2); border: 1px solid var(--line-soft); border-radius: 9px; }
+  .deriv .lbl { font-family: var(--mono); font-size: .7rem; letter-spacing: .12em; color: var(--style); margin-bottom: .35rem; }
+  .deriv .why { font-size: .88rem; color: var(--ink-soft); line-height: 1.6; margin-top: .35rem; }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 11 · 시험 단골 — 가장 우아한 결과</span>
+      <h1>조기 종료 ≈ L2 — <span class="t-style">시간 위의</span> 정칙화</h1>
+      <p class="lede">학습을 일찍 멈추는 것이 왜 L2와 수학적으로 같은가. 2차 근사에서 α = 1/(ετ) 유도.</p>
+    </header>
+
+    <div class="prose">
+      <p>조기 종료(early stopping)는 가장 단순하면서도 가장 우아한 정칙화다. 절차는 한 줄이다. <strong>훈련 도중 검증 손실이 가장 작았던 지점의 가중치를 보관해 두고, 검증 손실이 한동안 개선되지 않으면 학습을 중단한다.</strong> 그게 다다. 페널티 항도 없고, 데이터 변환도 없고, 모형 구조 변경도 없다. 단지 "언제 멈출 것인가"만 정한다.</p>
+
+      <p>그런데 이 단순한 절차가 한 식 $\tilde J = J + \alpha\Omega$의 시점에서 보면 어떻게 정칙화로 둔갑하는가? 그리고 왜 L2와 수학적으로 같은가? 이게 7장에서 가장 자주 시험에 나오는 주제 중 하나이고, 그 답이 의외로 깊고 우아하다.</p>
+
+      <h2>1. 직관 — 학습 단계별로 무엇이 학습되는가</h2>
+
+      <p>먼저 직관부터 잡자. 신경망 학습은 보통 다음 순서로 진행된다.</p>
+
+      <ul>
+        <li><strong>초기(epoch 0-5)</strong>: 가중치가 작은 값(예: 가우시안 초기화의 0 근처)에서 시작하여, 데이터의 큰 구조를 빠르게 잡는다. 검증 손실 빠르게 감소.</li>
+        <li><strong>중기(epoch 5-20)</strong>: 데이터의 미세한 패턴을 학습. 가중치 점점 커짐. 검증 손실 천천히 감소, 최저점 도달.</li>
+        <li><strong>후기(epoch 20+)</strong>: 훈련셋의 우연한 잡음을 외우기 시작. 가중치 폭주. <strong>검증 손실 다시 증가</strong> — 과적합.</li>
+      </ul>
+
+      <p>조기 종료는 중기의 최저점에서 멈추는 것이다. 가중치가 너무 커지기 전에 멈추므로, 결과는 작은 가중치를 가진 모형이다. 그런데 "작은 가중치를 갖게 한다"는 게 바로 L2의 핵심 아니던가? 조기 종료와 L2의 등가성은 이미 직관 수준에서 보이기 시작한다. 이제 수학으로 정확하게 보자.</p>
+
+      <h2>2. 설정 — 2차 근사 + Vanilla GD</h2>
+
+      <p>분석을 위해 두 가지 단순화를 도입한다. 첫째, 손실 $J(\theta)$를 정칙화 안 한 최적해 $\theta^*$ 근처에서 <strong>2차 테일러 근사</strong>한다.</p>
+
+      <div class="math-block">$$ J(\theta) \;\approx\; J(\theta^*) \;+\; \frac{1}{2}(\theta - \theta^*)^\top H\,(\theta - \theta^*) $$</div>
+      <p class="math-note">H는 $\theta^*$에서의 헤시안. 1차 항은 $\nabla J(\theta^*) = 0$이므로 사라짐.</p>
+
+      <p>둘째, 학습은 학습률 $\varepsilon$의 <strong>표준 경사하강법</strong>(vanilla GD)으로 한다.</p>
+
+      <div class="math-block">$$ \theta_{t+1} \;=\; \theta_t \;-\; \varepsilon\,\nabla J(\theta_t) \;=\; \theta_t \;-\; \varepsilon\,H(\theta_t - \theta^*) $$</div>
+
+      <p>초기값을 $\theta_0 = 0$으로 두자(흔한 초기화 가정). 그러면 다음과 같은 점화식이 된다.</p>
+
+      <div class="deriv">
+        <span class="lbl">유도 1 · GD 한 스텝의 닫힌 형식</span>
+        <div class="math-block">$$ \theta_{t+1} \;=\; \theta_t \;-\; \varepsilon H\theta_t \;+\; \varepsilon H\theta^* \;=\; (I - \varepsilon H)\theta_t \;+\; \varepsilon H\theta^* $$</div>
+        <p class="why">이 점화식의 일반해는 $\theta_\tau = \bigl(I - (I - \varepsilon H)^\tau\bigr)\theta^*$. 즉 $\tau$번 스텝 후의 가중치는 $\theta^*$에서 $(I - \varepsilon H)^\tau$만큼 깎인 값.</p>
+      </div>
+
+      <h2>3. 핵심 유도 — 고유값 분해와 비율 매칭</h2>
+
+      <p>이제 헤시안 $H$를 고유값 분해한다. $H = Q\Lambda Q^\top$, $\Lambda = \mathrm{diag}(\lambda_1, \dots, \lambda_n)$. 회전된 좌표계 $u = Q^\top \theta$, $u^* = Q^\top \theta^*$로 표현하면 각 성분이 분리된다.</p>
+
+      <div class="deriv">
+        <span class="lbl">유도 2 · 각 고유 방향의 성장 비율</span>
+        <div class="math-block">$$ u_{\tau,i} \;=\; \bigl(1 - (1 - \varepsilon\lambda_i)^\tau\bigr)\, u^*_i $$</div>
+        <p class="why">즉 $i$번째 고유 방향에서, $\tau$번 학습 후의 가중치는 정칙화 없는 해의 $1 - (1 - \varepsilon\lambda_i)^\tau$ 비율만큼 진행한 값. $\tau \to \infty$일 때 이 비율은 1(완전 학습), $\tau = 0$일 때 비율은 0(아예 학습 안 함).</p>
+      </div>
+
+      <p>한편 4sub에서 본 L2 정칙화의 해는 다음과 같았다.</p>
+
+      <div class="math-block">$$ u_i^{(L2)} \;=\; \frac{\lambda_i}{\lambda_i + \alpha}\, u^*_i $$</div>
+
+      <p>이제 두 식을 같다고 놓고 $\alpha$를 풀어 보자.</p>
+
+      <div class="deriv">
+        <span class="lbl">유도 3 · 동치 조건 α = 1/(ετ)</span>
+        <div class="math-block">$$ 1 - (1 - \varepsilon\lambda_i)^\tau \;=\; \frac{\lambda_i}{\lambda_i + \alpha} $$</div>
+        <p class="why">$\varepsilon\lambda_i$가 작을 때 $(1 - \varepsilon\lambda_i)^\tau \approx e^{-\varepsilon\lambda_i\tau}$로 근사. 또 $e^{-x} \approx 1/(1+x)$를 작은 $x$에서 쓰면</p>
+        <div class="math-block">$$ 1 - e^{-\varepsilon\lambda_i\tau} \;\approx\; \frac{\varepsilon\lambda_i\tau}{1 + \varepsilon\lambda_i\tau} \;=\; \frac{\lambda_i}{\lambda_i + 1/(\varepsilon\tau)} $$</div>
+        <p class="why">우변과 L2의 비율 $\lambda_i/(\lambda_i + \alpha)$를 비교하면 정확히 <strong>α = 1/(ετ)</strong>. 학습률 $\varepsilon$과 반복 횟수 $\tau$의 곱의 역수가 정확히 L2의 정칙화 강도다.</p>
+      </div>
+
+      <p>이 한 줄 — $\alpha = 1/(\varepsilon\tau)$ — 이 시험에서 나올 가능성이 가장 높은 식이다. 그 의미는 매우 명확하다.</p>
+
+      <ul>
+        <li>학습을 일찍 멈춘다(작은 $\tau$) → $\alpha$ 크다 → 정칙화가 강하다 → 가중치 작다.</li>
+        <li>학습을 오래 한다(큰 $\tau$) → $\alpha$ 작다 → 정칙화가 약하다 → 가중치 크다.</li>
+        <li>학습률을 키운다(큰 $\varepsilon$) → $\alpha$ 작다 → 정칙화 약하다(같은 $\tau$라면 더 많이 학습됨).</li>
+      </ul>
+
+      <div class="analogy">
+        <b>장거리 달리기 선수에게 "1시간 동안만 뛰어라"</b>고 시간 제한을 두는 것과 "체력의 1/k만 쓰라"고 강도 제한을 두는 것은 같은 거리 제한을 만들 수 있다. 시간 제한(τ)이 강도 제한(α)과 정량적으로 환산 가능하다는 게 위 유도의 의미다. 둘 다 결국 "선수가 이동한 총 거리"(가중치 크기)를 제한한다.
+      </div>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 11</span><span>조기 종료 시각화 — 검증 손실 + 가중치 노름</span></div>
+        <div id="es"></div>
+      </div>
+      <p class="widget-cap">시간에 따라 변하는 훈련 손실(파랑), 검증 손실(빨강), 가중치 L2 노름(노랑)을 동시에 본다. 슬라이더로 학습률 ε과 멈춤 시점 τ를 조정. 빨간 곡선의 최저점이 최적 조기 종료 시점. 가중치 노름이 시간에 따라 단조 증가하는 모양에서 "시간 제한이 곧 가중치 크기 제한"이 확인된다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>4. 실전 — 어떻게 멈춤 시점을 정하는가</h2>
+
+      <p>수학적 동치성은 우아하지만 실전에서는 더 간단한 절차로 구현된다.</p>
+
+      <ol>
+        <li><strong>인내(patience) 정하기</strong>: 검증 손실이 개선되지 않는 epoch 수의 한계 (예: 10).</li>
+        <li><strong>최고 모형 저장</strong>: 학습 중 검증 손실이 가장 작았던 시점의 가중치를 별도로 저장.</li>
+        <li><strong>인내 초과 시 중단</strong>: 검증 손실이 10 epoch 연속 개선되지 않으면 학습 중단.</li>
+        <li><strong>저장된 최고 가중치 복원</strong>: 마지막 가중치가 아니라, 검증 손실이 가장 좋았던 시점의 가중치를 최종 모형으로 사용.</li>
+      </ol>
+
+      <p>이 절차의 장점은 분명하다. (1) <strong>하이퍼파라미터가 사실상 없다</strong> — 인내 값 하나만 정하면 된다(보통 10에서 20). L2의 $\alpha$를 찾기 위해 여러 값으로 학습할 필요 없이, 한 번의 학습으로 자동으로 최적 정칙화 강도가 결정된다. (2) <strong>계산 비용이 0이다</strong> — 검증 손실 계산은 이미 매 epoch 하고 있으므로 추가 비용 없음.</p>
+
+      <h2>5. 한 줄에서의 미묘한 차이</h2>
+
+      <p>조기 종료와 L2는 수학적으로 거의 같지만 정확히 같은 것은 아니다. 동치성이 성립하는 조건을 정리하자.</p>
+
+      <ul>
+        <li><strong>2차 근사 영역</strong>: $\theta$가 $\theta^*$에서 너무 멀지 않을 때만 2차 근사가 정확하다. 매우 비선형적인 손실 표면에서는 차이가 생긴다.</li>
+        <li><strong>표준 GD 가정</strong>: Adam, RMSprop 같은 어댑티브 옵티마이저에서는 위 유도가 그대로 성립하지 않는다. 어댑티브 학습률이 방향별로 다르게 작용하기 때문.</li>
+        <li><strong>$\theta_0 = 0$ 가정</strong>: 다른 초기값에서는 유도가 약간 달라진다.</li>
+      </ul>
+
+      <p>그래도 실전에서는 두 방법이 거의 같은 효과를 내며, 자주 함께 쓰인다 — L2 + 조기 종료를 동시에 적용하는 게 표준이다.</p>
+
+      <h2>6. 다른 시점에서 본 조기 종료</h2>
+
+      <p>마지막으로 다른 시점에서도 조기 종료의 의미를 짚어 두자.</p>
+
+      <p><strong>최적화 시점</strong>: 조기 종료는 학습 알고리즘 자체에 제약을 거는 정칙화다. 모형 구조도, 손실도 건드리지 않고 "이만큼만 학습하라"는 단 한 줄의 제약.</p>
+
+      <p><strong>통계 시점</strong>: 조기 종료는 <em>편향-분산 교환의 자동 튜닝기</em>다. 학습 초기에는 편향이 크고 분산이 작다(과소적합). 후기로 갈수록 편향이 줄고 분산이 커진다(과적합). 검증 손실의 최저점이 바로 편향+분산 합이 최소인 지점이고, 그 지점에서 멈추는 것이 조기 종료다.</p>
+
+      <p><strong>최적화 궤적 시점</strong>: 가중치 공간에서 보면, 조기 종료는 "$\theta_0 = 0$에서 출발한 궤적이 어느 지점에 도달하는가"를 제한한다. L2도 결국 같은 일을 한다(0 쪽으로 끌어당기는 페널티). 두 방법이 같은 시점에서 만난다.</p>
+
+      <h2>한 줄 정리</h2>
+
+      <p>조기 종료의 본질은 <strong>$\alpha = 1/(\varepsilon\tau)$의 L2와 동치인 시간 정칙화</strong>다. 학습 반복 횟수를 제한하는 것이 가중치 크기를 제한하는 것과 같은 수학적 효과를 낸다. 한 식 시점에서는 페널티 항이 안 보이지만, 2차 근사 하에서 정확히 L2와 같은 비율의 가중치 축소를 만든다. 시험에서 "왜 조기 종료가 정칙화인가"를 묻는다면 위 유도 — $1 - (1 - \varepsilon\lambda_i)^\tau \approx \lambda_i/(\lambda_i + 1/(\varepsilon\tau))$ — 를 보이면 된다.</p>
+
+      <p>다음 sub에서는 7장의 가장 유명한 정칙화 — 드롭아웃을 본다. 무작위 마스킹과 추론 시 스케일링의 직관, 그리고 그것이 왜 가중치 노이즈의 한 형태로 해석되는지를 본다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script src="widgets.js"></script>
+<script>
+window.addEventListener('load', () => {
+  CH7.buildNav('11');
+  if (window.renderMathInElement) {
+    renderMathInElement(document.body, {
+      delimiters: [
+        { left: '$$', right: '$$', display: true },
+        { left: '$', right: '$', display: false },
+      ],
+      throwOnError: false,
+    });
+  }
+  CH7.onVisible(document.getElementById('es'), () => CH7.earlystop(document.getElementById('es')));
+});
+</script>
+</body>
+</html>

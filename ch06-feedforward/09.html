@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sub 09 · 출력층 2 — 이진: sigmoid + BCE · Ch.06</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 09 · 출력층-비용 짝짓기의 두 번째</span>
+      <h1>출력층 2 — 이진:<br><span class="t-structure">sigmoid</span> + <span class="t-style">BCE</span></h1>
+      <p class="lede">출력이 0 또는 1뿐인 이진 분류에서는 sigmoid + binary cross-entropy(BCE)가 정해진 짝이다. 이 짝은 베르누이(Bernoulli) 분포의 최대우도에서 자동으로 유도된다. 그리고 시그모이드와 BCE를 함께 쓰면 미분이 깔끔하게 떨어지는 수학적 이유가 있다.</p>
+    </header>
+
+    <div class="prose">
+      <p>이진 분류(binary classification)는 출력이 0 또는 1인 문제다. "이 이메일이 스팸인가 아닌가", "이 종양이 악성인가 양성인가", "이 사람이 5년 안에 대출을 갚을까 아닐까" 같은 문제들이다. 이 문제에서 출력층의 표준 설계는 다음과 같다.</p>
+
+      <h2>출력층 설계 — sigmoid 활성화</h2>
+      <p>은닉층의 마지막 활성 $\mathbf{h}$에서 출발해, 활성 전 값(logit) $z$를 만들고, 거기에 sigmoid를 씌운다.</p>
+      <div class="math-block">$$ z = \mathbf{w}^\top \mathbf{h} + b, \quad \hat{y} = \sigma(z) = \frac{1}{1 + e^{-z}} $$</div>
+      <p class="math-note">z는 임의의 실수, σ(z)는 (0, 1) 사이의 확률값. "이 입력이 양성(positive)일 확률"로 해석.</p>
+
+      <p>여기서 $\hat{y}$를 모델의 예측 확률, $1 - \hat{y}$를 음성(negative)일 확률로 본다. 이 해석이 자연스러운 이유는 sigmoid의 출력이 정확히 0과 1 사이의 값이기 때문이다. 그리고 두 확률의 합이 1이다.</p>
+
+      <h2>왜 비용 함수가 BCE인가 — 베르누이 분포의 최대우도</h2>
+      <p>회귀에서 가우시안 가정 → MSE가 떨어졌듯이, 이진 분류에서는 베르누이 가정에서 BCE가 떨어진다. 베르누이 분포는 동전 던지기의 분포다. 확률 $p$로 1(앞면), 확률 $1-p$로 0(뒷면)이 나온다. 한 번의 결과 $y \in \{0, 1\}$의 확률은 다음과 같이 한 줄로 적을 수 있다.</p>
+      <div class="math-block">$$ p(y \mid \mathbf{x}) = \hat{y}^y \, (1 - \hat{y})^{1-y} $$</div>
+      <p class="math-note">y=1이면 ŷ, y=0이면 1-ŷ. 한 식에 두 경우를 모두 담는 트릭.</p>
+
+      <p>이제 최대우도추정을 수행한다. 훈련 데이터 $\{(\mathbf{x}_i, y_i)\}_{i=1}^N$의 우도는 모든 샘플의 곱.</p>
+      <div class="math-block">$$ L(\theta) = \prod_{i=1}^{N} \hat{y}_i^{y_i} (1 - \hat{y}_i)^{1 - y_i} $$</div>
+      <p class="math-note">곱이 매우 작아져 수치적으로 다루기 어려우니, log를 씌운다.</p>
+
+      <p>로그를 씌우면 곱이 합이 되고, 지수가 계수가 된다.</p>
+      <div class="math-block">$$ \log L(\theta) = \sum_{i=1}^{N} \left[ y_i \log \hat{y}_i + (1 - y_i) \log(1 - \hat{y}_i) \right] $$</div>
+      <p class="math-note">로그우도. 이걸 최대화하는 일이 최대우도.</p>
+
+      <p>최대화를 최소화로 바꾸려면 부호를 반대로 한다. 그리고 평균을 내면 우리가 BCE라고 부르는 형태가 된다.</p>
+      <div class="math-block">$$ L_{\text{BCE}} = -\frac{1}{N} \sum_{i=1}^{N} \left[ y_i \log \hat{y}_i + (1 - y_i) \log(1 - \hat{y}_i) \right] $$</div>
+      <p class="math-note">"binary cross-entropy" 또는 "log loss". 베르누이의 음의 로그우도.</p>
+
+      <p>한 샘플에 대해 식을 풀어 보면 직관이 더 분명해진다. 정답 $y=1$인 경우 비용은 $-\log \hat{y}$가 된다. 모델이 $\hat{y}=1$로 잘 맞히면 비용은 0, $\hat{y}=0$로 완전히 틀리면 비용은 $+\infty$. 정답 $y=0$인 경우 비용은 $-\log(1-\hat{y})$가 되고, 같은 식으로 작동한다.</p>
+
+      <div class="analogy">
+        <b>도박꾼의 손실로 비유해 보자.</b> 도박꾼이 매 게임에 자기가 이길 확률 $\hat{y}$를 선언하고, 실제 결과가 나오면 그 선언에 따라 점수가 매겨진다고 해 보자. "내가 이길 확률 99%"라고 선언했는데 실제로 졌다면, 손실이 매우 크다($-\log 0.01 = \log 100 \approx 4.6$). "내가 이길 확률 50%"라고 선언하고 실제로 졌어도 손실은 $-\log 0.5 \approx 0.69$로 작다. 즉 도박꾼이 자기 확신과 실제 결과의 어긋남에 비례해서 손실을 받는다. BCE가 정확히 이 점수 체계다. 그래서 모델이 자기 예측에 자신 있게 틀린 경우(confident wrong)에 가장 큰 벌점을 받는다.
+      </div>
+
+      <h2>sigmoid + BCE가 같이 쓰이는 수학적 이유 — 미분의 깔끔함</h2>
+      <p>왜 굳이 sigmoid와 BCE를 함께 쓰는가? 한 가지 답은 위에서 본 베르누이 최대우도다. 하지만 더 실용적인 답이 하나 더 있다. <strong>이 둘을 함께 쓰면 역전파의 미분이 매우 깔끔하게 떨어진다</strong>는 점이다.</p>
+
+      <p>한 샘플의 BCE를 sigmoid를 씌운 형태로 다시 쓰면 다음과 같다.</p>
+      <div class="math-block">$$ L = -y \log \sigma(z) - (1 - y) \log(1 - \sigma(z)) $$</div>
+      <p class="math-note">z는 sigmoid에 들어가기 전의 logit.</p>
+
+      <p>이걸 $z$에 대해 미분해 보자. $\sigma'(z) = \sigma(z)(1 - \sigma(z))$ 공식을 사용한다.</p>
+      <div class="math-block">$$ \frac{\partial L}{\partial z} = \sigma(z) - y = \hat{y} - y $$</div>
+      <p class="math-note">놀랍게 단순한 결과. 예측 - 정답.</p>
+
+      <p>이 식의 단순함을 음미해 보자. 활성 전 값 $z$에 대한 미분이 그저 <strong>"예측 확률 - 정답"</strong>이다. 활성화 함수의 미분과 비용 함수의 미분이 합쳐지면서, 복잡한 시그모이드 미분 항이 거짓말처럼 사라진다. 이것은 우연이 아니라 sigmoid + BCE 짝짓기의 수학적 핵심이다.</p>
+
+      <p>이 단순함은 두 가지 면에서 좋다. 첫째, <strong>계산이 빠르다</strong>. 매 backward pass마다 sigmoid 미분을 다시 계산할 필요 없이, 이미 계산한 $\hat{y}$에서 $y$를 빼면 끝이다. 둘째, <strong>학습 신호가 시그모이드 포화 영역에서도 죽지 않는다</strong>. 시그모이드만으로 미분하면 포화 영역에서 $\sigma'(z) \to 0$이라 신호가 사라지는데, BCE와 결합하면 그 항이 상쇄되어 사라진다. 그래서 "이미 자신 있게 틀린" 예측도 강한 수정 신호를 받는다.</p>
+
+      <h2>sigmoid + MSE는 왜 나쁜가 — 잘못된 짝의 함정</h2>
+      <p>이 점을 더 분명히 하기 위해, "잘못된 짝"을 한 번 시도해 보자. 만약 누군가 sigmoid 출력에 MSE를 적용하면 어떤 일이 일어나는가? 비용 함수는 $L = \frac{1}{2}(\sigma(z) - y)^2$이 된다. $z$에 대한 미분은 다음과 같다.</p>
+      <div class="math-block">$$ \frac{\partial L}{\partial z} = (\sigma(z) - y) \cdot \sigma(z)(1 - \sigma(z)) $$</div>
+      <p class="math-note">예측 오차에 sigmoid 미분이 곱해진다.</p>
+
+      <p>문제는 sigmoid의 미분이 포화 영역에서 사실상 0이라는 점이다. 모델이 $z$를 매우 크게 또는 매우 작게 만들어 자신 있게 틀린 예측을 한 경우($\hat{y} \approx 1$인데 $y = 0$ 같은 경우), $\sigma'(z) \approx 0$이 되어 미분 전체가 거의 0이 된다. <strong>"자신 있게 틀린" 상태에서 학습이 멈춘다.</strong> 이것이 sigmoid + MSE의 비극이고, BCE를 써야 하는 실용적인 이유다.</p>
+
+      <h2>다중 라벨(multi-label) 분류 — sigmoid를 여러 개 쓰기</h2>
+      <p>이진 분류의 자연스러운 확장이 하나 있다. 출력이 여러 개의 독립적인 이진 라벨인 경우다. 예를 들어 한 이미지에 "고양이가 있는가?", "사람이 있는가?", "차가 있는가?" 세 가지를 동시에 묻는 다중 라벨(multi-label) 분류. 이 경우 출력 뉴런을 라벨 수만큼 두고, 각각에 sigmoid를 적용한 뒤 각각 BCE를 합한다.</p>
+
+      <div class="math-block">$$ L = -\frac{1}{N} \sum_{i=1}^{N} \sum_{k=1}^{K} \left[ y_{ik} \log \hat{y}_{ik} + (1 - y_{ik}) \log(1 - \hat{y}_{ik}) \right] $$</div>
+      <p class="math-note">K개의 독립적인 이진 분류를 동시에 수행. softmax와 달리 라벨끼리 경쟁하지 않음.</p>
+
+      <p>이 경우 다음 절의 softmax + CE와 혼동하지 말아야 한다. softmax는 K개의 클래스가 서로 배타적이라고 가정하지만, 다중 라벨 BCE는 K개가 독립적으로 켜졌다 꺼졌다 할 수 있다고 가정한다. 한 이미지에 고양이도 있고 사람도 있을 수 있다.</p>
+
+      <h2>아래 위젯에서 직접 비교 — 회귀·이진·다중의 손실 곡선</h2>
+      <p>위 위젯에서 회귀/이진/다중 세 가지 짝을 토글로 바꾸며 손실 곡선과 기울기 곡선을 직접 본다. 특히 이진 모드에서 z(logit)를 양 끝으로 보내 보라. "자신 있게 틀린" 영역에서도 BCE의 기울기가 살아 있는 것이 보인다. MSE+sigmoid를 가상으로 적용하면 같은 영역에서 기울기가 거의 0이 된다는 것을 머릿속에 그려 보자.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 09</span><span>출력층-비용 짝짓기 — 세 가지 짝의 손실 곡선</span></div>
+        <div id="outs"></div>
+      </div>
+      <p class="widget-cap">카드 토글로 회귀(선형+MSE) / 이진(sigmoid+BCE) / 다중(softmax+CE) 전환. 각 짝의 손실 곡선과 기울기. 같은 "MLE 유도" 원리가 세 경우 모두에서 작동한다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>지금 잡아 둘 그림</h2>
+      <ol>
+        <li><strong>이진 분류 출력층 = sigmoid 활성화.</strong> 출력을 (0, 1)의 확률로 해석.</li>
+        <li><strong>BCE = 베르누이 분포의 음의 로그우도.</strong> 임의의 점수가 아닌 확률 모형에서 유도.</li>
+        <li><strong>sigmoid + BCE 미분 = ŷ - y.</strong> 활성화 미분이 정확히 상쇄되어 깔끔한 신호.</li>
+        <li><strong>sigmoid + MSE는 함정.</strong> 자신 있게 틀린 상태에서 학습이 멈춘다. 이게 "짝을 함께 설계해야 한다"의 진짜 의미.</li>
+        <li><strong>다중 라벨은 sigmoid를 여러 개.</strong> 라벨이 독립적일 때.</li>
+      </ol>
+      <p>다음 절은 출력층 짝짓기의 마지막 — softmax + cross-entropy다. K개의 배타적 클래스 중 하나를 고르는 다중 분류(multi-class classification). 그리고 거기서 미분이 어떻게 q-p 형태로 떨어지는지를 본다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script src="widgets.js"></script>
+<script>
+  window.addEventListener('load', () => {
+    CH6.buildNav('09');
+    const o = document.getElementById('outs');
+    CH6.onVisible(o, () => CH6.outputs(o));
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>13 · 인코더-디코더 — seq2seq의 등장</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .ed-stage { padding: 1.4rem 1.2rem 1rem; }
+  .ed-stage svg { width: 100%; height: auto; max-height: 380px; background: #fff; border: 1px solid var(--line); border-radius: 10px; display: block; }
+  .ed-ctl { display: flex; flex-wrap: wrap; gap: 1.1rem; padding: 1rem 1.2rem; border-top: 1px solid var(--line-soft); background: var(--paper); font-size: .87rem; }
+  .ed-ctl label { display: flex; flex-direction: column; gap: .25rem; min-width: 200px; flex: 1; }
+  .ed-ctl label span { color: var(--ink-soft); font-family: var(--mono); font-size: .78rem; }
+  .ed-ctl input[type=range] { width: 100%; accent-color: var(--structure); }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar">
+  <a class="home" href="index.html">← Ch.10 표지</a>
+  <span class="ch-mini">SUB 13 / 14</span>
+</div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol id="navlist"></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-chapter 13 · 두 시퀀스 사이의 다리</span>
+      <h1>입력과 출력의 길이가<br><span class="t-style">달라도</span> 잇는다</h1>
+      <p class="lede">RNN의 가장 강력한 응용 중 하나는 한 시퀀스를 다른 길이의 시퀀스로 변환하는 일이다. 영어 문장 "I love you"를 한국어 "나는 너를 사랑해"로 옮길 때, 입력은 3 단어, 출력은 4 단어다. 입력과 출력의 길이가 다르고, 단어 사이의 정렬도 1:1이 아니다. 2014년 Sutskever 등과 Cho 등이 동시에 제안한 <strong>인코더-디코더(Encoder-Decoder) 구조</strong>, 또는 <strong>sequence-to-sequence(seq2seq)</strong>는 이 문제를 정면으로 푼다. 그리고 그 한계가 곧장 다음 장(Attention)을 부른다.</p>
+    </header>
+
+    <div class="prose">
+      <h2>문제의 핵심 — 다른 길이의 두 시퀀스를 어떻게 잇나</h2>
+      <p>SUB 02에서 본 RNN의 출력 패턴 세 가지를 떠올려 보자 — many-to-one, many-to-many(정렬), many-to-many(다른 길이). 첫 두 패턴은 입력과 출력의 길이가 같거나 출력이 하나다. 셋째 패턴인 "다른 길이의 many-to-many"가 기계 번역, 음성→텍스트, 텍스트 요약 같은 시퀀스 변환의 본질이다.</p>
+
+      <p>이 문제의 어려움은 두 가지다. 첫째, <strong>출력 길이를 미리 알 수 없다</strong>. 입력 영어 문장의 단어 수가 5개라고 해서 한국어 번역이 정확히 5단어라는 보장이 없다. 짧을 수도 길 수도 있다. 둘째, <strong>입력과 출력의 정렬이 단순하지 않다</strong>. 영어의 "I love you"에서 'I'는 한국어 '나는'에, 'love'는 '사랑해'에 대응하지만 어순이 다르다("나는 너를 사랑해" — '너를'이 'you'에 해당하는데 위치가 중간). 일대일 대응이 안 된다.</p>
+
+      <p>해결의 핵심 통찰은 <strong>"읽기와 쓰기를 분리하자"</strong>다. 두 개의 RNN을 둔다. 첫 번째는 입력 시퀀스 전체를 읽어 그 의미를 하나의 벡터로 압축한다. 이 RNN을 인코더(encoder)라 부른다. 두 번째는 그 벡터를 시드(seed)로 받아, 출력 시퀀스를 한 토큰씩 생성한다. 이 RNN을 디코더(decoder)라 부른다. 두 RNN은 매개변수를 공유하지 않으며, 서로 다른 길이의 시퀀스를 처리한다.</p>
+
+      <h2>인코더 — 입력 시퀀스를 컨텍스트 벡터로 압축</h2>
+      <p>인코더는 일반적인 RNN(보통 LSTM이나 GRU, 양방향이면 더 좋음)이다. 입력 시퀀스 $x_1, \ldots, x_{T_x}$를 한 단어씩 읽으며 hidden state를 갱신한다.</p>
+
+      <div class="math-block">$$h_t^{(enc)} = f_{enc}\!\left(h_{t-1}^{(enc)}, x_t\right), \quad t = 1, \ldots, T_x$$</div>
+      <p class="math-note">입력 시퀀스의 길이는 T_x. 인코더의 hidden state는 매 시점 갱신된다.</p>
+
+      <p>입력을 다 읽은 후 마지막 hidden state $h_{T_x}^{(enc)}$가 입력 전체의 "요약"이 된다. 이를 <strong>컨텍스트 벡터(context vector)</strong> $c$라 부른다. 이 한 벡터에 입력 시퀀스의 모든 정보가 압축되어 담긴다.</p>
+
+      <div class="math-block">$$c = h_{T_x}^{(enc)}$$</div>
+      <p class="math-note">기본 seq2seq에서 컨텍스트는 인코더의 마지막 hidden state 하나. 양방향이면 마지막 정·역 state의 결합.</p>
+
+      <h2>디코더 — 컨텍스트로부터 출력 시퀀스 생성</h2>
+      <p>디코더는 컨텍스트 $c$를 초기 hidden state로 받아, 출력 시퀀스 $y_1, \ldots, y_{T_y}$를 한 토큰씩 생성한다.</p>
+
+      <div class="math-block">$$h_0^{(dec)} = c, \quad h_t^{(dec)} = f_{dec}\!\left(h_{t-1}^{(dec)}, y_{t-1}\right), \quad \hat y_t = g(h_t^{(dec)})$$</div>
+      <p class="math-note">디코더의 각 시점은 이전 hidden state와 이전 출력 토큰을 받아 새 hidden state를 만든다.</p>
+
+      <p>디코더의 입력은 자기 자신의 이전 출력이다. 첫 시점에는 시작 토큰(예: &lt;START&gt;)을 받아 첫 번째 출력 단어를 만들고, 그 단어를 다음 시점의 입력으로 넣어 두 번째 단어를 만들고, 종료 토큰(&lt;END&gt;)이 나올 때까지 이어 간다. 이 자기 회귀(autoregressive) 생성이 출력 길이를 미리 정하지 않고도 임의 길이의 시퀀스를 만들 수 있게 한다.</p>
+
+      <div class="analogy">
+        인코더-디코더는 <b>"두 명의 통역사가 메모지 한 장으로 정보를 전달하는 것"</b>과 같다. 첫 번째 통역사(인코더)는 영어 문장을 듣고 자기 노트에 핵심 요약을 적는다. 그 노트를 두 번째 통역사(디코더)에게 건넨다. 두 번째 통역사는 그 노트만 보고 한국어로 다시 쓴다. 첫 통역사는 원문을 직접 옮기지 않고 요약만 한다는 점, 두 번째 통역사는 원문을 보지 않고 요약만 본다는 점이 핵심이다. 두 사람 사이에 흐르는 정보는 노트(컨텍스트 벡터) 한 장뿐이다.
+      </div>
+
+      <h2>훈련 시간의 트릭 — teacher forcing</h2>
+      <p>디코더의 입력은 자기 자신의 이전 출력이다. 그러나 훈련 초기에는 디코더가 엉뚱한 토큰을 만들어 다음 입력이 이미 잘못된 토큰이 되고, 그 다음도 더 잘못되고, 시퀀스가 누적적으로 무너진다. 이를 막기 위해 훈련 중에는 디코더의 입력을 모델의 출력이 아닌 <strong>정답 토큰(ground truth)</strong>으로 강제한다. 이 트릭을 <strong>교사 강요(teacher forcing)</strong>라 부른다.</p>
+
+      <div class="math-block">$$h_t^{(dec)} = f_{dec}\!\left(h_{t-1}^{(dec)}, y_{t-1}^{\text{(true)}}\right) \quad \text{(훈련)}$$</div>
+      <p class="math-note">훈련 중에는 모델의 출력 대신 정답 토큰을 입력으로 사용. 추론 중에는 모델의 출력을 사용.</p>
+
+      <p>teacher forcing 덕분에 훈련은 매 시점이 독립적인 다중 분류 문제처럼 보이고, 모든 시점을 동시에 병렬로 계산할 수 있다. 매우 빠른 훈련이 가능해진다. 단점은 <strong>훈련 시와 추론 시의 분포 차이</strong>(exposure bias)다. 훈련 시에는 항상 정답 토큰이 입력으로 들어왔지만, 추론 시에는 모델의 잘못된 출력이 입력으로 들어온다. 이 차이가 누적되면 추론 품질이 떨어진다. 이를 완화하기 위한 scheduled sampling 같은 기법이 제안되었지만, 실용적으로는 teacher forcing이 표준으로 남아 있다.</p>
+
+      <h2>한 컨텍스트 벡터의 한계 — 정보 병목</h2>
+      <p>이 단순한 구조가 가지는 결정적인 한계가 곧장 보인다. 입력 시퀀스가 아무리 길어도 컨텍스트는 <strong>고정 크기 벡터 하나</strong>다. 100 단어짜리 영어 문장도, 1000 단어짜리 단락도, 같은 크기 벡터에 압축되어야 한다. 인코더의 마지막 hidden state라는 한 점에 모든 정보가 들어가야 하는데, 그 한 점의 차원이 보통 512나 1024 정도다. 정보의 양이 많아지면 어느 시점부터 압축이 무너진다.</p>
+
+      <p>2014년 Cho 등이 보고한 첫 seq2seq 모델은 짧은 문장(20 단어 이하)에서는 잘 작동했지만, 30 단어가 넘어가면 번역 품질이 급격히 떨어졌다. 인코더의 마지막 hidden state가 시퀀스 앞부분의 정보를 잊어버리기 때문이다(LSTM이라도 100 단계는 잊기 시작한다). 이 현상이 <strong>고정 크기 컨텍스트 병목(fixed-size context bottleneck)</strong>이다.</p>
+
+      <h2>해결의 길 — 어텐션의 등장</h2>
+      <p>2015년 Bahdanau 등은 이 병목을 푸는 결정적인 해법을 제안했다 — <strong>"디코더가 매 시점마다 인코더의 모든 hidden state를 직접 참조하도록 하자"</strong>. 컨텍스트 벡터 하나만 보는 대신, 디코더가 출력 단어를 만들 때마다 인코더의 모든 시점 $h_1^{(enc)}, \ldots, h_{T_x}^{(enc)}$ 중 "지금 이 출력에 가장 중요한 시점"을 동적으로 골라 가중 평균(weighted average)을 만든다. 이 가중치를 <strong>어텐션(attention)</strong>이라 부른다.</p>
+
+      <p>어텐션이 등장하면서 정보가 한 점에 압축되어야 한다는 제약이 사라졌다. 디코더는 매 시점 인코더 전체를 다시 훑어보며 필요한 정보를 골라 쓴다. 인코더의 길이가 1000이든 10000이든 압축 없이 그대로 참조할 수 있다. 이 한 단계의 변화가 기계 번역의 품질을 폭발적으로 올렸고, 2017년에는 어텐션 메커니즘만으로 RNN을 완전히 대체한 <strong>Transformer</strong>로 이어졌다. 그 흐름은 다음 챕터(P3 Transformer 해설)에서 본격적으로 다룬다.</p>
+
+      <p>아래 위젯은 같은 입력에 컨텍스트 병목이 어떻게 작동하는지를 보여 준다. 입력 시퀀스 길이를 늘리면 인코더 마지막 hidden state의 정보 보존율이 떨어지는 모습을 직접 볼 수 있다. 어텐션은 이 곡선을 평평하게 만든다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 13</span><span>인코더-디코더 정보 흐름 — 컨텍스트 병목과 어텐션의 차이</span></div>
+        <div class="ed-stage">
+          <svg id="edSvg" viewBox="0 0 720 380" preserveAspectRatio="xMidYMid meet"></svg>
+        </div>
+        <div class="ed-ctl">
+          <label><span>입력 길이 T_x <b id="lblTx">8</b></span><input type="range" id="ctlTx" min="3" max="15" step="1" value="8"></label>
+          <label><span>출력 길이 T_y <b id="lblTy">7</b></span><input type="range" id="ctlTy" min="3" max="15" step="1" value="7"></label>
+          <label><span>현재 디코더 위치 t <b id="lblDt">3</b></span><input type="range" id="ctlDt" min="0" max="14" step="1" value="3"></label>
+          <label><span>모드 <b id="lblMode">컨텍스트만 (기본 seq2seq)</b></span><input type="range" id="ctlMode" min="0" max="1" step="1" value="0"></label>
+        </div>
+      </div>
+      <p class="widget-cap">모드 0 — 기본 seq2seq: 인코더 마지막 hidden state(굵은 파란 화살표)만 디코더로 흐름. 한 점에 모든 정보가 압축. 모드 1 — 어텐션: 디코더의 현재 위치 t가 인코더의 모든 시점에 화살표를 보내, 각 시점에서 가중치(시각화의 두께)에 따라 정보를 가져옴. 입력이 길수록 컨텍스트 병목의 손실이 커진다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>핵심 정리</h2>
+      <ul class="checklist">
+        <li>인코더-디코더(seq2seq)는 다른 길이의 두 시퀀스를 잇는 표준 구조. 기계 번역, 음성 인식, 요약 등에 표준.</li>
+        <li>인코더: 입력 전체를 읽어 컨텍스트 벡터 $c = h_{T_x}^{(enc)}$로 압축.</li>
+        <li>디코더: $c$를 초기 hidden state로 받아, $y_{t-1}$을 입력으로 받으며 한 토큰씩 자기회귀 생성.</li>
+        <li>훈련 시 teacher forcing: 디코더 입력으로 모델 출력 대신 정답 토큰. 빠른 훈련, exposure bias 단점.</li>
+        <li>한계: 고정 크기 컨텍스트 벡터에 모든 정보 압축. 30 단어가 넘으면 품질 급락.</li>
+        <li>해결: 어텐션(2015 Bahdanau). 디코더가 매 시점 인코더 전체를 참조해 가중합 컨텍스트 생성.</li>
+        <li>어텐션의 일반화가 Transformer(2017). RNN을 완전히 대체하는 새 아키텍처.</li>
+      </ul>
+    </div>
+
+    <nav class="ch-foot" id="chfoot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    ['01','왜 시퀀스에 FC·CNN은 부족한가'],['02','RNN의 기본 아이디어'],['03','시간 펼치기'],
+    ['04','매개변수 공유'],['05','BPTT 1 — 직관'],['06','BPTT 2 — 손계산'],
+    ['07','기울기 폭발과 소실'],['08','기울기 클리핑'],['09','LSTM 1 — 세 게이트'],
+    ['10','LSTM 2 — cell state'],['11','GRU'],['12','양방향 RNN'],
+    ['13','인코더-디코더'],['14','시험 대비'],
+  ];
+  const CUR = '13';
+  const ol = document.getElementById('navlist');
+  SUBS.forEach(([n,t]) => {
+    const li = document.createElement('li');
+    li.innerHTML = `<a href="${n}.html"${n===CUR?' class="current"':''}>${t}</a>`;
+    ol.appendChild(li);
+  });
+  const i = SUBS.findIndex(s=>s[0]===CUR);
+  const prev = i>0 ? SUBS[i-1] : ['','표지로'];
+  const next = i<SUBS.length-1 ? SUBS[i+1] : ['','표지로'];
+  document.getElementById('chfoot').innerHTML =
+    `<a href="${prev[0]?prev[0]+'.html':'index.html'}"><div class="dir">← 이전</div><div class="ti">${prev[1]}</div></a>` +
+    `<a href="${next[0]?next[0]+'.html':'index.html'}" class="next"><div class="dir">다음 →</div><div class="ti">${next[1]}</div></a>`;
+  const bar = document.querySelector('.scroll-progress');
+  document.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max>0 ? (h.scrollTop/max)*100 : 0) + '%';
+  }, { passive: true });
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) renderMathInElement(document.body, {
+      delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }],
+      throwOnError: false,
+    });
+  });
+
+  // ---------- 위젯: encoder-decoder + attention 시각화 ----------
+  const svg = document.getElementById('edSvg');
+  const ctlTx = document.getElementById('ctlTx');
+  const ctlTy = document.getElementById('ctlTy');
+  const ctlDt = document.getElementById('ctlDt');
+  const ctlMode = document.getElementById('ctlMode');
+  const lblTx = document.getElementById('lblTx');
+  const lblTy = document.getElementById('lblTy');
+  const lblDt = document.getElementById('lblDt');
+  const lblMode = document.getElementById('lblMode');
+
+  function drawED() {
+    const Tx = parseInt(ctlTx.value);
+    const Ty = parseInt(ctlTy.value);
+    const dt = Math.min(parseInt(ctlDt.value), Ty-1);
+    const mode = parseInt(ctlMode.value);
+    lblTx.textContent = Tx;
+    lblTy.textContent = Ty;
+    lblDt.textContent = dt;
+    lblMode.textContent = mode === 0 ? '컨텍스트만 (기본 seq2seq)' : '어텐션 (Bahdanau)';
+
+    const W = 720, H = 380;
+    const yEnc = 110;
+    const yDec = 270;
+    const xEnc0 = 60, xEncSpan = 600;
+    const xDec0 = 60, xDecSpan = 600;
+    const exp = (i, n, x0, span) => x0 + (n<=1 ? span/2 : (i/(n-1))*span);
+
+    let s = `<rect width="${W}" height="${H}" fill="#fff" />`;
+    // labels
+    s += `<text x="40" y="${yEnc+5}" fill="#2D5B7A" font-family="Spline Sans Mono, monospace" font-size="12" text-anchor="end">인코더</text>`;
+    s += `<text x="40" y="${yDec+5}" fill="#C0492E" font-family="Spline Sans Mono, monospace" font-size="12" text-anchor="end">디코더</text>`;
+
+    // encoder hidden chain
+    for (let i = 0; i < Tx; i++) {
+      const x = exp(i, Tx, xEnc0, xEncSpan);
+      s += `<rect x="${x-16}" y="${yEnc-16}" width="32" height="32" rx="6" fill="#2D5B7A" fill-opacity="0.15" stroke="#2D5B7A" />`;
+      s += `<text x="${x}" y="${yEnc+5}" fill="#2D5B7A" font-family="Spline Sans Mono, monospace" font-size="12" text-anchor="middle">h${i+1}</text>`;
+      // input
+      s += `<text x="${x}" y="${yEnc-26}" fill="#5A5247" font-family="Spline Sans Mono, monospace" font-size="11" text-anchor="middle">x${i+1}</text>`;
+      // arrow to next
+      if (i < Tx-1) {
+        const xn = exp(i+1, Tx, xEnc0, xEncSpan);
+        s += `<line x1="${x+16}" y1="${yEnc}" x2="${xn-16}" y2="${yEnc}" stroke="#2D5B7A" stroke-width="2" marker-end="url(#arrEnc)" />`;
+      }
+    }
+
+    // decoder hidden chain
+    for (let i = 0; i < Ty; i++) {
+      const x = exp(i, Ty, xDec0, xDecSpan);
+      const isCur = i === dt;
+      s += `<rect x="${x-16}" y="${yDec-16}" width="32" height="32" rx="6" fill="${isCur?'#C0492E':'#fff'}" fill-opacity="${isCur?0.35:0.1}" stroke="#C0492E" stroke-width="${isCur?2:1}" />`;
+      s += `<text x="${x}" y="${yDec+5}" fill="#C0492E" font-family="Spline Sans Mono, monospace" font-size="12" text-anchor="middle">s${i+1}</text>`;
+      s += `<text x="${x}" y="${yDec+34}" fill="#5A5247" font-family="Spline Sans Mono, monospace" font-size="11" text-anchor="middle">y${i+1}</text>`;
+      if (i < Ty-1) {
+        const xn = exp(i+1, Ty, xDec0, xDecSpan);
+        s += `<line x1="${x+16}" y1="${yDec}" x2="${xn-16}" y2="${yDec}" stroke="#C0492E" stroke-width="2" marker-end="url(#arrDec)" />`;
+      }
+    }
+
+    // markers
+    s += `<defs>
+      <marker id="arrEnc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#2D5B7A"/></marker>
+      <marker id="arrDec" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#C0492E"/></marker>
+      <marker id="arrCtx" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#A47B2E"/></marker>
+    </defs>`;
+
+    // context flow
+    if (mode === 0) {
+      // 한 점: encoder last hidden -> decoder
+      const xLast = exp(Tx-1, Tx, xEnc0, xEncSpan);
+      const xFirst = exp(0, Ty, xDec0, xDecSpan);
+      // arrow from h_Tx down to s_1
+      const midX = (xLast + xFirst) / 2;
+      s += `<path d="M ${xLast} ${yEnc+18} Q ${midX} ${(yEnc+yDec)/2} ${xFirst} ${yDec-18}" stroke="#A47B2E" stroke-width="4" fill="none" marker-end="url(#arrCtx)" />`;
+      s += `<text x="${midX}" y="${(yEnc+yDec)/2}" fill="#A47B2E" font-family="Spline Sans Mono, monospace" font-size="13" text-anchor="middle" font-weight="600">컨텍스트 c (한 벡터)</text>`;
+      s += `<text x="${midX}" y="${(yEnc+yDec)/2+18}" fill="#8E8576" font-family="Spline Sans Mono, monospace" font-size="11" text-anchor="middle">모든 입력 정보가 이 한 점에 압축</text>`;
+    } else {
+      // attention: from decoder dt to all encoder positions
+      const xCur = exp(dt, Ty, xDec0, xDecSpan);
+      // 가짜 attention weights: gaussian around dt scaled to Tx
+      const center = (dt / Math.max(1, Ty-1)) * (Tx-1);
+      const weights = [];
+      let sum = 0;
+      for (let i = 0; i < Tx; i++) {
+        const w = Math.exp(-Math.pow(i - center, 2) / (1.5*1.5));
+        weights.push(w); sum += w;
+      }
+      for (let i = 0; i < Tx; i++) weights[i] /= sum;
+      for (let i = 0; i < Tx; i++) {
+        const xE = exp(i, Tx, xEnc0, xEncSpan);
+        const thick = 0.5 + weights[i] * 8;
+        const op = 0.2 + weights[i] * 0.7;
+        s += `<line x1="${xE}" y1="${yEnc+18}" x2="${xCur}" y2="${yDec-18}" stroke="#A47B2E" stroke-width="${thick}" stroke-opacity="${op}" />`;
+        // weight label on the encoder side
+        s += `<text x="${xE}" y="${yEnc-42}" fill="#A47B2E" font-family="Spline Sans Mono, monospace" font-size="10" text-anchor="middle">${weights[i].toFixed(2)}</text>`;
+      }
+      s += `<text x="360" y="190" fill="#A47B2E" font-family="Spline Sans Mono, monospace" font-size="13" text-anchor="middle" font-weight="600">디코더 s${dt+1}이 인코더 모든 시점에 가중치로 접근</text>`;
+    }
+
+    // bottom legend
+    s += `<line x1="${xEnc0}" y1="350" x2="${xEnc0+50}" y2="350" stroke="#2D5B7A" stroke-width="3" />`;
+    s += `<text x="${xEnc0+60}" y="354" fill="#26221C" font-family="Spline Sans Mono, monospace" font-size="11">인코더 hidden chain</text>`;
+    s += `<line x1="${xEnc0+200}" y1="350" x2="${xEnc0+250}" y2="350" stroke="#C0492E" stroke-width="3" />`;
+    s += `<text x="${xEnc0+260}" y="354" fill="#26221C" font-family="Spline Sans Mono, monospace" font-size="11">디코더 chain (생성)</text>`;
+    s += `<line x1="${xEnc0+420}" y1="350" x2="${xEnc0+460}" y2="350" stroke="#A47B2E" stroke-width="4" />`;
+    s += `<text x="${xEnc0+470}" y="354" fill="#26221C" font-family="Spline Sans Mono, monospace" font-size="11">컨텍스트 정보 흐름</text>`;
+
+    svg.innerHTML = s;
+  }
+  [ctlTx, ctlTy, ctlDt, ctlMode].forEach(el => el.addEventListener('input', drawED));
+  drawED();
+</script>
+</body>
+</html>

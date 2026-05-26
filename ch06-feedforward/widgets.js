@@ -961,6 +961,314 @@
   };
 
   /* ============================================================
+     7. 손계산 step-by-step — 2-2-1 MLP의 한 epoch
+     아주 작은 망에서 순전파 한 번 + 역전파 한 번을 손으로 따라간다.
+     각 단계의 수식과 수치를 함께 보여 준다.
+     ============================================================ */
+  CH6.handCalc = function(root){
+    root.innerHTML = `
+      <div class="hc-stage">
+        <svg class="hc-graph" viewBox="0 0 540 280" xmlns="http://www.w3.org/2000/svg"></svg>
+        <div class="hc-panel">
+          <div class="hc-stat"></div>
+          <div class="hc-eq"></div>
+          <div class="hc-trace"></div>
+        </div>
+      </div>`;
+    const svg = root.querySelector('.hc-graph');
+    const stat = root.querySelector('.hc-stat');
+    const eq = root.querySelector('.hc-eq');
+    const trace = root.querySelector('.hc-trace');
+
+    // 고정 입력 (XOR 한 점)
+    const x1 = 1, x2 = 0, t = 1;
+    // 가중치 (학습용 작은 임의값)
+    const W1 = [[0.5, -0.4],[0.3, 0.8]]; // W1[j][k]: 은닉 j ← 입력 k
+    const b1 = [0.1, -0.2];
+    const W2 = [0.6, -0.7];               // W2[j]: 출력 ← 은닉 j
+    const b2 = 0.05;
+    const eta = 0.1;
+
+    // 계산 결과 누적
+    let step = 0;
+    const vals = {};
+    const grads = {};
+
+    function relu(z){ return Math.max(0, z); }
+    function dRelu(z){ return z > 0 ? 1 : 0; }
+    function sigmoid(z){ return 1/(1+Math.exp(-z)); }
+
+    function fmt(v, k){ return (typeof v === 'number') ? v.toFixed(k||3) : '–'; }
+
+    function drawGraph(){
+      // 노드: x1, x2 (왼쪽 두 개), h1, h2 (가운데), y (오른쪽), L (오른쪽 끝)
+      const positions = {
+        x1: [70, 80],  x2: [70, 200],
+        h1: [220, 80], h2: [220, 200],
+        y:  [380, 140],
+        L:  [490, 140],
+      };
+      // 엣지: 입력→은닉 (4) + 은닉→출력 (2) + y→L (1)
+      const edges = [
+        ['x1','h1','w11'], ['x2','h1','w12'], ['x1','h2','w21'], ['x2','h2','w22'],
+        ['h1','y','v1'], ['h2','y','v2'],
+        ['y','L',''],
+      ];
+      let s = '';
+      // 엣지
+      edges.forEach(([a,b,lab]) => {
+        const [ax,ay] = positions[a], [bx,by] = positions[b];
+        s += `<line x1="${ax+22}" y1="${ay}" x2="${bx-22}" y2="${by}" stroke="${C.line}" stroke-width="1.4"/>`;
+        if (lab){
+          const mx = (ax+bx)/2, my = (ay+by)/2 - 5;
+          s += `<text x="${mx}" y="${my}" text-anchor="middle" font-family="Spline Sans Mono" font-size="9" fill="${C.inkFaint}">${lab}</text>`;
+        }
+      });
+      // 노드
+      const nodeStyle = (id, label, v, g) => {
+        const [cx, cy] = positions[id];
+        const active = vals[id] !== undefined;
+        return `
+          <circle cx="${cx}" cy="${cy}" r="22" fill="${active ? C.paper2 : C.paper}" stroke="${active ? C.structure : C.line}" stroke-width="${active ? 1.8 : 1.2}"/>
+          <text x="${cx}" y="${cy+4}" text-anchor="middle" font-family="Fraunces, serif" font-size="13" fill="${C.ink}">${label}</text>
+          ${vals[id] !== undefined ? `<text x="${cx}" y="${cy+38}" text-anchor="middle" font-family="Spline Sans Mono" font-size="10" fill="${C.structure}">= ${fmt(vals[id])}</text>` : ''}
+          ${grads[id] !== undefined ? `<text x="${cx}" y="${cy-32}" text-anchor="middle" font-family="Spline Sans Mono" font-size="10" fill="${C.style}">δ = ${fmt(grads[id])}</text>` : ''}`;
+      };
+      s += nodeStyle('x1', 'x₁', x1);
+      s += nodeStyle('x2', 'x₂', x2);
+      s += nodeStyle('h1', 'h₁', vals.h1);
+      s += nodeStyle('h2', 'h₂', vals.h2);
+      s += nodeStyle('y', 'ŷ', vals.y);
+      s += nodeStyle('L', 'L', vals.L);
+      svg.innerHTML = s;
+    }
+
+    function log(html){
+      trace.innerHTML += `<div class="hc-row">${html}</div>`;
+      trace.scrollTop = trace.scrollHeight;
+    }
+
+    function reset(){
+      step = 0;
+      for (const k in vals) delete vals[k];
+      for (const k in grads) delete grads[k];
+      stat.innerHTML = `<b>준비</b> · 입력 (x₁, x₂) = (${x1}, ${x2}), 정답 t = ${t}`;
+      eq.innerHTML = '';
+      trace.innerHTML = '';
+      drawGraph();
+    }
+
+    function next(){
+      step++;
+      if (step === 1){
+        // 1) z1 = W1·x + b1 → h = ReLU(z1)
+        const z1 = W1[0][0]*x1 + W1[0][1]*x2 + b1[0];
+        const z2 = W1[1][0]*x1 + W1[1][1]*x2 + b1[1];
+        const h1 = relu(z1), h2 = relu(z2);
+        vals.h1 = h1; vals.h2 = h2;
+        stat.innerHTML = `<b>① 순전파 — 은닉층</b>`;
+        eq.innerHTML = `\\[ z_1 = 0.5·1 + (-0.4)·0 + 0.1 = ${z1.toFixed(2)},\\ \\ h_1 = ReLU(z_1) = ${h1.toFixed(2)} \\]
+                        \\[ z_2 = 0.3·1 + 0.8·0 + (-0.2) = ${z2.toFixed(2)},\\ \\ h_2 = ReLU(z_2) = ${h2.toFixed(2)} \\]`;
+        log(`<b style="color:${C.structure}">①</b> z₁=${z1.toFixed(3)}, h₁=${h1.toFixed(3)} / z₂=${z2.toFixed(3)}, h₂=${h2.toFixed(3)}`);
+      }
+      else if (step === 2){
+        // 2) 출력: u = W2·h + b2, ŷ = sigmoid(u)
+        const u = W2[0]*vals.h1 + W2[1]*vals.h2 + b2;
+        const yhat = sigmoid(u);
+        vals.y = yhat;
+        stat.innerHTML = `<b>② 순전파 — 출력층</b>`;
+        eq.innerHTML = `\\[ u = 0.6·${vals.h1.toFixed(2)} + (-0.7)·${vals.h2.toFixed(2)} + 0.05 = ${u.toFixed(3)} \\]
+                        \\[ \\hat y = \\sigma(u) = ${yhat.toFixed(3)} \\]`;
+        log(`<b style="color:${C.structure}">②</b> u=${u.toFixed(3)} → ŷ=${yhat.toFixed(3)}`);
+      }
+      else if (step === 3){
+        // 3) 손실 — BCE
+        const yhat = vals.y;
+        const L = -(t * Math.log(yhat + 1e-12) + (1-t)*Math.log(1 - yhat + 1e-12));
+        vals.L = L;
+        stat.innerHTML = `<b>③ 손실 — BCE</b>`;
+        eq.innerHTML = `\\[ L = -[t\\log\\hat y + (1-t)\\log(1-\\hat y)] = -\\log(${yhat.toFixed(3)}) = ${L.toFixed(3)} \\]`;
+        log(`<b style="color:${C.structure}">③</b> L = ${L.toFixed(3)}`);
+      }
+      else if (step === 4){
+        // 4) 역전파 시작 — 출력층 δ
+        // 표준: ∂L/∂u = ŷ - t (sigmoid+BCE의 깔끔한 형태)
+        const dL_du = vals.y - t;
+        grads.y = dL_du;
+        stat.innerHTML = `<b>④ 역전파 — 출력 단위 δ</b>`;
+        eq.innerHTML = `\\[ \\frac{\\partial L}{\\partial u} = \\hat y - t = ${vals.y.toFixed(3)} - ${t} = ${dL_du.toFixed(3)} \\]`;
+        log(`<b style="color:${C.style}">④</b> δ_u = ŷ - t = ${dL_du.toFixed(3)} <span class="hc-note">(softmax/sigmoid + CE의 깔끔한 형태)</span>`);
+      }
+      else if (step === 5){
+        // 5) 은닉층 δ
+        const du = grads.y;
+        // ∂L/∂h_j = du * W2[j]
+        // h_j = ReLU(z_j) → ∂L/∂z_j = ∂L/∂h_j * dReLU(z_j)
+        const dh1 = du * W2[0], dh2 = du * W2[1];
+        const z1 = W1[0][0]*x1 + W1[0][1]*x2 + b1[0];
+        const z2 = W1[1][0]*x1 + W1[1][1]*x2 + b1[1];
+        const dz1 = dh1 * dRelu(z1), dz2 = dh2 * dRelu(z2);
+        grads.h1 = dz1; grads.h2 = dz2;
+        stat.innerHTML = `<b>⑤ 역전파 — 은닉층 δ</b>`;
+        eq.innerHTML = `\\[ \\frac{\\partial L}{\\partial z_1} = \\frac{\\partial L}{\\partial u} · v_1 · ReLU'(z_1) = ${du.toFixed(3)}·0.6·${dRelu(z1)} = ${dz1.toFixed(3)} \\]
+                        \\[ \\frac{\\partial L}{\\partial z_2} = ${du.toFixed(3)}·(-0.7)·${dRelu(z2)} = ${dz2.toFixed(3)} \\]`;
+        log(`<b style="color:${C.style}">⑤</b> δ_z1=${dz1.toFixed(3)}, δ_z2=${dz2.toFixed(3)}`);
+      }
+      else if (step === 6){
+        // 6) 가중치 업데이트
+        const du = grads.y, dz1 = grads.h1, dz2 = grads.h2;
+        const dW2_0 = du * vals.h1, dW2_1 = du * vals.h2, db2_ = du;
+        const dW1_00 = dz1 * x1, dW1_01 = dz1 * x2, db1_0 = dz1;
+        const dW1_10 = dz2 * x1, dW1_11 = dz2 * x2, db1_1 = dz2;
+        const newW2_0 = W2[0] - eta*dW2_0, newW2_1 = W2[1] - eta*dW2_1;
+        stat.innerHTML = `<b>⑥ 파라미터 갱신</b> · η = ${eta}`;
+        eq.innerHTML = `\\[ \\Delta v_1 = -\\eta · \\delta_u · h_1 = ${(-eta*dW2_0).toFixed(4)} \\]
+                        \\[ v_1' = ${W2[0]} ${dW2_0 >= 0 ? '-' : '+'} ${Math.abs(eta*dW2_0).toFixed(4)} = ${newW2_0.toFixed(4)} \\]`;
+        log(`<b style="color:${C.synth}">⑥</b> v₁: ${W2[0]} → ${newW2_0.toFixed(4)}, v₂: ${W2[1]} → ${newW2_1.toFixed(4)}, 입력측 W₁도 모두 갱신`);
+        log(`<i style="color:${C.ink}">완료 — 1 epoch (1 sample) 끝. 손실은 다음 순전파에서 감소함이 정상.</i>`);
+      } else {
+        return;
+      }
+      // KaTeX 렌더
+      if (window.renderMathInElement) renderMathInElement(eq, {
+        delimiters: [{ left: '\\[', right: '\\]', display: true }, { left: '$', right: '$', display: false }],
+        throwOnError: false,
+      });
+      drawGraph();
+    }
+
+    const ctr = document.createElement('div'); ctr.className = 'widget-controls';
+    ctr.innerHTML = `
+      <button class="btn nxt">다음 단계 ▸</button>
+      <button class="btn ghost rst">초기화 ↻</button>
+      <span style="font-family:var(--mono);font-size:.74rem;color:var(--ink-faint)">고정 입력 — (1, 0) → 정답 1 · 가중치는 시연용</span>`;
+    root.appendChild(ctr);
+    ctr.querySelector('.nxt').addEventListener('click', next);
+    ctr.querySelector('.rst').addEventListener('click', reset);
+    reset();
+  };
+
+  /* ============================================================
+     8. 계산 그래프 — 노드 클릭으로 의존성과 미분 경로 강조
+     z = (x + y) * sin(x)  같은 작은 식을 그래프로 그리고
+     노드 클릭 시 그 노드의 부모/자식과 미분 경로를 보여 준다.
+     ============================================================ */
+  CH6.compGraph = function(root){
+    root.innerHTML = `
+      <div class="cg-stage">
+        <svg class="cg-graph" viewBox="0 0 560 280" xmlns="http://www.w3.org/2000/svg"></svg>
+        <div class="cg-panel">
+          <div class="cg-stat">노드 클릭 — 부모/자식 강조</div>
+          <div class="cg-eq"></div>
+        </div>
+      </div>`;
+    const svg = root.querySelector('.cg-graph');
+    const stat = root.querySelector('.cg-stat');
+    const eqEl = root.querySelector('.cg-eq');
+
+    // 식: z = (x + y) * sin(x)
+    // 노드: x, y, a=x+y, b=sin(x), z=a*b
+    const NODES = {
+      x: { pos: [60, 80],  label: 'x',      val: 1.5,   op: 'input',  parents: [] },
+      y: { pos: [60, 200], label: 'y',      val: 0.5,   op: 'input',  parents: [] },
+      a: { pos: [220, 140], label: 'a',     op: '+',    parents: ['x','y'], formula:'x + y' },
+      b: { pos: [220, 60],  label: 'b',     op: 'sin',  parents: ['x'],     formula:'sin(x)' },
+      z: { pos: [420, 100], label: 'z',     op: '×',    parents: ['a','b'], formula:'a · b' },
+    };
+    // 값 계산
+    NODES.a.val = NODES.x.val + NODES.y.val;
+    NODES.b.val = Math.sin(NODES.x.val);
+    NODES.z.val = NODES.a.val * NODES.b.val;
+    // 자식 자동 추가
+    Object.entries(NODES).forEach(([k, n]) => n.children = []);
+    Object.entries(NODES).forEach(([k, n]) => n.parents.forEach(p => NODES[p].children.push(k)));
+
+    let selected = 'z';
+
+    function ancestors(k){
+      const out = new Set();
+      const dfs = (id) => {
+        NODES[id].parents.forEach(p => { if (!out.has(p)){ out.add(p); dfs(p); }});
+      };
+      dfs(k); return out;
+    }
+    function descendants(k){
+      const out = new Set();
+      const dfs = (id) => {
+        NODES[id].children.forEach(c => { if (!out.has(c)){ out.add(c); dfs(c); }});
+      };
+      dfs(k); return out;
+    }
+
+    function draw(){
+      const anc = ancestors(selected);
+      const desc = descendants(selected);
+      let s = '';
+      // 엣지
+      Object.entries(NODES).forEach(([k, n]) => {
+        n.parents.forEach(p => {
+          const [px,py] = NODES[p].pos;
+          const [cx,cy] = n.pos;
+          const onPathBack = (k === selected) || desc.has(k);   // 역전파 경로 강조: 선택 노드 → 입력
+          const onPathFwd = (p === selected) || anc.has(p);     // 순전파 영향: 선택 노드 → 출력
+          const active = (selected === k && anc.has(p)) || (selected === p && desc.has(k)) || (anc.has(k) && anc.has(p)) || (desc.has(k) && desc.has(p));
+          s += `<line x1="${px+24}" y1="${py}" x2="${cx-24}" y2="${cy}" stroke="${active ? C.structure : C.line}" stroke-width="${active ? 2.4 : 1.2}"/>`;
+        });
+      });
+      // 노드
+      Object.entries(NODES).forEach(([k, n]) => {
+        const [cx, cy] = n.pos;
+        const isSel = k === selected;
+        const inAnc = anc.has(k), inDesc = desc.has(k);
+        let fill = C.paper;
+        if (isSel) fill = C.synth;
+        else if (inAnc) fill = C.structureLo;
+        else if (inDesc) fill = C.styleLo;
+        const stroke = isSel ? C.synth : (inAnc ? C.structure : (inDesc ? C.style : C.line));
+        s += `<circle cx="${cx}" cy="${cy}" r="24" fill="${fill}" stroke="${stroke}" stroke-width="${isSel ? 3 : 1.4}" data-k="${k}" class="cg-n" style="cursor:pointer"/>`;
+        s += `<text x="${cx}" y="${cy+5}" text-anchor="middle" font-family="Fraunces, serif" font-size="14" fill="${isSel ? '#fff' : C.ink}" pointer-events="none">${n.label}</text>`;
+        s += `<text x="${cx}" y="${cy-32}" text-anchor="middle" font-family="Spline Sans Mono" font-size="9" fill="${C.inkFaint}" pointer-events="none">${n.op}</text>`;
+        s += `<text x="${cx}" y="${cy+38}" text-anchor="middle" font-family="Spline Sans Mono" font-size="10" fill="${C.structure}" pointer-events="none">= ${n.val.toFixed(3)}</text>`;
+      });
+      svg.innerHTML = s;
+      svg.querySelectorAll('.cg-n').forEach(c => c.addEventListener('click', e => {
+        selected = c.dataset.k;
+        updateInfo();
+        draw();
+      }));
+    }
+
+    function updateInfo(){
+      const n = NODES[selected];
+      const anc = [...ancestors(selected)].map(k => NODES[k].label);
+      const desc = [...descendants(selected)].map(k => NODES[k].label);
+      stat.innerHTML = `<b>선택: ${n.label}</b> (${n.op})${n.formula ? ' — ' + n.formula : ''}<br>
+                        <span style="color:${C.structure}">↑ 부모/조상</span>: ${anc.length ? anc.join(', ') : '(없음 — 입력 노드)'}<br>
+                        <span style="color:${C.style}">↓ 자식/후손</span>: ${desc.length ? desc.join(', ') : '(없음 — 출력 노드)'}`;
+      // 미분 경로
+      if (selected === 'x'){
+        eqEl.innerHTML = `\\[ \\frac{\\partial z}{\\partial x} = \\frac{\\partial z}{\\partial a}·\\frac{\\partial a}{\\partial x} + \\frac{\\partial z}{\\partial b}·\\frac{\\partial b}{\\partial x} \\]
+                          <p style="font-size:.85rem;color:var(--ink-soft)">x는 두 경로로 z에 영향 → 합산.</p>`;
+      } else if (selected === 'y'){
+        eqEl.innerHTML = `\\[ \\frac{\\partial z}{\\partial y} = \\frac{\\partial z}{\\partial a}·\\frac{\\partial a}{\\partial y} = b · 1 = ${NODES.b.val.toFixed(3)} \\]`;
+      } else if (selected === 'a'){
+        eqEl.innerHTML = `\\[ \\frac{\\partial z}{\\partial a} = b = ${NODES.b.val.toFixed(3)} \\]`;
+      } else if (selected === 'b'){
+        eqEl.innerHTML = `\\[ \\frac{\\partial z}{\\partial b} = a = ${NODES.a.val.toFixed(3)} \\]`;
+      } else {
+        eqEl.innerHTML = `\\[ z = (x+y)·\\sin(x) = ${NODES.z.val.toFixed(3)} \\]`;
+      }
+      if (window.renderMathInElement) renderMathInElement(eqEl, {
+        delimiters: [{ left: '\\[', right: '\\]', display: true }, { left: '$', right: '$', display: false }],
+        throwOnError: false,
+      });
+    }
+
+    updateInfo();
+    draw();
+  };
+
+  /* ============================================================
      IntersectionObserver 폴리필 — 첫 진입 시 init
      ============================================================ */
   CH6.onVisible = function(el, fn){
@@ -975,13 +1283,22 @@
      공용 — 챕터 nav, topbar, scroll progress, prev/next
      ============================================================ */
   CH6.SUBS = [
-    { no:'01', t:'XOR — 선형 분리 불가능의 벽',                    f:'01.html' },
-    { no:'02', t:'다층 퍼셉트론 — 깊이가 가능하게 하는 것',         f:'02.html' },
-    { no:'03', t:'활성화 함수 — ReLU가 이긴 이유',                  f:'03.html' },
-    { no:'04', t:'출력 단위와 비용의 짝',                           f:'04.html' },
-    { no:'05', t:'역전파의 미적분',                                 f:'05.html' },
-    { no:'06', t:'만능 근사와 깊이 vs 너비',                        f:'06.html' },
-    { no:'07', t:'시험 대비 정리',                                  f:'07.html' },
+    { no:'01', t:'왜 다층이 필요한가 — XOR의 벽',                  f:'01.html' },
+    { no:'02', t:'단일 뉴런 — 선형 변환 + 비선형 활성',             f:'02.html' },
+    { no:'03', t:'MLP — 깊이가 표현 공간을 바꾸는 방법',            f:'03.html' },
+    { no:'04', t:'만능 근사 정리 — 가능성과 효율',                  f:'04.html' },
+    { no:'05', t:'활성화 1 — sigmoid·tanh, 옛 시절과 죽음',         f:'05.html' },
+    { no:'06', t:'활성화 2 — ReLU 등장, sparsity, dying ReLU',     f:'06.html' },
+    { no:'07', t:'활성화 3 — Leaky·ELU·GELU·Swish',                f:'07.html' },
+    { no:'08', t:'출력층 1 — 회귀: 선형 + MSE = 가우시안 MLE',     f:'08.html' },
+    { no:'09', t:'출력층 2 — 이진: sigmoid + BCE',                 f:'09.html' },
+    { no:'10', t:'출력층 3 — 다중: softmax + CE',                  f:'10.html' },
+    { no:'11', t:'계산 그래프 — 신경망을 흐름으로',                 f:'11.html' },
+    { no:'12', t:'역전파 1 — 체인룰 직관',                          f:'12.html' },
+    { no:'13', t:'역전파 2 — 식 6.44-6.57 한 줄씩',                f:'13.html' },
+    { no:'14', t:'역전파 3 — 손계산 (2-2-1 MLP, 1 epoch)',         f:'14.html' },
+    { no:'15', t:'기울기 소실 — 깊은 sigmoid의 한계',               f:'15.html' },
+    { no:'16', t:'시험 대비 — 25개 자가점검 + 손계산 1문항',         f:'16.html' },
   ];
 
   CH6.buildNav = function(currentNo){
@@ -989,7 +1306,7 @@
     const tb = document.querySelector('.topbar');
     if (tb) tb.innerHTML =
       `<a class="home" href="index.html">← Ch.06 표지</a>` +
-      `<span class="ch-mini">SUB ${currentNo} / 07 · Chapter 06</span>`;
+      `<span class="ch-mini">SUB ${currentNo} / 16 · Chapter 06</span>`;
     const ol = document.querySelector('.ch-nav ol');
     if (ol) ol.innerHTML = CH6.SUBS.map(c =>
       `<li><a href="${c.f}" ${c.no === currentNo ? 'class="current"' : ''}>${c.t}</a></li>`).join('');

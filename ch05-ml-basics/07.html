@@ -3,23 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>07 · 시험 대비 — Q&A · 체크리스트</title>
+<title>07 · 검증·테스트 분할과 교차검증</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
-<style>
-  .form-table { max-width: var(--measure); margin: 1.4rem auto; border-collapse: collapse; width: 100%; font-size: .92rem; }
-  .form-table th, .form-table td { padding: .55rem .8rem; border-bottom: 1px solid var(--line-soft); text-align: left; vertical-align: top; }
-  .form-table th { font-family: var(--mono); font-size: .72rem; color: var(--ink-faint); letter-spacing: .1em; text-transform: uppercase; background: var(--paper-2); }
-  .form-table td.eq { font-family: var(--mono); color: var(--structure); white-space: nowrap; width: 14rem; }
-  .form-table tr:hover { background: var(--paper-2); }
-
-  .diag-table { max-width: var(--measure); margin: 1.4rem auto; border-collapse: collapse; width: 100%; font-size: .9rem; }
-  .diag-table th, .diag-table td { padding: .6rem .9rem; border: 1px solid var(--line); }
-  .diag-table th { background: var(--paper-2); font-family: var(--mono); font-size: .72rem; letter-spacing: .08em; color: var(--ink-soft); text-transform: uppercase; }
-  .diag-table td b.s1 { color: var(--structure); } .diag-table td b.s2 { color: var(--style); } .diag-table td b.s3 { color: var(--synth); }
-</style>
 </head>
 <body>
 <div class="scroll-progress"></div>
@@ -30,206 +18,80 @@
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Section 07 · 시험 직전 한 번 더</span>
-      <h1>예상 출제 7문제 +<br><em>핵심 수식 7개</em> + 진단 체크리스트</h1>
-      <p class="lede">시험 D-9. 이 페이지는 빠르게 훑기용이다. 6개 sub-chapter의 정수를 Q&A 아코디언, 수식 표, 진단 체크리스트, k-NN 위젯으로 압축했다.</p>
+      <span class="kicker">Section 07 · 데이터를 셋으로 나누는 약속</span>
+      <h1>검증·테스트 분할과 <span class="t-structure">교차검증</span></h1>
+      <p class="lede">왜 데이터를 셋으로 — 훈련(training), 검증(validation), 테스트(test) — 나누어야 하는가. 답은 한 줄이지만 입문자는 거의 항상 처음에 한 번씩 틀린다. 학습 외에 하이퍼파라미터를 고르는 단계가 따로 있고, 그 단계가 데이터를 추가로 소비하기 때문이다.</p>
     </header>
 
-    <h2 style="max-width: var(--measure); margin-inline: auto; padding-inline: 1.4rem">예상 출제 7문제 (Q&A)</h2>
-
     <div class="prose">
-      <p>각 문제를 클릭하면 답이 펼쳐진다. 답을 보기 전에 30초씩 머릿속으로 답해보고 펼쳐라.</p>
-    </div>
+      <p>먼저 용어부터 정리하자. 모델은 두 종류의 숫자를 가진다. 매개변수(parameter)는 학습 알고리즘이 데이터에서 직접 자동으로 조정하는 값으로, 선형회귀의 가중치, 신경망의 weight·bias 같은 것이다. 하이퍼파라미터(hyperparameter)는 사람이 학습 전에 결정하는 값으로, 모델 차수, 정칙화 계수 $\lambda$, 학습률 $\eta$, 은닉층의 개수, 드롭아웃 비율 같은 것이다. 매개변수는 손실을 줄여 가며 학습되지만, 하이퍼파라미터는 학습 알고리즘 바깥에서 정해진다. 그래서 하이퍼파라미터를 "어디서 어떻게 정할 것인가"라는 별도의 문제가 생긴다.</p>
 
-    <div class="qa-list" style="max-width: var(--measure); margin: 1.4rem auto; padding-inline: 1.4rem">
+      <p>가장 단순한 답은 "여러 후보를 시도해 보고 가장 좋은 것을 고른다"이다. 예를 들어 다항식 차수를 $d = 1, 2, 3, \ldots, 12$로 바꿔 가며 같은 데이터에 학습시키고, 가장 작은 오차를 내는 $d$를 고르는 식이다. 그런데 여기서 결정적인 질문이 따라온다. <strong>"가장 작은 오차"의 기준이 무엇인가.</strong> 만약 훈련 데이터에서의 오차를 기준으로 한다면, 차수를 키울수록 단조 감소하므로 무조건 가장 큰 $d$를 고르게 된다. 결과는 명백한 과적합이다. 따라서 하이퍼파라미터를 고르는 데는 훈련 데이터와 분리된 또 다른 데이터가 필요하다. 이 역할이 검증 데이터다.</p>
 
-      <div class="qa">
-        <div class="qa-q"><span class="qn">Q1</span><span>학습을 T·P·E로 설명할 때, 한 축이라도 빠지면 무엇이 모호해지는가? <span class="qx">+</span></span></div>
-        <div class="qa-a"><div class="qa-a-inner">
-          <span class="rel">→ <a href="01.html">Sec.1 학습 알고리즘의 정의</a></span>
-          T가 빠지면 "무엇을 학습하는가"가 정의되지 않아 같은 데이터로도 분류기·회귀기·군집기 중 어느 것을 만드는지 모름. P가 빠지면 "잘했다"의 기준이 없어 손실 함수가 정해지지 않음. E가 빠지면 알고리즘이 무엇을 보고 학습하는지 모르고, 지도/비지도/강화 구분도 안 됨. 셋이 모두 정해져야 학습이라는 동사가 의미 있게 적용된다.
-        </div></div>
-      </div>
+      <h2>왜 셋이 필요한가 — 두 번의 적합</h2>
+      <p>훈련(training)과 검증(validation)만 있으면 충분할 것 같다. 그러나 한 번 더 따져 보면 이걸로 부족하다. 검증 데이터를 보면서 하이퍼파라미터를 고르는 일도 사실은 "검증 데이터에 대한 적합"이다. 차수 $d$를 1부터 12까지 시도하고 가장 좋은 $d$를 고른 결과는, 그 검증 데이터에 운 좋게 들어맞은 모델일 수 있다. 이 선택 자체가 데이터를 소비하는 행위이므로, 그 결과 모델의 진짜 일반화 오차는 검증 오차보다 더 클 가능성이 높다. 그래서 한 번도 들여다보지 않은 또 다른 데이터가 필요하고, 그것이 테스트 데이터다.</p>
 
-      <div class="qa">
-        <div class="qa-q"><span class="qn">Q2</span><span>훈련 오차가 0이지만 좋은 모델이 아닐 수 있는 이유는? <span class="qx">+</span></span></div>
-        <div class="qa-a"><div class="qa-a-inner">
-          <span class="rel">→ <a href="02.html">Sec.2 용량·과적합·과소적합</a></span>
-          머신러닝의 목표는 훈련 데이터 암기가 아니라 일반화. 충분히 큰 모델은 항상 훈련 데이터를 100% 외울 수 있지만, 그 모델은 데이터의 잡음까지 따라가서 새 데이터에서는 무너진다. 일반화 격차(시험 오차 − 훈련 오차)가 클수록 외운 모델. 시험에서 묻는 핵심은 "훈련 오차 = 0인데 일반화 격차가 크다 = 과적합"이라는 진단.
-        </div></div>
-      </div>
+      <p>전체 절차를 다시 정리하면 이렇다. 데이터를 셋으로 나눈다. 훈련 데이터(보통 60-80%)는 매개변수 학습에 쓴다. 검증 데이터(보통 10-20%)는 하이퍼파라미터 선택과 모델 비교에 쓴다. 테스트 데이터(보통 10-20%)는 최종 모델의 일반화 오차를 한 번만 측정한다. 비유하자면 훈련 데이터는 학습을 위한 연습문제, 검증 데이터는 학습 중간에 보는 모의고사, 테스트 데이터는 단 한 번 치는 실제 시험이다. 모의고사를 보고 공부 전략을 바꾸는 것은 정상이지만, 실제 시험 문제를 미리 들여다보는 것은 부정행위다.</p>
 
-      <div class="qa">
-        <div class="qa-q"><span class="qn">Q3</span><span>편향-분산 분해식을 적고, 모델 용량을 키울 때 각 항이 어떻게 변하는가? <span class="qx">+</span></span></div>
-        <div class="qa-a"><div class="qa-a-inner">
-          <span class="rel">→ <a href="03.html">Sec.3 편향-분산 분해</a></span>
-          $$ \mathbb{E}[(y - \hat{f})^2] = \mathrm{Bias}^2 + \mathrm{Variance} + \sigma^2 $$
-          용량↑ → 편향² ↓ (모델이 더 다양한 함수를 표현 가능) → 분산 ↑ (데이터 잡음까지 따라감) → 잡음 σ²은 그대로. 총 오차는 U자 곡선. 최적 용량은 그 골짜기.
-        </div></div>
-      </div>
+      <h2>검증과 테스트를 섞으면 무슨 일이 벌어지는가</h2>
+      <p>가장 흔한 실수는 검증 데이터와 테스트 데이터를 같이 쓰는 일이다. 이를 데이터 누수(data leakage)라 부르는데, 그 결과는 단순한 통계적 편향이 아니라 모델 보고의 정직성을 무너뜨린다. 한 가지 예를 보자. 어떤 학생이 10개의 모델을 시도하고 가장 좋은 것을 테스트 데이터로 골랐다고 하자. 10개의 모델은 각각 진짜 일반화 오차에 어떤 무작위 변동을 가진 추정값을 만든다. 그 중 "가장 좋은 모델"을 고른다는 것은 사실상 무작위 변동의 가장 운 좋은 끝값을 골라 보고하는 행위다. 결과적으로 보고된 시험 점수는 진짜 일반화 오차보다 낙관적으로 부풀려진다.</p>
 
-      <div class="qa">
-        <div class="qa-q"><span class="qn">Q4</span><span>왜 우도 L(θ) 최대화 = −log L(θ) 최소화인가? <span class="qx">+</span></span></div>
-        <div class="qa-a"><div class="qa-a-inner">
-          <span class="rel">→ <a href="04.html">Sec.4 MLE</a></span>
-          (1) 로그는 단조증가 함수이므로 $\arg\max L = \arg\max \log L$. (2) 부호를 뒤집어 최대화를 최소화로 바꾸어도 해는 같음. 추가로 곱 → 합 변환이 수치적으로 안정 (underflow 방지). 두 변환 모두 답 보존, 다만 미분/구현이 쉬워짐.
-        </div></div>
-      </div>
+      <p>이 효과는 단순한 사고 실험이 아니라 실험 통계학의 정설이다. 똑같은 데이터를 여러 번 들여다보며 모델을 골라내면 그 데이터에 대한 적합은 반복할수록 더 잘 되지만, 그 모델이 새로운 데이터에서 보일 성능은 오히려 떨어질 수 있다. 그래서 머신러닝 논문은 보통 "테스트 데이터는 단 한 번만 본다"는 규칙을 명시한다. 실무에서도 모델 개발 단계와 배포 평가 단계의 데이터를 엄격히 분리하는 일이 표준이다.</p>
 
-      <div class="qa">
-        <div class="qa-q"><span class="qn">Q5</span><span>회귀 문제에 MSE를 쓰는 것은 어떤 분포 가정의 MLE인가? <span class="qx">+</span></span></div>
-        <div class="qa-a"><div class="qa-a-inner">
-          <span class="rel">→ <a href="04.html">Sec.4 MLE</a></span>
-          출력에 평균 $f(x;\theta)$, 분산 $\sigma^2$인 <strong>가우시안 잡음</strong>을 가정한 경우의 MLE. NLL을 풀어 적으면 $\sum (y_i - f(x_i;\theta))^2 / (2\sigma^2) + \text{상수}$가 나오는데, 이는 정확히 MSE의 스케일된 형태. 분류에서 교차 엔트로피 = 베르누이/카테고리 가정 MLE도 같은 원리.
-        </div></div>
-      </div>
+      <h2>분할의 비율과 무작위성</h2>
+      <p>데이터를 어떤 비율로 나눠야 할까. 정해진 규칙은 없지만 관행이 있다. 데이터가 충분히 많으면(수만 건 이상) 60:20:20 또는 70:15:15가 표준이다. 데이터가 적으면 훈련의 비율을 높여 65:15:20 또는 70:10:20을 쓰기도 한다. 매우 작은 데이터셋(수백 건)에서는 단순 분할로는 검증·테스트의 표본 변동이 너무 커서 신뢰할 수 없으므로 다음에 볼 교차검증을 쓴다.</p>
 
-      <div class="qa">
-        <div class="qa-q"><span class="qn">Q6</span><span>L2 정칙화가 가우시안 사전의 MAP이 되는 이유를 한 줄로 설명하라. <span class="qx">+</span></span></div>
-        <div class="qa-a"><div class="qa-a-inner">
-          <span class="rel">→ <a href="06.html">Sec.6 정칙화</a></span>
-          가중치 $w$에 평균 0, 분산 $\tau^2$의 가우시안 사전을 주면 $\log p(w) = -\sum w_i^2/(2\tau^2) + \text{상수}$. MAP는 $\arg\max[\log p(x|w) + \log p(w)]$이므로, NLL에 $\frac{1}{2\tau^2}\sum w_i^2 = \lambda \|w\|_2^2$ 항이 더해진다. 이것이 L2 정칙화. 사전이 강할수록(τ 작을수록) λ가 크다.
-        </div></div>
-      </div>
-
-      <div class="qa">
-        <div class="qa-q"><span class="qn">Q7</span><span>검증셋(validation)과 시험셋(test)을 왜 구분해야 하는가? 한 셋으로 둘 다 하면 무슨 문제? <span class="qx">+</span></span></div>
-        <div class="qa-a"><div class="qa-a-inner">
-          <span class="rel">→ <a href="02.html">Sec.2 용량·과적합</a></span>
-          하이퍼파라미터(학습률, 정칙화 계수, 모델 차수)를 검증셋에서 고른다. 그 과정에서 검증셋에 대한 간접 과적합이 일어남 (선택 자체가 데이터에 맞추는 행위). 시험셋을 검증으로 쓰면 시험 점수가 낙관적으로 부풀려져 실제 배포 성능을 과대평가. 그래서 시험셋은 한 번만 보고, 그 점수는 수정 불가. 데이터 쪼개기: 보통 6:2:2 또는 7:1.5:1.5.
-        </div></div>
-      </div>
-
-    </div>
-
-    <h2 style="max-width: var(--measure); margin-inline: auto; padding-inline: 1.4rem">핵심 수식 7개 (한 페이지 컨닝쪽지)</h2>
-
-    <table class="form-table">
-      <thead>
-        <tr><th>이름</th><th>수식</th></tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td class="eq">일반화 격차</td>
-          <td>$E_{\text{gen}} = E_{\text{test}} - E_{\text{train}}$. 작을수록 일반화.</td>
-        </tr>
-        <tr>
-          <td class="eq">편향-분산 분해</td>
-          <td>$\mathbb{E}[(y-\hat{f})^2] = \mathrm{Bias}^2 + \mathrm{Var} + \sigma^2$</td>
-        </tr>
-        <tr>
-          <td class="eq">MLE</td>
-          <td>$\theta_{\text{MLE}} = \arg\max_\theta \prod_i p(x_i|\theta) = \arg\min_\theta \big[-\sum_i \log p(x_i|\theta)\big]$</td>
-        </tr>
-        <tr>
-          <td class="eq">베이즈 정리</td>
-          <td>$p(\theta|x) \propto p(x|\theta)\, p(\theta)$. 사후 ∝ 우도 × 사전.</td>
-        </tr>
-        <tr>
-          <td class="eq">MAP</td>
-          <td>$\theta_{\text{MAP}} = \arg\max_\theta [\log p(x|\theta) + \log p(\theta)]$. 사전 로그가 정칙화 항.</td>
-        </tr>
-        <tr>
-          <td class="eq">L2 정칙화</td>
-          <td>$J(w) = \mathrm{NLL}(w) + \lambda \|w\|_2^2$, $\lambda = 1/(2\tau^2)$. 가우시안 사전 MAP.</td>
-        </tr>
-        <tr>
-          <td class="eq">L1 정칙화</td>
-          <td>$J(w) = \mathrm{NLL}(w) + \lambda \|w\|_1$. 라플라스 사전 MAP, 희소해 유도.</td>
-        </tr>
-      </tbody>
-    </table>
-
-    <h2 style="max-width: var(--measure); margin-inline: auto; padding-inline: 1.4rem">k-NN 위젯 — 용량을 거꾸로 조절하는 모형</h2>
-
-    <div class="prose">
-      <p>k-Nearest Neighbors는 매개변수가 따로 없는 모형이다. 그러나 하이퍼파라미터 $k$가 모델 용량을 거꾸로 조절한다. $k=1$이면 가장 가까운 한 점의 라벨을 그대로 따르는 매우 유연한 모델 (용량↑, 분산↑, 편향↓). $k$를 크게 하면 평균이 평활해져 용량↓, 분산↓, 편향↑. 5장의 모든 개념(용량·편향-분산)이 단 하나의 슬라이더로 시각화된다.</p>
+      <p>분할을 만들 때 가장 중요한 것은 무작위성과 분포 균형이다. 우선 데이터를 무작위로 섞어야 한다. 시간순으로 정렬된 데이터를 그대로 앞 7할을 훈련, 다음 1.5할을 검증, 마지막 1.5할을 테스트로 쓰면 시간에 따른 분포 변화가 그대로 평가에 영향을 미친다. 무작위 순서로 섞고 나서 분할해야 세 셋이 같은 분포에서 뽑힌 표본이라는 가정이 유지된다. 둘째, 분류 문제에서는 각 클래스의 비율이 세 셋에 골고루 들어가야 한다. 이를 층화 추출(stratified sampling)이라 한다. 불균형 데이터에서 무작위 분할만 하면 어떤 클래스가 검증 데이터에 거의 안 들어오는 일이 생긴다.</p>
     </div>
 
     <div class="widget">
       <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 01</span><span>k-NN 결정 경계 — k가 용량을 거꾸로 조절</span></div>
-        <div id="kn"></div>
+        <div class="widget-label"><span class="lab-no">위젯 07</span><span>k-Fold 교차검증 — 분할 수를 슬라이더로 본다</span></div>
+        <div id="cv"></div>
       </div>
-      <p class="widget-cap">k=1은 경계가 들쭉날쭉(잡음 점들도 다 외움). k가 클수록 경계가 부드러워지지만 두 클래스를 가르는 미세 구조가 사라진다. 시험 직출 가능: "k가 작을 때와 클 때의 편향·분산 변화를 설명하라."</p>
+      <p class="widget-cap">k=2부터 k=10까지 슬라이더로 움직여 보자. 가로 한 줄이 한 fold의 데이터 분할이고, 주황 칸이 그 fold에서 검증으로 쓰는 부분, 파랑 칸이 훈련으로 쓰는 부분이다. k가 커질수록 검증으로 쓰는 비율이 좁아지고, k=N이면 한 점만 빼고 학습하는 leave-one-out이 된다.</p>
     </div>
 
-    <h2 style="max-width: var(--measure); margin-inline: auto; padding-inline: 1.4rem">일반화 진단 체크리스트</h2>
-
     <div class="prose">
-      <p>실제 문제를 풀 때 다음 표 한 장으로 진단할 수 있다. 시험에서도 "이런 증상이면 무엇이 문제인가, 어떻게 고치는가" 형태의 응용 문제로 자주 출제된다.</p>
-    </div>
+      <h2>교차검증 — 작은 데이터의 표본 변동을 평균으로 누른다</h2>
+      <p>데이터가 적을 때는 단순 셋 분할에 두 가지 문제가 있다. 첫째, 검증 데이터가 너무 작아 그 위에서 측정한 오차에 큰 표본 변동이 끼고, 따라서 모델 비교가 신뢰할 수 없게 된다. 둘째, 훈련에 쓸 수 있는 데이터가 줄어들어 모델의 성능 자체가 떨어진다. 이 두 문제를 한 번에 푸는 도구가 교차검증(cross-validation)이다.</p>
 
-    <table class="diag-table">
-      <thead>
-        <tr><th>증상</th><th>진단</th><th>처방</th></tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>훈련 오차 큼<br>검증 오차도 큼<br>(두 오차 비슷)</td>
-          <td><b class="s1">과소적합 (Underfitting)</b><br>모델이 너무 단순</td>
-          <td>모델 용량 ↑ (층 추가, 차원 증가)<br>특징을 더 잘 설계<br>정칙화 줄이기 (λ ↓)</td>
-        </tr>
-        <tr>
-          <td>훈련 오차 작음<br>검증 오차 큼<br>(격차 큼)</td>
-          <td><b class="s2">과적합 (Overfitting)</b><br>모델이 잡음까지 외움</td>
-          <td>데이터 더 모으기<br>정칙화 ↑ (λ, dropout)<br>모델 용량 ↓<br>조기 종료 (early stopping)</td>
-        </tr>
-        <tr>
-          <td>훈련 오차 작음<br>검증 오차 작음<br>(둘 다 잡음 한계 근처)</td>
-          <td><b class="s3">최적 학습</b><br>더 이상 얻을 게 적음</td>
-          <td>모형 자체를 바꾸기<br>(예: 선형 → 신경망)<br>또는 더 좋은 특징 발굴</td>
-        </tr>
-        <tr>
-          <td>훈련 손실은 줄지만<br>검증 손실이 다시 ↑</td>
-          <td>훈련 중간부터 과적합 시작</td>
-          <td><b>조기 종료</b><br>검증 손실 최소 지점에서 멈춤<br>(가중치 감쇠 효과)</td>
-        </tr>
-        <tr>
-          <td>훈련 데이터 추가에도<br>검증 오차 안 줄어듦</td>
-          <td>편향(=구조적 한계)이 지배<br>또는 잡음 한계 도달</td>
-          <td>용량 ↑ 또는 새 특징<br>데이터 양은 도움 안 됨</td>
-        </tr>
-      </tbody>
-    </table>
+      <p>$k$-폴드 교차검증($k$-fold cross-validation)의 절차는 다음과 같다. 데이터를 같은 크기의 $k$개 부분(폴드, fold)으로 나눈다. 한 폴드를 검증 데이터로 빼 두고 나머지 $k-1$개로 모델을 학습한다. 학습된 모델을 빼 둔 폴드에서 평가한다. 이 과정을 $k$번 반복하면서 매번 다른 폴드를 검증으로 쓴다. 마지막으로 $k$번의 검증 점수를 평균한 값이 교차검증 점수다. 이렇게 하면 모든 데이터가 한 번씩은 검증에 쓰이고, 평균을 통해 표본 변동이 줄어든다.</p>
 
-    <h2 style="max-width: var(--measure); margin-inline: auto; padding-inline: 1.4rem">시험 전날 30분 복습 루트</h2>
+      <p>$k$를 어떻게 정할까. $k=5$나 $k=10$이 가장 흔하고, 데이터가 매우 적으면 $k=N$인 leave-one-out cross-validation(LOOCV)을 쓰기도 한다. LOOCV는 한 점만 빼고 학습한 결과를 그 한 점에서 평가하는 일을 모든 $N$개 점에 대해 반복한다. $k$가 커질수록 각 학습에 쓰는 훈련 데이터가 많아져 추정의 편향은 작아지지만, 학습을 $k$번 해야 하므로 계산 비용이 $k$배다. 또 LOOCV는 매번 거의 같은 데이터로 학습하므로 학습된 모델들이 강하게 상관되고, 그 결과 추정의 분산이 오히려 클 수 있다. 그래서 실무 표준은 $k=5$나 $k=10$이며, 작은 데이터에서만 LOOCV로 옮긴다.</p>
 
-    <div class="prose">
-      <ol style="padding-left: 1.4rem">
-        <li><strong>5분</strong>: 이 페이지의 핵심 수식 7개를 손으로 한 번 적어보기.</li>
-        <li><strong>5분</strong>: <a href="03.html">Sec.3 편향-분산 분해</a> 위젯에서 d 슬라이더를 1→15로 천천히 옮기며 세 항이 어떻게 변하는지 입으로 설명.</li>
-        <li><strong>5분</strong>: <a href="04.html">Sec.4 MLE</a> 위젯에서 μ를 양 끝으로 옮기며 L과 −lnL 곡선이 정확히 거울상으로 움직이는지 확인.</li>
-        <li><strong>5분</strong>: <a href="05.html">Sec.5</a> 베이지안 vs 빈도주의 위젯에서 N=0, N=10, N=200을 차례로 보며 사후가 어떻게 우도로 흡수되는지 관찰.</li>
-        <li><strong>5분</strong>: <a href="06.html">Sec.6</a> L2 = 가우시안 사전 MAP 유도를 한 번 더 따라 적어보기.</li>
-        <li><strong>5분</strong>: 위의 Q&A 7문제 답을 보지 않고 30초씩 답해보고, 막힌 문제만 다시 펼쳐 보기.</li>
-      </ol>
+      <h2>중첩 교차검증 — 하이퍼파라미터 선택까지 정직하게</h2>
+      <p>교차검증을 단순히 모델 평가에만 쓰면 안 되는 경우가 있다. 하이퍼파라미터를 교차검증으로 선택한 뒤 같은 교차검증 점수를 최종 보고에 쓰면, 위에서 본 데이터 누수와 같은 효과가 생긴다. 정확한 절차는 두 단계의 교차검증을 겹치는 중첩 교차검증(nested cross-validation)이다. 바깥 루프는 모델 평가용으로 데이터를 $k$개로 나눈다. 안쪽 루프는 각 바깥 폴드의 훈련 부분을 다시 $k'$개로 나누어 하이퍼파라미터를 고른다. 안쪽에서 고른 하이퍼파라미터로 바깥의 훈련 부분 전체로 학습한 모델을 바깥의 검증 폴드에서 평가한다.</p>
 
-      <p>5장은 6장 이후 모든 신경망 단원의 해석 틀이다. 이 장의 언어(편향-분산, MLE, 정칙화, 일반화 격차)로 6장 이후의 모든 결정을 다시 설명할 수 있어야 한다. 시험에서 어떤 응용 문제가 나오든, 그 답은 이 6개 sub-chapter 중 어느 칸에 들어가는지 분류할 수 있어야 한다.</p>
+      <p>중첩 교차검증은 계산이 $k \cdot k'$배가 들어 비싸지만, 보고된 성능이 진짜 일반화 오차의 정직한 추정이 된다. 작은 데이터로 출판해야 하는 의료 영상이나 생명과학 분야 논문에서 특히 자주 쓰인다. 큰 데이터에서는 단순 셋 분할이면 충분하다.</p>
 
-      <p style="margin-top: 2rem; font-family: var(--mono); font-size: .8rem; color: var(--ink-faint); text-align: center;">
-        2026-06-04 (목) 기말고사 · Chapter 5 완료 · 다음은 Chapter 6 깊은 순방향 신경망 →
-      </p>
+      <div class="analogy">
+        교차검증을 <b>요리 평가단</b>에 비유해 보자. 한 명의 평가단에게 한 번만 시식하게 하면 그 사람의 입맛이 기분이 좋은지 나쁜지에 따라 점수가 들쭉날쭉한다. $k$명의 평가단에게 각각 다른 음식을 시식하게 하고 점수를 평균하면, 개인 변동이 평균으로 씻겨 음식 자체의 품질이 드러난다. 단순 분할은 평가단 한 명, 5-폴드는 다섯 명, LOOCV는 평가단 수가 음식 수와 같은 극단이다. 평가단 수가 많을수록 점수가 안정되지만, 평가단을 한 명씩 부르는 비용이 그만큼 늘어난다.
+      </div>
+
+      <h2>분류 문제의 층화 교차검증</h2>
+      <p>분류 문제에서 단순한 무작위 폴드 분할은 클래스 불균형 데이터에서 문제가 생긴다. 양성 라벨이 5%인 의료 진단 데이터에서 무작위로 10개 폴드를 만들면, 어떤 폴드는 양성이 거의 안 들어오고 어떤 폴드는 정상보다 양성이 많을 수도 있다. 이 변동이 검증 점수를 무작위로 흔든다. 해법은 층화 $k$-폴드 교차검증(stratified $k$-fold)이다. 각 폴드의 양성 비율이 전체 양성 비율과 같도록 분할을 만든다. 이렇게 하면 각 폴드의 검증 점수가 클래스 분포 변동의 영향을 덜 받는다.</p>
+
+      <h2>시간 시리즈와 그룹 데이터의 분할</h2>
+      <p>모든 데이터가 i.i.d.가 아니다. 시간 시리즈 데이터에서는 미래 정보를 훈련에 쓰는 일이 누수다. 주가 예측 모델을 어제까지의 데이터로 학습하고 오늘 평가하는 것은 정상이지만, 오늘 데이터를 훈련에 넣고 어제를 검증하는 것은 미래 정보 누수다. 시간 시리즈의 표준 분할은 시간 순으로 잘라서 앞부분이 훈련, 뒷부분이 검증·테스트가 되게 한다. 교차검증을 쓸 때는 시간 순서를 유지하며 점진적으로 훈련 윈도우를 키우는 walk-forward validation을 쓴다.</p>
+
+      <p>또 다른 함정은 그룹 데이터다. 같은 환자에서 여러 번 측정한 데이터가 한 데이터셋에 들어 있을 때 무작위 분할을 하면 같은 환자의 데이터가 훈련과 검증에 동시에 들어가, 모델이 환자의 개별 특징을 외워 검증 점수를 부풀린다. 이 경우 그룹 단위로 분할해야 한다(같은 환자의 데이터는 같은 폴드에 묶기). 이를 group k-fold라 한다. 5장은 이런 변형까지 깊이 다루지는 않지만, "i.i.d. 가정이 흔들릴 때 분할의 단위를 바꿔야 한다"는 원리는 6장 이후에서도 거듭 나온다.</p>
+
+      <p>다음 장에서는 검증 데이터로 평가할 "오차" — 그 정체가 정확히 무엇인지 — 를 손실 함수와 경험적 위험(empirical risk)으로 정의한다. 이 정의가 있어야 MLE와 교차 엔트로피로 이어지는 9-10장의 수학적 흐름이 자연스럽게 따라온다.</p>
     </div>
 
     <nav class="ch-foot"></nav>
   </main>
 </div>
 
-<script src="../assets/widgets.js"></script>
-<script src="widgets-ch05.js"></script>
 <script>
   window.addEventListener('load', () => {
     NST.buildNav('07');
-    // Q&A 아코디언
-    document.querySelectorAll('.qa').forEach(qa => {
-      const q = qa.querySelector('.qa-q');
-      q.addEventListener('click', () => qa.classList.toggle('open'));
-    });
-    // k-NN 위젯
-    const kn = document.getElementById('kn');
-    NST.onVisible(kn, () => NST.knn(kn));
+    const t = document.getElementById('cv');
+    NST.onVisible(t, () => NST.crossVal(t));
   });
 </script>
+<script src="../assets/widgets.js"></script>
+<script src="widgets-ch05.js"></script>
 </body>
 </html>

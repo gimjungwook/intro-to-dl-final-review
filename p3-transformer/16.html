@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>16 · 시험 대비 핵심</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .qa-block { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 1rem 1.2rem; margin: .9rem 0; }
+  .qa-block .q { font-weight: 700; color: var(--structure); font-family: var(--mono); font-size: .8rem; letter-spacing: .12em; }
+  .qa-block .qt { font-family: var(--serif); font-size: 1.05rem; margin: .3rem 0 .6rem; }
+  .qa-block .a { color: var(--ink-soft); line-height: 1.6; font-size: .95rem; }
+  .qa-block .a b { color: var(--style); }
+  .tagrow { display: flex; gap: .4rem; margin-top: .6rem; flex-wrap: wrap; }
+  .tagrow span { font-family: var(--mono); font-size: .7rem; padding: .2rem .5rem; border-radius: 3px; background: var(--paper-2); color: var(--ink-faint); }
+  table.summary { width: 100%; border-collapse: collapse; margin: 1.5rem 0; font-size: .92rem; }
+  table.summary th, table.summary td { padding: .65rem .9rem; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+  table.summary th { background: var(--paper-2); font-family: var(--mono); font-size: .78rem; letter-spacing: .08em; color: var(--ink-soft); }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Chapter 16 · 시험 직전 한 번 더</span>
+      <h1>시험 대비 —<br>핵심 정리와 <span class="t-style">예상 문제</span> 27선</h1>
+      <p class="lede">앞 15장까지의 모든 개념을 시험 직전에 한 번 더 훑을 수 있도록 정리한다. 먼저 “핵심 표” 4개로 모든 부품의 모양·역할·차원을 한눈에 본 다음, 27개의 예상 문제와 모범 답안을 본다. 6월 4일 시험까지 일주일 전, 사흘 전, 하루 전에 한 번씩 다시 보면 좋다.</p>
+    </header>
+
+    <div class="prose">
+      <h2>한눈에 정리 표 1 — Transformer 핵심 부품</h2>
+      <table class="summary">
+        <thead><tr><th>부품</th><th>입력 → 출력</th><th>역할</th><th>핵심 수식</th></tr></thead>
+        <tbody>
+          <tr><td><b>Token Embedding</b></td><td>token id → $d_{model}$ vec</td><td>이산 토큰을 연속 벡터로</td><td>$E[\text{id}]$ (lookup)</td></tr>
+          <tr><td><b>Positional Encoding</b></td><td>position → $d_{model}$ vec</td><td>순서 정보 주입</td><td>$\sin/\cos$ 다중 주기</td></tr>
+          <tr><td><b>Scaled Dot-Product Attention</b></td><td>Q,K,V → 가중합</td><td>관련 토큰 정보 추출</td><td>$\text{softmax}(QK^\top/\sqrt{d_k})V$</td></tr>
+          <tr><td><b>Multi-Head Attention</b></td><td>X → X′ (같은 모양)</td><td>여러 관계 병렬 학습</td><td>$\text{Concat}(\text{head}_i) W^O$</td></tr>
+          <tr><td><b>FFN</b></td><td>$d_{model}$ → $d_{model}$</td><td>토큰별 비선형 변환</td><td>$\max(0, xW_1)W_2$</td></tr>
+          <tr><td><b>LayerNorm</b></td><td>vec → 표준화 vec</td><td>활성값 스케일 안정</td><td>$\gamma(x-\mu)/\sigma + \beta$</td></tr>
+          <tr><td><b>Residual</b></td><td>+ 입력 통과</td><td>gradient 지름길</td><td>$y = x + f(x)$</td></tr>
+          <tr><td><b>Masked Self-Attn</b></td><td>Q,K,V (디코더) → 가중합</td><td>미래 차단</td><td>$QK^\top + M$, $M_{j>i} = -\infty$</td></tr>
+          <tr><td><b>Cross-Attention</b></td><td>$Q_{dec}, K_{enc}, V_{enc}$ → 가중합</td><td>인코더 참조</td><td>$\text{softmax}(Q_{dec}K_{enc}^\top/\sqrt{d_k})V_{enc}$</td></tr>
+        </tbody>
+      </table>
+
+      <h2>한눈에 정리 표 2 — 차원·하이퍼파라미터 (원 논문 base)</h2>
+      <table class="summary">
+        <thead><tr><th>이름</th><th>값</th><th>의미</th></tr></thead>
+        <tbody>
+          <tr><td>$d_{model}$</td><td>512</td><td>모델 전체 임베딩 차원. 모든 sub-layer 입출력의 마지막 축.</td></tr>
+          <tr><td>$h$</td><td>8</td><td>Multi-head의 헤드 수.</td></tr>
+          <tr><td>$d_k = d_v$</td><td>64</td><td>한 헤드의 query/key/value 차원. $d_{model}/h = 512/8$.</td></tr>
+          <tr><td>$d_{ff}$</td><td>2048</td><td>FFN 중간층 차원. 보통 $d_{model}$의 4배.</td></tr>
+          <tr><td>$N$ (encoder)</td><td>6</td><td>인코더 블록 개수.</td></tr>
+          <tr><td>$N$ (decoder)</td><td>6</td><td>디코더 블록 개수.</td></tr>
+          <tr><td>dropout</td><td>0.1</td><td>각 sub-layer 출력 후, embedding+PE 후에 적용.</td></tr>
+          <tr><td>label smoothing</td><td>0.1</td><td>정답 분포를 약간 완화해 과신뢰 방지.</td></tr>
+        </tbody>
+      </table>
+
+      <h2>한눈에 정리 표 3 — RNN vs Transformer</h2>
+      <table class="summary">
+        <thead><tr><th></th><th>RNN</th><th>Transformer</th></tr></thead>
+        <tbody>
+          <tr><td>병렬화</td><td>불가 (직렬 $N$ step)</td><td>가능 (1 step에 전체)</td></tr>
+          <tr><td>장거리 의존</td><td>약화 (vanishing gradient)</td><td>강함 (모두-모두 연결)</td></tr>
+          <tr><td>위치 정보</td><td>구조에 내재 (시간 흐름)</td><td>별도 주입 (PE)</td></tr>
+          <tr><td>한 step 비용</td><td>O(N·d²)</td><td>O(N²·d) — 시퀀스 길이 제곱</td></tr>
+          <tr><td>총 학습 시간</td><td>시퀀스 길이에 비례</td><td>길이와 무관 (병렬 처리)</td></tr>
+          <tr><td>추론 시 자기회귀</td><td>O(N·d²)</td><td>O(N²·d) — but KV cache로 완화</td></tr>
+        </tbody>
+      </table>
+
+      <h2>한눈에 정리 표 4 — Encoder vs Decoder</h2>
+      <table class="summary">
+        <thead><tr><th></th><th>Encoder 블록</th><th>Decoder 블록</th></tr></thead>
+        <tbody>
+          <tr><td>Sub-layer 수</td><td>2 (MHA + FFN)</td><td>3 (Masked MHA + Cross MHA + FFN)</td></tr>
+          <tr><td>Self-Attention</td><td>마스크 없음</td><td>Causal mask (상삼각 $-\infty$)</td></tr>
+          <tr><td>Cross-Attention</td><td>없음</td><td>있음 (Q=디코더, K=V=인코더 출력)</td></tr>
+          <tr><td>입력</td><td>입력 시퀀스 임베딩 + PE</td><td>출력 시퀀스 임베딩 + PE (학습) 또는 자기 출력 (추론)</td></tr>
+          <tr><td>출력 사용</td><td>모든 디코더 블록의 cross-attn K, V</td><td>최종 Linear+Softmax로 토큰 분포</td></tr>
+        </tbody>
+      </table>
+
+      <h2>예상 문제 27선</h2>
+
+      <div class="qa-block">
+        <div class="q">Q01 · 개념</div>
+        <div class="qt">RNN의 두 가지 구조적 한계를 한 문장씩 설명하라.</div>
+        <div class="a"><b>(1) 병렬화 불가</b> — $h_t$가 $h_{t-1}$에 의존하므로 GPU가 한 step씩만 처리 가능. <b>(2) 장거리 의존성 약화</b> — 같은 가중치 $W_h$가 시퀀스 길이만큼 거듭 곱해져 그래디언트가 0이나 무한대로 발산.</div>
+        <div class="tagrow"><span>RNN</span><span>한계</span></div>
+      </div>
+
+      <div class="qa-block">
+        <div class="q">Q02 · 직관</div>
+        <div class="qt">Attention의 핵심 직관을 “가중평균”이라는 단어로 설명하라.</div>
+        <div class="a">시퀀스의 한 토큰이 다음 표현을 만들 때, 다른 모든 토큰의 정보를 “관련도에 따라 가중평균”한 것이 attention. 모든 토큰을 동등하게 보는 게 아니라 “어디 얼마나” 볼지를 정하는 분포가 attention 가중치.</div>
+        <div class="tagrow"><span>Attention</span><span>직관</span></div>
+      </div>
+
+      <div class="qa-block">
+        <div class="q">Q03 · 비유</div>
+        <div class="qt">Q, K, V를 도서관 검색 비유로 설명하라.</div>
+        <div class="a"><b>Query</b> = 내가 찾는 주제(검색어). <b>Key</b> = 각 책의 표지·색인(검색 가능한 인덱스). <b>Value</b> = 책의 본문(실제 가져올 내용). Query와 Key의 유사도가 가중치가 되고, 그 가중치로 Value들을 가중평균한 게 attention 출력.</div>
+        <div class="tagrow"><span>QKV</span><span>비유</span></div>
+      </div>
+
+      <div class="qa-block">
+        <div class="q">Q04 · 수식</div>
+        <div class="qt">Scaled Dot-Product Attention의 수식을 정확히 적고 각 단계의 의미를 설명하라.</div>
+        <div class="a">$\text{Attention}(Q, K, V) = \text{softmax}(QK^\top / \sqrt{d_k}) V$. <b>$QK^\top$</b> = 모든 query-key 쌍의 내적(점수). <b>$/\sqrt{d_k}$</b> = 차원 의존 분산 폭발 방지. <b>softmax</b> = 점수를 확률 분포로. <b>$\cdot V$</b> = 분포로 Value를 가중합.</div>
+        <div class="tagrow"><span>Scaled Dot-Product</span><span>수식</span></div>
+      </div>
+
+      <div class="qa-block">
+        <div class="q">Q05 · 수식</div>
+        <div class="qt">왜 $\sqrt{d_k}$로 나누는가? 만약 나누지 않으면 무슨 일이 생기는가?</div>
+        <div class="a">독립인 두 $d_k$차원 벡터의 내적은 분산이 $d_k$로 커진다. $d_k$가 클수록 점수의 분산이 커져 softmax 입력 중 한 값이 매우 크면 softmax 출력이 “한 곳에 거의 1, 나머지는 거의 0”이 된다. 이 상태에서 softmax 미분(자코비안)이 거의 0이 되어 학습이 멈춘다(vanishing gradient). $\sqrt{d_k}$로 나누면 분산이 1로 정규화되어 softmax가 적당히 “부드러운” 분포를 유지.</div>
+        <div class="tagrow"><span>스케일링</span><span>분산</span></div>
+      </div>
+
+      <div class="qa-block">
+        <div class="q">Q06 · 개념</div>
+        <div class="qt">Self-Attention과 Cross-Attention의 차이는?</div>
+        <div class="a"><b>Self-Attention</b>: Q, K, V가 모두 같은 시퀀스에서 나옴(예: 인코더 입력 또는 디코더 출력). 시퀀스 내부 토큰들 간 관계 학습. <b>Cross-Attention</b>: Q는 디코더 시퀀스, K·V는 인코더 출력. 디코더가 입력 시퀀스의 어디를 참조할지 학습.</div>
+        <div class="tagrow"><span>Self-Attn</span><span>Cross-Attn</span></div>
+      </div>
+
+      <div class="qa-block">
+        <div class="q">Q07 · 개념</div>
+        <div class="qt">Multi-Head Attention이 단일 헤드보다 강한 이유 두 가지를 설명하라.</div>
+        <div class="a">(1) 한 종류 관계만 잡는 단일 attention과 달리, 헤드들이 서로 다른 관계(구문·의미·위치)를 병렬로 학습 가능. (2) $d_{model}$을 $h$개로 나눠도 파라미터 수는 동일하지만, 작은 차원의 attention 여러 개가 큰 차원 attention 하나보다 표현 다양성이 높음.</div>
+        <div class="tagrow"><span>Multi-Head</span><span>표현력</span></div>
+      </div>
+
+      <div class="qa-block">
+        <div class="q">Q08 · 수식</div>
+        <div class="qt">Multi-Head Attention의 수식을 적어라.</div>
+        <div class="a">$\text{MultiHead}(Q, K, V) = \text{Concat}(\text{head}_1, \ldots, \text{head}_h) W^O$ 이때 $\text{head}_i = \text{Attention}(QW_i^Q, KW_i^K, VW_i^V)$. $W^O \in \mathbb{R}^{h d_v \times d_{model}}$는 마지막 “출력 사영”.</div>
+        <div class="tagrow"><span>Multi-Head</span><span>수식</span></div>
+      </div>
+
+      <div class="qa-block">
+        <div class="q">Q09 · 차원</div>
+        <div class="qt">$d_{model} = 512, h = 8$일 때, 한 헤드의 $d_k$와 전체 파라미터 수를 단일 헤드($d_k = 512$) 경우와 비교하라.</div>
+        <div class="a">한 헤드 $d_k = d_v = d_{model}/h = 64$. Multi-head 전체 파라미터: $h \cdot (3 \cdot d_{model} \cdot d_k) + d_{model} \cdot d_{model} = 8(3 \cdot 512 \cdot 64) + 512 \cdot 512 = 786{,}432 + 262{,}144 = 1{,}048{,}576$. 단일 헤드($d_k = 512$, $W^Q,W^K,W^V,W^O$ 모두 $512\times512$)도 정확히 같은 $1{,}048{,}576$. <b>파라미터 수 동일.</b></div>
+        <div class="tagrow"><span>차원 계산</span><span>파라미터</span></div>
+      </div>
+
+      <div class="qa-block">
+        <div class="q">Q10 · 개념</div>
+        <div class="qt">왜 Attention만 쓰면 시퀀스 순서를 알 수 없는가?</div>
+        <div class="a">Attention 식은 토큰의 “집합”에 대한 가중합으로, 토큰 위치 인덱스 $j$가 식 안에 들어가지 않는다. 입력 시퀀스의 순서를 바꾸면 출력 시퀀스도 같은 순서로 바뀔 뿐, 본질적인 계산 결과는 같다(permutation equivariance). 자연어에서 순서는 의미에 결정적이므로 별도의 위치 정보 주입이 필요.</div>
+        <div class="tagrow"><span>PE</span><span>순서</span></div>
+      </div>
+
+      <div class="qa-block">
+        <div class="q">Q11 · 수식</div>
+        <div class="qt">Positional Encoding의 sin·cos 수식을 적고, 차원에 따라 주기가 어떻게 변하는지 설명하라.</div>
+        <div class="a">$\text{PE}(pos, 2i) = \sin(pos/10000^{2i/d_{model}})$, $\text{PE}(pos, 2i+1) = \cos(pos/10000^{2i/d_{model}})$. $i$가 클수록 분모 $10000^{2i/d_{model}}$가 커져 sin·cos의 주기가 길어진다. 낮은 차원은 짧은 주기로 빠른 변화 → 인접 위치 구분. 높은 차원은 긴 주기로 느린 변화 → 멀리 떨어진 위치 구분.</div>
+        <div class="tagrow"><span>PE</span><span>sin/cos</span></div>
+      </div>
+
+      <div class="qa-block">
+        <div class="q">Q12 · 개념</div>
+        <div class="qt">함수형 PE(sin·cos)와 학습형 PE(learned embedding)의 장단점을 비교하라.</div>
+        <div class="a"><b>함수형</b>: 길이 일반화에 강함, 추가 파라미터 0, 위치 차이가 선형 변환으로 표현 가능. 단점은 데이터에 맞춰 미세 조정 불가. <b>학습형</b>: 데이터에 맞춰 학습되어 성능이 약간 더 좋을 수 있음. 단점은 학습 시 본 최대 길이를 초과한 위치를 처리 못함, 추가 파라미터 필요.</div>
+        <div class="tagrow"><span>PE</span><span>비교</span></div>
+      </div>
+
+      <div class="qa-block">
+        <div class="q">Q13 · 개념</div>
+        <div class="qt">Encoder 블록의 sub-layer 두 개를 적고 각 역할을 설명하라.</div>
+        <div class="a">(1) <b>Multi-Head Self-Attention</b> — 위치 간 정보 교환. 각 토큰이 다른 토큰들의 정보를 가중합으로 흡수. (2) <b>Feed-Forward Network</b> — 위치별 비선형 변환. 같은 가중치 $W_1, W_2$를 모든 토큰에 독립 적용. 두 sub-layer 모두 뒤에 잔차 연결과 LayerNorm.</div>
+        <div class="tagrow"><span>Encoder</span><span>구조</span></div>
+      </div>
+
+      <div class="qa-block">
+        <div class="q">Q14 · 개념</div>
+        <div class="qt">잔차 연결(residual connection)이 깊은 Transformer 학습에 어떻게 도움이 되는가?</div>
+        <div class="a">(1) gradient가 sublayer를 우회해 입력까지 곧장 흐를 수 있어 vanishing/exploding gradient 완화. (2) 학습 초기에 출력이 입력에 가깝게 시작하여 안정성 확보. (3) “sublayer가 학습한 변화량”만 잔차로 표현되어 모델이 “입력을 어떻게 수정할지”에 집중.</div>
+        <div class="tagrow"><span>Residual</span><span>학습 안정</span></div>
+      </div>
+
+      <div class="qa-block">
+        <div class="q">Q15 · 개념</div>
+        <div class="qt">LayerNorm과 BatchNorm의 차이는? 왜 Transformer는 LayerNorm을 쓰는가?</div>
+        <div class="a"><b>LayerNorm</b>: 한 토큰의 모든 차원에 대해 평균·분산 계산(다른 토큰·배치 무관). <b>BatchNorm</b>: 같은 차원의 배치 전체에 대해 평균·분산 계산. 시퀀스 처리에서는 (1) 길이가 배치마다 달라 BatchNorm 불안정, (2) “한 토큰 안의 차원 표준화”가 의미적으로 자연스러움. 그래서 LayerNorm.</div>
+        <div class="tagrow"><span>LayerNorm</span></div>
+      </div>
+
+      <div class="qa-block">
+        <div class="q">Q16 · 개념</div>
+        <div class="qt">FFN의 역할을 두 가지 적어라.</div>
+        <div class="a">(1) <b>비선형성 도입</b> — Attention 자체는 선형에 가까우므로 ReLU 같은 비선형이 필요. (2) <b>“세상 지식” 저장</b> — 중간층 $d_{ff}=2048$가 key-value 메모리처럼 작동, 토큰별 변환 규칙 저장.</div>
+        <div class="tagrow"><span>FFN</span></div>
+      </div>
+
+      <div class="qa-block">
+        <div class="q">Q17 · 개념</div>
+        <div class="qt">Decoder 블록의 sub-layer 세 개를 적어라.</div>
+        <div class="a">(1) <b>Masked Multi-Head Self-Attention</b> — 자기 시퀀스 안에서, 미래 위치를 mask. (2) <b>Multi-Head Cross-Attention</b> — Q=디코더, K·V=인코더 최종 출력. (3) <b>Feed-Forward Network</b> — Encoder와 동일. 각 뒤에 Add&Norm.</div>
+        <div class="tagrow"><span>Decoder</span><span>구조</span></div>
+      </div>
+
+      <div class="qa-block">
+        <div class="q">Q18 · 수식</div>
+        <div class="qt">Decoder의 causal mask 행렬 $M$을 정의하고, attention 식에 어떻게 들어가는지 설명하라.</div>
+        <div class="a">$M_{ij} = 0$ if $j \le i$, $-\infty$ otherwise. 식은 $\text{softmax}((QK^\top + M)/\sqrt{d_k})V$. $M$이 attention 점수에 더해진 후 softmax 적용 시 $-\infty$가 $e^{-\infty} = 0$이 되어, 미래 위치의 가중치가 정확히 0. 결과적으로 query는 자기 위치와 과거만 본다.</div>
+        <div class="tagrow"><span>Mask</span><span>Decoder</span></div>
+      </div>
+
+      <div class="qa-block">
+        <div class="q">Q19 · 개념</div>
+        <div class="qt">Cross-Attention에는 왜 mask가 없는가?</div>
+        <div class="a">Cross-Attention에서 K·V는 인코더의 최종 출력 — 입력 시퀀스 전체를 본 결과. 디코더가 이걸 참조할 때 “미래”라는 개념이 없다(인코더 입력은 이미 모두 정해진 정적 자료). 따라서 디코더가 인코더 출력의 어떤 위치든 자유롭게 보아도 무방.</div>
+        <div class="tagrow"><span>Cross-Attn</span><span>Mask</span></div>
+      </div>
+
+      <div class="qa-block">
+        <div class="q">Q20 · 개념</div>
+        <div class="qt">Teacher Forcing이란 무엇이고, 어떤 단점(exposure bias)이 있는가?</div>
+        <div class="a"><b>Teacher Forcing</b>: 학습 시 디코더 입력으로 “정답 시퀀스”를 한 칸 밀어 사용. 모든 위치의 예측이 병렬 계산 가능. <b>Exposure Bias</b>: 학습 시 디코더는 항상 “깨끗한 정답”만 봤기에, 추론 시 자기 출력이 입력으로 들어가는 상황에서 잘못된 과거를 처리하는 법을 못 배움. 오차가 누적될 수 있음.</div>
+        <div class="tagrow"><span>학습</span><span>Teacher Forcing</span></div>
+      </div>
+
+      <div class="qa-block">
+        <div class="q">Q21 · 개념</div>
+        <div class="qt">자기회귀(autoregressive) 디코딩이란?</div>
+        <div class="a">추론 시 디코더가 “자기가 만든 출력 토큰”을 다음 step의 입력으로 다시 사용해 한 토큰씩 시퀀스를 생성하는 방식. $\hat{y}_1$ 생성 → 입력 $[\langle s\rangle, \hat{y}_1]$ → $\hat{y}_2$ 생성 → ... → EOS 또는 최대 길이까지. 학습 시 병렬 처리와 달리 추론은 토큰 수만큼의 step 필요.</div>
+        <div class="tagrow"><span>추론</span><span>Autoregressive</span></div>
+      </div>
+
+      <div class="qa-block">
+        <div class="q">Q22 · 구현</div>
+        <div class="qt">KV Cache가 왜 자기회귀 추론에서 필수인가?</div>
+        <div class="a">Naive 구현은 위치 $i$의 출력을 만들 때 매번 위치 1부터 $i-1$까지의 K, V를 다시 계산함. KV Cache는 이전 위치들의 K, V를 메모리에 저장하고 재사용 — 새 토큰의 K, V만 추가 계산. 결과적으로 위치당 비용을 일정하게 유지($O(i^2) \to O(i)$). 모든 자기회귀 LLM(GPT, Llama 등)에 필수.</div>
+        <div class="tagrow"><span>KV Cache</span><span>추론 가속</span></div>
+      </div>
+
+      <div class="qa-block">
+        <div class="q">Q23 · 전략</div>
+        <div class="qt">Greedy decoding, Beam Search, Sampling의 차이를 한 줄씩 설명하라.</div>
+        <div class="a"><b>Greedy</b>: 매 step 최대 확률 토큰 하나 선택. 빠르지만 최적 시퀀스 보장 X. <b>Beam Search</b>: 상위 $k$개 후보 시퀀스 유지하며 확장, 마지막에 점수 최고 선택. 번역·요약 등 정답 정해진 과제. <b>Sampling</b>: 분포에서 확률적으로 토큰 추출. temperature/top-k/top-p로 조절. 창의적 생성용.</div>
+        <div class="tagrow"><span>디코딩</span><span>전략</span></div>
+      </div>
+
+      <div class="qa-block">
+        <div class="q">Q24 · 개념</div>
+        <div class="qt">Transformer 학습률 warmup이 왜 필요한가?</div>
+        <div class="a">학습 초기 가중치가 랜덤이라 layer 출력 스케일 불안정. 큰 학습률로 시작하면 첫 step에서 발산 가능. Warmup으로 작은 학습률에서 시작해 점진적으로 늘려, 가중치 안정 후 본격 학습. Post-LN 구조에서 특히 중요. 원 논문 스케줄: $lr \propto d_{model}^{-0.5} \min(t^{-0.5}, t \cdot \text{warmup}^{-1.5})$.</div>
+        <div class="tagrow"><span>학습</span><span>Warmup</span></div>
+      </div>
+
+      <div class="qa-block">
+        <div class="q">Q25 · 개념</div>
+        <div class="qt">Pre-LN과 Post-LN의 차이는?</div>
+        <div class="a"><b>Post-LN</b> (원 논문): $X' = \text{LN}(X + \text{Sublayer}(X))$. <b>Pre-LN</b> (후속 모델 대부분): $X' = X + \text{Sublayer}(\text{LN}(X))$. Pre-LN은 잔차 경로가 LN을 거치지 않아 그래디언트가 더 깨끗하게 흐르고 학습이 더 안정. Warmup 필요성도 감소. GPT-2, GPT-3, 최신 LLM 대부분 Pre-LN.</div>
+        <div class="tagrow"><span>LN</span><span>Pre/Post</span></div>
+      </div>
+
+      <div class="qa-block">
+        <div class="q">Q26 · 차원</div>
+        <div class="qt">시퀀스 길이 $N$, 모델 차원 $d$일 때 self-attention 한 layer의 시간 복잡도와 메모리 복잡도는?</div>
+        <div class="a"><b>시간</b>: $QK^\top$ 계산이 $O(N^2 d)$, softmax·$V$ 곱이 $O(N^2 d)$ → 합 $O(N^2 d)$. <b>메모리</b>: attention 점수 행렬 $N \times N$이 $O(N^2)$. 시퀀스 길이가 길어지면 메모리가 제곱으로 증가 — 이게 long-context LLM의 핵심 병목. 해결책은 Flash Attention, sparse/linear attention 등.</div>
+        <div class="tagrow"><span>복잡도</span></div>
+      </div>
+
+      <div class="qa-block">
+        <div class="q">Q27 · 종합</div>
+        <div class="qt">Vaswani et al. 2017 "Attention Is All You Need" 논문의 핵심 기여 3가지를 적어라.</div>
+        <div class="a">(1) <b>RNN·CNN을 완전히 버리고 attention만으로 sequence-to-sequence 모델을 구성</b>한 첫 사례. 병렬화 가능. (2) <b>Multi-Head Attention 도입</b> — 같은 비용으로 여러 종류 관계 학습. (3) <b>Sin·Cos Positional Encoding 도입</b> — 결정론적 함수로 위치 정보 주입, 길이 일반화. WMT 영어-독일어/영어-프랑스어에서 당시 SOTA 달성하고 학습 시간 대폭 단축.</div>
+        <div class="tagrow"><span>논문</span><span>종합</span></div>
+      </div>
+
+      <h2>시험 직전 체크리스트</h2>
+      <p>다음 항목을 한 줄로 설명할 수 있으면 시험 준비 완료다.</p>
+      <ul>
+        <li>RNN의 두 한계 (병렬 불가, 장거리 의존 약화) → 한 문장씩.</li>
+        <li>Attention 공식 $\text{softmax}(QK^\top/\sqrt{d_k})V$ → 단계별 의미.</li>
+        <li>$\sqrt{d_k}$로 나누는 이유 → 분산·softmax·vanishing gradient.</li>
+        <li>Q, K, V의 의미와 역할 → 도서관 비유로.</li>
+        <li>Self-Attention vs Cross-Attention → 어디서 Q, K, V 가져오는지.</li>
+        <li>Multi-Head 핵심 → 왜 여러 헤드, 차원 쪼개기, $W^O$ 역할.</li>
+        <li>$h, d_k, d_{model}$ 관계 → $d_k = d_{model}/h$.</li>
+        <li>Positional Encoding 공식과 “차원마다 다른 주기”의 의미.</li>
+        <li>PE 더하기 vs 이어붙이기 → 왜 더해도 되는지.</li>
+        <li>Encoder 블록 구조: MHA + FFN + Add&Norm 2회.</li>
+        <li>Decoder 블록 구조: Masked MHA + Cross-Attn + FFN.</li>
+        <li>Causal mask 행렬 $M$ → $-\infty$로 softmax 후 0.</li>
+        <li>잔차 연결의 두 가지 효과 → gradient 흐름, 항등 함수 시작.</li>
+        <li>LayerNorm의 정의와 BatchNorm과의 차이.</li>
+        <li>Teacher Forcing → 정답 한 칸 밀어 입력.</li>
+        <li>Exposure bias → 학습과 추론 분포 mismatch.</li>
+        <li>자기회귀 디코딩 → 자기 출력을 입력으로.</li>
+        <li>KV Cache → 위치당 비용 일정.</li>
+        <li>Greedy/Beam/Sampling 차이.</li>
+        <li>Self-attention 복잡도 $O(N^2 d)$ → long context 병목.</li>
+      </ul>
+
+      <h2>마지막 한마디</h2>
+      <p>Transformer는 한 번에 이해하기 어렵지만, 부품 단위로 쪼개 보면 의외로 “단순한 발상의 누적”이다. RNN의 두 한계 → 모든 토큰이 모든 토큰을 보자 → 그러려면 Q·K·V로 역할 분리 → softmax로 분포 → 분산 안정 위해 $\sqrt{d_k}$ → 여러 관계 동시에 위해 multi-head → 순서 정보 위해 PE → 깊이 쌓기 위해 잔차·LN → 출력 생성 위해 masked self-attn + cross-attn → 학습은 teacher forcing 병렬, 추론은 자기회귀 직렬. 시험에서 어떤 문제가 나와도 이 흐름 위 어딘가에 있다. 다시 한 번 처음부터 따라가 보고, 막히는 부분의 sub-chapter로 돌아가 보자.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  window.addEventListener('load', () => {
+    TFR.buildNav('16');
+  });
+</script>
+<script src="assets/widgets.js"></script>
+</body>
+</html>

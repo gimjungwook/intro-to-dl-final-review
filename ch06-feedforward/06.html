@@ -3,30 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Sub 06 · 만능 근사 정리와 깊이 vs 너비 · Ch.06</title>
+<title>Sub 06 · 활성화 2 — ReLU의 등장, sparsity, dying ReLU · Ch.06</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
-<style>
-  .uni-stage { display: grid; grid-template-columns: 1fr 200px; gap: 1.2rem; padding: 1.2rem 1.2rem .8rem; align-items: start; }
-  .uni-cv { display: block; border-radius: 8px; border: 1px solid var(--line); max-width: 100%; background: var(--paper); }
-  .uni-side { display: flex; flex-direction: column; gap: .7rem; }
-  .uni-stat { padding: .8rem 1rem; background: var(--paper-2); border-radius: 8px; font-size: .9rem; line-height: 1.55; color: var(--ink-soft); }
-  .uni-stat b { color: var(--ink); }
-  .uni-note { padding: .8rem 1rem; background: #fff; border: 1px solid var(--line); border-radius: 8px; font-size: .82rem; color: var(--ink-soft); line-height: 1.55; }
-  @media (max-width: 780px) { .uni-stage { grid-template-columns: 1fr; } }
-
-  .myth { max-width: var(--measure); margin: 1.4rem auto; padding: 1.1rem 1.4rem; background: var(--style-bg); border-left: 3px solid var(--style); border-radius: 0 8px 8px 0; }
-  .myth h4 { margin: 0 0 .4rem; font-family: var(--serif); color: var(--style); font-size: 1.05rem; }
-  .myth p { margin: 0; font-size: .92rem; color: var(--ink-soft); line-height: 1.6; }
-  .myth p b { color: var(--ink); }
-
-  .fact { max-width: var(--measure); margin: 1.4rem auto; padding: 1.1rem 1.4rem; background: var(--structure-bg); border-left: 3px solid var(--structure); border-radius: 0 8px 8px 0; }
-  .fact h4 { margin: 0 0 .4rem; font-family: var(--serif); color: var(--structure); font-size: 1.05rem; }
-  .fact p { margin: 0 0 .4rem; font-size: .92rem; color: var(--ink-soft); line-height: 1.6; }
-  .fact p:last-child { margin: 0; }
-</style>
 </head>
 <body>
 <div class="scroll-progress"></div>
@@ -37,97 +18,84 @@
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Sub 06 · 가능성 vs 효율</span>
-      <h1>만능 근사 정리와<br><span class="t-style">깊이 vs 너비</span></h1>
-      <p class="lede">하나의 은닉층으로 충분히 넓다면 무엇이든 근사할 수 있다 — 그러나 “가능성”과 “효율”은 다르다.</p>
+      <span class="kicker">Sub 06 · 단순함이 이긴 이유</span>
+      <h1>활성화 2 —<br><span class="t-structure">ReLU</span>의 등장과 <span class="t-style">죽은 ReLU</span></h1>
+      <p class="lede">2010년경 등장해 단숨에 표준이 된 활성화 함수가 있다. ReLU(Rectified Linear Unit). 식은 너무 단순해서 거의 농담처럼 보일 정도다. 그러나 그 단순함이 깊은 학습의 시대를 열었다.</p>
     </header>
 
     <div class="prose">
-      <p>만능 근사 정리(Universal Approximation Theorem, UAT)는 신경망에 대한 가장 자주 인용되는 정리다. 그런데 자주 인용되는 만큼 자주 오해된다. 이 절은 그 정리가 <strong>무엇을 말하고, 무엇을 말하지 않는지</strong>를 정확히 분리한 뒤, “왜 그럼에도 깊이가 중요한가”를 설명한다.</p>
+      <p>앞 절에서 sigmoid와 tanh가 깊은 망에서 무너지는 이유를 보았다. 그 무너짐을 해결한 함수가 ReLU다. 2010년 Nair와 Hinton의 논문, 2012년 AlexNet의 ImageNet 우승에서 본격적으로 주목받았고, 그 이후 거의 모든 깊은 신경망의 기본 활성화 함수가 되었다. ReLU의 식은 다음 한 줄이다.</p>
 
-      <h2>정리의 진술 — 한 줄로</h2>
-      <p>UAT를 가장 일반적인 형태로 풀면 이렇다.</p>
+      <div class="math-block">$$ \text{ReLU}(z) = \max(0, z) $$</div>
+      <p class="math-note">양수면 그대로 통과, 음수면 0. 그게 끝.</p>
 
-      <div class="math-block">$$ \text{충분히 많은 은닉 유닛을 가진 단일 은닉층 MLP는, 임의의 연속 함수를 임의의 정밀도로 근사할 수 있다.} $$</div>
+      <h2>이 단순한 함수가 왜 그렇게 강력한가</h2>
+      <p>ReLU의 위력은 세 가지에서 나온다.</p>
 
-      <p>활성화 함수에는 약한 조건(예: 시그모이드처럼 “찌그러진 S자”이거나, ReLU처럼 “꺾인 직선”)만 붙는다. 입력 공간이 유한(예: $[0,1]^n$ 같은 닫힌 영역)이고 근사할 함수가 연속이라면, <strong>은닉 유닛을 충분히 많이 두는 것만으로</strong> 어떤 함수든 흉내낼 수 있다.</p>
+      <p>첫째, <strong>양수 영역에서 미분이 정확히 1</strong>이다. sigmoid의 최댓값 0.25, tanh의 최댓값 1과 달리, ReLU는 모든 양수 입력에서 미분이 정확히 1이다. 즉 역전파에서 양수 활성을 가진 뉴런을 통과하는 기울기는 손실되지 않고 그대로 전달된다. 100층을 지나도 1을 100번 곱하면 1이다. 기울기 소실이 사라진다.</p>
 
-      <p>이 정리는 1989년 Hornik, 1989년 Cybenko, 1991년 Hornik 등의 결과로 정립되었다. 활성화 함수가 시그모이드일 때 처음 증명되었고, 이후 다양한 활성화 함수와 다양한 함수 클래스로 확장되었다.</p>
+      <div class="math-block">$$ \text{ReLU}'(z) = \begin{cases} 1 & z > 0 \\ 0 & z < 0 \end{cases} $$</div>
+      <p class="math-note">z=0에서는 엄밀히 미분이 정의되지 않지만, 보통 0(또는 1)로 처리한다.</p>
 
-      <h2>아래 위젯에서 직접 확인</h2>
-      <p>은닉 유닛 수 $N$을 슬라이더로 늘려 보자. ReLU MLP(은닉층 1개, 출력층 1개)가 목표 함수(사인파, 계단, 이중봉, 톱니파)를 흉내내는 정확도가 $N$이 커질수록 좋아진다. $N=60$쯤 되면 거의 완벽하게 따라간다. <strong>$N$만 충분히 크면 무엇이든 근사 가능하다 — UAT가 말하는 것은 정확히 이것이다.</strong></p>
-    </div>
+      <p>둘째, <strong>계산이 매우 가볍다</strong>. sigmoid는 한 번 호출할 때 지수 함수 $e^{-z}$를 계산해야 한다. 한 층의 뉴런이 수천 개고 미니배치가 수백이라면, 한 번의 순전파에서 수백만 번의 지수 계산이 일어난다. ReLU는 단순한 비교 연산 한 번이다. GPU에서 sigmoid의 한 자리수 빠른 속도로 처리된다.</p>
 
-    <div class="widget">
-      <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 06</span><span>만능 근사 정리 — 은닉 유닛 수와 근사 정확도</span></div>
-        <div id="uni"></div>
-      </div>
-      <p class="widget-cap">웜은 목표 함수, 쿨은 은닉 유닛 N개짜리 ReLU MLP의 근사. 빨간 점은 각 ReLU의 꺾임점 위치. N이 커질수록 꺾임점이 많아져 곡선을 더 정밀하게 흉내낼 수 있다. RMSE가 N과 함께 줄어드는 것을 확인할 수 있다.</p>
-    </div>
+      <p>셋째, <strong>희소성(sparsity)을 자연스럽게 만든다</strong>. 입력 $z$가 음수인 뉴런은 출력 0을 낸다. 즉 다음 층에 영향을 주지 않는다. 한 층의 약 절반 정도 뉴런이 0이 되는 것이 일반적이라, 자연스럽게 희소한 표현(sparse representation)이 만들어진다. 이것은 두 가지 면에서 좋다. (1) 표현이 더 분리되기 쉬워 다음 층이 일을 하기 쉽다. (2) 계산상 0인 부분은 사실 더 절약될 여지가 있다(특정 하드웨어).</p>
 
-    <div class="prose">
-      <h2>가장 자주 빠지는 오해</h2>
-      <div class="myth">
-        <h4>오해</h4>
-        <p><b>“하나의 은닉층으로 충분하다면, 깊이는 사실 별로 중요하지 않다.”</b></p>
-      </div>
+      <h2>ReLU가 비선형성을 만드는 메커니즘</h2>
+      <p>ReLU는 단순한 꺾임이지만, 이 꺾임 하나가 모든 비선형성을 만든다. ReLU 한 개는 직선과 $y=0$ 두 조각으로 구성된 piecewise-linear 함수다. ReLU $N$개를 가중합 하면, $N+1$개의 직선 조각으로 구성된 piecewise-linear 함수가 된다. 입력 차원이 늘고 ReLU 층이 쌓이면, 이 piecewise-linear 영역의 수는 지수적으로 늘어난다. 한 층의 ReLU $n$개가 만드는 영역의 수가 $O(2^n)$ 또는 그 이상으로 증가할 수 있다는 정리가 Montufar et al. 2014에서 증명됐다.</p>
 
-      <div class="fact">
-        <h4>실제 의미</h4>
-        <p>이 정리는 <b>가능성</b>을 증명하는 정리이지 <b>효율</b>을 보장하는 정리가 아니다.</p>
-        <p>“하나의 얕은 층도 이론적으로는 가능하지만, 실용적으로는 엄청나게 비효율적일 수 있다”가 진짜 메시지다.</p>
-      </div>
+      <p>즉 ReLU는 사인 곡선이나 시그모이드 같은 매끄러운 함수가 아니지만, <strong>충분한 수의 ReLU를 조합하면 매끄러운 함수를 임의의 정확도로 근사할 수 있다</strong>. 이것은 UAT의 활성화 함수 조건이 sigmoid에 한정되지 않는다는 후속 정리들에 의해 보장된다(Leshno et al. 1993).</p>
 
-      <p>왜 그런가? 위 위젯에서 본 것처럼, 단일 은닉층 MLP가 복잡한 함수를 근사하려면 <strong>은닉 유닛 수가 함수의 “꺾임 점 수”에 비례해서 늘어나야 한다</strong>. 더 정확히 말하면, 단순한 톱니파 함수를 근사할 때 톱니가 $k$개라면 ReLU 유닛도 대략 $k$개 필요하다.</p>
-
-      <p>그런데 두 층짜리 MLP라면? <strong>“합성”이 작동한다.</strong> 1층이 “접는” 변환을 한 번 하면, 2층은 그 접힌 결과를 받아서 또 다시 접는다. 같은 함수를 “접고 또 접는” 방식으로 흉내낼 수 있다.</p>
-
-      <h2>깊이의 지수적 이득 — 종이접기 비유</h2>
       <div class="analogy">
-        <b>종이접기로 생각해 보자.</b> 종이를 한 번도 접지 않고 가위로 1024개의 다른 모양 조각을 만들려면 가위질을 1024번 해야 한다. 하지만 종이를 10번 접고 한 번만 가위질하면 — 펼쳤을 때 $2^{10} = 1024$개의 같은 모양 조각이 나온다. 접기(깊이)는 가위질(너비)을 <b>지수적으로 절약</b>한다.
+        <b>레고 블록과 비교해 보자.</b> sigmoid는 부드럽게 휘어진 점토 같다. 한 조각만으로도 곡선을 만들 수 있지만, 큰 형태를 만들기에는 한계가 있다. ReLU는 직각 블록 같다. 한 조각은 매우 단순하지만, 수백 개를 조합하면 어떤 모양이든 충분히 자세하게 흉내 낼 수 있다. 게다가 블록 한 개의 가격(계산 비용)도 점토보다 훨씬 싸다. 그래서 같은 예산으로 훨씬 큰 모델을 만들 수 있다.
       </div>
 
-      <p>같은 원리가 ReLU 네트워크에도 적용된다. ReLU의 꺾임은 “접기”와 같은 효과를 낸다. $L$층짜리 ReLU 네트워크는 입력 공간을 최대 $2^L$개의 영역으로 “접어” 표현할 수 있다. 같은 표현력을 1층 MLP로 흉내내려면 $2^L$개의 은닉 유닛이 필요하다.</p>
+      <h2>그래도 죽는다 — Dying ReLU 문제</h2>
+      <p>ReLU의 장점만 들으면 완벽한 함수처럼 보인다. 그러나 ReLU에는 한 가지 치명적인 부작용이 있다. <strong>음수 입력에서 미분이 0이라는 점</strong>이다. 어떤 뉴런이 학습 중에 큰 음수 편향(bias)을 가지게 되거나, 입력 분포가 음수 쪽으로 치우치면, 그 뉴런의 활성 전 값 $z$가 항상 음수가 된다. 그러면 출력은 항상 0이고, 미분도 항상 0이다. 그 뉴런으로 흘러 들어오는 기울기도 0이고, 그 뉴런의 가중치는 업데이트되지 않는다. <strong>뉴런이 영원히 죽는다.</strong></p>
 
-      <p>이 사실을 정량적으로 증명한 결과들이 있다 — Telgarsky 2016, Eldan-Shamir 2016 등. 이들은 “어떤 함수 클래스는 $L$층 네트워크로는 $O(L)$개 유닛으로 표현되지만, 1층 네트워크로는 $\Omega(2^L)$개 유닛이 필요하다”를 명확히 증명했다.</p>
+      <p>이 현상을 dying ReLU 또는 dead neurons라 부른다. 한 번 죽은 뉴런은 깨어날 길이 없다. 왜냐하면 학습 신호가 전혀 들어오지 않기 때문이다. 학습 후반에 모델의 뉴런 중 10-40% 정도가 죽어 있는 경우는 드물지 않다. 표면적으로는 학습이 멈추지 않으니 눈에 띄지 않지만, 모델의 유효 용량은 그만큼 감소한다.</p>
 
-      <h2>깊이가 강한 또 다른 이유 — 표현의 재사용</h2>
-      <p>깊이의 이득은 “종이접기” 비유로 다 설명되지는 않는다. 더 본질적인 이유는 <strong>표현의 재사용(reuse)</strong>이다.</p>
+      <p>죽는 원인은 보통 다음과 같다.</p>
+      <ol>
+        <li><strong>학습률(learning rate)이 너무 큼</strong>. 한 번의 업데이트로 편향이 큰 음수로 점프해 버린다. 작은 학습률로 충분히 천천히 학습하면 발생 빈도가 줄어든다.</li>
+        <li><strong>가중치 초기화가 너무 한쪽으로 치우침</strong>. He initialization 같은 적절한 초기화로 어느 정도 예방 가능.</li>
+        <li><strong>입력 분포가 한쪽으로 치우침</strong>. Batch normalization 같은 정규화로 완화.</li>
+      </ol>
 
-      <p>이미지를 예로 들어 보자. 얕은 층은 에지·코너·작은 텍스처 같은 저수준 특징을 잡는다. 다음 층은 이 저수준 특징들을 조합해 “눈”, “바퀴”, “문” 같은 중간 수준 부분을 만든다. 그 다음 층은 그 부분들을 조합해 “얼굴”, “자동차”, “건물”을 만든다.</p>
+      <h2>왜 ReLU가 sigmoid를 이겼는가 — 한 번 더 정리</h2>
+      <p>이 비교는 시험 직전에 자주 묻는 형태다. 핵심을 한 줄로 정리하면 이렇다. <strong>ReLU는 양수 영역에서 미분이 1이라서 깊은 망에서도 기울기가 살아남는다. sigmoid는 최대 미분이 0.25라서 깊이가 늘수록 신호가 지수적으로 약해진다.</strong></p>
 
-      <p>여기서 핵심은 <strong>“저수준 특징은 여러 고수준 객체에 공유된다”</strong>는 점이다. 얼굴을 검출하는 데 쓰이는 “수직 에지” 검출기는 자동차나 건물에도 똑같이 유용하다. 깊은 네트워크는 이런 공유 가능한 표현을 한 번만 학습해 재사용하지만, 얕은 네트워크는 각 객체마다 처음부터 다 학습해야 한다. 그래서 깊이는 표현의 <strong>모듈성(modularity)</strong>을 가능하게 한다.</p>
+      <p>좀 더 구체적인 비교 표를 그려 보자.</p>
+      <table class="symbols">
+        <tr><td>속성</td><td>sigmoid · tanh</td></tr>
+        <tr><td>·</td><td>ReLU</td></tr>
+        <tr><td>식</td><td>σ(z) = 1/(1+e^(-z))</td></tr>
+        <tr><td>·</td><td>max(0, z)</td></tr>
+        <tr><td>미분 최댓값</td><td>0.25 (sigmoid), 1 (tanh)</td></tr>
+        <tr><td>·</td><td>1 (양수 영역)</td></tr>
+        <tr><td>계산 비용</td><td>지수 함수 1회</td></tr>
+        <tr><td>·</td><td>비교 1회</td></tr>
+        <tr><td>포화 영역</td><td>양 끝 모두 (기울기 소실)</td></tr>
+        <tr><td>·</td><td>음수 영역 (dying ReLU)</td></tr>
+        <tr><td>출력 범위</td><td>(0, 1) 또는 (-1, 1)</td></tr>
+        <tr><td>·</td><td>[0, ∞)</td></tr>
+        <tr><td>zero-centered</td><td>sigmoid 아님, tanh 예</td></tr>
+        <tr><td>·</td><td>아님 (항상 ≥ 0)</td></tr>
+      </table>
 
-      <h2>그렇다면 너비는 왜 중요한가</h2>
-      <p>너비(width)도 무시할 수 없다. 너비는 한 층 안에서 동시에 “서로 다른 특징”을 잡을 수 있게 한다. 너무 좁은 층은 “표현의 병목(bottleneck)”이 되어 학습 가능한 함수 클래스를 제한한다.</p>
+      <h2>그래서 ReLU는 완벽한가? — 다음 절 예고</h2>
+      <p>아니다. Dying ReLU 외에도 ReLU는 두 가지 작은 약점이 있다. 첫째, 음수 영역의 정보 손실 — 음수 입력은 모두 0이 되어 정보가 사라진다. 둘째, 활성값이 zero-centered가 아니다(sigmoid와 같은 zigzag 문제가 약하게 남아 있다). 셋째, 매끄럽지 않다 — 일부 응용(예: 일부 베이지안 신경망)에서는 매끄러움이 필요하다.</p>
 
-      <p>현대적 권장사항은 <strong>“충분히 넓고 매우 깊은”</strong>이다. AlexNet(8층), VGG(19층), ResNet(50-152층), Transformer 변형(수십~수백 층)이 그 경향을 잘 보여 준다. 다만 너무 깊으면 학습 안정성 문제가 생기는데, 그건 잔차 연결(residual connection), 정규화 기법 등으로 해결한다(자세한 내용은 Ch.7-8).</p>
+      <p>이 약점들을 메우려는 변형들이 2013년 이후 줄줄이 등장했다. Leaky ReLU, Parametric ReLU, ELU, SELU, GELU, Swish, Mish 등등. 어느 것도 ReLU를 완전히 대체하지는 못했지만, 특정 응용에서는 ReLU보다 약간 나은 성능을 보인다. 다음 절에서 이 변형들을 차례로 본다.</p>
 
-      <h2>UAT의 또 다른 한계 — 학습 가능성과 다르다</h2>
-      <p>한 가지 더 중요한 점. UAT는 “그런 함수를 표현하는 네트워크가 존재한다”는 보장이다. <strong>“그 네트워크를 경사하강법으로 실제 찾을 수 있다”는 보장은 아니다.</strong> 즉 표현 가능성(representability)과 학습 가능성(learnability)은 별개 문제다.</p>
-
-      <p>예를 들어 어떤 복잡한 함수를 표현하는 1억 개 유닛짜리 단층 MLP가 이론적으로 존재한다고 해도, 무작위 초기화에서 시작해 SGD로 그 1억 개 가중치를 정확한 값으로 수렴시킬 수 있다는 보장은 없다. 깊이가 학습 가능성에도 유리하다는 것이 경험적으로 잘 알려져 있다(특히 잔차 연결, 적절한 초기화, 배치 정규화와 함께).</p>
-
-      <h2>시험에서 자주 묻는 형태</h2>
-      <ul>
-        <li>“만능 근사 정리가 있는데 왜 깊이가 필요한가?” → <em>가능성과 효율의 구분</em>으로 답</li>
-        <li>“깊은 네트워크가 얕은 네트워크보다 표현 효율이 어떻게 좋은가?” → <em>종이접기 비유, 지수적 이득, 표현 재사용</em></li>
-        <li>“UAT는 어떤 활성화 함수에 대해서 성립하나?” → 시그모이드, ReLU 등 약한 조건이면 충분</li>
-        <li>“UAT가 보장하지 않는 것은 무엇인가?” → <em>학습 가능성, 일반화, 효율</em> 모두 별개</li>
-      </ul>
-
-      <h2>이 절이 잡아 준 그림</h2>
-      <ul>
-        <li><strong>UAT의 진술</strong> — 충분히 넓은 단층 MLP는 어떤 연속 함수든 근사 가능.</li>
-        <li><strong>가장 흔한 오해</strong> — “그럼 깊이가 필요 없다”는 결론은 정확히 반대.</li>
-        <li><strong>실제 메시지</strong> — 가능성은 보장하지만 효율은 보장하지 않는다.</li>
-        <li><strong>깊이의 이득 1</strong> — 종이접기처럼 입력 공간을 지수적으로 많이 “접을 수 있다”.</li>
-        <li><strong>깊이의 이득 2</strong> — 저수준 특징의 재사용으로 모듈성을 얻는다.</li>
-        <li><strong>UAT가 보장하지 않는 것</strong> — 학습 가능성, 일반화, 너비 결정 모두 별개.</li>
-      </ul>
-
-      <p>다음 절은 6장 전체의 <strong>시험 대비 정리</strong>다. 챕터 핵심을 한 페이지로 압축하고, 자가 점검 질문과 미니 backprop 손계산 문제 하나를 두었다.</p>
+      <h2>지금 잡아 둘 그림</h2>
+      <ol>
+        <li><strong>ReLU = max(0, z).</strong> 너무 단순해서 의심스러울 정도지만, 그 단순함이 깊은 학습을 가능하게 했다.</li>
+        <li><strong>양수에서 미분이 1.</strong> 기울기 소실이 사라진다. 100층을 지나도 신호가 살아남는다.</li>
+        <li><strong>음수에서 미분이 0.</strong> Dying ReLU의 원인. 학습률, 초기화, 정규화로 완화 가능.</li>
+        <li><strong>계산이 가볍고, 희소성을 자연스럽게 만든다.</strong> GPU 친화적, 표현 분리에 유리.</li>
+      </ol>
+      <p>다음 절에서는 ReLU의 약점을 메우려는 현대적 변형들 — Leaky ReLU, ELU, GELU, Swish를 본다. 그리고 왜 Transformer 같은 현대 아키텍처가 GELU를 표준으로 채택했는지의 이유도 살핀다.</p>
     </div>
 
     <nav class="ch-foot"></nav>
@@ -138,8 +106,6 @@
 <script>
   window.addEventListener('load', () => {
     CH6.buildNav('06');
-    const u = document.getElementById('uni');
-    CH6.onVisible(u, () => CH6.universal(u));
   });
 </script>
 </body>

@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>10 · 적응 학습률 3 — Adam, 현대 표준</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .adam-stage { padding: 1.2rem 1.1rem 0.6rem; }
+  #adamCanvas { width: 100%; height: 460px; display: block; background: #fff; border: 1px solid var(--line); border-radius: 8px; }
+  .adam-read { display: flex; flex-wrap: wrap; gap: 1.2rem; padding: 0.4rem 1.1rem 1rem; font-family: var(--mono); font-size: .78rem; color: var(--ink-soft); }
+  .adam-read span b { color: var(--ink); font-weight: 600; }
+  .adam-legend { display: flex; gap: 1.1rem; padding: .4rem 1.1rem 0; font-family: var(--mono); font-size: .72rem; color: var(--ink-soft); }
+  .adam-legend i { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: .35rem; vertical-align: -1px; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a class="home" href="index.html">← Ch.08 최적화</a>
+  <span class="ch-mini">SUB 10 / 17</span>
+</div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol id="navlist"></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 10 · 모멘텀 + RMSProp + 편향 보정</span>
+      <h1>모든 좋은 점을 한 알고리즘에,<br><span class="t-style">Adam이 현대 표준이 된 이유</span></h1>
+      <p class="lede">Adam은 모멘텀의 1차 모멘트와 RMSProp의 2차 모멘트를 동시에 유지한다. 그리고 초기 편향까지 보정한다. 그 결과 하이퍼파라미터 튜닝에 강건한, 새 프로젝트의 첫 옵티마이저가 되었다.</p>
+    </header>
+
+    <div class="prose">
+
+      <p>지금까지 본 SGD·모멘텀·네스테로프·AdaGrad·RMSProp 다섯 개 알고리즘은 모두 각자의 장점과 약점을 갖는다. 그러면 자연스러운 질문이 생긴다. "왜 좋은 것들을 다 합치면 안 되나?" Adam(Adaptive Moment Estimation, 2014년 Kingma & Ba)이 정확히 그 답이다. Adam은 모멘텀의 1차 모멘트(1st moment, 기울기 평균)와 RMSProp의 2차 모멘트(2nd moment, 기울기 제곱 평균)를 동시에 유지하고, 두 평균 모두에 편향 보정을 적용한다.</p>
+
+      <p>이 절은 Adam의 네 줄 식을 한 줄씩 풀어 본 뒤, 편향 보정이 왜 필요한지를 직관적으로 본다. 그리고 Adam의 권장 하이퍼파라미터와 그것이 왜 그 값인지를 살핀다. 마지막으로 "그러면 Adam이 항상 최선인가?"라는 미묘한 질문에 답한다.</p>
+
+      <h2>Adam의 네 줄 — 두 모멘트 + 보정 + 업데이트</h2>
+
+      <div class="math-block">$$ s \leftarrow \rho_1 s + (1-\rho_1)\, \hat{g} $$</div>
+      <p class="math-note">1차 모멘트 (기울기 평균) 갱신. 모멘텀과 같은 형태.</p>
+
+      <div class="math-block">$$ r \leftarrow \rho_2 r + (1-\rho_2)\, \hat{g} \odot \hat{g} $$</div>
+      <p class="math-note">2차 모멘트 (기울기 제곱 평균) 갱신. RMSProp과 같은 형태.</p>
+
+      <div class="math-block">$$ \hat{s} = \frac{s}{1-\rho_1^t}, \quad \hat{r} = \frac{r}{1-\rho_2^t} $$</div>
+      <p class="math-note">편향 보정. s와 r은 0에서 시작하므로 초기에 0 방향으로 편향. 보정 인자 1−ρᵗ로 나누어 보정.</p>
+
+      <div class="math-block">$$ \theta \leftarrow \theta - \varepsilon\, \frac{\hat{s}}{\sqrt{\hat{r}} + \delta} $$</div>
+      <p class="math-note">파라미터 업데이트. 보정된 1차 모멘트를 보정된 2차 모멘트의 제곱근으로 나눠 학습률 조정.</p>
+
+      <p>네 줄을 다시 정리하면 이렇다. 첫 두 줄은 모멘텀과 RMSProp을 그대로 가져왔다. 세 번째 줄이 Adam의 특징인 편향 보정이다. 마지막 줄은 보정된 두 모멘트를 결합해 업데이트한다.</p>
+
+      <h2>편향 보정 — 왜 필요한가</h2>
+
+      <p>$s$와 $r$은 0으로 초기화된다. 그러면 학습 첫 스텝에서 $s = (1-\rho_1) g_1 = 0.1 \cdot g_1$이다($\rho_1 = 0.9$ 기준). 실제 기울기 $g_1$의 약 10%만 반영된 것이다. 이는 $s$가 0에서 출발했기 때문에 발생하는 편향이다.</p>
+
+      <p>이 편향은 $t$가 커질수록 작아진다. 두 번째 스텝에서는 $s = 0.81 \cdot 0.1 g_1 + 0.1 g_2$가 되어 평균에 더 가깝다. $t$ 스텝 후의 편향 인자는 $1 - \rho_1^t$이다. $\rho_1 = 0.9$, $t = 10$이면 $1 - 0.9^{10} \approx 0.65$. 즉 $s$가 진짜 평균의 약 65%만큼 작다. 이를 $0.65$로 나눠 보정하면 진짜 평균이 나온다.</p>
+
+      <p>이 보정의 효과는 초기 몇 십 스텝에서 두드러진다. 보정이 없으면 학습 초기에 너무 작은 스텝을 밟거나, 두 모멘트의 비율이 왜곡되어 잘못된 방향으로 갈 수 있다. 보정 인자 $1 - \rho^t$는 $t$가 커지면 1에 가까워지므로 영향이 사라진다. <strong>초기에는 보정이 필요하고, 후기에는 자동으로 사라지는 우아한 설계다.</strong></p>
+
+      <div class="analogy">
+        한 학생이 매일 시험을 봐서 누적 평균 점수를 계산한다. 첫 날은 시험 한 번의 점수뿐이라 "누적 평균"이라고 부르기 부끄럽다 — 그저 그 한 점수다. 일주일이 지나야 평균이 의미 있어진다. <b>편향 보정은 "지금까지 본 시험 횟수로 나누어 실제 평균에 가까운 값을 만드는" 것이다.</b> 0에서 시작한 누적값을 진짜 평균으로 복원한다.
+      </div>
+
+      <h2>Adam의 권장 하이퍼파라미터 — 거의 만질 일이 없다</h2>
+
+      <table class="symbols">
+        <tr><td>$\varepsilon$ (학습률)</td><td>0.001 — 전체 스텝 크기. 모델·데이터에 따라 0.0001 ~ 0.01 사이 조정.</td></tr>
+        <tr><td>$\rho_1$ (1차 모멘트 감쇠율)</td><td>0.9 — 모멘텀의 시간 스케일. 윈도우 약 10스텝.</td></tr>
+        <tr><td>$\rho_2$ (2차 모멘트 감쇠율)</td><td>0.999 — 곡률 추정의 시간 스케일. 윈도우 약 1000스텝.</td></tr>
+        <tr><td>$\delta$ (수치 안정 상수)</td><td>$10^{-8}$ — 0으로 나누기 방지.</td></tr>
+      </table>
+
+      <p>이 값들이 인기 있는 이유는 단순하다. <strong>대부분의 문제에서 기본값만으로 합리적인 성능을 보인다.</strong> 학습률만 한 자릿수 정도 조정하면 되고, $\rho_1, \rho_2$는 거의 만질 일이 없다. 그래서 새 프로젝트를 시작할 때 첫 옵티마이저로 Adam을 선택하는 것이 표준이 되었다.</p>
+
+      <h2>Adam이 항상 최선인가 — 미묘한 답</h2>
+
+      <p>Adam은 합리적 기본값으로 매우 잘 작동하지만, 특정 과제에서는 잘 튜닝된 SGD + 모멘텀이 더 좋은 결과를 낸다. 특히 이미지 분류에서 ResNet 같은 모델의 최종 성능을 극한까지 끌어올릴 때 그렇다. 책은 명시적으로 "단일 최고 알고리즘은 아직 없다"고 한다.</p>
+
+      <p>그래서 권고는 다음과 같다. <strong>탐색 단계에서는 Adam, 최종 튜닝 단계에서는 SGD + 모멘텀.</strong> Adam의 안정성으로 좋은 모델 구조를 찾은 뒤, SGD + 모멘텀으로 마지막 1-2%포인트를 끌어올린다.</p>
+
+      <p>또 한 가지 변종으로 AdamW가 있다. Adam에 가중치 감쇠(weight decay)를 분리해 더 잘 작동하게 만든 변종이다. 2017년 Loshchilov & Hutter가 제안했고, 현대 트랜스포머 학습에서 사실상 표준이다. 식은 Adam과 거의 같고, weight decay 항을 그래디언트가 아닌 파라미터에 직접 적용한다.</p>
+
+      <h2>위젯 — SGD·모멘텀·Adam 세 옵티마이저 비교</h2>
+
+      <p>아래 위젯은 좁은 골짜기에서 SGD, 모멘텀, Adam 세 옵티마이저의 궤적을 동시에 보여 준다. Adam은 매 파라미터의 학습률을 자동 조정하므로, 학습률 하이퍼파라미터에 가장 강건하다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 10</span><span>SGD vs 모멘텀 vs Adam — 세 궤적</span></div>
+        <div class="adam-stage">
+          <canvas id="adamCanvas" width="800" height="500"></canvas>
+        </div>
+        <div class="adam-legend">
+          <span><i style="background:var(--structure)"></i>SGD</span>
+          <span><i style="background:var(--synth)"></i>모멘텀</span>
+          <span><i style="background:var(--style)"></i>Adam</span>
+        </div>
+        <div class="adam-read">
+          <span>SGD 손실 = <b id="readASGD">0.000</b></span>
+          <span>모멘텀 손실 = <b id="readAMOM">0.000</b></span>
+          <span>Adam 손실 = <b id="readADAM">0.000</b></span>
+          <span>스텝 = <b id="readStep">0</b></span>
+        </div>
+        <div class="widget-controls">
+          <div class="slider">
+            <label>학습률 ε <b id="lrValA">0.04</b></label>
+            <input id="lrSlideA" type="range" min="0.005" max="0.1" value="0.04" step="0.005">
+          </div>
+          <button class="btn ghost" id="restartBtnA">처음부터</button>
+        </div>
+      </div>
+      <p class="widget-cap">학습률을 작게(0.005) 하면 SGD가 매우 느리지만 Adam은 빨리 수렴. 학습률을 크게(0.08) 하면 SGD가 발산해도 Adam은 안정적. Adam의 강건성이 한눈에 드러난다.</p>
+    </div>
+
+    <div class="prose">
+
+      <h2>시험 답안 핵심</h2>
+
+      <p>Adam이 시험에 나오면 다음 네 가지를 적자. 첫째, <strong>1차 모멘트 $s$ = 기울기의 지수 이동 평균 (모멘텀)</strong>. 둘째, <strong>2차 모멘트 $r$ = 기울기 제곱의 지수 이동 평균 (RMSProp)</strong>. 셋째, <strong>편향 보정 $\hat{s} = s/(1-\rho_1^t)$, $\hat{r} = r/(1-\rho_2^t)$ — 초기 0 출발 편향 제거</strong>. 넷째, <strong>업데이트 $\theta \leftarrow \theta - \varepsilon \hat{s}/(\sqrt{\hat{r}} + \delta)$</strong>. 기본값 $(\varepsilon, \rho_1, \rho_2, \delta) = (0.001, 0.9, 0.999, 10^{-8})$도 함께.</p>
+    </div>
+
+    <nav class="ch-foot" id="chFoot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'순수 vs ML 최적화' }, { no:'02', t:'학습의 장애물' }, { no:'03', t:'미니배치 SGD 1' }, { no:'04', t:'미니배치 SGD 2' },
+    { no:'05', t:'학습률의 의미' }, { no:'06', t:'모멘텀 1' }, { no:'07', t:'모멘텀 2 (네스테로프)' }, { no:'08', t:'적응 1 (AdaGrad)' },
+    { no:'09', t:'적응 2 (RMSProp)' }, { no:'10', t:'적응 3 (Adam)' }, { no:'11', t:'초기화 1 (대칭성)' }, { no:'12', t:'초기화 2 (Xavier·He)' },
+    { no:'13', t:'배치 정규화 1' }, { no:'14', t:'배치 정규화 2' }, { no:'15', t:'학습률 스케줄' }, { no:'16', t:'기울기 클리핑' },
+    { no:'17', t:'시험 대비' },
+  ];
+  const CUR = '10';
+  const navlist = document.getElementById('navlist');
+  SUBS.forEach(s => { const li = document.createElement('li'); li.innerHTML = `<a href="${s.no}.html"${s.no===CUR?' class="current"':''}>${s.t}</a>`; navlist.appendChild(li); });
+  const chFoot = document.getElementById('chFoot');
+  const idx = SUBS.findIndex(s => s.no === CUR);
+  const prev = idx > 0 ? SUBS[idx-1] : { no:'index', t:'표지로' };
+  const next = idx < SUBS.length-1 ? SUBS[idx+1] : { no:'index', t:'표지로' };
+  chFoot.innerHTML = `<a href="${prev.no}.html"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` + `<a href="${next.no}.html" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
+        throwOnError: false,
+      });
+    }
+  });
+
+  (function() {
+    const css = getComputedStyle(document.documentElement);
+    const C = {
+      structure: css.getPropertyValue('--structure').trim() || '#2D5B7A',
+      style: css.getPropertyValue('--style').trim() || '#C0492E',
+      synth: css.getPropertyValue('--synth').trim() || '#A47B2E',
+      ink: css.getPropertyValue('--ink').trim() || '#26221C',
+      faint: css.getPropertyValue('--ink-faint').trim() || '#8E8576',
+      line: '#d8d2c4',
+    };
+    const cvs = document.getElementById('adamCanvas');
+    const lrSlide = document.getElementById('lrSlideA');
+    const lrVal = document.getElementById('lrValA');
+    const readSGD = document.getElementById('readASGD');
+    const readMOM = document.getElementById('readAMOM');
+    const readADAM = document.getElementById('readADAM');
+    const readStep = document.getElementById('readStep');
+    const restartBtn = document.getElementById('restartBtnA');
+
+    const A1 = 5, A2 = 0.5;
+    function J(x, y) { return A1*x*x + A2*y*y; }
+    function gradJ(x, y) { return [2*A1*x, 2*A2*y]; }
+
+    let sgd, mom, adam;
+    let trajSGD, trajMOM, trajADAM, step;
+    function reset() {
+      sgd = { x: 0.8, y: 1.5 };
+      mom = { x: 0.8, y: 1.5, vx: 0, vy: 0 };
+      adam = { x: 0.8, y: 1.5, sx: 0, sy: 0, rx: 0, ry: 0 };
+      trajSGD = [[sgd.x, sgd.y]];
+      trajMOM = [[mom.x, mom.y]];
+      trajADAM = [[adam.x, adam.y]];
+      step = 0;
+    }
+    reset();
+
+    function tick() {
+      const lr = +lrSlide.value;
+      step++;
+      // SGD
+      const [gxS, gyS] = gradJ(sgd.x, sgd.y);
+      sgd.x -= lr*gxS; sgd.y -= lr*gyS;
+      trajSGD.push([sgd.x, sgd.y]);
+      // 모멘텀
+      const [gxM, gyM] = gradJ(mom.x, mom.y);
+      mom.vx = 0.9*mom.vx - lr*gxM;
+      mom.vy = 0.9*mom.vy - lr*gyM;
+      mom.x += mom.vx; mom.y += mom.vy;
+      trajMOM.push([mom.x, mom.y]);
+      // Adam
+      const [gxA, gyA] = gradJ(adam.x, adam.y);
+      const rho1 = 0.9, rho2 = 0.999, delta = 1e-8;
+      adam.sx = rho1*adam.sx + (1-rho1)*gxA;
+      adam.sy = rho1*adam.sy + (1-rho1)*gyA;
+      adam.rx = rho2*adam.rx + (1-rho2)*gxA*gxA;
+      adam.ry = rho2*adam.ry + (1-rho2)*gyA*gyA;
+      const sxHat = adam.sx / (1 - Math.pow(rho1, step));
+      const syHat = adam.sy / (1 - Math.pow(rho1, step));
+      const rxHat = adam.rx / (1 - Math.pow(rho2, step));
+      const ryHat = adam.ry / (1 - Math.pow(rho2, step));
+      adam.x -= lr * sxHat / (Math.sqrt(rxHat) + delta);
+      adam.y -= lr * syHat / (Math.sqrt(ryHat) + delta);
+      trajADAM.push([adam.x, adam.y]);
+      if (trajSGD.length > 250) { trajSGD.shift(); trajMOM.shift(); trajADAM.shift(); }
+    }
+
+    function draw() {
+      const ctx = cvs.getContext('2d');
+      const W = cvs.width, H = cvs.height;
+      ctx.clearRect(0,0,W,H);
+      ctx.strokeStyle = C.line; ctx.strokeRect(0.5,0.5,W-1,H-1);
+      const X = x => W/2 + x * (W-60)/2;
+      const Y = y => H/2 - y * (H-60)/3.6;
+      ctx.strokeStyle = C.faint; ctx.globalAlpha = 0.25;
+      for (let level = 0.2; level <= 6; level += 0.5) {
+        ctx.beginPath();
+        for (let t=0;t<=200;t++) {
+          const ang = (t/200) * Math.PI * 2;
+          const r = Math.sqrt(level);
+          const x = r / Math.sqrt(A1) * Math.cos(ang);
+          const y = r / Math.sqrt(A2) * Math.sin(ang);
+          if (t===0) ctx.moveTo(X(x), Y(y)); else ctx.lineTo(X(x), Y(y));
+        }
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1.0;
+      ctx.fillStyle = C.ink;
+      ctx.beginPath(); ctx.arc(X(0), Y(0), 4, 0, Math.PI*2); ctx.fill();
+      function drawTraj(traj, col, cur) {
+        ctx.strokeStyle = col; ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        traj.forEach((p,i) => { if (i===0) ctx.moveTo(X(p[0]), Y(p[1])); else ctx.lineTo(X(p[0]), Y(p[1])); });
+        ctx.stroke();
+        ctx.fillStyle = col; ctx.beginPath(); ctx.arc(X(cur[0]), Y(cur[1]), 5, 0, Math.PI*2); ctx.fill();
+      }
+      drawTraj(trajSGD, C.structure, [sgd.x, sgd.y]);
+      drawTraj(trajMOM, C.synth, [mom.x, mom.y]);
+      drawTraj(trajADAM, C.style, [adam.x, adam.y]);
+      ctx.fillStyle = C.faint; ctx.font='12px monospace';
+      ctx.fillText('J(x,y) = 5x² + 0.5y² — 좁고 긴 골짜기', 14, 18);
+    }
+
+    function loop() {
+      const lr = +lrSlide.value;
+      lrVal.textContent = lr.toFixed(3);
+      tick();
+      readSGD.textContent = J(sgd.x, sgd.y).toFixed(4);
+      readMOM.textContent = J(mom.x, mom.y).toFixed(4);
+      readADAM.textContent = J(adam.x, adam.y).toFixed(4);
+      readStep.textContent = step;
+      draw();
+      setTimeout(()=>requestAnimationFrame(loop), 60);
+    }
+    lrSlide.addEventListener('input', reset);
+    restartBtn.addEventListener('click', reset);
+    loop();
+  })();
+</script>
+</body>
+</html>

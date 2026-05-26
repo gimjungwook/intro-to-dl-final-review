@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>13 · 시험 대비 체크리스트</title>
+<link rel="stylesheet" href="./assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 13 · 시험 직전 30분</span>
+      <h1>시험 대비<br><span class="t-style">체크리스트</span></h1>
+      <p class="lede">핵심 수식, 기하학적 직관, 예상 질문 20+개. 자신 없는 문제만 골라 풀고 본문 해당 sub으로 돌아가 보강하자.</p>
+    </header>
+
+    <div class="prose">
+      <p>이 sub은 시험 직전 30분으로 Ch.2 전체를 한 바퀴 도는 용도다. 흐름은 세 단계다. ① 핵심 수식과 정의 자기 점검 → ② 직관 점검(직접 행렬을 만들어 시각적으로) → ③ 예상 질문 20+개를 클릭해 가며 본인이 답할 수 있는지 검증.</p>
+
+      <h2>① 핵심 수식 자기 점검 — 빈칸 채우기</h2>
+      <p>아래 식들을 본문을 보지 않고 한 번 적어 보자. 막히면 옆에 적힌 sub으로 즉시 돌아가 보강.</p>
+
+      <ul class="checklist">
+        <li>벡터의 점 곱(닮음 점수) — <a href="03.html">sub 03</a></li>
+        <li>두 벡터 사이의 각도와 점 곱의 관계 (a · b = |a| |b| cos θ) — <a href="03.html">sub 03</a></li>
+        <li>행렬-벡터 곱의 두 시점(행/열) — <a href="04.html">sub 04</a></li>
+        <li>2×2 회전·스케일·전단 행렬의 모양 — <a href="04.html">sub 04</a></li>
+        <li>L1, L2, L∞ 노름의 정의와 단위구 모양 — <a href="05.html">sub 05</a></li>
+        <li>대칭, 직교, 대각 행렬의 정의 — <a href="06.html">sub 06</a></li>
+        <li>랭크-널리티 정리 (rank(A) + dim Null(A) = n) — <a href="07.html">sub 07</a></li>
+        <li>4가지 부분공간의 정의와 직교 관계 — <a href="07.html">sub 07</a></li>
+        <li>고유값·고유벡터의 정의 (Av = λv) — <a href="08.html">sub 08</a></li>
+        <li>특성 다항식 (det(A − λI) = 0) — <a href="08.html">sub 08</a></li>
+        <li>대칭 행렬의 스펙트럼 정리 (A = QΛQᵀ) — <a href="09.html">sub 09</a></li>
+        <li>SVD의 정의 (A = UΣVᵀ) — <a href="10.html">sub 10</a></li>
+        <li>특이값과 AᵀA 고유값의 관계 (σᵢ² = λᵢ(AᵀA)) — <a href="10.html">sub 10</a></li>
+        <li>Eckart-Young 최적 저랭크 근사 — <a href="11.html">sub 11</a></li>
+        <li>의사역행렬의 정의 (A⁺ = VΣ⁺Uᵀ) — <a href="11.html">sub 11</a></li>
+        <li>최소제곱 해 (x* = A⁺b) — <a href="11.html">sub 11</a></li>
+        <li>자코비안의 정의 — <a href="12.html">sub 12</a></li>
+        <li>연쇄법칙과 자코비안 곱 — <a href="12.html">sub 12</a></li>
+        <li>헤시안의 정의와 대칭성 — <a href="12.html">sub 12</a></li>
+        <li>완전연결층 미분 (∂L/∂W = δxᵀ, ∂L/∂x = Wᵀδ) — <a href="12.html">sub 12</a></li>
+      </ul>
+
+      <h2>② 직관 점검 — 직접 행렬을 만들어 보기</h2>
+      <p>아래 위젯에서 회전 60°, 스케일 2배, 전단, 반사, 그리고 “특이(rank-1) 행렬”을 차례로 만들어 본다. 각 모양의 det 값과 변환된 평행사변형의 모양을 손으로 익혀 두면, 시험 문제에서 행렬을 보자마자 “이게 무슨 변환인지” 즉시 보인다.</p>
+
+      <div class="widget">
+        <div class="widget-frame">
+          <div class="widget-label"><span class="lab-no">위젯 07</span><span>단위 사각형 변환 — a, b, c, d 직접 입력</span></div>
+          <div id="us"></div>
+        </div>
+        <p class="widget-cap">슬라이더로 행렬 A의 네 원소를 직접 조작. 점선 = 원래 단위 사각형, 채워진 = 변환 후 평행사변형. 프리셋 버튼으로 회전·스케일·전단·반사·특이 행렬을 한 번에 만들 수 있다.</p>
+      </div>
+
+      <h2>③ 예상 질문 — 클릭해 답 확인</h2>
+      <p>각 질문을 본인이 답해 본 다음 클릭해 본문 정답과 대조한다. 막힌 문제는 즉시 옆 sub으로 돌아가 보강.</p>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q1</span><span>왜 신경망의 한 층을 $\mathbf{y} = f(W\mathbf{x} + \mathbf{b})$로 적는가? 이 식의 각 기호가 무엇인지 설명하라.</span><span class="qx">+</span></div>
+        <div class="qa-a"><div class="qa-a-inner"><strong>답</strong> — 신경망의 한 층은 “입력 벡터에 가중치 행렬을 곱하고, 편향을 더한 다음, 비선형 함수를 통과시키는” 일이다. $\mathbf{x}$는 입력 벡터, $W$는 학습 가능한 가중치 행렬, $\mathbf{b}$는 편향 벡터, $f$는 활성화 함수, $\mathbf{y}$는 출력 벡터. 본질은 $W\mathbf{x}$의 행렬 곱이고, 이것이 “데이터를 다른 좌표계로 옮긴다”. 자세한 풀이: <a href="01.html">sub 01</a>.</div></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q2</span><span>점 곱의 기하학적 의미는 무엇인가? 두 벡터가 직교한다는 것은 무엇을 의미하는가?</span><span class="qx">+</span></div>
+        <div class="qa-a"><div class="qa-a-inner"><strong>답</strong> — 점 곱 = |a| × |b| × cos θ. “두 벡터의 길이 × 방향 정합도”다. 점 곱이 양수면 두 벡터가 같은 방향, 0이면 직각, 음수면 반대 방향. 단위벡터의 점 곱은 코사인 유사도. 두 벡터가 직교하면 점 곱이 0이고, 두 벡터의 한쪽이 다른 쪽의 어떤 정보도 “담지 못한다”(독립). 자세한 풀이: <a href="03.html">sub 03</a>.</div></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q3</span><span>행렬 곱이 교환법칙은 성립하지 않지만 결합법칙은 성립하는 이유는?</span><span class="qx">+</span></div>
+        <div class="qa-a"><div class="qa-a-inner"><strong>답</strong> — 행렬 곱은 “함수 합성(function composition)”이기 때문이다. 회전 다음 스케일과 스케일 다음 회전은 다른 결과를 낳는다(교환 안 됨). 그러나 셋을 어떻게 묶어 합성해도 최종 합성 함수는 같다(결합 성립). “양말 → 신발” 순서를 바꿀 수 없는 것과 같다. 자세한 풀이: <a href="04.html">sub 04</a>.</div></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q4</span><span>$\det A = 0$인 행렬은 역행렬을 가지지 않는다. 왜인가?</span><span class="qx">+</span></div>
+        <div class="qa-a"><div class="qa-a-inner"><strong>답</strong> — $\det A$는 “변환 후 단위 사각형의 넓이”를 잰다. det = 0이면 단위 사각형이 선분이나 점으로 찌부러진다 → 정보의 한 차원이 사라진다. 사라진 차원은 되돌릴 수 없으므로 역변환이 불가능 → 역행렬이 존재하지 않는다. 동치 조건: rank(A) &lt; n. 자세한 풀이: <a href="04.html">sub 04</a>, <a href="07.html">sub 07</a>.</div></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q5</span><span>L1과 L2 정칙화의 차이가 무엇이며, 왜 L1이 “희소한 해”를 만드는가?</span><span class="qx">+</span></div>
+        <div class="qa-a"><div class="qa-a-inner"><strong>답</strong> — L2 단위구가 둥근 원이라 어디서 데이터 등고선과 만나도 “0이 아닌 좌표”에서 만나기 쉽다. L1 단위구는 마름모(diamond)이고, 마름모의 뾰족한 꼭짓점이 축 위에 있어서, 최적해가 그 꼭짓점에서 만나기 쉽다 → 한 좌표가 정확히 0이 되는 해(희소). L2는 “모든 가중치를 골고루 작게”, L1은 “일부를 완전히 0으로”. 자세한 풀이: <a href="05.html">sub 05</a>.</div></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q6</span><span>직교 행렬은 어떤 변환인가? 왜 수치적으로 “안정적”인가?</span><span class="qx">+</span></div>
+        <div class="qa-a"><div class="qa-a-inner"><strong>답</strong> — 직교 행렬 Q는 $Q^\top Q = I$를 만족하는 정사각 행렬. 회전과 반사가 대표 예. 벡터의 길이와 각도를 모두 보존한다 → $\|Q\mathbf{x}\| = \|\mathbf{x}\|$. 반복 곱셈에도 “폭발/소멸”이 없으므로 수치적으로 안정적이다. RNN 초기화에서 직교 가중치를 쓰는 이유. 자세한 풀이: <a href="06.html">sub 06</a>.</div></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q7</span><span>랭크-널리티 정리의 의미를 설명하라.</span><span class="qx">+</span></div>
+        <div class="qa-a"><div class="qa-a-inner"><strong>답</strong> — rank(A) + dim Null(A) = n. 입력 공간 $\mathbb{R}^n$이 “행렬이 신경 쓰는 방향(행공간)”과 “무시하는 방향(영공간)”으로 직각으로 갈라진다. 모든 입력 방향이 둘 중 하나에 속하므로 두 차원의 합이 $n$. 자세한 풀이: <a href="07.html">sub 07</a>.</div></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q8</span><span>고유벡터가 존재하지 않을 수 있는 행렬의 예를 들고 그 이유를 설명하라.</span><span class="qx">+</span></div>
+        <div class="qa-a"><div class="qa-a-inner"><strong>답</strong> — 90° 회전 행렬 $R = \begin{pmatrix}0 & -1\\ 1 & 0\end{pmatrix}$. 실수 고유벡터가 없다. 특성 다항식이 $\lambda^2 + 1 = 0$이라 복소수 해 $\pm i$만 가진다. 기하학적으로도 자명: 90° 회전은 모든 방향을 직각으로 옮기므로 “방향이 보존되는 실수 벡터”가 없다. 단, 복소수 벡터로는 고유분해 가능. 대칭 행렬은 항상 실수 고유값을 가져 이런 문제가 없음. 자세한 풀이: <a href="08.html">sub 08</a>, <a href="09.html">sub 09</a>.</div></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q9</span><span>대칭 행렬이 “좋다”라고 하는 이유는?</span><span class="qx">+</span></div>
+        <div class="qa-a"><div class="qa-a-inner"><strong>답</strong> — 세 가지. ① 모든 고유값이 실수(복소수 고유 X). ② 고유벡터들이 직교(서로 90°). ③ 직교 행렬로 깔끔하게 $A = Q\Lambda Q^\top$로 분해(스펙트럼 정리). 그래서 PCA의 공분산 행렬, 헤시안, Gram 행렬을 모두 “안정적인 직교 좌표계”로 분해할 수 있다. 자세한 풀이: <a href="09.html">sub 09</a>.</div></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q10</span><span>PCA의 작동 원리를 한 문단으로 설명하라.</span><span class="qx">+</span></div>
+        <div class="qa-a"><div class="qa-a-inner"><strong>답</strong> — 데이터를 평균 0으로 정렬 → 공분산 행렬 $C = X^\top X / N$ 계산 → $C$의 고유분해. 가장 큰 고유값의 고유벡터가 “데이터의 분산이 가장 큰 방향”(PC1), 그 다음이 PC2 ... 처음 $k$개를 남기면 $k$차원으로 차원 축소. 직관: 데이터가 가장 “길게 늘어선 방향”을 찾는 일. 자세한 풀이: <a href="09.html">sub 09</a>.</div></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q11</span><span>SVD와 고유분해의 차이는?</span><span class="qx">+</span></div>
+        <div class="qa-a"><div class="qa-a-inner"><strong>답</strong> — 고유분해는 정사각형 행렬에만, SVD는 임의 직사각 행렬에도 적용. 고유분해의 $V$는 일반적으로 직교가 아닐 수 있지만 SVD의 $U, V$는 항상 직교. 고유값은 복소수일 수 있지만 특이값은 항상 음수가 아닌 실수. SVD는 항상 존재하고 (부호 빼고) 유일. 그래서 SVD는 “가장 무적”인 분해. 자세한 풀이: <a href="10.html">sub 10</a>.</div></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q12</span><span>Eckart-Young 정리란? 그것이 이미지 압축과 어떻게 연결되는가?</span><span class="qx">+</span></div>
+        <div class="qa-a"><div class="qa-a-inner"><strong>답</strong> — 어떤 행렬 $A$를 “랭크 $k$ 이하인 행렬”로 근사할 때, 가장 좋은 근사는 SVD에서 상위 $k$개 특이값 항만 남긴 것 $A_k$. 이미지 = 픽셀 행렬. 상위 $k$개 σ만 남기면 $H + W + 1$의 $k$배 저장 공간으로 큰 인상을 보존 → 압축. 큰 σ에 해당하는 항이 “큰 색 덩어리”, 작은 σ가 “디테일 잡음”. 자세한 풀이: <a href="11.html">sub 11</a>.</div></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q13</span><span>의사역행렬은 언제 진짜 역행렬과 같은가? 다를 때는 어떻게 다른가?</span><span class="qx">+</span></div>
+        <div class="qa-a"><div class="qa-a-inner"><strong>답</strong> — $A$가 풀랭크 정사각 행렬이면 $A^{+} = A^{-1}$. 그렇지 않으면 의사역행렬은 “있는 차원은 되돌리고 없는 차원은 포기”한다. 정의: $A^{+} = V \Sigma^{+} U^\top$. $\Sigma^{+}$는 0이 아닌 σ는 역수, 0인 σ는 그대로 둠. 과결정 최소제곱 해와 과소결정 최소노름 해가 모두 $\mathbf{x}^{*} = A^{+}\mathbf{b}$로 통일된다. 자세한 풀이: <a href="11.html">sub 11</a>.</div></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q14</span><span>자코비안 행렬과 헤시안 행렬의 차이는?</span><span class="qx">+</span></div>
+        <div class="qa-a"><div class="qa-a-inner"><strong>답</strong> — 자코비안: 벡터-입력 벡터-출력 함수의 1차 미분. $J \in \mathbb{R}^{m \times n}$. 헤시안: 스칼라-출력 함수의 2차 미분. $H \in \mathbb{R}^{n \times n}$, 항상 대칭. 자코비안은 “출력 한 단위 변화에 입력 각각이 얼마나 기여하는가”를 모은 표, 헤시안은 “함수의 곡률(curvature)”. 자코비안은 역전파의 핵심, 헤시안은 2차 최적화의 핵심. 자세한 풀이: <a href="12.html">sub 12</a>.</div></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q15</span><span>연쇄법칙(chain rule)을 행렬 미적분으로 어떻게 적는가?</span><span class="qx">+</span></div>
+        <div class="qa-a"><div class="qa-a-inner"><strong>답</strong> — 합성 함수 $f(g(\mathbf{x}))$의 자코비안은 “바깥 함수의 자코비안 × 안쪽 함수의 자코비안”. $J_{f \circ g} = J_f \cdot J_g$. 그래서 $L$층 신경망의 미분은 $L$개의 자코비안의 곱이다. 역전파는 이 곱을 “끝에서 거꾸로” 계산해 매 단계 벡터×행렬 곱만 쓴다. 자세한 풀이: <a href="12.html">sub 12</a>.</div></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q16</span><span>완전연결층 $\mathbf{y} = W\mathbf{x}$의 $W$에 대한 손실의 기울기를 적어라.</span><span class="qx">+</span></div>
+        <div class="qa-a"><div class="qa-a-inner"><strong>답</strong> — $\partial \mathcal{L} / \partial W = \delta \mathbf{x}^\top$. 여기서 $\delta = \partial \mathcal{L}/\partial \mathbf{y}$는 다음 층에서 내려온 출력 기울기. 즉 “출력 기울기”와 “입력 벡터”의 바깥곱(outer product). 모양: $\delta \in \mathbb{R}^m, \mathbf{x} \in \mathbb{R}^n$, 결과 $\in \mathbb{R}^{m \times n}$ — $W$와 같은 모양. 입력 쪽 기울기는 $\partial \mathcal{L}/\partial \mathbf{x} = W^\top \delta$. 앞으로는 $W$, 뒤로는 $W^\top$. 자세한 풀이: <a href="12.html">sub 12</a>.</div></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q17</span><span>$\mathbf{x}^\top A \mathbf{x}$의 $\mathbf{x}$에 대한 기울기를 유도하라(A는 대칭).</span><span class="qx">+</span></div>
+        <div class="qa-a"><div class="qa-a-inner"><strong>답</strong> — 일반 식: $\nabla_{\mathbf{x}} (\mathbf{x}^\top A \mathbf{x}) = (A + A^\top)\mathbf{x}$. $A$가 대칭이면 $A^\top = A$이므로 $\nabla = 2A\mathbf{x}$. 특히 $A = I$이면 $\nabla \|\mathbf{x}\|_2^2 = 2\mathbf{x}$. 이 공식이 MSE 손실 등 거의 모든 손실 함수의 기울기 유도에 등장. 자세한 풀이: <a href="12.html">sub 12</a>.</div></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q18</span><span>왜 신경망의 손실 표면에서 “안장점(saddle point)”이 진짜 적인가?</span><span class="qx">+</span></div>
+        <div class="qa-a"><div class="qa-a-inner"><strong>답</strong> — 고차원 비볼록 함수에서 “모든 방향의 곡률이 양수”인 점(국소 최저점)은 매우 드물다. 차원이 $n$이면 그럴 확률이 $1/2^n$ 정도. 대부분의 임계점은 “일부 방향은 양의 곡률, 일부는 음의 곡률”인 안장점. 기울기가 0이라 SGD가 멈춰 보일 수 있지만 실은 최저점이 아님. 그래서 SGD의 노이즈, 모멘텀, learning rate schedule이 중요. 자세한 풀이: <a href="12.html">sub 12</a>.</div></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q19</span><span>가중치 행렬 $W \in \mathbb{R}^{5 \times 784}$의 랭크가 최대 얼마인가? 이 사실이 신경망 설계에 의미하는 바는?</span><span class="qx">+</span></div>
+        <div class="qa-a"><div class="qa-a-inner"><strong>답</strong> — 랭크는 최대 5(=min(5, 784)). 즉 이 층은 784차원 입력을 무조건 5차원 안으로 압축한다 → 입력의 779차원어치 정보가 강제로 사라짐. 이런 “병목 층”이 작으면 모델이 표현력이 부족, 너무 크면 학습이 어려움. 좋은 학습은 이 5차원에 “정말 필요한 정보”를 채워 넣는 일. autoencoder의 잠재 차원이 바로 이런 병목. 자세한 풀이: <a href="07.html">sub 07</a>.</div></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q20</span><span>LoRA(Low-Rank Adaptation)가 무엇인지 SVD/저랭크 관점에서 설명하라.</span><span class="qx">+</span></div>
+        <div class="qa-a"><div class="qa-a-inner"><strong>답</strong> — 큰 모델의 가중치 변화량을 $\Delta W = AB^\top$로 표현. $A \in \mathbb{R}^{n \times r}, B \in \mathbb{R}^{m \times r}$, $r$은 작은 랭크(예: 8). 즉 $\Delta W$의 랭크를 $r$로 제약하는 저랭크 근사다. 작은 두 행렬만 학습하면 되니 학습 비용이 1%로 줄어듦. Eckart-Young의 “최적 저랭크 근사”와 같은 발상이지만, 학습으로 최적의 $A, B$를 찾는 것. 자세한 풀이: <a href="11.html">sub 11</a>.</div></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q21</span><span>한 뉴런이 입력 벡터에 점 곱을 한다는 사실이 어텐션(attention)의 어디에 다시 등장하는가?</span><span class="qx">+</span></div>
+        <div class="qa-a"><div class="qa-a-inner"><strong>답</strong> — 어텐션의 “score(q, k) = qᵀk”에 등장. 질의(query) 벡터와 키(key) 벡터의 점 곱이 “이 키가 질문과 얼마나 닮았는가”의 점수. 점수가 큰 키의 값(value) 벡터를 큰 비중으로 가져옴. Transformer의 모든 self-attention 헤드가 이 점 곱 닮음을 수만 번 한다. 점 곱이 어텐션의 첫 부품. 자세한 풀이: <a href="03.html">sub 03</a>.</div></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q22</span><span>$(AB)^\top = B^\top A^\top$의 직관적 의미는?</span><span class="qx">+</span></div>
+        <div class="qa-a"><div class="qa-a-inner"><strong>답</strong> — “순서가 뒤집힌다.” 행렬 곱이 “함수 합성”이라면 그 전치는 “역방향 작용”이다. 옷을 입을 때 “속옷 → 셔츠 → 외투” 순서를 벗을 때는 “외투 → 셔츠 → 속옷”으로 뒤집는 것과 같다. 신경망 역전파에서 “앞은 W, 뒤는 Wᵀ”의 대칭성이 정확히 이 항등식의 응용. 자세한 풀이: <a href="04.html">sub 04</a>, <a href="12.html">sub 12</a>.</div></div>
+      </div>
+
+      <h2>마지막 점검</h2>
+      <p>위 22개 질문에 모두 “본문 다시 보지 않고” 한 단락씩 답할 수 있다면 시험 준비 완료다. 막힌 질문이 5개 이상이면 해당 sub을 한 번씩 더 정독한 다음 위젯을 한 번 더 만져 보면 손에 더 익는다.</p>
+
+      <h2>이 장이 다음 장과 연결되는 지점</h2>
+      <ul class="checklist">
+        <li><strong>Ch.3 확률·정보이론</strong> — 공분산 행렬, 가우시안 분포의 평균/공분산은 모두 행렬·벡터 언어.</li>
+        <li><strong>Ch.4 수치계산</strong> — 의사역행렬, 조건수, 부동소수점 정밀도 모두 SVD 위에 세워짐.</li>
+        <li><strong>Ch.5 머신러닝 기초</strong> — 선형 회귀, 정칙화, MSE 손실 모두 노름과 의사역행렬 언어.</li>
+        <li><strong>Ch.6 피드포워드 신경망</strong> — 한 층 = 행렬 곱 + 비선형. 역전파 = 자코비안 곱.</li>
+        <li><strong>Ch.7 정칙화</strong> — L1/L2 정칙화의 단위구 모양이 결정.</li>
+        <li><strong>Ch.8 최적화</strong> — 헤시안, 안장점, 자연 기울기 모두 행렬 미적분.</li>
+        <li><strong>Ch.9 CNN</strong> — 합성곱도 결국 “sparse 행렬과의 곱”.</li>
+        <li><strong>Ch.10 RNN</strong> — 가중치 행렬을 T번 곱한 결과 → 고유값의 절댓값이 1에 가까워야 안정.</li>
+        <li><strong>Ch.13 선형 인자 모델</strong> — PCA, factor analysis 모두 이 장의 고유분해/SVD.</li>
+        <li><strong>Ch.14 오토인코더</strong> — 병목 층 = 저랭크. PCA의 비선형 일반화.</li>
+      </ul>
+
+      <p>Ch.2는 “이 장만의 시험 내용”이 아니라 “나머지 모든 장의 문법”이다. 한 번 더 천천히 익혀 두면 학기 후반이 한결 가볍다. 시험 잘 보길.</p>
+
+      <h2>Ch.2 표지로 돌아가기</h2>
+      <p><a href="index.html">← Ch.02 선형대수 표지</a> · <a href="../index.html">← 기말고사 전체 표지</a></p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script src="./assets/widgets.js"></script>
+<script>
+  window.addEventListener('load', () => {
+    NST.buildNav('13');
+    NST.onVisible(document.getElementById('us'), () => NST.unitSquare(document.getElementById('us')));
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ch.09 · 15 시험 대비 — 30+ 핵심 질문 체크리스트</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .qcat { margin: 2rem auto 1rem; padding-inline: 1.4rem; max-width: var(--measure); display: flex; align-items: center; gap: .8rem; }
+  .qcat .badge { font-family: var(--mono); font-size: .68rem; letter-spacing: .12em; padding: .25rem .55rem; border-radius: 4px; background: var(--ink); color: var(--paper); text-transform: uppercase; }
+  .qcat h2 { margin: 0; }
+  .qlist { max-width: var(--measure); margin: 0 auto; padding-inline: 1.4rem; }
+  .q { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 1rem 1.1rem; margin-bottom: .9rem; transition: border-color .15s; }
+  .q:hover { border-color: var(--structure-lo); }
+  .q .qno { font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; color: var(--style); font-weight: 600; }
+  .q .qq { font-family: var(--serif); font-size: 1.05rem; color: var(--ink); margin: .35rem 0 .6rem; line-height: 1.5; font-weight: 500; }
+  .q .qa { font-size: .92rem; color: var(--ink-soft); line-height: 1.7; }
+  .q .qa b { color: var(--ink); }
+  .q .qa code { font-family: var(--mono); font-size: .88em; background: var(--paper-sink); padding: .08em .35em; border-radius: 3px; }
+  .q .qref { font-family: var(--mono); font-size: .7rem; color: var(--ink-faint); margin-top: .5rem; }
+  details.q[open] { background: #fff; border-color: var(--structure-lo); }
+  details.q summary { list-style: none; cursor: pointer; }
+  details.q summary::-webkit-details-marker { display: none; }
+  details.q summary::after { content: '▾'; float: right; color: var(--ink-faint); transition: transform .15s; }
+  details.q[open] summary::after { transform: rotate(180deg); }
+
+  .summary-card { max-width: var(--measure); margin: 2rem auto 1rem; padding: 1.2rem 1.4rem; background: var(--style-bg); border: 1px solid var(--style-lo); border-radius: 8px; }
+  .summary-card h3 { margin: 0 0 .6rem; font-family: var(--serif); color: var(--style); font-size: 1.15rem; }
+  .summary-card p { font-size: .92rem; color: var(--ink); line-height: 1.6; margin: 0; }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Ch.09 · Sub 15 · 시험 직전 마지막 훑기</span>
+      <h1>시험 대비<br><span class="t-style">30+ 핵심 질문</span> 체크리스트</h1>
+      <p class="lede">1번부터 14번까지의 모든 내용을 시험 직전에 한 번 더 훑는 핵심 질문 33개. 각 질문 옆에 한 줄 답을 펴 두고 닫아 두기를 반복. 함정 지점(등가성 vs 불변성, 합성곱 vs 교차상관)을 우선.</p>
+    </header>
+
+    <div class="summary-card">
+      <h3>시험 직전 5분 요약 — 잊으면 안 되는 다섯 줄</h3>
+      <p>① CNN = 완전연결에 무한히 강한 사전(국소성 + 이동 등가). ② 합성곱 = 같은 작은 커널을 슬라이드 + 곱 + 합. ③ 세 속성: 희소 상호작용, 파라미터 공유, 변환 등가. ④ 풀링은 등가를 근사 불변으로 바꾼다. 합성곱은 등가, 풀링은 불변. ⑤ 깊이는 좋지만 단순히 쌓으면 열화. ResNet의 F(x)+x가 항등 매핑 학습을 쉽게 한다.</p>
+    </div>
+
+    <div class="qcat"><span class="badge">A</span><h2>기초 — 합성곱이 무엇인가</h2></div>
+    <div class="qlist">
+
+      <details class="q">
+        <summary>
+          <span class="qno">Q1</span>
+          <div class="qq">합성곱(convolution)의 한 줄 정의를 쓰고, 그 직관을 비유로 설명하라.</div>
+        </summary>
+        <div class="qa">작은 커널(가중치 행렬)을 입력 위에 슬라이드하면서 각 위치에서 가중합을 계산. 직관: <b>도장 찍기</b>. 같은 도장(커널)을 들고 종이(이미지) 전체를 한 번씩 찍어 본다. 도장 모양과 종이 모양이 닮으면 큰 수, 다르면 작은 수가 나온다. 결과는 "이 도장이 잘 맞는 자리들의 지도".</div>
+        <p class="qref">참고: 02번 합성곱이란 무엇인가</p>
+      </details>
+
+      <details class="q">
+        <summary>
+          <span class="qno">Q2</span>
+          <div class="qq">수학의 합성곱과 딥러닝의 합성곱이 어떻게 다른가. 왜 딥러닝에서는 그 차이를 무시해도 되는가.</div>
+        </summary>
+        <div class="qa">수학의 합성곱은 커널을 뒤집어(flip) 적용하지만, 딥러닝은 뒤집지 않는 <b>교차상관(cross-correlation)</b>을 사용. 그러나 커널이 학습되므로 뒤집기 여부는 결과에 영향 없음. PyTorch, TensorFlow 모두 교차상관을 "convolution"이라 부른다. 시험에서 "둘이 다르다"는 사실은 알지만 "결과에 차이 없다"가 더 중요한 답.</div>
+        <p class="qref">참고: 02번, 책 9.1절</p>
+      </details>
+
+      <details class="q">
+        <summary>
+          <span class="qno">Q3</span>
+          <div class="qq">256x256x3 컬러 이미지를 같은 크기 특징맵으로 변환할 때, 완전연결과 3x3 합성곱의 가중치 수를 적어 비교하라.</div>
+        </summary>
+        <div class="qa">완전연결: <code>n_in × n_out ≈ (196,608)² ≈ 387억</code>. 단일 채널로 잡아도 책의 기준 약 <b>43억</b>. 3x3 합성곱(C_in=3, C_out=64): <code>3 × 3 × 3 × 64 ≈ 1,728</code>. 비율 약 <b>2천만 배</b>. 책의 단일 채널 비교로는 약 <b>5억 배</b>. 합성곱 가중치 수는 입력 공간 크기와 무관.</div>
+        <p class="qref">참고: 01번 파라미터 폭발</p>
+      </details>
+
+      <details class="q">
+        <summary>
+          <span class="qno">Q4</span>
+          <div class="qq">1D 합성곱과 2D 합성곱의 식을 적어 보라.</div>
+        </summary>
+        <div class="qa">1D: $s(t) = \sum_a x(a) w(t-a)$ (수학) 또는 $s(t) = \sum_a x(t+a) w(a)$ (교차상관). 2D: $S(i,j) = \sum_m \sum_n I(i+m, j+n) K(m, n)$. 1D는 시간축, 2D는 공간 격자.</div>
+        <p class="qref">참고: 03번, 04번</p>
+      </details>
+
+      <details class="q">
+        <summary>
+          <span class="qno">Q5</span>
+          <div class="qq">RGB 컬러 이미지의 합성곱 커널은 몇 차원 텐서인가. 왜 그런가.</div>
+        </summary>
+        <div class="qa"><b>3차원 텐서</b>. 입력 채널 3개에 각각 적용할 가중치가 필요하므로 (3 × k_h × k_w). 모든 채널의 결과를 더해 한 출력 특징맵을 만들고, 이 작업을 C_out번 반복해 C_out개 특징맵을 만든다. 따라서 한 합성곱 층의 가중치 텐서는 <code>(C_out, C_in, k_h, k_w)</code> 4차원.</div>
+        <p class="qref">참고: 04번 2D 합성곱</p>
+      </details>
+    </div>
+
+    <div class="qcat"><span class="badge">B</span><h2>CNN 3대 속성</h2></div>
+    <div class="qlist">
+
+      <details class="q">
+        <summary>
+          <span class="qno">Q6</span>
+          <div class="qq">CNN의 세 가지 핵심 속성을 적고, 각 속성이 무엇을 줄이거나 만드는지 한 줄씩 설명하라.</div>
+        </summary>
+        <div class="qa">
+          1. <b>희소 상호작용(sparse interactions)</b>: 한 출력 뉴런이 입력의 작은 영역만 본다. → 가중치 수, 계산량, 메모리 감소.
+          <br>2. <b>파라미터 공유(parameter sharing)</b>: 같은 커널을 모든 위치에 적용. → 표본 효율성, 파라미터 수 추가 감소.
+          <br>3. <b>변환 등가성(equivariance to translation)</b>: 입력 이동 시 출력도 같은 양만큼 이동. → "어디든 통하는" 특징 검출.
+        </div>
+        <p class="qref">참고: 05, 06, 07번</p>
+      </details>
+
+      <details class="q">
+        <summary>
+          <span class="qno">Q7</span>
+          <div class="qq">희소 상호작용과 파라미터 공유는 같은 것인가, 다른 것인가. 둘의 차이를 설명하라.</div>
+        </summary>
+        <div class="qa"><b>다른 속성</b>. 희소 = "한 출력이 보는 입력 수가 적다". 공유 = "여러 출력이 같은 가중치를 쓴다". 둘이 분리된 증거: <em>locally connected layer</em>(또는 unshared convolution)는 희소하지만 공유가 아니다(위치마다 다른 작은 커널). 합성곱은 둘 다 동시에 한다.</div>
+        <p class="qref">참고: 05번, 06번, 책 9.2절</p>
+      </details>
+
+      <details class="q">
+        <summary>
+          <span class="qno">Q8</span>
+          <div class="qq">변환 등가성(equivariance)과 변환 불변성(invariance)의 정확한 차이를 식으로 적고 예를 들라.</div>
+        </summary>
+        <div class="qa">등가: $f(T(x)) = T(f(x))$ (입력 이동 시 출력도 같은 양만큼 이동). 불변: $f(T(x)) = f(x)$ (입력 이동에도 출력 변하지 않음). <b>합성곱은 등가</b>, <b>풀링은 (근사) 불변</b>. 분류는 불변을 원하고, 검출·분할은 등가가 더 유용. 시험에서 가장 자주 헷갈리는 함정.</div>
+        <p class="qref">참고: 07번 변환 등가성</p>
+      </details>
+
+      <details class="q">
+        <summary>
+          <span class="qno">Q9</span>
+          <div class="qq">합성곱은 회전과 크기 변화에 대해서도 등가인가.</div>
+        </summary>
+        <div class="qa"><b>아니다</b>. 합성곱이 자동으로 처리하는 것은 평행이동 한 가지뿐. 회전·크기는 학습으로 데이터 증강(rotation, scaling)을 통해 가르쳐야 한다. 그래서 데이터 증강에서 회전·확대·반전이 많이 쓰이고, 평행이동은 (합성곱이 이미 처리하므로) 덜 중요.</div>
+        <p class="qref">참고: 07번 변환 등가성</p>
+      </details>
+
+      <details class="q">
+        <summary>
+          <span class="qno">Q10</span>
+          <div class="qq">파라미터 공유가 자연 이미지에서 정당화되는 통계적 이유는 무엇인가.</div>
+        </summary>
+        <div class="qa"><b>정상성(stationarity)</b>. 자연 이미지는 위치에 대해 (대략) 정상이다 — 한 위치의 통계가 다른 위치의 통계와 거의 같다. 왼쪽 위에서 잘 통하는 에지 검출기가 오른쪽 아래에서도 잘 통한다. 그래서 위치마다 다른 검출기를 배우는 것은 낭비.</div>
+        <p class="qref">참고: 06번 파라미터 공유</p>
+      </details>
+
+      <details class="q">
+        <summary>
+          <span class="qno">Q11</span>
+          <div class="qq">파라미터 공유가 깨질 수 있는(unshared convolution이 더 나은) 데이터의 예를 들라.</div>
+        </summary>
+        <div class="qa"><b>가운데 정렬된 얼굴 이미지</b>. 얼굴이 늘 가운데 있고, 눈은 위쪽, 입은 아래쪽이라면 위치마다 통계가 다르다. 이 경우 unshared(locally connected) convolution이 위치마다 다른 검출기를 배워 더 좋다. 책에서 명시적으로 드는 예.</div>
+        <p class="qref">참고: 06번 파라미터 공유</p>
+      </details>
+    </div>
+
+    <div class="qcat"><span class="badge">C</span><h2>풀링과 출력 크기</h2></div>
+    <div class="qlist">
+
+      <details class="q">
+        <summary>
+          <span class="qno">Q12</span>
+          <div class="qq">풀링이 하는 두 가지 일을 적어라.</div>
+        </summary>
+        <div class="qa">① <b>공간 다운샘플링</b>: 2x2 풀링(stride 2)으로 특징맵 크기 절반. ② <b>근사 평행이동 불변성</b>: 풀링 영역 크기 이하의 입력 이동을 무시. ②가 풀링의 "진짜 가치".</div>
+        <p class="qref">참고: 08번 풀링</p>
+      </details>
+
+      <details class="q">
+        <summary>
+          <span class="qno">Q13</span>
+          <div class="qq">Max pooling과 average pooling의 차이를 적고, 어느 것이 더 자주 쓰이는지 설명하라.</div>
+        </summary>
+        <div class="qa">Max: 영역 안 최댓값. "특징이 강하게 존재하는가". 역전파 시 기울기가 최댓값 위치에만. Avg: 영역 평균. "특징이 전반적으로 얼마나 분포하는가". 기울기가 모든 자리에 1/n씩. <b>Max가 더 자주 사용</b>(에지·코너 같은 희소 특징이 분류에 더 유용). Avg는 마지막 분류 직전의 <em>global average pooling</em>에서 주로 쓰임.</div>
+        <p class="qref">참고: 08번 풀링</p>
+      </details>
+
+      <details class="q">
+        <summary>
+          <span class="qno">Q14</span>
+          <div class="qq">합성곱 출력 크기 공식을 적고, 각 항이 무엇을 세는지 설명하라.</div>
+        </summary>
+        <div class="qa">$O = \lfloor (W - K + 2P) / S \rfloor + 1$. W=입력 한 변, K=커널 한 변, P=한쪽 패딩, S=스트라이드. 유도: 패딩한 입력 크기 W+2P, 커널이 첫 위치에 놓인 후 남은 (W+2P-K)칸을 S씩 건너뛰면 추가 가능 위치 ⌊(W+2P-K)/S⌋, 첫 위치 포함하면 +1.</div>
+        <p class="qref">참고: 10번 출력 크기 공식</p>
+      </details>
+
+      <details class="q">
+        <summary>
+          <span class="qno">Q15</span>
+          <div class="qq">동일 합성곱(same convolution)을 만들기 위한 패딩 값을 K로 표현하라. 왜 K가 홀수여야 하는가.</div>
+        </summary>
+        <div class="qa">$P = (K - 1) / 2$. K가 짝수이면 P가 정수가 아니라 양쪽 패딩이 비대칭이 된다. 그래서 CNN 커널은 거의 항상 <b>홀수</b>(3, 5, 7, ...).</div>
+        <p class="qref">참고: 10번 출력 크기 공식</p>
+      </details>
+
+      <details class="q">
+        <summary>
+          <span class="qno">Q16</span>
+          <div class="qq">예제: 입력 32x32, 커널 3x3, 패딩 1, 스트라이드 2의 출력 크기를 계산하라.</div>
+        </summary>
+        <div class="qa">$O = \lfloor (32 - 3 + 2 \cdot 1) / 2 \rfloor + 1 = \lfloor 31/2 \rfloor + 1 = 15 + 1 = 16$. 출력 16x16. 스트라이드 2로 절반 다운샘플링한 동일 패딩(strided same conv).</div>
+        <p class="qref">참고: 10번 출력 크기 공식</p>
+      </details>
+
+      <details class="q">
+        <summary>
+          <span class="qno">Q17</span>
+          <div class="qq">풀링이 항상 좋은 것은 아닌 이유를 두 가지 들라.</div>
+        </summary>
+        <div class="qa">
+          ① <b>위치 정보 손실</b>: 분할·검출 같은 "어디에 무엇이 있는가"가 중요한 과제에는 해가 됨.
+          <br>② <b>학습 파라미터 없음</b>: stride 합성곱은 다운샘플링하며 학습된 가중치로 특징을 추출. 최근 ResNet 일부 변형과 Vision Transformer는 풀링을 줄이거나 제거.
+          <br>단, <em>global average pooling</em>은 거의 모든 분류 모델 마지막 단에서 표준.
+        </div>
+        <p class="qref">참고: 08번 풀링</p>
+      </details>
+    </div>
+
+    <div class="qcat"><span class="badge">D</span><h2>수용 영역과 깊이</h2></div>
+    <div class="qlist">
+
+      <details class="q">
+        <summary>
+          <span class="qno">Q18</span>
+          <div class="qq">수용 영역(receptive field)이란 무엇인가. 3x3 커널 stride 1을 5층 쌓으면 수용 영역은 얼마인가.</div>
+        </summary>
+        <div class="qa">수용 영역 = 한 뉴런의 값을 결정할 수 있는 입력 픽셀 영역. K=3, S=1 L층 쌓으면 R = 1 + 2L = <b>11x11</b>(L=5).</div>
+        <p class="qref">참고: 11번 수용 영역</p>
+      </details>
+
+      <details class="q">
+        <summary>
+          <span class="qno">Q19</span>
+          <div class="qq">왜 5x5 한 층보다 3x3 두 층이 일반적으로 더 좋은가. 세 가지 이유.</div>
+        </summary>
+        <div class="qa">같은 5x5 수용 영역을 만들면서, ① <b>파라미터 적음</b> (18 vs 25), ② <b>비선형성 많음</b> (ReLU 2번 vs 1번 → 표현력 향상), ③ <b>계산량 적음</b>. 7x7과 3x3 세 층의 비교는 49 vs 27. VGG의 핵심 통찰.</div>
+        <p class="qref">참고: 11번, 13번 VGG</p>
+      </details>
+
+      <details class="q">
+        <summary>
+          <span class="qno">Q20</span>
+          <div class="qq">이론적 수용 영역(theoretical RF)과 효과적 수용 영역(effective RF, ERF)의 차이는 무엇인가.</div>
+        </summary>
+        <div class="qa">이론 RF = "영향을 줄 수 있는" 최대 영역. ERF = 실제 영향력 분포(가우시안에 가까움, 중심부에 집중). 그래서 깊이를 무한정 늘려도 ERF가 같은 속도로 자라지는 않는다. dilated convolution이 ERF를 더 효율적으로 키운다. 2017 Luo et al.</div>
+        <p class="qref">참고: 11번 수용 영역</p>
+      </details>
+    </div>
+
+    <div class="qcat"><span class="badge">E</span><h2>아키텍처 발전사</h2></div>
+    <div class="qlist">
+
+      <details class="q">
+        <summary>
+          <span class="qno">Q21</span>
+          <div class="qq">LeNet-5의 구조를 한 줄로 적어라.</div>
+        </summary>
+        <div class="qa">Conv(6@5x5) → AvgPool → Conv(16@5x5) → AvgPool → FC(120) → FC(84) → Output(10). 입력 32x32 흑백, 활성화 sigmoid/tanh, 1998 LeCun, MNIST, 미국 우편번호 자동 인식.</div>
+        <p class="qref">참고: 12번 아키텍처 1</p>
+      </details>
+
+      <details class="q">
+        <summary>
+          <span class="qno">Q22</span>
+          <div class="qq">AlexNet이 LeNet에 추가한 다섯 부품을 적어라.</div>
+        </summary>
+        <div class="qa">① <b>깊이 증가</b> 5→8층, 채널 50배. ② <b>GPU 학습</b> 2x GTX 580. ③ <b>ReLU</b>(시그모이드 대비 기울기 소실 해결 + 학습 6배). ④ <b>Dropout</b> 완전연결 층에. ⑤ <b>데이터 증강</b> random crop/flip/color jitter. 2012 ILSVRC top-5 오류 15.3%로 우승, 딥러닝 혁명 도화선.</div>
+        <p class="qref">참고: 12번 아키텍처 1</p>
+      </details>
+
+      <details class="q">
+        <summary>
+          <span class="qno">Q23</span>
+          <div class="qq">VGG의 핵심 설계 철학을 한 줄로 적어라.</div>
+        </summary>
+        <div class="qa">"<b>모든 합성곱을 3x3로 통일하고 깊이만 쌓는다</b>". 풀링은 2x2 max. 채널 64→128→256→512→512 두 배씩. VGG-16: 13 Conv + 3 FC, 가중치 1.38억 (대부분 FC). top-5 오류 7.3%.</div>
+        <p class="qref">참고: 13번 VGG</p>
+      </details>
+
+      <details class="q">
+        <summary>
+          <span class="qno">Q24</span>
+          <div class="qq">Inception 모듈의 한 줄 정의와 핵심 아이디어를 적어라.</div>
+        </summary>
+        <div class="qa">한 입력에 1x1, 3x3, 5x5, MaxPool을 <b>병렬로</b> 적용하고 결과를 채널 방향으로 Concat. 핵심: 한 층 안에 <b>다양한 수용 영역</b>이 동시에. 3x3·5x5 전에 1x1 합성곱으로 채널을 줄여(병목) 계산량 절감.</div>
+        <p class="qref">참고: 13번 Inception</p>
+      </details>
+
+      <details class="q">
+        <summary>
+          <span class="qno">Q25</span>
+          <div class="qq">1x1 합성곱이 왜 유용한가. 두 가지 이유.</div>
+        </summary>
+        <div class="qa">① <b>채널 수를 줄여 계산 절감</b>: 256→128 1x1은 32{,}768 가중치, 같은 일을 3x3로 하면 294{,}912 가중치(9배 절감). 이를 병목(bottleneck)이라 부름. ② <b>채널 사이 비선형 결합</b>: 1x1 + ReLU는 한 픽셀의 채널 벡터에 작은 MLP 적용. Inception이 도입, ResNet·MobileNet·EfficientNet 모두 표준.</div>
+        <p class="qref">참고: 13번 Inception</p>
+      </details>
+
+      <details class="q">
+        <summary>
+          <span class="qno">Q26</span>
+          <div class="qq">열화 문제(degradation problem)란 무엇인가. 과적합과 어떻게 다른가.</div>
+        </summary>
+        <div class="qa">단순히 층을 더 쌓으면 <b>훈련 오차</b>마저 더 커지는 현상. 시험 오차가 아니라 훈련 오차가 망가짐 → 과적합 아님. 원인: 항등 매핑을 일반 블록이 학습하기 어려움. ResNet의 잔차 연결로 해결.</div>
+        <p class="qref">참고: 14번 ResNet</p>
+      </details>
+
+      <details class="q">
+        <summary>
+          <span class="qno">Q27</span>
+          <div class="qq">잔차 연결(residual connection)의 식을 적고, 왜 이것이 효과적인지 두 관점으로 설명하라.</div>
+        </summary>
+        <div class="qa">$y = F(x; \{W_i\}) + x$. <b>관점 1 (학습 용이성)</b>: 항등 매핑이 최적이면 F(x)=0만 배우면 됨 → 매우 쉬움. <b>관점 2 (기울기 흐름)</b>: 역전파 기울기 $\partial L / \partial x = \partial L / \partial y \cdot (1 + \partial F / \partial x)$, +1 덕에 기울기가 1로 그대로 흘러감 → 기울기 소실 구조적 완화.</div>
+        <p class="qref">참고: 14번 ResNet</p>
+      </details>
+
+      <details class="q">
+        <summary>
+          <span class="qno">Q28</span>
+          <div class="qq">ResNet-50의 병목 블록 구조는 무엇이며, 왜 병목을 쓰는가.</div>
+        </summary>
+        <div class="qa">1x1 (채널 축소) → 3x3 → 1x1 (채널 복원) + skip. 예: 256→64 (1x1) → 64 (3x3) → 256 (1x1). 가중치 수: 65{,}536 (3x3 직접) → 53{,}248 (병목). <b>같은 표현력을 더 적은 가중치로</b>. 50, 101, 152층 변형이 모두 병목 블록 사용.</div>
+        <p class="qref">참고: 14번 ResNet</p>
+      </details>
+    </div>
+
+    <div class="qcat"><span class="badge">F</span><h2>심화 — 사전, 신경과학, 한계</h2></div>
+    <div class="qlist">
+
+      <details class="q">
+        <summary>
+          <span class="qno">Q29</span>
+          <div class="qq">"CNN은 완전연결에 무한히 강한 사전을 건 모델이다"라는 관점을 설명하라.</div>
+        </summary>
+        <div class="qa">L2 정칙화 같은 약한 사전은 가중치를 0에 가깝게 부드럽게 끌어당김. CNN의 구조적 제약은 "허용되지 않는 가중치 배치"를 확률 0으로 원천 차단 → 무한히 강한 사전. 사전 내용: ① 국소성(local interactions), ② 이동 등가성. 자연 이미지에 잘 맞아 폭발적 성능. 사전이 맞지 않는 데이터에는 오히려 해.</div>
+        <p class="qref">참고: 책 9.4절, 1번, 5번, 6번</p>
+      </details>
+
+      <details class="q">
+        <summary>
+          <span class="qno">Q30</span>
+          <div class="qq">CNN의 구조적 사전이 맞지 않을 수 있는 데이터 유형의 예를 들라.</div>
+        </summary>
+        <div class="qa"><b>표 형식 데이터(tabular data)</b>: 열 순서가 의미 없어 공간 국소성 없음. <b>그래프 구조 데이터</b>: 격자가 아닌 임의 그래프 → GNN(Graph Neural Network)이 더 적합. <b>가운데 정렬된 얼굴</b>: 위치마다 통계 다름 → unshared conv가 더 좋음. <b>매우 멀리 떨어진 두 픽셀 사이 강한 관계가 핵심인 데이터</b>: 깊이만으로는 한계 → 트랜스포머의 어텐션이 우회.</div>
+        <p class="qref">참고: 책 9.10절, 06번</p>
+      </details>
+
+      <details class="q">
+        <summary>
+          <span class="qno">Q31</span>
+          <div class="qq">Hubel-Wiesel의 발견에서 단순 세포와 복잡 세포는 CNN의 어느 부품에 각각 대응되는가.</div>
+        </summary>
+        <div class="qa"><b>단순 세포</b>: 작은 수용장 + 특정 방향 에지에 반응 + 위치 민감 → <b>합성곱 한 뉴런</b>의 청사진. <b>복잡 세포</b>: 같은 방향이면 위치 바뀌어도 비슷한 반응 → <b>풀링(특히 max pool)</b>의 청사진. 1959년 발견, 1981년 노벨상.</div>
+        <p class="qref">참고: 09번 신경과학적 기원</p>
+      </details>
+
+      <details class="q">
+        <summary>
+          <span class="qno">Q32</span>
+          <div class="qq">계층적 특징 추출(hierarchical feature extraction)이 CNN에서 어떻게 일어나는가.</div>
+        </summary>
+        <div class="qa">깊이를 따라 수용 영역이 자라며 동시에 더 추상적인 특징을 잡는다. <b>얕은 층</b>(작은 RF): 에지·코너·색 경계. <b>중간 층</b>(중간 RF): 텍스처·반복 패턴·부분 구조. <b>깊은 층</b>(넓은 RF): 눈·코·바퀴 같은 부분 객체, 나아가 전체 객체. 사람이 명시적으로 설계하지 않아도 학습이 자동으로 이 계층을 만든다.</div>
+        <p class="qref">참고: 11번 수용 영역, 09번 신경과학</p>
+      </details>
+
+      <details class="q">
+        <summary>
+          <span class="qno">Q33</span>
+          <div class="qq">현대 CNN에서 풀링이 점점 사라지는 추세는 무엇을 의미하는가.</div>
+        </summary>
+        <div class="qa">풀링의 불변성이 항상 장점이 아닌, <b>과제·데이터에 따른 절충안</b>이라는 인식. ResNet 일부 변형은 풀링 대신 stride 2 합성곱(학습되는 다운샘플링) 사용. Vision Transformer는 풀링을 완전 제거하고 어텐션으로 대체. 그러나 분류 마지막 단의 <em>global average pooling</em>은 거의 모든 모델에 남아 있음. 풀링이 사라진 것이 아니라 "어디에 쓸지가 정교해진 것".</div>
+        <p class="qref">참고: 08번 풀링</p>
+      </details>
+    </div>
+
+    <div class="prose">
+      <h2>마지막 한 마디</h2>
+      <p>이 33개 질문이 9장의 대부분을 덮는다. 시험 직전에는 ①번부터 ⑤번까지의 5분 요약을 외우듯이 다시 읽고, B 카테고리(CNN 3대 속성)와 Q8(등가성 vs 불변성)을 최우선으로 정리하기를 권한다. 이 두 가지가 9장에서 가장 자주 나오는 함정이다.</p>
+
+      <p>10장(RNN)에서는 또 다른 구조적 사전 — "시간 축의 정상성" — 을 만난다. 9장의 사전 관점이 그대로 옮겨진다. CNN이 공간의 정상성을 가중치 공유로 새겼다면, RNN은 시간의 정상성을 같은 가중치를 매 스텝 반복하는 방식으로 새긴다. 같은 줄거리가 다른 옷을 입는다.</p>
+
+      <p>9장을 다 마쳤다. 수고했다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const CHAPTERS = [
+    { no:'01', t:'완전연결의 파라미터 폭발' },
+    { no:'02', t:'합성곱이란 무엇인가' },
+    { no:'03', t:'1D 합성곱 — 시간 신호' },
+    { no:'04', t:'2D 합성곱 — 이미지 커널' },
+    { no:'05', t:'희소 상호작용' },
+    { no:'06', t:'파라미터 공유' },
+    { no:'07', t:'변환 등가성' },
+    { no:'08', t:'풀링 — max vs avg' },
+    { no:'09', t:'신경과학적 기원' },
+    { no:'10', t:'출력 크기 공식' },
+    { no:'11', t:'수용 영역' },
+    { no:'12', t:'아키텍처 1 — LeNet, AlexNet' },
+    { no:'13', t:'아키텍처 2 — VGG, Inception' },
+    { no:'14', t:'아키텍처 3 — ResNet' },
+    { no:'15', t:'시험 대비 — 30+ 질문' },
+  ];
+  const CUR = '15';
+  document.querySelector('.topbar').innerHTML = '<a class="home" href="index.html">← Ch.09 CNN 표지</a><span class="ch-mini">SUB ' + CUR + ' / 15</span>';
+  document.querySelector('.ch-nav ol').innerHTML = CHAPTERS.map(c => '<li><a href="' + c.no + '.html"' + (c.no===CUR?' class="current"':'') + '>' + c.t + '</a></li>').join('');
+  const idx = CHAPTERS.findIndex(c=>c.no===CUR);
+  const prev = idx>0 ? CHAPTERS[idx-1] : { no:'', t:'표지로', _:'index.html' };
+  const next = idx<CHAPTERS.length-1 ? CHAPTERS[idx+1] : { no:'', t:'표지로', _:'index.html' };
+  document.querySelector('.ch-foot').innerHTML =
+    '<a href="' + (prev._||prev.no+'.html') + '"><div class="dir">← 이전</div><div class="ti">' + prev.t + '</div></a>' +
+    '<a href="' + (next._||next.no+'.html') + '" class="next"><div class="dir">다음 →</div><div class="ti">' + next.t + '</div></a>';
+
+  const bar = document.querySelector('.scroll-progress');
+  document.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max > 0 ? (h.scrollTop/max)*100 : 0) + '%';
+  }, { passive: true });
+
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, { delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}], throwOnError: false });
+    }
+  });
+</script>
+</body>
+</html>

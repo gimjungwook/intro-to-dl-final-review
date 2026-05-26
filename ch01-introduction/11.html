@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>11 · 폭발 3 — 모델 크기 — Chapter 1</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .scale-stage { padding: 1.4rem 1rem 1rem; }
+  .scale-grid { display: grid; grid-template-columns: 1fr; gap: .5rem; max-width: 580px; margin: 0 auto; }
+  .scale-row { display: grid; grid-template-columns: 6rem 1fr 6rem; gap: .8rem; align-items: center; padding: .4rem 0; }
+  .scale-row .yr { font-family: var(--mono); font-size: .82rem; color: var(--ink-soft); text-align: right; }
+  .scale-row .bar { height: 16px; border-radius: 4px; background: linear-gradient(90deg, var(--structure-lo), var(--structure)); transition: width 1s var(--ease); }
+  .scale-row .n { font-family: var(--mono); font-size: .78rem; color: var(--ink); text-align: left; }
+  .scale-row .name { font-family: var(--serif); font-size: .92rem; color: var(--ink-soft); }
+  .scale-row.cur .bar { background: linear-gradient(90deg, var(--style-lo), var(--style)); }
+  .scale-row.cur .name { color: var(--style); font-weight: 600; }
+  .triangle-stage { padding: 1.4rem 1rem 1rem; }
+  .tri-svg { display: block; width: 100%; max-width: 480px; margin: 0 auto; }
+  .tri-vertex { cursor: pointer; }
+  .tri-vertex circle { transition: r .15s; }
+  .tri-vertex:hover circle { r: 14; }
+  .tri-readout { max-width: var(--measure); margin: 1rem auto; padding: 1rem 1.4rem; min-height: 5rem; background: var(--paper-2); border-radius: 8px; }
+  .tri-readout h5 { margin: 0 0 .3rem; font-family: var(--serif); font-size: 1rem; color: var(--ink); }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-Chapter 11 · 세 폭발 중 마지막</span>
+      <h1>모델 크기의 폭발 — <span class="t-style">100</span>에서<br>1조 파라미터까지</h1>
+      <p class="lede">데이터와 계산이 가속되자, 그 위에 올릴 수 있는 모델 크기도 함께 커졌다. 1980년대 100개 파라미터에서 2020년대 1조 파라미터까지 약 100억 배. 이 폭발이 어떤 곡선을 그렸는지, 그리고 왜 데이터·계산·모델 크기 셋이 함께 가야 하는지를 본다.</p>
+    </header>
+
+    <div class="prose">
+      <p>데이터와 계산이 폭발한 결과, 그 위에서 작동하는 모델 자체도 폭발적으로 커졌다. 신경망 한 개에 들어가는 파라미터(parameter) — 학습되는 가중치(weight)와 편향(bias)의 총 개수 — 의 변화를 보면 그 폭발의 규모를 한눈에 알 수 있다.</p>
+
+      <ul style="max-width:var(--measure);margin:0 auto;padding-left:2rem;line-height:1.8;font-size:.94rem;color:var(--ink-soft);">
+        <li><strong>1958년 퍼셉트론</strong>: 약 400개 파라미터 (단일 층).</li>
+        <li><strong>1989년 LeNet-1</strong>: 약 9,760개.</li>
+        <li><strong>1998년 LeNet-5</strong>: 약 60,000개.</li>
+        <li><strong>2012년 AlexNet</strong>: 약 6,000만 개.</li>
+        <li><strong>2014년 VGG-16</strong>: 약 1억 3,800만 개.</li>
+        <li><strong>2018년 BERT-Large</strong>: 약 3억 4,000만 개.</li>
+        <li><strong>2020년 GPT-3</strong>: 약 1,750억 개.</li>
+        <li><strong>2022년 PaLM</strong>: 약 5,400억 개.</li>
+        <li><strong>2024년 GPT-4 (추정)</strong>: 약 1조 8천억 개 (MoE 포함).</li>
+      </ul>
+
+      <p>1958년에서 2024년까지 66년 동안, 신경망 한 개의 크기는 약 <strong>40억 배</strong> 늘었다. 이 정도의 가속은 인류 역사상 어떤 기술 영역에서도 보기 힘들다. 같은 기간 동안 컴퓨터의 메모리 용량은 약 100만 배, 트랜지스터 수는 약 10억 배 늘었다. 신경망 파라미터의 증가는 그보다도 빨랐다.</p>
+
+      <div class="analogy">
+        <b>도서관의 장서.</b> 어떤 도서관이 매년 책의 수를 두 배로 늘린다면, 10년 후에는 처음의 1,024배가 된다. 그런데 그 도서관에 사서가 한 명밖에 없거나, 책장을 채울 새 책 자체가 없다면 늘어난 책은 의미가 없다. 신경망 파라미터의 증가도 마찬가지다. 그 자체가 가치가 아니라, 그것을 학습시킬 데이터와 계산이 함께 늘어났을 때만 가치가 된다. 셋이 따로 움직이면 비효율적이다.
+      </div>
+
+      <p>이 sub-chapter의 핵심 메시지는 이 폭발 자체가 아니라, <strong>그 폭발이 데이터·계산과 함께 균형을 맞춰 가야 효과가 난다</strong>는 점이다. 셋 중 하나만 커지면 효과가 없거나 오히려 나빠진다. 그 균형의 법칙을 한 번 정리해 보자.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 13</span><span>신경망 크기의 역사 · 로그 스케일</span></div>
+        <div class="scale-stage">
+          <div class="scale-grid" id="scale-grid"></div>
+        </div>
+      </div>
+      <p class="widget-cap">각 막대의 길이는 log10(파라미터 수)에 비례한다. 절대값으로는 지수적 성장. 가장 큰 빨간 막대(GPT-4)는 가장 왼쪽 파란 막대(퍼셉트론)의 약 40억 배 크기다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>데이터·계산·모델 크기의 삼각형 — Chinchilla 법칙</h2>
+
+      <p>2022년 DeepMind는 <strong>Chinchilla</strong>라는 모델과 함께 결정적인 결과를 발표했다. "한정된 계산 자원으로 가장 좋은 LLM을 만들려면, 데이터 양과 모델 크기를 어떤 비율로 배분해야 하는가?"라는 질문에 답한 논문이다. 결론은 두 가지였다. 첫째, <em>"기존 큰 모델들 — GPT-3, Gopher, Megatron — 은 모두 데이터에 비해 모델이 너무 컸다."</em> 둘째, <em>"같은 계산 자원이라면 모델을 줄이고 데이터를 늘리는 편이 낫다."</em></p>
+
+      <p>구체적으로 Chinchilla 법칙은 이렇게 말한다. <strong>"모델 파라미터 수 N과 학습 데이터 토큰 수 D는 거의 같은 비율로 함께 늘어야 한다."</strong> N이 두 배가 되면 D도 두 배가 되어야 한다. 만약 모델만 키우고 데이터를 그대로 두면, 그 추가 파라미터는 사실상 낭비된다 — 학습 부족(undertrained) 상태가 된다.</p>
+
+      <div class="math-block">$$ N_{\text{opt}} \propto C^{0.5}, \quad D_{\text{opt}} \propto C^{0.5} $$</div>
+      <p class="math-note">N은 모델 파라미터 수. D는 학습 데이터 토큰 수. C는 총 계산량(FLOP). 최적 N과 D는 모두 계산량 C의 제곱근에 비례. 즉, C가 4배 늘면 N과 D 각각 2배가 되어야 한다.</p>
+
+      <p>이 수식이 왜 이 형태인가? 학습에 드는 계산량은 대략 N × D에 비례한다(한 토큰 처리에 N에 비례하는 연산이 필요하므로). C = N × D라면, 같은 C 안에서 최적은 보통 N과 D가 비슷한 크기로 자라는 곳이다. 정확한 비율은 모델 구조와 데이터 종류에 따라 약간 다르지만, "한쪽만 키우면 낭비"라는 정성적 결론은 광범위하게 성립한다.</p>
+
+      <div class="analogy">
+        <b>학생과 교과서.</b> 한 학생에게 10권의 교과서를 주고 시험을 보게 한다고 하자. 학생을 더 똑똑하게 만들어도(모델 크기 증가) 교과서가 10권뿐이면 어느 순간부터 추가 능력은 쓸 곳이 없다. 교과서를 100권으로 늘려도(데이터 증가) 학생의 머리가 작으면 다 못 본다. 같은 자원으로 가장 좋은 결과를 내려면 학생의 능력과 교과서 분량을 같이 늘려야 한다. Chinchilla 법칙이 정확히 이 점을 정량화했다.
+      </div>
+
+      <p>이 법칙은 매우 중요한 실용적 의미를 가진다. <strong>"GPT-3는 사실 너무 컸다."</strong> 같은 계산 자원으로 그것의 1/3 크기 모델을 3배 많은 데이터로 학습시켰다면, 더 좋은 성능을 얻을 수 있었다. 실제 Chinchilla(70B 파라미터)는 GPT-3(175B 파라미터)와 같은 계산 자원으로 학습됐는데, 거의 모든 벤치마크에서 더 좋은 성능을 보였다. 이 결과 이후 거의 모든 LLM이 이 비율을 따르도록 재설계됐다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 14</span><span>데이터 · 계산 · 모델 크기의 삼각형 · 꼭짓점 클릭</span></div>
+        <div class="triangle-stage">
+          <svg class="tri-svg" viewBox="0 0 480 360">
+            <polygon points="240,40 80,300 400,300" fill="none" stroke="rgba(38,34,28,.15)" stroke-width="1.5"/>
+            <line x1="240" y1="40" x2="240" y2="300" stroke="rgba(38,34,28,.08)" stroke-dasharray="3 3"/>
+            <g class="tri-vertex" data-k="data">
+              <circle cx="80" cy="300" r="10" fill="#C0492E"/>
+              <text x="40" y="320" font-family="monospace" font-size="13" fill="#26221C">데이터</text>
+            </g>
+            <g class="tri-vertex" data-k="comp">
+              <circle cx="400" cy="300" r="10" fill="#2D5B7A"/>
+              <text x="365" y="320" font-family="monospace" font-size="13" fill="#26221C">계산</text>
+            </g>
+            <g class="tri-vertex" data-k="model">
+              <circle cx="240" cy="40" r="10" fill="#A47B2E"/>
+              <text x="205" y="30" font-family="monospace" font-size="13" fill="#26221C">모델 크기</text>
+            </g>
+            <text x="155" y="200" font-family="monospace" font-size="11" fill="rgba(94,82,71,.6)">Chinchilla 법칙</text>
+            <text x="155" y="215" font-family="monospace" font-size="10" fill="rgba(94,82,71,.5)">셋이 함께 자라야</text>
+          </svg>
+        </div>
+        <div class="tri-readout" id="tri-read">
+          <h5>꼭짓점을 클릭해 보세요</h5>
+          <p>데이터·계산·모델 크기 셋이 어떻게 함께 가야 하는지, 그리고 한 축만 크면 무엇이 망가지는지를 봅니다.</p>
+        </div>
+      </div>
+      <p class="widget-cap">셋 중 하나라도 부족하면 다른 둘의 효과가 절반 이상 사라진다. Chinchilla 법칙은 이 균형을 정량화한 첫 시도다.</p>
+    </div>
+
+    <div class="prose">
+      <div class="analogy">
+        <b>비행기와 활주로.</b> 더 큰 비행기를 만들면 더 많은 승객을 태울 수 있다. 그러나 활주로가 짧으면 그 큰 비행기를 띄울 수 없다. 활주로(데이터)와 비행기 크기(모델)는 함께 자라야 한다. 데이터 없이 모델만 키우는 것은 활주로가 부족한 공항에 점보 제트기를 들이는 것과 같다.
+      </div>
+
+      <h2>모델 크기의 폭발이 가져온 새로운 현상 — 창발적 능력</h2>
+
+      <p>모델이 어떤 임계 크기를 넘으면, 그 전에는 보이지 않던 능력이 갑자기 나타나는 현상이 발견됐다. 이를 <strong>창발적 능력(emergent abilities)</strong>이라고 부른다. 예를 들어 산수, 다단계 추론, 코드 생성 같은 능력은 모델 크기가 약 10B(100억) 파라미터 이하에서는 거의 0에 가까웠다가, 그 이상에서 갑자기 의미 있는 수준으로 올라온다. 이 현상은 처음에는 신비롭게 여겨졌고, 그 자체로 큰 모델을 추구하는 이유 중 하나가 됐다.</p>
+
+      <p>다만 2023년 이후의 연구는 이 "창발" 현상의 일부가 측정 방식의 인공물(artifact)이라고 본다. 어떤 능력은 점진적으로 증가하지만, 우리가 0/1로 채점하기 때문에 임계 이전에는 모두 0으로 보였을 뿐이라는 것이다. 그래도 일부 능력 — 특히 in-context learning, chain-of-thought reasoning — 은 진짜로 임계 크기 이후에 처음 나타나는 것으로 보인다. 이 현상은 sub-chapter 12의 응용 부분에서 다시 다룬다.</p>
+
+      <h2>모델 크기 폭발의 한계 — 단순 스케일업의 종착점</h2>
+
+      <p>2024년 무렵부터, 단순 스케일업(파라미터를 더 키우는 방식)의 효율이 떨어지고 있다는 신호가 나오기 시작했다. 첫째, 인터넷 텍스트 데이터가 거의 다 학습에 쓰여서, Chinchilla 법칙이 요구하는 만큼 데이터를 늘리기 어려워졌다. 둘째, 전력과 환경적 비용이 임계에 가까워졌다. 셋째, 같은 자원으로 더 효율적인 모델 — 더 작지만 더 잘 학습된 모델 — 이 더 좋은 성능을 내기 시작했다.</p>
+
+      <p>그래서 최근 연구는 모델 크기 자체보다 다음 세 가지에 집중한다. 첫째, <strong>혼합 전문가(MoE, mixture of experts)</strong> — 전체 파라미터는 크되 각 토큰 처리에는 그 일부만 활성화. 둘째, <strong>추론 시간 계산(test-time compute)</strong> — 모델은 그대로 두고 추론할 때 더 많이 생각하게 함. 셋째, <strong>합성 데이터(synthetic data)</strong> — 모델이 만든 데이터로 다시 모델을 학습. 모두 "크기로는 더 이상 단순히 이길 수 없다"는 인식에서 나온 흐름이다.</p>
+
+      <p>이 sub-chapter의 정리. <strong>"모델 크기는 66년 동안 40억 배 늘었지만, 그 폭발은 데이터·계산과 함께 움직였을 때만 효과가 있었다. 단순 스케일업의 시대는 이제 끝나가고, 셋의 균형과 효율이 새로운 화두다."</strong> 다음 sub-chapter는 이 세 폭발이 실제 응용에서 어디까지 왔는지를 본다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+const SUBS = [
+  { no:'01', t:'표상의 문제' },
+  { no:'02', t:'AI · ML · 표상학습 · DL' },
+  { no:'03', t:'표상학습이란 무엇인가' },
+  { no:'04', t:'깊이 1 — 표상의 사다리' },
+  { no:'05', t:'깊이 2 — 합성성' },
+  { no:'06', t:'역사 1 — 사이버네틱스' },
+  { no:'07', t:'역사 2 — 연결주의' },
+  { no:'08', t:'역사 3 — 부활과 폭발' },
+  { no:'09', t:'폭발 1 — 데이터' },
+  { no:'10', t:'폭발 2 — 계산' },
+  { no:'11', t:'폭발 3 — 모델 크기' },
+  { no:'12', t:'응용 — 어디까지' },
+  { no:'13', t:'시험 대비 체크리스트' },
+];
+function buildNav(cur) {
+  const ol = document.querySelector('.ch-nav ol');
+  ol.innerHTML = SUBS.map(s =>
+    `<li><a href="${s.no}.html"${s.no===cur?' class="current"':''}>${s.t}</a></li>`).join('');
+  document.querySelector('.topbar').innerHTML =
+    `<a class="home" href="index.html">← Ch.01 표지</a><span class="ch-mini">SUB ${cur} / 13</span>`;
+  const i = SUBS.findIndex(s => s.no === cur);
+  const prev = i > 0 ? SUBS[i-1] : { no:'', t:'챕터 표지로' };
+  const next = i < SUBS.length-1 ? SUBS[i+1] : { no:'', t:'챕터 표지로' };
+  const ph = prev.no ? prev.no+'.html' : 'index.html';
+  const nh = next.no ? next.no+'.html' : 'index.html';
+  document.querySelector('.ch-foot').innerHTML =
+    `<a href="${ph}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+    `<a href="${nh}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+}
+function progressBar() {
+  const bar = document.querySelector('.scroll-progress');
+  document.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max>0 ? (h.scrollTop/max)*100 : 0) + '%';
+  }, { passive: true });
+}
+
+const SCALES = [
+  { yr:1958, n:400, name:'퍼셉트론' },
+  { yr:1989, n:9760, name:'LeNet-1' },
+  { yr:1998, n:60000, name:'LeNet-5' },
+  { yr:2012, n:60000000, name:'AlexNet' },
+  { yr:2014, n:138000000, name:'VGG-16' },
+  { yr:2015, n:25557032, name:'ResNet-50' },
+  { yr:2018, n:340000000, name:'BERT-Large' },
+  { yr:2019, n:1500000000, name:'GPT-2' },
+  { yr:2020, n:175000000000, name:'GPT-3', cur:true },
+  { yr:2022, n:540000000000, name:'PaLM' },
+  { yr:2024, n:1800000000000, name:'GPT-4 (추정)', cur:true },
+];
+
+function renderScales() {
+  const grid = document.getElementById('scale-grid');
+  const maxLog = Math.log10(SCALES[SCALES.length-1].n);
+  SCALES.forEach(s => {
+    const row = document.createElement('div');
+    row.className = 'scale-row' + (s.cur ? ' cur' : '');
+    const w = (Math.log10(s.n) / maxLog) * 100;
+    const nFmt = s.n >= 1e9 ? (s.n/1e9).toFixed(1) + 'B' :
+                 s.n >= 1e6 ? (s.n/1e6).toFixed(1) + 'M' :
+                 s.n >= 1e3 ? (s.n/1e3).toFixed(1) + 'K' : s.n;
+    row.innerHTML = `
+      <div class="yr">${s.yr}<br><span class="name">${s.name}</span></div>
+      <div class="bar" style="width:${w}%"></div>
+      <div class="n">${nFmt}</div>`;
+    grid.appendChild(row);
+  });
+}
+
+const TRI = {
+  data:  { t:'데이터만 크고 모델·계산이 작으면', d:'모델이 데이터의 풍부함을 다 흡수하지 못한다. 학습이 빨리 수렴해 버리고, 추가 데이터의 한계 효용이 거의 0이 된다. 데이터 낭비.' },
+  comp:  { t:'계산만 크고 데이터·모델이 작으면', d:'같은 작은 모델을 같은 작은 데이터로 더 오래 학습한다. 어느 순간부터 손실이 더 안 줄고, 오히려 과적합이 심해진다. 계산 낭비.' },
+  model: { t:'모델만 크고 데이터·계산이 작으면', d:'GPT-3가 정확히 이 상태였다. 큰 모델의 추가 파라미터가 학습되지 못한 채 남는다 (undertrained). 같은 자원으로 더 작은 모델을 잘 학습시키는 편이 낫다는 것이 Chinchilla 법칙의 결론.' },
+};
+
+window.addEventListener('load', () => {
+  buildNav('11');
+  progressBar();
+  renderScales();
+  document.querySelectorAll('.tri-vertex').forEach(v => {
+    v.addEventListener('click', () => {
+      const r = TRI[v.dataset.k];
+      document.getElementById('tri-read').innerHTML = `<h5>${r.t}</h5><p>${r.d}</p>`;
+    });
+  });
+});
+</script>
+</body>
+</html>

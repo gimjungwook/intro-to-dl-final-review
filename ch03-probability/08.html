@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>08. 흔한 분포 1 — Bernoulli, Categorical</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .cat-stage { padding: 1.4rem 1.1rem; display: grid; gap: 1rem; }
+  .logits-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: .5rem; }
+  .logit-col { display: flex; flex-direction: column; gap: .35rem; }
+  .logit-col label { font-family: var(--mono); font-size: .68rem; letter-spacing: .08em; color: var(--ink-soft); text-align: center; }
+  .logit-col input { writing-mode: bt-lr; appearance: slider-vertical; -webkit-appearance: slider-vertical; width: 28px; height: 110px; margin: 0 auto; }
+  .logit-col .lv { font-family: var(--mono); font-size: .76rem; text-align: center; color: var(--ink); }
+  .prob-bars { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; gap: .4rem; align-items: end; height: 160px; padding: .4rem .2rem 0; border-top: 1px solid var(--line-soft); }
+  .prob-bars .pcol { display: flex; flex-direction: column; align-items: center; gap: .3rem; }
+  .prob-bars .pcol .bar { width: 100%; max-width: 60px; background: var(--structure); border-radius: 4px 4px 0 0; transition: height .18s var(--ease); }
+  .prob-bars .pcol.win .bar { background: var(--style); }
+  .prob-bars .pcol .pv { font-family: var(--mono); font-size: .74rem; color: var(--ink); }
+  .prob-bars .pcol .pn { font-family: var(--mono); font-size: .68rem; color: var(--ink-soft); }
+  .ber-stage { padding: 1.4rem 1.1rem; display: grid; gap: 1rem; }
+  .sigmoid-canvas { width: 100%; height: 200px; display: block; background: #fff; border: 1px solid var(--line-soft); border-radius: 7px; }
+  @media (max-width: 600px){ .logits-row{ grid-template-columns: repeat(5,minmax(0,1fr)); } }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-chapter 08. 분포 카탈로그 첫째 묶음</span>
+      <h1>Bernoulli와 Categorical —<br><span class="t-structure">이진과 다중 분류</span>의 뿌리</h1>
+      <p class="lede">분류기(classifier)의 마지막 층에서 어떤 활성 함수를 쓸지는 출력이 따르는 분포의 종류에 따라 결정된다. 이진(binary)이면 시그모이드(sigmoid), 다중(multiclass)이면 소프트맥스(softmax). 그리고 두 활성 함수는 각각 Bernoulli와 Categorical 분포의 파라미터를 신경망이 직접 추정하는 장치다.</p>
+    </header>
+
+    <div class="prose">
+      <p>3장의 후반은 자주 쓰이는 분포의 카탈로그(catalog)다. 카탈로그를 외우는 게 목적이 아니라 — 각 분포가 어떤 종류의 사건을 모델링하는지, 그리고 그 분포의 파라미터가 신경망의 어디에 들어가는지를 익히는 것이 목적이다. 이번 페이지에서는 가장 단순하면서도 분류기에서 가장 자주 만나는 두 분포 — <strong>베르누이(Bernoulli) 분포</strong>와 <strong>범주(Categorical) 분포</strong> — 를 본다.</p>
+
+      <p>두 분포는 사실 한 가족이다. 동전 한 번을 던져 앞/뒤가 나오는 사건을 모델링하는 것이 베르누이고, 주사위 한 번을 던져 1에서 6 중 어느 면이 나오는지 모델링하는 것이 범주 분포다. 동전(가능한 결과 2개)을 일반화해 주사위(가능한 결과 $K$개)로 키운 것이 범주 분포라고 생각하면 정확하다.</p>
+
+      <h2>베르누이 분포 — 단 두 값, 하나의 파라미터</h2>
+      <p>베르누이(Bernoulli) 분포는 결과가 두 가지뿐인 사건을 모델링한다. 흔히 1(성공)과 0(실패)로 적는다. 분포 전체를 결정하는 파라미터는 단 하나 — 1이 나올 확률 $\phi$다. 0이 나올 확률은 자동으로 $1 - \phi$가 된다. 표기는 다음과 같다.</p>
+
+      <div class="math-block">$$ P(X = 1) = \phi, \qquad P(X = 0) = 1 - \phi $$</div>
+      <p class="math-note">$\phi \in [0,1]$. 두 값의 합이 정확히 1 — 분포의 약속.</p>
+
+      <p>두 줄을 한 줄로 적는 흔한 표기는 다음이다.</p>
+
+      <div class="math-block">$$ P(X = x) = \phi^x (1 - \phi)^{1 - x} $$</div>
+      <p class="math-note">$x$는 0 또는 1. $x=1$이면 $\phi^1 (1-\phi)^0 = \phi$, $x=0$이면 $\phi^0 (1-\phi)^1 = 1 - \phi$. 두 케이스를 지수로 묶은 트릭.</p>
+
+      <p>왜 굳이 한 줄로 묶나. 학습에서 음의 로그우도(negative log-likelihood) 손실을 미분할 때, 두 경우를 따로 다루지 않고 한 식으로 끌고 가는 편이 편하기 때문이다. 로그를 씌우면 $\log P = x \log \phi + (1 - x) \log(1 - \phi)$가 되고, 이것이 바로 우리가 분류기에서 매일 쓰는 <strong>이진 교차 엔트로피(binary cross-entropy)</strong> 손실이다.</p>
+
+      <h2>시그모이드 — 신경망 출력을 베르누이 파라미터로 바꾸는 다리</h2>
+      <p>신경망의 마지막 층은 일반적으로 어떤 실수 하나 — 양수일 수도 음수일 수도, 100을 넘을 수도 있는 — 를 내놓는다. 이 실수를 $z$라고 하자. 그런데 베르누이 파라미터 $\phi$는 $[0, 1]$에 갇혀 있어야 한다. 어떤 함수가 임의의 실수를 받아 항상 $[0, 1]$에 떨어뜨려 줄 수 있을까. 가장 유명한 답이 <strong>시그모이드(sigmoid)</strong>다.</p>
+
+      <div class="math-block">$$ \sigma(z) = \frac{1}{1 + e^{-z}} $$</div>
+      <p class="math-note">$z$가 매우 크면 분모가 1에 가까워져 $\sigma \to 1$. $z$가 매우 작으면 분모가 매우 커져 $\sigma \to 0$. 정확히 $z = 0$이면 $\sigma = 0.5$.</p>
+
+      <p>왜 이 형태인가. $\sigma(z)$를 풀어 보면 $\sigma(z) / (1 - \sigma(z)) = e^z$이다 — 출력이 "성공 확률 / 실패 확률"의 로그가 정확히 $z$가 되는 함수다. 즉 신경망의 출력 $z$는 "성공 가능성을 실패 가능성에 비해 얼마나 더 강하게 본다고 말하는가"의 로그 단위(log-odds)다. 이런 해석이 가능하기 때문에 시그모이드는 단순한 압축 함수가 아니라 <em>해석 가능한 변환</em>이다.</p>
+
+      <p>그리고 한 가지 더 — 시그모이드는 모든 곳에서 부드럽게 미분된다. 도함수가 $\sigma(z)(1 - \sigma(z))$로 깔끔하게 떨어진다. 이 성질이 역전파(backpropagation)에서 기울기를 매끄럽게 흐르게 한다.</p>
+
+      <div class="analogy">
+        시그모이드는 신경망과 분포 사이의 <b>번역기</b>다. 신경망은 실수의 언어로 말하고, 분포는 [0,1] 확률의 언어로 말한다. 두 언어 사이에서 의미를 잃지 않고 옮겨주는 게 시그모이드다. 일종의 압력 조절 밸브이기도 하다 — 입력이 아무리 강해져도 출력은 항상 0과 1 사이에 안전하게 들어 있다.
+      </div>
+
+      <h2>범주 분포 — Bernoulli의 $K$ 결과 버전</h2>
+      <p>이제 결과가 두 가지가 아니라 $K$가지인 경우를 보자. "고양이/강아지/토끼", "한국어/영어/일본어", 손글씨 숫자 0에서 9까지 등. 이런 경우 모델링하는 분포가 <strong>범주(Categorical) 분포</strong>다. 파라미터는 각 결과의 확률들 $\boldsymbol{\phi} = (\phi_1, \phi_2, \ldots, \phi_K)$이며, 두 조건을 만족해야 한다.</p>
+
+      <div class="math-block">$$ \phi_i \geq 0, \qquad \sum_{i=1}^{K} \phi_i = 1 $$</div>
+      <p class="math-note">각 클래스 확률은 0 이상, 다 더하면 정확히 1. 베르누이의 두 줄을 $K$ 줄로 확장한 형태.</p>
+
+      <p>결과 하나가 클래스 $i$로 나올 확률은 그냥 $\phi_i$다. 분류기의 정답 라벨이 클래스 $i$일 때 모델이 부여한 확률이 $\phi_i$다. 이 값을 크게 만들도록 학습하는 것이 분류기 학습의 본질이다.</p>
+
+      <h2>소프트맥스 — 신경망 출력을 범주 분포 파라미터로</h2>
+      <p>신경망이 클래스마다 실수 점수 하나씩, 총 $K$개의 점수($z_1, z_2, \ldots, z_K$)를 내놓는다고 하자. 이 점수들을 합이 1인 $K$개의 양수로 변환해야 범주 분포 파라미터가 된다. 그 변환이 <strong>소프트맥스(softmax)</strong>다.</p>
+
+      <div class="math-block">$$ \phi_i = \frac{e^{z_i}}{\sum_{j=1}^{K} e^{z_j}} $$</div>
+      <p class="math-note">분자는 클래스 $i$의 로짓 지수, 분모는 모든 클래스 지수의 합. 결과는 자동으로 양수이고 합이 1.</p>
+
+      <p>왜 이 형태인지는 1장에서 한 번 본 그대로다 — 지수가 양수성을 보장하고, 합으로 나누는 것이 정규화를 보장한다. 그리고 베르누이가 시그모이드와 같은 자리에 있듯, $K = 2$일 때 소프트맥스는 정확히 시그모이드로 떨어진다. $\phi_1 = e^{z_1} / (e^{z_1} + e^{z_2}) = 1 / (1 + e^{-(z_1 - z_2)}) = \sigma(z_1 - z_2)$. 두 출력 차이를 시그모이드에 넣은 것과 같다. 즉 소프트맥스는 시그모이드의 다중 클래스 일반화다.</p>
+
+      <p>한 가지 함정. 소프트맥스의 분자에 큰 $z_i$가 들어가면 $e^{z_i}$가 부동소수점 한계를 넘어 무한대로 발산한다. 이걸 막기 위해 실전에서는 $z_i - \max_j z_j$를 먼저 빼는 트릭을 쓴다(분모와 분자에서 같은 양을 빼므로 확률은 그대로다). 시험에서 직접 묻지는 않지만, 실무에서는 이 한 줄이 모델을 살린다.</p>
+
+      <h2>위젯 — 로짓 슬라이더로 소프트맥스 직접 만들기</h2>
+      <p>아래 위젯은 5개 클래스의 로짓을 각각 조절할 수 있는 슬라이더와, 그 결과로 나오는 소프트맥스 확률 막대를 보여준다. 한 클래스의 로짓을 강하게 키워 보라 — 그 클래스 막대가 거의 1을 독차지하고 나머지가 0에 가까워진다. 모든 로짓이 비슷하면 균등 분포에 가까워진다. 이 위젯이 분류기 마지막 층에서 매일 일어나는 일의 전부다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 08a</span><span>로짓 → 소프트맥스 → 범주 분포</span></div>
+        <div class="cat-stage">
+          <div class="logits-row" id="logitsRow"></div>
+          <div class="prob-bars" id="probBars"></div>
+        </div>
+        <div class="widget-controls">
+          <span style="font-family: var(--mono); font-size: .72rem; color: var(--ink-faint);">5클래스 분류기 (cat / dog / rabbit / fox / owl) — 슬라이더는 신경망 출력 로짓</span>
+        </div>
+      </div>
+      <p class="widget-cap">한 칸을 +5쯤 올리면 그 클래스가 거의 1.0을 가져간다 — 분류기가 매우 확신하는 상태. 모두 0 근처로 모으면 균등(uniform)에 가까워진다 — 모델이 망설이는 상태.</p>
+    </div>
+
+    <div class="prose">
+      <h2>위젯 — 시그모이드의 모양</h2>
+      <p>아래 위젯은 시그모이드 곡선이다. 출력은 0과 1에 점근하고, 입력이 0 근처일 때 가장 가파르다. 이 가파른 부분이 "결정 경계 근처"이며, 입력이 멀리 떨어진 곳에서는 출력이 거의 변하지 않는다(이걸 포화, saturation이라 부른다).</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 08b</span><span>시그모이드 곡선 — Bernoulli 파라미터 변환기</span></div>
+        <div class="ber-stage">
+          <canvas id="sigC" class="sigmoid-canvas" width="700" height="200"></canvas>
+        </div>
+        <div class="widget-controls">
+          <div class="slider">
+            <label>입력 z <b><span id="zV">0.00</span></b></label>
+            <input id="zSl" type="range" min="-600" max="600" value="0" class="s-structure">
+          </div>
+          <span style="font-family: var(--mono); font-size: .72rem; color: var(--ink-faint);">σ(z) = 1/(1 + e^(-z)). z가 크면 1로 포화, 작으면 0으로 포화.</span>
+        </div>
+      </div>
+      <p class="widget-cap">입력 z가 0에서 멀어질수록 곡선이 평평해진다 — 도함수가 작아진다. 이게 deep network에서 시그모이드만 잔뜩 쓰면 학습이 안 되는 이유(기울기 소실, vanishing gradient)이기도 하다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>출력 분포 → 손실 함수의 한 줄 매칭</h2>
+      <p>이 장의 끝에서 시험에 가장 자주 나오는 표가 다음이다. 출력층의 활성 함수와 손실 함수가 짝지어진다.</p>
+
+      <ul>
+        <li><strong>이진 분류(binary classification)</strong>: 시그모이드 + 이진 교차 엔트로피 손실 = Bernoulli 분포의 NLL.</li>
+        <li><strong>다중 분류(multiclass classification)</strong>: 소프트맥스 + 범주 교차 엔트로피 손실 = Categorical 분포의 NLL.</li>
+        <li><strong>다중 라벨(multi-label) 분류</strong>: 각 라벨마다 독립 시그모이드 + 라벨별 이진 교차 엔트로피 = 여러 Bernoulli의 합.</li>
+      </ul>
+
+      <p>이 세 줄을 시험 전에 정확히 외워야 한다. 더 정확히는, 외우는 게 아니라 "활성 함수는 출력 분포의 파라미터를 만드는 변환이고, 손실은 그 분포의 음의 로그우도다"라는 한 문장을 몸에 새겨야 한다. 한 문장만 알면 셋이 자동으로 따라온다.</p>
+
+      <h2>딥러닝 현장에서 자주 보는 함정</h2>
+      <p>함정 첫째 — 다중 라벨인데 소프트맥스를 쓰는 경우. 사진 한 장에 "고양이"와 "강아지"가 동시에 있을 수 있다면 두 라벨이 동시에 1이어야 한다. 그런데 소프트맥스는 합이 1이 되도록 강제하므로 한 라벨이 강해지면 다른 라벨이 약해진다. 이 경우는 소프트맥스가 아니라 각 라벨마다 독립 시그모이드를 써야 한다. 둘째 — 회귀에 시그모이드를 끼는 경우. 출력이 [0, 1]이 아니라면 시그모이드가 출력의 범위를 강제로 압축해 버린다. 셋째 — 클래스가 매우 많은(수만 개) 다중 분류에서 소프트맥스 분모 계산 비용. 이 경우는 hierarchical softmax나 negative sampling 같은 근사를 쓴다.</p>
+
+      <h2>시험에서 자주 묻는 한 줄</h2>
+      <p>시험 직전 정리. <strong>Bernoulli는 결과 2개, 파라미터 1개($\phi$), 시그모이드 + BCE. Categorical은 결과 $K$개, 파라미터 $K-1$개(합 제약), 소프트맥스 + cross-entropy.</strong> 두 분포의 NLL이 곧 우리가 매일 쓰는 분류 손실이라는 점, 그리고 다중 라벨 ≠ 다중 분류라는 함정. 객관식에서 "다중 라벨에 소프트맥스가 적절하다"는 보기가 보이면 틀린 보기다.</p>
+
+      <p>다음 페이지에서는 연속값 분포의 챔피언 — 가우시안(Gaussian) 분포 — 를 본다. 왜 그렇게 자주 나오는지, 그리고 선형 회귀의 평균제곱오차 손실이 사실은 가우시안 가정의 NLL이라는 점이 거기서 정리된다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const CH = [
+    { no:'01', t:'왜 확률이 필요한가', f:'01.html' },
+    { no:'02', t:'확률변수와 분포 — PMF vs PDF', f:'02.html' },
+    { no:'03', t:'결합·주변·조건부 분포', f:'03.html' },
+    { no:'04', t:'연쇄법칙 — 결합을 조건부의 곱으로', f:'04.html' },
+    { no:'05', t:'독립과 조건부 독립', f:'05.html' },
+    { no:'06', t:'기대값 — 분포를 한 숫자로', f:'06.html' },
+    { no:'07', t:'분산과 공분산 — 무상관 ≠ 독립', f:'07.html' },
+    { no:'08', t:'흔한 분포 1 — Bernoulli, Categorical', f:'08.html' },
+    { no:'09', t:'흔한 분포 2 — Gaussian', f:'09.html' },
+    { no:'10', t:'흔한 분포 3 — Mixture, Dirac', f:'10.html' },
+    { no:'11', t:'베이즈 규칙 — 사전이 사후로', f:'11.html' },
+    { no:'12', t:'정보이론 1 — 엔트로피', f:'12.html' },
+    { no:'13', t:'정보이론 2 — KL 발산의 비대칭', f:'13.html' },
+    { no:'14', t:'정보이론 3 — 교차 엔트로피 = NLL', f:'14.html' },
+    { no:'15', t:'시험 대비 체크리스트', f:'15.html' },
+  ];
+  function buildNav(curr) {
+    const tb = document.querySelector('.topbar');
+    if (tb) tb.innerHTML =
+      `<a class="home" href="index.html">← Ch.3 확률과 정보이론</a>` +
+      `<span class="ch-mini">SUB-CHAPTER ${curr} of 15</span>`;
+    const ol = document.querySelector('.ch-nav ol');
+    if (ol) ol.innerHTML = CH.map(c =>
+      `<li><a href="${c.f}" ${c.no === curr ? 'class="current"' : ''}>${c.t}</a></li>`).join('');
+    const foot = document.querySelector('.ch-foot');
+    if (foot) {
+      const i = CH.findIndex(c => c.no === curr);
+      const prev = i > 0 ? CH[i-1] : { f:'index.html', t:'표지로', no:'' };
+      const next = i < CH.length-1 ? CH[i+1] : { f:'index.html', t:'표지로', no:'' };
+      foot.innerHTML =
+        `<a href="${prev.f}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+        `<a href="${next.f}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+    }
+    const bar = document.querySelector('.scroll-progress');
+    if (bar) {
+      const onS = () => {
+        const h = document.documentElement;
+        const m = h.scrollHeight - h.clientHeight;
+        bar.style.width = (m > 0 ? (h.scrollTop / m) * 100 : 0) + '%';
+      };
+      document.addEventListener('scroll', onS, { passive: true });
+      onS();
+    }
+  }
+
+  const NAMES = ['cat','dog','rabbit','fox','owl'];
+  const logits = [1.5, 0.8, 0.2, -0.4, -0.8];
+
+  function softmax(z) {
+    const m = Math.max(...z);
+    const e = z.map(v => Math.exp(v - m));
+    const s = e.reduce((a, b) => a + b, 0);
+    return e.map(v => v / s);
+  }
+
+  function renderLogits() {
+    const host = document.getElementById('logitsRow');
+    host.innerHTML = NAMES.map((n, i) => `
+      <div class="logit-col">
+        <label>${n}</label>
+        <input type="range" min="-400" max="400" value="${Math.round(logits[i] * 100)}" data-i="${i}">
+        <span class="lv" id="lv${i}">${logits[i].toFixed(2)}</span>
+      </div>`).join('');
+    host.querySelectorAll('input').forEach(inp => {
+      inp.addEventListener('input', () => {
+        const i = parseInt(inp.dataset.i, 10);
+        logits[i] = parseInt(inp.value, 10) / 100;
+        document.getElementById('lv' + i).textContent = logits[i].toFixed(2);
+        renderProbs();
+      });
+    });
+  }
+
+  function renderProbs() {
+    const p = softmax(logits);
+    const maxI = p.indexOf(Math.max(...p));
+    const host = document.getElementById('probBars');
+    host.innerHTML = p.map((v, i) => `
+      <div class="pcol ${i === maxI ? 'win' : ''}">
+        <span class="pv">${v.toFixed(3)}</span>
+        <div class="bar" style="height: ${(v * 130).toFixed(1)}px"></div>
+        <span class="pn">${NAMES[i]}</span>
+      </div>`).join('');
+  }
+
+  function drawSigmoid(zhi) {
+    const c = document.getElementById('sigC');
+    const ctx = c.getContext('2d');
+    const W = c.width, H = c.height;
+    ctx.clearRect(0, 0, W, H);
+    /* axes */
+    ctx.strokeStyle = 'rgba(38,34,28,0.18)';
+    ctx.beginPath(); ctx.moveTo(30, 10); ctx.lineTo(30, H - 25); ctx.lineTo(W - 10, H - 25); ctx.stroke();
+    /* y-grid 0/0.5/1 */
+    ctx.strokeStyle = 'rgba(38,34,28,0.07)';
+    [0, 0.5, 1].forEach(yy => {
+      const py = (H - 25) - yy * (H - 35);
+      ctx.beginPath(); ctx.moveTo(30, py); ctx.lineTo(W - 10, py); ctx.stroke();
+      ctx.fillStyle = 'rgba(38,34,28,0.5)';
+      ctx.font = '10px "Spline Sans Mono", monospace';
+      ctx.fillText(yy.toFixed(1), 8, py + 3);
+    });
+    /* x-grid */
+    [-8, -4, 0, 4, 8].forEach(xx => {
+      const px = 30 + ((xx + 10) / 20) * (W - 40);
+      ctx.fillStyle = 'rgba(38,34,28,0.5)';
+      ctx.fillText(xx >= 0 ? '+' + xx : xx, px - 6, H - 10);
+    });
+    /* curve */
+    ctx.strokeStyle = '#2D5B7A';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = 0; i <= 400; i++) {
+      const z = -10 + 20 * i / 400;
+      const s = 1 / (1 + Math.exp(-z));
+      const px = 30 + ((z + 10) / 20) * (W - 40);
+      const py = (H - 25) - s * (H - 35);
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+    /* marker */
+    const z = zhi;
+    const s = 1 / (1 + Math.exp(-z));
+    const px = 30 + ((z + 10) / 20) * (W - 40);
+    const py = (H - 25) - s * (H - 35);
+    ctx.fillStyle = '#C0492E';
+    ctx.beginPath(); ctx.arc(px, py, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(192,73,46,0.4)';
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.moveTo(px, H - 25); ctx.lineTo(px, py); ctx.lineTo(30, py); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#26221C';
+    ctx.font = 'bold 12px "Spline Sans Mono", monospace';
+    ctx.fillText('σ = ' + s.toFixed(3), px + 8, py - 6);
+  }
+
+  window.addEventListener('load', () => {
+    buildNav('08');
+    renderLogits();
+    renderProbs();
+    const zs = document.getElementById('zSl');
+    function go() {
+      const z = parseInt(zs.value, 10) / 100;
+      document.getElementById('zV').textContent = z.toFixed(2);
+      drawSigmoid(z);
+    }
+    zs.addEventListener('input', go);
+    go();
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$', right:'$$', display:true}, {left:'$', right:'$', display:false}],
+        throwOnError: false,
+      });
+    }
+  });
+</script>
+</body>
+</html>

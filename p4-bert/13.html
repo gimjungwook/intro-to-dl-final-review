@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>13 · BERT vs GPT vs T5 — 세 갈래 흐름</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="assets/bert.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .arch-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; padding: 1.2rem; }
+  @media (max-width: 720px) { .arch-grid { grid-template-columns: 1fr; } }
+  .arch-card { border: 1px solid var(--line); border-radius: 10px; padding: 1rem 1.1rem; background: #fff; }
+  .arch-card.bert { border-color: var(--bidir-lo); background: var(--bidir-bg); }
+  .arch-card.gpt  { border-color: var(--mask-lo);  background: var(--mask-bg); }
+  .arch-card.t5   { border-color: var(--ink-faint); background: var(--paper-2); }
+  .arch-card h4   { margin: 0 0 .35rem; font-family: var(--serif); font-size: 1.15rem; }
+  .arch-card.bert h4 { color: var(--bidir); }
+  .arch-card.gpt h4  { color: var(--mask); }
+  .arch-card.t5 h4   { color: var(--ink); }
+  .arch-card .tag    { font-family: var(--mono); font-size: .68rem; letter-spacing: .12em; color: var(--ink-faint); text-transform: uppercase; }
+  .arch-card .arrows { font-family: var(--mono); font-size: .85rem; color: var(--ink-soft); margin: .35rem 0 .5rem; letter-spacing: .04em; }
+  .arch-card .lbl    { font-size: .82rem; color: var(--ink-soft); margin: .15rem 0; }
+  .arch-card .lbl b  { color: var(--ink); font-weight: 600; }
+  .arch-card .use    { font-size: .82rem; color: var(--ink-soft); margin-top: .4rem; padding-top: .4rem; border-top: 1px dashed var(--line); }
+  .arch-card .use b  { color: var(--ink); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Chapter 13 · 세 갈래 흐름</span>
+      <h1>같은 부품, <span class="t-bidir">세 가지 사용법</span>으로 갈라진다</h1>
+      <p class="lede">2017 년 Vaswani 등이 발표한 트랜스포머는 인코더 (encoder) 와 디코더 (decoder) 두 블록을 가진 하나의 구조였다. 그 이후 자연어 처리 모델은 이 두 블록을 어떻게 골라 쓰는가에 따라 세 갈래로 갈라졌다. 인코더만 쓰는 BERT 의 흐름, 디코더만 쓰는 GPT 의 흐름, 둘 다 쓰는 T5 의 흐름이다. 같은 부품, 다른 사용법. 이 장은 세 흐름의 본질을 한 그림으로 정리한다.</p>
+    </header>
+
+    <div class="prose">
+      <h2>1. 한 부품, 두 변형</h2>
+      <p>먼저 트랜스포머의 두 블록을 다시 짚자. 인코더 블록과 디코더 블록은 거의 같은 구조다. 둘 다 self-attention + feed-forward + 잔차 연결 + LayerNorm 의 묶음을 여러 층 쌓는다. 차이는 두 가지다. 첫째, 디코더의 self-attention 은 마스킹 (masking) 이 걸려 있어 한 토큰이 자기보다 뒤에 오는 토큰을 보지 못한다. 즉 단방향이다. 인코더의 self-attention 은 마스킹이 없어 모든 토큰이 모든 토큰을 본다. 즉 양방향이다.</p>
+
+      <p>둘째, 디코더는 인코더 출력에 대한 cross-attention 한 층을 더 가진다 (원본 트랜스포머에서). 이는 디코더가 출력을 만들면서 입력의 모든 위치를 다시 참조할 수 있게 한다. GPT 처럼 디코더만 쓰는 모델은 인코더가 없으므로 cross-attention 도 없다.</p>
+
+      <div class="def-box bidir-side">
+        <div class="deft">두 블록의 핵심 차이</div>
+        <p><b>인코더 블록</b> — 양방향 self-attention. 한 토큰이 입력의 모든 토큰을 본다. cross-attention 없음.<br><b>디코더 블록</b> — 단방향 (causal) self-attention. 한 토큰이 자기와 자기보다 앞 토큰만 본다. 원본 트랜스포머에서는 cross-attention 으로 인코더 출력을 참조.</p>
+      </div>
+
+      <h2>2. 인코더 전용 — BERT 와 그 후계자들</h2>
+      <p>BERT 는 트랜스포머 인코더만 가져왔다. 한 입력 시퀀스에서 모든 위치가 모든 위치를 보는 양방향 표현을 학습하고, 그 표현을 다양한 다운스트림 작업에 미세조정한다. 사전훈련 손실은 MLM 과 NSP 이고, 출력은 보통 분류 또는 토큰별 라벨이다.</p>
+
+      <p>인코더 전용 모델의 본질은 "이해 (understanding)" 다. 입력을 깊이 분석해 그것이 어떤 종류의 문장인지, 어떤 의미인지, 어떤 구조를 가지는지를 한 벡터 또는 토큰별 벡터들로 표현한다. 인코더 전용 모델은 생성을 잘 못한다 (할 수 있지만 효율적이지 않다). 자연어 이해 (NLU) 작업이 주 용도다.</p>
+
+      <p>BERT 이후의 인코더 전용 모델들 — RoBERTa, ALBERT, DeBERTa, ELECTRA 등 — 은 모두 인코더만 쓰고, 사전훈련 손실의 세부만 다르다. RoBERTa 는 NSP 를 빼고 MLM 만 더 잘 학습시켰고, ELECTRA 는 MLM 대신 "이 자리의 단어가 바뀌었는가" 를 모든 자리에서 이항 분류하는 방식으로 효율을 끌어올렸다.</p>
+
+      <h2>3. 디코더 전용 — GPT 와 그 후계자들</h2>
+      <p>GPT (Generative Pre-trained Transformer) 는 트랜스포머 디코더만 가져왔다. cross-attention 은 빼고 (인코더가 없으므로), causal self-attention 한 종류만 쌓아 올린다. 사전훈련 손실은 표준 언어 모델 손실 — "이전 단어들이 주어졌을 때 다음 단어의 확률" 의 자가지도 학습이다.</p>
+
+      <div class="math-block">$$ \mathcal{L}_{\text{LM}} \;=\; - \sum_{t=1}^{T} \log P(w_t \mid w_1, w_2, \ldots, w_{t-1}) $$</div>
+      <p class="math-note">표준 좌→우 언어 모델 손실. 모든 자리에서 다음 단어를 예측한다.</p>
+
+      <p>디코더 전용 모델의 본질은 "생성 (generation)" 이다. 입력 (프롬프트) 을 받으면 그 다음으로 올 단어를 한 번에 하나씩 생성한다. 한 단어를 생성하면 그것을 입력 끝에 붙여 다시 다음 단어를 생성하는 방식의 자기회귀 (autoregressive) 추론이다.</p>
+
+      <p>BERT 와 결정적으로 다른 점은 모든 자리에서 손실이 발생한다는 것이다. MLM 은 15% 의 자리에서만 손실을 매기지만, 표준 LM 은 모든 자리에서 손실을 매긴다. 같은 데이터에서 GPT 가 BERT 보다 학습 신호를 약 6.7 배 더 뽑아낸다. 다만 그 신호의 질은 단방향이라는 점에서 다르다 — 한 자리에서 그 자리의 단어를 예측할 때 좌측 문맥만 활용한다.</p>
+
+      <p>GPT-1 (2018, 117M), GPT-2 (2019, 1.5B), GPT-3 (2020, 175B), GPT-4 (2023) 로 이어지는 흐름은 디코더 전용 모델의 크기와 데이터를 끝없이 늘려, 미세조정 없이도 (zero-shot 또는 few-shot 으로) 다양한 작업을 풀어 내는 거대 언어 모델 (LLM) 시대를 열었다. ChatGPT, Claude, Llama 등 오늘날 거의 모든 대화형 AI 가 이 흐름의 후계자다.</p>
+
+      <h2>4. 인코더-디코더 (시퀀스2시퀀스) — T5 와 BART</h2>
+      <p>세 번째 흐름은 인코더와 디코더를 둘 다 쓰는 시퀀스-투-시퀀스 (sequence-to-sequence, seq2seq) 모델이다. 원본 트랜스포머가 그러했듯 인코더가 입력을 깊이 분석하고, 디코더가 그 결과를 참조하면서 출력을 생성한다. 두 블록을 통해 정보가 흐른다.</p>
+
+      <p>T5 (Text-to-Text Transfer Transformer, 2019) 는 이 구조를 가장 깔끔하게 정리한 모델이다. T5 의 슬로건은 "모든 자연어 작업을 텍스트 입력 → 텍스트 출력 변환으로 다룬다" 이다. 분류든, 요약이든, 번역이든, 질의응답이든 — 모두 입력 텍스트와 출력 텍스트의 쌍으로 표현한다.</p>
+
+      <div class="analogy">
+        예를 들어 감성 분류 (SST-2) 는 T5 에서 다음과 같이 표현된다. 입력: "sst2 sentence: I loved this movie ." 출력: "positive". 번역 (영→독) 은 입력: "translate English to German: That is good ." 출력: "Das ist gut .". 한 모델, 한 인터페이스 — 입력의 접두사로 어떤 작업인지를 선언하기만 하면 된다.
+      </div>
+
+      <p>T5 의 사전훈련 손실은 "스팬 마스킹 (span corruption)" 이다. 입력의 일부 연속 구간 (보통 평균 3 단어 길이) 을 [MASK] 토큰 하나로 치환하고, 디코더가 그 가린 구간의 원래 텍스트를 생성하도록 학습한다. BERT 의 MLM 이 단일 토큰 마스킹이었다면, T5 의 스팬 마스킹은 다중 토큰 마스킹의 확장이다. 또 BERT 가 가린 자리에서 분류 (어휘 분포 한 줄) 만 했다면, T5 는 가린 구간 전체를 생성 (한 줄이 아니라 여러 단어 시퀀스) 한다.</p>
+
+      <p>BART (Bidirectional and Auto-Regressive Transformer, 2019) 는 비슷한 인코더-디코더 구조이지만 사전훈련 손실에 다양한 노이즈 변형을 추가했다 (토큰 마스킹, 토큰 삭제, 문장 순서 섞기, 문서 회전 등). 두 모델 모두 요약, 번역, 데이터-텍스트 같은 생성형 작업에서 강력한 성능을 보였다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 09</span><span>세 갈래 흐름 한눈에 비교</span></div>
+        <div class="arch-grid">
+          <div class="arch-card bert">
+            <div class="tag">Encoder Only</div>
+            <h4>BERT</h4>
+            <div class="arrows">입력 ←→ 입력 (양방향)</div>
+            <div class="lbl"><b>구조</b> 인코더 12 ~ 24 층</div>
+            <div class="lbl"><b>주의</b> 모든 토큰 ↔ 모든 토큰</div>
+            <div class="lbl"><b>사전훈련</b> MLM + NSP</div>
+            <div class="use"><b>잘 하는 것</b> 분류, NER, NLI, QA, 임베딩</div>
+          </div>
+          <div class="arch-card gpt">
+            <div class="tag">Decoder Only</div>
+            <h4>GPT</h4>
+            <div class="arrows">입력 → 다음 단어 (단방향)</div>
+            <div class="lbl"><b>구조</b> 디코더 12 ~ 96 층 (causal)</div>
+            <div class="lbl"><b>주의</b> 한 토큰 → 자신과 좌측만</div>
+            <div class="lbl"><b>사전훈련</b> 다음 단어 예측 (LM)</div>
+            <div class="use"><b>잘 하는 것</b> 생성, 대화, 코드, 자유 형식 답변</div>
+          </div>
+          <div class="arch-card t5">
+            <div class="tag">Encoder + Decoder</div>
+            <h4>T5 · BART</h4>
+            <div class="arrows">입력 텍스트 → 출력 텍스트</div>
+            <div class="lbl"><b>구조</b> 인코더 N 층 + 디코더 N 층</div>
+            <div class="lbl"><b>주의</b> 인코더 양방향 + 디코더 단방향 + cross</div>
+            <div class="lbl"><b>사전훈련</b> 스팬 마스킹 (T5) / 노이즈 (BART)</div>
+            <div class="use"><b>잘 하는 것</b> 요약, 번역, text→text 모든 변환</div>
+          </div>
+        </div>
+      </div>
+      <p class="widget-cap">같은 트랜스포머 블록을 어떻게 골라 쓰는가에 따라 세 모델군이 갈라진다. BERT 는 인코더만 (이해 특화), GPT 는 디코더만 (생성 특화), T5 는 둘 다 (변환 특화). 세 흐름은 경쟁자가 아니라 서로 다른 작업 영역을 담당한다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>5. 어떤 작업에 어떤 모델을 쓰는가</h2>
+      <p>실무 관점에서 세 흐름의 용도는 다음과 같이 갈라진다.</p>
+      <ul style="font-size:.95rem; color:var(--ink-soft); line-height:1.7;">
+        <li><b>인코더 (BERT 계열)</b> — 분류, 개체명 인식, 임베딩 추출, 검색 (search retrieval), 텍스트 유사도. 출력이 짧고 정형화된 라벨 또는 한 벡터인 경우.</li>
+        <li><b>디코더 (GPT 계열)</b> — 대화, 글짓기, 코드 생성, 요약 (생성형), 자유 형식 응답. 출력이 자유로운 자연어 문장 또는 다중 문장인 경우.</li>
+        <li><b>인코더-디코더 (T5 계열)</b> — 번역, 추출형 요약과 생성형 요약의 중간, 데이터-텍스트, 입력과 출력 둘 다 자연어 문장이며 둘 사이의 정해진 변환이 있는 경우.</li>
+      </ul>
+
+      <p>2024 ~ 2025 년 현재의 추세는 디코더 전용이 압도적이다. 모델 크기를 키우는 일이 디코더 전용 구조에서 가장 잘 통했고, in-context learning (몇 가지 예시만 입력에 넣으면 작업을 따라 하는 능력) 이 디코더 전용 구조에서 자연스럽게 발현되었기 때문이다. 그러나 임베딩과 의미 검색 영역에서는 여전히 인코더 전용 모델이 표준이다 (Sentence-BERT, E5, GTE 등). 또 번역과 정형화된 변환에서는 인코더-디코더 모델이 더 효율적이다 (Marian, NLLB 등).</p>
+
+      <h2>6. BERT 의 역사적 위치</h2>
+      <p>BERT 가 2018 년 10 월에 등장하지 않았다면 오늘날의 LLM 시대가 같은 모양으로 왔을지는 불확실하다. BERT 는 두 가지 결정적 기여를 했다. 첫째, "사전훈련 + 미세조정" 패러다임이 자연어 처리 전체에서 작동한다는 것을 11 개 작업의 SOTA 갱신으로 증명했다. 둘째, 양방향 자가지도 학습이 단방향보다 자연어 이해에 더 강한 표현을 만든다는 것을 보였다.</p>
+
+      <p>이 두 기여 위에서 GPT-2, GPT-3, T5, RoBERTa, ELECTRA, DeBERTa 등 후속 모델들이 빠르게 등장했다. 모든 후속 모델은 BERT 의 부품 (트랜스포머 인코더), BERT 의 절차 (사전훈련 + 미세조정), BERT 의 평가 무대 (GLUE, SuperGLUE) 를 빌려 썼다. 오늘날의 LLM 도 결국 같은 부품의 변형과 같은 절차의 확장이다.</p>
+
+      <h2>7. 한 줄 정리 와 다음</h2>
+      <div class="def-box synth-side">
+        <div class="deft">한 줄 정리</div>
+        <p>같은 트랜스포머 부품으로 BERT 는 인코더만 양방향으로, GPT 는 디코더만 단방향으로, T5 는 둘 다 사용해 시퀀스 변환으로 학습된다. 세 흐름은 각각 이해·생성·변환이라는 서로 다른 작업 영역을 담당하며 경쟁이 아닌 분업의 관계다.</p>
+      </div>
+
+      <p>다음 장은 이 사이트 전체를 한 페이지로 압축한 시험 대비 노트다. 한 줄 정의, 손실 수식, 흔한 함정, 예상 질문 20 개 이상을 정리한다. 시험 직전 마지막 한 번 훑기에 적합한 형태다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script src="assets/bert.js"></script>
+<script>
+  window.addEventListener('load', () => {
+    BERT.buildNav('13');
+  });
+</script>
+</body>
+</html>
+</content>
+</invoke>

@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ch.04 · 09 · 학습률 — 발산·진동·수렴의 3분류</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .lr-stage { padding: 1rem 1rem 0.5rem; }
+  .lr-canvas { display: block; width: 100%; height: 320px; background: var(--paper); border-radius: 8px; border: 1px solid var(--line-soft); }
+  .lr-status { display: flex; flex-wrap: wrap; gap: .55rem 1.2rem; padding: .7rem 1rem .4rem; font-family: var(--mono); font-size: .8rem; }
+  .lr-status .pill { display: inline-flex; align-items: center; gap: .35rem; padding: .25rem .65rem; border-radius: 16px; border: 1px solid var(--line); color: var(--ink-soft); }
+  .lr-status .pill.ok { background: var(--structure-bg); color: var(--structure); border-color: var(--structure-lo); }
+  .lr-status .pill.osc { background: var(--style-bg); color: var(--style); border-color: var(--style-lo); }
+  .lr-status .pill.div { background: rgba(192,73,46,.18); color: var(--style); border-color: var(--style); font-weight: 700; }
+  .lr-status .pill b { color: var(--ink); font-weight: 600; }
+  .preset-row { display: flex; flex-wrap: wrap; gap: .4rem; padding: 0 1rem .6rem; }
+  .three-pole { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: .7rem; max-width: var(--measure); margin: 1.4rem auto; padding-inline: 1.4rem; }
+  @media (max-width: 720px) { .three-pole { grid-template-columns: 1fr; } }
+  .three-pole .pp { padding: .9rem 1rem; border-radius: 9px; }
+  .three-pole .pp h5 { margin: 0 0 .35rem; font-family: var(--serif); font-size: 1rem; }
+  .three-pole .pp p { margin: 0; font-size: .86rem; color: var(--ink-soft); line-height: 1.55; }
+  .three-pole .conv { background: var(--structure-bg); } .three-pole .conv h5 { color: var(--structure); }
+  .three-pole .osc { background: rgba(164,123,46,.10); } .three-pole .osc h5 { color: var(--synth); }
+  .three-pole .div { background: var(--style-bg); } .three-pole .div h5 { color: var(--style); }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-Chapter 09 · 보폭이 정하는 운명</span>
+      <h1>같은 함수, 다른 ε —<br><span class="t-synth">발산·진동·수렴</span>의 3분류</h1>
+      <p class="lede">학습률(learning rate) ε은 경사하강의 단 하나의 하이퍼파라미터이지만, 그 한 숫자가 학습 전체의 운명을 가른다. 너무 크면 발산하고, 적당히 크면 진동하며, 적당히 작으면 수렴하고, 너무 작으면 정체한다. 이 절은 한 화면에서 ε의 네 영역을 모두 본다.</p>
+    </header>
+
+    <div class="prose">
+      <p>7절에서 경사하강의 방향이 음의 기울기여야 하는 이유를 코시-슈바르츠 부등식으로 보였다. 그러나 방향만 정한다고 학습이 잘 굴러가지는 않는다. 같은 방향이라도 한 걸음을 얼마나 크게 내디딜지 — 즉 보폭 — 를 잘못 잡으면 학습은 곧장 무너진다. 이 보폭이 학습률 $\epsilon$이고, 이 절의 모든 이야기는 그 한 숫자가 만들어 내는 네 가지 운명에 관한 것이다.</p>
+
+      <p>시작은 가장 단순한 함수다. 1변수 이차 함수 $L(x) = \tfrac{1}{2} L_c x^2$를 생각하자. 여기서 $L_c > 0$는 곡률(curvature)을 결정하는 상수다. 이 함수는 종이 위에 그려진 깨끗한 그릇 모양이고, 최저점은 자명하게 $x^\ast = 0$이다. 기울기는 $\nabla L = L_c x$이고, 경사하강은 다음과 같이 이동한다.</p>
+
+      <div class="math-block">$$ x_{t+1} \;=\; x_t \;-\; \epsilon \, L_c \, x_t \;=\; (1 - \epsilon L_c) \, x_t $$</div>
+      <p class="math-note">매 step마다 x가 (1 - εL_c) 배 된다. 즉 한 step은 곱하기 한 번. 이 곱하는 인수 r = 1 - εL_c의 부호와 크기가 모든 것을 결정한다.</p>
+
+      <p>이 한 줄의 점화식이 학습률 분석의 출발점이다. 매 step마다 $x$는 $r = 1 - \epsilon L_c$ 배가 되고, 따라서 $t$ step 뒤에는 $x_t = r^t \, x_0$이 된다. $|r|$의 크기와 $r$의 부호에 따라 네 영역이 갈린다.</p>
+
+      <h2>네 영역 — $r$의 절댓값과 부호</h2>
+      <p>첫째, $0 < r < 1$인 경우, 즉 $0 < \epsilon < 1/L_c$일 때다. 매 step마다 $x$가 같은 부호를 유지하면서 크기만 작아진다. <strong>단조 수렴(monotone convergence)</strong>이라 부른다. 그릇의 한쪽에서 출발해 끝까지 같은 쪽으로 내려가며 0에 가까워진다. 가장 안전하고 깔끔한 학습이다.</p>
+
+      <p>둘째, $-1 < r < 0$인 경우, 즉 $1/L_c < \epsilon < 2/L_c$일 때다. 매 step마다 $x$가 부호를 바꾸면서 크기는 줄어든다. <strong>진동 수렴(oscillatory convergence)</strong>이다. 그릇의 왼쪽에서 오른쪽으로, 다시 왼쪽으로 점점 작은 폭으로 흔들리며 0에 다가간다. 수렴은 하지만 단조 수렴보다 느리고, 그래프로 보면 학습 곡선이 떨린다.</p>
+
+      <p>셋째, $r = -1$인 경계, 즉 $\epsilon = 2/L_c$일 때다. $x$가 매 step마다 부호만 바뀌고 크기는 그대로다. $x_0, -x_0, x_0, -x_0, \ldots$로 영원히 진동한다. 수렴도 발산도 아닌 <strong>영구 진동(limit cycle)</strong>이다. 실제 학습에서 손실이 두 값 사이를 오가며 평균적으로 줄지 않는 현상으로 나타난다.</p>
+
+      <p>넷째, $r < -1$ 또는 $r > 1$인 경우, 즉 $\epsilon > 2/L_c$일 때다. 매 step마다 $x$의 크기가 커진다. <strong>발산(divergence)</strong>이다. 학습 손실이 step마다 폭증하고 곧 <code>inf</code>나 <code>NaN</code>에 도달한다. 학습이 시작도 못 하고 죽는 가장 흔한 사고가 바로 이 경우다.</p>
+
+      <div class="math-block">$$ |x_t| \;=\; |r|^t \, |x_0|, \qquad r \;=\; 1 - \epsilon L_c $$</div>
+      <p class="math-note">|r|^t가 0으로 가는지(|r|<1, 수렴), 1로 머무는지(|r|=1, 영구 진동), 무한대로 가는지(|r|>1, 발산)가 학습률 ε이 어느 영역에 있느냐로 결정.</p>
+
+      <h2>안전 한계 — 왜 ε &lt; 1/L_c가 황금률인가</h2>
+      <p>네 영역을 알면 학습률 선택의 황금률이 자연스럽게 나온다. 발산을 막는 절대 상한은 $\epsilon < 2/L_c$이다. 이 한계만 안 넘으면 적어도 학습이 죽지는 않는다. 그러나 $\epsilon$이 $1/L_c$를 넘으면 진동이 시작되므로, 깔끔한 학습을 원한다면 $\epsilon < 1/L_c$가 실용적 상한이다. 이 안에서는 단조 수렴이고, 그중에서도 $\epsilon$이 클수록 빨리 수렴한다(매 step의 인수 $r$이 0에 가까울수록 좋다). 그래서 이상적인 학습률은 $\epsilon \approx 1/L_c$ 부근이다.</p>
+
+      <p>다변수로 확장하면 $L_c$ 자리에 <strong>헤시안의 최대 고유값 $\lambda_{\max}$</strong>가 들어간다. 7절에서 언급한 $\epsilon < 2/\lambda_{\max}$가 바로 이 황금률의 다차원 버전이다. 그리고 6절에서 본 조건수 $\kappa = \lambda_{\max} / \lambda_{\min}$이 크면, 학습률을 $\lambda_{\max}$에 맞춰 작게 잡아야 하지만, 그러면 $\lambda_{\min}$ 방향의 수렴은 한없이 느려진다. 이것이 6절의 지그재그 문제를 다시 한번 다른 각도에서 본 것이다.</p>
+
+      <div class="analogy">
+        <b>그릇 위에 놓인 공을 옆에서 누르는 손가락의 세기를 생각하자.</b> 살짝 누르면 공은 천천히 굴러 바닥에 가서 멈춘다(단조 수렴). 조금 더 세게 누르면 공이 반대편 벽을 한 번 치고 돌아오면서 점점 안정된다(진동 수렴). 정확히 어느 세기 이상으로 누르면 공이 벽에 부딪혀 같은 높이로 튀어 오르기를 반복한다(영구 진동). 그보다 더 세게 누르면 공이 벽을 넘어 그릇 밖으로 튀어나간다(발산). 학습률은 손가락의 세기다.
+      </div>
+
+      <p>아래 위젯은 같은 1D 손실 함수 위에서 $\epsilon$ 슬라이더 하나로 네 영역을 모두 둘러본다. 학습 곡선의 모양과 분류 레이블(수렴 / 진동 / 발산)이 실시간으로 갱신된다. 발산 영역으로 들어가면 50 step 안에 값이 $10^{20}$을 넘는 광경을 직접 확인할 수 있다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 09</span><span>학습률 ε — 네 영역을 한 슬라이더로</span></div>
+        <div class="lr-stage">
+          <canvas id="lrCv" class="lr-canvas"></canvas>
+        </div>
+        <div class="lr-status">
+          <span class="pill"><span>r = 1 − εL_c =</span><b id="lrRval">—</b></span>
+          <span class="pill"><span>|r| =</span><b id="lrAbsR">—</b></span>
+          <span id="lrClass" class="pill ok">단조 수렴</span>
+          <span class="pill"><span>50 step 후 x =</span><b id="lrEnd">—</b></span>
+        </div>
+        <div class="widget-controls">
+          <div class="slider"><label>학습률 ε <b id="lrLab">0.50</b></label><input type="range" id="lrSl" min="1" max="280" value="50" step="1"></div>
+          <div class="slider"><label>곡률 L_c <b id="lcLab">1.0</b></label><input type="range" id="lcSl" min="5" max="40" value="10" step="1"></div>
+        </div>
+        <div class="preset-row">
+          <button class="btn" data-eps="50">단조 수렴 (ε = 0.5)</button>
+          <button class="btn" data-eps="150">진동 수렴 (ε = 1.5)</button>
+          <button class="btn" data-eps="200">영구 진동 (ε = 2.0)</button>
+          <button class="btn" data-eps="250">발산 (ε = 2.5)</button>
+        </div>
+      </div>
+      <p class="widget-cap">L(x) = ½ L_c x² 위에서 x₀ = 1.0으로 50 step. 그릇 위의 빨간 점은 매 step 위치를, 그래프는 step별 x의 부호와 크기를 보여준다. ε이 1/L_c에 가까울수록 빠르게 0에 닿고, 2/L_c를 넘으면 곧장 발산한다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>딥러닝 현실 — $\lambda_{\max}$를 모를 때 어떻게 정하는가</h2>
+      <p>이론적 황금률이 $\epsilon \approx 1/\lambda_{\max}$라는 것은 알았다. 그러나 실제 신경망에서 손실 함수의 헤시안은 수십억 차원이고, 매 batch마다 모양이 바뀐다. $\lambda_{\max}$를 정확히 알 길이 없다. 그래서 실용적 학습률 선택은 다음 세 가지 휴리스틱(heuristic)에 의존한다.</p>
+
+      <p>첫째, <strong>학습률 스윕(learning rate sweep)</strong>이다. 아주 작은 ε부터 점진적으로 키워 가며 손실 곡선을 그려본다. 손실이 가장 빠르게 떨어지는 영역의 ε을 채택한다. Smith의 cyclical learning rates 논문이 정착시킨 방법이다.</p>
+
+      <p>둘째, <strong>워밍업(warmup)</strong>이다. 학습 초기에 ε을 0에서 목표값까지 천천히 올린다. 초기 가중치는 헤시안이 잘 컨디션되어 있지 않을 가능성이 크므로, 그 동안은 작은 보폭으로 가야 발산을 피한다. Transformer 학습의 표준 관행이다.</p>
+
+      <p>셋째, <strong>적응적 옵티마이저(adaptive optimizer)</strong>다. Adam이나 RMSProp은 각 파라미터마다 ε을 자동 조정한다. 헤시안의 대각 성분만 근사한 것이지만, 적어도 "어떤 파라미터는 곡률이 크고 어떤 파라미터는 작다"는 정보를 활용한다. 8절에서 본 절충안이다.</p>
+
+      <h2>학습 곡선 진단표 — 무엇이 잘못된 신호인가</h2>
+      <p>학습 중 손실 곡선이 다음과 같이 보이면 ε 문제로 의심해야 한다.</p>
+
+      <div class="three-pole">
+        <div class="pp conv">
+          <h5>✓ 정상 (수렴)</h5>
+          <p>손실이 매 epoch마다 단조로 줄어들다 일정 수준에서 평탄해진다. 줄어드는 속도가 너무 느리면 ε을 조금 더 키울 여지가 있다.</p>
+        </div>
+        <div class="pp osc">
+          <h5>△ 진동</h5>
+          <p>손실이 step별로 위아래로 흔들리며 평균적으로만 줄어든다. ε이 1/λ_max 부근으로 너무 크다. 절반으로 줄여본다.</p>
+        </div>
+        <div class="pp div">
+          <h5>✗ 발산</h5>
+          <p>손실이 한두 step 만에 폭증하거나 NaN이 된다. ε이 2/λ_max를 넘었다. 10분의 1로 줄이고 워밍업도 함께 적용.</p>
+        </div>
+      </div>
+
+      <h2>다음으로</h2>
+      <p>지금까지 8개 절은 모두 무제약 최적화 — 어떤 점이든 자유롭게 갈 수 있는 — 의 이야기였다. 다음 절은 한 단계 더 어려운 문제로 간다. 해가 반드시 어떤 영역 안에 있어야 할 때(예: 가중치의 노름이 1 이하이거나, 확률 분포처럼 합이 1이거나), 어떻게 최적화하는가. 라그랑주 승수와 KKT 조건이 그 답이다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'왜 수치 계산이 ML의 발목을 잡는가' },
+    { no:'02', t:'부동소수점 — IEEE 754의 좁은 자' },
+    { no:'03', t:'언더플로 / 오버플로 — softmax는 왜 터지는가' },
+    { no:'04', t:'logsumexp 트릭 — 안정화 수식 유도' },
+    { no:'05', t:'조건수 1 — 행렬은 답을 얼마나 흔드는가' },
+    { no:'06', t:'조건수 2 — 최적화의 지그재그' },
+    { no:'07', t:'경사하강법의 본질' },
+    { no:'08', t:'2계 방법 — 헤시안과 뉴턴법' },
+    { no:'09', t:'학습률의 의미' },
+    { no:'10', t:'제약 최적화 — 라그랑주와 KKT' },
+    { no:'11', t:'시험 대비' },
+  ];
+  function buildNav(current) {
+    const tb = document.querySelector('.topbar');
+    if (tb) tb.innerHTML =
+      `<a class="home" href="index.html">← Ch.04 수치 계산</a>` +
+      `<span class="ch-mini">SUB ${current} / 11</span>`;
+    const ol = document.querySelector('.ch-nav ol');
+    if (ol) ol.innerHTML = SUBS.map(s =>
+      `<li><a href="${s.no}.html" ${s.no === current ? 'class="current"' : ''}>${s.t}</a></li>`).join('');
+    const foot = document.querySelector('.ch-foot');
+    if (foot) {
+      const i = SUBS.findIndex(s => s.no === current);
+      const prev = i > 0 ? SUBS[i-1] : { no:'index', t:'표지로' };
+      const next = i < SUBS.length-1 ? SUBS[i+1] : { no:'index', t:'표지로' };
+      foot.innerHTML =
+        `<a href="${prev.no === 'index' ? 'index.html' : prev.no + '.html'}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+        `<a href="${next.no === 'index' ? 'index.html' : next.no + '.html'}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+    }
+    const bar = document.querySelector('.scroll-progress');
+    if (bar) {
+      const onScroll = () => {
+        const h = document.documentElement;
+        const max = h.scrollHeight - h.clientHeight;
+        bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+      };
+      document.addEventListener('scroll', onScroll, { passive: true });
+      onScroll();
+    }
+  }
+
+  // 위젯: 1D quadratic L(x) = 0.5 * Lc * x^2, GD steps
+  function render() {
+    const lrRaw = parseFloat(document.getElementById('lrSl').value);
+    const lcRaw = parseFloat(document.getElementById('lcSl').value);
+    const eps = lrRaw / 100;     // 0.01 ~ 2.80
+    const Lc  = lcRaw / 10;      // 0.5 ~ 4.0
+    document.getElementById('lrLab').textContent = eps.toFixed(2);
+    document.getElementById('lcLab').textContent = Lc.toFixed(1);
+
+    const r = 1 - eps * Lc;
+    const absR = Math.abs(r);
+    document.getElementById('lrRval').textContent = r.toFixed(3);
+    document.getElementById('lrAbsR').textContent = absR.toFixed(3);
+
+    // simulate
+    const N = 50;
+    let xs = [1.0];
+    for (let i = 0; i < N; i++) {
+      const x = xs[xs.length - 1];
+      const xn = x - eps * Lc * x;
+      // clamp absurd values
+      if (Math.abs(xn) > 1e18 || !isFinite(xn)) { xs.push(Math.sign(xn || 1) * 1e18); break; }
+      xs.push(xn);
+    }
+    const endX = xs[xs.length - 1];
+    let endStr;
+    if (Math.abs(endX) > 1e10) endStr = endX.toExponential(2);
+    else if (Math.abs(endX) < 1e-6 && endX !== 0) endStr = endX.toExponential(2);
+    else endStr = endX.toFixed(5);
+    document.getElementById('lrEnd').textContent = endStr;
+
+    // classify
+    const classEl = document.getElementById('lrClass');
+    classEl.className = 'pill';
+    if (absR > 1.0001) { classEl.classList.add('div'); classEl.textContent = '발산'; }
+    else if (Math.abs(absR - 1) < 0.001) { classEl.classList.add('osc'); classEl.textContent = '영구 진동'; }
+    else if (r < 0) { classEl.classList.add('osc'); classEl.textContent = '진동 수렴'; }
+    else { classEl.classList.add('ok'); classEl.textContent = '단조 수렴'; }
+
+    drawCanvas(xs, Lc);
+  }
+
+  function drawCanvas(xs, Lc) {
+    const canvas = document.getElementById('lrCv');
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    canvas.width = w * dpr; canvas.height = h * dpr;
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.fillStyle = '#FAF7F0'; ctx.fillRect(0,0,w,h);
+
+    // 왼쪽: 그릇 + 점, 오른쪽: x_t 그래프
+    const splitX = w * 0.45;
+    // 분리선
+    ctx.strokeStyle = 'rgba(38,34,28,0.10)';
+    ctx.beginPath(); ctx.moveTo(splitX, 8); ctx.lineTo(splitX, h - 8); ctx.stroke();
+
+    // ── 왼쪽 그릇 ──
+    const bx = splitX / 2, by = h / 2;
+    const xRange = 2.4;
+    const xToPx = (x) => bx + (x / xRange) * (splitX * 0.42);
+    // 그릇 곡선
+    ctx.strokeStyle = 'rgba(45, 91, 122, 0.55)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for (let i = 0; i <= 80; i++) {
+      const x = -xRange + (2 * xRange) * (i / 80);
+      const y = 0.5 * Lc * x * x;
+      const px = xToPx(x);
+      const py = by + (h * 0.35) - y * (h * 0.18);
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+    // 0선
+    ctx.strokeStyle = 'rgba(38,34,28,0.18)';
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(bx, 8); ctx.lineTo(bx, h - 8); ctx.stroke();
+    ctx.setLineDash([]);
+    // 점들
+    xs.forEach((x, i) => {
+      if (Math.abs(x) > xRange * 1.5) return;
+      const y = 0.5 * Lc * x * x;
+      const px = xToPx(x);
+      const py = by + (h * 0.35) - y * (h * 0.18);
+      const alpha = 0.25 + 0.7 * (i / xs.length);
+      ctx.fillStyle = i === xs.length - 1 ? 'rgba(192, 73, 46, 0.95)' : `rgba(164, 123, 46, ${alpha})`;
+      ctx.beginPath(); ctx.arc(px, py, i === xs.length - 1 ? 5 : 3, 0, Math.PI*2); ctx.fill();
+    });
+    // 레이블
+    ctx.fillStyle = '#8E8576';
+    ctx.font = '11px "Spline Sans Mono", monospace';
+    ctx.fillText('L(x) = ½ L_c x²', 14, 22);
+    ctx.fillText('x₀ = 1', xToPx(1) - 6, by + (h * 0.35) - 0.5 * Lc * 1 * (h * 0.18) - 12);
+
+    // ── 오른쪽: x_t 시계열 ──
+    const ox = splitX + 16, oy = 16, ow = w - splitX - 24, oh = h - 32;
+    const cy = oy + oh / 2;
+    // 가로 0선
+    ctx.strokeStyle = 'rgba(38,34,28,0.18)';
+    ctx.beginPath(); ctx.moveTo(ox, cy); ctx.lineTo(ox + ow, cy); ctx.stroke();
+    // y 스케일: log 압축
+    const compress = (v) => {
+      const s = Math.sign(v);
+      const a = Math.abs(v);
+      const c = a < 1 ? a : (1 + Math.log10(a));
+      return s * c;
+    };
+    const maxC = compress(1e18);
+    const yToPx = (v) => cy - (compress(v) / 6) * (oh / 2);
+    // 그래프
+    ctx.strokeStyle = 'rgba(45, 91, 122, 0.85)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    xs.forEach((v, i) => {
+      const px = ox + (i / Math.max(1, xs.length - 1)) * ow;
+      const py = Math.max(oy, Math.min(oy + oh, yToPx(v)));
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    });
+    ctx.stroke();
+    // 점 (마지막)
+    const last = xs[xs.length - 1];
+    const lastPx = ox + ow;
+    const lastPy = Math.max(oy, Math.min(oy + oh, yToPx(last)));
+    ctx.fillStyle = 'rgba(192, 73, 46, 0.95)';
+    ctx.beginPath(); ctx.arc(lastPx, lastPy, 4, 0, Math.PI*2); ctx.fill();
+    // 레이블
+    ctx.fillStyle = '#8E8576';
+    ctx.fillText('x_t (50 step, log 스케일)', ox + 4, oy + 14);
+    ctx.fillText('+', ox - 10, cy - oh / 2 + 14);
+    ctx.fillText('0', ox - 10, cy + 4);
+    ctx.fillText('−', ox - 10, cy + oh / 2 - 4);
+  }
+
+  window.addEventListener('load', () => {
+    buildNav('09');
+    document.getElementById('lrSl').addEventListener('input', render);
+    document.getElementById('lcSl').addEventListener('input', render);
+    document.querySelectorAll('button[data-eps]').forEach(b => {
+      b.addEventListener('click', () => {
+        document.getElementById('lrSl').value = b.dataset.eps;
+        render();
+      });
+    });
+    window.addEventListener('resize', render);
+    render();
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [
+          { left: '$$', right: '$$', display: true },
+          { left: '$',  right: '$',  display: false }
+        ]
+      });
+    }
+  });
+</script>
+</body>
+</html>

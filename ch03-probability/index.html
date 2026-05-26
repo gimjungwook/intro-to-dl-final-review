@@ -36,16 +36,16 @@
   .plates { max-width: var(--wide); margin: 1rem auto; padding: 2rem 1.4rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); gap: 1rem; }
   .plate { position: relative; display: flex; flex-direction: column; text-decoration: none; color: inherit; background: #fff; border: 1px solid var(--line); border-radius: 13px; padding: 1.3rem 1.3rem 1.4rem; transition: transform .2s var(--ease), border-color .2s, box-shadow .2s; overflow: hidden; }
   .plate:hover { transform: translateY(-4px); border-color: var(--structure-lo); box-shadow: var(--shadow-plate); }
-  .plate .pno { font-family: var(--mono); font-size: .74rem; letter-spacing: .14em; color: var(--ink-faint); }
-  .plate h3 { font-family: var(--serif); font-size: 1.3rem; margin: .5rem 0 .5rem; line-height: 1.2; }
-  .plate p { font-size: .9rem; color: var(--ink-soft); line-height: 1.5; margin: 0; }
+  .plate .pno { font-family: var(--mono); font-size: .72rem; letter-spacing: .14em; color: var(--ink-faint); }
+  .plate h3 { font-family: var(--serif); font-size: 1.22rem; margin: .5rem 0 .5rem; line-height: 1.22; }
+  .plate p { font-size: .88rem; color: var(--ink-soft); line-height: 1.5; margin: 0; }
   .plate .spectrum { display: flex; height: 4px; border-radius: 2px; overflow: hidden; margin-bottom: 1rem; }
   .plate .spectrum i { display: block; height: 100%; }
   .plate .go { margin-top: 1rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; color: var(--structure); opacity: 0; transform: translateX(-4px); transition: .2s var(--ease); }
   .plate:hover .go { opacity: 1; transform: translateX(0); }
 
   .path { max-width: var(--wide); margin: 2rem auto; padding: 1.6rem 1.4rem; }
-  .path-flow { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; font-family: var(--mono); font-size: .8rem; }
+  .path-flow { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; font-family: var(--mono); font-size: .78rem; }
   .path-flow a { display: inline-flex; align-items: center; gap: .4rem; text-decoration: none; color: var(--ink-soft); padding: .4rem .7rem; border: 1px solid var(--line); border-radius: 20px; transition: .15s; }
   .path-flow a:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
   .path-flow a b { color: var(--style); } .path-flow a:hover b { color: var(--style-lo); }
@@ -76,19 +76,20 @@
     <span><b>딥러닝 개론</b> 기말고사 복습</span>
     <span>제작 <b>김정욱</b></span>
     <span>시험 <b>2026-06-04 (목)</b></span>
-    <span>구성 <b>7 sub-chapter</b></span>
+    <span>구성 <b>14 sub-chapter + 시험대비</b></span>
   </div>
 </div>
 
 <section class="section-intro">
   <h2>한 문장으로</h2>
-  <p>이 장은 딥러닝이 세상을 바라보는 태도를 정한다. 모델은 정답 하나를 외치는 기계가 아니라, <strong>가능성 분포 하나를 출력하는 시스템</strong>이다. 분류기 끝의 소프트맥스, 교차 엔트로피 손실, 변분추론/VAE에서 등장하는 KL 발산까지, 이후 모든 장의 손실함수와 추론은 이 장의 언어 위에 세워진다.</p>
-  <p>읽는 순서는 단순하다. <strong>왜 확률이 필요한지</strong> → <strong>분포와 조건부의 기본 문법</strong> → <strong>분포를 한 숫자로 요약하는 방법</strong> → <strong>관측이 들어왔을 때 믿음을 갱신하는 베이즈 규칙</strong> → <strong>분포의 불확실성을 재는 정보이론</strong> → <strong>실전에 자주 나오는 분포 카탈로그</strong> → <strong>시험 직전 체크리스트</strong>다.</p>
+  <p>이 장은 딥러닝이 세상을 바라보는 태도를 정한다. 모델은 정답 하나를 외치는 기계가 아니라, <strong>가능성의 분포 하나를 출력하는 시스템</strong>이다. 분류기 끝의 소프트맥스(softmax)도, 교차 엔트로피(cross-entropy) 손실도, 변분추론(variational inference)과 VAE의 KL 발산(Kullback-Leibler divergence)도, 모두 이 한 문장에서 갈라져 나온 가지다.</p>
+  <p>읽는 순서는 다음과 같이 흐른다. <strong>왜 확률이 필요한지</strong> → <strong>확률변수와 분포의 기본 문법</strong> → <strong>결합/주변/조건부 분포</strong> → <strong>연쇄법칙(chain rule)</strong> → <strong>독립과 조건부 독립</strong> → <strong>기대값(expectation)·분산(variance)·공분산(covariance)</strong> → <strong>흔한 분포 카탈로그(Bernoulli, Categorical, Gaussian, Mixture, Dirac)</strong> → <strong>베이즈 규칙(Bayes' rule)</strong> → <strong>정보이론(엔트로피, KL 발산, 교차 엔트로피)</strong> → <strong>시험 대비 체크리스트</strong>다.</p>
+  <p>한 페이지에 한 개념씩, 충분히 길게 풀어 쓴다. 비유와 그림과 위젯을 충분히 곁들였으니 일독에 시간이 걸린다. 시험 직전에는 마지막 체크리스트 페이지만 빠르게 훑어도 되도록 설계했다.</p>
 </section>
 
 <div class="twopole">
-  <div class="pole s1"><h4>확률 (Probability)</h4><p>세상의 가능성 구조를 표현하는 언어. 분포, 조건부, 베이즈. 이 사이트에서 <b>쿨한 파랑</b>으로 표시된다.</p></div>
-  <div class="pole s2"><h4>정보이론 (Information Theory)</h4><p>분포의 불확실성과 두 분포의 차이를 재는 자. 엔트로피 / KL / 교차 엔트로피. 이 사이트에서 <b>웜한 주홍</b>으로 표시된다.</p></div>
+  <div class="pole s1"><h4>확률 (Probability)</h4><p>세상의 가능성 구조를 표현하는 언어. 분포(distribution), 조건부(conditional), 베이즈(Bayes). 이 사이트에서 <b>쿨한 파랑</b>으로 표시된다.</p></div>
+  <div class="pole s2"><h4>정보이론 (Information Theory)</h4><p>분포의 불확실성과 두 분포 사이의 거리를 재는 자. 엔트로피(entropy), KL 발산, 교차 엔트로피. 이 사이트에서 <b>웜한 주홍</b>으로 표시된다.</p></div>
 </div>
 
 <section class="plates" id="plates"></section>
@@ -99,7 +100,7 @@
 </section>
 
 <footer class="colophon">
-  <p>이 해설은 Goodfellow, Bengio, Courville(2016)의 <em>Deep Learning</em> 3장과 한동대 딥러닝 개론 강의(최희열) 진도 전체를 바탕으로, 시험 직전 한 번에 훑기 좋게 다시 쓴 것이다. 모든 수식은 "왜 그 형태인가"를 함께 설명한다.</p>
+  <p>이 해설은 Goodfellow, Bengio, Courville(2016) <em>Deep Learning</em> Chapter 3 원문을 바탕으로, 한동대 딥러닝 개론(최희열 교수) 진도와 시험 대비 관점을 함께 녹여 다시 쓴 것이다. 모든 수식은 "왜 그 형태인가, 무엇을 말하는가, 다른 형태였다면 어떻게 달랐을까"를 같이 설명한다. 한 문단에 새 개념은 하나만 들어가도록 천천히 풀어 썼다.</p>
   <p class="src">
     원서 / <a href="https://www.deeplearningbook.org/contents/prob.html">deeplearningbook.org/contents/prob.html</a><br>
     선행학습 노트 / <a href="../../../05-선행학습/Deep-Learning-Book-03-Probability-and-Information-Theory-상세해설.md">Ch.3 상세해설</a><br>
@@ -109,13 +110,21 @@
 
 <script>
   const CHAPTERS = [
-    { no:'01', t:'왜 딥러닝에 확률이 필요한가', d:'불확실성의 세 원천. 결정적 답 대신 분포 하나를 출력한다는 발상의 전환.', sp:['ink-soft','structure'] },
-    { no:'02', t:'확률변수, 분포, 조건부, 연쇄법칙', d:'PMF/PDF, 결합, 주변, 조건부. 큰 분포를 작은 조건부의 곱으로 분해하는 연쇄법칙과 독립.', sp:['structure-lo','structure'] },
-    { no:'03', t:'기대값, 분산, 공분산 — 분포를 한 숫자로', d:'평균적 위치, 퍼짐의 정도, 함께 움직이는 경향. 공분산 0 ≠ 독립인 이유.', sp:['structure','synth'] },
-    { no:'04', t:'베이즈 규칙 — 사전이 사후로', d:'관측 데이터가 들어올 때마다 믿음이 어떻게 갱신되는가. 사전을 슬라이더로 움직이며 사후가 좁아지는 과정을 직접 본다.', sp:['structure','style'] },
-    { no:'05', t:'정보이론 — 엔트로피/KL/교차 엔트로피', d:'드문 사건이 더 놀랍다. 분포 전체의 평균 놀라움이 엔트로피. 교차 엔트로피 손실이 왜 MLE의 다른 얼굴인지, KL의 비대칭은 왜 생기는지.', sp:['style','synth'] },
-    { no:'06', t:'흔한 분포 카탈로그', d:'Bernoulli / Categorical / Gaussian / 혼합 / Dirac. 시그모이드, 소프트맥스가 어느 분포의 파라미터인지.', sp:['synth','structure-lo'] },
-    { no:'07', t:'시험 대비 체크리스트', d:'정의, 수식, 해석, 전형 함정. 헷갈리기 쉬운 짝(독립 vs 무상관 등)과 객관식 빈출 한 줄 정리.', sp:['ink'] },
+    { no:'01', t:'왜 딥러닝에 확률이 필요한가', d:'불확실성의 3원천 — 본래적 무작위성, 불완전한 관측, 불완전한 모델링. 결정적 답 대신 분포 하나를 출력한다는 발상의 전환을 argmax vs softmax 위젯으로 확인한다.', sp:['ink-soft','structure'] },
+    { no:'02', t:'확률변수와 분포 — PMF vs PDF', d:'이산(discrete)과 연속(continuous)의 차이. 확률질량함수(PMF)와 확률밀도함수(PDF)가 같은 그림이 아닌 이유. 밀도가 1을 넘을 수 있는 이유를 적분 면적으로 푼다.', sp:['structure-lo','structure'] },
+    { no:'03', t:'결합·주변·조건부 분포', d:'세 가지 분포를 한 4×4 그리드 위에서 동시에 본다. 행을 더하면 주변, 한 행만 잘라 정규화하면 조건부. 인터랙티브 표로 직접 합하고 정규화해 본다.', sp:['structure','structure-lo'] },
+    { no:'04', t:'연쇄법칙(chain rule) — 결합을 조건부의 곱으로', d:'p(a,b,c)를 p(a)·p(b|a)·p(c|a,b)로 쪼개는 단 하나의 식. 언어모델이 문장을 단어 단위로 예측하는 방식과 정확히 같은 구조다.', sp:['structure','synth'] },
+    { no:'05', t:'독립과 조건부 독립', d:'두 변수가 서로 정보를 안 줄 때 vs 다른 변수를 알고 나면 안 줄 때. 네이브 베이즈(naive Bayes)가 왜 그렇게 단순한 식이 되는지 여기서 결정난다.', sp:['structure','ink-soft'] },
+    { no:'06', t:'기대값 — 분포를 한 숫자로', d:'분포에서 살아남는 한 점. 평균은 무엇을 잃고 무엇을 남기는가. 비대칭 분포에서 평균과 최빈값의 어긋남을 슬라이더로 본다.', sp:['structure','synth'] },
+    { no:'07', t:'분산과 공분산 — 무상관 ≠ 독립', d:'산포의 크기와 함께 움직이는 경향. 공분산이 0이어도 독립이 아닌 가장 유명한 반례(원형 의존)를 산점도로 직접 그린다.', sp:['structure','style-lo'] },
+    { no:'08', t:'흔한 분포 1 — Bernoulli, Categorical', d:'이진 분류의 시그모이드와 다중 분류의 소프트맥스가 각각 어느 분포의 파라미터인지. 출력층 설계의 첫 번째 결정이 여기서 갈린다.', sp:['synth','structure-lo'] },
+    { no:'09', t:'흔한 분포 2 — Gaussian', d:'왜 정규분포가 그렇게 자주 나오는가. 중심극한정리(central limit theorem)와 잡음 모델, 선형회귀의 손실이 평균제곱오차로 떨어지는 진짜 이유.', sp:['synth','structure'] },
+    { no:'10', t:'흔한 분포 3 — Mixture, Dirac, 경험분포', d:'여러 봉우리를 가진 분포는 단일 가우시안으로 표현되지 않는다. 혼합 모델(mixture model), 디랙 델타(Dirac delta), 학습 데이터의 경험분포(empirical distribution).', sp:['synth','style'] },
+    { no:'11', t:'베이즈 규칙 — 사전이 사후로', d:'p(y|x) = p(x|y)p(y) / p(x). 사전(prior)에 관측을 더하면 사후(posterior)가 좁아진다. 슬라이더로 관측을 한 개씩 추가하면서 분포가 좁아지는 과정을 직접 본다.', sp:['structure','style'] },
+    { no:'12', t:'정보이론 1 — 엔트로피', d:'드문 사건은 더 놀랍다. 자기정보(self-information)의 합리적 정의 한 가지가 곧 −log p다. 분포 전체의 평균 놀라움이 Shannon 엔트로피.', sp:['style','synth'] },
+    { no:'13', t:'정보이론 2 — KL 발산의 비대칭', d:'KL(P||Q)와 KL(Q||P)는 다른 양이다. 모드-탐색(mode-seeking) vs 모드-덮기(mode-covering)의 차이를 두 가우시안 슬라이더로 확인한다.', sp:['style','style-lo'] },
+    { no:'14', t:'정보이론 3 — 교차 엔트로피 = NLL', d:'분류기에서 매일 쓰는 그 손실. cross-entropy 최소화 = KL 최소화 = 음의 로그우도(negative log-likelihood, NLL) 최소화 = 최대우도추정(MLE). 네 이름이 한 식인 이유.', sp:['style','synth'] },
+    { no:'15', t:'시험 대비 체크리스트', d:'정의, 수식, 해석, 전형 함정 20개. 헷갈리기 쉬운 짝(독립 vs 무상관, KL 비대칭, PDF vs PMF 등)과 객관식 빈출 한 줄 정리.', sp:['ink','ink-soft'] },
   ];
   const colMap = { structure:'var(--structure)', 'structure-lo':'var(--structure-lo)', style:'var(--style)', 'style-lo':'var(--style-lo)', synth:'var(--synth)', ink:'var(--ink)', 'ink-soft':'var(--ink-soft)' };
   const platesEl = document.getElementById('plates');
@@ -133,7 +142,8 @@
     platesEl.appendChild(a);
 
     const f = document.createElement('a'); f.href = c.no + '.html';
-    f.innerHTML = `<b>${c.no}</b> ${c.t.split('—')[0].split('/')[0].slice(0,14)}…`;
+    const sh = c.t.split('—')[0].split('/')[0].trim().slice(0, 16);
+    f.innerHTML = `<b>${c.no}</b> ${sh}`;
     flowEl.appendChild(f);
     if (idx < CHAPTERS.length - 1) { const s = document.createElement('span'); s.className='arr'; s.textContent='→'; flowEl.appendChild(s); }
   });
@@ -152,8 +162,6 @@
     renderer.setSize(w, h, false);
     renderer.setClearColor(0xffffff, 0);
 
-    /* N개 점이 두 분포 사이를 보간:
-       prior = 넓은 균등 (-W..W 흩어짐) → posterior = 좁은 가우시안 (mean=μ, σ작음) */
     const N = 1400;
     const positions = new Float32Array(N * 3);
     const colors = new Float32Array(N * 3);
@@ -167,14 +175,12 @@
       return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
     }
     for (let i = 0; i < N; i++) {
-      /* prior: 넓은 균등 + 약간 흔들림 */
       const xp = (Math.random() - 0.5) * W * 2;
       const yp = (Math.random() - 0.5) * 0.5 + gauss() * 0.15;
       targetsPrior[i*3]   = xp;
       targetsPrior[i*3+1] = yp;
       targetsPrior[i*3+2] = 0;
 
-      /* posterior: 좁은 가우시안 (mean=0.8, σ=0.7) */
       const xq = 0.8 + gauss() * 0.7;
       const yq = gauss() * 0.18;
       targetsPost[i*3]   = xq;
@@ -198,7 +204,6 @@
     const pts = new THREE.Points(geo, mat);
     scene.add(pts);
 
-    /* 분포 곡선 — 위쪽에 가우시안 PDF 라인 */
     const curveGeo = new THREE.BufferGeometry();
     const CP = 200;
     const curvePos = new Float32Array(CP * 3);
@@ -233,10 +238,9 @@
       }
       pts.geometry.attributes.position.needsUpdate = true;
 
-      /* 위쪽 PDF 곡선 — prior=flat, posterior=narrow gaussian */
       const cp = curve.geometry.attributes.position.array;
       const mu = 0.8;
-      const sigmaPrior = W / 1.4;            /* flat */
+      const sigmaPrior = W / 1.4;
       const sigmaPost  = 0.7;
       const sigma = sigmaPrior * (1 - target) + sigmaPost * target;
       const A = 2.2;

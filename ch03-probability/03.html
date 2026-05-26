@@ -3,25 +3,37 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>03. 기대값, 분산, 공분산</title>
+<title>03. 결합·주변·조건부 분포</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
-  /* 공분산 산점도 위젯 */
-  .cov-stage { display: grid; grid-template-columns: 1fr auto; gap: 1.3rem; padding: 1.4rem 1.1rem; align-items: center; }
-  .cov-stage canvas { background: #fff; border: 1px solid var(--line); border-radius: 8px; display: block; }
-  .cov-info { font-family: var(--mono); font-size: .82rem; color: var(--ink); line-height: 1.7; }
-  .cov-info .row { margin: .3rem 0; }
-  .cov-info .row b { color: var(--structure); }
-  .cov-info .row.style b { color: var(--style); }
-  .cov-info .legend { font-size: .68rem; color: var(--ink-faint); margin-top: .8rem; padding-top: .5rem; border-top: 1px solid var(--line-soft); }
-  @media (max-width: 720px){ .cov-stage{ grid-template-columns: 1fr; } }
-
-  .pitfall { max-width: var(--measure); margin: 1.6rem auto; padding: 1.1rem 1.3rem; background: var(--style-bg); border-left: 3px solid var(--style); border-radius: 0 8px 8px 0; }
-  .pitfall h4 { margin: 0 0 .5rem; font-family: var(--serif); font-size: 1.05rem; color: var(--style); }
-  .pitfall p { margin: 0; font-size: .92rem; color: var(--ink-soft); line-height: 1.6; }
+  .grid-stage { padding: 1.6rem 1.1rem 1rem; display: grid; grid-template-columns: 1fr; gap: 1rem; }
+  .joint-table { border-collapse: collapse; font-family: var(--mono); font-size: .82rem; margin: 0 auto; }
+  .joint-table th, .joint-table td { border: 1px solid var(--line); padding: .6rem .8rem; text-align: center; min-width: 4rem; }
+  .joint-table th { background: var(--paper-2); color: var(--ink-soft); font-weight: 500; font-size: .72rem; letter-spacing: .08em; }
+  .joint-table th.corner { background: transparent; border: none; }
+  .joint-cell { background: #fff; cursor: pointer; transition: background .12s; position: relative; }
+  .joint-cell .bg-fill { position: absolute; left: 0; bottom: 0; right: 0; background: rgba(45,91,122,0.22); pointer-events: none; }
+  .joint-cell .num { position: relative; z-index: 1; }
+  .joint-cell:hover { outline: 2px solid var(--style); outline-offset: -2px; }
+  .joint-cell.selected-row { background: rgba(192,73,46,0.10); }
+  .joint-cell.selected-col { background: rgba(45,91,122,0.10); }
+  .joint-table td.marg { background: var(--paper-2); font-weight: 600; color: var(--structure); }
+  .joint-table td.marg-row { background: rgba(45,91,122,0.06); color: var(--structure); font-weight: 600; }
+  .joint-table td.total { background: var(--ink); color: #fff; }
+  .ctrl-row { display: flex; gap: .5rem; flex-wrap: wrap; padding: .2rem 0; }
+  .ctrl-row button { font-family: var(--mono); font-size: .72rem; letter-spacing: .06em; padding: .4rem .7rem; border-radius: 6px; border: 1px solid var(--line); background: #fff; color: var(--ink-soft); cursor: pointer; }
+  .ctrl-row button.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .read-out { font-family: var(--mono); font-size: .8rem; color: var(--ink-soft); line-height: 1.6; padding: .8rem 1rem; background: var(--paper-2); border-radius: 7px; }
+  .read-out b { color: var(--ink); }
+  .cond-bars { padding: .2rem 0; }
+  .cond-bar { display: flex; align-items: center; gap: .5rem; margin: .25rem 0; font-family: var(--mono); font-size: .76rem; }
+  .cond-bar .lab { width: 5rem; color: var(--ink-soft); }
+  .cond-bar .bg { flex: 1; height: 9px; background: var(--paper-sink); border-radius: 4px; overflow: hidden; }
+  .cond-bar .fg { display: block; height: 100%; background: var(--style); }
+  .cond-bar .val { width: 3.4rem; text-align: right; color: var(--ink); }
 </style>
 </head>
 <body>
@@ -33,94 +45,100 @@
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Sub-chapter 03. 분포를 한 줄로 요약</span>
-      <h1>분포를 <span class="t-structure">세 숫자</span>로<br>줄여 들고 다닐 때 무엇이 남는가</h1>
-      <p class="lede">기대값은 평균적 위치, 분산은 퍼짐의 정도, 공분산은 두 변수가 함께 움직이는 경향. 분포 전체를 못 들고 다닐 때 이 세 숫자가 자주 우리의 손에 남는다.</p>
+      <span class="kicker">Sub-chapter 03. 변수 두 개의 세상</span>
+      <h1>결합·주변·조건부<br><span class="t-structure">한 표 위의 세 분포</span></h1>
+      <p class="lede">변수가 두 개가 되는 순간, 우리는 4×4 같은 표를 다루기 시작한다. 표 전체가 결합 분포, 한 방향으로 더한 것이 주변 분포, 한 행이나 열만 잘라 정규화한 것이 조건부 분포다. 한 그림으로 셋이 동시에 보인다.</p>
     </header>
 
     <div class="prose">
-      <p>지금까지는 분포 전체를 그대로 다루었다. 그러나 실무에서 분포 전체를 다 들고 다니는 일은 거의 없다. <em>분포의 첫인상</em>을 한 줄로 적어 둘 때, 가장 흔히 쓰이는 세 숫자가 기대값, 분산, 공분산이다. 시험 직전에 식 자체보다 <strong>각 숫자가 무엇을 살리고 무엇을 버리는가</strong>를 잡아 두면, 문제 풀 때 헷갈리지 않는다.</p>
+      <p>2장에서 우리는 변수 하나의 분포를 봤다. 동전 하나의 앞면 확률, 키 하나의 분포 같은 식이었다. 그런데 현실은 변수가 한 개만 있지 않다. 키와 몸무게가 같이 변하고, 입력 이미지와 분류 라벨이 같이 등장하며, 시간 $t$의 단어와 $t+1$의 단어가 짝지어 들어온다. 변수 두 개 이상이 함께 나오는 분포를 다루려면 새로운 도구가 필요하다.</p>
 
-      <h2>기대값 — 분포의 평균적 위치</h2>
-      <div class="math-block">$$ \mathbb{E}_{x \sim P}[f(x)] = \sum_{x} P(x)\, f(x) \quad \text{(이산)}, \qquad \mathbb{E}_{x \sim p}[f(x)] = \int p(x)\, f(x)\, dx \quad \text{(연속)} $$</div>
-      <p class="math-note">f를 분포 P 아래서 가중평균. 가장 흔한 경우 f(x)=x → 평균 μ.</p>
+      <p>변수가 두 개로 늘어나는 순간 등장하는 세 가지 분포 — <strong>결합 분포(joint distribution)</strong>, <strong>주변 분포(marginal distribution)</strong>, <strong>조건부 분포(conditional distribution)</strong> — 는 사실 한 표 위에서 자연스럽게 만들어진다. 표를 한 번 그리고 나면 세 분포 모두를 그 표에서 뽑아낼 수 있다. 이 페이지의 핵심 메시지는 이것이다 — <em>세 분포는 따로 외워야 할 세 개의 정의가 아니라, 같은 표에서 보는 방향만 다른 세 가지 시점</em>이다.</p>
 
-      <p>여기서 가장 중요한 점은 <strong>기대값은 "한 번 뽑았을 때 가장 자주 나오는 값"이 아니다</strong>는 사실이다. 기대값은 무한히 여러 번 뽑았을 때 <em>평균이 어디로 수렴하는가</em>를 말한다. 그래서 동전 던지기에서 앞면을 1, 뒷면을 0으로 매기면 기대값은 0.5인데, 한 번 던져서 0.5가 나오는 일은 절대 없다.</p>
+      <h2>결합 분포 — 한 표 전체</h2>
+      <p>두 확률변수 $X$와 $Y$가 있다고 하자. 예를 들어 $X$는 날씨(맑음/흐림/비/눈), $Y$는 우산을 챙겼는지 여부(예/아니오)다. 두 변수가 동시에 어떤 값을 가질 확률을 적은 것이 결합 분포다. 표기는 $p(X=x, Y=y)$ 또는 줄여서 $p(x, y)$다. 이 표는 가능한 모든 $(x, y)$ 짝에 확률을 한 칸씩 떨어뜨려 놓는다.</p>
+
+      <div class="math-block">$$ p(x, y) \geq 0, \qquad \sum_x \sum_y p(x, y) = 1 $$</div>
+      <p class="math-note">표의 모든 칸은 0 이상. 표 전체 칸의 합이 정확히 1. 변수 한 개 분포의 규칙을 두 변수로 확장한 것뿐.</p>
+
+      <p>왜 이 형태인가. "확률이 다 더하면 1"이라는 약속은 변수가 늘어나도 변하지 않는다. 다만 합산 방향이 한 줄에서 두 줄로 바뀌었을 뿐이다. 만약 결합 분포가 합이 0.9라면 어딘가 0.1만큼의 사건이 빠져 있다는 뜻이고, 1.1이라면 어딘가 중복 계산이 있다는 뜻이다. 둘 다 분포가 아니다.</p>
+
+      <p>이 표가 분포의 모든 정보를 다 들고 있다. 우리는 표만 있으면 $X$만의 분포, $Y$만의 분포, $X$를 알고 있을 때의 $Y$ 분포, $Y$를 알고 있을 때의 $X$ 분포를 전부 계산해낼 수 있다. 그래서 결합 분포를 <em>가장 풍부한 표현</em>이라 부른다.</p>
+
+      <h2>주변 분포 — 한 방향으로 더해 압축</h2>
+      <p>표가 있는데 $X$의 분포만 알고 싶다고 하자. 즉 "$Y$가 무엇이든 상관없이 $X$가 특정 값일 확률"을 알고 싶다는 뜻이다. 방법은 단순하다 — $Y$ 방향으로 다 더해 버린다.</p>
+
+      <div class="math-block">$$ p(X=x) = \sum_{y} p(X=x, Y=y) $$</div>
+      <p class="math-note">$\sum_y$는 $Y$가 취할 수 있는 모든 값에 대한 합. 한 행을 가로질러 다 더하면 그 행의 $X$ 값의 주변 확률.</p>
+
+      <p>왜 더하는가. "$Y$가 무엇이든"이라는 표현은 곧 "$Y$의 모든 가능성을 한꺼번에 인정"한다는 뜻이다. $Y$가 어떤 값일지 모르거나, 알 필요가 없는 상황에서 가능성을 합쳐 버리는 일이 곧 합산이다. 이 연산을 부를 때 "주변(margin)이라는 이름이 붙은 이유는, 옛 통계학 표의 가장자리(margin)에 행/열의 합을 적어 두던 관행에서 유래했다.</p>
+
+      <p>이름이 직관과 어긋나기 쉬워 한 번 짚자. "주변"이라는 한국어는 마치 "곁다리"처럼 들리지만, 영어 marginal은 "표 가장자리"라는 의미다. 즉 주변 분포는 표 가장자리에 적힌 합이고, 본질적으로는 "한 변수만 남기고 나머지를 다 합쳐 버린 분포"다. 시험에서는 $p(x) = \sum_y p(x, y)$가 결합에서 주변을 얻는 식이라는 점만 기억하면 된다. 연속이라면 합산 대신 적분이다.</p>
+
+      <h2>조건부 분포 — 한 줄만 잘라 정규화</h2>
+      <p>주변 분포가 "$Y$가 무엇이든 상관없이 $X$를 보는 것"이라면, 조건부 분포는 정반대다. <em>$Y$가 특정 값으로 정해졌다는 정보가 들어왔을 때 $X$가 어떻게 분포하는가</em>다. 표기는 $p(X=x | Y=y)$ 또는 줄여서 $p(x|y)$다. 막대 모양 기호 "|"는 "주어졌을 때"라는 뜻으로 읽는다.</p>
+
+      <div class="math-block">$$ p(x | y) = \frac{p(x, y)}{p(y)} $$</div>
+      <p class="math-note">분자는 결합 확률, 분모는 $y$의 주변 확률. 한 열만 잘라낸 뒤 그 열의 합으로 나누어 다시 1이 되게 만든 것.</p>
+
+      <p>왜 이 형태인가. 표에서 $Y = y$로 고정한다는 건 그 열 하나만 잘라낸다는 뜻이다. 그 잘라낸 열의 칸들은 결합 확률 값이라 합이 1이 아니다(예를 들어 0.30 정도). 이 열을 다시 분포로 만들려면 합이 1이 되도록 다시 정규화(normalize)해야 한다. 그래서 분모에 $p(y)$로 나눠 주는 것이다. 이 분모는 그 잘라낸 열의 결합 확률들을 다 더한 값과 같다.</p>
+
+      <p>만약 다른 형태였다면 어떨까. $p(x | y) = p(x, y)$로 두면 합이 1이 아니라 $p(y)$가 된다 — 분포가 아니다. $p(x | y) = p(x, y) - p(y)$로 두면 음수가 나올 수 있다 — 분포가 아니다. $p(x | y) = p(x, y) \cdot p(y)$로 두면 합이 $p(y)^2$이 된다 — 1이 아니다. 모든 변형은 둘 중 하나의 조건(0 이상, 합이 1)을 어긴다. 분모로 $p(y)$를 나누는 형태만이 정확히 두 조건을 만족시킨다.</p>
 
       <div class="analogy">
-        주사위를 굴려 나온 눈만큼 돈을 받는다고 하자. 한 번 굴려서 정확히 3.5원을 받는 일은 없지만, 100만 번 굴리면 평균이 거의 정확히 <b>3.5원</b>으로 수렴한다. <em>"기대"</em>라는 말이 한국어에서 "기대된다"의 어감을 가져서 혼동을 부르지만, 정확히는 <b>"무한 반복의 평균"</b>이다. 딥러닝의 손실함수는 거의 모두 <em>훈련 데이터 분포 아래서의 기대값</em>으로 정의된다.
+        반(class) 학생들의 성적표를 떠올리자. 결합 분포는 "남자/여자 × 1등급/2등급/3등급" 전체 표 — 모든 칸의 학생 수를 적어 둔 것이다. 남자만의 등급 분포는 어떻게 얻나. 남자 열 하나를 잘라낸 뒤, 그 열에 있는 학생 수의 비율로 다시 환산한다(전체 남학생 수로 나눔). 이것이 조건부 분포 $p(\text{등급} | \text{남자})$다. 한편 등급 전체 분포를 얻으려면? 남자 칸과 여자 칸을 가로질러 다 더한다. 이것이 주변 분포 $p(\text{등급})$다. 같은 표 — 두 시점.
       </div>
 
-      <h2>선형성 — 시험에 자주 나오는 한 줄</h2>
-      <div class="math-block">$$ \mathbb{E}[\alpha f(x) + \beta g(x)] = \alpha\, \mathbb{E}[f(x)] + \beta\, \mathbb{E}[g(x)] $$</div>
-      <p class="math-note">합과 상수배는 기대값 안팎으로 자유롭게 옮길 수 있음. 변수 독립 여부와 무관.</p>
-
-      <p>이 성질은 <strong>독립이든 아니든</strong> 무조건 성립한다. 시험에서 "두 변수가 독립이라야 $\mathbb{E}[X+Y] = \mathbb{E}[X] + \mathbb{E}[Y]$가 성립한다"는 보기는 항상 함정이다. 이 식은 <em>독립과 무관하게</em> 늘 성립한다.</p>
-
-      <h2>분산 — 평균에서 얼마나 멀리 흩어져 있는가</h2>
-      <div class="math-block">$$ \mathrm{Var}(X) = \mathbb{E}\!\left[(X - \mathbb{E}[X])^2\right] = \mathbb{E}[X^2] - (\mathbb{E}[X])^2 $$</div>
-      <p class="math-note">기댓값으로부터의 거리(편차)를 제곱해서 평균. 단위는 X 단위의 제곱.</p>
-
-      <p>왜 절대값 $|X-\mu|$가 아니라 제곱 $(X-\mu)^2$일까. 제곱은 큰 편차를 더 무겁게 벌하고, 미분이 매끈해서 최적화가 잘 되고, 가우시안 분포와 자연스럽게 맞아떨어진다. 단점은 단위가 X의 제곱이라 직관이 어렵다는 점인데, 그래서 같은 정보를 단위 그대로 보고 싶을 때는 표준편차 $\sigma = \sqrt{\mathrm{Var}(X)}$를 쓴다.</p>
-
-      <p>두 번째 등호 $\mathrm{Var}(X) = \mathbb{E}[X^2] - (\mathbb{E}[X])^2$는 시험에 그대로 자주 나오는 공식이다. 외울 때는 <em>"제곱의 평균에서 평균의 제곱을 빼라"</em>로 외우면 헷갈리지 않는다.</p>
-
-      <h2>공분산 — 함께 움직이는 경향</h2>
-      <div class="math-block">$$ \mathrm{Cov}(X, Y) = \mathbb{E}\!\left[(X - \mathbb{E}[X])(Y - \mathbb{E}[Y])\right] = \mathbb{E}[XY] - \mathbb{E}[X]\mathbb{E}[Y] $$</div>
-      <p class="math-note">X가 평균보다 클 때 Y도 평균보다 큰 경향이면 양수, 반대로 움직이면 음수.</p>
-
-      <p>아래 위젯에서 공분산을 직접 움직여 보자. 산점도가 어떻게 변하는지 보면, 공분산이라는 한 숫자가 <em>"두 변수가 같은 방향으로 함께 움직이는가, 반대로 움직이는가, 별 관계가 없는가"</em>를 압축하고 있다는 직관이 잡힌다.</p>
+      <h2>위젯 — 4×4 표에서 셋을 동시에</h2>
+      <p>아래 위젯은 4×4 결합 분포 표 하나를 보여준다. 칸 위에 마우스를 올리면 해당 행과 열이 강조되고, 위쪽 패널에는 그 행의 조건부 분포(=$Y$를 고정하고 $X$를 보는)와 그 열의 조건부 분포(=$X$를 고정하고 $Y$를 보는)가 동시에 갱신된다. 표의 오른쪽 가장자리(주변 합)와 아래쪽 가장자리(주변 합)도 자동 계산된다 — 이것이 곧 주변 분포다.</p>
     </div>
 
     <div class="widget">
       <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 03</span><span>공분산이 양일 때, 0일 때, 음일 때 산점도가 어떻게 보이는가</span></div>
-        <div class="cov-stage">
-          <canvas id="scatter" width="360" height="320"></canvas>
-          <div class="cov-info">
-            <div class="row">표본 평균 $(\bar{x}, \bar{y}) = $ <b id="meanV">(0.00, 0.00)</b></div>
-            <div class="row">분산 $\mathrm{Var}(X) = $ <b id="varX">1.00</b></div>
-            <div class="row">분산 $\mathrm{Var}(Y) = $ <b id="varY">1.00</b></div>
-            <div class="row style">공분산 $\mathrm{Cov}(X,Y) = $ <b id="covV">0.00</b></div>
-            <div class="row style">상관계수 $\rho = $ <b id="rhoV">0.00</b></div>
-            <div class="legend">파랑 점 = 500개 표본, 점선 = (μx, μy) / 슬라이더는 진짜 공분산을 바꿈</div>
+        <div class="widget-label"><span class="lab-no">위젯 03</span><span>한 표 — 결합 / 주변 / 조건부</span></div>
+        <div class="grid-stage">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div style="background: var(--paper); border: 1px solid var(--line-soft); border-radius: 7px; padding: .8rem;">
+              <div style="font-family: var(--mono); font-size: .72rem; color: var(--style); letter-spacing: .1em; margin-bottom: .4rem;">조건부 (행 선택) p(Y | X=선택)</div>
+              <div id="condRow" class="cond-bars"></div>
+            </div>
+            <div style="background: var(--paper); border: 1px solid var(--line-soft); border-radius: 7px; padding: .8rem;">
+              <div style="font-family: var(--mono); font-size: .72rem; color: var(--structure); letter-spacing: .1em; margin-bottom: .4rem;">조건부 (열 선택) p(X | Y=선택)</div>
+              <div id="condCol" class="cond-bars"></div>
+            </div>
           </div>
-        </div>
-        <div class="widget-controls">
-          <div class="slider">
-            <label>공분산 $\mathrm{Cov}(X, Y)$ <b><span id="cVal">0.00</span></b></label>
-            <input id="cSlider" type="range" min="-90" max="90" value="0" class="s-style">
+          <div style="overflow-x: auto;">
+            <table class="joint-table" id="jointTable"></table>
           </div>
-          <button class="btn" id="reseed">샘플 다시 뽑기</button>
+          <div class="read-out" id="readout">표 위에 마우스를 올려 한 칸을 선택하세요. 그 칸이 속한 행/열의 조건부 분포가 위에 나타납니다.</div>
+          <div class="ctrl-row">
+            <button class="on" data-preset="0">표 1 — 강한 의존</button>
+            <button data-preset="1">표 2 — 거의 독립</button>
+            <button data-preset="2">표 3 — 비대각 의존</button>
+          </div>
         </div>
       </div>
-      <p class="widget-cap">슬라이더를 양수 끝으로 밀면 점들이 우상향, 음수 끝으로 밀면 우하향 띠를 이룬다. 정확히 0일 때만 둥글게 흩어진다. 공분산은 <em>방향</em>을, 상관계수 $\rho$는 그 방향이 얼마나 <em>강한가</em>($-1$에서 $+1$ 사이의 $\rho$)를 같이 본다.</p>
+      <p class="widget-cap">표 가장자리(파란 셀)는 자동 계산된 주변 분포 — 한 방향으로 모두 더한 값. 칸 위에 마우스를 올리면 그 행/열의 조건부 분포(위 막대)가 다시 정규화되어 표시된다. "표 2"로 바꾸면 결합 = 행 주변 × 열 주변인 독립 케이스를 본다.</p>
     </div>
 
     <div class="prose">
-      <h2>공분산 0 = 독립? — 시험 단골 함정</h2>
+      <h2>결합 = 주변 × 조건부 — 한 식으로 묶기</h2>
+      <p>위의 조건부 정의를 양변에 곱셈으로 풀면 매우 유용한 한 줄을 얻는다.</p>
 
-      <div class="pitfall">
-        <h4>함정 — 무상관 vs 독립</h4>
-        <p>두 변수가 독립이면 항상 공분산이 0이다. 그러나 <b>공분산이 0이라고 해서 반드시 독립인 것은 아니다</b>. 공분산은 <em>선형적</em> 관계만 잡아낸다. 비선형 관계는 잡지 못한다.</p>
-      </div>
+      <div class="math-block">$$ p(x, y) = p(x | y) \, p(y) = p(y | x) \, p(x) $$</div>
+      <p class="math-note">결합 = 조건부 × 주변. 두 가지 분해 방향이 모두 같은 결합을 만들어 낸다.</p>
 
-      <p>대표적 반례는 이렇다. $X$를 $[-1, 1]$에서 균등하게 뽑고 $Y = X^2$이라고 하자. $Y$는 $X$에 완전히 결정되어 있으니 둘은 결코 독립이 아니다. 그러나 대칭성 때문에 $\mathbb{E}[XY] = \mathbb{E}[X^3] = 0$이고 $\mathbb{E}[X] = 0$이므로 공분산도 정확히 0이다. <strong>"공분산 0인데 독립은 아닌" 한 가지 사례</strong>를 외워 두면 시험에서 헷갈리지 않는다.</p>
+      <p>왜 이게 중요한가. 결합 분포를 직접 다루기는 부담스러운 경우가 많다. 변수가 둘만 돼도 표가 커지고, 변수가 셋 넷이 되면 표가 차원만큼 폭증한다. 그런데 결합을 "주변 한 줄 × 조건부 한 줄"의 곱으로 풀어쓰면, 큰 분포를 작은 부분으로 쪼개서 모델링할 수 있다. 이 발상이 다음 페이지의 연쇄법칙(chain rule)으로 이어지고, 더 멀게는 베이즈 네트워크(Bayesian network)와 그래프 모델(graphical model)의 토대가 된다.</p>
 
-      <div class="analogy">
-        공분산은 <b>"줄자 하나로 두 사람의 키를 같이 재는 것"</b>과 비슷하다. 두 사람이 손을 잡고 비스듬히 서 있으면 그 기울기를 잘 잡아낸다. 그러나 한 사람이 다른 사람 머리 위에서 동심원을 그리며 돌고 있다면, 줄자는 <em>"평균적으로는 둘이 같은 자리"</em>라고 보고하지만 실제로는 강력한 관계가 있다. 비선형은 줄자로 안 잡힌다.
-      </div>
+      <p>한편 같은 결합을 두 가지 방향으로 풀 수 있다는 점도 중요하다. $p(x|y) p(y) = p(y|x) p(x)$이므로 양변을 정리하면 $p(x|y) = p(y|x) p(x) / p(y)$ — 이것이 바로 11번 페이지에서 자세히 다룰 베이즈 규칙(Bayes' rule)이다. 즉, 베이즈 규칙은 별도로 외워야 할 공식이 아니라 결합 분포의 두 가지 분해를 한 줄에 적어 놓은 것뿐이다.</p>
 
-      <h2>벡터로 확장 — 공분산 행렬</h2>
-      <p>변수가 여럿일 때는 모든 변수 쌍의 공분산을 모은 <strong>공분산 행렬(covariance matrix)</strong>로 정리한다.</p>
+      <h2>딥러닝에서 셋이 만나는 자리</h2>
+      <p>구체 예시 네 개로 머리에 박아 두자. 첫째, 분류기. 모델은 입력 $x$와 라벨 $y$의 결합 분포 $p(x, y)$를 직접 다루지 않는다. 대신 조건부 $p(y | x)$만 학습한다. 이걸 판별 모델(discriminative model)이라 부른다. 둘째, 생성 모델(generative model). 생성 모델은 결합 $p(x, y)$를 모델링하거나, 더 흔히는 클래스를 먼저 뽑고 그 다음 입력을 뽑는 분해 $p(x|y) p(y)$를 학습한다. 셋째, 언어모델. $p(w_1, w_2, w_3, \ldots) = \prod_t p(w_t | w_{<t})$로 연쇄법칙을 통째로 쓴다. 넷째, 인과 추론(causal inference). 같은 결합이라도 분해 방향에 따라 "원인 → 결과"의 해석이 달라지는 — 정확히 이 페이지에서 본 두 가지 분해 방향이 그 시작점이다.</p>
 
-      <div class="math-block">$$ \mathrm{Cov}(\mathbf{X})_{ij} = \mathrm{Cov}(X_i, X_j), \qquad \mathrm{Cov}(\mathbf{X}) = \mathbb{E}\!\left[(\mathbf{X} - \boldsymbol{\mu})(\mathbf{X} - \boldsymbol{\mu})^\top\right] $$</div>
-      <p class="math-note">대각 성분은 각 변수의 분산, 비대각 성분은 변수 쌍의 공분산. 대칭 양반정부호.</p>
+      <h2>시험에서 자주 묻는 한 줄</h2>
+      <p>시험 직전 정리. <strong>결합 = 표 전체 / 주변 = 한 방향으로 합한 것 / 조건부 = 한 줄을 잘라 정규화한 것</strong>. 그리고 셋을 잇는 한 식 $p(x,y) = p(x|y) p(y)$. 객관식에서 "결합 분포에서 주변 분포를 얻으려면 무엇을 해야 하는가"라는 문제가 보이면 "다른 변수에 대해 합산 또는 적분"이 정답이다. "조건부 분포는 무엇으로 나누어야 분포가 되는가"라는 문제가 보이면 "조건이 되는 변수의 주변 확률"이 정답이다.</p>
 
-      <p>이 행렬은 6번 sub-chapter에서 다변량 가우시안 분포의 모양을 정의하는 데 다시 등장하고, 2장 선형대수에서 본 고유분해와 만나 <em>주성분분석(PCA)</em>의 출발점이 된다. 즉 <strong>"공분산 행렬을 고유분해하면 데이터가 가장 크게 변하는 축이 나온다"</strong>는 13장의 주제로 곧장 이어진다.</p>
-
-      <h2>이 장의 한 줄 요약</h2>
-      <p>기대값은 분포의 무게중심, 분산은 그 중심에서 얼마나 멀리 흩어졌는가, 공분산은 두 변수가 함께 움직이는 방향. 분포 전체를 못 들고 다닐 때 이 세 숫자가 우리 손에 남는다. 다음 장에서는 거꾸로, 우리가 들고 있는 분포가 새 관측을 만났을 때 <em>어떻게 갱신되는가</em>를 묻는다. 이게 베이즈 규칙이다.</p>
+      <p>다음 페이지에서는 변수가 세 개, 네 개, 그 이상으로 늘어났을 때 어떻게 결합을 작은 조각으로 쪼개는지 — 연쇄법칙을 본격적으로 다룬다. 언어모델이 문장을 단어 단위로 예측하는 방식이 정확히 그 식이다.</p>
     </div>
 
     <nav class="ch-foot"></nav>
@@ -130,18 +148,26 @@
 <script>
   const CH = [
     { no:'01', t:'왜 확률이 필요한가', f:'01.html' },
-    { no:'02', t:'확률변수, 분포, 조건부', f:'02.html' },
-    { no:'03', t:'기대값, 분산, 공분산', f:'03.html' },
-    { no:'04', t:'베이즈 규칙', f:'04.html' },
-    { no:'05', t:'정보이론 — 엔트로피/KL/교차 엔트로피', f:'05.html' },
-    { no:'06', t:'흔한 분포 카탈로그', f:'06.html' },
-    { no:'07', t:'시험 대비 체크리스트', f:'07.html' },
+    { no:'02', t:'확률변수와 분포 — PMF vs PDF', f:'02.html' },
+    { no:'03', t:'결합·주변·조건부 분포', f:'03.html' },
+    { no:'04', t:'연쇄법칙 — 결합을 조건부의 곱으로', f:'04.html' },
+    { no:'05', t:'독립과 조건부 독립', f:'05.html' },
+    { no:'06', t:'기대값 — 분포를 한 숫자로', f:'06.html' },
+    { no:'07', t:'분산과 공분산 — 무상관 ≠ 독립', f:'07.html' },
+    { no:'08', t:'흔한 분포 1 — Bernoulli, Categorical', f:'08.html' },
+    { no:'09', t:'흔한 분포 2 — Gaussian', f:'09.html' },
+    { no:'10', t:'흔한 분포 3 — Mixture, Dirac', f:'10.html' },
+    { no:'11', t:'베이즈 규칙 — 사전이 사후로', f:'11.html' },
+    { no:'12', t:'정보이론 1 — 엔트로피', f:'12.html' },
+    { no:'13', t:'정보이론 2 — KL 발산의 비대칭', f:'13.html' },
+    { no:'14', t:'정보이론 3 — 교차 엔트로피 = NLL', f:'14.html' },
+    { no:'15', t:'시험 대비 체크리스트', f:'15.html' },
   ];
   function buildNav(curr) {
     const tb = document.querySelector('.topbar');
     if (tb) tb.innerHTML =
       `<a class="home" href="index.html">← Ch.3 확률과 정보이론</a>` +
-      `<span class="ch-mini">SUB-CHAPTER ${curr} of 07</span>`;
+      `<span class="ch-mini">SUB-CHAPTER ${curr} of 15</span>`;
     const ol = document.querySelector('.ch-nav ol');
     if (ol) ol.innerHTML = CH.map(c =>
       `<li><a href="${c.f}" ${c.no === curr ? 'class="current"' : ''}>${c.t}</a></li>`).join('');
@@ -166,93 +192,105 @@
     }
   }
 
-  /* 공분산 산점도 위젯 */
-  function randn() {
-    let u = 0, v = 0;
-    while (u === 0) u = Math.random();
-    while (v === 0) v = Math.random();
-    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
-  }
-  let seed = 1;
-  function sampleBivariate(cov, N) {
-    /* X ~ N(0,1), Y = cov*X + sqrt(1-cov^2)*Z, Z ~ N(0,1) → Cov=cov, Var(Y)=1 */
-    const c = Math.max(-0.95, Math.min(0.95, cov));
-    const k = Math.sqrt(Math.max(0, 1 - c * c));
-    const X = new Float32Array(N);
-    const Y = new Float32Array(N);
-    for (let i = 0; i < N; i++) {
-      const x = randn();
-      const z = randn();
-      X[i] = x;
-      Y[i] = c * x + k * z;
+  const X_LABELS = ['맑음','흐림','비','눈'];
+  const Y_LABELS = ['우산X','우산△','우산O','외출X'];
+  /* 세 가지 결합 분포 프리셋 — 합이 1로 정규화됨 */
+  const PRESETS = [
+    /* 0: 강한 의존 — 맑은 날엔 우산X, 비/눈엔 우산O */
+    [[0.18,0.06,0.01,0.02],[0.05,0.10,0.04,0.02],[0.01,0.04,0.18,0.04],[0.01,0.02,0.09,0.13]],
+    /* 1: 거의 독립 — 행/열 곱과 비슷 */
+    [[0.10,0.10,0.05,0.05],[0.10,0.10,0.05,0.05],[0.07,0.07,0.04,0.04],[0.05,0.05,0.04,0.04]],
+    /* 2: 비대각 의존 — 변형 패턴 */
+    [[0.02,0.18,0.04,0.02],[0.02,0.04,0.10,0.06],[0.06,0.02,0.04,0.10],[0.10,0.05,0.02,0.02]],
+  ];
+  let joint = PRESETS[0].map(r => r.slice());
+
+  function rowSum(M, i) { return M[i].reduce((a,b)=>a+b,0); }
+  function colSum(M, j) { return M.reduce((s,r)=>s+r[j],0); }
+
+  function renderTable() {
+    const t = document.getElementById('jointTable');
+    let max = 0;
+    for (const r of joint) for (const v of r) max = Math.max(max, v);
+    let html = '<tr><th class="corner"></th>';
+    for (const yl of Y_LABELS) html += `<th>${yl}</th>`;
+    html += '<th>주변 p(X)</th></tr>';
+    for (let i = 0; i < 4; i++) {
+      html += `<tr><th>${X_LABELS[i]}</th>`;
+      for (let j = 0; j < 4; j++) {
+        const v = joint[i][j];
+        const h = (v / max) * 100;
+        html += `<td class="joint-cell" data-i="${i}" data-j="${j}"><span class="bg-fill" style="height:${h}%"></span><span class="num">${v.toFixed(3)}</span></td>`;
+      }
+      html += `<td class="marg-row">${rowSum(joint,i).toFixed(3)}</td></tr>`;
     }
-    return { X, Y };
+    html += '<tr><th>주변 p(Y)</th>';
+    for (let j = 0; j < 4; j++) html += `<td class="marg">${colSum(joint,j).toFixed(3)}</td>`;
+    const total = joint.flat().reduce((a,b)=>a+b,0);
+    html += `<td class="total">${total.toFixed(3)}</td></tr>`;
+    t.innerHTML = html;
+
+    t.querySelectorAll('.joint-cell').forEach(c => {
+      c.addEventListener('mouseenter', (e) => {
+        const i = parseInt(c.dataset.i,10), j = parseInt(c.dataset.j,10);
+        highlight(i, j);
+      });
+    });
   }
-  function stat(arr) {
-    let s = 0, ss = 0;
-    for (let i = 0; i < arr.length; i++) { s += arr[i]; ss += arr[i] * arr[i]; }
-    const m = s / arr.length;
-    const v = ss / arr.length - m * m;
-    return { m, v };
-  }
-  function cov(X, Y, mx, my) {
-    let s = 0;
-    for (let i = 0; i < X.length; i++) s += (X[i] - mx) * (Y[i] - my);
-    return s / X.length;
+
+  function clearHighlight() {
+    document.querySelectorAll('.joint-cell').forEach(c => {
+      c.classList.remove('selected-row');
+      c.classList.remove('selected-col');
+    });
   }
 
-  const canvas = document.getElementById('scatter');
-  const ctx = canvas.getContext('2d');
-  let current = null;
+  function highlight(i, j) {
+    clearHighlight();
+    document.querySelectorAll('.joint-cell').forEach(c => {
+      const ci = parseInt(c.dataset.i,10), cj = parseInt(c.dataset.j,10);
+      if (ci === i) c.classList.add('selected-row');
+      if (cj === j) c.classList.add('selected-col');
+    });
+    const rs = rowSum(joint, i), cs = colSum(joint, j);
+    const condY = joint[i].map(v => v / rs);
+    const condX = [0,1,2,3].map(ii => joint[ii][j] / cs);
 
-  function draw(cv) {
-    const N = 500;
-    if (!current || current.cv !== cv) {
-      current = { cv, ...sampleBivariate(cv, N) };
-    }
-    const { X, Y } = current;
-    const sx = stat(X), sy = stat(Y);
-    const cxy = cov(X, Y, sx.m, sy.m);
-    const rho = cxy / (Math.sqrt(sx.v) * Math.sqrt(sy.v));
+    const cRow = document.getElementById('condRow');
+    cRow.innerHTML = condY.map((p, jj) => `
+      <div class="cond-bar">
+        <span class="lab">${Y_LABELS[jj]}</span>
+        <span class="bg"><i class="fg" style="width:${(p*100).toFixed(0)}%"></i></span>
+        <span class="val">${p.toFixed(3)}</span>
+      </div>`).join('');
+    const cCol = document.getElementById('condCol');
+    cCol.innerHTML = condX.map((p, ii) => `
+      <div class="cond-bar">
+        <span class="lab">${X_LABELS[ii]}</span>
+        <span class="bg"><i class="fg" style="width:${(p*100).toFixed(0)}%; background:var(--structure);"></i></span>
+        <span class="val">${p.toFixed(3)}</span>
+      </div>`).join('');
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    /* 축 */
-    ctx.strokeStyle = 'rgba(38,34,28,0.18)';
-    ctx.setLineDash([3, 3]);
-    ctx.beginPath();
-    ctx.moveTo(0, canvas.height / 2); ctx.lineTo(canvas.width, canvas.height / 2);
-    ctx.moveTo(canvas.width / 2, 0); ctx.lineTo(canvas.width / 2, canvas.height);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    /* 점 */
-    ctx.fillStyle = 'rgba(45, 91, 122, 0.55)';
-    const scale = 50;
-    for (let i = 0; i < N; i++) {
-      const px = canvas.width / 2 + X[i] * scale;
-      const py = canvas.height / 2 - Y[i] * scale;
-      ctx.fillRect(px - 1.5, py - 1.5, 3, 3);
-    }
-
-    document.getElementById('meanV').textContent = `(${sx.m.toFixed(2)}, ${sy.m.toFixed(2)})`;
-    document.getElementById('varX').textContent = sx.v.toFixed(2);
-    document.getElementById('varY').textContent = sy.v.toFixed(2);
-    document.getElementById('covV').textContent = cxy.toFixed(2);
-    document.getElementById('rhoV').textContent = rho.toFixed(2);
+    document.getElementById('readout').innerHTML =
+      `선택 칸 <b>p(X=${X_LABELS[i]}, Y=${Y_LABELS[j]}) = ${joint[i][j].toFixed(3)}</b><br>` +
+      `행 주변 p(X=${X_LABELS[i]}) = ${rs.toFixed(3)} · 열 주변 p(Y=${Y_LABELS[j]}) = ${cs.toFixed(3)}<br>` +
+      `조건부 p(Y=${Y_LABELS[j]} | X=${X_LABELS[i]}) = ${(joint[i][j]/rs).toFixed(3)} = ${joint[i][j].toFixed(3)} / ${rs.toFixed(3)}`;
   }
 
   window.addEventListener('load', () => {
     buildNav('03');
-    const slider = document.getElementById('cSlider');
-    const cVal = document.getElementById('cVal');
-    function go() {
-      const v = parseInt(slider.value, 10) / 100;
-      cVal.textContent = v.toFixed(2);
-      draw(v);
-    }
-    slider.addEventListener('input', go);
-    document.getElementById('reseed').addEventListener('click', () => { current = null; go(); });
-    go();
+    renderTable();
+    highlight(2, 2);
+    document.querySelectorAll('[data-preset]').forEach(b => {
+      b.addEventListener('click', () => {
+        document.querySelectorAll('[data-preset]').forEach(x => x.classList.remove('on'));
+        b.classList.add('on');
+        const idx = parseInt(b.dataset.preset, 10);
+        joint = PRESETS[idx].map(r => r.slice());
+        renderTable();
+        highlight(2, 2);
+      });
+    });
     if (window.renderMathInElement) {
       renderMathInElement(document.body, {
         delimiters: [{left:'$$', right:'$$', display:true}, {left:'$', right:'$', display:false}],

@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>12 / 08 / 추천 시스템 — 협업 필터링·행렬 분해</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .mf-stage { display: grid; grid-template-columns: 1.4fr 1fr; gap: 1rem; padding: 1.4rem 1.2rem 1rem; }
+  @media (max-width: 760px) { .mf-stage { grid-template-columns: 1fr; } }
+  .mf-canvas-wrap { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: .8rem; }
+  .mf-canvas-wrap canvas { display: block; width: 100%; height: 340px; border-radius: 6px; background: #fff; }
+  .mf-side { display: flex; flex-direction: column; gap: .9rem; }
+  .mf-panel { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 1rem 1.1rem; }
+  .mf-panel h4 { margin: 0 0 .55rem; font-family: var(--serif); font-size: .98rem; color: var(--ink); }
+  .mf-stat { display: flex; justify-content: space-between; font-family: var(--mono); font-size: .82rem; color: var(--ink-soft); margin: .2rem 0; }
+  .mf-stat b { color: var(--ink); }
+  .mf-controls { display: flex; gap: .4rem; flex-wrap: wrap; margin-top: .5rem; }
+  .mf-controls button { font-family: var(--mono); font-size: .74rem; padding: .4rem .7rem; border-radius: 6px; background: var(--ink); color: var(--paper); border: none; cursor: pointer; }
+  .mf-controls button.ghost { background: var(--paper-2); color: var(--ink-soft); border: 1px solid var(--line); }
+  .mf-controls button:hover { opacity: .9; }
+  .mf-slider { display: flex; flex-direction: column; gap: .25rem; margin-top: .55rem; font-family: var(--mono); font-size: .74rem; color: var(--ink-soft); }
+  .mf-slider input { width: 100%; }
+  .mf-slider b { color: var(--style); }
+  .mf-mat-wrap { background: var(--paper); padding: .55rem; border-radius: 6px; }
+  .mf-mat { display: grid; gap: 1px; font-family: var(--mono); font-size: .68rem; }
+  .mf-cell { background: #fff; padding: .25rem 0; text-align: center; border-radius: 2px; min-height: 1.4rem; line-height: 1; }
+  .mf-cell.obs { background: var(--structure-bg); color: var(--structure); font-weight: 600; }
+  .mf-cell.pred { background: #fff; color: var(--ink-faint); font-style: italic; }
+  .mf-cell.head { background: transparent; color: var(--ink-faint); font-size: .62rem; padding-top: .35rem; }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-chapter 08 / 추천</span>
+      <h1>사용자 × 아이템 행렬을<br><span class="t-style">두 임베딩의 내적</span>으로 분해</h1>
+      <p class="lede">추천 시스템은 “이 사용자가 이 아이템에 몇 점을 줄까”를 예측하는 문제다. 평점 행렬은 거의 모든 칸이 비어 있고, 모델은 관찰된 한 줌의 평점에서 두 임베딩(사용자 임베딩, 아이템 임베딩)을 학습해 빈칸을 채워 넣는다. 단어 임베딩과 동일한 “좋은 표상 위에서 내적”의 사고가 그대로 옮겨 온다.</p>
+    </header>
+
+    <div class="prose">
+      <p>12장이 비전, 음성, NLP 세 도메인을 거친 뒤 추천 시스템(recommender system)을 짚는 이유는 단순하다. 추천 시스템은 NLP에서 본 “단어를 벡터로, 그 위에서 내적”이라는 사고가 가장 직접적으로 옮겨 가는 도메인이고, 거기에 더해 “관찰된 데이터가 모델의 행동에 의해 결정된다”는 폐쇄 루프(closed loop) 구조가 다음 sub의 강화학습으로 매끄럽게 이어진다. 책의 “knowledge representation and reasoning” 절은 추천을 직접 다루지는 않지만, 같은 임베딩 사고의 변주로 명시적으로 묶는다.</p>
+
+      <h2>평점 행렬 — 본질은 거대한 빈칸</h2>
+
+      <p>Netflix가 추천을 학습할 때 마주하는 데이터는 (사용자, 영화, 평점) 트리플의 모음이다. 이것을 사용자 행, 영화 열의 거대한 행렬 <code>R</code>로 펼치면, 사용자 수는 수천만, 영화 수는 수만, 따라서 <code>R</code>의 크기는 <code>10^11</code>개 정도의 칸이다. 그런데 한 사용자가 실제로 평점을 매긴 영화는 수십에서 수백 편에 불과하므로, 행렬의 99.99% 이상이 “모름”으로 비어 있다. 추천 문제는 <strong>“관찰된 한 줌의 평점에서, 빈칸의 평점을 예측하라”</strong>로 환원된다.</p>
+
+      <div class="analogy">
+        평점 행렬을 <b>“수천만 명이 수만 편의 영화에 점수를 줄 수 있는 칠판”</b>이라 생각하면, 칠판의 99.99%는 백지다. 사람이 좋아할 영화는 정해져 있는데(점심 추천), 백지 칸이 그 답이다. 모델의 일은 “네가 점수 준 영화의 패턴을 보니, 이 빈칸들도 너는 4.2점쯤 줄 것 같다”라고 “지운 답안지의 답”을 복구하는 것이다.
+      </div>
+
+      <h2>협업 필터링과 행렬 분해</h2>
+
+      <p>이 빈칸 채우기를 푸는 가장 단순하고 강력한 방법이 협업 필터링(collaborative filtering)의 행렬 분해(matrix factorization)다. 핵심 가정은 두 가지다.</p>
+
+      <ul>
+        <li><b>저차원 잠재 인자(low-dimensional latent factors)가 존재한다.</b> 사용자의 영화 취향은 “액션을 얼마나 좋아하는가”, “로맨스를 얼마나 좋아하는가”, “고전 명작을 얼마나 좋아하는가” 같은 소수의 축으로 거의 다 설명된다.</li>
+        <li><b>그 축 위에서 사용자와 아이템은 같은 좌표계를 공유한다.</b> 사용자도 “액션 +0.8, 로맨스 −0.3, 고전 +0.5”의 좌표를 가지고, 영화도 같은 축에서 “액션 +0.9, 로맨스 −0.1, 고전 +0.2”의 좌표를 가진다. 둘의 내적이 클수록 그 사용자가 그 영화를 좋아할 확률이 높다.</li>
+      </ul>
+
+      <p>수식으로 옮기면 사용자 수 <code>m</code>, 아이템 수 <code>n</code>, 잠재 인자 수 <code>K</code>(보통 20-200)에 대해 다음과 같다.</p>
+
+      <div class="math-block">$$ R \approx U V^\top, \quad U \in \mathbb{R}^{m \times K}, \quad V \in \mathbb{R}^{n \times K} $$</div>
+      <p class="math-note">$U$의 $u$번째 행이 사용자 $u$의 임베딩, $V$의 $i$번째 행이 아이템 $i$의 임베딩. 둘의 내적 $u_u \cdot v_i$가 사용자 $u$가 아이템 $i$에 줄 예측 평점.</p>
+
+      <h2>관찰된 칸에만 손실 — 빈칸은 정답이 아니다</h2>
+
+      <p>학습 손실은 다음과 같이 “관찰된 칸”에만 정의한다. 관찰된 (사용자, 아이템) 쌍의 집합을 <code>Ω</code>로 표기한다.</p>
+
+      <div class="math-block">$$ \mathcal{L}(U, V) = \sum_{(u,i) \in \Omega} \big(R_{ui} - u_u \cdot v_i\big)^2 + \lambda \big(\lVert U \rVert_F^2 + \lVert V \rVert_F^2\big) $$</div>
+      <p class="math-note">관찰된 쌍 $\Omega$만 손실에 포함. 빈칸은 “모름”이지 “0”이 아니다. 마지막 항의 Frobenius 노름 정칙화는 임베딩이 관찰값에 과적합되어 빈칸 예측이 무너지는 것을 막는다.</p>
+
+      <p>여기서 가장 흔히 떨어지는 함정은 <strong>“빈칸을 0으로 두고 손실에 넣는” 일</strong>이다. 그렇게 하면 모델은 “모든 칸을 0으로 예측”하는 자명한 해에 끌려간다 — 칠판의 99.99%가 0이니까 그것이 거의 모든 칸에서 정답이 되어 손실이 매우 낮아진다. 그러나 그 모델은 추천에 전혀 쓸모가 없다. 빈칸은 “모름(unknown)”이므로, 모름을 손실에서 빼고 <em>관찰된 평점 패턴만으로</em> 임베딩을 학습한 뒤, 그 임베딩이 빈칸에 합리적인 예측을 내놓기를 베팅하는 구조다. L2 정칙화는 이 베팅이 무너지지 않게 임베딩을 “단순한 쪽”으로 끌어당기는 역할이다.</p>
+
+      <h2>SGD로 직접 학습 — 만져 보기</h2>
+
+      <p>위 손실은 미니배치 SGD로 단순하게 학습된다. 관찰된 쌍 <code>(u, i)</code>를 하나 뽑아, 오차 <code>e_{ui} = R_{ui} − u_u · v_i</code>를 계산하고, 두 임베딩을 그 방향으로 살짝 민다.</p>
+
+      <div class="math-block">$$ u_u \leftarrow u_u + \eta \big(e_{ui} \cdot v_i - \lambda u_u\big), \quad v_i \leftarrow v_i + \eta \big(e_{ui} \cdot u_u - \lambda v_i\big) $$</div>
+      <p class="math-note">$\eta$는 학습률, $\lambda$는 정칙화 강도. 사용자 벡터는 아이템 벡터 방향으로, 아이템 벡터는 사용자 벡터 방향으로 끌려간다 — 두 임베딩이 서로의 좌표계를 공동으로 학습하는 모습.</p>
+
+      <p>아래 위젯은 5명의 사용자가 6편의 영화에 부분적으로만 평점을 매긴 작은 행렬에서 위 SGD를 실시간으로 돌린다. 좌측 캔버스는 사용자 임베딩(파랑)과 아이템 임베딩(주홍)이 학습되는 모습을, 우측은 행렬의 관찰값과 모델 예측값의 변화를 보여 준다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 05</span><span>행렬 분해 SGD 라이브</span></div>
+        <div class="mf-stage">
+          <div class="mf-canvas-wrap">
+            <canvas id="mfCanvas"></canvas>
+            <div style="font-family:var(--mono); font-size:.66rem; color:var(--ink-faint); margin-top:.3rem; text-align:center;">2D 잠재 공간 / 파랑 = 사용자 임베딩 / 주홍 = 영화 임베딩 / 거리 가까울수록 높은 예측 평점</div>
+          </div>
+          <div class="mf-side">
+            <div class="mf-panel">
+              <h4>학습 상태</h4>
+              <div class="mf-stat"><span>step</span><b id="mfStep">0</b></div>
+              <div class="mf-stat"><span>관찰값 MSE</span><b id="mfMse">—</b></div>
+              <div class="mf-stat"><span>정칙화 항</span><b id="mfReg">—</b></div>
+              <div class="mf-slider">
+                <label>학습률 η = <b id="mfEta">0.05</b></label>
+                <input type="range" id="mfEtaR" min="1" max="20" value="5">
+              </div>
+              <div class="mf-slider">
+                <label>정칙화 λ = <b id="mfLam">0.02</b></label>
+                <input type="range" id="mfLamR" min="0" max="20" value="2">
+              </div>
+              <div class="mf-controls">
+                <button id="mfPlay">▶ 재생</button>
+                <button id="mfStep1" class="ghost">+1 step</button>
+                <button id="mfReset" class="ghost">↻ 초기화</button>
+              </div>
+            </div>
+            <div class="mf-panel">
+              <h4>평점 행렬 (5 사용자 × 6 영화)</h4>
+              <div class="mf-mat-wrap"><div class="mf-mat" id="mfMat"></div></div>
+              <div style="font-family:var(--mono); font-size:.66rem; color:var(--ink-faint); margin-top:.4rem;">파랑 칸 = 관찰값, 흰 칸 = 모델 예측 (정수 반올림)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="widget-cap">관찰된 쌍은 SGD가 한 step당 한 개씩 뽑아 임베딩을 갱신한다. 학습이 진행되면서 사용자와 영화의 임베딩이 “좋아할 사용자-영화 쌍은 가깝게, 싫어할 쌍은 멀게” 자동 배치된다. η를 너무 키우면 발산하고, λ를 너무 키우면 모든 임베딩이 원점으로 끌려가 “모든 예측 = 평균 평점”의 자명한 해에 떨어진다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>평균 평점의 함정과 편향 분리</h2>
+
+      <p>실제 Netflix Prize에서 가장 강력한 기여를 한 한 줄짜리 개선은 다음이다 — <strong>평균 평점, 사용자 편향, 영화 편향을 임베딩 내적에서 분리해 빼낸다.</strong></p>
+
+      <div class="math-block">$$ \hat{R}_{ui} = \mu + b_u + b_i + u_u \cdot v_i $$</div>
+      <p class="math-note">$\mu$는 전체 평균 평점(예: 3.6), $b_u$는 사용자가 평균적으로 후한가/박한가, $b_i$는 영화가 평균적으로 호평인가/혹평인가. 이 셋이 평점의 분산 대부분을 설명한다.</p>
+
+      <p>왜 이 분리가 강력한가. 평점 데이터의 분산은 “이 사용자가 액션 영화를 좋아한다”는 미세한 취향보다 “이 사용자가 매사 평점을 박하게 준다”나 “이 영화는 대다수가 호평한다” 같은 평이한 편향에서 더 많이 온다. 이 평이한 편향을 임베딩이 흡수하려 들면 임베딩이 낭비되고 진짜 취향을 잡지 못한다. 편향을 명시적으로 빼 주면 임베딩 자유도가 “취향 차이”를 학습하는 데 집중된다.</p>
+
+      <h2>콜드 스타트 — 신규 사용자·신규 아이템</h2>
+
+      <p>행렬 분해의 가장 큰 한계는 콜드 스타트(cold start)다. 신규 사용자는 평점을 한 번도 매기지 않았으므로 임베딩을 학습할 데이터가 없다. 신규 영화도 마찬가지. 이 두 경우 행렬 분해는 무기력하다. 처방은 두 갈래다.</p>
+
+      <ul>
+        <li><b>콘텐츠 기반 보강.</b> 사용자의 가입 시 정보(나이, 지역, 가입 동기)나 영화의 메타데이터(장르, 출연진, 줄거리 임베딩)를 별도 특징으로 사용해, 임베딩이 부재한 자리를 메운다. 행렬 분해의 단점을 콘텐츠 기반 추천이 보완하므로 둘을 결합한 하이브리드 시스템이 실무 표준이다.</li>
+        <li><b>탐험-착취 균형.</b> 신규 아이템에 대한 데이터를 모으려면 가끔 일부러 추천해 사용자 반응을 관찰해야 한다. 이 “정보를 얻기 위한 의도적 추천”이 다음 sub의 강화학습 사고로 직접 이어진다 — 추천 시스템은 점점 contextual bandit과 RL 프레임워크로 재정의되어 왔다.</li>
+      </ul>
+
+      <h2>지식 표상으로의 확장</h2>
+
+      <p>책 본문은 이 임베딩 + 내적 사고를 추천에서 멈추지 않고, “지식 표상과 추론(knowledge representation and reasoning)”으로 확장한다. 사용자-아이템 쌍을 (subject, predicate, object) 같은 (개체, 관계, 개체) 트리플로 바꾸면, 같은 행렬 분해 사고가 지식 그래프(knowledge graph)의 링크 예측(link prediction)이 된다. <code>(Obama, born_in, ?)</code>의 빈칸을 학습된 임베딩의 내적으로 채워 넣는 식이다. 이것이 TransE, ComplEx, RotatE 같은 후속 모델의 출발점이고, 현대 LLM이 사실 지식을 학습하는 방식의 한 뿌리다.</p>
+
+      <h2>한 줄 결론</h2>
+
+      <p>추천 시스템의 행렬 분해는 “사용자와 아이템을 같은 잠재 공간에 임베딩하고, 두 임베딩의 내적으로 선호를 예측”하는 NLP 임베딩 사고의 직접 변주다. 손실은 반드시 관찰된 칸에만 정의해야 하며, 빈칸을 0으로 두면 자명한 해에 끌려간다. 평균·편향 분리가 임베딩의 자유도를 진짜 취향에 집중시키고, 콜드 스타트의 “일부러 탐험해야 한다”는 압박이 다음 sub의 강화학습으로 자연스럽게 이어진다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    { no: '01', t: '응용 챕터의 의미' },
+    { no: '02', t: '대규모 비전 분류 1 — ImageNet' },
+    { no: '03', t: '대규모 비전 분류 2 — 증강·전이학습' },
+    { no: '04', t: '음성 인식 — 파형 → 스펙트로그램' },
+    { no: '05', t: 'NLP 1 — 단어 임베딩' },
+    { no: '06', t: 'NLP 2 — 분포 가설·임베딩 산수' },
+    { no: '07', t: 'NLP 3 — 언어 모델·번역·어텐션' },
+    { no: '08', t: '추천 시스템 — 협업 필터링' },
+    { no: '09', t: '강화학습 — agent-environment 루프' },
+    { no: '10', t: '공통 교훈 — 표상 위의 단순 산수' },
+    { no: '11', t: '시험 대비' },
+  ];
+  function buildNav(cur) {
+    const tb = document.querySelector('.topbar');
+    if (tb) tb.innerHTML =
+      '<a class="home" href="index.html">← Chapter 12 / 응용</a>' +
+      '<span class="ch-mini">SUB ' + cur + ' / 11</span>';
+    const ol = document.querySelector('.ch-nav ol');
+    if (ol) ol.innerHTML = SUBS.map(c =>
+      '<li><a href="' + c.no + '.html"' + (c.no === cur ? ' class="current"' : '') + '>' + c.t + '</a></li>').join('');
+    const foot = document.querySelector('.ch-foot');
+    if (foot) {
+      const i = SUBS.findIndex(c => c.no === cur);
+      const prev = i > 0 ? SUBS[i - 1] : { no: '', t: '표지로', _href: 'index.html' };
+      const next = i < SUBS.length - 1 ? SUBS[i + 1] : { no: '', t: '표지로', _href: 'index.html' };
+      const hp = prev._href || (prev.no + '.html');
+      const hn = next._href || (next.no + '.html');
+      foot.innerHTML =
+        '<a href="' + hp + '"><div class="dir">← 이전</div><div class="ti">' + prev.t + '</div></a>' +
+        '<a href="' + hn + '" class="next"><div class="dir">다음 →</div><div class="ti">' + next.t + '</div></a>';
+    }
+  }
+  function initScroll() {
+    const bar = document.querySelector('.scroll-progress');
+    if (!bar) return;
+    const on = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    document.addEventListener('scroll', on, { passive: true }); on();
+  }
+
+  // ─── 위젯 05: 행렬 분해 SGD ───
+  function mfWidget() {
+    const M = 5, N = 6, K = 2;
+    const USERS = ['UA','UB','UC','UD','UE'];
+    const MOVIES = ['M1','M2','M3','M4','M5','M6'];
+    // 관찰된 평점 (1-5). null = 모름.
+    const Robs = [
+      [5,   null,4,   null,1,   2],
+      [4,   5,   null,null,2,   1],
+      [null,4,   5,   null,null,2],
+      [1,   2,   null,5,   null,4],
+      [2,   1,   null,4,   5,   null],
+    ];
+
+    let U, V, eta = 0.05, lam = 0.02, step = 0, playing = false;
+    function init() {
+      U = Array.from({length: M}, () => Array.from({length: K}, () => (Math.random()-0.5)*0.4));
+      V = Array.from({length: N}, () => Array.from({length: K}, () => (Math.random()-0.5)*0.4));
+      step = 0;
+    }
+    function dot(a, b) { let s = 0; for (let k = 0; k < K; k++) s += a[k]*b[k]; return s; }
+    function sgdStep() {
+      // 관찰된 쌍 무작위 1개
+      const pairs = [];
+      for (let u = 0; u < M; u++) for (let i = 0; i < N; i++) if (Robs[u][i] != null) pairs.push([u,i]);
+      const [u, i] = pairs[Math.floor(Math.random()*pairs.length)];
+      const r = Robs[u][i];
+      const p = dot(U[u], V[i]) + 3.0; // 평균 3 더해 평점 범위 흉내
+      const e = r - p;
+      for (let k = 0; k < K; k++) {
+        const uk = U[u][k], vk = V[i][k];
+        U[u][k] += eta * (e * vk - lam * uk);
+        V[i][k] += eta * (e * uk - lam * vk);
+      }
+      step++;
+    }
+    function mse() {
+      let s = 0, c = 0;
+      for (let u = 0; u < M; u++) for (let i = 0; i < N; i++) if (Robs[u][i] != null) {
+        const p = dot(U[u], V[i]) + 3.0;
+        s += (Robs[u][i] - p)**2; c++;
+      }
+      return c ? s/c : 0;
+    }
+    function reg() {
+      let s = 0;
+      for (let u = 0; u < M; u++) for (let k = 0; k < K; k++) s += U[u][k]**2;
+      for (let i = 0; i < N; i++) for (let k = 0; k < K; k++) s += V[i][k]**2;
+      return s;
+    }
+
+    const cv = document.getElementById('mfCanvas');
+    const ctx = cv.getContext('2d');
+    function fit() {
+      const r = cv.parentElement.getBoundingClientRect();
+      cv.width = r.width * devicePixelRatio;
+      cv.height = 340 * devicePixelRatio;
+      ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+    }
+    function drawCanvas() {
+      fit();
+      const W = cv.width/devicePixelRatio, H = cv.height/devicePixelRatio;
+      ctx.clearRect(0, 0, W, H);
+      // grid
+      ctx.strokeStyle = 'rgba(38,34,28,0.05)';
+      for (let i = -2; i <= 2; i++) {
+        const x = W/2 + i*(W*0.18);
+        ctx.beginPath(); ctx.moveTo(x, 16); ctx.lineTo(x, H-16); ctx.stroke();
+        const y = H/2 + i*(H*0.18);
+        ctx.beginPath(); ctx.moveTo(16, y); ctx.lineTo(W-16, y); ctx.stroke();
+      }
+      ctx.strokeStyle = 'rgba(38,34,28,0.25)';
+      ctx.beginPath(); ctx.moveTo(W/2, 16); ctx.lineTo(W/2, H-16); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(16, H/2); ctx.lineTo(W-16, H/2); ctx.stroke();
+      const scale = W * 0.18;
+      // V (movies)
+      V.forEach((v, i) => {
+        const x = W/2 + v[0]*scale, y = H/2 - v[1]*scale;
+        ctx.fillStyle = 'rgba(192,73,46,0.85)';
+        ctx.beginPath(); ctx.arc(x, y, 6, 0, Math.PI*2); ctx.fill();
+        ctx.font = 'bold 11px monospace'; ctx.fillStyle = '#C0492E';
+        ctx.fillText(MOVIES[i], x+9, y+4);
+      });
+      // U (users)
+      U.forEach((u, i) => {
+        const x = W/2 + u[0]*scale, y = H/2 - u[1]*scale;
+        ctx.fillStyle = 'rgba(45,91,122,0.85)';
+        ctx.beginPath(); ctx.arc(x, y, 6, 0, Math.PI*2); ctx.fill();
+        ctx.font = 'bold 11px monospace'; ctx.fillStyle = '#2D5B7A';
+        ctx.fillText(USERS[i], x+9, y+4);
+      });
+      // legend
+      ctx.font = '10px monospace'; ctx.fillStyle = 'rgba(38,34,28,0.5)';
+      ctx.fillText('K=2 잠재 인자 공간', 20, 18);
+    }
+    function drawMat() {
+      const host = document.getElementById('mfMat');
+      let html = '<div class="mf-cell head"></div>';
+      MOVIES.forEach(m => html += '<div class="mf-cell head">' + m + '</div>');
+      for (let u = 0; u < M; u++) {
+        html += '<div class="mf-cell head">' + USERS[u] + '</div>';
+        for (let i = 0; i < N; i++) {
+          if (Robs[u][i] != null) {
+            html += '<div class="mf-cell obs">' + Robs[u][i] + '</div>';
+          } else {
+            const p = dot(U[u], V[i]) + 3.0;
+            const pc = Math.max(1, Math.min(5, p));
+            html += '<div class="mf-cell pred">' + pc.toFixed(1) + '</div>';
+          }
+        }
+      }
+      host.style.gridTemplateColumns = '2rem repeat(' + N + ', 1fr)';
+      host.innerHTML = html;
+    }
+    function updateStats() {
+      document.getElementById('mfStep').textContent = step;
+      document.getElementById('mfMse').textContent = mse().toFixed(3);
+      document.getElementById('mfReg').textContent = reg().toFixed(3);
+    }
+    function tick() {
+      if (!playing) return;
+      for (let k = 0; k < 8; k++) sgdStep();
+      drawCanvas(); drawMat(); updateStats();
+      requestAnimationFrame(tick);
+    }
+
+    init(); drawCanvas(); drawMat(); updateStats();
+    document.getElementById('mfPlay').onclick = (e) => {
+      playing = !playing;
+      e.target.textContent = playing ? '■ 정지' : '▶ 재생';
+      if (playing) tick();
+    };
+    document.getElementById('mfStep1').onclick = () => {
+      for (let k = 0; k < 16; k++) sgdStep();
+      drawCanvas(); drawMat(); updateStats();
+    };
+    document.getElementById('mfReset').onclick = () => {
+      init(); drawCanvas(); drawMat(); updateStats();
+    };
+    document.getElementById('mfEtaR').oninput = (e) => {
+      eta = (+e.target.value) / 100;
+      document.getElementById('mfEta').textContent = eta.toFixed(2);
+    };
+    document.getElementById('mfLamR').oninput = (e) => {
+      lam = (+e.target.value) / 100;
+      document.getElementById('mfLam').textContent = lam.toFixed(2);
+    };
+    window.addEventListener('resize', () => { drawCanvas(); });
+  }
+
+  window.addEventListener('load', () => {
+    buildNav('08'); initScroll();
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false},
+        ],
+        throwOnError: false,
+      });
+    }
+    mfWidget();
+  });
+</script>
+</body>
+</html>

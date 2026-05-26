@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>11 · SVD 2 — 저랭크 근사와 의사역행렬</title>
+<link rel="stylesheet" href="./assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 11 · 데이터 압축과 가짜 역행렬</title>
+      <h1>SVD 2 —<br><span class="t-synth">저랭크와 의사역행렬</span></h1>
+      <p class="lede">σ를 큰 순서로 잘라 내는 것이 데이터 압축의 본질. 그리고 같은 도구가 “해가 없거나 무한히 많은” 시스템에도 가장 그럴듯한 답을 준다.</p>
+    </header>
+
+    <div class="prose">
+      <p>SVD가 “모든 행렬을 회전·스케일·회전으로 분해한다”는 사실이 가장 강력하게 쓰이는 두 자리가 있다. 첫째는 <strong>저랭크 근사(low-rank approximation)</strong> — 큰 행렬을 작은 행렬로 압축하기. 둘째는 <strong>의사역행렬(pseudoinverse)</strong> — 정확한 역행렬이 없을 때 “가장 그럴듯한 답”을 찾기. 이 두 응용이 머신러닝/딥러닝에서 끊임없이 등장한다.</p>
+
+      <h2>Eckart-Young 정리 — 최적의 저랭크 근사</h2>
+      <p>행렬 $A$를 “랭크 $k$ 이하인 어떤 행렬 $B$로 가장 가깝게” 근사하고 싶다고 하자. 거리는 프로베니우스 노름(<a href="05.html">sub 05</a>)으로 잰다. 이 문제의 답은 무엇일까? Eckart-Young 정리가 답을 준다.</p>
+
+      <div class="math-block">$$ A_k = \sum_{i=1}^{k} \sigma_i \mathbf{u}_i \mathbf{v}_i^\top $$</div>
+      <p class="math-note">최적 근사 = SVD 분해의 상위 k개 항만 남긴 것. 가장 큰 σ의 조각들.</p>
+
+      <p>즉 <strong>“가장 좋은 저랭크 근사는 SVD의 큰 특이값에 해당하는 항들만 남기는 것”</strong>이다. 이게 단순히 한 가지 방법이 아니라 “수학적으로 가장 최적인 근사”라는 점이 Eckart-Young의 강력한 결과다. 다른 어떤 랭크 $k$ 행렬도 $A_k$보다 $A$에 가까울 수 없다.</p>
+
+      <p>근사 오차는 “버려진 특이값들의 제곱합의 제곱근”이다.</p>
+
+      <div class="math-block">$$ \|A - A_k\|_F = \sqrt{\sigma_{k+1}^2 + \sigma_{k+2}^2 + \cdots + \sigma_r^2} $$</div>
+      <p class="math-note">버린 σ들의 제곱합의 제곱근 = 프로베니우스 노름으로 잰 근사 오차.</p>
+
+      <p>그래서 $\sigma_i$가 큰 순서대로 “지수적으로” 작아지는 행렬은 매우 적은 항으로도 매우 잘 근사된다. 자연 이미지·문서·사용자 평점 같은 실제 데이터의 행렬들은 거의 항상 이런 “저랭크적” 성질을 가진다.</p>
+
+      <div class="widget">
+        <div class="widget-frame">
+          <div class="widget-label"><span class="lab-no">위젯 05</span><span>SVD 저랭크 근사 — k를 늘려 가며 압축률 보기</span></div>
+          <div id="svd"></div>
+        </div>
+        <p class="widget-cap">왼쪽이 48×48 합성 이미지, 오른쪽이 상위 k개 특이값만 남긴 재구성. k = 1, 5, 20에서 보존된 분산 비율과 압축률을 확인. 막대 그래프는 σ의 크기 — 처음 몇 개가 압도적으로 크다.</p>
+      </div>
+
+      <h2>이미지 압축으로 보는 직관</h2>
+      <p>이미지 한 장을 “회색 강도 행렬”로 적으면 $M \in \mathbb{R}^{H \times W}$ 행렬이 된다. 이 행렬의 SVD를 해서 상위 $k$개 특이값만 남기면 이미지가 압축된다. 원본 저장에는 $H \cdot W$ 픽셀이 필요하지만, 저랭크 근사 $M_k$의 저장에는 “좌측 특이벡터들($H \cdot k$) + 특이값들($k$) + 우측 특이벡터들($k \cdot W$)” = $k(H + W + 1)$가 필요하다.</p>
+
+      <p>예를 들어 $H = W = 1000$, $k = 50$이면 원본은 100만 픽셀이지만 압축본은 약 10만 픽셀. 1/10로 줄었으면서도 “주요 구조”는 거의 다 보존된다. JPEG 같은 진짜 이미지 압축이 SVD를 직접 쓰지는 않지만(DCT라는 비슷한 도구), 발상은 동일하다.</p>
+
+      <div class="analogy">
+        <b>한 폭의 그림을 모자이크로 그리기</b>를 떠올려 보자. 원본 그림 그대로 옮기려면 100만 개의 작은 타일이 필요할 수 있다. 그러나 “큰 색 덩어리 50개 + 디테일 잡음”으로 분해하면, 큰 덩어리 50개만 그려도 원본의 거의 모든 인상이 살아난다. SVD의 저랭크 근사가 정확히 이 일을 한다. 큰 특이값 = 큰 색 덩어리, 작은 특이값 = 미세한 디테일 잡음.
+      </div>
+
+      <h2>추천 시스템과 잠재 요인</h2>
+      <p>저랭크 근사가 가장 인상적으로 쓰이는 자리 중 하나는 추천 시스템이다. 사용자 $N$명과 영화 $M$편의 평점 행렬 $R \in \mathbb{R}^{N \times M}$이 있다고 하자(빈칸 많음). 이 행렬의 SVD를 해 상위 $k$개 특이값만 남기면, “사용자의 잠재 취향”과 “영화의 잠재 특성”을 $k$차원으로 표현하는 분해가 나온다.</p>
+
+      <div class="math-block">$$ R \approx U_k \Sigma_k V_k^\top, \quad U_k \in \mathbb{R}^{N \times k}, V_k \in \mathbb{R}^{M \times k} $$</div>
+      <p class="math-note">사용자 임베딩 = U_k의 행, 영화 임베딩 = V_k의 행. k차원 잠재 공간.</p>
+
+      <p>이 분해의 의미는 매우 직관적이다. $U_k$의 한 행은 “한 사용자의 $k$차원 취향 벡터”이고, $V_k$의 한 행은 “한 영화의 $k$차원 장르 벡터”다. 두 벡터의 점 곱이 “이 사용자가 이 영화를 얼마나 좋아할지”의 예측값이 된다. Netflix Prize(2009)에서 이 발상이 100만 달러를 가져갔고, 현대 추천 시스템의 기초가 되었다.</p>
+
+      <div class="example">
+        <b>의미 검색(semantic search)</b>도 같은 원리다. 큰 문서 코퍼스의 “단어-문서 행렬”에 SVD를 해서 상위 $k$개 특이값만 남기면, 단어와 문서가 같은 $k$차원 “잠재 의미 공간(latent semantic space)”에 임베딩된다. 비슷한 의미의 단어는 같은 방향으로, 같은 주제의 문서도 같은 방향으로 모인다. 이것이 LSA(latent semantic analysis)이고, 현대의 임베딩 기반 검색의 직계 조상이다.
+      </div>
+
+      <h2>의사역행렬(Pseudoinverse) — “정확한 답이 없을 때”의 해</h2>
+      <p>이제 SVD의 두 번째 응용 — 의사역행렬. <strong>$A$가 정사각형이 아니거나 정확한 역행렬이 없을 때에도 “가장 그럴듯한 답”을 주는 도구</strong>다. 정의는 SVD를 통해 매우 깔끔하게 적힌다.</p>
+
+      <div class="math-block">$$ A^{+} = V \Sigma^{+} U^\top $$</div>
+      <p class="math-note">Σ⁺ = Σ의 0이 아닌 원소를 역수로, 0은 그대로 두고 전치. 가짜 역행렬.</p>
+
+      <p>핵심 트릭은 $\Sigma^{+}$다. $\Sigma$의 대각 원소 가운데 0이 아닌 것($\sigma_i > 0$)은 그 역수 $1/\sigma_i$로 바꾸고, 0인 것은 그대로 0으로 두고, 행과 열을 바꾼다(전치). 즉 “있는 정보는 되돌리고, 사라진 정보는 사라진 채로 둔다”.</p>
+
+      <p>$A$가 풀랭크 정사각 행렬이라면 $\Sigma$가 모두 0이 아니므로 $A^{+} = A^{-1}$이다. 즉 의사역행렬은 진짜 역행렬의 일반화다. 일반 경우에 의사역행렬은 $A$가 잃은 차원은 복원하지 못하지만, 잃지 않은 차원에서는 “원래 역행렬과 똑같이” 작동한다.</p>
+
+      <h2>최소 제곱 문제의 답</h2>
+      <p>의사역행렬이 가장 자연스럽게 등장하는 자리는 “최소 제곱 문제(least squares)”다. 선형 시스템 $A\mathbf{x} = \mathbf{b}$를 풀고 싶지만, 해가 존재하지 않거나(과결정, $m > n$이고 $\mathbf{b}$가 열공간 밖) 무한히 많을 수 있다(과소결정, $m < n$). 이때 “가장 그럴듯한 답”의 정의는 다음이다.</p>
+
+      <ul>
+        <li><strong>과결정의 경우</strong>: $\|A\mathbf{x} - \mathbf{b}\|_2$를 최소로 만드는 $\mathbf{x}$.</li>
+        <li><strong>과소결정의 경우</strong>: $A\mathbf{x} = \mathbf{b}$를 만족하는 $\mathbf{x}$ 가운데 $\|\mathbf{x}\|_2$가 최소인 것.</li>
+      </ul>
+
+      <p>놀랍게도 두 경우 모두 답이 같은 식으로 적힌다.</p>
+
+      <div class="math-block">$$ \mathbf{x}^{*} = A^{+} \mathbf{b} $$</div>
+      <p class="math-note">의사역행렬 한 번 곱하면 두 경우 모두 “최적해” 나옴. 매우 강력한 결과.</p>
+
+      <p>이 한 식이 선형 회귀(linear regression)의 정확한 해이기도 하다. 데이터 $X \in \mathbb{R}^{N \times d}$와 정답 $\mathbf{y} \in \mathbb{R}^N$이 있을 때, $\mathbf{y} \approx X \boldsymbol{\beta}$를 푸는 가장 좋은 계수 $\boldsymbol{\beta}^{*}$는 $\boldsymbol{\beta}^{*} = X^{+} \mathbf{y}$다.</p>
+
+      <div class="example">
+        <b>실제 회귀</b>. 키와 몸무게의 데이터 100쌍이 있다. 키 $\boldsymbol{x}$로 몸무게 $\boldsymbol{y}$를 예측하는 직선 $y = \beta_0 + \beta_1 x$를 그리고 싶다. 설계 행렬 $X \in \mathbb{R}^{100 \times 2}$(첫 열 = 모두 1, 두 번째 열 = 키)와 정답 $\mathbf{y} \in \mathbb{R}^{100}$. 답은 $\boldsymbol{\beta} = X^{+} \mathbf{y}$. 100개의 데이터 점에 정확히 통과하는 직선은 없지만, “가장 잘 통과하는 직선”을 한 식으로 얻는다. 이것이 정밀한 정의로는 “데이터 점들과 직선 사이의 수직 거리 제곱합을 최소화하는 직선”이다.
+      </div>
+
+      <h2>의사역행렬의 직관적 그림</h2>
+      <p>의사역행렬을 “SVD 분해 단계의 역방향”으로 그릴 수 있다. $A$가 입력을 “$V^\top$로 돌리고, $\Sigma$로 늘이고, $U$로 돌리는” 변환이라면, 그 역방향은 “$U^\top$로 돌리고, $\Sigma^{+}$로 거꾸로 늘이고(0인 부분 빼고), $V$로 돌리는” 것이다. 그래서 $A^{+} = V \Sigma^{+} U^\top$가 자연스럽다.</p>
+
+      <p>“0인 부분은 그대로 두는” 점이 핵심이다. 만약 그 자리도 역수를 취하려고 하면 $1/0 = \infty$가 되어 “복원할 수 없는 차원을 무리하게 복원하려는” 불안정한 답이 나온다. 의사역행렬은 그 자리를 “포기”함으로써 안정성을 유지한다.</p>
+
+      <div class="analogy">
+        <b>찢어진 사진의 복원</b>을 떠올려 보자. 원본 사진 정보가 어느 정도 남아 있다면(찢어진 곳이 일부라면) 컴퓨터로 “복원 작업”을 해 비슷한 모양을 만들 수 있다. 그러나 한 변이 완전히 사라졌다면(거기에 해당하는 $\sigma_i = 0$), 그 정보는 영원히 복원할 수 없다. 의사역행렬은 “복원 가능한 부분은 복원, 불가능한 부분은 포기”하는 자세를 수학적으로 적은 것이다.
+      </div>
+
+      <h2>정칙화와 의사역행렬</h2>
+      <p>실제 데이터에서는 $\sigma_i$가 정확히 0은 아니더라도 매우 작은 경우가 흔하다. 그 작은 $\sigma_i$의 역수($1/\sigma_i$가 매우 큼)가 답을 “수치적으로 불안정하게” 만든다. 그래서 실무에서는 다음과 같이 정칙화한다.</p>
+
+      <div class="math-block">$$ A^{+}_\tau = V \cdot \text{diag}\!\left(\frac{\sigma_i}{\sigma_i^2 + \tau}\right) \cdot U^\top $$</div>
+      <p class="math-note">τ가 작은 양의 상수. 작은 σ도 안정적으로 다룸. Tikhonov 정칙화.</p>
+
+      <p>이것이 Tikhonov 정칙화(또는 Ridge 회귀)의 정확한 정의다. $\tau$가 클수록 작은 $\sigma_i$의 영향을 줄여 답이 안정적이지만, “정확한 의사역행렬”에서 멀어진다. 이 둘 사이의 균형이 머신러닝의 정칙화 강도 선택과 같은 발상이다.</p>
+
+      <h2>전체적인 SVD 응용 요약</h2>
+      <ul>
+        <li>이미지/문서 압축 — 상위 $k$개 σ만 남기기.</li>
+        <li>추천 시스템 — 사용자-아이템 평점 행렬의 저랭크 분해.</li>
+        <li>선형 회귀의 안정적 해 — 의사역행렬.</li>
+        <li>주성분 분석(PCA) — $X^\top X$의 고유분해는 $X$의 SVD와 동치.</li>
+        <li>잠재 의미 분석(LSA) — 단어-문서 행렬의 SVD.</li>
+        <li>LoRA 등 효율적 fine-tuning — 가중치 변화량을 저랭크로 표현.</li>
+        <li>그래프 신호 처리 — 라플라시안의 고유분해(SVD의 특수 경우)가 그래프 푸리에 변환.</li>
+      </ul>
+
+      <p>이 모든 응용이 단 한 가지 공식 $A = U \Sigma V^\top$ 위에 세워진다. 이래서 SVD를 “선형대수의 보석”이라고 부른다.</p>
+
+      <h2>이번 sub의 한 줄 요약</h2>
+      <p>“SVD 한 번에 압축과 가짜 역행렬 모두 풀린다.” 이로써 분해의 모든 도구를 손에 쥐었다. <a href="12.html">다음 sub</a>에서는 행렬에 미적분(calculus)을 얹어 — 자코비안(Jacobian), 헤시안(Hessian) — 신경망의 역전파(backpropagation)로 가는 다리를 짓는다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script src="./assets/widgets.js"></script>
+<script>
+  window.addEventListener('load', () => {
+    NST.buildNav('11');
+    NST.onVisible(document.getElementById('svd'), () => NST.svdLowRank(document.getElementById('svd')));
+  });
+</script>
+</body>
+</html>

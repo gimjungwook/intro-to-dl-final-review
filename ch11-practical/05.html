@@ -3,28 +3,24 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>11.05 · 하이퍼파라미터 탐색</title>
+<title>11.05 · 데이터 모으기 vs 모델 키우기 — 학습 곡선 읽기</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
-  /* 탐색 비교 위젯 */
-  .hp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .8rem; padding: 1.4rem 1.2rem 1rem; }
-  @media (max-width: 720px) { .hp-grid { grid-template-columns: 1fr; } }
-  .hp-card { background: #fff; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }
-  .hp-head { padding: .7rem .9rem; border-bottom: 1px solid var(--line-soft); background: var(--paper); }
-  .hp-head h4 { margin: 0; font-family: var(--mono); font-size: .82rem; letter-spacing: .04em; color: var(--ink); display: flex; justify-content: space-between; }
-  .hp-head h4 span:last-child { color: var(--style); font-weight: 600; }
-  .hp-canvas { display: block; width: 100%; height: 220px; }
-  .hp-stats { padding: .6rem .9rem; background: var(--paper-2); font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); display: flex; justify-content: space-between; }
-  .hp-stats b { color: var(--ink); }
-  .hp-ctrl { padding: .8rem 1.2rem; border-top: 1px solid var(--line-soft); background: var(--paper); display: flex; gap: .8rem; justify-content: center; align-items: center; flex-wrap: wrap; }
-  .hp-budget { font-family: var(--mono); font-size: .78rem; color: var(--ink-soft); }
-
-  /* U자 곡선 */
-  .ushape { padding: 1rem 1.2rem; display: flex; justify-content: center; }
-  .ushape canvas { background: #fff; border: 1px solid var(--line); border-radius: 9px; max-width: 100%; }
+  .lc-stage { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1.4rem 1.2rem 1rem; }
+  @media (max-width: 760px) { .lc-stage { grid-template-columns: 1fr; } }
+  .lc-canvas-wrap { background: #fff; border: 1px solid var(--line); border-radius: 9px; padding: .8rem; }
+  .lc-canvas-wrap canvas { display: block; width: 100%; height: 280px; }
+  .lc-diag { padding: .1rem .3rem; }
+  .lc-diag h5 { margin: 0 0 .5rem; font-family: var(--serif); font-size: 1.05rem; color: var(--style); }
+  .lc-diag p { margin: .4rem 0; font-size: .9rem; color: var(--ink-soft); line-height: 1.6; }
+  .lc-diag .verdict { padding: .6rem .8rem; background: var(--paper-2); border-left: 3px solid var(--structure); border-radius: 0 7px 7px 0; font-size: .88rem; color: var(--ink); margin-top: .65rem; }
+  .lc-diag .verdict b { color: var(--style); }
+  .scen-btns { display: flex; gap: .5rem; flex-wrap: wrap; padding: .9rem 1.1rem; border-top: 1px solid var(--line-soft); background: var(--paper); }
+  .scen-btns .btn { flex: 1; min-width: 130px; }
+  .scen-btns .btn.active { background: var(--style); border-color: var(--style); color: #fff; }
 </style>
 </head>
 <body>
@@ -36,104 +32,68 @@
   <main class="ch-main">
 
     <header class="ch-head">
-      <span class="kicker">Sub-chapter 05 · 어디를 보고 무엇을 돌릴 것인가</span>
-      <h1>같은 예산이라면,<br><span class="t-style">grid</span>가 진다</h1>
-      <p class="lede">학습률, 정칙화 강도, 배치 크기, 층 수 — 하이퍼파라미터는 끝이 없다. 11장은 단호하다 — 학습률이 1순위이고, 같은 예산이라면 grid가 random에 진다.</p>
+      <span class="kicker">Sub-chapter 05 · 두 줄을 읽으면 답이 나온다</span>
+      <h1>학습 오차와 검증 오차,<br><span class="t-style">두 줄</span>의 차이가 처방을 정한다</h1>
+      <p class="lede">베이스라인이 동작한 다음 가장 중요한 진단 — 데이터를 더 모을 것인가, 모델을 키울 것인가. 책 11.3절은 이 결정을 두 줄짜리 학습 곡선으로 환원한다.</p>
     </header>
 
     <div class="prose">
-      <p>모델과 데이터 결정이 끝나면 이제 <strong>하이퍼파라미터(hyperparameter) 탐색</strong>이 남는다. 학습률, dropout 비율, weight decay 계수, 배치 크기, 학습률 스케줄, 옵티마이저 모멘텀 — 다 합치면 10개를 쉽게 넘는다. 모든 조합을 다 시도할 수는 없다.</p>
+      <p>베이스라인 모델이 동작하고 첫 번째 점수가 나왔다고 하자. 점수가 만족스럽지 않다 — 다음에 무엇을 해야 하는가. 데이터를 더 모을 것인가, 모델을 키울 것인가, 정칙화를 약하게 풀 것인가, 새 아키텍처를 시도할 것인가. 책 11.3절은 이 분기에 대해 분명한 결정 규칙을 준다 — <strong>학습 오차와 검증 오차 두 줄을 비교하면 답이 나온다.</strong></p>
 
-      <h2>왜 학습률이 단연 1순위인가</h2>
-      <p>책은 단 한 가지 하이퍼파라미터를 1순위로 강조한다 — <strong>학습률(learning rate)</strong>이다. 왜인가. 다른 어떤 하이퍼파라미터도 양쪽 끝에서 모두 모델을 죽이지는 않는다. 학습률만이 그렇다.</p>
+      <p>왜 이 두 줄로 충분한가. 모델의 성능 한계는 두 종류로 나뉘기 때문이다 — 모델이 훈련 데이터의 패턴조차 못 잡는 <strong>과소적합(underfitting)</strong>, 또는 훈련 데이터에 너무 맞아 새 데이터에 못 맞추는 <strong>과대적합(overfitting)</strong>. 둘은 처방이 정반대라서 진단을 잘못하면 처방도 잘못된다. 학습 오차가 낮으면 적어도 첫 번째 문제는 없다 — 모델이 훈련 데이터의 패턴은 잡았다. 두 오차의 차이가 작으면 두 번째 문제도 없다 — 모델이 일반화했다.</p>
 
-      <div class="analogy">
-        <b>샤워 온도 비유.</b> 너무 차가우면 못 씻는다. 너무 뜨거우면 데인다. 적당한 한 구간에서만 동작한다. 게다가 적정 온도는 사람마다 다르다 — 모델마다 다르다. <em>학습률이 잘못 잡히면 다른 어떤 하이퍼파라미터를 어떻게 튜닝해도 소용없다.</em>
-      </div>
+      <h2>네 가지 시나리오</h2>
+      <p>두 오차의 조합은 네 가지 경우로 분류된다.</p>
 
-      <p>책의 효과적 용량(effective capacity)이 학습률에 대해 <strong>U자 곡선</strong>을 그린다는 표현이 정확히 이 점을 짚는다.</p>
-    </div>
+      <ol>
+        <li><strong>훈련↑·검증↑ — 과소적합(underfitting)</strong>: 두 오차 모두 높음. 모델이 훈련 데이터의 패턴조차 못 잡는다. 데이터를 더 모아도 모델이 못 쓴다. <em>모델을 키우거나 학습률을 다시 잡거나 학습을 더 오래 시킨다.</em></li>
+        <li><strong>훈련↓·검증↑ — 과대적합(overfitting)</strong>: 훈련은 낮은데 검증은 높음. 모델이 훈련 데이터의 노이즈까지 외웠다. <em>정칙화를 강화하거나 데이터를 더 모은다.</em></li>
+        <li><strong>훈련↓·검증↓ — 적절(good fit)</strong>: 두 오차 모두 낮음. 모델이 일반화에 성공. <em>베이스라인 완성. 더 짜내려면 베이즈 오차와 비교.</em></li>
+        <li><strong>훈련↑·검증↓ — 의심(suspicious)</strong>: 거의 안 일어나는 조합. 검증 세트가 너무 쉽거나, 데이터 누수(data leakage)가 의심된다. <em>분할 자체를 다시 확인.</em></li>
+      </ol>
 
-    <div class="ushape">
-      <canvas id="ush" width="540" height="220"></canvas>
-    </div>
-
-    <div class="prose">
-      <p>그래프를 풀어 보면 이렇다. <span class="t-style">학습률이 너무 작으면</span> 가중치가 거의 안 움직여서 모델이 학습 자체를 못 한다 — 사실상 용량을 못 쓰는 셈이다. <span class="t-structure">학습률이 너무 크면</span> 손실 표면을 건너뛰어 발산하거나 진동한다 — 마찬가지로 용량을 못 쓴다. 가운데의 좁은 구간에서만 모델의 "진짜 용량"이 발휘된다.</p>
-
-      <p>그래서 책의 실용 권고는 단순하다. <strong>탐색 예산이 한정되어 있으면 먼저 학습률부터 잡아라.</strong> 다른 하이퍼파라미터를 고정한 채 학습률만 로그스케일($10^{-5}, 10^{-4}, ..., 10^{-1}$)로 5-7번 돌려 본다. 가장 좋은 학습률을 잡은 다음 다른 하이퍼파라미터로 넘어간다.</p>
-
-      <h2>탐색 전략 — grid · random · bayesian</h2>
-      <p>학습률이 잡힌 후, 여러 하이퍼파라미터를 동시에 튜닝해야 한다. 11장은 세 가지 전략을 비교한다.</p>
-
-      <ul>
-        <li><strong>Grid search</strong>: 각 하이퍼파라미터의 값을 등간격으로 미리 정해 모든 조합을 시도. 3개 파라미터 × 각 5개 값이면 125번. <em>비용이 차원에 대해 지수적으로 증가</em>한다.</li>
-        <li><strong>Random search</strong>: 각 하이퍼파라미터를 (로그스케일) 분포에서 독립적으로 무작위 추출. 같은 예산에서 grid보다 보통 빠르게 좋은 값을 찾는다.</li>
-        <li><strong>Bayesian optimization</strong>: 지금까지 본 결과로부터 “다음에 어디를 시도하면 좋을 확률이 높은가”를 모델링(Gaussian Process)해서 다음 점을 결정. Spearmint, TPE, SMAC 같은 라이브러리.</li>
-      </ul>
+      <p>아래 위젯에서 네 시나리오를 차례로 눌러 보면 곡선 모양과 그에 맞는 처방이 같이 펼쳐진다.</p>
     </div>
 
     <div class="widget">
       <div class="widget-frame">
-        <div class="widget-label"><span class="lab-no">위젯 05</span><span>같은 예산 25회 시도 · 세 전략의 최고 결과 비교</span></div>
-        <div class="hp-grid">
-          <div class="hp-card">
-            <div class="hp-head"><h4><span>Grid Search</span><span id="g-best">—</span></h4></div>
-            <canvas class="hp-canvas" id="g-canvas"></canvas>
-            <div class="hp-stats"><span>시도 5×5 격자</span><span>유효 차원 <b>1</b></span></div>
-          </div>
-          <div class="hp-card">
-            <div class="hp-head"><h4><span>Random Search</span><span id="r-best">—</span></h4></div>
-            <canvas class="hp-canvas" id="r-canvas"></canvas>
-            <div class="hp-stats"><span>균등 분포 25점</span><span>유효 차원 <b>25</b></span></div>
-          </div>
-          <div class="hp-card">
-            <div class="hp-head"><h4><span>Bayesian</span><span id="b-best">—</span></h4></div>
-            <canvas class="hp-canvas" id="b-canvas"></canvas>
-            <div class="hp-stats"><span>이전 결과 활용</span><span>적응적 <b>탐색</b></span></div>
-          </div>
+        <div class="widget-label"><span class="lab-no">위젯 05</span><span>학습 곡선 4시나리오 · 같은 모델, 다른 두 오차의 모양</span></div>
+        <div class="lc-stage">
+          <div class="lc-canvas-wrap"><canvas id="lcCanvas" width="540" height="280"></canvas></div>
+          <div class="lc-diag" id="lcDiag"></div>
         </div>
-        <div class="hp-ctrl">
-          <button class="btn" id="run">새로 25회 시도</button>
-          <span class="hp-budget">예산 = 25회 학습 · 진짜 좋은 영역은 학습률 차원에 집중</span>
-        </div>
+        <div class="scen-btns" id="scenBtns"></div>
       </div>
-      <p class="widget-cap">2차원 하이퍼파라미터 공간(x: 학습률, y: dropout). 진짜 “좋은 영역”은 좁은 학습률 띠에 몰려 있고, dropout은 거의 영향이 없다. <b>Grid는 dropout 차원에 쓸데없이 5번을 분산</b>하느라 학습률 해상도가 5점밖에 안 된다. <b>Random은 25점 모두 다른 학습률 값</b>이라 좁은 띠를 더 잘 찾는다. <b>Bayesian은 첫 몇 점 후 좋은 영역으로 집중</b>한다. "새로 시도"를 여러 번 눌러 보면서 평균적으로 어느 전략이 더 자주 이기는지 확인하라.</p>
+      <p class="widget-cap">파랑은 훈련 오차, 주홍은 검증 오차. 가로축은 에폭(epoch), 즉 학습이 진행됨에 따라 시간. 두 곡선의 <b>최종 위치</b>와 <b>둘 사이 간격</b>이 진단의 핵심.</p>
     </div>
 
     <div class="prose">
-      <h2>Random이 Grid를 이기는 이유 — Bergstra &amp; Bengio (2012)</h2>
-      <p>이 결과는 직관에 반한다. "체계적으로 다 살펴보는" 격자가 왜 무작위에 지는가. 책이 인용하는 Bergstra와 Bengio의 분석은 다음과 같다.</p>
+      <h2>왜 데이터를 더 모을지가 별도 결정인가</h2>
+      <p>책이 이 sub를 강조하는 이유는, "데이터 수집"이 비싸기 때문이다. 의료 데이터는 한 건당 수십만 원, 라벨링이 필요한 이미지는 한 장당 수백 원, 음성 전사는 한 시간당 수만 원이 들 수 있다. 데이터를 더 모으는 게 도움이 안 되는 상황(과소적합)에서 무작정 모으면 막대한 비용이 효과 없이 나간다. 반대로 데이터를 더 모으면 풀릴 문제(과대적합 + 베이즈 오차 멀음)인데 모델만 키우면 잘못된 처방이다.</p>
 
-      <div class="analogy">
-        <b>10명 중에 키 큰 사람을 찾는다고 하자.</b> 그런데 키는 사실 한 변수(나이)에 거의 다 결정되고 다른 변수(머리카락 길이)는 영향이 없다. Grid는 5×5로 격자를 만들어 시도한다 — 같은 나이의 사람 5명을 머리카락 길이만 다르게 5번 본다. <em>나이 차원에서 본 사람은 5명뿐이다</em>. Random은 25명을 무작위로 골라 본다 — 25개의 서로 다른 나이를 본다. 어느 쪽이 키 큰 사람을 찾을 확률이 높은가.
-      </div>
+      <p>그래서 책은 진단을 먼저 하고 처방을 정하라고 단호하게 적는다. 과소적합 진단이 나오면 <strong>"데이터를 더 모아도 무의미하다. 모델 용량을 늘려라"</strong>가 권고다. 과대적합 진단이 나오면 두 처방이 모두 가능하다 — <strong>"정칙화를 강화하거나 데이터를 더 모아라."</strong> 둘 중 어느 쪽이 더 비용 효과적인지가 다음 결정이다.</p>
 
-      <p>딥러닝 하이퍼파라미터에서 이게 정확히 일어난다. 보통 1-2개의 하이퍼파라미터(거의 항상 학습률 포함)가 성능의 대부분을 결정하고, 나머지는 거의 영향이 없다. <strong>Grid는 영향 없는 차원에 시도 예산을 낭비</strong>하지만, Random은 모든 시도가 영향 있는 차원에서 서로 다른 값을 본다. 그래서 같은 예산에서 더 좋은 점을 찾을 확률이 높다.</p>
+      <h2>로그스케일 외삽 — "얼마나 더 모아야 충분한가"</h2>
+      <p>과대적합 진단이 나오고 데이터 수집 쪽을 택했다면, 다음 질문은 "얼마나 더 모아야 하는가"다. 책이 권하는 방법은 단순한 외삽이다. 현재 데이터셋의 일부(예: 10%, 30%, 50%, 100%)만 가지고 학습한 다음, 그 각각의 검증 오차를 데이터 크기에 대해 로그스케일로 찍어 본다.</p>
 
-      <p>수학적으로는 다음 사실로 정리된다. n개의 하이퍼파라미터 중 k개만 진짜 중요하다면, random search는 효과적으로 <strong>k-차원 공간에서</strong> n번 표본을 뽑는 셈이다. Grid는 여전히 n-차원 격자라 k 차원에서는 $n^{k/n}$번밖에 표본을 못 뽑는다.</p>
+      <div class="math-block">$$ \mathrm{validation\ error} \approx a - b \cdot \log(N) $$</div>
+      <p class="math-note">$N$은 훈련 데이터 크기. $a$와 $b$는 데이터에서 추정되는 상수. 로그스케일에서 거의 직선이 되는 경우가 많다.</p>
 
-      <h2>Bayesian — 정보를 누적하는 탐색</h2>
-      <p>Bayesian optimization은 한 발 더 나간다. <em>이전 시도의 결과를 기억해서</em> 다음 점을 결정한다. 작동 원리는 다음과 같다.</p>
+      <p>이 직선이 그려지면 "검증 오차를 X%까지 낮추려면 데이터가 몇 개 필요한가"가 외삽으로 추정된다. 예를 들어 현재 1만 개로 오차 12%인데 외삽 결과 1%당 데이터 두 배가 필요하다면, 5%까지 낮추려면 32만 개가 필요하다. 그게 비용상 불가능하다면 데이터 모으는 대신 다른 처방(모델 변경, 정칙화 조정)을 택해야 한다. 외삽은 의사결정을 바꾸는 도구다.</p>
 
-      <div class="math-block">$$ p(f|D_n) \quad\Longrightarrow\quad x_{n+1} = \arg\max_x \, \text{acquisition}(p(f|D_n), x) $$</div>
-      <p class="math-note">지금까지 본 n개의 (하이퍼파라미터, 검증 손실) 쌍 $D_n$으로부터 손실 함수 f의 사후분포를 모델링(보통 Gaussian Process). 그 사후분포에서 “기댓값이 좋거나 불확실성이 크거나”인 점을 다음에 시도.</p>
+      <h2>실전에서 자주 보는 함정</h2>
+      <p>이론은 명확하지만 실전에서는 두 가지 함정이 자주 보인다.</p>
 
-      <p>이 acquisition 함수의 형태에 따라 EI(Expected Improvement), UCB(Upper Confidence Bound), PI(Probability of Improvement) 등 변종이 있다. 핵심은 <em>탐색(exploration, 모르는 영역)과 활용(exploitation, 좋은 영역) 사이의 균형</em>을 자동으로 잡아 준다는 점이다.</p>
+      <p><strong>함정 1 — 학습 곡선을 충분히 길게 안 본다.</strong> 첫 5-10 epoch만 보고 "안 된다"고 결정하는 경우가 많은데, 학습률 스케줄에 따라 진짜 학습은 한참 뒤에 시작될 수 있다. 적어도 50-100 epoch을 돌려 봐야 학습 곡선의 진짜 모양이 나온다. Early stopping은 마지막 N epoch 동안 개선이 없을 때 멈추는 방식인데, 그 N(patience)을 너무 작게 잡으면 학습이 자라기 전에 끊긴다.</p>
 
-      <p>Bayesian이 random을 이기는 영역은 <strong>학습 한 번의 비용이 비쌀 때</strong>다. 큰 모델을 하루씩 학습해야 한다면 25번 무작위 추출보다 10번 베이지안 + 정보 누적이 더 효율적이다. 반대로 학습이 1분이면 random으로 1000번 돌리는 게 더 단순하고 종종 비슷한 결과를 낸다.</p>
+      <p><strong>함정 2 — 검증 세트가 진짜 일반화를 평가하지 않는다.</strong> 시간 순서가 있는 데이터(시계열, 사용자 행동)에서 무작위 분할을 하면 "미래 데이터로 과거를 학습"하는 leakage가 생긴다. 또는 같은 사용자의 데이터가 훈련과 검증 양쪽에 들어가면 모델이 그 사용자의 패턴을 외운다. 이런 leakage가 있으면 검증 오차가 거짓말 같이 낮게 나오고, 실제 배포에서는 망한다. 시간 분할, 사용자 분할, group K-fold 같은 적절한 분할 전략이 필수.</p>
 
-      <h2>실전 권장 순서</h2>
-      <p>책과 실무를 종합하면 11장의 하이퍼파라미터 권장 순서는 다음과 같다.</p>
+      <h2>한 번에 한 가지 — 메타 원칙의 재확인</h2>
+      <p>학습 곡선을 보고 처방을 정했다면, 그 처방 한 가지만 적용해 본다. "데이터를 더 모은다"고 결정했으면 모델은 그대로 두고 데이터만 늘려 다시 학습. 처방의 효과가 검증된 다음에 다음 변경을 시도한다.</p>
 
-      <ol>
-        <li><strong>학습률만 먼저</strong> — 다른 모든 것을 디폴트로 고정한 채 학습률만 로그스케일 5-7회 (manual).</li>
-        <li><strong>3개 이하면 grid</strong> — 정칙화 강도(weight decay, dropout) 같은 2-3개 핵심 파라미터를 grid로 격자 탐색.</li>
-        <li><strong>4개 이상이면 random</strong> — 각 파라미터를 적절한 분포에서 25-100회 무작위 추출.</li>
-        <li><strong>학습 한 번이 비싸면 bayesian</strong> — 모델 학습이 시간 단위로 걸리면 베이지안 라이브러리.</li>
-      </ol>
+      <p>이게 11장의 메타 원칙 — "한 번에 한 가지 가설, 한 번에 한 가지 수정" — 의 구체적 적용이다. 학습 곡선을 보고 "데이터도 늘리고 모델도 키우고 학습률도 바꾸자"고 동시에 했다면, 결과가 좋아져도 무엇이 좋아지게 한 건지 모른다. 다음 사이클에서 어느 것을 유지해야 할지 결정할 수 없다.</p>
 
-      <p>지표·베이스라인·진단·튜닝까지 끝나면 마지막 단계가 남는다 — <strong>그래도 안 될 때 무엇이 진짜 망가졌는지 찾는 디버깅</strong>이다. <a href="06.html">다음 장</a>이 그 도구상자다.</p>
+      <p>학습 곡선 진단이 끝나고 모델 자체의 변경이 필요하다고 결론났다면, 그 변경의 가장 작은 단위 — 하이퍼파라미터 탐색 — 으로 넘어간다. 06-07 sub의 주제다.</p>
     </div>
 
     <nav class="ch-foot"></nav>
@@ -142,18 +102,23 @@
 
 <script>
   const SUB = [
-    { no:'01', t:'방법론의 필요성' },
+    { no:'01', t:'절차가 알고리즘보다 중요한 이유' },
     { no:'02', t:'성능 지표 선택' },
-    { no:'03', t:'베이스라인부터' },
-    { no:'04', t:'데이터 vs 모델 키우기' },
-    { no:'05', t:'하이퍼파라미터 탐색' },
-    { no:'06', t:'디버깅과 시험 대비' },
+    { no:'03', t:'정밀도·재현율·F1·AUC' },
+    { no:'04', t:'기본 베이스라인' },
+    { no:'05', t:'데이터 vs 모델 키우기' },
+    { no:'06', t:'하이퍼파라미터 1 — grid vs random' },
+    { no:'07', t:'하이퍼파라미터 2 — 베이지안' },
+    { no:'08', t:'디버깅 결정 트리' },
+    { no:'09', t:'실패 모드 분류' },
+    { no:'10', t:'실전 워크플로우' },
+    { no:'11', t:'시험 대비' },
   ];
   const CUR = '05';
 
   document.querySelector('.topbar').innerHTML =
     `<a class="home" href="index.html">← Ch.11 실용적 방법론</a>` +
-    `<span class="ch-mini">SUB ${CUR} / 06</span>`;
+    `<span class="ch-mini">SUB ${CUR} / ${SUB.length}</span>`;
   document.querySelector('.ch-nav ol').innerHTML = SUB.map(c =>
     `<li><a href="${c.no}.html" ${c.no === CUR ? 'class="current"' : ''}>${c.t}</a></li>`).join('');
   const i = SUB.findIndex(c => c.no === CUR);
@@ -170,178 +135,146 @@
     bar.style.width = (max > 0 ? (h.scrollTop/max)*100 : 0) + '%';
   }, { passive: true });
 
-  const css = getComputedStyle(document.documentElement);
-  const C = {
-    structure: css.getPropertyValue('--structure').trim(),
-    style: css.getPropertyValue('--style').trim(),
-    synth: css.getPropertyValue('--synth').trim(),
-    ink: css.getPropertyValue('--ink-soft').trim(),
-    faint: css.getPropertyValue('--ink-faint').trim(),
-    paper2: css.getPropertyValue('--paper-2').trim(),
-    line: 'rgba(38,34,28,0.13)',
+  // 학습 곡선 4 시나리오
+  const EPOCHS = 100;
+  function buildCurve(scenName) {
+    const tr = [], va = [];
+    for (let e = 0; e < EPOCHS; e++) {
+      const t = e / (EPOCHS - 1);
+      let trE = 0, vaE = 0;
+      switch (scenName) {
+        case 'underfit':
+          // 두 줄 모두 높은 자리에서 정체
+          trE = 0.55 - 0.10 * (1 - Math.exp(-3*t));
+          vaE = 0.58 - 0.10 * (1 - Math.exp(-3*t));
+          break;
+        case 'overfit':
+          // 훈련 오차는 0 근처로 내려가지만 검증 오차는 어느 시점부터 다시 상승
+          trE = 0.55 * Math.exp(-3.5*t) + 0.02;
+          vaE = 0.55 * Math.exp(-3.5*t) + 0.10 + 0.08 * Math.max(0, t - 0.5);
+          break;
+        case 'good':
+          // 두 줄 모두 낮은 자리로 수렴, 간격 작음
+          trE = 0.55 * Math.exp(-2.8*t) + 0.04;
+          vaE = 0.55 * Math.exp(-2.6*t) + 0.07;
+          break;
+        case 'suspicious':
+          // 검증 < 훈련 (이상함). 데이터 누수 의심
+          trE = 0.55 * Math.exp(-2.5*t) + 0.18;
+          vaE = 0.55 * Math.exp(-2.5*t) + 0.08;
+          break;
+      }
+      tr.push(Math.max(0.01, trE + (Math.random() - 0.5) * 0.02));
+      va.push(Math.max(0.01, vaE + (Math.random() - 0.5) * 0.02));
+    }
+    return { tr, va };
+  }
+
+  const DIAG = {
+    underfit: {
+      title: '과소적합 — 두 줄 모두 높은 자리',
+      body: '훈련 오차도 별로 안 내려갔고 검증 오차도 높다. 모델이 훈련 데이터의 패턴조차 못 잡는다는 의미.',
+      verdict: '<b>처방</b>: 모델 용량 증가(더 깊은 층, 더 넓은 유닛), 학습률 재탐색, 학습 더 오래. <b>데이터 추가는 무의미</b> — 모델이 못 쓰는 데이터를 더 줘 봤자다.'
+    },
+    overfit: {
+      title: '과대적합 — 일반화 격차가 점점 벌어짐',
+      body: '훈련은 0에 가깝게 내려갔는데 검증은 중간쯤에서 다시 올라가기 시작. 모델이 훈련 데이터의 노이즈까지 외웠다.',
+      verdict: '<b>처방</b>: 정칙화 강화(Dropout↑, weight decay↑), 데이터 증강, 데이터 추가, Early stopping(검증 최저점에서 멈추기). 한 번에 한 가지만.'
+    },
+    good: {
+      title: '적절 — 두 줄 모두 낮은 자리에 수렴',
+      body: '두 오차 모두 낮고 둘 사이 간격도 작음. 모델이 훈련 패턴을 잡고 일반화에도 성공했다.',
+      verdict: '<b>베이스라인 완성</b>. 더 짜내려면 베이즈 오차(인간 전문가 라벨 분산)와 비교. 그 격차가 작으면 사실상 한계. 격차가 크면 새 데이터·새 모델·다른 지표 정의를 시도.'
+    },
+    suspicious: {
+      title: '의심 — 검증이 훈련보다 낮음',
+      body: '거의 안 일어나는 조합. 검증 오차가 훈련보다 낮다.',
+      verdict: '<b>처방</b>: 분할 자체를 의심. 데이터 누수(같은 사용자가 양쪽에 들어감, 시간 순서 무시), 검증 세트가 너무 쉬움(어려운 예가 모두 훈련에 있음), Dropout이 평가 모드에서도 켜져 있음 등. 모델 수정 전에 데이터 분할부터 다시.'
+    },
   };
 
-  // ---------- U자 곡선 (효과적 용량) ----------
-  function drawU() {
-    const cv = document.getElementById('ush');
-    const ctx = cv.getContext('2d');
-    const W = cv.width, H = cv.height;
-    ctx.clearRect(0,0,W,H);
-    const pad = { l: 60, r: 30, t: 20, b: 38 };
-    const w = W - pad.l - pad.r, h = H - pad.t - pad.b;
-    // 그리드
-    ctx.strokeStyle = C.paper2; ctx.lineWidth = 1;
-    for (let i = 0; i <= 4; i++) {
-      const y = pad.t + (h/4)*i;
-      ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l+w, y); ctx.stroke();
+  const canvas = document.getElementById('lcCanvas');
+  const ctx = canvas.getContext('2d');
+  function resizeCanvas() {
+    const w = canvas.parentElement.clientWidth - 16;
+    canvas.width = w * (window.devicePixelRatio || 1);
+    canvas.height = 280 * (window.devicePixelRatio || 1);
+    canvas.style.width = w + 'px';
+    canvas.style.height = '280px';
+    ctx.setTransform(window.devicePixelRatio || 1, 0, 0, window.devicePixelRatio || 1, 0, 0);
+  }
+  resizeCanvas();
+  window.addEventListener('resize', () => { resizeCanvas(); if (currScenName) drawScen(currScenName); });
+
+  const PAD_L = 38, PAD_R = 12, PAD_T = 24, PAD_B = 32;
+  let currScenName = null;
+
+  function drawScen(name) {
+    currScenName = name;
+    const { tr, va } = buildCurve(name);
+    const W = canvas.width / (window.devicePixelRatio || 1), H = canvas.height / (window.devicePixelRatio || 1);
+    ctx.clearRect(0, 0, W, H);
+    const pw = W - PAD_L - PAD_R, ph = H - PAD_T - PAD_B;
+    ctx.strokeStyle = '#e7e3d8'; ctx.lineWidth = 1;
+    for (let y = 0; y <= 4; y++) {
+      const yy = PAD_T + (y/4) * ph;
+      ctx.beginPath(); ctx.moveTo(PAD_L, yy); ctx.lineTo(W - PAD_R, yy); ctx.stroke();
     }
-    // 축 라벨
-    ctx.fillStyle = C.faint; ctx.font = '11px Spline Sans Mono, monospace'; ctx.textAlign = 'center';
-    ctx.fillText('학습률 (log scale)', pad.l + w/2, H - 8);
-    ctx.save(); ctx.translate(16, pad.t + h/2); ctx.rotate(-Math.PI/2);
-    ctx.fillText('효과적 용량', 0, 0); ctx.restore();
-    ctx.textAlign = 'right';
-    ['10⁻⁵','10⁻⁴','10⁻³','10⁻²','10⁻¹'].forEach((lab, i) => {
-      ctx.textAlign = 'center';
-      ctx.fillText(lab, pad.l + (w/4)*i, H - 22);
+    ctx.fillStyle = '#9b948a'; ctx.font = '10px monospace';
+    ['0.6', '0.45', '0.3', '0.15', '0.0'].forEach((s, idx) => {
+      ctx.fillText(s, 4, PAD_T + (idx/4) * ph + 4);
     });
-    // U자 곡선 (실제로는 inverted U)
-    ctx.strokeStyle = C.structure; ctx.lineWidth = 2.8;
-    ctx.beginPath();
-    for (let i = 0; i <= 200; i++) {
-      const t = i / 200;
-      // optimal at t=0.5
-      const cap = Math.exp(-Math.pow((t - 0.5) * 3.5, 2));
-      const x = pad.l + t * w;
-      const y = pad.t + (1 - cap) * h * 0.92 + 8;
-      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-    }
-    ctx.stroke();
-    // 최적 점
-    const optX = pad.l + 0.5 * w;
-    const optY = pad.t + 8;
-    ctx.fillStyle = C.style;
-    ctx.beginPath(); ctx.arc(optX, optY, 5, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = C.style; ctx.font = 'italic 12px Fraunces, serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('최적', optX, optY - 12);
-    // 양쪽 영역 라벨
-    ctx.fillStyle = C.faint; ctx.font = '11px Spline Sans Mono';
-    ctx.fillText('학습 불가', pad.l + w*0.12, pad.t + h - 12);
-    ctx.fillText('발산·진동', pad.l + w*0.88, pad.t + h - 12);
-  }
-  drawU();
-
-  // ---------- 탐색 비교 위젯 ----------
-  // 진짜 "good" 영역: x ∈ [0.4, 0.55] (학습률 좁은 띠), y는 거의 무관
-  // 점수 = exp(-((x-0.475)/0.06)^2) + 0.05 * exp(-((y-0.5)/0.3)^2) + noise
-  function score(x, y) {
-    const a = Math.exp(-Math.pow((x - 0.475)/0.06, 2));
-    const b = 0.05 * Math.exp(-Math.pow((y - 0.5)/0.3, 2));
-    return a + b + (Math.random() - 0.5) * 0.03;
-  }
-
-  function drawHeat(ctx, W, H, pad) {
-    // 진짜 점수 함수 배경(heatmap)
-    const cellW = 6;
-    for (let i = 0; i < (W - pad.l - pad.r); i += cellW) {
-      for (let j = 0; j < (H - pad.t - pad.b); j += cellW) {
-        const x = i / (W - pad.l - pad.r);
-        const y = j / (H - pad.t - pad.b);
-        const s = Math.exp(-Math.pow((x - 0.475)/0.06, 2)) + 0.05 * Math.exp(-Math.pow((y - 0.5)/0.3, 2));
-        const alpha = Math.min(0.5, s * 0.5);
-        ctx.fillStyle = `rgba(45, 91, 122, ${alpha})`;
-        ctx.fillRect(pad.l + i, pad.t + j, cellW, cellW);
-      }
-    }
-  }
-
-  function plotSearch(canvasId, points, bestId, color) {
-    const cv = document.getElementById(canvasId);
-    const ctx = cv.getContext('2d');
-    const dpr = window.devicePixelRatio || 1;
-    const w = cv.clientWidth, h = 220;
-    cv.width = w * dpr; cv.height = h * dpr;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, w, h);
-    const pad = { l: 8, r: 8, t: 8, b: 8 };
-    drawHeat(ctx, w, h, pad);
-    // 축
-    ctx.strokeStyle = C.line; ctx.lineWidth = 1;
-    ctx.strokeRect(pad.l, pad.t, w - pad.l - pad.r, h - pad.t - pad.b);
-    // 점
-    let best = -Infinity, bestPt = null;
-    points.forEach(p => {
-      const s = score(p.x, p.y);
-      if (s > best) { best = s; bestPt = p; }
+    ['0', '25', '50', '75', '100'].forEach((s, idx) => {
+      const xx = PAD_L + (idx/4) * pw;
+      ctx.fillText(s, xx - 6, H - 12);
     });
-    points.forEach((p, idx) => {
-      const px = pad.l + p.x * (w - pad.l - pad.r);
-      const py = pad.t + p.y * (h - pad.t - pad.b);
-      const s = score(p.x, p.y);
-      const sz = 2 + s * 3.5;
-      ctx.fillStyle = color;
-      ctx.globalAlpha = 0.55;
-      ctx.beginPath(); ctx.arc(px, py, sz, 0, Math.PI*2); ctx.fill();
-      ctx.globalAlpha = 1;
+    ctx.fillStyle = '#6f6960';
+    ctx.fillText('epoch', W / 2 - 16, H - 1);
+    ctx.fillText('오차', 4, PAD_T - 6);
+
+    function plot(arr, color) {
+      ctx.strokeStyle = color; ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      arr.forEach((v, idx) => {
+        const x = PAD_L + (idx / (EPOCHS - 1)) * pw;
+        const y = PAD_T + (1 - v / 0.6) * ph;
+        if (idx === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+    }
+    plot(tr, '#2D5B7A');
+    plot(va, '#C0492E');
+
+    ctx.font = '11px monospace';
+    ctx.fillStyle = '#2D5B7A'; ctx.fillText('● 훈련 오차', PAD_L + 8, PAD_T + 12);
+    ctx.fillStyle = '#C0492E'; ctx.fillText('● 검증 오차', PAD_L + 96, PAD_T + 12);
+
+    const d = DIAG[name];
+    document.getElementById('lcDiag').innerHTML = `
+      <h5>${d.title}</h5>
+      <p>${d.body}</p>
+      <div class="verdict">${d.verdict}</div>`;
+  }
+
+  const SCENS = [
+    { key: 'underfit', label: '과소적합' },
+    { key: 'overfit', label: '과대적합' },
+    { key: 'good', label: '적절' },
+    { key: 'suspicious', label: '의심(누수?)' },
+  ];
+  const btnHost = document.getElementById('scenBtns');
+  SCENS.forEach((s, idx) => {
+    const b = document.createElement('button');
+    b.className = 'btn ghost' + (idx === 0 ? ' active' : '');
+    b.textContent = s.label;
+    b.addEventListener('click', () => {
+      document.querySelectorAll('.scen-btns .btn').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      drawScen(s.key);
     });
-    // best point
-    if (bestPt) {
-      const px = pad.l + bestPt.x * (w - pad.l - pad.r);
-      const py = pad.t + bestPt.y * (h - pad.t - pad.b);
-      ctx.strokeStyle = C.style; ctx.lineWidth = 2.5;
-      ctx.beginPath(); ctx.arc(px, py, 7, 0, Math.PI*2); ctx.stroke();
-    }
-    document.getElementById(bestId).textContent = '최고 ' + best.toFixed(3);
-  }
-
-  function gridPoints() {
-    const pts = [];
-    for (let i = 0; i < 5; i++) for (let j = 0; j < 5; j++) {
-      pts.push({ x: 0.1 + 0.2*i, y: 0.1 + 0.2*j });
-    }
-    return pts;
-  }
-  function randPoints() {
-    const pts = [];
-    for (let i = 0; i < 25; i++) pts.push({ x: Math.random(), y: Math.random() });
-    return pts;
-  }
-  function bayesPoints() {
-    // 첫 5개 random, 그 후 좋은 영역으로 수렴
-    const pts = [];
-    let bestX = 0.5, bestY = 0.5, bestS = -Infinity;
-    for (let i = 0; i < 5; i++) {
-      const p = { x: Math.random(), y: Math.random() };
-      pts.push(p);
-      const s = score(p.x, p.y);
-      if (s > bestS) { bestS = s; bestX = p.x; bestY = p.y; }
-    }
-    for (let i = 5; i < 25; i++) {
-      // 90% 확률로 best 주변, 10% 확률로 random (exploration)
-      let p;
-      if (Math.random() < 0.85) {
-        const sigma = Math.max(0.04, 0.2 * Math.exp(-(i-5)/8));
-        p = { x: bestX + (Math.random()-0.5)*sigma*2, y: bestY + (Math.random()-0.5)*sigma*2 };
-        p.x = Math.max(0.02, Math.min(0.98, p.x));
-        p.y = Math.max(0.02, Math.min(0.98, p.y));
-      } else {
-        p = { x: Math.random(), y: Math.random() };
-      }
-      pts.push(p);
-      const s = score(p.x, p.y);
-      if (s > bestS) { bestS = s; bestX = p.x; bestY = p.y; }
-    }
-    return pts;
-  }
-
-  function runAll() {
-    plotSearch('g-canvas', gridPoints(), 'g-best', C.ink);
-    plotSearch('r-canvas', randPoints(), 'r-best', C.structure);
-    plotSearch('b-canvas', bayesPoints(), 'b-best', C.synth);
-  }
-  document.getElementById('run').addEventListener('click', runAll);
-  setTimeout(runAll, 100);
+    btnHost.appendChild(b);
+  });
+  drawScen(SCENS[0].key);
 
   window.addEventListener('load', () => {
     if (window.renderMathInElement) renderMathInElement(document.body, {

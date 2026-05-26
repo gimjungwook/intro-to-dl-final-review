@@ -412,6 +412,162 @@ hr.rule { max-width: var(--measure); margin: 3rem auto; border: none; border-top
   body { font-size: 17px; }
 }
 
+/* ============================================================
+   Ch06 sub-chapter 분리 (단일 페이지에 16개 절)
+   ============================================================ */
+.sub-block { max-width: var(--measure); margin: 0 auto; padding: 0 1.4rem; scroll-margin-top: 4rem; }
+.sub-block.wide { max-width: var(--wide); }
+.sub-marker { max-width: var(--wide); margin: 4.5rem auto 0; padding: 0 1.4rem; display: flex; align-items: baseline; gap: 1.2rem; }
+.sub-marker .sm-num { font-family: var(--mono); font-size: .82rem; letter-spacing: .26em; color: var(--style); font-weight: 600; }
+.sub-marker .sm-dot { flex: 1; height: 1px; background: linear-gradient(90deg, var(--line), transparent); }
+.sub-marker .sm-rev { font-family: var(--mono); font-size: .68rem; color: var(--ink-faint); letter-spacing: .14em; }
+.sub-title { max-width: var(--wide); margin: .8rem auto 0; padding: 0 1.4rem; }
+.sub-title h2 { font-size: clamp(1.7rem, 3.4vw, 2.4rem); margin: 0 0 .5rem; line-height: 1.15; }
+.sub-title h2 em { color: var(--style); font-style: normal; }
+.sub-title .sub-lede { font-family: var(--serif); font-style: italic; font-size: 1.12rem; color: var(--ink-soft); line-height: 1.55; max-width: var(--measure); }
+
+/* 챕터 본문 보조 — math-derive: 식의 줄별 풀이 */
+.math-derive { max-width: var(--measure); margin: 1.4rem auto; padding: 1rem 1.2rem; background: var(--paper-2); border-radius: 9px; border-left: 3px solid var(--structure); }
+.math-derive .row { display: grid; grid-template-columns: 1fr; gap: .35rem .9rem; padding: .55rem 0; border-bottom: 1px dashed rgba(38,34,28,.10); }
+.math-derive .row:last-child { border-bottom: none; }
+.math-derive .row > .step { font-family: var(--mono); font-size: .72rem; color: var(--structure); letter-spacing: .04em; font-weight: 600; }
+.math-derive .row > .why { font-size: .92rem; color: var(--ink-soft); line-height: 1.55; }
+
+/* 핵심 강조 박스 */
+.key-point { max-width: var(--measure); margin: 1.6rem auto; padding: 1rem 1.3rem 1rem 1.4rem; background: linear-gradient(180deg, rgba(192,73,46,.06), rgba(192,73,46,.02)); border-left: 3px solid var(--style); border-radius: 0 8px 8px 0; }
+.key-point::before { content: "핵심"; display: block; font-family: var(--mono); font-size: .66rem; letter-spacing: .22em; color: var(--style); margin-bottom: .4rem; font-weight: 700; }
+.key-point p { margin: 0; font-size: .95rem; color: var(--ink); line-height: 1.6; }
+.key-point p + p { margin-top: .55rem; }
+
+/* 자주 묻는 함정 */
+.pitfall { max-width: var(--measure); margin: 1.5rem auto; padding: .9rem 1.2rem; background: var(--paper-sink); border-radius: 8px; }
+.pitfall::before { content: "자주 헷갈리는 지점"; display: block; font-family: var(--mono); font-size: .66rem; letter-spacing: .22em; color: var(--synth); margin-bottom: .4rem; font-weight: 700; }
+.pitfall p { margin: 0; font-size: .9rem; color: var(--ink-soft); line-height: 1.6; }
+.pitfall p + p { margin-top: .4rem; }
+
+/* 비교 표 — 2열/3열 */
+.compare-tbl { max-width: var(--measure); width: 100%; margin: 1.4rem auto; border-collapse: collapse; font-size: .9rem; }
+.compare-tbl th, .compare-tbl td { padding: .55rem .8rem; border-bottom: 1px solid var(--line-soft); vertical-align: top; text-align: left; }
+.compare-tbl th { background: var(--paper-2); font-family: var(--serif); font-size: .96rem; color: var(--ink); font-weight: 600; }
+.compare-tbl td:first-child { font-family: var(--mono); color: var(--structure); width: 9rem; }
+
+/* 사이드 nav (단일 페이지 16개) */
+.sub-toc { position: fixed; top: 5rem; right: 1.2rem; width: 14rem; max-height: calc(100vh - 7rem); overflow-y: auto; padding: 1rem .8rem; background: rgba(255,255,255,0.92); backdrop-filter: blur(8px); border: 1px solid var(--line); border-radius: 11px; box-shadow: var(--shadow-plate); z-index: 30; font-size: .8rem; }
+.sub-toc h5 { margin: 0 0 .6rem; font-family: var(--mono); font-size: .7rem; letter-spacing: .14em; color: var(--ink-faint); text-transform: uppercase; }
+.sub-toc ol { list-style: none; margin: 0; padding: 0; counter-reset: sct; }
+.sub-toc li { counter-increment: sct; }
+.sub-toc a { display: grid; grid-template-columns: 1.5rem 1fr; gap: .4rem; align-items: baseline; padding: .35rem .4rem; border-radius: 5px; color: var(--ink-soft); text-decoration: none; font-size: .76rem; line-height: 1.3; transition: background .12s; }
+.sub-toc a::before { content: counter(sct, decimal-leading-zero); font-family: var(--mono); font-size: .68rem; color: var(--ink-faint); }
+.sub-toc a:hover { background: var(--paper-2); color: var(--ink); }
+.sub-toc a.cur { background: var(--ink); color: var(--paper); }
+.sub-toc a.cur::before { color: var(--style-lo); }
+@media (max-width: 1200px) { .sub-toc { display: none; } }
+
+/* ---------- CH06 XOR 위젯 ---------- */
+.xor-stage { display: flex; gap: 1.2rem; padding: 1.2rem 1.1rem 1rem; flex-wrap: wrap; justify-content: center; }
+.xor-cv { border-radius: 8px; border: 1px solid var(--line); max-width: 100%; }
+.xor-side { display: flex; flex-direction: column; gap: .9rem; min-width: 220px; }
+.xor-mode { display: flex; gap: .35rem; }
+.xor-mode .btn { flex: 1; padding: .45rem .5rem; font-size: .72rem; }
+.xor-ctr { display: flex; flex-direction: column; gap: .55rem; }
+.xor-status { font-size: .85rem; line-height: 1.5; color: var(--ink-soft); padding: .5rem .7rem; border-left: 2px solid var(--style-lo); background: var(--paper-2); border-radius: 0 6px 6px 0; }
+.xor-truth table { font-family: var(--mono); font-size: .76rem; border-collapse: collapse; }
+.xor-truth th, .xor-truth td { padding: .2rem .55rem; border: 1px solid var(--line-soft); text-align: center; }
+.xor-truth th { background: var(--paper-2); color: var(--ink-faint); }
+.xor-note { font-size: .82rem; color: var(--ink-soft); line-height: 1.45; margin: 0; }
+.xor-note em { color: var(--style); font-style: normal; }
+
+/* ---------- CH06 활성화 함수 위젯 ---------- */
+.act-stage { display: flex; gap: 1.2rem; padding: 1.2rem 1.1rem 1rem; flex-wrap: wrap; justify-content: center; }
+.act-cv { border-radius: 8px; border: 1px solid var(--line); max-width: 100%; cursor: crosshair; }
+.act-read { display: flex; flex-direction: column; gap: .35rem; min-width: 170px; padding-top: .5rem; }
+.act-row { display: flex; justify-content: space-between; align-items: baseline; padding: .25rem .55rem; border-bottom: 1px solid var(--line-soft); font-family: var(--mono); font-size: .82rem; }
+.act-row .lab { color: var(--ink-faint); }
+.act-row b { color: var(--structure); }
+.act-note { font-size: .82rem; color: var(--ink-soft); line-height: 1.45; margin: .35rem 0 0; padding: .5rem .65rem; background: var(--paper-2); border-radius: 6px; }
+
+/* ---------- CH06 backprop 체인 ---------- */
+.bp-stage { display: flex; gap: 1rem; padding: 1.2rem 1rem 1rem; flex-wrap: wrap; justify-content: center; }
+.bp-graph { width: 540px; height: 220px; max-width: 100%; background: var(--paper-2); border-radius: 10px; }
+.bp-side { display: flex; flex-direction: column; gap: .55rem; min-width: 220px; }
+.bp-status { padding: .55rem .75rem; background: var(--paper-2); border-radius: 6px; font-size: .85rem; line-height: 1.45; color: var(--ink); }
+.bp-trace { max-height: 200px; overflow-y: auto; font-family: var(--mono); font-size: .76rem; line-height: 1.55; }
+.tr-row { padding: .25rem .55rem; border-bottom: 1px solid var(--line-soft); }
+.tr-note { color: var(--ink-faint); font-size: .68rem; }
+
+/* ---------- CH06 출력층-비용 위젯 ---------- */
+.out-stage { display: grid; grid-template-columns: 12rem 1fr; gap: 1rem; padding: 1rem 1rem 1.2rem; }
+@media (max-width: 720px) { .out-stage { grid-template-columns: 1fr; } }
+.out-cards { display: flex; flex-direction: column; gap: .45rem; }
+.out-card { display: block; padding: .7rem .8rem; background: #fff; border: 1px solid var(--line); border-radius: 9px; text-align: left; font-family: inherit; cursor: pointer; transition: border-color .12s, transform .12s, background .12s; }
+.out-card:hover { transform: translateY(-2px); border-color: var(--structure-lo); }
+.out-card.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.out-card .oc-t { font-family: var(--serif); font-size: 1rem; font-weight: 600; }
+.out-card .oc-d { font-family: var(--mono); font-size: .72rem; line-height: 1.4; margin-top: .25rem; color: var(--ink-soft); }
+.out-card.on .oc-d { color: var(--paper-2); }
+.out-card.on .oc-d b { color: var(--style-lo); }
+.out-panel { display: flex; flex-direction: column; gap: .6rem; }
+.out-cv { border-radius: 8px; border: 1px solid var(--line); max-width: 100%; }
+.out-explain { font-size: .9rem; }
+.oe-row { display: flex; justify-content: space-between; padding: .25rem 0; border-bottom: 1px dashed var(--line-soft); font-family: var(--mono); font-size: .82rem; }
+.oe-row span { color: var(--ink-faint); }
+.oe-row b { color: var(--structure); }
+.oe-eq { margin: .35rem 0; padding: .55rem .85rem; background: var(--paper-2); border-radius: 6px; }
+.oe-eq .katex-display { margin: 0; }
+.oe-mle { font-family: var(--mono); font-size: .76rem; color: var(--synth); padding: .25rem 0; }
+.oe-desc { margin: .4rem 0 0; font-size: .88rem; color: var(--ink-soft); line-height: 1.5; }
+
+/* ---------- CH06 만능 근사 ---------- */
+.uni-stage { display: flex; gap: 1rem; padding: 1.2rem 1rem 1rem; flex-wrap: wrap; }
+.uni-cv { border-radius: 8px; border: 1px solid var(--line); max-width: 100%; }
+.uni-side { display: flex; flex-direction: column; gap: .6rem; min-width: 220px; flex: 1; }
+.uni-stat { padding: .55rem .75rem; background: var(--paper-2); border-radius: 6px; font-size: .85rem; line-height: 1.5; }
+.uni-stat b { color: var(--structure); }
+.uni-note { font-size: .82rem; color: var(--ink-soft); line-height: 1.5; }
+
+/* ---------- CH06 vanishing ---------- */
+.vg-stage { display: flex; gap: 1rem; padding: 1.2rem 1rem 1rem; flex-wrap: wrap; }
+.vg-cv { border-radius: 8px; border: 1px solid var(--line); max-width: 100%; }
+.vg-side { display: flex; flex-direction: column; gap: .6rem; min-width: 200px; flex: 1; }
+.vg-stat { padding: .55rem .75rem; background: var(--paper-2); border-radius: 6px; font-size: .85rem; line-height: 1.5; }
+.vg-stat b { color: var(--structure); }
+.vg-note { font-size: .82rem; color: var(--ink-soft); line-height: 1.5; }
+
+/* ---------- CH06 손계산 ---------- */
+.hc-stage { display: flex; gap: 1rem; padding: 1.2rem 1rem 1rem; flex-wrap: wrap; }
+.hc-graph { width: 540px; height: 280px; max-width: 100%; background: var(--paper-2); border-radius: 10px; }
+.hc-panel { display: flex; flex-direction: column; gap: .55rem; min-width: 240px; flex: 1; }
+.hc-stat { padding: .55rem .75rem; background: var(--ink); color: var(--paper); border-radius: 6px; font-size: .9rem; }
+.hc-eq { padding: .6rem .85rem; background: var(--paper-2); border-radius: 6px; font-size: .85rem; }
+.hc-eq .katex-display { margin: .25rem 0; font-size: .94rem; }
+.hc-trace { max-height: 220px; overflow-y: auto; font-family: var(--mono); font-size: .74rem; line-height: 1.55; }
+.hc-row { padding: .25rem .55rem; border-bottom: 1px solid var(--line-soft); }
+.hc-note { color: var(--ink-faint); font-size: .68rem; }
+
+/* ---------- CH06 계산 그래프 ---------- */
+.cg-stage { display: flex; gap: 1rem; padding: 1.2rem 1rem 1rem; flex-wrap: wrap; }
+.cg-graph { width: 560px; height: 280px; max-width: 100%; background: var(--paper-2); border-radius: 10px; }
+.cg-panel { display: flex; flex-direction: column; gap: .55rem; min-width: 240px; flex: 1; }
+.cg-stat { padding: .55rem .75rem; background: var(--paper-2); border-radius: 6px; font-size: .85rem; line-height: 1.55; }
+.cg-stat b { color: var(--ink); }
+.cg-eq { padding: .55rem .85rem; background: #fff; border: 1px solid var(--line); border-radius: 6px; font-size: .9rem; }
+.cg-eq .katex-display { margin: 0; font-size: .96rem; }
+
+/* ---------- 시험 대비 자가점검 카드 (sub 16) ---------- */
+.quiz-list { max-width: var(--measure); margin: 1.5rem auto; padding: 0 1.4rem; display: flex; flex-direction: column; gap: .55rem; }
+.quiz-item { background: #fff; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; transition: border-color .12s; }
+.quiz-item:hover { border-color: var(--structure-lo); }
+.quiz-q { display: flex; gap: .8rem; align-items: baseline; padding: .85rem 1.1rem; cursor: pointer; transition: background .12s; }
+.quiz-q:hover { background: var(--paper-2); }
+.quiz-q .qn { font-family: var(--mono); font-size: .76rem; color: var(--style); flex: none; font-weight: 600; }
+.quiz-q .qt { font-size: .95rem; color: var(--ink); line-height: 1.45; }
+.quiz-q .qx { margin-left: auto; color: var(--ink-faint); transition: transform .2s var(--ease); flex: none; }
+.quiz-item.open .quiz-q .qx { transform: rotate(45deg); }
+.quiz-a { max-height: 0; overflow: hidden; transition: max-height .35s var(--ease); }
+.quiz-item.open .quiz-a { max-height: 30rem; }
+.quiz-a-inner { padding: 0 1.1rem 1rem; font-size: .9rem; color: var(--ink-soft); line-height: 1.65; }
+.quiz-a-inner .ans-tag { font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; color: var(--structure); display: block; margin-bottom: .4rem; }
+
 /* 접근성: 모션 줄이기 */
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: .001ms !important; transition-duration: .001ms !important; scroll-behavior: auto; }
