@@ -69,7 +69,7 @@
       <div class="math-block">$$ \text{Steve} \;\to\; \text{B-PER}, \quad \text{Jobs} \;\to\; \text{I-PER}, \quad \text{founded} \;\to\; \text{O}, $$ $$ \text{Apple} \;\to\; \text{B-ORG}, \quad \text{in} \;\to\; \text{O}, \quad \text{New} \;\to\; \text{B-LOC}, $$ $$ \text{York} \;\to\; \text{I-LOC}, \quad \text{City} \;\to\; \text{I-LOC}, \quad . \;\to\; \text{O} $$</div>
       <p class="math-note">개체별 종류 (PER, ORG, LOC, MISC) 4 종에 각각 B-/I- 두 접두사가 붙어 8 종, 거기에 O 한 종을 더해 총 9 종의 태그 집합이 된다. 분류기 출력 차원 $K = 9$.</p>
 
-      <p>BIO 태깅은 BERT 가 도입한 것이 아니다. NER 분야의 오래된 표준이며, BERT 는 이 표준을 그대로 받아들여 사용한다. BIO 라벨로 학습된 분류기의 출력을 사후 처리하면 다중 단어 개체명도 정확히 추출된다.</p>
+      <p>BIO 태깅은 BERT 가 도입한 것이 아니다. NER 분야의 오래된 표준이며, BERT 는 이 표준을 그대로 받아들여 사용한다. 분류기는 각 토큰에 대해 B-/I-/O 라벨을 직접 출력하고, 추론 단계에서는 그 라벨 시퀀스를 그대로 묶기만 하면("B-LOC, I-LOC, I-LOC" → "New York City") 다중 단어 개체명이 곧바로 추출된다 — 별도의 복잡한 사후 처리는 필요 없다. (선택적으로 라벨 시퀀스의 일관성을 강제하는 CRF 한 층을 얹는 변형은 다음 절에서 본다.)</p>
 
       <h2>6. NER 의 BERT 성과</h2>
       <p>BERT 는 CoNLL-2003 NER 에서 F1 점수 92.4 (BASE) / 92.8 (LARGE) 를 기록했다. 종전 SOTA 였던 CVT (Cross-View Training) 의 92.6 과 거의 동률이지만, CVT 가 NER 에 특화된 복잡한 구조였던 데 비해 BERT 는 단순히 사전훈련된 인코더 위에 한 층의 선형 분류기만 얹은 결과다. 이 단순성과 SOTA 의 결합이 사전훈련의 위력을 가장 잘 보여 준 결과 중 하나였다.</p>
