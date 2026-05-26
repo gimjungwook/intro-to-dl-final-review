@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sub 01 · XOR — 선형 분리 불가능의 벽 · Ch.06</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  /* XOR widget */
+  .xor-stage { display: grid; grid-template-columns: auto 1fr; gap: 1.2rem; padding: 1.4rem 1.2rem 0.8rem; align-items: start; }
+  .xor-cv { display: block; border-radius: 8px; border: 1px solid var(--line); max-width: 100%; background: var(--paper); }
+  .xor-side { min-width: 220px; }
+  .xor-mode { display: flex; gap: .4rem; margin-bottom: 1rem; }
+  .xor-ctr { display: flex; flex-direction: column; gap: .9rem; padding: .9rem 1rem; background: var(--paper-2); border-radius: 9px; margin-bottom: .8rem; }
+  .xor-ctr .slider label { font-family: var(--mono); font-size: .72rem; letter-spacing: .04em; color: var(--ink-soft); display: flex; justify-content: space-between; }
+  .xor-ctr .slider label b { color: var(--ink); }
+  .xor-ctr input[type=range] { width: 100%; }
+  .xor-note { font-size: .82rem; color: var(--ink-soft); line-height: 1.5; margin: .3rem 0 0; font-family: var(--sans); }
+  .xor-note em { color: var(--style); font-style: normal; }
+  .xor-status { font-size: .9rem; padding: .6rem .8rem; background: #fff; border: 1px solid var(--line); border-radius: 7px; margin-bottom: .8rem; line-height: 1.4; }
+  .xor-truth table { border-collapse: collapse; font-family: var(--mono); font-size: .8rem; width: 100%; }
+  .xor-truth th, .xor-truth td { padding: .3rem .5rem; border: 1px solid var(--line-soft); text-align: center; }
+  .xor-truth th { background: var(--paper-2); color: var(--ink-soft); font-weight: 500; }
+  @media (max-width: 780px) { .xor-stage { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 01 · 비선형성의 동기</span>
+      <h1>XOR — <span class="t-style">선형 분리 불가능</span>의 벽</h1>
+      <p class="lede">네 점, 두 클래스. 직선 하나로는 절대 가를 수 없다. 이 작은 예가 왜 딥러닝 전체의 출발점이 되는가.</p>
+    </header>
+
+    <div class="prose">
+      <p>딥러닝이 풀고자 한 첫 번째 벽은 화려한 ImageNet도, 자율주행도 아니었다. 진짜 출발점은 <strong>입력 두 개짜리, 출력 한 개짜리</strong>의 단순한 진리표 — XOR다. 입력이 같으면 0, 다르면 1을 내야 한다. 사람의 직관으로는 너무 쉬워 보이지만, 1969년 Minsky와 Papert는 이 문제로 단일 퍼셉트론(perceptron)의 근본 한계를 증명했고, 그 결과 1차 신경망 겨울이 시작됐다.</p>
+
+      <h2>왜 직선 하나로는 안 되는가</h2>
+      <p>먼저 “선형 모형(linear model)”이 무엇을 한다는 것인지 정확히 그려보자. 두 입력 $x_1, x_2$를 받아 하나의 출력을 내는 선형 모형은 다음과 같다.</p>
+      <div class="math-block">$$ \hat{y} = \sigma(w_1 x_1 + w_2 x_2 + b) $$</div>
+      <p class="math-note">w는 가중치(weight), b는 편향(bias), σ는 출력을 0/1로 누르는 시그모이드.</p>
+
+      <p>이 식이 만드는 결정경계(decision boundary)는 $w_1 x_1 + w_2 x_2 + b = 0$이라는 <strong>직선 하나</strong>다. 직선의 한쪽은 1로, 다른 쪽은 0으로 분류된다. 그런데 XOR의 네 점을 $(x_1, x_2)$ 평면에 찍어 보면 다음과 같다.</p>
+
+      <table class="symbols">
+        <tr><td>(0, 0)</td><td>0 (음성)</td></tr>
+        <tr><td>(1, 0)</td><td>1 (양성)</td></tr>
+        <tr><td>(0, 1)</td><td>1 (양성)</td></tr>
+        <tr><td>(1, 1)</td><td>0 (음성)</td></tr>
+      </table>
+
+      <p>양성 두 점은 <em>대각선</em>으로 떨어져 있고, 음성 두 점도 마찬가지다. 직선 하나로 양성과 음성을 가르려면 두 직선이 필요하지 한 직선으로는 불가능하다. 이 사실은 그림 하나로 증명되지만, 그 의미는 깊다. <strong>선형 모형은 입력 공간의 “자르는 방식”을 직선 하나로 제한한다.</strong> 그래서 직선으로는 표현 불가능한 모든 함수는 선형 모형의 사각지대다.</p>
+
+      <div class="analogy">
+        <b>마트의 한 줄짜리 컨베이어 벨트</b>를 상상해 보자. 직원이 칸막이를 한 번만 세울 수 있다면, “싱싱한 사과”와 “썩은 사과”를 가른다거나, “큰 것”과 “작은 것”을 가르는 일은 가능하다. 하지만 “싱싱하고 큰 것 + 썩고 작은 것 = A 박스, 나머지 = B 박스”처럼 두 속성을 <b>교차</b>해서 분류하려면 칸막이 하나로는 안 된다. XOR이 바로 그런 “교차”다.
+      </div>
+
+      <h2>아래 위젯에서 직접 확인하기</h2>
+      <p>위젯에서 슬라이더로 $w_1$, $w_2$, $b$를 움직여 보라. 직선의 각도와 위치는 마음대로 바꿀 수 있지만, <strong>네 점 모두를 정답으로 분류하는 직선은 존재하지 않는다</strong>. 어떻게 움직이든 최선이 3/4다. 이것이 1969년의 벽이다.</p>
+      <p>그 다음 <em>2-2-1 MLP</em> 토글을 눌러 보라. 같은 입력에 은닉층 두 개짜리 작은 신경망이 붙는다. 결정경계가 직선이 아니라 <strong>꺾인 띠</strong>로 바뀐다. XOR이 풀린다. 가중치 강도 슬라이더로 ReLU 두 개가 어떻게 합쳐져 비선형 경계를 만드는지도 확인할 수 있다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 01</span><span>XOR 결정경계 — 직선의 한계와 MLP의 돌파</span></div>
+        <div id="xor"></div>
+      </div>
+      <p class="widget-cap">단일 퍼셉트론 모드: 슬라이더로 직선을 회전·이동해 보면 정답률이 최대 3/4를 넘지 못한다. MLP 모드: ReLU 은닉 두 개의 차로 만들어진 띠가 네 점을 정확히 가른다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>표현 공간 변환이라는 진짜 메시지</h2>
+      <p>이 작은 예제의 진짜 메시지는 <em>“두 직선이 한 직선보다 강하다”</em>가 아니다. 더 깊은 메시지는 이렇다. <strong>은닉층은 입력 공간을 새로운 좌표계로 바꾸는 일을 한다.</strong> 원래 입력 공간 $(x_1, x_2)$에서는 분리 불가능했던 네 점이, 은닉층의 활성값 $(h_1, h_2)$ 공간으로 옮겨가면 직선 하나로 가를 수 있는 모양으로 재배치된다.</p>
+
+      <p>구체적으로 보자. 다음 가중치를 고른다 (이 절의 위젯 MLP 모드와 동일).</p>
+      <div class="math-block">$$ h_1 = \text{ReLU}(x_1 + x_2 - 0.5), \qquad h_2 = \text{ReLU}(x_1 + x_2 - 1.5) $$</div>
+      <p class="math-note">은닉 유닛 두 개. 둘 다 같은 OR-like 합을 사용하되, 편향만 다르다.</p>
+
+      <p>이제 네 입력을 통과시키면 은닉 공간에서의 좌표가 이렇게 나온다.</p>
+      <table class="symbols">
+        <tr><td>입력 (0,0)</td><td>(h₁, h₂) = (0, 0)   · 목표 0</td></tr>
+        <tr><td>입력 (1,0)</td><td>(h₁, h₂) = (0.5, 0) · 목표 1</td></tr>
+        <tr><td>입력 (0,1)</td><td>(h₁, h₂) = (0.5, 0) · 목표 1</td></tr>
+        <tr><td>입력 (1,1)</td><td>(h₁, h₂) = (1.5, 0.5) · 목표 0</td></tr>
+      </table>
+
+      <p>은닉 공간에서 (1,0)과 (0,1)은 <em>같은 점</em>이 되어 “양성 1점”으로 합쳐졌다. 즉 네 점 문제가 사실상 세 점 문제로 줄었다. 그리고 이 세 점은 <strong>직선 하나로 가를 수 있다</strong>. 출력층의 마지막 선형 결합 + 시그모이드가 그 직선을 긋는다.</p>
+
+      <div class="analogy">
+        지도에서 두 도시 사이를 직선으로 잇기 어려울 때, 우리는 <b>좌표계를 바꾼다</b>. 위도·경도 대신 “주요 도로 번호 + 도로 위 거리”로 좌표를 다시 쓰면, 굽은 길도 한 줄로 펴진다. 은닉층은 입력 데이터에 대해 그 좌표계 변경을 학습으로 찾아낸다. 그래서 신경망은 “분류기에 직선을 하나 더 긋는 일”이 아니라 <b>“문제를 보기 좋은 좌표계로 옮기는 일”</b>이다.
+      </div>
+
+      <h2>이 첫 절이 잡아 줘야 할 그림</h2>
+      <p>XOR 한 예제만으로 6장 전체를 관통하는 그림 세 가지가 분명해진다.</p>
+      <ol>
+        <li><strong>선형성은 표현력의 한계다.</strong> 직선만으로는 단순 진리표조차 풀 수 없다.</li>
+        <li><strong>비선형 활성화가 필요하다.</strong> ReLU 같은 꺾임이 없으면 층을 쌓아도 또 다른 직선으로 합쳐질 뿐이다(<a href="03.html">3절</a>).</li>
+        <li><strong>은닉층은 새 좌표계다.</strong> 학습은 가중치를 조정해서 “원래 문제를 직선으로 풀 수 있는 좌표계”를 찾는 일이다(<a href="02.html">2절</a>).</li>
+      </ol>
+      <p>이 세 가지를 손에 쥐고 다음 절로 가자. 그 다음 절은 “하나의 은닉층이 어떻게 입력 공간을 접고, 펴고, 새로 정렬하는가”를 더 깊게 들여다본다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script src="widgets.js"></script>
+<script>
+  window.addEventListener('load', () => {
+    CH6.buildNav('01');
+    const x = document.getElementById('xor');
+    CH6.onVisible(x, () => CH6.xor(x));
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>04 · 분산 표상의 힘 — Ch.15</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  /* 분산 vs one-hot 비교 위젯 */
+  .dr-stage { padding: 1.4rem 1.2rem 1rem; }
+  .dr-chart { display: block; width: 100%; max-width: 540px; aspect-ratio: 16/9; margin: 0 auto; background: #fff; border-radius: 10px; border: 1px solid var(--line); }
+  .dr-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1rem 1.1rem 0; max-width: 600px; margin: 0 auto; }
+  .dr-card { padding: 1rem 1.1rem; border-radius: 10px; border: 1px solid var(--line); background: #fff; }
+  .dr-card.onehot { border-left: 3px solid var(--style); }
+  .dr-card.dist { border-left: 3px solid var(--structure); }
+  .dr-card h4 { margin: 0 0 .4rem; font-family: var(--serif); font-size: 1rem; }
+  .dr-card.onehot h4 { color: var(--style); } .dr-card.dist h4 { color: var(--structure); }
+  .dr-card .num { font-family: var(--mono); font-size: 1.3rem; color: var(--ink); font-weight: 600; margin: .2rem 0; }
+  .dr-card p { margin: 0; font-size: .82rem; color: var(--ink-soft); line-height: 1.5; }
+  .dr-verdict { padding: .9rem 1.2rem; border-top: 1px solid var(--line-soft); background: var(--paper); font-size: .9rem; color: var(--ink-soft); line-height: 1.55; }
+  .dr-verdict b { color: var(--structure); }
+
+  /* 비트 가시화 */
+  .bits-stage { padding: 1.4rem 1.2rem 1rem; text-align: center; }
+  .bits-row { display: flex; gap: .35rem; justify-content: center; flex-wrap: wrap; margin: .5rem 0 1rem; }
+  .bits-bit { width: 38px; height: 38px; border-radius: 7px; border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: .9rem; cursor: pointer; transition: all .15s var(--ease); background: #fff; user-select: none; }
+  .bits-bit.on { background: var(--structure); color: #fff; border-color: var(--structure); }
+  .bits-bit:hover { transform: translateY(-2px); box-shadow: var(--shadow-plate); }
+  .bits-cap { font-family: var(--mono); font-size: .78rem; color: var(--ink-soft); margin-top: .4rem; }
+  .bits-cap b { color: var(--ink); }
+  .bits-imag { display: grid; grid-template-columns: 1fr; gap: .5rem; padding: 0 1.1rem 1rem; max-width: 360px; margin: 0 auto; }
+  .bits-feat { display: grid; grid-template-columns: 5rem 1fr; align-items: center; gap: .7rem; padding: .4rem .6rem; border-radius: 6px; background: var(--paper-2); font-size: .82rem; }
+  .bits-feat .fname { font-family: var(--mono); font-size: .72rem; color: var(--ink-soft); }
+  .bits-feat .fval { color: var(--ink); }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 04 · 같은 자원, 지수적으로 많은 개념</span>
+      <h1>분산 표상 — <span class="t-style">조합</span>으로 폭발하는 표현력</h1>
+      <p class="lede">한 개념에 한 뉴런을 할당하면(one-hot) n개의 뉴런으로 n개의 개념을 가진다. 그러나 n개의 뉴런을 독립적 비트로 쓰면(distributed) 같은 자원으로 2^n개의 개념을 가진다. 그 지수적 차이가 일반화의 비밀이다.</p>
+    </header>
+
+    <div class="prose">
+      <p>15장에서 책이 가장 길게 설명하는 개념이 분산 표상(distributed representation)이다. 그 이유는 단순하다. 이 개념 하나가 "왜 신경망이 일반화하는가"의 가장 깊은 답이기 때문이다. 책의 표현을 옮기면, <strong>"분산 표상은 깊은 학습이 단순히 더 많은 파라미터를 가지는 모델이라는 통념을 깨는 지점이다."</strong></p>
+
+      <p>두 가지 표현 방식부터 대비해 보자. 같은 8개의 뉴런이 있다.</p>
+
+      <h2>방식 1: One-Hot 표상 — 한 개념에 한 뉴런</h2>
+      <p>가장 단순하고 직관적인 표상이다. "고양이"는 뉴런 1번이 1, 나머지는 0. "강아지"는 뉴런 2번이 1, 나머지는 0. 한 번에 한 뉴런만 켜진다. 8개의 뉴런으로 정확히 <strong>8개의 클래스</strong>를 표현한다.</p>
+
+      <p>이 방식의 본질은 <em>"각 뉴런이 한 클래스의 식별자"</em>라는 것이다. 마치 8개의 칸막이 방을 만들어 한 클래스에 한 방을 배정한 것과 같다. 깔끔하지만 한 가지 치명적 약점이 있다 — <strong>클래스 간 관계가 표현되지 않는다</strong>. "고양이"와 "강아지"는 모두 동물이고 털이 있고 4발인데, 두 one-hot 벡터의 거리는 "고양이"와 "비행기"의 거리와 똑같다(둘 다 √2). 즉 의미 구조가 완전히 사라진다.</p>
+
+      <h2>방식 2: 분산 표상 — 각 뉴런이 한 속성</h2>
+      <p>같은 8개의 뉴런을 다르게 쓴다. 뉴런 1번은 "동물인가?", 2번은 "포유류인가?", 3번은 "크기가 큰가?", 4번은 "다리가 4개인가?", 5번은 "야생인가?", 6번은 "털이 있는가?", 7번은 "송곳니가 있는가?", 8번은 "꼬리가 있는가?". 한 번에 여러 뉴런이 켜진다.</p>
+
+      <p>"고양이"는 (1,1,0,1,0,1,1,1). "사자"는 (1,1,1,1,1,1,1,1). 두 벡터의 거리는 단 2(크기·야생 두 차원). 반면 "비행기"는 (0,0,1,0,0,0,0,0). 고양이와의 거리는 6(거의 모든 차원에서 다름). <strong>의미적 거리가 표상의 거리로 자연스럽게 드러난다.</strong></p>
+
+      <p>이 방식이 얼마나 더 많은 개념을 표현할 수 있는가? 각 비트가 독립적으로 0/1을 가질 수 있으므로, 8비트로는 <strong>$2^8 = 256$가지의 구별되는 조합</strong>이 가능하다. one-hot의 8과 비교해 32배 차이다. 일반화해서, $n$개의 뉴런으로 분산 표상은 $2^n$개의 영역을, one-hot은 단지 $n$개를 표현한다.</p>
+
+      <div class="math-block">$$ \underbrace{n}_{\text{one-hot 영역 수}} \quad \mathrm{vs} \quad \underbrace{2^n}_{\text{분산 표상 영역 수}} $$</div>
+      <p class="math-note">선형 학습 자원은 같지만, 표현 가능한 구별 영역의 수는 선형 vs 지수적. 이것이 분산 표상의 본질적 이득이다.</p>
+
+      <p>왜 굳이 "$2^n$"인가, "$n$이 영역의 수가 아닐 수도 있는데"라는 의문이 들 수 있다. 정확히는, $n$개의 분리된 결정 경계가 입력 공간을 자르면 그 결정 경계들의 교차로 만들어지는 영역의 수는 최대 $2^n$이다(차원이 충분히 높다면). $n$개의 직선이 평면을 자르는 최대 영역 수가 $\binom{n}{0} + \binom{n}{1} + \binom{n}{2}$가 되는 고전적 결과의 일반화다.</p>
+
+      <div class="analogy">
+        <b>주민등록번호 vs 신체 특징.</b> 같은 인구 1억 명을 표현하는 두 가지 방법을 떠올려 보자. 한 가지는 1억 개의 서로 다른 ID를 부여하는 것(완전한 one-hot). 다른 한 가지는 키·몸무게·나이·성별·머리색·눈색·... 30가지 특징으로 표현하는 것(분산). 새 사람이 등장했을 때 후자는 즉시 비슷한 사람을 찾을 수 있다 — 키와 나이가 비슷한 사람. 그러나 전자는 새 ID를 처음 봤다면 아무 정보도 없다. 분산 표상은 본 적 없는 조합도 일반화한다. 본 적 없는 ID는 일반화할 수 없다.
+      </div>
+
+      <h2>왜 일반화로 이어지는가</h2>
+      <p>책의 핵심 논변이 여기다. 학습 데이터에는 가능한 조합의 일부만 들어 있다. one-hot이라면 본 적 없는 조합은 새 ID처럼 처음 보는 것이라 일반화가 안 된다. 그러나 분산 표상이라면, 각 비트가 진짜 생성 요인을 잡았다면, 학습 중 본 적 없는 조합도 자동으로 일반화된다 — 각 비트가 어떤 값일 때 어떻게 분류되는지를 따로따로 배웠기 때문이다.</p>
+
+      <p>이것이 GAN이나 VAE의 잠재 공간에서 보던 그 마법의 정체다. "안경 + 미소 + 머리 길이"를 따로 학습한 모델은 "안경을 쓴 미소짓는 긴 머리 사람"이라는 본 적 없는 조합도 생성한다. 각 차원이 의미적 인과 요인이라서 가능한 일이다.</p>
+
+      <p>아래 첫 번째 위젯에서 직접 비트를 켜고 끄며 분산 표상이 어떤 개념을 만들어내는지 본다. 두 번째 위젯에서 단어 수가 늘어날 때 두 표상의 표현력이 어떻게 갈라지는지 곡선으로 확인한다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 04</span><span>비트 = 개념의 속성 — 켜고 끄며 표상이 가리키는 개체를 본다</span></div>
+        <div class="bits-stage">
+          <div class="bits-row" id="bitsrow"></div>
+          <div class="bits-cap">8비트 분산 표상의 한 점 = <b id="bitsBin">10000000</b> = 본 적 없는 조합 #<b id="bitsIdx">128</b></div>
+        </div>
+        <div class="bits-imag" id="bitsfeats"></div>
+        <div class="dr-verdict" id="drverdict"></div>
+      </div>
+      <p class="widget-cap">8비트로 만들 수 있는 조합은 256가지. 같은 8개의 뉴런으로 one-hot은 8개의 클래스만 가능하다. 본 적 없는 조합도 각 비트의 의미를 학습했다면 즉시 일반화된다 — 이것이 분산 표상의 지수적 이득의 실제 모습이다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 05</span><span>같은 뉴런 수, 지수적으로 갈라지는 표현력</span></div>
+        <div class="dr-stage">
+          <canvas id="drchart" class="dr-chart" width="540" height="304"></canvas>
+        </div>
+        <div class="widget-controls">
+          <div class="slider" style="flex:1; min-width:260px;">
+            <label>뉴런(비트) 수 n <b id="drNval">n = 10</b></label>
+            <input type="range" id="drN" min="1" max="20" step="1" value="10">
+          </div>
+        </div>
+        <div class="dr-compare">
+          <div class="dr-card onehot">
+            <h4>One-Hot 표상</h4>
+            <div class="num" id="drOne">10 영역</div>
+            <p>n개의 뉴런으로 n개의 구별되는 클래스. 한 번에 한 뉴런만 켜진다.</p>
+          </div>
+          <div class="dr-card dist">
+            <h4>분산 표상</h4>
+            <div class="num" id="drDist">1,024 영역</div>
+            <p>n개의 비트로 2^n개의 구별되는 조합. 본 적 없는 조합도 일반화 가능.</p>
+          </div>
+        </div>
+        <div class="dr-verdict" id="drverdict2"></div>
+      </div>
+      <p class="widget-cap">n = 20일 때 one-hot은 20개, 분산은 약 100만 개. 이 격차가 곧 "왜 신경망이 학습 데이터의 모든 조합을 외울 필요 없이 일반화하는가"의 수치적 답이다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>왜 신경망이 자연스럽게 분산 표상을 만드는가</h2>
+      <p>여기서 깊은 망의 중요한 사실이 드러난다. 신경망의 은닉 뉴런들은 명시적으로 "각 뉴런이 한 의미를 잡아라"라고 강제하지 않아도 분산 표상에 가까운 것을 학습한다. 그 이유는 두 가지다.</p>
+
+      <p><strong>(1) 손실 최소화의 압력.</strong> 학습 데이터의 모든 조합을 외우는 것보다, 더 적은 비트(뉴런)로 데이터의 통계를 압축하는 표상이 손실을 더 잘 줄인다. 이는 일종의 정보병목(information bottleneck) 효과다.</p>
+
+      <p><strong>(2) 매개변수의 효율.</strong> $n$개의 뉴런으로 $2^n$개의 영역을 표현하는 분산 표상은 적은 파라미터로 많은 일을 한다. 같은 일을 one-hot으로 하려면 파라미터가 지수적으로 더 필요하다. 손실이 같다면 옵티마이저는 더 적은 파라미터의 해를 선호하게 된다(implicit regularization).</p>
+
+      <h2>주의 — 모든 분산 표상이 좋지는 않다</h2>
+      <p>$2^n$개의 영역을 표현할 수 있다는 것은 잠재력이고, 실제로 그 영역들이 의미적으로 좋은 클래스 경계와 정렬되어야 일반화에 도움이 된다. 단순히 비트가 많기만 한 표상은 잡음일 뿐이다. 1번 절에서 본 "좋은 표상의 세 정의"가 다시 등장하는 지점이다 — 각 비트가 진짜 생성 인과 요인을 잡았을 때만 분산 표상의 잠재력이 일반화로 실현된다.</p>
+
+      <p>다음 절에서는 분산 표상과 짝을 이루는 다른 지수적 이득 — <strong>깊이(depth)의 지수적 표현력</strong>으로 들어간다. 두 이득을 합쳐야 깊은 망의 진짜 그림이 완성된다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'좋은 표상이란', f:'01.html' },
+    { no:'02', t:'사전훈련과 미세조정', f:'02.html' },
+    { no:'03', t:'전이학습·도메인 적응', f:'03.html' },
+    { no:'04', t:'분산 표상의 힘', f:'04.html' },
+    { no:'05', t:'깊이의 지수적 표현력', f:'05.html' },
+    { no:'06', t:'인과 요소와 반지도', f:'06.html' },
+    { no:'07', t:'시험 대비', f:'07.html' },
+  ];
+  const CURRENT = '04';
+  (function buildNav() {
+    document.querySelector('.topbar').innerHTML =
+      `<a class="home" href="index.html">← Chapter 15 · 표상 학습</a>` +
+      `<span class="ch-mini">SUB ${CURRENT} / 07</span>`;
+    document.querySelector('.ch-nav ol').innerHTML = SUBS.map(s =>
+      `<li><a href="${s.f}" ${s.no === CURRENT ? 'class="current"' : ''}>${s.t}</a></li>`).join('');
+    const i = SUBS.findIndex(s => s.no === CURRENT);
+    const prev = i > 0 ? SUBS[i-1] : { f:'index.html', t:'챕터 표지', no:'' };
+    const next = i < SUBS.length-1 ? SUBS[i+1] : { f:'index.html', t:'챕터 표지', no:'' };
+    document.querySelector('.ch-foot').innerHTML =
+      `<a href="${prev.f}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+      `<a href="${next.f}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+    const bar = document.querySelector('.scroll-progress');
+    const onScroll = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    document.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+  })();
+
+  // ===== 위젯 04: 비트 토글 =====
+  (function bitsWidget() {
+    const FEATS = [
+      { name: '동물', desc: '생명체인가 무생물인가' },
+      { name: '포유류', desc: '깃털이 아닌 털이 있고 새끼를 낳는가' },
+      { name: '크기 大', desc: '큰가 작은가' },
+      { name: '4발', desc: '4개의 다리로 걷는가' },
+      { name: '야생', desc: '인간이 길들였는가' },
+      { name: '털', desc: '몸이 털로 덮였는가' },
+      { name: '송곳니', desc: '날카로운 송곳니가 있는가' },
+      { name: '꼬리', desc: '꼬리가 있는가' },
+    ];
+    const ENTITIES = {
+      '11010111': '고양이', '11111111': '사자', '11011110': '늑대',
+      '11000111': '쥐', '00100000': '비행기', '11010110': '여우',
+      '11111110': '호랑이', '11010100': '족제비',
+    };
+
+    let bits = [1,0,0,0,0,0,0,0];
+    const row = document.getElementById('bitsrow');
+    const featsEl = document.getElementById('bitsfeats');
+
+    function render() {
+      row.innerHTML = bits.map((b, i) => `
+        <div class="bits-bit ${b ? 'on' : ''}" data-i="${i}">${b}</div>`).join('');
+      row.querySelectorAll('.bits-bit').forEach(el => {
+        el.addEventListener('click', () => {
+          const i = parseInt(el.dataset.i);
+          bits[i] = 1 - bits[i];
+          render();
+        });
+      });
+      featsEl.innerHTML = FEATS.map((f, i) => `
+        <div class="bits-feat" style="opacity:${bits[i] ? 1 : 0.4}">
+          <span class="fname">비트 ${i+1}</span>
+          <span class="fval"><b style="color:${bits[i] ? 'var(--structure)' : 'var(--ink-faint)'}">${bits[i] ? '✓' : '✗'}</b> ${f.name} — ${f.desc}</span>
+        </div>`).join('');
+      const bin = bits.join('');
+      const idx = parseInt(bin, 2);
+      document.getElementById('bitsBin').textContent = bin;
+      document.getElementById('bitsIdx').textContent = idx;
+      const entity = ENTITIES[bin];
+      const v = document.getElementById('drverdict');
+      if (entity) {
+        v.innerHTML = `이 비트 조합은 학습 데이터에서 <b>"${entity}"</b>로 본 적이 있을 수 있다. 비트 하나만 뒤집어도 새 개념이 나타난다.`;
+      } else {
+        v.innerHTML = `이 조합은 학습 중 한 번도 본 적이 없을 가능성이 높다. 그래도 각 비트의 의미를 안다면 이 개념을 <b>"${describeBits(bits)}"</b>로 해석할 수 있다 — 이것이 일반화다.`;
+      }
+    }
+    function describeBits(b) {
+      const parts = [];
+      if (b[0]) parts.push('동물');
+      if (b[1]) parts.push('포유류');
+      if (b[2]) parts.push('큰'); else parts.push('작은');
+      if (b[3]) parts.push('네발');
+      if (b[4]) parts.push('야생');
+      if (b[5]) parts.push('털 있음');
+      if (b[6]) parts.push('송곳니');
+      if (b[7]) parts.push('꼬리');
+      return parts.join('+') || '특징 없음';
+    }
+    render();
+  })();
+
+  // ===== 위젯 05: One-hot vs 분산 지수곡선 =====
+  (function drChartWidget() {
+    const c = document.getElementById('drchart');
+    const css = getComputedStyle(document.documentElement);
+    const STRUCT = css.getPropertyValue('--structure').trim();
+    const STYLE = css.getPropertyValue('--style').trim();
+    const FAINT = css.getPropertyValue('--ink-faint').trim();
+    const SOFT = css.getPropertyValue('--ink-soft').trim();
+    const slider = document.getElementById('drN');
+    const nval = document.getElementById('drNval');
+
+    function draw() {
+      const N = parseInt(slider.value);
+      const W = c.width, H = c.height;
+      const ctx = c.getContext('2d');
+      ctx.clearRect(0,0,W,H);
+      ctx.fillStyle = '#fff'; ctx.fillRect(0,0,W,H);
+
+      const ml = 56, mr = 14, mt = 16, mb = 36;
+      const cw = W - ml - mr, ch = H - mt - mb;
+      ctx.strokeStyle = FAINT; ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(ml, mt); ctx.lineTo(ml, mt+ch); ctx.lineTo(ml+cw, mt+ch); ctx.stroke();
+
+      // 로그 스케일 y축
+      const maxLog = Math.log10(Math.pow(2, 20));  // 약 6
+      function yPx(v) { return mt + ch * (1 - Math.log10(Math.max(1, v)) / maxLog); }
+      function xPx(n) { return ml + cw * ((n-1) / 19); }
+
+      // 격자
+      ctx.strokeStyle = 'rgba(38,34,28,0.07)';
+      ctx.fillStyle = SOFT; ctx.font = '11px "Spline Sans Mono", monospace';
+      for (let p = 0; p <= 6; p++) {
+        const y = mt + ch * (1 - p/maxLog);
+        ctx.beginPath(); ctx.moveTo(ml, y); ctx.lineTo(ml+cw, y); ctx.stroke();
+        ctx.fillText('10^' + p, 14, y+4);
+      }
+      ctx.fillText('뉴런 수 n →', ml + cw/2 - 36, H-8);
+      ctx.save(); ctx.translate(16, mt + ch/2 + 40); ctx.rotate(-Math.PI/2);
+      ctx.fillText('표현 가능 영역 (log)', 0, 0); ctx.restore();
+
+      // x 라벨
+      for (let n = 1; n <= 20; n += 4) {
+        ctx.fillText(n.toString(), xPx(n)-5, H-22);
+      }
+
+      // 두 곡선: one-hot = n, 분산 = 2^n
+      ctx.strokeStyle = STYLE; ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      for (let n = 1; n <= 20; n++) {
+        const x = xPx(n), y = yPx(n);
+        if (n === 1) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+
+      ctx.strokeStyle = STRUCT; ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      for (let n = 1; n <= 20; n++) {
+        const x = xPx(n), y = yPx(Math.pow(2, n));
+        if (n === 1) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+
+      // 현재 N 표시
+      const oneVal = N;
+      const distVal = Math.pow(2, N);
+      ctx.fillStyle = STYLE;
+      ctx.beginPath(); ctx.arc(xPx(N), yPx(oneVal), 5, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = STRUCT;
+      ctx.beginPath(); ctx.arc(xPx(N), yPx(distVal), 5, 0, Math.PI*2); ctx.fill();
+
+      // 라벨
+      ctx.fillStyle = STYLE; ctx.font = '11px "Spline Sans Mono", monospace';
+      ctx.fillText('one-hot (n)', xPx(15), yPx(15) + 18);
+      ctx.fillStyle = STRUCT;
+      ctx.fillText('분산 (2^n)', xPx(10) - 10, yPx(Math.pow(2,10)) - 8);
+
+      nval.textContent = 'n = ' + N;
+      document.getElementById('drOne').textContent = oneVal.toLocaleString() + ' 영역';
+      document.getElementById('drDist').textContent = distVal.toLocaleString() + ' 영역';
+
+      const v = document.getElementById('drverdict2');
+      const ratio = distVal / oneVal;
+      v.innerHTML = `같은 ${N}개의 뉴런으로 분산 표상은 one-hot보다 <b>${ratio.toLocaleString()}배</b> 더 많은 영역을 표현한다. 이 격차가 곧 일반화 능력의 격차다.`;
+    }
+    slider.addEventListener('input', draw);
+    draw();
+  })();
+
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
+        throwOnError: false,
+      });
+    }
+  });
+</script>
+</body>
+</html>

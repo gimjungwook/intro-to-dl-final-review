@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sub 02 · 다층 퍼셉트론 — 깊이가 가능하게 하는 것 · Ch.06</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  /* MLP 다이어그램 */
+  .mlp-diagram { max-width: var(--measure); margin: 1.6rem auto; padding: 1.2rem 1.4rem; background: linear-gradient(180deg,#fff,var(--paper-2)); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow-plate); }
+  .mlp-svg { width: 100%; height: auto; }
+  .mlp-legend { display: flex; flex-wrap: wrap; gap: 1.2rem; justify-content: center; margin-top: .9rem; font-family: var(--mono); font-size: .72rem; color: var(--ink-soft); }
+  .mlp-legend i { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: .35rem; vertical-align: -2px; }
+
+  /* 행렬 곱 미니 위젯 */
+  .matmul { max-width: var(--measure); margin: 1.4rem auto; padding: 1.1rem 1.4rem; background: var(--paper-2); border-radius: 10px; font-family: var(--mono); font-size: .9rem; line-height: 1.7; }
+  .matmul .row { display: grid; grid-template-columns: 1fr; gap: .3rem; }
+  .matmul code { background: #fff; padding: .15em .4em; border-radius: 4px; border: 1px solid var(--line-soft); }
+  .matmul .label { color: var(--ink-faint); font-size: .78rem; margin-top: .4rem; }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 02 · 한 방향으로 흐르는 함수의 구조</span>
+      <h1>다층 퍼셉트론(MLP) —<br><span class="t-structure">깊이</span>가 가능하게 하는 것</h1>
+      <p class="lede">은닉층 하나는 입력을 새 좌표계로 옮기는 행렬 곱과 비선형 꺾임의 합성이다. 깊이는 그 합성을 여러 번 반복하는 일이다.</p>
+    </header>
+
+    <div class="prose">
+      <p>이전 절에서 “은닉층은 새 좌표계다”라는 그림을 잡았다. 이 절은 그 그림을 <strong>수식과 구조</strong>로 다시 그린다. 즉 다층 퍼셉트론(multilayer perceptron, MLP)이라는 기계의 내부를 들여다본다.</p>
+
+      <h2>피드포워드 신경망 — 한 방향으로 흐르는 함수</h2>
+      <p>피드포워드 신경망(feedforward neural network)은 입력 $\mathbf{x}$를 출력 $\mathbf{y}$로 보내는 매핑 $\mathbf{y} = f(\mathbf{x}; \boldsymbol{\theta})$를 학습한다. 여기서 “feedforward”라는 이름은 <strong>정보가 입력에서 출력으로 한 방향으로만 흐른다</strong>는 뜻이다. 어떤 시점의 출력이 다음 시점의 입력으로 돌아가는 순환(feedback) 연결이 없다. 그래서 같은 입력은 항상 같은 출력을 낸다.</p>
+
+      <div class="analogy">
+        <b>공장의 일방통행 컨베이어 벨트</b>를 떠올려 보자. 원자재(입력)가 한쪽 끝에서 들어오면, 자르고, 조립하고, 칠하고, 포장하는 단계(은닉층)를 차례로 거쳐 완성품(출력)이 다른 쪽으로 나온다. 어느 단계의 결과를 앞 단계로 되돌리지 않는다. 이것이 피드포워드다. 반면 같은 자재를 일부 다시 입력으로 보내는 공장은 순환 신경망(RNN)에 가깝다 — 그건 10장에서 다룬다.
+      </div>
+
+      <h2>한 층 = 행렬 곱 + 비선형 활성</h2>
+      <p>층(layer) 하나가 하는 일은 두 단계로 쪼개진다. 첫째, <strong>아핀 변환(affine transformation)</strong> — 입력 벡터에 가중치 행렬을 곱하고 편향을 더한다. 둘째, <strong>비선형 활성(nonlinear activation)</strong> — 각 성분에 ReLU 같은 꺾임을 적용한다.</p>
+
+      <div class="math-block">$$ \mathbf{h}^{(l)} = g\!\left(W^{(l)} \mathbf{h}^{(l-1)} + \mathbf{b}^{(l)}\right) $$</div>
+      <p class="math-note">l번째 층의 출력 = (가중치 곱 + 편향) → 비선형 함수 g.</p>
+
+      <p>각 기호를 풀어 보면 이렇다.</p>
+      <table class="symbols">
+        <tr><td>$\mathbf{h}^{(l-1)}$</td><td>이전 층의 출력 (또는 $l=1$이면 입력 $\mathbf{x}$)</td></tr>
+        <tr><td>$W^{(l)}$</td><td>가중치 행렬. 행 = 새 좌표축의 개수, 열 = 이전 좌표축의 개수</td></tr>
+        <tr><td>$\mathbf{b}^{(l)}$</td><td>편향 벡터. 좌표축을 평행 이동</td></tr>
+        <tr><td>$g$</td><td>비선형 활성(ReLU 등). 그것이 없으면 전체가 선형으로 붕괴</td></tr>
+        <tr><td>$\mathbf{h}^{(l)}$</td><td>새 좌표계에서의 표현</td></tr>
+      </table>
+
+      <h2>가중치 행렬은 “회전·축척·반사”의 합성이다</h2>
+      <p>가중치 행렬 $W$를 그냥 “숫자들의 표”로 보지 말고 <strong>기하학적 변환</strong>으로 보자. 선형대수의 SVD(특이값 분해)로 보면 임의의 행렬 $W$는 “회전 → 축척(scaling) → 회전” 세 단계의 합성이다. 즉 가중치 행렬은 입력 공간을 회전시키고, 어떤 방향은 늘리고 어떤 방향은 줄인 뒤, 다시 회전시키는 일을 한다.</p>
+
+      <p>이 변환에 편향 벡터를 더하면 평행 이동이 추가된다. 그래서 $W\mathbf{x} + \mathbf{b}$는 “회전 + 늘이기 + 회전 + 평행 이동” — 일반적인 아핀 변환이다. 평행 이동이 없으면 항상 원점을 지나야 해서 표현력이 떨어진다. 그래서 편향 b는 단순한 부록이 아니라 <strong>필수 자유도</strong>다.</p>
+
+      <p>그 위에 비선형 활성 $g$가 들어가면, 직선들이 꺾인다. 이전 절의 XOR 예에서 본 것처럼, ReLU의 꺾임이 들어가는 순간 “접힌 종이”처럼 공간을 접을 수 있게 된다. 여기서 “접는다”는 표현은 비유가 아니라 실제 기하다 — ReLU는 입력 공간을 두 개의 반평면(half-plane)으로 나눠, 한쪽은 그대로 두고 다른 쪽은 0으로 눌러 접는다.</p>
+
+      <h2>2-2-1 MLP를 행렬로 적기</h2>
+      <p>이전 절의 XOR MLP를 행렬로 다시 적어 보자. 입력 $\mathbf{x} = (x_1, x_2)$, 은닉 2개, 출력 1개.</p>
+      <div class="math-block">$$ \mathbf{h} = \text{ReLU}\!\left( W^{(1)} \mathbf{x} + \mathbf{b}^{(1)} \right), \qquad \hat y = \sigma\!\left( \mathbf{w}^{(2)\top} \mathbf{h} + b^{(2)} \right) $$</div>
+      <p class="math-note">은닉층은 ReLU, 출력층은 시그모이드(이진 분류).</p>
+
+      <div class="matmul">
+        <div class="row"><b>구체적 형태</b></div>
+        <div class="label">은닉층 가중치 W⁽¹⁾ — 2×2 행렬, 편향 b⁽¹⁾ — 2×1 벡터</div>
+        <div class="row"><code>W⁽¹⁾ = [[1, 1], [1, 1]],  b⁽¹⁾ = [-0.5, -1.5]</code></div>
+        <div class="label">출력층 가중치 w⁽²⁾ — 2×1 벡터, 편향 b⁽²⁾ — 스칼라</div>
+        <div class="row"><code>w⁽²⁾ = [1, -2],  b⁽²⁾ = -0.3</code></div>
+      </div>
+
+      <p>입력 $(x_1, x_2) = (1, 0)$을 통과시키면 이렇게 흐른다.</p>
+      <ol>
+        <li>$W^{(1)} \mathbf{x} + \mathbf{b}^{(1)} = (1+0-0.5,\ 1+0-1.5) = (0.5, -1)$</li>
+        <li>ReLU → $\mathbf{h} = (0.5, 0)$</li>
+        <li>$\mathbf{w}^{(2)\top} \mathbf{h} + b^{(2)} = 1 \cdot 0.5 + (-2)\cdot 0 - 0.3 = 0.2$</li>
+        <li>시그모이드(0.2) ≈ 0.55 → 양성</li>
+      </ol>
+      <p>은닉 두 유닛이 같은 OR-like 합을 쓰지만 편향이 달라서, 하나는 “하나 이상 켜진 경우(OR)”에 반응하고 다른 하나는 “둘 다 켜진 경우(AND)”에 반응한다. 출력은 OR − 2·AND 형태가 되어 정확히 XOR을 흉내낸다. 이런 “OR과 AND의 차이로 XOR” 구성은 6장에서 가장 자주 나오는 미니 예제다.</p>
+
+      <h2>왜 다이어그램을 “레이어”로 그리는가</h2>
+      <p>피드포워드 신경망은 흔히 다음과 같이 그려진다.</p>
+    </div>
+
+    <div class="mlp-diagram">
+      <svg class="mlp-svg" viewBox="0 0 560 240" xmlns="http://www.w3.org/2000/svg">
+        <!-- 엣지 -->
+        <g stroke="#9aa3b0" stroke-width="1">
+          <!-- 입력→은닉 -->
+          <line x1="100" y1="80" x2="260" y2="60"/>
+          <line x1="100" y1="80" x2="260" y2="120"/>
+          <line x1="100" y1="80" x2="260" y2="180"/>
+          <line x1="100" y1="160" x2="260" y2="60"/>
+          <line x1="100" y1="160" x2="260" y2="120"/>
+          <line x1="100" y1="160" x2="260" y2="180"/>
+          <!-- 은닉→출력 -->
+          <line x1="260" y1="60" x2="460" y2="120"/>
+          <line x1="260" y1="120" x2="460" y2="120"/>
+          <line x1="260" y1="180" x2="460" y2="120"/>
+        </g>
+        <!-- 노드 -->
+        <g>
+          <circle cx="100" cy="80" r="22" fill="#F3EEE3" stroke="#2D5B7A" stroke-width="2"/>
+          <text x="100" y="86" text-anchor="middle" font-family="Fraunces, serif" font-size="16">x₁</text>
+          <circle cx="100" cy="160" r="22" fill="#F3EEE3" stroke="#2D5B7A" stroke-width="2"/>
+          <text x="100" y="166" text-anchor="middle" font-family="Fraunces, serif" font-size="16">x₂</text>
+          <circle cx="260" cy="60" r="22" fill="#fff" stroke="#A47B2E" stroke-width="2"/>
+          <text x="260" y="66" text-anchor="middle" font-family="Fraunces, serif" font-size="14">h₁</text>
+          <circle cx="260" cy="120" r="22" fill="#fff" stroke="#A47B2E" stroke-width="2"/>
+          <text x="260" y="126" text-anchor="middle" font-family="Fraunces, serif" font-size="14">h₂</text>
+          <circle cx="260" cy="180" r="22" fill="#fff" stroke="#A47B2E" stroke-width="2"/>
+          <text x="260" y="186" text-anchor="middle" font-family="Fraunces, serif" font-size="14">h₃</text>
+          <circle cx="460" cy="120" r="22" fill="#F3EEE3" stroke="#C0492E" stroke-width="2"/>
+          <text x="460" y="126" text-anchor="middle" font-family="Fraunces, serif" font-size="16">ŷ</text>
+        </g>
+        <!-- 층 이름 -->
+        <g font-family="Spline Sans Mono" font-size="11" fill="#8E8576">
+          <text x="100" y="225" text-anchor="middle">입력층</text>
+          <text x="260" y="225" text-anchor="middle">은닉층 (ReLU)</text>
+          <text x="460" y="225" text-anchor="middle">출력층 (σ)</text>
+        </g>
+      </svg>
+      <div class="mlp-legend">
+        <span><i style="background:#2D5B7A"></i>입력 — 데이터가 들어오는 자리</span>
+        <span><i style="background:#A47B2E"></i>은닉 — 새 좌표계의 축</span>
+        <span><i style="background:#C0492E"></i>출력 — 답을 내는 자리</span>
+      </div>
+    </div>
+
+    <div class="prose">
+      <p>이 그림이 잡아 주는 것은 두 가지다. 첫째, <strong>각 층 안의 뉴런은 같은 종류의 일을 한다.</strong> 그래서 “행렬 한 줄”로 표현할 수 있다. 둘째, <strong>층 사이에는 명확한 순서가 있고, 같은 층 안에서는 병렬</strong>이다. 이 사실이 GPU 가속을 가능하게 한다 — 한 층의 모든 뉴런을 한 번의 행렬 곱으로 계산할 수 있기 때문이다.</p>
+
+      <h2>은닉층은 “직접 감독되지 않는 표현 공간”이다</h2>
+      <p>출력층은 정답 데이터와 직접 연결된다. 모델이 무엇을 출력해야 하는지가 분명하다. 그런데 은닉층은 다르다. 데이터가 “첫 번째 은닉 뉴런은 반드시 에지(edge)를 검출하라” 같은 지시를 내려주지 않는다. 그래서 hidden — <em>숨겨진</em> 층이라고 부른다.</p>
+
+      <p>여기서 “숨겨진”의 의미를 정확히 잡는 것이 중요하다. <strong>은닉층의 활성값은 충분히 읽을 수 있다.</strong> 우리가 어떤 입력을 넣었을 때 각 은닉 뉴런이 얼마나 켜졌는지는 코드 한 줄로 출력 가능하다. “숨겨졌다”는 말은 접근 불가능하다는 뜻이 아니라, <em>직접 감독되는 목표가 없다</em>는 뜻이다.</p>
+
+      <p>이 특성이 딥러닝의 힘과 약점을 동시에 만든다. 힘은 — 모델이 정답을 맞히기 위해 중간 표현을 <strong>스스로 조직</strong>한다는 점. 이미지에서는 얕은 층이 에지/코너/질감을 잡고, 깊은 층이 부분 구조와 객체 개념을 잡는 경향이 나타난다. 텍스트에서는 단어 관계, 어순, 문맥적 역할이 점차 정리된다.</p>
+
+      <p>약점은 — 이 과정이 사람의 의미 라벨과 정확히 일치하지 않기 때문에 <strong>해석이 어렵다</strong>는 점. 학습된 모델 안에서 “여기 이 뉴런은 정확히 무엇을 검출하는가?”를 사람의 말로 옮기는 것은 별도의 연구 분야가 되어 있다(설명가능 AI, mechanistic interpretability). 학습 가능성과 해석 가능성은 분리된 문제다.</p>
+
+      <h2>층을 쌓는다 = 함수를 합성한다</h2>
+      <p>이제 깊이로 가자. 두 층짜리 MLP는 함수의 합성으로 적힌다.</p>
+      <div class="math-block">$$ f(\mathbf{x}) = f^{(3)}\!\left( f^{(2)}\!\left( f^{(1)}(\mathbf{x}) \right) \right) $$</div>
+      <p class="math-note">f⁽¹⁾, f⁽²⁾, f⁽³⁾가 차례로 적용된다. 각 단계가 “아핀 + 비선형”.</p>
+
+      <p>왜 합성인가? <em>한 층의 출력이 다음 층의 입력</em>이기 때문이다. 합성 함수 $f \circ g$의 깊이가 깊다는 것은 “단계적으로 정제”된다는 뜻이다. 1층은 거친 좌표 변환을, 2층은 그 위에서 다시 좌표를 정리하고, 3층은 또 그 위에서 다시 정리한다.</p>
+
+      <div class="analogy">
+        <b>이미지를 흑백 변환 → 윤곽 추출 → 다각형 단순화 → 도형 인식</b>으로 순차 처리하는 파이프라인을 생각해 보자. 각 단계는 앞 단계의 출력을 입력으로 받아 더 추상적인 표현으로 바꾼다. 깊이가 깊다는 건 이런 파이프라인의 단계 수가 많다는 것이고, 각 단계가 단순할수록 전체는 더 효율적으로 학습된다.
+      </div>
+
+      <p>이 단계적 합성이 왜 강력한지는 <a href="06.html">6절(만능 근사 정리)</a>에서 더 자세히 다룬다. 핵심만 미리 말해 두면 — <strong>얕은 모델이 같은 함수를 흉내내려면 지수적으로 더 많은 뉴런이 필요할 수 있다.</strong> 깊이는 “표현의 재사용”을 가능하게 한다.</p>
+
+      <h2>이 절이 잡아 준 그림</h2>
+      <ul>
+        <li><strong>한 층</strong> = 행렬 곱(아핀) + 비선형 활성. 두 단계의 합성.</li>
+        <li><strong>가중치 행렬</strong>은 회전·축척·반사의 합성, 즉 좌표 변환.</li>
+        <li><strong>편향</strong>은 평행 이동. 원점에 묶이지 않게 해주는 필수 자유도.</li>
+        <li><strong>은닉층</strong>은 직접 감독되지 않는 새 좌표계. 모델이 스스로 구성.</li>
+        <li><strong>깊이</strong> = 함수의 합성. 표현이 단계적으로 정제됨.</li>
+      </ul>
+
+      <p>다음 절에서는 “비선형 활성 $g$가 왜 그렇게 중요한가”를 더 정밀하게 본다. ReLU, sigmoid, tanh의 차이가 학습 가능성에 어떻게 영향을 미치는지가 핵심이다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script src="widgets.js"></script>
+<script>
+  window.addEventListener('load', () => {
+    CH6.buildNav('02');
+  });
+</script>
+</body>
+</html>

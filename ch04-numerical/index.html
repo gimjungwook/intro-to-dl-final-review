@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chapter 04 · 수치 계산 — 인터랙티브 복습</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .masthead { position: relative; max-width: var(--wide); margin: 0 auto; padding: 1.5rem 1.4rem 0; }
+  .hero-wrap { position: relative; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: linear-gradient(180deg,#fff,var(--paper-2)); box-shadow: var(--shadow-plate); }
+  #hero { display: block; width: 100%; height: 360px; }
+  .hero-cap { position: absolute; left: 1.2rem; bottom: 1rem; font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; color: var(--ink-faint); pointer-events: none; }
+  .hero-cap b { color: var(--structure); } .hero-cap em { color: var(--style); font-style: normal; }
+  .title-block { max-width: var(--wide); margin: 2.4rem auto 0; padding-inline: 1.4rem; }
+  .title-block .kicker { display: block; margin-bottom: 1rem; }
+  .title-block h1 { font-size: clamp(2.6rem, 7vw, 5rem); margin: 0; line-height: 1.05; }
+  .title-block h1 em { color: var(--synth); font-style: normal; }
+  .paper-meta { display: flex; flex-wrap: wrap; gap: .5rem 1.6rem; margin-top: 1.4rem; font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); letter-spacing: .02em; }
+  .paper-meta span b { color: var(--ink); font-weight: 500; }
+
+  .plates { max-width: var(--wide); margin: 1rem auto; padding: 2rem 1.4rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 1rem; }
+  .plate { position: relative; display: flex; flex-direction: column; text-decoration: none; color: inherit; background: #fff; border: 1px solid var(--line); border-radius: 13px; padding: 1.3rem 1.3rem 1.4rem; transition: transform .2s var(--ease), border-color .2s, box-shadow .2s; overflow: hidden; }
+  .plate:hover { transform: translateY(-4px); border-color: var(--synth); box-shadow: var(--shadow-plate); }
+  .plate .pno { font-family: var(--mono); font-size: .74rem; letter-spacing: .14em; color: var(--ink-faint); }
+  .plate h3 { font-family: var(--serif); font-size: 1.3rem; margin: .5rem 0 .5rem; line-height: 1.2; }
+  .plate p { font-size: .9rem; color: var(--ink-soft); line-height: 1.5; margin: 0; }
+  .plate .spectrum { display: flex; height: 4px; border-radius: 2px; overflow: hidden; margin-bottom: 1rem; }
+  .plate .spectrum i { display: block; height: 100%; }
+  .plate .go { margin-top: 1rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; color: var(--synth); opacity: 0; transform: translateX(-4px); transition: .2s var(--ease); }
+  .plate:hover .go { opacity: 1; transform: translateX(0); }
+  .plate .kw { margin-top: .8rem; font-family: var(--mono); font-size: .68rem; color: var(--ink-faint); letter-spacing: .04em; }
+
+  .section-intro { max-width: var(--measure); margin: 1rem auto 0; padding-inline: 1.4rem; }
+  .section-intro h2 { margin-top: 1rem; }
+  .twopole { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; max-width: var(--measure); margin: 1.6rem auto; padding-inline: 1.4rem; }
+  .pole { padding: 1.1rem 1.2rem; border-radius: 11px; }
+  .pole.s1 { background: var(--synth-bg); } .pole.s2 { background: var(--structure-bg); }
+  .pole h4 { margin: 0 0 .4rem; font-family: var(--serif); font-size: 1.1rem; }
+  .pole.s1 h4 { color: var(--synth); } .pole.s2 h4 { color: var(--structure); }
+  .pole p { margin: 0; font-size: .9rem; color: var(--ink-soft); line-height: 1.5; }
+  @media (max-width: 560px){ .twopole{ grid-template-columns: 1fr; } }
+
+  .path { max-width: var(--wide); margin: 2rem auto; padding: 1.6rem 1.4rem; }
+  .path-flow { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; font-family: var(--mono); font-size: .8rem; }
+  .path-flow a { display: inline-flex; align-items: center; gap: .4rem; text-decoration: none; color: var(--ink-soft); padding: .4rem .7rem; border: 1px solid var(--line); border-radius: 20px; transition: .15s; }
+  .path-flow a:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .path-flow a b { color: var(--synth); } .path-flow a:hover b { color: var(--style-lo); }
+  .path-flow .arr { color: var(--ink-faint); }
+
+  footer.colophon { max-width: var(--measure); margin: 3rem auto 4rem; padding: 2rem 1.4rem 0; border-top: 1px solid var(--line); font-size: .85rem; color: var(--ink-soft); }
+  footer.colophon a { color: var(--structure); }
+  footer.colophon .src { font-family: var(--mono); font-size: .76rem; line-height: 1.8; }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="hero-wrap">
+    <canvas id="hero"></canvas>
+    <div class="hero-cap"><b>설계도 — 수학식</b> ↔ <em>공법 — 부동소수점과 수렴</em> · 마우스를 올려보세요</div>
+  </div>
+</header>
+
+<div class="title-block">
+  <span class="kicker">Deep Learning Book · Chapter 4 · Numerical Computation</span>
+  <h1>수학식이 컴퓨터에서<br><em>무너지지 않게</em> 만드는 법</h1>
+  <div class="paper-meta">
+    <span><b>딥러닝 개론</b> 기말고사 인터랙티브</span>
+    <span>제작 <b>김정욱</b></span>
+    <span>분량 <b>약 30분</b></span>
+    <span>위젯 <b>5개</b></span>
+  </div>
+</div>
+
+<section class="section-intro">
+  <h2>한 문장으로</h2>
+  <p>이 장은 <strong>"수학적으로 옳은 식이 컴퓨터에서도 옳게 굴러가는가"</strong>라는 질문에 답한다. 부동소수점(floating point)은 유한한 비트로 무한한 실수를 흉내 내기 때문에, 종이 위에서는 자명한 계산도 실제로는 0으로 깎이거나 무한대로 터질 수 있다.</p>
+  <p>처음 읽을 때 가장 중요한 점은, 이 장이 <em>"새로운 모델을 제안하는"</em> 장이 <strong>아니라는</strong> 것이다. 이 장은 뒤이어 나오는 모든 학습 과정(softmax, log-likelihood, 경사하강, 헤시안)의 <span class="t-synth">바닥에서 작동하는 공법(工法)</span>을 다룬다. 좋은 설계도(수식)와 좋은 시공(수치 안정성·최적화)이 다 있어야 건물이 선다.</p>
+</section>
+
+<div class="twopole">
+  <div class="pole s1"><h4>수치 안정성 (공법)</h4><p>언더플로, 오버플로, 조건수. 종이에서 같은 식이라도 컴퓨터에서는 다른 결과가 나올 수 있다. logsumexp 트릭, max 빼기, 안정화된 softmax.</p></div>
+  <div class="pole s2"><h4>경사 기반 최적화 (방향)</h4><p>기울기, 헤시안, 학습률. 어디로 얼마나 내려갈 것인가의 문제. 안장점, 곡률, 뉴턴 방법, KKT 조건까지.</p></div>
+</div>
+
+<section class="plates" id="plates"></section>
+
+<section class="path">
+  <span class="kicker">권장 읽기 순서</span>
+  <div class="path-flow" id="pathflow"></div>
+</section>
+
+<footer class="colophon">
+  <p>이 해설은 Goodfellow, Bengio, Courville의 Deep Learning Book Chapter 4 (Numerical Computation)을 바텀업으로 다시 쓴 것이다. 부동소수점의 한계에서 출발해 1계·2계 최적화와 제약 최적화까지 단계별로 쌓아 올린다. 모든 수식은 "왜 그 형태인가"를 함께 설명한다.</p>
+  <p class="src">
+    원서 · <a href="https://www.deeplearningbook.org/contents/numerical.html">deeplearningbook.org/contents/numerical.html</a><br>
+    선행학습 노트 · <a href="../../../05-선행학습/Deep-Learning-Book-04-Numerical-Computation-상세해설.md">Ch.04 상세해설</a><br>
+    상위 인덱스 · <a href="../index.html">기말고사 인터랙티브 표지</a>
+  </p>
+</footer>
+
+<script>
+  const CHAPTERS = [
+    { no:'01', t:'부동소수점의 함정', d:'언더플로와 오버플로. 왜 softmax는 식 그대로 짜면 터지는가. max 빼기와 logsumexp 트릭의 등가성과 안전성.', sp:['synth','style'] },
+    { no:'02', t:'잘못된 조건수', d:'조건수 κ가 큰 행렬은 입력의 작은 흔들림을 출력의 큰 흔들림으로 증폭한다. 등고선 타원이 가늘어질수록 경사하강은 지그재그를 그린다.', sp:['structure','synth'] },
+    { no:'03', t:'경사 기반 최적화', d:'미분과 기울기. 왜 음의 기울기가 가장 가파른 하강 방향인가. 학습률 ε 슬라이더로 발산·진동·수렴을 직접 본다.', sp:['structure'] },
+    { no:'04', t:'헤시안과 2계 방법', d:'곡률 H가 알려 주는 추가 정보. 뉴턴법은 어떻게 한 번에 점프하는가. GD와 Newton의 궤적 비교, 그리고 안장점에서 깨지는 이유.', sp:['structure-lo','synth'] },
+    { no:'05', t:'제약 최적화와 KKT', d:'해가 어떤 집합 안에 있어야 할 때. 라그랑주 승수의 직관과 KKT 조건이 왜 그 형태인가.', sp:['style','synth'] },
+    { no:'06', t:'시험 대비 — 한 장 요약과 예상 문제', d:'중간/기말 빈출 질문 카드. softmax 안정화, 조건수, 안장점, 헤시안, 뉴턴법의 한 줄 답안. Ch.8 최적화로 가는 다리.', sp:['ink-soft','ink'] },
+  ];
+  const colMap = { structure:'var(--structure)', 'structure-lo':'var(--structure-lo)', style:'var(--style)', 'style-lo':'var(--style-lo)', synth:'var(--synth)', ink:'var(--ink)', 'ink-soft':'var(--ink-soft)' };
+  const platesEl = document.getElementById('plates');
+  const flowEl = document.getElementById('pathflow');
+  CHAPTERS.forEach((c, idx) => {
+    const sp = c.sp.length === 1 ? [c.sp[0], c.sp[0]] : c.sp;
+    const a = document.createElement('a');
+    a.className = 'plate'; a.href = c.no + '.html';
+    a.innerHTML = `
+      <div class="spectrum">${sp.map(s=>`<i style="flex:1;background:${colMap[s]}"></i>`).join('')}</div>
+      <span class="pno">SUB-CHAPTER ${c.no}</span>
+      <h3>${c.t}</h3>
+      <p>${c.d}</p>
+      <span class="go">읽기 →</span>`;
+    platesEl.appendChild(a);
+
+    const f = document.createElement('a'); f.href = c.no + '.html';
+    f.innerHTML = `<b>${c.no}</b> ${c.t}`;
+    flowEl.appendChild(f);
+    if (idx < CHAPTERS.length - 1) { const s = document.createElement('span'); s.className='arr'; s.textContent='→'; flowEl.appendChild(s); }
+  });
+
+  // 히어로 — 손실 표면 위의 경사하강 입자
+  window.addEventListener('load', () => {
+    const canvas = document.getElementById('hero');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    function resize() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const w = canvas.clientWidth, h = 360;
+      canvas.width = w * dpr; canvas.height = h * dpr;
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    // 손실 함수: 타원 + 마우스에 의해 종횡비 변형
+    let mouseX = 0.5;
+    canvas.addEventListener('mousemove', (e) => {
+      const r = canvas.getBoundingClientRect();
+      mouseX = (e.clientX - r.left) / r.width;
+    });
+    canvas.addEventListener('mouseleave', () => { mouseX = 0.5; });
+
+    // 입자: GD 궤적
+    let particles = [];
+    function spawn() {
+      particles = [];
+      for (let i = 0; i < 18; i++) {
+        const theta = (i / 18) * Math.PI * 2;
+        particles.push({ x: Math.cos(theta) * 0.8, y: Math.sin(theta) * 0.5, vx:0, vy:0, life: Math.random() });
+      }
+    }
+    spawn();
+
+    function loss(x, y, a) { return 0.5 * (x*x + a*a*y*y); }
+    function grad(x, y, a) { return [x, a*a*y]; }
+
+    function draw() {
+      const w = canvas.clientWidth, h = 360;
+      ctx.clearRect(0,0,w,h);
+      // 배경
+      ctx.fillStyle = '#FAF7F0'; ctx.fillRect(0,0,w,h);
+
+      const cx = w/2, cy = h/2;
+      const scale = Math.min(w, h) * 0.32;
+      // 종횡비: mouseX 0→1이면 a 1→6
+      const a = 1 + mouseX * 5;
+
+      // 등고선
+      ctx.lineWidth = 1;
+      for (let lev = 1; lev <= 7; lev++) {
+        const c = lev * 0.18;
+        ctx.strokeStyle = `rgba(45, 91, 122, ${0.10 + lev*0.04})`;
+        ctx.beginPath();
+        for (let t = 0; t <= Math.PI*2 + 0.01; t += 0.04) {
+          const x = Math.sqrt(2*c) * Math.cos(t);
+          const y = Math.sqrt(2*c) * Math.sin(t) / a;
+          const px = cx + x * scale;
+          const py = cy - y * scale;
+          if (t === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        }
+        ctx.closePath(); ctx.stroke();
+      }
+
+      // 경사하강 입자
+      const lr = 0.04;
+      particles.forEach(p => {
+        const [gx, gy] = grad(p.x, p.y, a);
+        // 이전 위치 저장
+        const px0 = cx + p.x * scale, py0 = cy - p.y * scale;
+        p.x -= lr * gx;
+        p.y -= lr * gy;
+        p.life += 0.01;
+        const px1 = cx + p.x * scale, py1 = cy - p.y * scale;
+
+        // 궤적
+        ctx.strokeStyle = `rgba(164, 123, 46, ${0.65 - p.life*0.5})`;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(px0, py0); ctx.lineTo(px1, py1); ctx.stroke();
+
+        // 점
+        ctx.fillStyle = `rgba(192, 73, 46, ${Math.max(0.2, 1 - p.life)})`;
+        ctx.beginPath(); ctx.arc(px1, py1, 2.5, 0, Math.PI*2); ctx.fill();
+
+        // 중앙 가까이 가면 재생성
+        if (Math.abs(p.x) < 0.02 && Math.abs(p.y) < 0.02 || p.life > 1.2) {
+          const theta = Math.random() * Math.PI * 2;
+          p.x = Math.cos(theta) * 0.8;
+          p.y = Math.sin(theta) * 0.5;
+          p.life = 0;
+        }
+      });
+
+      // 중심
+      ctx.fillStyle = '#26221C';
+      ctx.beginPath(); ctx.arc(cx, cy, 3, 0, Math.PI*2); ctx.fill();
+
+      // 조건수 라벨
+      ctx.fillStyle = '#8E8576';
+      ctx.font = '11px "Spline Sans Mono", monospace';
+      ctx.fillText(`κ ≈ ${(a*a).toFixed(1)}`, 14, h - 14);
+
+      requestAnimationFrame(draw);
+    }
+    draw();
+  });
+</script>
+</body>
+</html>

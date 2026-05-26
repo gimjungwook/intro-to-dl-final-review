@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>09 / 08 / 시험 대비</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .qcard { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 1.2rem 1.3rem; margin-bottom: 1rem; transition: border-color .15s; }
+  .qcard:hover { border-color: var(--structure-lo); }
+  .qcard summary { cursor: pointer; font-family: var(--serif); font-size: 1.05rem; font-weight: 600; color: var(--structure); list-style: none; padding-right: 1.5rem; position: relative; }
+  .qcard summary::-webkit-details-marker { display: none; }
+  .qcard summary::after { content: '+'; position: absolute; right: 0; top: 0; font-family: var(--mono); font-weight: 400; color: var(--ink-faint); font-size: 1.4rem; line-height: 1; transition: transform .15s; }
+  .qcard[open] summary::after { transform: rotate(45deg); }
+  .qcard .ans { margin-top: .8rem; padding-top: .8rem; border-top: 1px solid var(--line-soft); font-size: .92rem; color: var(--ink-soft); line-height: 1.65; }
+  .qcard .ans p { margin: 0 0 .6rem; }
+  .qcard .ans p:last-child { margin-bottom: 0; }
+  .qcard .ans b { color: var(--ink); }
+  .qcard .ans .t-style { color: var(--style); font-weight: 640; }
+  .qcard .ans .t-structure { color: var(--structure); font-weight: 640; }
+
+  .diff-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1.4rem 0; }
+  @media (max-width: 580px) { .diff-grid { grid-template-columns: 1fr; } }
+  .diff { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 1.1rem 1.2rem; }
+  .diff h4 { margin: 0 0 .4rem; font-family: var(--serif); font-size: 1.05rem; }
+  .diff.s1 { border-left: 3px solid var(--structure); }
+  .diff.s1 h4 { color: var(--structure); }
+  .diff.s2 { border-left: 3px solid var(--style); }
+  .diff.s2 h4 { color: var(--style); }
+  .diff p { margin: 0; font-size: .9rem; color: var(--ink-soft); line-height: 1.55; }
+  .diff .ex { margin-top: .5rem; padding-top: .5rem; border-top: 1px solid var(--line-soft); font-family: var(--mono); font-size: .72rem; color: var(--ink-faint); }
+
+  .keymap { display: grid; grid-template-columns: max-content 1fr; gap: .6rem 1.2rem; margin: 1.4rem 0; padding: 1.2rem 1.4rem; background: var(--paper-2); border-radius: 10px; }
+  .keymap dt { font-family: var(--mono); font-size: .82rem; color: var(--structure); font-weight: 600; }
+  .keymap dd { margin: 0; font-size: .92rem; color: var(--ink-soft); line-height: 1.5; }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-chapter 08 / D-day 전 마지막 카드</span>
+      <h1>시험 대비 — 핵심 구분과<br><span class="t-style">예상 질문 체크리스트</span></h1>
+      <p class="lede">9장에서 가장 잘 헷갈리고 시험에서 가장 자주 묻는 구분들을 한 자리에. 클릭하면 답이 펼쳐진다. 시험 직전 30분에 한 번 더 훑을 카드.</p>
+    </header>
+
+    <div class="prose">
+      <p>여기까지 7개의 sub-chapter를 통해 9장의 모든 주요 개념을 정리했다. 마지막 이 페이지는 그 내용을 “시험 직전 카드” 형식으로 압축한다. 두 부분이다 — 먼저 가장 헷갈리기 쉬운 5가지 구분을 카드로 정리하고, 그다음 출제 가능성이 높은 질문 8개를 “문제 → 답” 펼침 카드로 정리한다.</p>
+
+      <h2>한눈에 보는 키워드 지도</h2>
+
+      <p>9장의 모든 핵심 개념이 어떻게 한 지도 위에 펼쳐지는지부터 한 번 더 확인하자. 시험에서 어떤 질문이 나와도 이 키워드 중 어딘가에 닿는다.</p>
+    </div>
+
+    <dl class="keymap">
+      <dt>희소 상호작용</dt><dd>한 출력이 작은 입력 창에만 의존. 완전연결의 “모든 픽셀 ↔ 모든 픽셀” 거미줄을 제거.</dd>
+      <dt>파라미터 공유</dt><dd>같은 커널을 모든 위치에서 사용. 파라미터 수가 입력 크기와 무관해진다.</dd>
+      <dt>변환 등가성</dt><dd>입력이 옮겨지면 출력도 옮겨진다. 합성곱이 자동으로 보장.</dd>
+      <dt>변환 불변성</dt><dd>입력이 옮겨져도 출력이 거의 변하지 않는다. 풀링이 근사적으로 제공.</dd>
+      <dt>수용 영역</dt><dd>한 출력 뉴런이 의존하는 입력 영역. 층이 깊어질수록 확대.</dd>
+      <dt>출력 크기 공식</dt><dd>⌊(n + 2p − k) / s⌋ + 1. 외울 필요 없이 그림에서 유도.</dd>
+      <dt>강한 사전(prior)</dt><dd>CNN은 “국소성 + 이동 등가”라는 가정을 모델 구조에 새긴다. 자연 이미지에 거의 항상 맞음.</dd>
+      <dt>잔차 연결</dt><dd>H(x) = F(x) + x. 항등 매핑 학습을 쉽게 + 기울기에 지름길. 열화 문제의 해결책.</dd>
+    </dl>
+
+    <div class="prose">
+      <h2>가장 헷갈리는 5가지 구분</h2>
+    </div>
+
+    <div class="diff-grid">
+      <div class="diff s1">
+        <h4>등가성 (Equivariance)</h4>
+        <p>입력이 옮겨지면 출력도 <b>같은 방향, 거리</b>만큼 옮겨진다. f(Shift(x)) = Shift(f(x)).</p>
+        <div class="ex">합성곱 층이 제공. 위치 정보 <b>보존</b>.</div>
+      </div>
+      <div class="diff s2">
+        <h4>불변성 (Invariance)</h4>
+        <p>입력이 옮겨져도 출력이 <b>거의 변하지 않는다</b>. f(Shift(x)) ≈ f(x).</p>
+        <div class="ex">풀링 층이 근사적으로 제공. 위치 정보 <b>폐기</b>.</div>
+      </div>
+    </div>
+
+    <div class="diff-grid">
+      <div class="diff s1">
+        <h4>수학적 합성곱</h4>
+        <p>커널을 뒤집어 적용. s(t) = Σ x(a) w(t−a). 신호처리, 수학 교과서의 정의.</p>
+        <div class="ex">실용적으로는 신경 쓰지 않는다.</div>
+      </div>
+      <div class="diff s2">
+        <h4>교차상관 (실제 구현)</h4>
+        <p>커널을 뒤집지 않고 그대로 적용. S(i,j) = Σ I(i+m, j+n) K(m,n). PyTorch, TF가 실제로 하는 것.</p>
+        <div class="ex">가중치가 학습되므로 뒤집기 여부는 결과에 영향 없음.</div>
+      </div>
+    </div>
+
+    <div class="diff-grid">
+      <div class="diff s1">
+        <h4>유효 합성곱 (Valid)</h4>
+        <p>패딩 없음 (p=0). 출력 크기가 입력보다 작아진다. 32 → 30 (3×3, s=1).</p>
+        <div class="ex">가장자리 정보가 덜 반영.</div>
+      </div>
+      <div class="diff s2">
+        <h4>동일 합성곱 (Same)</h4>
+        <p>출력 크기 = 입력 크기가 되도록 패딩(예: 3×3이면 p=1). 32 → 32.</p>
+        <div class="ex">여러 층을 쌓을 때 크기 계산이 편해진다.</div>
+      </div>
+    </div>
+
+    <div class="diff-grid">
+      <div class="diff s1">
+        <h4>풀링 다운샘플링</h4>
+        <p>학습 가중치 없는 고정된 함수 (max 또는 avg). 정확한 위치를 폐기.</p>
+        <div class="ex">불변성을 만든다. 그러나 위치 정보 손실.</div>
+      </div>
+      <div class="diff s2">
+        <h4>스트라이드 합성곱</h4>
+        <p>같은 다운샘플링 효과를 내지만, 가중치가 학습된다 (s=2 합성곱).</p>
+        <div class="ex">“무엇을 버릴지”를 데이터로부터 배운다.</div>
+      </div>
+    </div>
+
+    <div class="diff-grid">
+      <div class="diff s1">
+        <h4>약한 사전 (L2 정칙화)</h4>
+        <p>큰 가중치가 있을 수는 있지만 <b>비용을 비싸게</b> 매김. “안전벨트는 매면 좋다.”</p>
+        <div class="ex">7장 정칙화의 접근.</div>
+      </div>
+      <div class="diff s2">
+        <h4>강한 사전 (CNN 구조)</h4>
+        <p>국소적이지 않거나 이동 등가가 아닌 가중치 배치는 <b>표현 불가</b>. “안전벨트 없으면 시동 안 걸림.”</p>
+        <div class="ex">9장 CNN의 접근. 사전이 맞을 때 압도적.</div>
+      </div>
+    </div>
+
+    <div class="prose">
+      <h2>출제 가능성 높은 질문 8개</h2>
+      <p>각 카드를 클릭하면 답이 펼쳐진다. 답을 먼저 가린 채 머릿속에서 한 번 답해 본 다음, 카드를 열어 비교하는 방식을 권한다.</p>
+    </div>
+
+    <div style="max-width: var(--measure); margin: 0 auto; padding-inline: 1.4rem;">
+
+      <details class="qcard">
+        <summary>Q1. 합성곱이 완전연결 대비 파라미터를 극적으로 줄일 수 있는 이유는?</summary>
+        <div class="ans">
+          <p>두 가지 구조적 제약 때문이다. <span class="t-structure">희소 상호작용</span>으로 각 출력이 작은 입력 창(예: 3×3)에만 의존하게 하고, <span class="t-structure">파라미터 공유</span>로 같은 커널을 이미지 모든 위치에서 사용한다.</p>
+          <p>256×256 단일 채널 이미지에서 완전연결 층은 약 <b>43억 개</b> 가중치가 필요하지만, 3×3 합성곱은 <b>단 9개</b>로 같은 일을 한다. 비율로는 약 5억분의 1.</p>
+          <p>이 효율은 공짜가 아니라 “국소성 + 이동 등가”라는 강한 사전을 모델에 박은 대가다. 자연 이미지에는 거의 항상 맞기 때문에 사실상 손해 없는 거래.</p>
+        </div>
+      </details>
+
+      <details class="qcard">
+        <summary>Q2. 희소 상호작용, 파라미터 공유, 변환 등가성 — 셋은 어떻게 연결되나?</summary>
+        <div class="ans">
+          <p>셋은 <b>한 가지 사전(prior)의 세 얼굴</b>이다. 그 사전은 두 조건만 요구한다 — (1) 학습된 함수는 국소 상호작용에만 의존, (2) 이동에 대해 등가.</p>
+          <p>희소 상호작용은 (1)의 직접 표현이다. 파라미터 공유는 (2)를 만족시키기 위한 메커니즘 — 모든 위치에서 같은 가중치를 써야 “위치에 무관”이 보장된다. 변환 등가성은 파라미터 공유의 자동 결과다.</p>
+          <p>그래서 셋을 “세 가지 트릭”이 아니라 “하나의 가정에서 갈라진 세 결과”로 이해해야 한다.</p>
+        </div>
+      </details>
+
+      <details class="qcard">
+        <summary>Q3. 풀링이 등가성에서 불변성으로 전환하는 메커니즘은?</summary>
+        <div class="ans">
+          <p>합성곱은 등가(equivariant)다 — 입력이 옮겨지면 출력도 같이 옮겨진다. 그러나 분류기는 “고양이가 어디에 있든 고양이”라고 판단해야 하므로 불변(invariant)이 필요하다.</p>
+          <p>2×2 최대 풀링의 동작을 보자. 풀링 창 안에서 최댓값을 취하므로, 입력의 작은 이동(풀링 창 크기보다 작은 이동)에 대해 같은 창 안의 최댓값은 거의 변하지 않는다. 이것이 <b>근사적 불변성</b>이다.</p>
+          <p>풀링을 여러 층 거치면 점점 더 큰 이동에 대해서도 출력이 안정되어, 분류기 수준에서는 사실상 위치에 강인해진다.</p>
+        </div>
+      </details>
+
+      <details class="qcard">
+        <summary>Q4. CNN을 “무한히 강한 사전을 가진 완전연결 네트워크”로 보는 관점은 7장 정칙화와 어떻게 연결되나?</summary>
+        <div class="ans">
+          <p>둘 다 “가설 공간을 제한해 일반화를 개선한다”는 같은 목적을 갖지만, 강도가 다르다.</p>
+          <p><span class="t-structure">L2 정칙화 (약한 사전)</span>: 큰 가중치도 가능하되 비용을 비싸게 매김. 위반 가능하지만 비싸다.</p>
+          <p><span class="t-style">CNN 구조 (강한 사전)</span>: 국소적이지 않거나 이동에 등가가 아닌 가중치 배치는 표현 자체가 불가. 위반 불가능.</p>
+          <p>둘 다 편향-분산 트레이드오프에서 편향을 올리고 분산을 낮춘다. 차이는 “얼마나 강하게” 그렇게 하느냐. 자연 이미지처럼 사전이 맞는 도메인에서는 강한 사전이 압도적으로 유리하다.</p>
+        </div>
+      </details>
+
+      <details class="qcard">
+        <summary>Q5. 3×3 커널을 여러 층 쌓는 것이 큰 커널 하나보다 유리한 두 가지 이유는?</summary>
+        <div class="ans">
+          <p>VGGNet이 입증한 “3×3의 철학”이다. 3×3 두 층과 5×5 한 층은 같은 5×5 수용 영역을 가진다.</p>
+          <p><b>(1) 파라미터가 적다</b>: 3×3 × 2 = 18 vs 5×5 = 25. 3×3 세 층 (7×7 수용 영역) vs 7×7 한 층은 27 vs 49.</p>
+          <p><b>(2) 비선형성이 더 많다</b>: 층 사이에 ReLU가 한 번씩 더 들어가, 같은 시야를 보면서 더 풍부한 비선형 함수를 표현할 수 있다.</p>
+          <p>같은 시야, 더 적은 파라미터, 더 많은 표현력 — 세 가지를 동시에 챙기는 거래.</p>
+        </div>
+      </details>
+
+      <details class="qcard">
+        <summary>Q6. ResNet의 잔차 연결이 열화 문제를 해결하는 원리는?</summary>
+        <div class="ans">
+          <p>핵심은 두 가지다.</p>
+          <p><b>(1) 항등 매핑 학습의 용이성</b>: 각 블록이 H(x) = F(x) + x를 출력하므로, “이 추가 층이 아무것도 하지 않는 것이 최선”이라면 F(x) = 0만 학습하면 된다. 가중치를 0에 가깝게 만드는 것은 복잡한 항등 매핑을 직접 학습하는 것보다 훨씬 쉽다.</p>
+          <p><b>(2) 기울기의 지름길</b>: 역전파에서 기울기가 덧셈 연산을 통해 깊은 층에서 얕은 층으로 직접 흐를 통로가 생긴다. 기울기 소실이 구조적으로 완화된다.</p>
+          <p>비유로는 <b>“처음부터 완벽한 답안을 쓰는 것”보다 “기존 답안에서 고칠 부분만 적는 것”</b>이 더 쉽다는 것. 이 한 줄의 변화로 152층(+)이 학습 가능해졌다.</p>
+        </div>
+      </details>
+
+      <details class="qcard">
+        <summary>Q7. CNN의 구조적 사전(prior)이 맞지 않는 데이터의 예시는?</summary>
+        <div class="ans">
+          <p>CNN은 “국소성 + 이동 등가”를 전제한다. 이 두 가정이 깨지는 데이터에는 CNN이 오히려 해롭다.</p>
+          <p><b>표 형식 데이터(tabular data)</b>: 각 칼럼의 의미가 서로 무관할 수 있다. “나이” 칼럼과 “수입” 칼럼이 인접해 있다고 해서 더 관계 있는 것은 아니다. 칼럼 순서를 바꾸는 “이동”이 의미를 바꾸지 않으므로 이동 등가 자체가 정의되지 않는다.</p>
+          <p><b>그래프 구조 데이터</b>: 노드의 “이웃”이 평면 격자가 아니라 임의 그래프로 정의된다. 합성곱의 “고정된 작은 창”이 작동하지 않는다. → 그래프 신경망(GNN) 같은 다른 구조가 필요하다.</p>
+          <p><b>순서가 의미 있는 시퀀스</b>: 자연어 처럼 “먼 거리의 의존성”이 결정적인 데이터. 작은 창만 보는 합성곱으로는 잡기 어려워, 트랜스포머, 어텐션이 더 적합하다.</p>
+        </div>
+      </details>
+
+      <details class="qcard">
+        <summary>Q8. 수용 영역(receptive field)이 층을 쌓을수록 커지는 것이 계층적 특징 추출과 어떻게 연결되나?</summary>
+        <div class="ans">
+          <p>한 합성곱 층의 한 출력은 직접적으로는 작은 창(예: 3×3)만 본다. 그러나 층을 쌓으면 깊은 층의 한 출력은 간접적으로 점점 더 넓은 입력 영역에 의존한다 — 3×3 두 층이면 5×5, 세 층이면 7×7.</p>
+          <p>이 점진적 확대가 계층적 특징 추출의 직접 근거다.</p>
+          <p><b>얕은 층 (수용 영역 작음)</b>: 픽셀 수준의 단순 패턴 — 에지, 코너, 색 경계.</p>
+          <p><b>중간 층 (수용 영역 중간)</b>: 텍스처, 반복 패턴, 부분 구조.</p>
+          <p><b>깊은 층 (수용 영역 큼)</b>: 눈, 바퀴 같은 객체 부분, 그리고 전체 객체와 장면 구조.</p>
+          <p>인간이 “에지 → 텍스처 → 부분 → 전체”의 특징 계층을 명시적으로 설계하지 않아도, CNN은 학습을 통해 자동으로 이 계층을 형성한다. 이것이 표현 학습의 핵심.</p>
+        </div>
+      </details>
+
+    </div>
+
+    <div class="prose">
+      <h2>D-day 8일 전 — 마지막 한 줄</h2>
+
+      <p>9장에서 절대 잊으면 안 되는 한 줄을 적자면 이렇다 — <strong>“CNN은 자연 이미지의 두 가지 통계적 사실(가까운 픽셀끼리 의미가 모이고, 같은 패턴은 어디에 있든 같다)을 모델 구조에 직접 새겨 넣은 결과다.”</strong> 합성곱, 풀링, 잔차 연결, 모든 아키텍처 발전이 이 한 문장의 변주다.</p>
+
+      <p>여기까지가 Chapter 09의 모든 것이다. <a href="index.html">표지</a>로 돌아가 다른 sub-chapter를 다시 훑어보거나, <a href="../index.html">기말고사 인터랙티브 복습</a> 표지로 돌아가 Chapter 10(RNN) 등 다른 챕터로 넘어갈 수 있다. 시험 잘 보자.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    { no: '01', t: '왜 완전연결은 안 되는가' },
+    { no: '02', t: '합성곱의 정의' },
+    { no: '03', t: 'CNN의 3대 핵심 속성' },
+    { no: '04', t: '풀링 — 평행이동 불변성' },
+    { no: '05', t: '신경과학적 기원' },
+    { no: '06', t: '출력 크기, 스트라이드, 패딩' },
+    { no: '07', t: '대표 아키텍처 계보' },
+    { no: '08', t: '시험 대비' },
+  ];
+  function buildNav(cur) {
+    const tb = document.querySelector('.topbar');
+    if (tb) tb.innerHTML =
+      '<a class="home" href="index.html">← Chapter 09 / 합성곱 신경망</a>' +
+      '<span class="ch-mini">SUB ' + cur + ' / 08</span>';
+    const ol = document.querySelector('.ch-nav ol');
+    if (ol) ol.innerHTML = SUBS.map(c =>
+      '<li><a href="' + c.no + '.html"' + (c.no === cur ? ' class="current"' : '') + '>' + c.t + '</a></li>').join('');
+    const foot = document.querySelector('.ch-foot');
+    if (foot) {
+      const i = SUBS.findIndex(c => c.no === cur);
+      const prev = i > 0 ? SUBS[i - 1] : { no: '', t: '표지로', _href: 'index.html' };
+      const next = i < SUBS.length - 1 ? SUBS[i + 1] : { no: '', t: '표지로', _href: 'index.html' };
+      const hp = prev._href || (prev.no + '.html');
+      const hn = next._href || (next.no + '.html');
+      foot.innerHTML =
+        '<a href="' + hp + '"><div class="dir">← 이전</div><div class="ti">' + prev.t + '</div></a>' +
+        '<a href="' + hn + '" class="next"><div class="dir">다음 →</div><div class="ti">' + next.t + '</div></a>';
+    }
+  }
+  function initScroll() {
+    const bar = document.querySelector('.scroll-progress');
+    if (!bar) return;
+    const on = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    document.addEventListener('scroll', on, { passive: true }); on();
+  }
+
+  window.addEventListener('load', () => {
+    buildNav('08'); initScroll();
+  });
+</script>
+</body>
+</html>

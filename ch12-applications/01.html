@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>12.01 · 대규모 비전 분류 — CNN의 본거지</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  /* === 비전 파이프라인 위젯 === */
+  .pipe-vision { display: grid; grid-template-columns: repeat(5, 1fr); gap: .35rem; padding: 1.4rem 1.1rem 1rem; align-items: stretch; }
+  .pv-step { position: relative; cursor: pointer; padding: 1rem .7rem; background: #fff; border: 1px solid var(--line); border-top: 3px solid var(--structure-lo); border-radius: 9px; transition: transform .15s var(--ease), box-shadow .15s, border-color .15s; }
+  .pv-step:hover { transform: translateY(-3px); box-shadow: var(--shadow-plate); border-top-color: var(--style); }
+  .pv-step.active { border-top-color: var(--style); background: var(--paper-2); }
+  .pv-step .pv-num { font-family: var(--mono); font-size: .66rem; letter-spacing: .14em; color: var(--ink-faint); }
+  .pv-step .pv-name { font-family: var(--serif); font-size: 1rem; margin-top: .3rem; color: var(--ink); line-height: 1.2; }
+  .pv-step .pv-mini { margin-top: .6rem; height: 38px; display: flex; align-items: center; justify-content: center; }
+  .pv-detail { max-width: 720px; margin: .8rem auto 1rem; padding: 1rem 1.2rem; background: var(--paper-2); border: 1px solid var(--line-soft); border-radius: 10px; font-size: .92rem; color: var(--ink-soft); line-height: 1.6; min-height: 8rem; }
+  .pv-detail h5 { margin: 0 0 .5rem; font-family: var(--serif); color: var(--style); font-size: 1.08rem; }
+  .pv-detail code { font-family: var(--mono); font-size: .82rem; background: #fff; padding: .1em .35em; border-radius: 4px; }
+  @media (max-width: 700px) { .pipe-vision { grid-template-columns: 1fr 1fr; } }
+
+  /* mini visual elements */
+  .pv-img-raw { width: 38px; height: 38px; border-radius: 4px; background: linear-gradient(135deg, #C0492E 0%, #A47B2E 40%, #2D5B7A 70%, #6E97AF 100%); border: 1px solid var(--line); }
+  .pv-img-norm { width: 38px; height: 38px; border-radius: 4px; background: linear-gradient(135deg, #8E8576 0%, #5A5247 50%, #26221C 100%); border: 1px solid var(--line); }
+  .pv-img-aug { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; }
+  .pv-img-aug i { width: 18px; height: 18px; border-radius: 3px; background: linear-gradient(135deg, #C0492E, #2D5B7A); }
+  .pv-img-aug i:nth-child(2) { transform: scaleX(-1); }
+  .pv-img-aug i:nth-child(3) { filter: hue-rotate(40deg); }
+  .pv-img-aug i:nth-child(4) { filter: hue-rotate(-30deg); }
+  .pv-cnn-bars { display: flex; align-items: flex-end; gap: 3px; height: 38px; }
+  .pv-cnn-bars i { width: 4px; background: var(--structure); border-radius: 1px 1px 0 0; }
+  .pv-softmax { display: flex; align-items: flex-end; gap: 2px; height: 38px; }
+  .pv-softmax i { width: 5px; background: var(--style); border-radius: 1px 1px 0 0; }
+  .pv-softmax i.win { background: var(--synth); }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar">
+  <a class="home" href="index.html">← Chapter 12 표지</a>
+  <span class="ch-mini">12.01 · 비전 분류</span>
+</div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol id="navlist"></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-chapter 01 · 비전이 딥러닝에 가장 먼저 굴복한 이유</span>
+      <h1>대규모 비전 분류 —<br>CNN의 <span class="t-structure">본거지</span></h1>
+      <p class="lede">비전은 딥러닝이 처음 산업적으로 성공한 도메인이다. 그 성공이 우연이 아닌 것은, 이미지의 통계적 구조 자체가 합성곱 신경망의 가정과 거의 그대로 일치하기 때문이다. 이 장은 그 일치를 워크플로로 풀어낸다.</p>
+    </header>
+
+    <div class="prose">
+      <p>먼저 그림을 하나 박아 두자. 비전 분류는 단일 모델 호출이 아니라 <strong>파이프라인</strong>이다. 원본 사진이 들어오면 <em>표준화 → 증강 → 대비 정규화 → CNN → softmax</em>를 거쳐 “이건 고양이”라는 한 줄의 답이 나온다. 책은 새로운 손실 함수를 제안하지 않는다. 대신 이 다섯 단계 각각이 <strong>왜 그 자리에 있어야 하는가</strong>를 설명한다. 아래 위젯에서 각 단계를 눌러 보면 그 단계가 사라졌을 때 모델이 어디서 무너지는지가 드러난다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 12.01</span><span>비전 분류 파이프라인 — 단계를 눌러 보세요</span></div>
+        <div class="pipe-vision" id="pv">
+          <div class="pv-step active" data-k="0">
+            <div class="pv-num">STEP 1</div>
+            <div class="pv-name">원본 입력</div>
+            <div class="pv-mini"><div class="pv-img-raw"></div></div>
+          </div>
+          <div class="pv-step" data-k="1">
+            <div class="pv-num">STEP 2</div>
+            <div class="pv-name">표준화·정규화</div>
+            <div class="pv-mini"><div class="pv-img-norm"></div></div>
+          </div>
+          <div class="pv-step" data-k="2">
+            <div class="pv-num">STEP 3</div>
+            <div class="pv-name">데이터 증강</div>
+            <div class="pv-mini"><div class="pv-img-aug"><i></i><i></i><i></i><i></i></div></div>
+          </div>
+          <div class="pv-step" data-k="3">
+            <div class="pv-num">STEP 4</div>
+            <div class="pv-name">CNN 추출</div>
+            <div class="pv-mini"><div class="pv-cnn-bars"><i style="height:60%"></i><i style="height:80%"></i><i style="height:40%"></i><i style="height:95%"></i><i style="height:55%"></i><i style="height:70%"></i></div></div>
+          </div>
+          <div class="pv-step" data-k="4">
+            <div class="pv-num">STEP 5</div>
+            <div class="pv-name">softmax 결정</div>
+            <div class="pv-mini"><div class="pv-softmax"><i style="height:30%"></i><i style="height:90%" class="win"></i><i style="height:45%"></i><i style="height:20%"></i><i style="height:60%"></i><i style="height:25%"></i></div></div>
+          </div>
+        </div>
+        <div class="pv-detail" id="pvDetail"></div>
+      </div>
+      <p class="widget-cap">파이프라인 단계는 모두 “모델이 데이터의 사소한 변이까지 외우지 않도록” 짜여 있다. 입력 측에서는 사소한 차이를 미리 지워 주고(표준화·정규화), 가짜 변이를 주입해 강건성을 키우고(증강), 출력 측에서는 거대한 표상을 작은 확률 분포로 압축한다(softmax).</p>
+    </div>
+
+    <div class="prose">
+      <h2>1단계 — 표준화: 모델이 외울 필요 없는 변이를 미리 지운다</h2>
+      <p>같은 고양이를 찍어도 카메라마다, 시간대마다, 화이트밸런스마다 픽셀 값이 달라진다. 모델이 이 모든 변이를 처음부터 다 흡수해야 한다면 <strong>학습 신호의 상당 부분이 “조명·색온도 같은 의미 없는 차이”에 낭비</strong>된다. 그래서 입력은 보통 다음과 같이 미리 다듬어 들여보낸다.</p>
+
+      <div class="math-block">$$ \hat{x} = \frac{x - \mu}{\sigma} $$</div>
+      <p class="math-note">x = 원본 픽셀, μ·σ = 데이터셋 평균·표준편차. 한 채널씩 따로 계산해 RGB 각각을 평균 0, 분산 1 근처로 맞춘다.</p>
+
+      <p>왜 이 형태인가? <strong>학습 알고리즘이 가장 잘 굴러가는 입력의 형태는 “평균이 0, 분산이 1 근처”</strong>이기 때문이다. 가중치의 초기 분포(보통 평균 0)와 활성화 함수의 잘 작동하는 영역이 모두 이 근처에 모여 있다. 평균을 빼지 않으면 첫 층의 가중치는 “일정한 바이어스”를 따로 학습해야 하고, 표준편차로 나누지 않으면 채널 간 스케일 차이 때문에 큰 채널이 다른 채널을 묻어 버린다.</p>
+
+      <div class="analogy">
+        오케스트라를 녹음한 음원을 떠올려 보자. 어떤 마이크는 너무 가깝고 어떤 마이크는 너무 멀다. 그대로 섞으면 가까운 악기만 들린다. 먼저 <b>각 트랙의 볼륨을 표준 레벨로 맞춘 다음</b> 섞어야 모든 악기가 들린다. 표준화는 채널별 볼륨 맞추기다.
+      </div>
+
+      <p>책은 여기에 <strong>국소 대비 정규화(local contrast normalization)</strong>를 한 단계 더 얹는 경우도 소개한다. 전역으로 평균·분산만 맞추면 “어두운 사진 / 밝은 사진”의 큰 차이는 사라지지만, 같은 사진 안에서 “햇빛 든 부분 / 그늘진 부분”의 차이는 남는다. 그늘에 있는 고양이와 햇빛 아래 고양이가 가중치 입장에서 서로 다른 입력처럼 보이는 문제를 줄이려면, 각 위치의 작은 창 안에서도 한 번 더 평균·분산을 맞춰 준다. 이것이 국소 대비 정규화다.</p>
+
+      <h2>2단계 — 데이터 증강: 가짜 변이로 진짜 강건함을 산다</h2>
+      <p>증강은 <strong>모델의 학습 데이터를 사실상 무한히 늘려 주는 가장 싸고 강력한 정칙화</strong>다. 한 장의 고양이 사진을 좌우 반전·1픽셀 이동·작은 회전·약간의 색조 변화로 변형하면, 모델은 그 모든 변형판을 “같은 라벨의 다른 예시”로 보게 된다. 이렇게 하면 모델이 <em>“고양이의 본질”</em>이 아니라 <em>“그 사진 하나의 우연”</em>을 외우는 것을 막을 수 있다.</p>
+
+      <div class="math-block">$$ \tilde{x} = T_{\theta}(x), \qquad y(\tilde{x}) = y(x) $$</div>
+      <p class="math-note">T_θ = 라벨을 바꾸지 않는 변환들의 집합(좌우 반전, 작은 평행 이동, 작은 회전, 색조 흔들기 등). 라벨 y는 원본과 같다.</p>
+
+      <p>변환 집합 $T_\theta$는 <strong>“이 도메인에서 라벨이 절대 바뀌지 않는 변환”</strong>들로만 채워야 한다. 비전에서 좌우 반전·평행 이동·약한 회전·약한 색조 변화는 라벨을 안 바꾼다(고양이는 거울에 비춰도 고양이다). 하지만 상하 반전은 도메인에 따라 문제가 된다 — 자연 사진에서는 “하늘이 아래로” 같은 어색한 결과를 만들고, 손글씨 숫자에서는 6이 9로 바뀌어 라벨이 깨진다. 즉 증강은 <strong>도메인 지식</strong>을 데이터로 흘려 넣는 통로다.</p>
+
+      <h2>3단계 — CNN 본체: 9장이 만든 그물을 그대로 쓴다</h2>
+      <p>비전 본체는 <a href="../ch09-cnn/index.html">9장</a>에서 본 CNN 그 자체다. 합성곱·풀링·ReLU의 반복. 여기서 12장이 강조하는 새 정보는 두 가지뿐이다. 첫째, <strong>처음부터 짜기보다 ImageNet 사전훈련 가중치를 갖다 쓰는 편</strong>이 거의 항상 더 잘 된다. 둘째, 더 깊고 더 큰 모델이 거의 언제나 더 잘 되지만, 그 대가로 인프라(GPU·메모리·전력) 비용이 따른다. 이 두 사실이 “전이학습”과 “하드웨어가 곧 정확도”라는 12장의 두 큰 주제로 이어진다.</p>
+
+      <div class="math-block">$$ z = f_{\text{CNN}}(\hat{x}; W), \qquad p(y \mid x) = \text{softmax}(W_{\text{out}} z + b) $$</div>
+      <p class="math-note">z = CNN이 추출한 고차원 특징 벡터(보통 수천 차원). 그 벡터에 선형 분류기를 얹어 클래스 확률로 변환한다.</p>
+
+      <h2>4단계 — softmax 출력과 음의 로그우도</h2>
+      <p>출력 단계는 두 개의 짝으로 움직인다. <strong>softmax</strong>가 점수 벡터를 확률 분포로 바꾸고, <strong>음의 로그우도(NLL)</strong>가 그 분포와 정답 라벨의 거리를 측정한다. 이 짝이 분류 문제 전반에 거의 그대로 재사용되므로 식의 형태를 다시 한 번 확인하자.</p>
+
+      <div class="math-block">$$ \text{softmax}(z)_k = \frac{e^{z_k}}{\sum_{j=1}^{K} e^{z_j}} $$</div>
+
+      <p>$e^{z_k}$는 모든 점수를 양수로 바꾼다(확률은 0 이상이어야 하니까). 분모 $\sum_j e^{z_j}$는 모든 클래스를 더해 1로 만들기 위한 정규화 상수다. 즉 softmax는 <em>“점수의 상대적 크기를 그대로 보존하면서, 합이 1인 확률로 강제로 압축하는 함수”</em>다.</p>
+
+      <div class="math-block">$$ \mathcal{L}(W) = - \frac{1}{N} \sum_{i=1}^{N} \log p(y_i \mid x_i; W) $$</div>
+      <p class="math-note">정답 클래스에 모델이 부여한 확률에 로그를 씌워 평균한 뒤 부호를 뒤집은 것. 정답에 더 큰 확률을 줄수록 손실이 작아진다.</p>
+
+      <p>왜 이 형태인가? <strong>NLL은 학습 데이터를 “생성하는 모델의 가능성(likelihood)”을 최대화하는 것과 정확히 같다.</strong> 통계학의 최대우도 추정(MLE)이다(<a href="../ch05-ml-basics/index.html">5장</a>에서 본 그 식이다). 그래서 비전 분류의 손실은 새 아이디어가 아니라, 분류 도메인에 옷을 갈아입힌 MLE다. 시험에서 “왜 cross-entropy를 쓰는가”라는 질문이 나오면 정답은 “softmax 출력 분포의 MLE이기 때문”이다.</p>
+
+      <h2>왜 이 모든 단계가 동시에 필요한가</h2>
+      <p>책의 핵심 메시지는 단순하다. <strong>어느 한 단계도 혼자서는 충분하지 않다.</strong> CNN만 좋아도 표준화 없이는 학습 신호가 의미 없는 변이를 외우는 데 새고, 표준화·증강이 좋아도 작은 CNN으로는 분류기 자체의 표현력이 모자라며, 본체가 좋아도 출력 단계의 softmax+NLL 짝이 없으면 “정답에 가까운 분포를 내라”는 학습 신호가 정의되지 않는다. <strong>도메인에 맞춘 워크플로 전체가 모델이다</strong>가 12장의 첫 교훈이다.</p>
+
+      <p>다음 장에서는 같은 원리를 음성으로 옮긴다. 입력 모양이 2D 이미지에서 1D 시계열·2D 스펙트로그램으로 바뀔 때, CNN과 RNN과 새 손실 함수(CTC)가 어떻게 조합되는지를 본다.</p>
+    </div>
+
+    <nav class="ch-foot">
+      <a href="index.html"><span class="dir">← Up</span><div class="ti">Chapter 12 표지</div></a>
+      <a href="02.html" class="next"><span class="dir">Next →</span><div class="ti">02 · 음성 인식</div></a>
+    </nav>
+  </main>
+</div>
+
+<script>
+  // 좌측 nav
+  const SUBS = [
+    ['01','대규모 비전 분류'],
+    ['02','음성 인식'],
+    ['03','자연어 처리'],
+    ['04','추천 시스템'],
+    ['05','강화학습 응용'],
+    ['06','시험 대비'],
+  ];
+  const here = '01';
+  const navlist = document.getElementById('navlist');
+  SUBS.forEach(([no, t]) => {
+    const li = document.createElement('li');
+    const a = document.createElement('a');
+    a.href = no + '.html';
+    a.textContent = t;
+    if (no === here) a.classList.add('current');
+    li.appendChild(a); navlist.appendChild(li);
+  });
+
+  // 스크롤 진행 바
+  const prog = document.querySelector('.scroll-progress');
+  window.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const pct = h.scrollTop / (h.scrollHeight - h.clientHeight);
+    prog.style.width = (pct * 100) + '%';
+  });
+
+  // KaTeX
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false},
+        ],
+        throwOnError: false,
+      });
+    }
+  });
+
+  // 파이프라인 위젯
+  const PV_DETAILS = [
+    {
+      title: '원본 입력 — 카메라의 날것',
+      body: '한 장의 사진은 보통 <code>H × W × 3</code> 텐서다. 224×224×3 = 150,528개의 숫자. 이 숫자 더미를 그대로 CNN에 던지면 “조명·색온도·노이즈” 같은 의미 없는 변이까지 모델이 외워야 해서 학습 효율이 급락한다. 그래서 거의 모든 비전 파이프라인은 원본을 즉시 받지 않고 다음 두 단계로 정제한다.',
+    },
+    {
+      title: '표준화·정규화 — 외울 필요 없는 변이 제거',
+      body: '데이터셋 전체 평균·표준편차로 한 채널씩 정규화한다(<code>x̂ = (x − μ) / σ</code>). 평균을 0, 분산을 1 근처로 만들면 활성화 함수가 잘 작동하는 영역에 입력이 모인다. 더 강한 처방으로 국소 대비 정규화를 쓰면, 같은 사진 안의 햇빛/그늘 차이까지 부분적으로 지운다.',
+    },
+    {
+      title: '데이터 증강 — 가짜 변이로 진짜 강건함',
+      body: '좌우 반전, 작은 평행 이동, 작은 회전, 색조·채도 흔들기 등 “라벨을 안 바꾸는 변환”을 학습 중에 무작위로 적용한다. 한 장이 사실상 수십~수백 장처럼 작용해 강력한 정칙화 효과를 낸다. 핵심은 변환 집합이 <em>도메인 지식</em>으로 골라져야 한다는 점 — 손글씨 숫자에 상하 반전을 넣으면 6↔9 라벨이 깨진다.',
+    },
+    {
+      title: 'CNN — 합성곱·풀링의 반복',
+      body: '9장에서 본 그 CNN이다. 합성곱은 작은 창에서 패턴을 찾고, 풀링은 위치 정보를 일부 버리는 대신 의미 정보를 압축한다. 12장의 새 메시지는 <strong>“처음부터 짜지 말고 ImageNet 사전훈련 가중치로 시작하라”</strong>는 것. 도메인이 달라도 얕은 층의 에지·질감 검출기는 거의 같다.',
+    },
+    {
+      title: 'softmax + NLL — 확률 분포로의 압축',
+      body: '<code>softmax(z)_k = exp(z_k) / Σ exp(z_j)</code>로 점수 벡터를 합이 1인 확률 분포로 만들고, 정답 클래스의 확률에 음의 로그를 씌워 평균한 것이 손실이다. 이는 분류 도메인에 옷을 갈아입힌 <strong>최대우도 추정(MLE)</strong>이다. 시험 질문 “왜 cross-entropy인가” → 답은 “softmax 분포의 MLE이기 때문”.',
+    },
+  ];
+  const pv = document.getElementById('pv');
+  const pvDetail = document.getElementById('pvDetail');
+  function showDetail(k) {
+    pv.querySelectorAll('.pv-step').forEach((s, i) => s.classList.toggle('active', i === k));
+    const d = PV_DETAILS[k];
+    pvDetail.innerHTML = `<h5>${d.title}</h5><p>${d.body}</p>`;
+  }
+  pv.querySelectorAll('.pv-step').forEach(s => {
+    s.addEventListener('click', () => showDetail(+s.dataset.k));
+    s.addEventListener('mouseenter', () => showDetail(+s.dataset.k));
+  });
+  showDetail(0);
+</script>
+</body>
+</html>

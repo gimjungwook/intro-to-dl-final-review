@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>07. 시험 대비 체크리스트</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  /* 시험 빈출 한 줄 카드 */
+  .quick { max-width: var(--measure); margin: 1.6rem auto; padding-inline: 1.4rem; }
+  .quick-card { background: #fff; border: 1px solid var(--line); border-left: 3px solid var(--structure); border-radius: 0 9px 9px 0; padding: .9rem 1.2rem; margin: .55rem 0; }
+  .quick-card .q { font-family: var(--serif); font-size: 1.02rem; color: var(--ink); margin-bottom: .35rem; }
+  .quick-card .a { font-size: .9rem; color: var(--ink-soft); line-height: 1.55; }
+  .quick-card .a code { font-family: var(--mono); background: var(--paper-sink); padding: .05em .35em; border-radius: 3px; font-size: .88em; }
+  .quick-card.tr { border-left-color: var(--style); }
+  .quick-card.tr .a b { color: var(--style); }
+
+  /* 공식 박스 */
+  .formula-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .7rem; max-width: var(--measure); margin: 1.4rem auto; padding-inline: 1.4rem; }
+  .formula { background: var(--paper-2); padding: .8rem 1rem; border-radius: 8px; border-left: 2px solid var(--ink-soft); }
+  .formula .name { font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; color: var(--ink-faint); text-transform: uppercase; margin-bottom: .25rem; }
+  .formula .ex { font-family: var(--mono); font-size: .92rem; color: var(--ink); overflow-x: auto; }
+  @media (max-width: 600px){ .formula-grid{ grid-template-columns: 1fr; } }
+
+  /* 페이지별 색인 */
+  .index-back { max-width: var(--measure); margin: 1.4rem auto; padding-inline: 1.4rem; }
+  .index-back ol { padding-left: 1.6rem; }
+  .index-back ol li { margin: .3rem 0; font-size: .92rem; color: var(--ink-soft); line-height: 1.5; }
+  .index-back ol li a { color: var(--structure); text-decoration: none; font-weight: 600; }
+  .index-back ol li a:hover { text-decoration: underline; }
+
+  /* 30분 회독 계획 */
+  .plan { max-width: var(--measure); margin: 1.4rem auto; padding-inline: 1.4rem; }
+  .plan-row { display: grid; grid-template-columns: 4rem 1fr; gap: 1rem; padding: .55rem 0; border-bottom: 1px solid var(--line-soft); font-size: .92rem; }
+  .plan-row .t { font-family: var(--mono); font-size: .8rem; color: var(--style); padding-top: .1rem; }
+  .plan-row .what { color: var(--ink); line-height: 1.5; }
+  .plan-row .what b { color: var(--structure); }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-chapter 07. 마지막 30분 회독</span>
+      <h1>시험 직전에<br>한 번에 훑는 <span class="t-style">체크리스트</span></h1>
+      <p class="lede">정의 한 줄, 공식 한 줄, 헷갈리기 쉬운 함정, 객관식 빈출 답. 다른 페이지에서 다 본 내용을 시험 직전 30분 동안 다시 한번 통과시키기 위한 자료다.</p>
+    </header>
+
+    <div class="prose">
+      <h2>가장 자주 나오는 한 줄 답 12개</h2>
+      <p>아래 카드들은 객관식 또는 단답 시험에서 그대로 정답인 한 줄들이다. 질문을 읽고 답을 가린 채 자신이 한 줄로 답할 수 있는지 확인하라.</p>
+    </div>
+
+    <div class="quick">
+      <div class="quick-card">
+        <div class="q">Q. 이진 분류 마지막 층의 시그모이드는 어느 분포의 파라미터인가?</div>
+        <div class="a">A. <b>베르누이 분포의 φ = P(Y=1 | x)</b>. 손실은 이진 교차 엔트로피 = 베르누이의 음의 로그우도.</div>
+      </div>
+      <div class="quick-card">
+        <div class="q">Q. 다클래스 분류 마지막 층의 softmax는 어느 분포의 파라미터인가?</div>
+        <div class="a">A. <b>범주분포(Categorical)의 φ_k 벡터</b>. 한 샘플의 손실 = -log p(정답 클래스).</div>
+      </div>
+      <div class="quick-card">
+        <div class="q">Q. 평균 제곱 오차(MSE) 손실은 어느 분포 가정에서 음의 로그우도가 되는가?</div>
+        <div class="a">A. <b>가우시안 분포(σ² 상수 가정)</b>. 출력층이 μ만 내놓고 σ를 상수로 고정하면 NLL의 미분 가능 부분이 정확히 (y - μ)².</div>
+      </div>
+      <div class="quick-card">
+        <div class="q">Q. KL 발산은 거리 함수인가?</div>
+        <div class="a">A. <b>아니다</b>. 음이 아니고 같을 때만 0이라는 점은 거리스럽지만, 대칭이 아니다(D(P‖Q) ≠ D(Q‖P)). 삼각 부등식도 일반적으로 성립하지 않는다.</div>
+      </div>
+      <div class="quick-card tr">
+        <div class="q">Q. 공분산이 0이면 두 변수는 독립인가?</div>
+        <div class="a">A. <b>일반적으로 아니다</b>. 공분산은 선형 관계만 잡는다. 반례: $X \sim$ Uniform$[-1, 1]$, $Y = X^2$ → 완전 결정되어 있지만 공분산은 0.</div>
+      </div>
+      <div class="quick-card tr">
+        <div class="q">Q. 𝔼[X + Y] = 𝔼[X] + 𝔼[Y]가 성립하려면 X와 Y가 독립이어야 하는가?</div>
+        <div class="a">A. <b>아니다</b>. 기대값의 선형성은 독립과 무관하게 항상 성립. 단, <code>𝔼[XY] = 𝔼[X]𝔼[Y]</code>는 독립일 때만 성립한다(같지 않음에 주의).</div>
+      </div>
+      <div class="quick-card">
+        <div class="q">Q. 엔트로피 H(X)가 최대가 되는 이산 분포는?</div>
+        <div class="a">A. <b>균등 분포</b>. K개 결과의 균등 분포 엔트로피 = log K. (연속에서는 분산이 같다는 제약 아래 가우시안.)</div>
+      </div>
+      <div class="quick-card">
+        <div class="q">Q. 교차 엔트로피 H(P, Q)를 최소화하는 것과 KL 발산 D_KL(P‖Q)를 최소화하는 것의 관계는?</div>
+        <div class="a">A. <b>같다</b>. H(P, Q) = H(P) + D_KL(P‖Q)인데 H(P)는 학습 중에 바뀌지 않는 상수.</div>
+      </div>
+      <div class="quick-card">
+        <div class="q">Q. 베이즈 규칙에서 분모 P(D)의 역할은?</div>
+        <div class="a">A. <b>정규화 상수(evidence)</b>. 모든 θ에 대해 우도×사전을 합한 값. 모양 자체에 영향을 안 주므로 θ를 비교할 때는 분자만 봐도 충분.</div>
+      </div>
+      <div class="quick-card">
+        <div class="q">Q. 1% 유병률의 질병에 99% 정확한 검사가 양성이면 환자일 확률은?</div>
+        <div class="a">A. <b>약 50%</b>. 정확한 검사여도 사전이 낮으면 거짓 양성이 진짜 양성과 비슷한 수가 나옴. 단일 검사로 단정 불가.</div>
+      </div>
+      <div class="quick-card">
+        <div class="q">Q. 다변량 가우시안의 등고선은 무슨 모양인가?</div>
+        <div class="a">A. <b>타원체</b>. 축의 방향과 길이가 공분산 행렬의 고유분해(고유벡터, 고유값)로 결정. 공분산이 단위행렬이면 구.</div>
+      </div>
+      <div class="quick-card">
+        <div class="q">Q. L2 정칙화는 베이즈 관점에서 무엇과 같은가?</div>
+        <div class="a">A. <b>가중치에 평균 0의 가우시안 사전을 둔 MAP 추정</b>. L1 정칙화는 라플라스 사전.</div>
+      </div>
+    </div>
+
+    <div class="prose">
+      <h2>꼭 외울 공식 8개</h2>
+      <p>식 자체보다 <em>왜 이 형태인가</em>를 잡는 게 우선이지만, 시험장에서 빠르게 적용해야 할 식은 결국 외워 두는 게 시간 절약이다. 다음 여덟 개만 정확히 기억해도 객관식, 단답형 대부분을 처리할 수 있다.</p>
+    </div>
+
+    <div class="formula-grid">
+      <div class="formula">
+        <div class="name">조건부확률</div>
+        <div class="ex">$P(Y\mid X) = \dfrac{P(X, Y)}{P(X)}$</div>
+      </div>
+      <div class="formula">
+        <div class="name">베이즈 규칙</div>
+        <div class="ex">$P(\theta\mid \mathcal{D}) = \dfrac{P(\mathcal{D}\mid\theta) P(\theta)}{P(\mathcal{D})}$</div>
+      </div>
+      <div class="formula">
+        <div class="name">기대값 (이산)</div>
+        <div class="ex">$\mathbb{E}[f(x)] = \sum_x P(x) f(x)$</div>
+      </div>
+      <div class="formula">
+        <div class="name">분산 (두 식)</div>
+        <div class="ex">$\mathrm{Var}(X) = \mathbb{E}[X^2] - \mathbb{E}[X]^2$</div>
+      </div>
+      <div class="formula">
+        <div class="name">공분산</div>
+        <div class="ex">$\mathrm{Cov}(X,Y) = \mathbb{E}[XY] - \mathbb{E}[X]\mathbb{E}[Y]$</div>
+      </div>
+      <div class="formula">
+        <div class="name">엔트로피</div>
+        <div class="ex">$H(X) = -\sum_x P(x) \log P(x)$</div>
+      </div>
+      <div class="formula">
+        <div class="name">KL 발산</div>
+        <div class="ex">$D_{\mathrm{KL}}(P\|Q) = \sum_x P(x)\log\dfrac{P(x)}{Q(x)}$</div>
+      </div>
+      <div class="formula">
+        <div class="name">교차 엔트로피 = H + KL</div>
+        <div class="ex">$H(P, Q) = H(P) + D_{\mathrm{KL}}(P\|Q)$</div>
+      </div>
+    </div>
+
+    <div class="prose">
+      <h2>헷갈리기 쉬운 짝 — 마지막 확인</h2>
+      <ul style="max-width: var(--measure); margin-inline: auto; padding-inline: 2.5rem; font-size: .95rem; color: var(--ink-soft); line-height: 1.8;">
+        <li><strong>독립 vs 무상관</strong>: 독립 → 무상관(역은 일반적으로 거짓). 공분산은 선형 관계만 잡음.</li>
+        <li><strong>PMF vs PDF</strong>: 이산은 PMF(값 자체가 확률), 연속은 PDF(밀도 → 구간 적분이 확률).</li>
+        <li><strong>기대값의 선형성 vs 곱의 기대값</strong>: 합은 무조건, 곱은 독립일 때만.</li>
+        <li><strong>분산의 합</strong>: $\mathrm{Var}(X+Y) = \mathrm{Var}(X) + \mathrm{Var}(Y) + 2\mathrm{Cov}(X,Y)$. 독립이면 마지막 항이 0.</li>
+        <li><strong>MLE vs MAP</strong>: MLE는 우도만 최대화(사전 균등 가정), MAP는 사후 최대화(사전 영향 받음). 정칙화 = MAP의 사전.</li>
+        <li><strong>교차 엔트로피 vs NLL</strong>: 둘은 같은 것의 다른 이름. 분류기 손실에서 정답 원핫이면 H(P, Q) = -log Q(정답).</li>
+        <li><strong>KL의 비대칭</strong>: forward KL(P‖Q)는 Q가 P의 모든 모드를 덮길 원함(mean-seeking), reverse KL(Q‖P)는 Q가 P의 한 모드에 집중하길 원함(mode-seeking). VAE는 reverse KL을 씀.</li>
+      </ul>
+
+      <h2>다른 페이지로 돌아가기 — 빠른 색인</h2>
+    </div>
+
+    <div class="index-back">
+      <ol>
+        <li><a href="01.html">01. 왜 확률이 필요한가</a> — 결정 답 vs 분포 답, 불확실성의 세 원천</li>
+        <li><a href="02.html">02. 확률변수, 분포, 조건부</a> — PMF/PDF, 결합, 주변, 조건부, 연쇄법칙, 독립과 조건부독립</li>
+        <li><a href="03.html">03. 기대값, 분산, 공분산</a> — 분포를 세 숫자로 요약, 공분산 0 ≠ 독립</li>
+        <li><a href="04.html">04. 베이즈 규칙</a> — 사전→사후 위젯, 의료 검사 함정, MAP/MLE/정칙화의 베이즈 해석</li>
+        <li><a href="05.html">05. 정보이론</a> — 엔트로피/KL/교차 엔트로피 = MLE의 다른 얼굴, 두 가우시안 KL 위젯</li>
+        <li><a href="06.html">06. 흔한 분포 카탈로그</a> — Bernoulli/Categorical/Gaussian/Mixture/Dirac과 딥러닝 출력층 매핑 표</li>
+        <li><a href="index.html">표지로 돌아가기</a></li>
+      </ol>
+    </div>
+
+    <div class="prose">
+      <h2>시험 직전 30분 회독 계획</h2>
+      <p>시험장에 들어가기 30분 전, 이 페이지만으로 빠르게 훑을 수 있도록 시간 배분을 적어 둔다. 위 카드와 공식을 가린 채 답을 떠올려 보고, 막히면 그 페이지만 다시 본다.</p>
+    </div>
+
+    <div class="plan">
+      <div class="plan-row"><span class="t">0-5분</span><span class="what"><b>한 줄 답 12개</b>를 위에서 아래로 가린 채 답해 보기. 막힌 카드는 표시.</span></div>
+      <div class="plan-row"><span class="t">5-10분</span><span class="what"><b>공식 8개</b>를 손으로 한 번씩 쓰기. 베이즈 규칙은 분자 분모를 분리해서 적기.</span></div>
+      <div class="plan-row"><span class="t">10-15분</span><span class="what"><b>05. 정보이론</b> 페이지의 세 위젯 한 번씩 흔들기. 엔트로피 최대점, KL 비대칭, CE = -log p(정답)를 눈에 다시 새기기.</span></div>
+      <div class="plan-row"><span class="t">15-20분</span><span class="what"><b>06. 분포 카탈로그</b> 마지막의 매핑 표 한 번 통째로 읽기. sigmoid/softmax/linear → 각 분포, 손실을 입으로 말해 보기.</span></div>
+      <div class="plan-row"><span class="t">20-25분</span><span class="what"><b>03. 공분산 위젯</b>으로 공분산 0 ≠ 독립 반례 한 번 떠올리기. Y = X² 예시를 머릿속에 다시 그리기.</span></div>
+      <div class="plan-row"><span class="t">25-30분</span><span class="what"><b>04. 베이즈 의료 검사</b> 표를 다시 보기. 1% 유병률/99% 정확도 → 50% 결과의 계산 흐름을 종이에 한 번 더 쓰기.</span></div>
+    </div>
+
+    <div class="prose">
+      <p>3장은 다른 장에 비해 그 자체로 출제되는 비중이 크진 않다. 그러나 이 장이 흔들리면 5–9장의 손실 함수 문제, 14–15장의 잠재변수 모델 문제가 한꺼번에 무너진다. <em>정확한 한 줄</em>로 답할 수 있는지를 기준으로 자신의 상태를 점검하자.</p>
+
+      <p>이 mini-site의 마지막 페이지다. <a href="index.html">표지로 돌아가서</a> 다른 sub-chapter로 들어가거나, <a href="../index.html">상위 인덱스로 가서</a> 다음 장(4번 수치 계산)으로 이동할 수 있다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const CH = [
+    { no:'01', t:'왜 확률이 필요한가', f:'01.html' },
+    { no:'02', t:'확률변수, 분포, 조건부', f:'02.html' },
+    { no:'03', t:'기대값, 분산, 공분산', f:'03.html' },
+    { no:'04', t:'베이즈 규칙', f:'04.html' },
+    { no:'05', t:'정보이론 — 엔트로피/KL/교차 엔트로피', f:'05.html' },
+    { no:'06', t:'흔한 분포 카탈로그', f:'06.html' },
+    { no:'07', t:'시험 대비 체크리스트', f:'07.html' },
+  ];
+  function buildNav(curr) {
+    const tb = document.querySelector('.topbar');
+    if (tb) tb.innerHTML =
+      `<a class="home" href="index.html">← Ch.3 확률과 정보이론</a>` +
+      `<span class="ch-mini">SUB-CHAPTER ${curr} of 07</span>`;
+    const ol = document.querySelector('.ch-nav ol');
+    if (ol) ol.innerHTML = CH.map(c =>
+      `<li><a href="${c.f}" ${c.no === curr ? 'class="current"' : ''}>${c.t}</a></li>`).join('');
+    const foot = document.querySelector('.ch-foot');
+    if (foot) {
+      const i = CH.findIndex(c => c.no === curr);
+      const prev = i > 0 ? CH[i-1] : { f:'index.html', t:'표지로', no:'' };
+      const next = i < CH.length-1 ? CH[i+1] : { f:'index.html', t:'표지로', no:'' };
+      foot.innerHTML =
+        `<a href="${prev.f}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+        `<a href="${next.f}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+    }
+    const bar = document.querySelector('.scroll-progress');
+    if (bar) {
+      const onS = () => {
+        const h = document.documentElement;
+        const m = h.scrollHeight - h.clientHeight;
+        bar.style.width = (m > 0 ? (h.scrollTop / m) * 100 : 0) + '%';
+      };
+      document.addEventListener('scroll', onS, { passive: true });
+      onS();
+    }
+  }
+
+  window.addEventListener('load', () => {
+    buildNav('07');
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$', right:'$$', display:true}, {left:'$', right:'$', display:false}],
+        throwOnError: false,
+      });
+    }
+  });
+</script>
+</body>
+</html>

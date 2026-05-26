@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ch.02 · 05 고유분해</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .eig-stage { padding: 1.4rem 1.4rem 0; }
+  .eig-stage canvas { display: block; width: 100%; max-width: 600px; height: 460px; background: #fff; border-radius: 8px; border: 1px solid var(--line); margin: 0 auto; cursor: crosshair; }
+  .eig-readout { padding: 1rem 1.2rem; background: var(--paper-2); margin: 1rem 1.2rem 0; border-radius: 8px; font-size: .92rem; line-height: 1.65; color: var(--ink-soft); }
+  .eig-readout b { color: var(--ink); }
+  .eig-readout .hit { color: var(--style); font-weight: 600; }
+  .eig-pre { display: flex; gap: .4rem; flex-wrap: wrap; justify-content: center; padding: .8rem 1.2rem; }
+  .eig-vals { font-family: var(--mono); font-size: .88rem; color: var(--structure); margin-top: .5rem; }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Ch.02 · Sub 05 · 행렬의 본질</span>
+      <h1>고유분해 — 행렬이 <span class="t-structure">늘리기만 하는</span> 방향</h1>
+      <p class="lede">일반 행렬은 평면 전체를 회전·전단·스케일로 비튼다. 그 비틈 속에서도 방향이 그대로 유지되는 특별한 벡터가 있다. 그것이 고유벡터(eigenvector)이며, 행렬의 "본질적 축"이다.</p>
+    </header>
+
+    <div class="prose">
+      <p>앞서 sub 02에서 행렬이 평면을 어떻게 변형하는지 봤다. 회전·스케일·전단이 섞이면 대부분의 벡터는 곱셈 후 <em>다른 방향</em>으로 옮겨간다. 그러나 잘 보면 <strong>딱 몇 개의 특별한 방향</strong>은 곱셈 후에도 방향이 바뀌지 않고 크기만 변한다. 그 방향이 고유벡터(eigenvector), 그 크기 변화 배율이 고유값(eigenvalue)이다.</p>
+
+      <div class="math-block">$$ \mathbf{A}\mathbf{v} = \lambda \mathbf{v} $$</div>
+      <p class="math-note">A를 v에 곱한 결과 = v 방향 그대로, 크기만 λ배. v는 고유벡터, λ는 고유값.</p>
+
+      <p>이 식 한 줄이 매우 강력한 이유는, 일반적으로 <em>“행렬 곱셈은 방향과 크기를 동시에 바꾼다”</em>는 사실에 예외를 제공하기 때문이다. 고유벡터 방향에서는 행렬이 단순한 스칼라 곱처럼 동작한다. 그래서 고유벡터들의 좌표계에서 보면, 복잡한 행렬도 <strong>대각 행렬</strong>처럼 단순해진다.</p>
+
+      <h2>왜 이게 “행렬의 본질”인가</h2>
+      <p>대칭 행렬 $\mathbf{A}$의 경우, 고유벡터들이 서로 직교하고, $n$개 모두 모이면 $\mathbb{R}^n$의 정규 직교 기저를 이룬다. 이 기저로 좌표계를 갈아끼우면 행렬은 다음과 같이 분해된다.</p>
+
+      <div class="math-block">$$ \mathbf{A} = \mathbf{V} \boldsymbol{\Lambda} \mathbf{V}^\top $$</div>
+      <p class="math-note">V는 고유벡터를 열로 모은 행렬, Λ는 고유값을 대각에 놓은 대각 행렬.</p>
+
+      <p>이 분해를 <strong>고유분해(eigendecomposition)</strong>라 부른다. 의미를 풀어 보면 <em>“임의의 대칭 행렬은 결국 회전($\mathbf{V}^\top$) → 축마다 다른 스케일($\boldsymbol{\Lambda}$) → 다시 회전($\mathbf{V}$)의 조합이다”</em>는 말이다. 즉, 한 행렬의 모든 변형을 “회전 + 스케일 + 회전”으로 쪼개서 보는 것이다.</p>
+
+      <h2>2x2 행렬에서 직접 찾아 보자</h2>
+      <p>2차원에서는 고유벡터가 보통 2개 있다 (있을 수도 없을 수도 있지만, 대칭이라면 항상 있다). 아래 위젯에서 단위 원 위 점을 클릭하면, 그 방향의 벡터가 행렬 A에 곱해진 후 어디로 가는지 보인다. <strong>방향이 바뀌지 않는 자리를 직접 찾아 보자</strong> — 그게 고유벡터다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 05</span><span>고유벡터 사냥 — 원을 클릭해 방향 보존을 찾아라</span></div>
+        <div class="eig-stage">
+          <canvas id="eigCanvas" width="900" height="700"></canvas>
+          <div class="eig-readout" id="eigRead"></div>
+          <div class="eig-vals" id="eigVals" style="text-align:center; padding: .6rem 1.2rem 0"></div>
+        </div>
+        <div class="eig-pre">
+          <button class="btn ghost on" data-mat="A1">대칭 — 가로/세로 늘림</button>
+          <button class="btn ghost" data-mat="A2">대칭 — 대각선 방향</button>
+          <button class="btn ghost" data-mat="A3">회전 — 실수 고유값 없음</button>
+          <button class="btn ghost" data-mat="A4">대각 행렬</button>
+          <button class="btn ghost" data-mat="A5">랭크 1 — 한 고유값 0</button>
+        </div>
+      </div>
+      <p class="widget-cap">파란 점은 클릭한 원 위 점(원본 벡터 v), 주홍 점은 그 벡터에 행렬 A를 곱한 결과(Av). 두 점과 원점이 한 직선 위에 있으면 그 방향이 <b>고유벡터</b>이고, 점선 위의 점이 곧 고유벡터 방향이다. 회전 행렬은 어떤 방향에서도 방향 보존이 일어나지 않으므로(2D 회전의 고유값은 복소수) 고유벡터가 보이지 않는다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>고유값이 알려 주는 행렬의 성격</h2>
+      <p>고유값 $\lambda_1, \dots, \lambda_n$의 부호와 크기는 행렬의 “성격”을 한 번에 요약한다.</p>
+
+      <table class="symbols">
+        <tr><td>모든 λ &gt; 0</td><td><b>양의 정부호</b>. 어느 방향으로도 늘리기만 함. 손실 함수가 이 헤시안이면 국소 최솟값.</td></tr>
+        <tr><td>모든 λ &lt; 0</td><td><b>음의 정부호</b>. 어느 방향으로도 줄이기만 함. 국소 최댓값.</td></tr>
+        <tr><td>λ 양수·음수 섞임</td><td><b>부정 부호</b>. 어떤 방향은 늘리고 어떤 방향은 줄인다. <span class="t-style">안장점(saddle point)</span> — 최적화의 골칫거리.</td></tr>
+        <tr><td>어떤 λ = 0</td><td>그 방향으로 짜부라뜨림. 특이행렬, 역행렬 없음.</td></tr>
+      </table>
+
+      <p>이 표가 왜 중요한가? 손실 함수 $L(\mathbf{w})$의 임계점(critical point)에서 헤시안 $\nabla^2 L$의 고유값을 보면, <strong>그 점이 최솟값인지, 최댓값인지, 안장점인지</strong>를 즉시 판정할 수 있다. 딥러닝의 손실 지형(landscape)은 안장점이 매우 많다는 것이 알려져 있고 (Ch.8 최적화), 모멘텀과 아담(Adam) 같은 옵티마이저는 이 안장점을 빨리 빠져나오기 위해 설계되었다.</p>
+
+      <div class="analogy">
+        고유벡터는 <b>회전 의자의 축</b>과 같다. 의자를 한 사람이 돌리면 등받이는 새 방향을 향한다. 하지만 의자의 회전축(바닥에 박힌 기둥)만은 어느 방향으로도 바뀌지 않고 그대로 있다. 행렬도 같다 — 행렬이 만드는 변형 속에서, 고유벡터만은 자기 방향을 지킨다. 그 축의 길이가 늘어나거나 줄어드는 정도가 고유값이다.
+      </div>
+
+      <h2>고유분해의 한계 — 왜 SVD로 넘어가는가</h2>
+      <p>고유분해는 강력하지만 <strong>정사각 행렬에만 정의된다</strong>. 더 나쁜 것은, 정사각이라도 항상 고유분해가 가능한 것은 아니라는 점이다. 위젯에서 “회전” 프리셋을 눌러 보면 어떤 방향에서도 방향 보존이 일어나지 않는다 — 2D 회전 행렬의 고유값은 복소수($e^{\pm i\theta}$)이므로 실수 평면에서는 고유벡터가 보이지 않는다.</p>
+
+      <p>그런데 딥러닝의 데이터 행렬은 보통 <strong>직사각형</strong>이다 — $m$개 샘플 × $n$개 특징이면 $\mathbf{X} \in \mathbb{R}^{m \times n}$, 일반적으로 $m \neq n$. 이런 경우 고유분해는 정의 자체가 불가능하다. 그래서 모든 행렬(정사각이든 직사각이든)에 대해 정의되는 더 일반적인 분해가 필요하다. 그것이 다음 sub에서 다룰 <a href="06.html"><strong>특이값분해(SVD)</strong></a>다.</p>
+
+      <h2>주성분 분석(PCA)의 뿌리</h2>
+      <p>고유분해의 가장 유명한 응용은 <strong>주성분 분석(Principal Component Analysis)</strong>이다. 데이터 $\mathbf{X} \in \mathbb{R}^{m \times n}$의 공분산 행렬 $\mathbf{C} = \tfrac{1}{m} \mathbf{X}^\top \mathbf{X}$는 $n \times n$ 대칭 행렬이다. 이 행렬의 고유값과 고유벡터를 구하면:</p>
+
+      <ul style="max-width: var(--measure); margin: 0 auto; padding-left: 2.4rem; font-size: .95rem; color: var(--ink-soft); line-height: 1.7;">
+        <li><strong>고유값이 큰 고유벡터</strong> = 데이터가 가장 많이 퍼진 방향 (주성분 1).</li>
+        <li><strong>고유값이 작은 고유벡터</strong> = 데이터가 거의 퍼지지 않은 방향.</li>
+        <li>큰 고유값 몇 개만 남기고 작은 것은 버리면, 정보 손실을 최소화하면서 차원을 줄일 수 있다.</li>
+      </ul>
+
+      <p>이것이 Ch.13에서 다시 다룰 <strong>차원 축소(Dimensionality Reduction)</strong>의 가장 고전적인 방법이다. 신경망의 오토인코더(Autoencoder, Ch.14)는 본질적으로 PCA의 비선형 일반화로 이해할 수 있다.</p>
+
+      <h3>핵심 정리 — 이것만은 기억하자</h3>
+      <ul class="checklist">
+        <li>Av = λv. 고유벡터 v는 행렬 곱셈 후에도 방향이 그대로다.</li>
+        <li>고유분해 A = VΛVᵀ. 대칭 행렬에서 항상 성립.</li>
+        <li>고유값 부호로 임계점 판정: 모두 양수=최솟값, 모두 음수=최댓값, 섞임=안장점.</li>
+        <li>고유분해는 정사각 행렬에만, 그것도 모든 경우에 가능한 것은 아님.</li>
+        <li>PCA = 공분산 행렬의 고유분해. 큰 고유값 = 분산이 큰 주성분.</li>
+        <li>직사각·일반 행렬에는 SVD를 쓴다 (다음 sub).</li>
+      </ul>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const CHAPTERS = [
+    { no:'01', t:'스칼라·벡터·행렬·텐서' },
+    { no:'02', t:'행렬 곱과 선형 변환' },
+    { no:'03', t:'노름과 거리' },
+    { no:'04', t:'특수 행렬과 직교성' },
+    { no:'05', t:'고유분해' },
+    { no:'06', t:'SVD — 특이값분해' },
+    { no:'07', t:'시험 대비 — 핵심 정리' },
+  ];
+  const CUR = '05';
+  document.querySelector('.topbar').innerHTML =
+    `<a class="home" href="index.html">← Ch.02 선형대수 표지</a>` +
+    `<span class="ch-mini">SUB ${CUR} / 07</span>`;
+  document.querySelector('.ch-nav ol').innerHTML = CHAPTERS.map(c =>
+    `<li><a href="${c.no}.html" ${c.no===CUR?'class="current"':''}>${c.t}</a></li>`).join('');
+  const idx = CHAPTERS.findIndex(c=>c.no===CUR);
+  const prev = idx>0 ? CHAPTERS[idx-1] : { no:'', t:'표지로', _:'index.html' };
+  const next = idx<CHAPTERS.length-1 ? CHAPTERS[idx+1] : { no:'', t:'표지로', _:'index.html' };
+  document.querySelector('.ch-foot').innerHTML =
+    `<a href="${prev._ || prev.no+'.html'}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+    `<a href="${next._ || next.no+'.html'}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+  const bar = document.querySelector('.scroll-progress');
+  document.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max > 0 ? (h.scrollTop/max)*100 : 0) + '%';
+  }, { passive: true });
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{ left:'$$', right:'$$', display:true }, { left:'$', right:'$', display:false }],
+        throwOnError: false,
+      });
+    }
+  });
+
+  // ---------- 위젯: 고유벡터 사냥 ----------
+  const canvas = document.getElementById('eigCanvas');
+  const ctx = canvas.getContext('2d');
+  const readEl = document.getElementById('eigRead');
+  const valsEl = document.getElementById('eigVals');
+
+  const MATRICES = {
+    A1: { m: [2, 0, 0, 0.5], name: '대각 — 가로 2배, 세로 0.5배' },
+    A2: { m: [1.5, 0.5, 0.5, 1.5], name: '대칭 — 대각선 방향 늘림' },
+    A3: { m: [Math.cos(0.7), -Math.sin(0.7), Math.sin(0.7), Math.cos(0.7)], name: '회전 (40°) — 실수 고유값 없음' },
+    A4: { m: [3, 0, 0, 1], name: '대각 — x축 3배, y축 1배 (단위)' },
+    A5: { m: [1, 1, 1, 1], name: '랭크 1 — 한 방향만 살아남음' },
+  };
+  let cur = 'A1';
+  let clickPt = null; // 클릭한 단위 원 위 점
+
+  // 2x2 행렬의 고유값/고유벡터 계산
+  function eigen(m) {
+    const [a, b, c, d] = m;
+    const tr = a + d;
+    const det = a*d - b*c;
+    const disc = tr*tr - 4*det;
+    if (disc < -1e-9) return null; // 복소수
+    const sq = Math.sqrt(Math.max(0, disc));
+    const l1 = (tr + sq) / 2;
+    const l2 = (tr - sq) / 2;
+    // 고유벡터: (A - λI)v = 0
+    function vec(l) {
+      // [a-l, b; c, d-l] v = 0
+      if (Math.abs(b) > 1e-6) {
+        const v = [b, l - a];
+        const len = Math.hypot(v[0], v[1]); return [v[0]/len, v[1]/len];
+      } else if (Math.abs(c) > 1e-6) {
+        const v = [l - d, c];
+        const len = Math.hypot(v[0], v[1]); return [v[0]/len, v[1]/len];
+      } else {
+        // 대각: 고유벡터 = 표준 기저
+        if (Math.abs(a - l) < 1e-6) return [1, 0];
+        else return [0, 1];
+      }
+    }
+    return { l1, l2, v1: vec(l1), v2: vec(l2) };
+  }
+
+  function draw() {
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0,0,W,H);
+    const cx = W/2, cy = H/2;
+    const S = 130;
+    // 격자
+    ctx.strokeStyle = 'rgba(38,34,28,.05)'; ctx.lineWidth = 1;
+    for (let i = -3; i <= 3; i++) {
+      ctx.beginPath(); ctx.moveTo(cx + i*S, 0); ctx.lineTo(cx + i*S, H); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, cy + i*S); ctx.lineTo(W, cy + i*S); ctx.stroke();
+    }
+    // 축
+    ctx.strokeStyle = 'rgba(38,34,28,.3)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(W, cy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, H); ctx.stroke();
+    // 단위 원
+    ctx.strokeStyle = 'rgba(38,34,28,.35)'; ctx.lineWidth = 1.5; ctx.setLineDash([4,3]);
+    ctx.beginPath(); ctx.arc(cx, cy, S, 0, Math.PI*2); ctx.stroke();
+    ctx.setLineDash([]);
+
+    const m = MATRICES[cur].m;
+    const e = eigen(m);
+
+    // 고유벡터 방향 (실수 존재 시) — 회색 점선 두 줄
+    if (e) {
+      [e.v1, e.v2].forEach((v, idx) => {
+        if (Math.abs(v[0]) < 1e-9 && Math.abs(v[1]) < 1e-9) return;
+        ctx.strokeStyle = idx === 0 ? 'rgba(192,73,46,.18)' : 'rgba(45,91,122,.18)';
+        ctx.lineWidth = 2; ctx.setLineDash([2,3]);
+        ctx.beginPath();
+        ctx.moveTo(cx - v[0]*S*2.5, cy + v[1]*S*2.5);
+        ctx.lineTo(cx + v[0]*S*2.5, cy - v[1]*S*2.5);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      });
+    }
+
+    // 클릭한 점 처리
+    if (clickPt) {
+      const vx = clickPt[0], vy = clickPt[1];
+      // A·v
+      const ax = m[0]*vx + m[1]*vy;
+      const ay = m[2]*vx + m[3]*vy;
+      // 원본 화살표
+      function arrow(x1,y1,x2,y2,color,wd) {
+        ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = wd || 2.5;
+        ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+        const an = Math.atan2(y2-y1, x2-x1); const al = 12;
+        ctx.beginPath();
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - al*Math.cos(an-0.4), y2 - al*Math.sin(an-0.4));
+        ctx.lineTo(x2 - al*Math.cos(an+0.4), y2 - al*Math.sin(an+0.4));
+        ctx.closePath(); ctx.fill();
+      }
+      arrow(cx, cy, cx + vx*S, cy - vy*S, '#2D5B7A', 3);    // v (파랑)
+      arrow(cx, cy, cx + ax*S, cy - ay*S, '#C0492E', 3);    // Av (주홍)
+      // 라벨
+      ctx.fillStyle = '#2D5B7A'; ctx.font = '600 14px Spline Sans Mono, monospace';
+      ctx.fillText('v', cx + vx*S + 10, cy - vy*S - 6);
+      ctx.fillStyle = '#C0492E';
+      ctx.fillText('A·v', cx + ax*S + 10, cy - ay*S - 6);
+
+      // 방향 보존 여부
+      const lenV = Math.hypot(vx, vy);
+      const lenAv = Math.hypot(ax, ay);
+      const dot = (vx*ax + vy*ay) / (lenV * lenAv + 1e-9);
+      const aligned = Math.abs(Math.abs(dot) - 1) < 0.02;
+      const ratio = lenAv / lenV;
+      if (aligned) {
+        readEl.innerHTML = `<b class="hit">고유벡터 발견!</b> 클릭한 방향 v ≈ (${vx.toFixed(2)}, ${vy.toFixed(2)})에서 A·v가 v와 정확히 같은 직선 위에 있다. 길이 비 = <b>${ratio.toFixed(2)}</b>${dot < 0 ? ' (방향 반전 → λ &lt; 0)' : ''} → <b>고유값 λ ≈ ${(dot > 0 ? ratio : -ratio).toFixed(2)}</b>`;
+      } else {
+        readEl.innerHTML = `v = (${vx.toFixed(2)}, ${vy.toFixed(2)}), A·v = (${ax.toFixed(2)}, ${ay.toFixed(2)}). 두 화살표가 같은 직선 위에 있지 않다 → <b>이 방향은 고유벡터가 아니다</b>. 회색 점선 위의 점을 클릭해 보라.`;
+      }
+    } else {
+      readEl.innerHTML = `<b>${MATRICES[cur].name}</b>. 위 단위 원 위 아무 점이나 클릭하면 그 방향의 벡터 v(파랑)와 변환된 결과 A·v(주홍)가 나타난다. 두 화살표가 한 직선 위에 있으면 그 방향이 고유벡터다.`;
+    }
+
+    // 고유값 표시
+    if (e) {
+      valsEl.innerHTML = `고유값: λ₁ = <b>${e.l1.toFixed(2)}</b>, λ₂ = <b>${e.l2.toFixed(2)}</b> · trace = ${(m[0]+m[3]).toFixed(2)}, det = ${(m[0]*m[3]-m[1]*m[2]).toFixed(2)}`;
+    } else {
+      valsEl.innerHTML = `<span style="color:var(--style)">고유값이 복소수</span> (실수 고유벡터 없음) · trace = ${(m[0]+m[3]).toFixed(2)}, det = ${(m[0]*m[3]-m[1]*m[2]).toFixed(2)}`;
+    }
+  }
+
+  canvas.addEventListener('click', (ev) => {
+    const r = canvas.getBoundingClientRect();
+    const px = (ev.clientX - r.left) * (canvas.width / r.width);
+    const py = (ev.clientY - r.top) * (canvas.height / r.height);
+    const cx = canvas.width/2, cy = canvas.height/2;
+    const S = 130;
+    let vx = (px - cx) / S, vy = -(py - cy) / S;
+    const len = Math.hypot(vx, vy);
+    if (len < 0.2) { clickPt = null; draw(); return; }
+    // 단위 원 위로 정규화
+    vx /= len; vy /= len;
+    clickPt = [vx, vy];
+    draw();
+  });
+
+  document.querySelectorAll('.eig-pre .btn').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('.eig-pre .btn').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on');
+      cur = b.dataset.mat;
+      clickPt = null;
+      draw();
+    });
+  });
+  draw();
+</script>
+</body>
+</html>

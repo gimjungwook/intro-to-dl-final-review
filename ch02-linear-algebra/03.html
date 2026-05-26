@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ch.02 · 03 노름과 거리</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .norm-stage { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1.4rem 1.4rem 1rem; align-items: center; }
+  .norm-stage canvas { display: block; width: 100%; max-width: 380px; height: 380px; background: #fff; border-radius: 8px; border: 1px solid var(--line); margin: 0 auto; }
+  .norm-info { padding: 1rem; background: var(--paper-2); border-radius: 8px; font-size: .92rem; line-height: 1.65; color: var(--ink-soft); }
+  .norm-info b { color: var(--ink); }
+  .norm-info .p-val { font-family: var(--mono); font-size: 1.4rem; color: var(--style); font-weight: 600; display: block; margin-bottom: .4rem; }
+  .norm-ctl { padding: .8rem 1.2rem 1.2rem; }
+  .norm-pre { display: flex; gap: .4rem; flex-wrap: wrap; justify-content: center; padding: 0 1.2rem .8rem; }
+  @media (max-width: 720px) { .norm-stage { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Ch.02 · Sub 03 · 크기를 재는 자</span>
+      <h1>노름(Norm)과 거리,<br>왜 <span class="t-style">여러 자</span>가 필요한가</h1>
+      <p class="lede">벡터의 "크기"를 재는 방법은 한 가지가 아니다. L2는 직선거리, L1은 격자 위 이동량, L∞는 가장 큰 한 성분의 절댓값이다. 어느 자를 쓰느냐에 따라 단위구 모양이 달라지고, 정칙화(Regularization)가 가중치를 어떤 방향으로 누르는지가 달라진다.</p>
+    </header>
+
+    <div class="prose">
+      <p>벡터의 크기를 잰다는 말은 일상에서는 “화살표의 길이”를 뜻한다. 평면 위의 화살표 $(3, 4)$의 길이는 피타고라스 정리로 $\sqrt{3^2 + 4^2} = 5$다. 이것이 우리가 가장 익숙한 <strong>유클리드 거리(Euclidean Distance)</strong>, 또는 $L^2$ 노름이다.</p>
+
+      <div class="math-block">$$ \|\mathbf{x}\|_2 = \sqrt{\sum_{i=1}^n x_i^2} $$</div>
+      <p class="math-note">L2 노름 = 각 성분 제곱의 합의 제곱근.</p>
+
+      <p>그런데 이게 유일한 답인가? 한 직장인이 도시에서 집까지 걸어간다고 해 보자. 도시는 격자 도로로 되어 있어 대각선으로 가로지를 수 없다. 그럼 실제 걷는 거리는 동쪽으로 3블록 + 북쪽으로 4블록 = <strong>7블록</strong>이지, 직선거리 5블록이 아니다. 이 “격자 거리”가 바로 $L^1$ 노름, <em>맨해튼 거리(Manhattan Distance)</em>다.</p>
+
+      <div class="math-block">$$ \|\mathbf{x}\|_1 = \sum_{i=1}^n |x_i| $$</div>
+      <p class="math-note">L1 노름 = 각 성분 절댓값의 합.</p>
+
+      <p>또 다른 자도 있다. 어떤 사람이 “내가 산 음식 중 가장 비싼 한 가지의 가격”에만 신경 쓴다고 해 보자. 카트의 “크기”는 모든 가격을 더한 것이 아니라 <strong>가장 큰 한 가격</strong>이다. 이것이 $L^\infty$ 노름이다.</p>
+
+      <div class="math-block">$$ \|\mathbf{x}\|_\infty = \max_i |x_i| $$</div>
+      <p class="math-note">L∞ 노름 = 성분 절댓값 중 최댓값.</p>
+
+      <h2>일반화된 $L^p$ 노름</h2>
+      <p>이 세 가지는 모두 다음 한 가지 공식의 특수한 경우다.</p>
+
+      <div class="math-block">$$ \|\mathbf{x}\|_p = \left( \sum_{i=1}^n |x_i|^p \right)^{1/p}, \quad p \geq 1 $$</div>
+      <p class="math-note">p=1이면 L1, p=2면 L2, p→∞이면 L∞.</p>
+
+      <p>왜 $p \geq 1$ 조건이 필요할까? 진짜 “크기를 재는 자(노름)”이려면 세 가지 성질을 만족해야 한다 — 양의 동질성(positivity), 절대 동차성(scalability), <strong>삼각 부등식(triangle inequality)</strong>. 마지막 조건 $\|\mathbf{x} + \mathbf{y}\| \leq \|\mathbf{x}\| + \|\mathbf{y}\|$가 $p < 1$이면 깨진다. 그래서 $p < 1$은 “준노름(quasi-norm)”이지 진짜 노름이 아니다.</p>
+
+      <p>아래 위젯에서 $p$값을 1부터 ∞ 사이에서 슬라이드해 보자. <strong>단위구(unit ball)</strong>, 즉 $\|\mathbf{x}\|_p = 1$인 점들의 집합 모양이 어떻게 변하는지가 핵심이다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 03</span><span>p값을 바꾸면 단위구 모양이 변한다</span></div>
+        <div class="norm-stage">
+          <canvas id="normCanvas" width="500" height="500"></canvas>
+          <div class="norm-info">
+            <span class="p-val" id="pVal">p = 2</span>
+            <p id="normName"><b>L² 노름</b> — 유클리드 거리.</p>
+            <p id="normShape">단위구는 <b>원(circle)</b>이다. 직선거리.</p>
+            <p id="normUse"><b>딥러닝에서</b>: 가장 흔한 손실 함수 (제곱 오차). 가중치 감쇠(Weight Decay) = L2 정칙화. 가중치를 부드럽게 0 쪽으로 누른다.</p>
+            <hr style="border:none;border-top:1px solid var(--line-soft);margin:.6rem 0">
+            <p style="font-family:var(--mono);font-size:.82rem"><b>예시 벡터 (3, 4):</b><br>
+              ‖x‖<sub>1</sub> = 7<br>
+              ‖x‖<sub>2</sub> = 5<br>
+              ‖x‖<sub>∞</sub> = 4</p>
+          </div>
+        </div>
+        <div class="norm-ctl">
+          <div class="slider"><label>p 값 <b id="pLab">2.00</b></label><input type="range" id="pSlider" min="1" max="10" step="0.05" value="2"></div>
+        </div>
+        <div class="norm-pre">
+          <button class="btn ghost" data-p="1">p = 1 (L1, 마름모)</button>
+          <button class="btn ghost on" data-p="2">p = 2 (L2, 원)</button>
+          <button class="btn ghost" data-p="4">p = 4</button>
+          <button class="btn ghost" data-p="10">p → ∞ (L∞, 정사각형)</button>
+        </div>
+      </div>
+      <p class="widget-cap">파란 곡선은 <b>‖x‖<sub>p</sub> = 1</b>인 점들의 집합 (단위구). p=1이면 모서리가 축에 닿는 <b>마름모</b>, p=2면 <b>원</b>, p→∞면 <b>정사각형</b>이다. 빨간 점은 예시 벡터 (3, 4)의 위치이고, 그 점이 어느 노름으로 "1.0"이 되려면 얼마나 줄여야 하는지가 회색 파선으로 표시된다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>왜 단위구 모양이 정칙화에 중요한가</h2>
+      <p>위 위젯에서 가장 결정적인 차이는 <strong>L1의 단위구는 축에 모서리가 있고, L2의 단위구는 매끈한 원</strong>이라는 점이다. 이 모양이 왜 중요한가? 정칙화(Regularization)는 손실 함수에 노름을 페널티로 더해서 가중치 $\mathbf{w}$를 작게 유지하는 기법이다.</p>
+
+      <div class="math-block">$$ L_{\text{전체}}(\mathbf{w}) = L_{\text{데이터}}(\mathbf{w}) + \lambda \|\mathbf{w}\|_p $$</div>
+      <p class="math-note">데이터 손실 + λ × 가중치 노름. λ는 정칙화 강도.</p>
+
+      <p>이 식의 의미를 기하학적으로 보면, “데이터 손실의 등고선과 노름 단위구가 만나는 점에서 멈춘다”는 뜻이다. <strong>L1 단위구는 축 위에 뾰족한 모서리</strong>가 있으므로, 등고선이 그 모서리에서 자주 멈춘다. 모서리 위의 점은 어떤 성분이 정확히 0이라는 뜻이다. 즉, <span class="t-style">L1 정칙화는 가중치를 정확히 0으로 만들어 희소(sparse) 표현을 유도한다</span>.</p>
+
+      <p>반대로 <strong>L2 단위구는 매끈한 원</strong>이라 모서리가 없다. 따라서 등고선이 만나는 점이 어느 한 성분도 정확히 0이 아닌 자리에 있을 가능성이 높다. <span class="t-structure">L2는 모든 가중치를 균등하게 작게 누른다.</span> 이 차이는 Ch.7 정칙화에서 다시 나오는 핵심 직관이다.</p>
+
+      <div class="analogy">
+        L1과 L2의 차이는 <b>벌금 정책</b>의 차이와 같다. L2는 “큰 가중치는 제곱으로 더 크게 벌금”을 매기므로 모든 가중치를 적당히 작게 만든다 — 부드러운 협상이다. L1은 “모든 가중치에 비례하는 일정한 벌금”을 매기므로, 별로 중요하지 않은 가중치는 차라리 0으로 만들어 버린다 — 칼 같은 선택이다. 그래서 L1을 쓰면 자연스럽게 <b>특징 선택(feature selection)</b>이 일어난다.
+      </div>
+
+      <h2>다른 노름들 — 프로베니우스 노름</h2>
+      <p>벡터뿐 아니라 행렬에도 노름을 정의할 수 있다. 가장 자주 쓰이는 행렬 노름은 <strong>프로베니우스 노름(Frobenius Norm)</strong>으로, 행렬을 펼쳐서 큰 벡터로 본 다음 그 L2 노름을 잰 것이다.</p>
+
+      <div class="math-block">$$ \|\mathbf{A}\|_F = \sqrt{\sum_{i,j} A_{i,j}^2} $$</div>
+      <p class="math-note">행렬 전 성분의 제곱합의 제곱근. 행렬판 L2.</p>
+
+      <p>딥러닝에서 가중치 행렬 $\mathbf{W}$의 프로베니우스 노름은 <em>“이 층의 변환이 얼마나 강한가”</em>를 한 숫자로 요약하는 지표로 자주 쓰인다. 가중치 감쇠(Weight Decay) 정칙화에서는 $\|\mathbf{W}\|_F^2$를 손실에 더한다.</p>
+
+      <h2>거리 함수와의 관계</h2>
+      <p>노름이 있으면 자연스럽게 두 벡터 사이의 <strong>거리(distance)</strong>를 정의할 수 있다.</p>
+      <div class="math-block">$$ d(\mathbf{x}, \mathbf{y}) = \|\mathbf{x} - \mathbf{y}\|_p $$</div>
+      <p class="math-note">두 벡터 사이 거리 = 차이 벡터의 노름.</p>
+
+      <p>이 거리는 데이터 점들 사이의 유사도(similarity)를 잴 때 곧장 쓰인다. k-최근접 이웃(k-Nearest Neighbors)에서는 L2 거리가 보통이고, 텍스트의 단어 유사도에서는 코사인 유사도(L2를 정규화한 형태)를 더 자주 쓴다. 이미지의 시각 유사도에서는 L1이 노이즈에 더 강인하다고 알려져 있다.</p>
+
+      <h3>핵심 정리 — 이것만은 기억하자</h3>
+      <ul class="checklist">
+        <li>L1 단위구 = 마름모, L2 단위구 = 원, L∞ 단위구 = 정사각형.</li>
+        <li>L1 정칙화는 가중치를 0으로 만들어 희소성(sparsity)을 만든다.</li>
+        <li>L2 정칙화는 모든 가중치를 균등하게 작게 누른다 (Weight Decay).</li>
+        <li>p ≥ 1이어야 진짜 노름 (삼각 부등식 성립).</li>
+        <li>예시 (3, 4)의 노름: L1 = 7, L2 = 5, L∞ = 4. p가 클수록 작아진다.</li>
+        <li>행렬판 L2 = 프로베니우스 노름 ‖A‖<sub>F</sub>.</li>
+      </ul>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const CHAPTERS = [
+    { no:'01', t:'스칼라·벡터·행렬·텐서' },
+    { no:'02', t:'행렬 곱과 선형 변환' },
+    { no:'03', t:'노름과 거리' },
+    { no:'04', t:'특수 행렬과 직교성' },
+    { no:'05', t:'고유분해' },
+    { no:'06', t:'SVD — 특이값분해' },
+    { no:'07', t:'시험 대비 — 핵심 정리' },
+  ];
+  const CUR = '03';
+  document.querySelector('.topbar').innerHTML =
+    `<a class="home" href="index.html">← Ch.02 선형대수 표지</a>` +
+    `<span class="ch-mini">SUB ${CUR} / 07</span>`;
+  document.querySelector('.ch-nav ol').innerHTML = CHAPTERS.map(c =>
+    `<li><a href="${c.no}.html" ${c.no===CUR?'class="current"':''}>${c.t}</a></li>`).join('');
+  const idx = CHAPTERS.findIndex(c=>c.no===CUR);
+  const prev = idx>0 ? CHAPTERS[idx-1] : { no:'', t:'표지로', _:'index.html' };
+  const next = idx<CHAPTERS.length-1 ? CHAPTERS[idx+1] : { no:'', t:'표지로', _:'index.html' };
+  document.querySelector('.ch-foot').innerHTML =
+    `<a href="${prev._ || prev.no+'.html'}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+    `<a href="${next._ || next.no+'.html'}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+  const bar = document.querySelector('.scroll-progress');
+  document.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max > 0 ? (h.scrollTop/max)*100 : 0) + '%';
+  }, { passive: true });
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{ left:'$$', right:'$$', display:true }, { left:'$', right:'$', display:false }],
+        throwOnError: false,
+      });
+    }
+  });
+
+  // ---------- 위젯: Lp 단위구 ----------
+  const canvas = document.getElementById('normCanvas');
+  const ctx = canvas.getContext('2d');
+  const slider = document.getElementById('pSlider');
+  const pLab = document.getElementById('pLab');
+  const pVal = document.getElementById('pVal');
+  const normName = document.getElementById('normName');
+  const normShape = document.getElementById('normShape');
+  const normUse = document.getElementById('normUse');
+
+  function drawNorm(p) {
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+    const cx = W/2, cy = H/2;
+    const S = 100; // 1단위 = 100px
+    // 격자
+    ctx.strokeStyle = 'rgba(38,34,28,.05)'; ctx.lineWidth = 1;
+    for (let i = -2; i <= 2; i++) {
+      ctx.beginPath(); ctx.moveTo(cx + i*S, 0); ctx.lineTo(cx + i*S, H); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, cy + i*S); ctx.lineTo(W, cy + i*S); ctx.stroke();
+    }
+    // 축
+    ctx.strokeStyle = 'rgba(38,34,28,.3)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(W, cy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, H); ctx.stroke();
+
+    // 단위구 그리기 — 매개변수화
+    // 1사분면: x^p + y^p = 1, y = (1-x^p)^(1/p)
+    function pts() {
+      const arr = [];
+      const N = 400;
+      if (p > 50) {
+        // L∞ 근사 — 정사각형
+        const e = 1;
+        arr.push([e, 0]); arr.push([e, e]); arr.push([-e, e]); arr.push([-e, -e]); arr.push([e, -e]); arr.push([e, 0]);
+        return arr;
+      }
+      for (let k = 0; k <= N; k++) {
+        const x = -1 + 2 * k / N;
+        const xa = Math.abs(x);
+        let y;
+        if (1 - Math.pow(xa, p) < 0) y = 0;
+        else y = Math.pow(1 - Math.pow(xa, p), 1/p);
+        arr.push([x, y]);
+      }
+      for (let k = N; k >= 0; k--) {
+        const x = -1 + 2 * k / N;
+        const xa = Math.abs(x);
+        let y;
+        if (1 - Math.pow(xa, p) < 0) y = 0;
+        else y = -Math.pow(1 - Math.pow(xa, p), 1/p);
+        arr.push([x, y]);
+      }
+      return arr;
+    }
+    const arr = pts();
+    ctx.fillStyle = 'rgba(45,91,122,.12)';
+    ctx.strokeStyle = '#2D5B7A'; ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    arr.forEach(([x, y], i) => {
+      if (i === 0) ctx.moveTo(cx + x*S, cy - y*S); else ctx.lineTo(cx + x*S, cy - y*S);
+    });
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+
+    // 예시 벡터 (3, 4) → 스케일 (0.6, 0.8) 정도로 그림 (정규화하지 말고 그대로)
+    // (3, 4)는 화면 밖이므로 (0.6, 0.8) 같은 대표 점으로 표시
+    const sx = 1.2, sy = 1.6;
+    ctx.fillStyle = '#C0492E';
+    ctx.beginPath(); ctx.arc(cx + sx*S, cy - sy*S, 6, 0, Math.PI*2); ctx.fill();
+    // 점선 — 원점에서 점까지
+    ctx.strokeStyle = 'rgba(38,34,28,.35)'; ctx.lineWidth = 1.5;
+    ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + sx*S, cy - sy*S); ctx.stroke();
+    ctx.setLineDash([]);
+    // 점 라벨
+    ctx.fillStyle = '#26221C';
+    ctx.font = '600 13px Spline Sans Mono, monospace';
+    ctx.fillText('(1.2, 1.6)', cx + sx*S + 10, cy - sy*S - 4);
+
+    // 축 라벨
+    ctx.font = '500 12px Spline Sans Mono, monospace';
+    ctx.fillStyle = '#8E8576';
+    ctx.fillText('+1', cx + S + 4, cy + 14);
+    ctx.fillText('-1', cx - S - 16, cy + 14);
+    ctx.fillText('+1', cx + 6, cy - S - 4);
+    ctx.fillText('-1', cx + 6, cy + S + 14);
+
+    // ‖x‖_p 계산
+    const nx = Math.pow(Math.pow(sx, p) + Math.pow(sy, p), 1/p);
+    ctx.fillStyle = '#C0492E';
+    ctx.font = '600 13px Spline Sans Mono, monospace';
+    ctx.fillText(`‖x‖${p>50?'∞':('p='+p.toFixed(1))} = ${p>50?Math.max(sx,sy).toFixed(2):nx.toFixed(2)}`, 20, 26);
+  }
+
+  function updateInfo(p) {
+    pLab.textContent = p > 50 ? '∞' : p.toFixed(2);
+    pVal.textContent = `p = ${p > 50 ? '∞' : p.toFixed(2)}`;
+    if (Math.abs(p - 1) < 0.05) {
+      normName.innerHTML = '<b>L¹ 노름</b> — 맨해튼 거리, 격자 위 이동량.';
+      normShape.innerHTML = '단위구는 <b>마름모(◇)</b>, 모서리가 축 위에 있다.';
+      normUse.innerHTML = '<b>딥러닝에서</b>: L1 정칙화. 가중치를 정확히 0으로 만들어 <b>희소(sparse)</b> 표현 유도. 자동 특징 선택.';
+    } else if (Math.abs(p - 2) < 0.05) {
+      normName.innerHTML = '<b>L² 노름</b> — 유클리드 거리, 직선거리.';
+      normShape.innerHTML = '단위구는 <b>원(circle)</b>, 모든 방향에서 매끈하다.';
+      normUse.innerHTML = '<b>딥러닝에서</b>: 가장 흔한 손실 함수 (제곱 오차). 가중치 감쇠(Weight Decay) = L2 정칙화. 가중치를 부드럽게 0 쪽으로 누른다.';
+    } else if (p > 50) {
+      normName.innerHTML = '<b>L∞ 노름</b> — 체비셰프 거리, 최댓값.';
+      normShape.innerHTML = '단위구는 <b>정사각형</b>, 한 성분만 1이면 다른 성분은 무관.';
+      normUse.innerHTML = '<b>딥러닝에서</b>: 적대적 공격(Adversarial Attack)의 ε-perturbation을 잴 때 자주 쓴다. 픽셀당 변화 한도를 통제.';
+    } else if (p < 2) {
+      normName.innerHTML = `<b>L<sup>${p.toFixed(2)}</sup> 노름</b> — L1과 L2 사이.`;
+      normShape.innerHTML = '단위구는 마름모에서 원으로 부드러워지는 중간 모양.';
+      normUse.innerHTML = '<b>실용 메모</b>: 실제 자주 쓰이는 p값은 1, 2, ∞ 셋. 사이값은 이론적 일반화에 주로 등장.';
+    } else {
+      normName.innerHTML = `<b>L<sup>${p.toFixed(2)}</sup> 노름</b> — L2와 L∞ 사이.`;
+      normShape.innerHTML = '단위구는 원에서 정사각형으로 부풀어 오르는 중간 모양.';
+      normUse.innerHTML = '<b>실용 메모</b>: p가 커질수록 큰 한 성분이 결과를 지배.';
+    }
+  }
+
+  function update() {
+    const p = parseFloat(slider.value);
+    drawNorm(p > 9.9 ? 100 : p);
+    updateInfo(p > 9.9 ? 100 : p);
+  }
+  slider.addEventListener('input', () => {
+    update();
+    document.querySelectorAll('.norm-pre .btn').forEach(b => b.classList.remove('on'));
+  });
+  document.querySelectorAll('.norm-pre .btn').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('.norm-pre .btn').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on');
+      slider.value = b.dataset.p;
+      update();
+    });
+  });
+  update();
+</script>
+</body>
+</html>

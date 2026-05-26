@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ch.10 순환 신경망과 시퀀스 모델</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .masthead { position: relative; max-width: var(--wide); margin: 0 auto; padding: 1.5rem 1.4rem 0; }
+  .hero-wrap { position: relative; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: linear-gradient(180deg,#fff,var(--paper-2)); box-shadow: var(--shadow-plate); }
+  #hero { display: block; width: 100%; height: 340px; }
+  .hero-cap { position: absolute; left: 1.2rem; bottom: 1rem; font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; color: var(--ink-faint); pointer-events: none; }
+  .hero-cap b { color: var(--structure); } .hero-cap em { color: var(--style); font-style: normal; }
+  .title-block { max-width: var(--wide); margin: 2.4rem auto 0; padding-inline: 1.4rem; }
+  .title-block .kicker { display: block; margin-bottom: 1rem; }
+  .title-block h1 { font-size: clamp(2.4rem, 6vw, 4.6rem); margin: 0; line-height: 1.05; }
+  .title-block h1 em { color: var(--style); font-style: normal; }
+  .paper-meta { display: flex; flex-wrap: wrap; gap: .5rem 1.6rem; margin-top: 1.4rem; font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); letter-spacing: .02em; }
+  .paper-meta span b { color: var(--ink); font-weight: 500; }
+
+  .plates { max-width: var(--wide); margin: 1rem auto; padding: 2rem 1.4rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 1rem; }
+  .plate { position: relative; display: flex; flex-direction: column; text-decoration: none; color: inherit; background: #fff; border: 1px solid var(--line); border-radius: 13px; padding: 1.3rem 1.3rem 1.4rem; transition: transform .2s var(--ease), border-color .2s, box-shadow .2s; overflow: hidden; }
+  .plate:hover { transform: translateY(-4px); border-color: var(--structure-lo); box-shadow: var(--shadow-plate); }
+  .plate .pno { font-family: var(--mono); font-size: .74rem; letter-spacing: .14em; color: var(--ink-faint); }
+  .plate h3 { font-family: var(--serif); font-size: 1.3rem; margin: .5rem 0 .5rem; line-height: 1.2; }
+  .plate p { font-size: .9rem; color: var(--ink-soft); line-height: 1.5; margin: 0; }
+  .plate .spectrum { display: flex; height: 4px; border-radius: 2px; overflow: hidden; margin-bottom: 1rem; }
+  .plate .spectrum i { display: block; height: 100%; }
+  .plate .go { margin-top: 1rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; color: var(--structure); opacity: 0; transform: translateX(-4px); transition: .2s var(--ease); }
+  .plate:hover .go { opacity: 1; transform: translateX(0); }
+
+  .section-intro { max-width: var(--measure); margin: 1rem auto 0; padding-inline: 1.4rem; }
+  .section-intro h2 { margin-top: 1rem; }
+  .twopole { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; max-width: var(--measure); margin: 1.6rem auto; padding-inline: 1.4rem; }
+  .pole { padding: 1.1rem 1.2rem; border-radius: 11px; }
+  .pole.s1 { background: var(--structure-bg); } .pole.s2 { background: var(--style-bg); }
+  .pole h4 { margin: 0 0 .4rem; font-family: var(--serif); font-size: 1.1rem; }
+  .pole.s1 h4 { color: var(--structure); } .pole.s2 h4 { color: var(--style); }
+  .pole p { margin: 0; font-size: .9rem; color: var(--ink-soft); line-height: 1.5; }
+  @media (max-width: 560px){ .twopole{ grid-template-columns: 1fr; } }
+
+  .path { max-width: var(--wide); margin: 2rem auto; padding: 1.6rem 1.4rem; }
+  .path-flow { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; font-family: var(--mono); font-size: .8rem; }
+  .path-flow a { display: inline-flex; align-items: center; gap: .4rem; text-decoration: none; color: var(--ink-soft); padding: .4rem .7rem; border: 1px solid var(--line); border-radius: 20px; transition: .15s; }
+  .path-flow a:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .path-flow a b { color: var(--style); } .path-flow a:hover b { color: var(--style-lo); }
+  .path-flow .arr { color: var(--ink-faint); }
+
+  .topback { max-width: var(--wide); margin: 1rem auto -.5rem; padding-inline: 1.4rem; }
+  .topback a { font-family: var(--mono); font-size: .74rem; letter-spacing: .12em; color: var(--ink-soft); text-decoration: none; }
+  .topback a:hover { color: var(--ink); }
+
+  footer.colophon { max-width: var(--measure); margin: 3rem auto 4rem; padding: 2rem 1.4rem 0; border-top: 1px solid var(--line); font-size: .85rem; color: var(--ink-soft); }
+  footer.colophon a { color: var(--structure); }
+  footer.colophon .src { font-family: var(--mono); font-size: .76rem; line-height: 1.8; }
+</style>
+</head>
+<body>
+
+<div class="topback"><a href="../index.html">← 기말고사 인터랙티브 표지</a></div>
+
+<header class="masthead">
+  <div class="hero-wrap">
+    <canvas id="hero"></canvas>
+    <div class="hero-cap"><b>왼쪽 시점의 정보</b> ↔ <em>오른쪽 시점으로 흐르는 은닉 상태</em> · 마우스 드래그로 시간 펼치기</div>
+  </div>
+</header>
+
+<div class="title-block">
+  <span class="kicker">Deep Learning Book · Chapter 10 · Sequence Modeling: Recurrent and Recursive Nets</span>
+  <h1>시간은 흐른다,<br><em>은닉 상태</em>도 함께 흐른다</h1>
+  <div class="paper-meta">
+    <span><b>딥러닝 개론</b> 기말고사 복습 · Ch.10</span>
+    <span>저본 <b>Goodfellow, Bengio, Courville (2016) 10장</b></span>
+    <span>읽는 시간 <b>약 45분</b></span>
+    <span>구성 <b>7 sub-chapter · 7 위젯</b></span>
+  </div>
+</div>
+
+<section class="section-intro">
+  <h2>한 문장으로</h2>
+  <p>이 장은 <strong>"가변 길이 시퀀스(variable-length sequence)를 어떻게 단 하나의 모델로 다룰까"</strong>라는 질문에, 매 시간 단계마다 같은 매개변수를 재사용하며 이전 상태를 다음 상태로 전달하는 <span class="t-structure">순환 신경망(Recurrent Neural Network, RNN)</span>으로 답한다. 합성곱(Convolution)이 공간을 따라 매개변수를 공유했듯, 순환(Recurrence)은 시간을 따라 매개변수를 공유한다.</p>
+  <p>처음 읽을 때 가장 중요한 점은, 이 장이 <em>"긴 시퀀스를 다루는 새로운 트릭들"</em>의 모음이 <strong>아니라는 것이다</strong>. 9장(CNN)과 11장(실용 방법론) 사이에서 이 장은 <strong>"왜 단순한 시간 펼치기로는 충분하지 않은가"</strong>를 다룬다. <span class="t-style">기울기 폭발/소실(Exploding/Vanishing Gradient)</span>이라는 깊은 시간의 저주가 모든 이야기의 중심에 있고, <span class="t-synth">LSTM·GRU의 게이트(Gate)</span>는 그 저주를 풀려는 구조적 응답이다. 그리고 그 끝에서 다음 장(Attention)이 시작된다.</p>
+</section>
+
+<div class="twopole">
+  <div class="pole s1"><h4>RNN의 약속</h4><p>매개변수 공유로 가변 길이를 다룬다. 위치 독립, 학습 효율, 일반화 능력. 이 사이트에서 <b>쿨한 파랑</b>으로 표시된다.</p></div>
+  <div class="pole s2"><h4>RNN의 저주</h4><p>같은 야코비안이 반복 곱해지면 기울기가 폭발하거나 소실된다. 10-20 시간 단계만 넘어도 학습 불가능. 이 사이트에서 <b>웜한 주홍</b>으로 표시된다.</p></div>
+</div>
+
+<section class="plates" id="plates"></section>
+
+<section class="path">
+  <span class="kicker">권장 읽기 순서</span>
+  <div class="path-flow" id="pathflow"></div>
+</section>
+
+<footer class="colophon">
+  <p>이 해설은 Goodfellow et al.(2016) Chapter 10의 흐름을 따르되, 정의 나열 대신 <strong>"왜 그 형태인가"</strong>를 늘 함께 설명한다. CNN의 공간 공유에서 RNN의 시간 공유로 자연스럽게 잇고, LSTM 게이트는 "장기 메모리 회로"라는 비유로 풀어낸다. 모든 수식은 산문과 위젯으로 동행한다.</p>
+  <p class="src">
+    원서 · <a href="https://www.deeplearningbook.org/contents/rnn.html">deeplearningbook.org / Chapter 10</a><br>
+    7주차 과제 · <a href="../../../03-과제-제출/IntroToDL_Week7_22000168.md">IntroToDL_Week7_22000168.md</a><br>
+    컨셉 노트 · <a href="../../../../../../../3-Resources/Concepts/RNN은-이전-상태를-다음-시점으로-전달하며-문맥을-누적한다.md">RNN 컨셉</a> · <a href="../../../../../../../3-Resources/Concepts/연산-그래프-펼치기는-RNN의-순환-계산을-시간-흐름으로-전개한다.md">시간 펼치기</a> · <a href="../../../../../../../3-Resources/Concepts/교사-강요는-정답-피드백으로-출력-순환-네트워크의-훈련을-안정화한다.md">교사 강요</a>
+  </p>
+</footer>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'왜 시퀀스에 FC·CNN은 충분하지 않은가', d:'가변 길이와 문맥 의존성. 같은 단어가 위치에 따라 의미가 달라지는 세계. 위치별 별도 모델이 왜 무너지는지 슬라이더로 확인.', sp:['structure-lo','structure'] },
+    { no:'02', t:'시간 펼치기와 매개변수 공유', d:'$h^{(t)} = f(h^{(t-1)}, x^{(t)}; \\theta)$를 펼쳐 깊은 네트워크로 만든다. CNN의 공간 공유와 RNN의 시간 공유가 같은 원리임을 시각화.', sp:['structure','synth'] },
+    { no:'03', t:'BPTT — 시간을 거슬러 가는 역전파', d:'펼쳐진 그래프에서 어떻게 손실이 모든 시간 단계로 흘러 들어가는가. 메모리 비용과 계산 비용의 거래. 교사 강요(Teacher Forcing) 비교.', sp:['structure','style'] },
+    { no:'04', t:'기울기 폭발/소실 — 깊은 시간의 저주', d:'$\\prod_t W^T \\mathrm{diag}(f\'(h_t))$가 폭발할까 소실할까. 시퀀스 길이 슬라이더로 노름이 지수적으로 폭발/소실되는 모습을 직접 본다.', sp:['style','style-lo'] },
+    { no:'05', t:'LSTM·GRU — 게이트가 푸는 문제', d:'forget·input·output 게이트가 어떻게 "선형 자체 루프(linear self-loop)"라는 기울기 고속도로를 만드는가. 입력 슬라이더로 4개 게이트 활성도 시각화.', sp:['synth','structure'] },
+    { no:'06', t:'양방향·인코더-디코더 — Attention으로 가는 다리', d:'정방향+역방향 합성. seq2seq의 고정 길이 컨텍스트 병목. Attention이 왜 다음 장에서 등장할 수밖에 없었는가.', sp:['style','synth'] },
+    { no:'07', t:'시험 대비 — 핵심 정리와 예상 질문', d:'10장의 모든 수식을 한 쪽에. RNN 구조 패턴 3종, 게이트 식, BPTT 비용, LSTM vs GRU 비교 체크리스트와 예상 질문 9개.', sp:['ink-soft','ink'] },
+  ];
+  const colMap = { structure:'var(--structure)', 'structure-lo':'var(--structure-lo)', style:'var(--style)', 'style-lo':'var(--style-lo)', synth:'var(--synth)', ink:'var(--ink)', 'ink-soft':'var(--ink-soft)' };
+
+  const platesEl = document.getElementById('plates');
+  const flowEl = document.getElementById('pathflow');
+  SUBS.forEach((c, idx) => {
+    const sp = c.sp.length === 1 ? [c.sp[0], c.sp[0]] : c.sp;
+    const a = document.createElement('a');
+    a.className = 'plate'; a.href = c.no + '.html';
+    a.innerHTML = `
+      <div class="spectrum">${sp.map(s=>`<i style="flex:1;background:${colMap[s]}"></i>`).join('')}</div>
+      <span class="pno">SUB ${c.no}</span>
+      <h3>${c.t}</h3>
+      <p>${c.d.replace(/\$([^$]+)\$/g, '<code>$1</code>')}</p>
+      <span class="go">읽기 →</span>`;
+    platesEl.appendChild(a);
+
+    const f = document.createElement('a'); f.href = c.no + '.html';
+    f.innerHTML = `<b>${c.no}</b> ${c.t.split('—')[0].slice(0,14)}`;
+    flowEl.appendChild(f);
+    if (idx < SUBS.length - 1) { const s = document.createElement('span'); s.className='arr'; s.textContent='→'; flowEl.appendChild(s); }
+  });
+
+  // 표지 hero — 시간 펼치기 입자 모핑
+  // 왼쪽: 회로도 형태 (작은 루프), 오른쪽: 시간축으로 펼친 chain
+  window.addEventListener('load', () => {
+    const canvas = document.getElementById('hero');
+    if (!canvas || !window.THREE) return;
+    const wrap = canvas.parentElement;
+    const w = wrap.clientWidth;
+    const h = 340;
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, w/h, 0.1, 100);
+    camera.position.set(0, 0, 8);
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(2, devicePixelRatio));
+    renderer.setSize(w, h, false);
+    renderer.setClearColor(0xffffff, 0);
+
+    const T = 7; // time steps
+    const perStep = 80;
+    const total = T * perStep;
+    const geo = new THREE.BufferGeometry();
+    const positions = new Float32Array(total * 3);
+    const colors = new Float32Array(total * 3);
+    const folded = new Float32Array(total * 3);   // 작은 루프
+    const unfolded = new Float32Array(total * 3); // 시간축으로 펼침
+    for (let t = 0; t < T; t++) {
+      for (let i = 0; i < perStep; i++) {
+        const k = t * perStep + i;
+        // 폴드(folded): 모든 시점이 한 원에 겹쳐 있는 회로도
+        const theta = (i / perStep) * Math.PI * 2;
+        folded[k*3]   = Math.cos(theta) * 0.6;
+        folded[k*3+1] = Math.sin(theta) * 0.6;
+        folded[k*3+2] = 0;
+        // 언폴드: 시간축으로 펼쳐진 chain
+        const x = (t - (T-1)/2) * 0.95;
+        unfolded[k*3]   = x;
+        unfolded[k*3+1] = Math.sin((i/perStep) * Math.PI * 2) * 0.4;
+        unfolded[k*3+2] = Math.cos((i/perStep) * Math.PI * 2) * 0.1;
+        positions[k*3]   = folded[k*3];
+        positions[k*3+1] = folded[k*3+1];
+        positions[k*3+2] = folded[k*3+2];
+        // 시점별 그라데이션
+        const tt = t / (T-1);
+        colors[k*3]   = 0.18 + tt * 0.57;
+        colors[k*3+1] = 0.35 - tt * 0.15;
+        colors[k*3+2] = 0.48 - tt * 0.35;
+      }
+    }
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    const mat = new THREE.PointsMaterial({ size: 0.06, vertexColors: true, transparent: true, opacity: .92 });
+    const pts = new THREE.Points(geo, mat);
+    scene.add(pts);
+
+    // 시점 간 연결선 (펼쳐졌을 때만 보임)
+    const lineGeo = new THREE.BufferGeometry();
+    const linePos = new Float32Array((T-1) * 6);
+    lineGeo.setAttribute('position', new THREE.BufferAttribute(linePos, 3));
+    const lineMat = new THREE.LineBasicMaterial({ color: 0x2D5B7A, transparent: true, opacity: 0 });
+    const lines = new THREE.LineSegments(lineGeo, lineMat);
+    scene.add(lines);
+
+    let t = 0;
+    let target = 0.5;
+    let drag = false, dragX = 0, sx = 0;
+    canvas.addEventListener('pointerdown', (e) => { drag = true; dragX = e.clientX; sx = target; });
+    window.addEventListener('pointermove', (e) => { if (!drag) return; target = Math.max(0, Math.min(1, sx + (e.clientX - dragX) / canvas.clientWidth)); });
+    window.addEventListener('pointerup', () => { drag = false; });
+
+    function tick() {
+      t += 0.005;
+      if (!drag) target = 0.5 + 0.45 * Math.sin(t);
+      const m = target;
+      const pos = pts.geometry.attributes.position.array;
+      for (let k = 0; k < total; k++) {
+        pos[k*3]   = folded[k*3]   * (1-m) + unfolded[k*3]   * m;
+        pos[k*3+1] = folded[k*3+1] * (1-m) + unfolded[k*3+1] * m;
+        pos[k*3+2] = folded[k*3+2] * (1-m) + unfolded[k*3+2] * m;
+      }
+      pts.geometry.attributes.position.needsUpdate = true;
+      // 연결선
+      for (let i = 0; i < T-1; i++) {
+        const a = i * perStep, b = (i+1) * perStep;
+        linePos[i*6]   = pos[a*3];
+        linePos[i*6+1] = pos[a*3+1];
+        linePos[i*6+2] = pos[a*3+2];
+        linePos[i*6+3] = pos[b*3];
+        linePos[i*6+4] = pos[b*3+1];
+        linePos[i*6+5] = pos[b*3+2];
+      }
+      lineGeo.attributes.position.needsUpdate = true;
+      lineMat.opacity = m * 0.6;
+      pts.rotation.y = (m - 0.5) * 0.3;
+      renderer.render(scene, camera);
+      requestAnimationFrame(tick);
+    }
+    tick();
+
+    window.addEventListener('resize', () => {
+      const w2 = wrap.clientWidth;
+      renderer.setSize(w2, h, false);
+      camera.aspect = w2 / h;
+      camera.updateProjectionMatrix();
+    });
+  });
+</script>
+</body>
+</html>

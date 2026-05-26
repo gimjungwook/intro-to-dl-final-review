@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ch.10 · 07 시험 대비</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .scroll-progress { position: fixed; top: 0; left: 0; height: 3px; background: var(--style); width: 0; z-index: 999; transition: width .1s; }
+  .topbar { position: fixed; top: 0; left: 0; right: 0; padding: .55rem 1.2rem; background: rgba(250,247,240,.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line-soft); display: flex; justify-content: space-between; align-items: center; z-index: 100; font-family: var(--mono); font-size: .72rem; }
+  .topbar a.home { color: var(--ink-soft); text-decoration: none; letter-spacing: .1em; }
+  .topbar a.home:hover { color: var(--ink); }
+  .topbar .ch-mini { color: var(--ink-faint); letter-spacing: .14em; }
+  .ch-main { max-width: 44rem; margin: 4.5rem auto 0; padding: 2rem 0 6rem; }
+  .ch-head { max-width: var(--measure); margin: 0 auto 2.4rem; padding-inline: 1.4rem; }
+  .ch-head .kicker { display: block; margin-bottom: 1rem; }
+  .ch-head h1 { font-size: clamp(2rem, 5vw, 3.3rem); margin: 0 0 .8rem; line-height: 1.1; }
+  .ch-head .lede { font-family: var(--serif); font-size: 1.22rem; font-style: italic; color: var(--ink-soft); line-height: 1.5; }
+  .ch-foot { display: flex; justify-content: space-between; gap: 1rem; max-width: var(--measure); margin: 4rem auto 0; padding-inline: 1.4rem; }
+  .ch-foot a { display: block; text-decoration: none; flex: 1; padding: 1rem 1.2rem; border: 1px solid var(--line); border-radius: 10px; transition: border-color .15s, transform .15s; }
+  .ch-foot a:hover { border-color: var(--structure); transform: translateY(-2px); }
+  .ch-foot .dir { font-family: var(--mono); font-size: .7rem; letter-spacing: .14em; color: var(--ink-faint); text-transform: uppercase; }
+  .ch-foot .ti { font-family: var(--serif); font-size: 1.05rem; color: var(--ink); margin-top: .2rem; }
+  .ch-foot .next { text-align: right; }
+  .widget { max-width: var(--wide); margin: 2.4rem auto; padding-inline: 1.4rem; }
+  .widget-frame { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 1.4rem; box-shadow: var(--shadow-plate); }
+  .widget-label { display: flex; align-items: center; gap: .8rem; margin-bottom: 1rem; font-family: var(--mono); font-size: .78rem; color: var(--ink-soft); letter-spacing: .05em; }
+  .widget-label .lab-no { color: var(--style); font-weight: 600; letter-spacing: .14em; }
+  .widget-cap { max-width: var(--measure); margin: .8rem auto 0; font-size: .85rem; color: var(--ink-soft); line-height: 1.6; text-align: center; }
+  .formula-grid { display: grid; grid-template-columns: 1fr; gap: 0; max-width: var(--measure); margin: 1rem auto; padding-inline: 1.4rem; }
+  .formula-card { padding: 1.1rem 1.2rem; border: 1px solid var(--line); border-radius: 10px; margin-bottom: .8rem; background: #fff; }
+  .formula-card h4 { margin: 0 0 .4rem; font-family: var(--mono); font-size: .76rem; letter-spacing: .1em; text-transform: uppercase; color: var(--style); font-weight: 600; }
+  .formula-card .desc { font-size: .85rem; color: var(--ink-soft); margin-top: .5rem; }
+  .qa-block { max-width: var(--measure); margin: 1rem auto; padding-inline: 1.4rem; }
+  .qa-item { padding: 1.1rem 1.3rem; border: 1px solid var(--line); border-radius: 10px; margin-bottom: .8rem; background: #fff; cursor: pointer; transition: .15s; }
+  .qa-item:hover { border-color: var(--structure); }
+  .qa-item.open { border-color: var(--style); background: #fffbf7; }
+  .qa-q { font-family: var(--serif); font-size: 1.05rem; color: var(--ink); margin: 0; }
+  .qa-q .qn { font-family: var(--mono); font-size: .76rem; color: var(--style); margin-right: .6rem; letter-spacing: .1em; font-weight: 600; }
+  .qa-a { display: none; margin-top: .8rem; padding-top: .8rem; border-top: 1px solid var(--line-soft); font-size: .93rem; color: var(--ink-soft); line-height: 1.65; }
+  .qa-item.open .qa-a { display: block; }
+  .compare-table { max-width: var(--measure); margin: 1.4rem auto; padding-inline: 1.4rem; }
+  .compare-table table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+  .compare-table th, .compare-table td { padding: .6rem .7rem; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+  .compare-table th { font-family: var(--mono); font-size: .72rem; color: var(--ink-faint); letter-spacing: .08em; text-transform: uppercase; font-weight: 500; }
+  .compare-table tr td:first-child { font-weight: 600; color: var(--structure); width: 30%; }
+  .checklist { max-width: var(--measure); margin: 1rem auto; padding-inline: 1.4rem; }
+  .checklist ul { list-style: none; padding: 0; margin: 0; }
+  .checklist li { padding: .6rem .9rem; margin-bottom: .4rem; border: 1px solid var(--line-soft); border-radius: 8px; font-size: .92rem; color: var(--ink-soft); display: flex; align-items: flex-start; gap: .6rem; background: #fff; }
+  .checklist li::before { content: '☐'; color: var(--ink-faint); font-family: monospace; font-size: 1.1em; flex-shrink: 0; }
+  .checklist li strong { color: var(--ink); font-weight: 650; }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar">
+  <a class="home" href="index.html">← Ch.10 표지</a>
+  <span class="ch-mini">SUB 07 / 07 · 시험 직전 체크</span>
+</div>
+
+<main class="ch-main">
+  <header class="ch-head">
+    <span class="kicker">Chapter 10 · Sub 07</span>
+    <h1>시험 대비 —<br><span class="t-structure">핵심 정리와 예상 질문</span></h1>
+    <p class="lede">10장의 모든 수식, 구조 패턴, 게이트 식, 그리고 시험에서 묻기 좋은 9개 질문. 시험 직전 30분에 한 번 더 훑을 카드.</p>
+  </header>
+
+  <div class="prose">
+    <h2>10장 한눈에 — 다섯 줄 요약</h2>
+    <p>① <strong>RNN</strong>은 시간 축에서 매개변수를 공유하며 가변 길이를 다룬다 ($h^{(t)} = f(h^{(t-1)}, x^{(t)}; \theta)$).</p>
+    <p>② 펼친 그래프 위에서 <strong>BPTT</strong>로 학습하지만, 같은 행렬 $W$의 반복 곱셈이 <strong>기울기 폭발/소실</strong>을 일으킨다.</p>
+    <p>③ <strong>LSTM·GRU의 게이트</strong>는 선형 자체 루프로 기울기를 살린다. 망각·입력·출력 게이트가 메모리를 동적으로 조절한다.</p>
+    <p>④ <strong>양방향 RNN</strong>은 미래까지, <strong>인코더-디코더</strong>는 길이가 다른 시퀀스를 잇는다.</p>
+    <p>⑤ seq2seq의 고정 길이 컨텍스트 병목이 <strong>Attention</strong>을 부르고, 어텐션이 Transformer를 부른다.</p>
+
+    <h2>핵심 수식 — 시험 직전 한 번 더</h2>
+  </div>
+
+  <div class="formula-grid">
+    <div class="formula-card">
+      <h4>RNN 갱신 (vanilla)</h4>
+      <div>$$ a^{(t)} = b + W h^{(t-1)} + U x^{(t)}, \quad h^{(t)} = \tanh(a^{(t)}) $$</div>
+      <p class="desc">W, U, b는 모든 시점에서 공유. 매개변수 공유가 RNN의 모든 약속의 출처.</p>
+    </div>
+    <div class="formula-card">
+      <h4>BPTT 핵심 항</h4>
+      <div>$$ \frac{\partial h^{(t)}}{\partial h^{(k)}} = \prod_{i=k+1}^{t} W^T \mathrm{diag}\!\left(\tanh'(a^{(i)})\right) $$</div>
+      <p class="desc">같은 W가 (t-k)번 반복 곱해진다. 고유값 |λ|>1: 폭발, |λ|<1: 소실.</p>
+    </div>
+    <div class="formula-card">
+      <h4>기울기 클리핑</h4>
+      <div>$$ \text{if } \|g\| > c, \quad g \leftarrow c \cdot \frac{g}{\|g\|} $$</div>
+      <p class="desc">방향은 보존, 크기만 c로 제한. 폭발 처방. 소실에는 무력.</p>
+    </div>
+    <div class="formula-card">
+      <h4>LSTM — 셀 업데이트</h4>
+      <div>$$ c^{(t)} = f^{(t)} \odot c^{(t-1)} + i^{(t)} \odot \tilde{c}^{(t)} $$</div>
+      <p class="desc">선형 자체 루프 — 비선형 변환 없이 c가 흐른다. 기울기 고속도로.</p>
+    </div>
+    <div class="formula-card">
+      <h4>LSTM — 게이트 4개</h4>
+      <div>$$ f, i, o = \sigma(W \cdot [h, x] + b), \quad \tilde{c} = \tanh(W_c \cdot [h, x]) $$</div>
+      <p class="desc">f: 망각. i: 입력. o: 출력. 모두 시그모이드. 후보 c̃만 tanh.</p>
+    </div>
+    <div class="formula-card">
+      <h4>LSTM — 출력</h4>
+      <div>$$ h^{(t)} = o^{(t)} \odot \tanh(c^{(t)}) $$</div>
+      <p class="desc">셀 상태는 메모리, 은닉 상태는 출력. 둘이 분리된 게 LSTM의 핵심.</p>
+    </div>
+    <div class="formula-card">
+      <h4>GRU — 핵심</h4>
+      <div>$$ h^{(t)} = (1 - z^{(t)}) \odot h^{(t-1)} + z^{(t)} \odot \tilde{h}^{(t)} $$</div>
+      <p class="desc">업데이트 게이트 z가 LSTM의 forget+input을 합친 역할. 매개변수 25% 절약.</p>
+    </div>
+    <div class="formula-card">
+      <h4>Attention (Bahdanau)</h4>
+      <div>$$ c^{(t)} = \sum_{i=1}^{\tau_x} \alpha_{t,i} \cdot h_i^{\text{enc}}, \quad \sum_i \alpha_{t,i} = 1 $$</div>
+      <p class="desc">매 디코더 시점마다 가중치 다시 계산. seq2seq의 고정 C 병목 해소.</p>
+    </div>
+  </div>
+
+  <div class="prose">
+    <h2>RNN 구조 패턴 세 종류 — 한 번에 정리</h2>
+    <p>이 장에 등장하는 RNN의 정규 설계 패턴이 셋이다. 시험에서 그림을 보고 어느 패턴인지 식별하라는 문제가 나올 수 있다.</p>
+  </div>
+
+  <div class="compare-table">
+    <table>
+      <thead><tr><th>패턴</th><th>구조</th><th>특징</th></tr></thead>
+      <tbody>
+        <tr><td>① 은닉-은닉 + 매 시점 출력</td><td>$h^{(t-1)} \to h^{(t)}$, 매 t마다 $y^{(t)}$</td><td>가장 강력 (이론상 Universal Turing Machine), BPTT 필수</td></tr>
+        <tr><td>② 출력-은닉 (Teacher Forcing 가능)</td><td>$y^{(t-1)} \to h^{(t)}$ (은닉끼리 직접 연결 X)</td><td>병렬 훈련 가능, 표현력 약함, 노출 편향 문제</td></tr>
+        <tr><td>③ 시퀀스 전체 → 단일 출력</td><td>은닉만 흐르고 마지막에 $y$ 한 번</td><td>분류·요약. seq2seq의 인코더가 이 패턴</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="prose">
+    <h2>예상 질문 9개 — 클릭하면 해답</h2>
+  </div>
+
+  <div class="qa-block" id="qaBlock">
+    <div class="qa-item"><p class="qa-q"><span class="qn">Q1</span> RNN이 CNN과 평행한 의미에서 무엇을 공유하는가?</p><div class="qa-a">CNN은 같은 필터를 <strong>공간</strong> 전체에 공유한다. RNN은 같은 전환 함수 $f(\theta)$를 <strong>시간</strong> 전체에 공유한다. 두 공유 모두 ① 위치 독립성, ② 가변 입력 크기 대응, ③ 학습 효율이라는 같은 이점을 만든다.</div></div>
+
+    <div class="qa-item"><p class="qa-q"><span class="qn">Q2</span> 시간 펼치기(Unfolding)가 가져오는 두 가지 이점은?</p><div class="qa-a">① <strong>입력 크기 고정</strong> — 시퀀스 길이와 무관하게 동일한 전환 규칙 하나만 정의. ② <strong>매개변수 공유</strong> — 모든 시점이 동일한 $\theta$를 재사용, 위치 독립 학습과 가변 길이 일반화가 동시에 가능.</div></div>
+
+    <div class="qa-item"><p class="qa-q"><span class="qn">Q3</span> BPTT의 시간·메모리 비용과 그 의미는?</p><div class="qa-a">시간 $O(\tau)$, 메모리 $O(\tau)$. 메모리 비용이 실용적 골칫거리. 모든 시점의 은닉 상태를 저장해야 역전파가 가능하기 때문. 그래서 실제로는 <strong>Truncated BPTT</strong>로 일정 길이(예: 100 시점)만 유지한다.</div></div>
+
+    <div class="qa-item"><p class="qa-q"><span class="qn">Q4</span> 기울기 폭발과 소실의 수학적 원인을 한 줄로?</p><div class="qa-a">$\partial h^{(t)}/\partial h^{(k)}$가 같은 행렬 $W^T \mathrm{diag}(\tanh')$의 $(t-k)$번 반복 곱셈이기 때문. 고유값 분해 $W^n = Q \Lambda^n Q^T$에서 $|\lambda| > 1$이면 지수적으로 폭발, $|\lambda| < 1$이면 지수적으로 소실. 일반 깊은 신경망과 달리 RNN은 <em>같은</em> 행렬이 반복되므로 자기 상쇄가 불가능.</div></div>
+
+    <div class="qa-item"><p class="qa-q"><span class="qn">Q5</span> 왜 기울기 클리핑은 폭발만 해결하고 소실은 해결 못 하는가?</p><div class="qa-a">클리핑은 노름이 큰 기울기의 크기만 줄인다 — 정보가 존재한다는 전제. 소실은 정보 자체가 사라진 것이므로 "키워야지"가 불가능. 정보가 흐를 길 자체를 새로 만들어야 한다 — 그것이 LSTM의 선형 자체 루프.</div></div>
+
+    <div class="qa-item"><p class="qa-q"><span class="qn">Q6</span> LSTM의 셀 업데이트 $c^{(t)} = f^{(t)} \odot c^{(t-1)} + i^{(t)} \odot \tilde{c}^{(t)}$가 왜 기울기 소실을 푸는가?</p><div class="qa-a">$c^{(t-1)}$에서 $c^{(t)}$로 가는 길에 비선형 함수가 없다. $\partial c^{(t)}/\partial c^{(t-1)} = \mathrm{diag}(f^{(t)})$. 모델이 "지금 기억 유지"가 필요하다고 학습했다면 $f \approx 1$로 두어 곱이 1 근처에 머무른다. 일반 RNN은 시점과 무관한 고정된 $W$로 이 결정을 못 하지만, LSTM은 <strong>시점마다 입력에 따라 게이트가 동적으로 결정</strong>한다.</div></div>
+
+    <div class="qa-item"><p class="qa-q"><span class="qn">Q7</span> LSTM과 GRU의 매개변수 수 차이는 어디서 오는가?</p><div class="qa-a">LSTM은 게이트 3개(f, i, o) + 후보(c̃) = 4개 변환 행렬. GRU는 게이트 2개(z, r) + 후보(h̃) = 3개 변환 행렬. 따라서 GRU는 LSTM 매개변수의 약 75%. 게이트 줄임으로써 forget과 input의 결정을 하나(z)로 합쳐 표현 자유도를 약간 희생한다.</div></div>
+
+    <div class="qa-item"><p class="qa-q"><span class="qn">Q8</span> 교사 강요(Teacher Forcing)의 장점과 단점은?</p><div class="qa-a"><strong>장점</strong>: 매 시점이 이전 시점의 모델 출력에 의존하지 않으므로 <strong>모든 시점을 병렬로 훈련 가능</strong>. 훈련 속도가 비약적으로 빨라짐. <strong>단점</strong>: <strong>노출 편향(Exposure Bias)</strong> — 훈련 분포(정답 입력)와 추론 분포(자기 출력 입력)가 달라, 긴 시퀀스 생성에서 오차 누적으로 성능 저하. 처방: Scheduled Sampling.</div></div>
+
+    <div class="qa-item"><p class="qa-q"><span class="qn">Q9</span> seq2seq의 고정 길이 컨텍스트가 왜 병목이고 Attention이 어떻게 푸는가?</p><div class="qa-a"><strong>병목</strong>: 입력 전체의 의미를 단 하나의 벡터 $C$에 압축. 입력이 길어질수록 압축이 무리됨 (책 한 권을 1000차원 벡터에). 디코더 매 시점이 같은 $C$만 보므로 "지금 입력의 어디를 봐야 하는지" 정보 손실. <strong>Attention</strong>: 매 디코더 시점마다 입력 시퀀스 전체에 가중치 $\alpha_{t,i}$를 다시 계산해 가중합 $c^{(t)}$ 생성. 모델이 "지금 어디 봐야 하는가"를 동적으로 결정. 이것이 일반화되어 Transformer의 self-attention이 됨.</div></div>
+  </div>
+
+  <div class="prose">
+    <h2>D-day 직전 체크리스트</h2>
+  </div>
+
+  <div class="checklist">
+    <ul>
+      <li><strong>매개변수 공유</strong>의 세 가지 이점 (위치 독립·가변 길이·학습 효율)을 한 번에 말할 수 있다.</li>
+      <li><strong>$h^{(t)} = f(h^{(t-1)}, x^{(t)}; \theta)$</strong>를 메모리 없이 쓸 수 있고, 펼친 그래프와 회로도 두 표현이 같은 것이라는 사실을 안다.</li>
+      <li><strong>BPTT</strong>의 비용 $O(\tau)$와 그 메모리 부담의 원인을 설명할 수 있다.</li>
+      <li>기울기 폭발/소실의 수학적 원인 — <strong>$W^n$의 고유값 거동</strong>을 한 문장으로 말할 수 있다.</li>
+      <li>기울기 클리핑이 <strong>폭발만 해결하는 이유</strong>를 안다.</li>
+      <li>LSTM 4개 게이트(forget, input, output, candidate) <strong>각각의 역할</strong>을 외운다.</li>
+      <li>LSTM의 <strong>선형 자체 루프</strong> $c^{(t)} = f \odot c^{(t-1)} + i \odot \tilde{c}$가 왜 기울기 고속도로인지 설명할 수 있다.</li>
+      <li>GRU와 LSTM의 <strong>구조적 차이</strong> 4가지(게이트 수, 상태 수, 매개변수 수, 표현력)를 안다.</li>
+      <li>양방향 RNN이 <strong>온라인 처리에 부적합한 이유</strong>를 안다.</li>
+      <li>seq2seq의 <strong>고정 길이 컨텍스트 병목</strong>과 그 응답으로서 Attention의 등장을 한 문장으로 잇는다.</li>
+      <li>교사 강요의 <strong>장점(병렬 훈련)</strong>과 <strong>단점(노출 편향)</strong>을 짝지어 안다.</li>
+      <li>재귀 네트워크가 합성 깊이를 <strong>$O(\tau)$ → $O(\log \tau)$</strong>로 줄인다는 사실을 안다.</li>
+    </ul>
+  </div>
+
+  <div class="prose">
+    <h2>다음 장으로</h2>
+    <p>10장은 RNN을 다 보았지만, 이야기의 진짜 결말은 다음 장들에 있다. 11장(실용 방법론)은 RNN을 어떻게 디버깅하고 튜닝하는지 다룬다. 12장(응용)에서는 RNN이 음성·NLP·강화학습에서 실제로 어떻게 쓰이는지 본다. 그리고 이 장의 마지막에 등장한 어텐션은 — 이 책 출간 이후 — 2017년 <em>Attention Is All You Need</em> 논문에서 RNN의 순차 계산 자체를 제거하며 Transformer로 거듭난다.</p>
+
+    <p>그러나 RNN의 핵심 발상 — <strong>매개변수 공유로 가변 길이를 다룬다</strong>, <strong>구조적 메모리 회로로 장기 의존성을 학습한다</strong> — 는 그 모든 후속 모델에 살아 있다. Transformer의 셀프 어텐션도 시퀀스 위치에 매개변수를 공유하고, 더 긴 의존성을 더 직접적으로 학습할 뿐이다.</p>
+
+    <p>좋은 시험 보길.</p>
+  </div>
+
+  <nav class="ch-foot">
+    <a href="06.html"><span class="dir">← 이전</span><div class="ti">06 · 양방향·인코더-디코더</div></a>
+    <a class="next" href="index.html"><span class="dir">표지 →</span><div class="ti">Ch.10 표지로</div></a>
+  </nav>
+</main>
+
+<script>
+  window.addEventListener('scroll', () => {
+    const sp = document.querySelector('.scroll-progress');
+    const sc = document.documentElement.scrollTop;
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    sp.style.width = (max > 0 ? (sc / max * 100) : 0) + '%';
+  });
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, { delimiters: [
+        {left:'$$', right:'$$', display:true},
+        {left:'$', right:'$', display:false}
+      ], throwOnError:false });
+    }
+  });
+
+  // QA accordion
+  document.querySelectorAll('.qa-item').forEach(item => {
+    item.addEventListener('click', () => {
+      item.classList.toggle('open');
+    });
+  });
+</script>
+</body>
+</html>

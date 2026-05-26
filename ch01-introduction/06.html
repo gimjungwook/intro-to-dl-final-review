@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>06 — 시험 대비 체크리스트 — Ch.1</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .defcard { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: .8rem; max-width: var(--measure); margin: 1.6rem auto; padding-inline: 1.4rem; }
+  .defcard .card { padding: 1rem 1.1rem; background: #fff; border: 1px solid var(--line); border-top: 3px solid var(--structure); border-radius: 9px; }
+  .defcard .card.style-top { border-top-color: var(--style); }
+  .defcard .card.synth-top { border-top-color: var(--synth); }
+  .defcard .card.ink-top { border-top-color: var(--ink-soft); }
+  .defcard .card .ct { font-family: var(--mono); font-size: .7rem; letter-spacing: .12em; color: var(--ink-faint); text-transform: uppercase; margin-bottom: .35rem; }
+  .defcard .card h4 { margin: 0 0 .35rem; font-family: var(--serif); font-size: 1.05rem; color: var(--ink); }
+  .defcard .card p { margin: 0; font-size: .85rem; color: var(--ink-soft); line-height: 1.5; }
+
+  .matchgame { max-width: var(--measure); margin: 1.4rem auto; padding-inline: 1.4rem; display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; }
+  .matchcol h5 { margin: 0 0 .5rem; font-family: var(--mono); font-size: .75rem; letter-spacing: .12em; color: var(--ink-faint); text-transform: uppercase; }
+  .mitem { padding: .6rem .8rem; background: #fff; border: 1px solid var(--line); border-radius: 7px; margin-bottom: .35rem; cursor: pointer; font-size: .88rem; color: var(--ink-soft); transition: all .15s var(--ease); }
+  .mitem:hover { border-color: var(--structure-lo); transform: translateX(2px); }
+  .mitem.selected { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .mitem.correct { background: rgba(45,91,122,0.1); border-color: var(--structure); color: var(--structure); }
+  .mitem.wrong { background: rgba(192,73,46,0.1); border-color: var(--style); color: var(--style); }
+  .match-status { max-width: var(--measure); margin: .5rem auto 1rem; padding-inline: 1.4rem; text-align: center; font-family: var(--mono); font-size: .82rem; color: var(--ink-soft); }
+  .match-status b { color: var(--ink); }
+  .match-reset { font-family: var(--mono); font-size: .72rem; padding: .3rem .7rem; background: transparent; color: var(--ink-soft); border: 1px solid var(--line); border-radius: 5px; cursor: pointer; margin-left: .5rem; }
+  .match-reset:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+  .finalbox { max-width: var(--measure); margin: 2.4rem auto 1rem; padding: 1.6rem 1.4rem; background: linear-gradient(180deg, var(--paper-2), #fff); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow-plate); }
+  .finalbox h3 { margin-top: 0; font-family: var(--serif); font-size: 1.3rem; color: var(--ink); }
+  .finalbox p { font-size: .92rem; color: var(--ink-soft); line-height: 1.6; margin: 0 0 .8rem; }
+  .finalbox p:last-child { margin-bottom: 0; }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 06 — 시험 직전 한 번 더 훑을 카드</span>
+      <h1>시험 대비 — 핵심 <span class="t-structure">정의</span>, <span class="t-style">구분</span>, 예상 질문</h1>
+      <p class="lede">이 절은 새 내용을 더하지 않는다. 1-5절의 결론을 카드로 압축하고, 시험에서 묻기 좋은 형태의 질문 7개를 아코디언으로 펼친다. 시험 30분 전 한 번 더 훑기 좋다.</p>
+    </header>
+
+    <div class="prose">
+      <h2>핵심 정의 5장 — 한 줄씩</h2>
+      <p>다음 다섯 카드의 정의는 시험에 그대로 답안에 옮겨 적을 수 있을 정도로 다듬었다. 한 카드씩 손으로 한 번 적어 보면 외워진다.</p>
+    </div>
+
+    <div class="defcard">
+      <div class="card">
+        <p class="ct">Card 01</p>
+        <h4>AI (Artificial Intelligence)</h4>
+        <p>“지능적으로 보이는” 컴퓨터 행동의 가장 넓은 우산. 학습 없이 규칙만으로 짠 시스템도 포함된다.</p>
+      </div>
+      <div class="card">
+        <p class="ct">Card 02</p>
+        <h4>ML (Machine Learning)</h4>
+        <p>데이터에서 입력↔출력 함수를 학습한다. 좋은 특징(feature)은 여전히 사람이 설계한다.</p>
+      </div>
+      <div class="card style-top">
+        <p class="ct">Card 03</p>
+        <h4>표상학습(representation learning)</h4>
+        <p>특징까지 모델이 데이터에서 뽑게 한다. 사람이 특징을 적기 어려운 음성, 이미지, 자연어에서 핵심.</p>
+      </div>
+      <div class="card synth-top">
+        <p class="ct">Card 04</p>
+        <h4>딥러닝(deep learning)</h4>
+        <p>표상학습을 다층으로 쌓아, 단순 표상에서 복잡 표상까지 단계적으로 합성한다. 깊이는 층 수가 아니라 합성의 깊이.</p>
+      </div>
+      <div class="card ink-top">
+        <p class="ct">Card 05</p>
+        <h4>깊이(depth)의 두 정의</h4>
+        <p>(1) 계산 그래프의 가장 긴 경로 (2) 복잡한 개념을 단순 개념들의 몇 단계 합성으로 만드는가.</p>
+      </div>
+    </div>
+
+    <div class="prose">
+      <h2>구분이 자주 헷갈리는 짝 — 매칭 게임으로 확인</h2>
+      <p>왼쪽 항목을 클릭한 뒤 오른쪽에서 짝이 되는 항목을 클릭하자. 모두 맞히면 “Ch.1의 핵심 분류는 손에 잡힌 것”이다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 06</span><span>인물/기여 매칭 — 짝을 맞춰 보자</span></div>
+        <div class="matchgame">
+          <div class="matchcol">
+            <h5>← 인물 / 시점</h5>
+            <div class="mitem" data-side="L" data-id="A">McCulloch &amp; Pitts (1943)</div>
+            <div class="mitem" data-side="L" data-id="B">Rosenblatt (1958)</div>
+            <div class="mitem" data-side="L" data-id="C">Minsky &amp; Papert (1969)</div>
+            <div class="mitem" data-side="L" data-id="D">Rumelhart 외 (1986)</div>
+            <div class="mitem" data-side="L" data-id="E">Krizhevsky 외 (2012)</div>
+            <div class="mitem" data-side="L" data-id="F">Vaswani 외 (2017)</div>
+          </div>
+          <div class="matchcol">
+            <h5>핵심 기여 →</h5>
+            <div class="mitem" data-side="R" data-id="D">역전파(backpropagation) 표준화 → 연결주의 부활</div>
+            <div class="mitem" data-side="R" data-id="C">단층 퍼셉트론의 한계 증명 → 1차 AI 겨울 촉발</div>
+            <div class="mitem" data-side="R" data-id="F">Transformer 제안 → LLM 시대의 기반 구조</div>
+            <div class="mitem" data-side="R" data-id="A">인공 뉴런의 첫 수학 모델 — “뇌를 수식으로”</div>
+            <div class="mitem" data-side="R" data-id="E">AlexNet, ImageNet 우승 → 딥러닝 3차 물결의 결정적 순간</div>
+            <div class="mitem" data-side="R" data-id="B">학습 가능한 첫 신경망(Perceptron) — Mark I 머신</div>
+          </div>
+        </div>
+        <div class="match-status">
+          <span id="ms-text">왼쪽 항목 하나를 클릭하세요</span>
+          <button class="match-reset" id="ms-reset">리셋</button>
+        </div>
+      </div>
+      <p class="widget-cap">시험에서 “이 인물의 핵심 기여는?” 또는 “이 사건이 어느 시대를 끝냈는가?”라는 문항이 나올 수 있다. 6쌍 모두 맞히면 Ch.1 역사 파트는 통과.</p>
+    </div>
+
+    <div class="prose">
+      <h2>예상 질문 7개 — 클릭해서 모범 답안 확인</h2>
+      <p>아래 일곱 질문은 1장 본문, 강의노트 1-2주차, 그리고 시험 출제 패턴을 종합해 만든 것이다. 먼저 머릿속으로 답을 정리한 뒤 펼쳐 보는 것을 권한다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame" style="background: var(--paper);">
+        <div class="widget-label"><span class="lab-no">예상 질문</span><span>클릭으로 펼쳐서 모범 답안 확인 (총 7개)</span></div>
+        <div style="padding: 1rem 1rem 1.4rem;">
+
+          <div class="qa">
+            <div class="qa-q"><span class="qn">Q1</span><span>왜 규칙기반 접근(rule-based approach)은 체스에는 강하지만 얼굴 인식에는 약한가?</span><span class="qx">+</span></div>
+            <div class="qa-a"><div class="qa-a-inner">
+              <span class="rel">관련: Sub 01 — 표상의 문제</span>
+              체스는 규칙이 닫혀 있고 상태가 명시적이다(말의 위치만 알면 다음 수의 후보가 결정된다). 반면 얼굴 인식은 입력이 픽셀이라는 날것이고, 조명/각도/표정/가림 같은 변형이 무한히 가능하다. 모든 변형을 사람이 규칙으로 적는 것은 사실상 불가능하다. 그래서 “데이터에서 표상을 배우는” 방식이 필요해진다.
+            </div></div>
+          </div>
+
+          <div class="qa">
+            <div class="qa-q"><span class="qn">Q2</span><span>특징(feature)을 사람이 설계하는 방식과 표상(representation)을 모델이 학습하는 방식은 무엇이 다른가?</span><span class="qx">+</span></div>
+            <div class="qa-a"><div class="qa-a-inner">
+              <span class="rel">관련: Sub 01 — Sub 02</span>
+              사람이 설계할 때는 “나이/혈압/기존 진단명”처럼 도메인 지식이 있는 항목에서는 강하지만, 음성/이미지/자연어처럼 무엇이 중요한지 미리 알기 어려운 도메인에서는 무력해진다. 표상학습은 모델이 데이터에서 어떤 특징이 유용한지 알아서 뽑게 한다. 이 위임의 폭이 클수록 동심원의 안쪽(딥러닝)으로 들어간다.
+            </div></div>
+          </div>
+
+          <div class="qa">
+            <div class="qa-q"><span class="qn">Q3</span><span>딥러닝에서 깊이(depth)는 단순히 층이 많다는 뜻이 아니라 어떤 의미를 가지는가?</span><span class="qx">+</span></div>
+            <div class="qa-a"><div class="qa-a-inner">
+              <span class="rel">관련: Sub 03</span>
+              깊이는 두 가지로 정의된다. (1) 계산 그래프에서 입력에서 출력까지의 가장 긴 경로. (2) 복잡한 개념이 단순 개념들의 몇 단계 합성으로 만들어지는가. 같은 함수를 한 층으로 표현하려면 지수적으로 많은 유닛이 필요한 반면, 여러 층으로 합성하면 다항적인 유닛만으로 충분한 경우가 많다. 즉 깊이는 표현력의 차이가 아니라 효율의 차이를 만든다.
+            </div></div>
+          </div>
+
+          <div class="qa">
+            <div class="qa-q"><span class="qn">Q4</span><span>딥러닝이 1980년대에도 아이디어가 있었는데 왜 2010년대에 폭발했는가? 세 가지 이유를 들어라.</span><span class="qx">+</span></div>
+            <div class="qa-a"><div class="qa-a-inner">
+              <span class="rel">관련: Sub 04 — Sub 05</span>
+              세 가지 환경 요인의 결합이다. (1) 대규모 레이블 데이터 — ImageNet(2009, 1,400만 장)을 비롯한 빅데이터. (2) GPU 가속 — NVIDIA CUDA로 행렬 연산이 수십 배 빨라짐. (3) 알고리즘 개선 — ReLU, dropout, batch normalization, 더 나은 초기화 등이 깊은 네트워크를 안정적으로 학습시킬 수 있게 했다. 셋 중 어느 하나라도 약했다면 폭발은 일어나지 않았을 것이다.
+            </div></div>
+          </div>
+
+          <div class="qa">
+            <div class="qa-q"><span class="qn">Q5</span><span>AI, ML, 표상학습, 딥러닝의 포함 관계를 한 문장으로 설명하라.</span><span class="qx">+</span></div>
+            <div class="qa-a"><div class="qa-a-inner">
+              <span class="rel">관련: Sub 02</span>
+              AI ⊃ ML ⊃ 표상학습 ⊃ 딥러닝. 안쪽으로 갈수록 “사람이 손으로 정해야 하는 부분”이 줄어든다. AI는 학습이 필수가 아니지만, ML은 학습이 필수이고, 표상학습은 특징까지 학습하며, 딥러닝은 그 표상학습을 다층으로 쌓는다.
+            </div></div>
+          </div>
+
+          <div class="qa">
+            <div class="qa-q"><span class="qn">Q6</span><span>1차 AI 겨울과 2차 AI 겨울의 원인은 각각 무엇이었는가?</span><span class="qx">+</span></div>
+            <div class="qa-a"><div class="qa-a-inner">
+              <span class="rel">관련: Sub 04</span>
+              1차(1969 - 1980)는 Minsky &amp; Papert가 단층 퍼셉트론으로는 XOR도 풀 수 없음을 증명한 것이 직접 도화선이었다. 신경망의 표현력 자체에 대한 회의가 자금 회수를 불렀다. 2차(1990 - 2006)는 SVM 같은 통계학 기반 “더 깔끔한” 방법론이 등장한 데다, 신경망 자체는 데이터/계산이 부족해 학습이 불안정했다. 두 겨울의 공통점은 “아이디어가 틀려서가 아니라 환경이 부족해서”라는 점이다.
+            </div></div>
+          </div>
+
+          <div class="qa">
+            <div class="qa-q"><span class="qn">Q7</span><span>AlexNet(2012)이 왜 그토록 결정적인 사건으로 평가되는가?</span><span class="qx">+</span></div>
+            <div class="qa-a"><div class="qa-a-inner">
+              <span class="rel">관련: Sub 04 — Sub 05</span>
+              세 가지 이유에서다. (1) ImageNet Top-5 오류율을 26%(전년 우승 모델)에서 16%로 단번에 떨어뜨렸다 — 점진적 개선이 아니라 단절적 변화. (2) GPU(GTX 580 두 장)로 학습 가능함을 증명해 “더 큰 모델 + 더 많은 데이터”의 길을 열었다. (3) 이 한 사건이 학계의 무게중심을 SVM/특징공학에서 딥러닝으로 통째로 옮겼다. 이후 매년 등장한 우승 모델은 모두 더 깊은 CNN이었다.
+            </div></div>
+          </div>
+
+        </div>
+      </div>
+      <p class="widget-cap">시험 30분 전 한 번 더 펼쳐 보자. 7개 질문에 한 줄씩 답할 수 있다면 Ch.1은 완벽히 잡혔다고 봐도 좋다.</p>
+    </div>
+
+    <div class="finalbox">
+      <h3>Chapter 01의 한 줄 요약</h3>
+      <p><strong>딥러닝은 “많은 층을 쌓는 모델”이 아니라 “데이터로부터 좋은 표상을 단계적으로 배우는 방법론”이다.</strong> 이 인식론적 전환이 1장의 핵심이고, 2장 이후의 모든 수학/구조/알고리즘이 결국 “좋은 표상을 어떻게 학습할 것인가”라는 한 질문을 풀어 가는 도구라는 점을 기억하면, 시험 문항이 어떻게 변형되어도 흔들리지 않는다.</p>
+      <p>다음 챕터(<a href="../ch02-linear-algebra/index.html">Ch.02 선형대수</a>)에서는 그 “표상”을 다룰 수학 언어, 즉 벡터/행렬/텐서로 들어간다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'표상의 문제', f:'01.html' },
+    { no:'02', t:'AI/ML/RL/DL 동심원', f:'02.html' },
+    { no:'03', t:'깊이가 만드는 것', f:'03.html' },
+    { no:'04', t:'역사적 굴곡', f:'04.html' },
+    { no:'05', t:'데이터/모델/계산 삼각형', f:'05.html' },
+    { no:'06', t:'시험 대비 체크리스트', f:'06.html' },
+  ];
+  const CURRENT = '06';
+  (function buildNav() {
+    document.querySelector('.topbar').innerHTML =
+      `<a class="home" href="index.html">← Chapter 01 — 딥러닝이란 무엇인가</a>` +
+      `<span class="ch-mini">SUB ${CURRENT} / 06</span>`;
+    document.querySelector('.ch-nav ol').innerHTML = SUBS.map(s =>
+      `<li><a href="${s.f}" ${s.no === CURRENT ? 'class="current"' : ''}>${s.t}</a></li>`).join('');
+    const i = SUBS.findIndex(s => s.no === CURRENT);
+    const prev = i > 0 ? SUBS[i-1] : { f:'index.html', t:'챕터 표지', no:'' };
+    const next = i < SUBS.length-1 ? SUBS[i+1] : { f:'index.html', t:'챕터 표지', no:'' };
+    document.querySelector('.ch-foot').innerHTML =
+      `<a href="${prev.f}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+      `<a href="${next.f}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+    const bar = document.querySelector('.scroll-progress');
+    const onScroll = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    document.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+  })();
+
+  // Q&A 아코디언
+  document.querySelectorAll('.qa-q').forEach(q => {
+    q.addEventListener('click', () => q.parentElement.classList.toggle('open'));
+  });
+
+  // 매칭 게임
+  (function match() {
+    let leftSel = null;
+    let matched = 0;
+    const total = 6;
+    const status = document.getElementById('ms-text');
+    const items = document.querySelectorAll('.mitem');
+
+    function setText(t) { status.innerHTML = t; }
+
+    items.forEach(it => {
+      it.addEventListener('click', () => {
+        if (it.classList.contains('correct')) return;
+        if (it.dataset.side === 'L') {
+          if (leftSel) leftSel.classList.remove('selected');
+          leftSel = it;
+          it.classList.add('selected');
+          setText('이제 오른쪽에서 짝이 되는 항목을 클릭하세요');
+        } else if (it.dataset.side === 'R') {
+          if (!leftSel) {
+            setText('먼저 왼쪽에서 인물/시점을 선택하세요');
+            return;
+          }
+          if (leftSel.dataset.id === it.dataset.id) {
+            leftSel.classList.remove('selected');
+            leftSel.classList.add('correct');
+            it.classList.add('correct');
+            matched++;
+            leftSel = null;
+            if (matched === total) {
+              setText(`<b>완벽 — ${matched}/${total} 모두 맞췄습니다.</b> Ch.1 역사 파트는 통과.`);
+            } else {
+              setText(`정답! <b>${matched}/${total}</b>`);
+            }
+          } else {
+            it.classList.add('wrong');
+            setTimeout(() => it.classList.remove('wrong'), 600);
+            leftSel.classList.remove('selected');
+            leftSel = null;
+            setText('틀렸습니다. 다시 시도해 보세요');
+          }
+        }
+      });
+    });
+
+    document.getElementById('ms-reset').addEventListener('click', () => {
+      items.forEach(it => it.classList.remove('selected', 'correct', 'wrong'));
+      leftSel = null;
+      matched = 0;
+      setText('왼쪽 항목 하나를 클릭하세요');
+    });
+  })();
+
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
+        throwOnError: false,
+      });
+    }
+  });
+</script>
+</body>
+</html>

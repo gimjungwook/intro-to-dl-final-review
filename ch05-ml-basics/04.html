@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>04 · 최대우도 추정 (MLE)</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Section 04 · 모든 손실 함수의 어머니</span>
+      <h1>최대우도 추정 (MLE)<br>= 음의 로그우도 <em>최소화</em></h1>
+      <p class="lede">MSE도, 교차 엔트로피도, KL 발산도 — 우리가 딥러닝에서 쓰는 거의 모든 손실 함수는 최대우도 원리 한 줄에서 파생된 것이다. "데이터를 가장 잘 설명하는 매개변수를 찾는다"는 명제를 수식으로 적으면 자연스럽게 손실 함수가 떨어진다.</p>
+    </header>
+
+    <div class="prose">
+      <p>3절에서 편향-분산 분해를 봤지만, 그 분해식이 어떤 손실 함수를 가정하는지에 대해서는 침묵했다. 사실 우리는 "MSE를 쓰면" 또는 "교차 엔트로피를 쓰면"이라고 임의로 시작했을 뿐이다. 그렇다면 그 손실 함수는 어디서 왔는가?</p>
+
+      <p>답은 <strong>최대우도 추정(Maximum Likelihood Estimation, MLE)</strong>이다. MLE는 머신러닝 손실 함수의 가장 깊은 원천이고, 거의 모든 표준 손실이 MLE의 특수한 경우다.</p>
+
+      <h2>우도(likelihood)란 무엇인가</h2>
+      <p>매개변수 $\theta$로 정의된 확률 모형 $p(x; \theta)$가 있다고 하자. 그리고 우리에게는 $m$개의 데이터 $x_1, x_2, \dots, x_m$이 있다. <strong>우도</strong>는 "이 매개변수 $\theta$ 하에서 이 데이터가 관측될 확률"을 말한다. 데이터가 독립이라는 가정 하에:</p>
+
+      <div class="math-block">$$ L(\theta) \;=\; p(x_1, x_2, \dots, x_m; \theta) \;=\; \prod_{i=1}^{m} p(x_i; \theta) $$</div>
+      <p class="math-note">곱 형태가 나오는 건 i.i.d. (독립 동일분포) 가정 때문. 데이터 점들이 서로 영향을 주지 않으니 확률들을 곱한다.</p>
+
+      <p>MLE의 정의: <strong>우도 $L(\theta)$를 최대화하는 $\theta$를 고른다</strong>. 이름 그대로 "데이터를 가장 잘 설명하는 매개변수"다.</p>
+
+      <div class="math-block">$$ \theta_{\text{MLE}} \;=\; \arg\max_{\theta}\; L(\theta) \;=\; \arg\max_{\theta}\; \prod_{i=1}^{m} p(x_i; \theta) $$</div>
+      <p class="math-note">곱 형태는 수치적으로 안 좋다 (값이 매우 작아 underflow). 그래서 로그를 씌운다.</p>
+
+      <h2>왜 로그를 씌우는가 — 그리고 왜 부호를 뒤집는가</h2>
+      <p>로그는 단조증가 함수다. 즉 $L(\theta)$를 최대화하는 $\theta$는 $\log L(\theta)$를 최대화하는 $\theta$와 정확히 같다. 그러면서 곱이 합으로 바뀐다.</p>
+
+      <div class="math-block">$$ \arg\max_\theta\, L(\theta) \;=\; \arg\max_\theta\, \log L(\theta) \;=\; \arg\max_\theta\, \sum_{i=1}^{m} \log p(x_i; \theta) $$</div>
+      <p class="math-note">곱이 합으로 바뀐 덕분에 미분이 쉽고, 수치적으로도 안정적. 곱 $\prod_i 0.01$ 같은 형태가 한 번에 underflow되지만, 합 $\sum_i \log 0.01$ 은 안전.</p>
+
+      <p>여기서 한 번 더, 머신러닝에서는 보통 <strong>최소화</strong> 문제로 다룬다. 그래서 부호를 뒤집어 음의 로그우도(Negative Log-Likelihood, NLL)를 정의하고, 그것을 최소화한다.</p>
+
+      <div class="math-block">$$ \arg\max_\theta\, \log L(\theta) \;=\; \arg\min_\theta\, \underbrace{\Big[-\sum_{i=1}^{m} \log p(x_i; \theta)\Big]}_{\text{NLL}(\theta)} $$</div>
+      <p class="math-note">L 최대화 = lnL 최대화 = −lnL 최소화. 세 식이 같은 해를 준다. 이 동치성이 시험 직출 가능.</p>
+
+      <div class="analogy">
+        용의자 추리 비유. 검사가 여러 용의자 $\theta_1, \theta_2, \dots$ 중에서 가장 의심스러운 사람을 고른다. 의심도는 "이 사람이 범인이라면 이 증거들이 동시에 발생했을 확률"이다. 증거가 5개면 5개의 확률을 곱한다. 그러나 0.1 × 0.05 × 0.2 × 0.01 × 0.3 같은 숫자는 너무 작아서 다루기 힘들다. 그래서 로그를 씌워 합으로 만든다. 마지막에 "가장 의심스러운 사람"을 "가장 의심이 작은 사람"으로 뒤집어 말해도 답은 같다.
+      </div>
+    </div>
+
+    <h2 style="max-width: var(--measure); margin-inline: auto; padding-inline: 1.4rem">위젯 — L 최대 = −lnL 최소 (동치)</h2>
+
+    <div class="prose">
+      <p>가장 단순한 예: 평균 $\mu$, 분산 $\sigma^2 = 1$인 정규분포에서 12개 데이터가 나왔다고 하자. $\mu$를 추정하는 MLE 문제다. 왼쪽 그림은 현재 $\mu$에서의 정규분포와 데이터 점, 오른쪽 그림은 $\mu$를 움직이며 본 음의 로그우도 곡선이다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 01</span><span>MLE = NLL 최소화 — 동치 시각화</span></div>
+        <div id="mle"></div>
+      </div>
+      <p class="widget-cap">μ 슬라이더를 움직이면 왼쪽 정규분포의 위치가 바뀌고, 데이터 점들이 분포의 어느 부분에 떨어지는지 보인다. 오른쪽은 −ln L(μ) 곡선. 그 곡선의 최솟값(노란 점)이 μ_MLE이고, 정규분포의 경우 그건 표본평균과 같다.</p>
+    </div>
+
+    <h2 style="max-width: var(--measure); margin-inline: auto; padding-inline: 1.4rem">왜 우리가 매일 쓰는 손실들이 다 MLE에서 나오는가</h2>
+
+    <div class="prose">
+      <p>MLE는 분포 가정을 바꾸면 익숙한 손실이 떨어진다. 이것이 MLE를 "손실의 어머니"라고 부르는 이유다.</p>
+
+      <h3>가우시안 모형 → MSE</h3>
+      <p>회귀 문제에서, 출력이 정규분포 $p(y|x; \theta) = \mathcal{N}(y; f(x;\theta), \sigma^2)$를 따른다고 가정한다. NLL을 적으면:</p>
+      <div class="math-block">$$ -\sum_i \log p(y_i|x_i) \;=\; \sum_i \frac{(y_i - f(x_i;\theta))^2}{2\sigma^2} + \text{const} $$</div>
+      <p class="math-note">상수 항과 분산 $\sigma^2$은 최적화에 영향 없음. 결국 NLL 최소화 = 평균제곱오차(MSE) 최소화. <strong>MSE는 가우시안 가정의 MLE</strong>.</p>
+
+      <h3>베르누이/카테고리 모형 → 교차 엔트로피</h3>
+      <p>분류 문제에서, 출력이 카테고리 분포 $p(y|x;\theta)$를 따른다고 가정한다. 클래스 $k$일 확률을 $\hat{y}_k$라 하고 정답 라벨을 원핫 $y_k \in \{0,1\}$로 적으면:</p>
+      <div class="math-block">$$ -\sum_i \log p(y_i|x_i) \;=\; -\sum_i \sum_k y_{i,k} \log \hat{y}_{i,k} $$</div>
+      <p class="math-note">바로 그것이 <strong>교차 엔트로피 손실</strong>이다. 베르누이/카테고리 가정의 MLE.</p>
+
+      <h3>일반화 — 모든 NLL은 KL 발산의 한 형태</h3>
+      <p>NLL을 더 깊이 들여다보면 KL 발산(Kullback-Leibler divergence)이 나온다. 실제 데이터 분포 $p_{\text{data}}$와 모형 분포 $p_\theta$ 사이의 KL을 최소화하는 것이, 데이터에 대한 NLL을 최소화하는 것과 동치다 (상수 차이만 있음).</p>
+      <div class="math-block">$$ \arg\min_\theta\, \mathrm{KL}(p_{\text{data}} \| p_\theta) \;=\; \arg\min_\theta\, -\mathbb{E}_{x \sim p_{\text{data}}}[\log p_\theta(x)] $$</div>
+      <p class="math-note">우변은 정확히 (큰 표본 한계에서의) NLL. 즉 MLE = KL 최소화. 정보이론적 해석.</p>
+
+      <h2>MLE의 좋은 성질 — 일관성과 효율성</h2>
+      <ul style="padding-left: 1.4rem">
+        <li><strong>일관성 (Consistency)</strong>: 데이터 수 $m \to \infty$이면 $\hat{\theta}_{\text{MLE}} \to \theta_{\text{true}}$에 수렴한다 (단, 모형이 진짜 분포를 표현할 수 있고, 식별 가능할 때).</li>
+        <li><strong>점근 효율성 (Asymptotic Efficiency)</strong>: 큰 표본 한계에서 MLE의 분산은 Cramér-Rao 하한에 도달한다. 즉 가능한 가장 작은 분산.</li>
+        <li><strong>스케일 불변성</strong>: $\theta$를 다른 매개변수화 $\phi = g(\theta)$로 바꾸면, $\hat{\phi}_{\text{MLE}} = g(\hat{\theta}_{\text{MLE}})$. 즉 매개변수를 어떻게 적든 답이 같다.</li>
+      </ul>
+
+      <p>그러나 MLE에도 약점이 있다. 데이터가 적을 때 과적합하기 쉽다는 점이다. 예컨대 동전을 3번 던져 3번 다 앞면이 나오면, MLE는 $p = 1$ (앞면이 항상 나온다)로 추정한다. 이는 분명히 과한 추정이다. 이 문제를 다음 절의 <strong>베이지안 추정과 사전(prior)</strong>이 해결한다. <a href="05.html">Sec.5</a>로 이어진다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script src="../assets/widgets.js"></script>
+<script src="widgets-ch05.js"></script>
+<script>
+  window.addEventListener('load', () => {
+    NST.buildNav('04');
+    const mle = document.getElementById('mle');
+    NST.onVisible(mle, () => NST.mleNll(mle));
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>01 · 잠재 변수 모델 — 관측 뒤에 무엇이 있는가</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  /* 매니폴드 위젯 */
+  .mfld-stage { display: grid; grid-template-columns: 1fr; gap: 0; padding: 1.4rem 1.1rem .6rem; }
+  .mfld-stage canvas { display: block; width: 100%; height: 360px; border-radius: 9px; border: 1px solid var(--line); background: #fff; cursor: grab; }
+  .mfld-stage canvas:active { cursor: grabbing; }
+  .mfld-meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; padding: .8rem 1.1rem 0; font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); }
+  .mfld-meta b { color: var(--structure); font-weight: 600; }
+  .mfld-meta .lbl { color: var(--ink-faint); display: block; font-size: .68rem; letter-spacing: .12em; text-transform: uppercase; margin-bottom: .15rem; }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar">
+  <a class="home" href="index.html">← Chapter 13 · 선형 요소 모델</a>
+  <span class="ch-mini">SUB-CHAPTER 01 / 06</span>
+</div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol>
+    <li><a href="01.html" class="current">잠재 변수 모델</a></li>
+    <li><a href="02.html">요소 분석과 확률적 PCA</a></li>
+    <li><a href="03.html">ICA — 비가우시안 독립</a></li>
+    <li><a href="04.html">희소 코딩</a></li>
+    <li><a href="05.html">평평한 매니폴드</a></li>
+    <li><a href="06.html">시험 대비 요약</a></li>
+  </ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-Chapter 01 · 발상의 출발선</span>
+      <h1>관측 뒤에<br>숨은 <span class="t-structure">소수의 원인</span></h1>
+      <p class="lede">우리가 보는 데이터는 그 자체가 아니라, 보이지 않는 몇 개의 원인이 만들어낸 그림자다. 이 발상은 이 장 전체와, 그 뒤에 이어질 모든 생성 모델의 출발선이 된다.</p>
+    </header>
+
+    <div class="prose">
+      <p>13장은 <strong>분별 모델(discriminative model)</strong>에서 <strong>생성 모델(generative model)</strong>로 책의 시점을 옮기는 첫 장이다. 분별 모델은 "이 입력의 정답 라벨이 무엇인가"를 묻고 ($p(y \mid x)$), 생성 모델은 "이 데이터가 어떻게 만들어졌는가"를 묻는다 ($p(x)$). 두 질문은 서로 다른 도구를 필요로 한다.</p>
+
+      <p>생성 모델 가족의 가장 단순한 분파가 바로 이 장의 주인공인 <span class="t-structure">선형 요소 모델(linear factor model)</span>이다. 이 모델 가족 전체는 단 하나의 발상으로 묶인다.</p>
+
+      <div class="analogy">
+        병원 진찰실을 떠올려 보자. 환자의 몸에서 측정할 수 있는 수치는 수십 가지다 — 혈압, 심박, 체온, 호흡수, 백혈구 수치, 간 효소, 콜레스테롤, 혈당. <b>이 수치들은 서로 강하게 얽혀 있다.</b> 같이 올라가고 같이 내려간다. 의사는 이 수십 개의 수치 뒤에 사실은 몇 개의 <b>보이지 않는 원인</b> — 염증 정도, 대사 상태, 자율신경 균형 — 이 있고, 모든 측정값은 그 원인들의 조합에 약간의 측정 오차가 더해진 결과라고 본다.
+        <br><br>
+        잠재 변수 모델은 이 의사의 직관을 수학으로 옮긴 것이다. 관측 변수 $x$ 뒤에 보이지 않는 잠재 변수 $h$가 있고, $h$의 분포만 알면 $x$의 분포를 설명할 수 있다고 가정한다.
+      </div>
+
+      <h2>공통 템플릿 — $x = Wh + b + \text{noise}$</h2>
+
+      <p>이 장에 등장하는 모든 모델 — 요소 분석(FA), 확률적 PCA, ICA, 희소 코딩 — 은 다음 한 줄로 묶인다. 먼저 <strong>잠재 변수 사전 분포</strong>에서 $h$를 한 번 뽑는다.</p>
+
+      <div class="math-block">$$ h \sim p(h) $$</div>
+      <p class="math-note">h는 우리가 관측하지 않는 소수의 원인 벡터. p(h)는 이 원인이 어떻게 분포한다고 우리가 가정하는지를 적은 사전 분포(prior).</p>
+
+      <p>그 다음 $h$를 <strong>선형 변환</strong>한 뒤 잡음을 더해 관측 $x$를 만든다.</p>
+
+      <div class="math-block">$$ x = W h + b + \text{noise} $$</div>
+      <p class="math-note">W는 잠재→관측 가중치 행렬. b는 편향. noise는 측정 오차 또는 모델로 설명되지 않는 잔여 변동.</p>
+
+      <p>여기서 가장 결정적인 단어는 <strong>선형(linear)</strong>이다. $h$가 두 배가 되면 $x$의 평균도 두 배가 되고, $h$들을 더하면 그에 해당하는 $x$의 평균들도 더해진다. 이 단순한 선형성 때문에 모델은 분석적으로 풀리는 경우가 많고, 동시에 휘어진 데이터 구조에는 무력하다는 한계도 안고 간다.</p>
+
+      <table class="symbols">
+        <tr><td>$x \in \mathbb{R}^D$</td><td>관측 변수. 차원이 큼 (예: 픽셀, 측정 수치).</td></tr>
+        <tr><td>$h \in \mathbb{R}^K$</td><td>잠재 변수. $K \ll D$가 보통. 소수의 원인.</td></tr>
+        <tr><td>$W \in \mathbb{R}^{D \times K}$</td><td>로딩(loading) 행렬. 열 $W_{:,k}$는 $k$번째 원인이 관측을 어느 방향으로 끌어가는지의 "사전(dictionary) 원소".</td></tr>
+        <tr><td>$b \in \mathbb{R}^D$</td><td>관측의 평균 보정.</td></tr>
+        <tr><td>$p(h)$</td><td>잠재 사전 분포. 이 모양이 모델 정체성을 결정한다.</td></tr>
+      </table>
+
+      <h2>분포 가정이 모델의 정체성이다</h2>
+
+      <p>모델 가족이 갈라지는 지점은 정확히 두 가지다 — <strong>$p(h)$의 모양</strong>과 <strong>잡음의 모양</strong>. 다른 모든 것은 같다.</p>
+
+      <ul>
+        <li><strong>잠재 가우시안 + 등방 잡음</strong> → <span class="t-structure">확률적 PCA(probabilistic PCA)</span>. 잡음 분산이 0으로 가는 극한이 고전 PCA.</li>
+        <li><strong>잠재 가우시안 + 대각(차원별) 잡음</strong> → <span class="t-structure">요소 분석(factor analysis)</span>.</li>
+        <li><strong>잠재 비가우시안 독립</strong> → <span class="t-style">독립 성분 분석(ICA)</span>.</li>
+        <li><strong>잠재 첨예·중꼬리(Laplace/Cauchy) 사전</strong> → <span class="t-style">희소 코딩(sparse coding)</span>.</li>
+      </ul>
+
+      <p>왜 이 차이가 결정적인가? <strong>$p(h)$는 모델이 "세상의 원인은 보통 어떻게 생겼다"라고 미리 적어두는 신념</strong>이기 때문이다. 가우시안 사전은 "원인들은 부드럽게 0 근처에 모여 있다"라고 말하고, 희소 사전은 "원인들은 거의 다 0이고 가끔만 살아난다"라고 말하고, 비가우시안 사전은 "원인들은 서로 통계적으로 독립이며 평범한 정규분포처럼 생기지 않았다"라고 말한다. 같은 데이터를 어떤 사전으로 들여다보느냐에 따라 우리는 다른 $W$를 발견한다. 이것이 이 장의 전부다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 01</span><span>3D 관측 ↔ 2D 잠재 평면 · 마우스로 회전</span></div>
+        <div class="mfld-stage">
+          <canvas id="mfld"></canvas>
+          <div class="mfld-meta">
+            <span><span class="lbl">관측 차원 D</span><b id="m-d">3</b></span>
+            <span><span class="lbl">잠재 차원 K</span><b id="m-k">2</b></span>
+            <span><span class="lbl">잡음 분산 σ²</span><b id="m-s">0.04</b></span>
+            <span><span class="lbl">현재 보기</span><b id="m-view">관측 공간 (3D)</b></span>
+          </div>
+        </div>
+      </div>
+      <p class="widget-cap">위 점들은 3차원 공간에 흩어진 관측이지만, 사실은 거의 2차원 평면(주황색 면) 근처에 모여 있다. 마우스를 좌우로 드래그하면 두 시점을 오갈 수 있다 — 왼쪽 끝에서는 3차원 점구름으로 보이고, 오른쪽 끝에서는 평면 위로 사영되어 잠재 변수 $h \in \mathbb{R}^2$가 모든 점을 인덱싱한다는 것이 드러난다. 잡음 슬라이더로 데이터가 평면에서 얼마나 멀리 흩어지는지도 조정할 수 있다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>왜 "관측이 아니라 잠재를 추론하는가"가 어려운가</h2>
+
+      <p>모델을 적었다고 끝이 아니다. 실제 데이터를 가지고 무엇을 해야 하는가? 두 가지 질문이 모든 학습의 동력이 된다.</p>
+
+      <p><strong>첫 번째 — 학습.</strong> $W, b, p(h)$의 파라미터를 데이터에 맞춘다. 무엇이 "맞춘다"인가? 관측 데이터의 우도(likelihood) $p(x)$를 최대화하는 것이다.</p>
+
+      <div class="math-block">$$ p(x) = \int p(x \mid h) \, p(h) \, dh $$</div>
+      <p class="math-note">관측의 주변 분포는 잠재를 모두 적분으로 지운 결과. 이 적분이 닫힌 형태(closed form)로 풀리느냐가 모델의 난이도를 결정한다.</p>
+
+      <p>두 번째 — <strong>추론(inference)</strong>. 새로운 관측 $x$가 들어왔을 때, 그것을 만들었을 법한 잠재 $h$는 무엇인가? 베이즈 규칙으로 사후 분포를 구한다.</p>
+
+      <div class="math-block">$$ p(h \mid x) = \frac{p(x \mid h) \, p(h)}{p(x)} $$</div>
+      <p class="math-note">분자는 쉽게 적을 수 있지만, 분모의 p(x)가 보통 적분이라 어렵다. 이 사후가 닫힌 형태로 풀리느냐가 알고리즘 선택을 좌우한다.</p>
+
+      <div class="analogy">
+        <b>왜 이 두 질문이 그렇게 큰 사건인가?</b> 다음 장의 오토인코더, 그 다음 장의 표상 학습, 그리고 책 밖의 변분 오토인코더(VAE), 확산 모델(diffusion model) 모두가 이 같은 두 질문 — "데이터에 모델을 맞춘다(학습)" 그리고 "데이터에서 잠재를 추론한다(인코딩)" — 의 변주이기 때문이다. 단지 잠재 분포, 변환 함수, 추론 방식이 점점 더 풍부해질 뿐이다. 이 장은 그 모든 변주의 가장 단순한 출발 코드를 보여준다.
+      </div>
+
+      <p>다음 장에서는 이 추론이 분석적으로 가장 깔끔하게 풀리는 경우 — <strong>잠재와 잡음이 모두 가우시안인 경우</strong> — 부터 다룬다. 그 경우 사후 $p(h \mid x)$ 자체가 다시 가우시안이 되어, 적분 없이 평균과 공분산만 계산하면 끝난다.</p>
+    </div>
+
+    <nav class="ch-foot">
+      <a href="index.html"><div class="dir">← 이전</div><div class="ti">표지로</div></a>
+      <a href="02.html" class="next"><div class="dir">다음 →</div><div class="ti">요소 분석과 확률적 PCA</div></a>
+    </nav>
+  </main>
+</div>
+
+<script>
+  window.addEventListener('load', () => {
+    // 진행 바
+    const bar = document.querySelector('.scroll-progress');
+    const onScroll = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    document.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+
+    // KaTeX 자동 렌더
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }],
+        throwOnError: false,
+      });
+    }
+
+    // 매니폴드 위젯
+    const canvas = document.getElementById('mfld');
+    const ctx = canvas.getContext('2d');
+    function resize() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const w = canvas.clientWidth, h = 360;
+      canvas.width = w * dpr; canvas.height = h * dpr;
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    // 잠재 → 관측 매핑
+    const N = 500;
+    const w1 = [0.95, 0.15, 0.28];
+    const w2 = [-0.18, 0.86, 0.45];
+    let sigma = 0.18;
+
+    function genPts() {
+      const pts = [];
+      for (let i = 0; i < N; i++) {
+        const h1 = (Math.random() + Math.random() + Math.random() - 1.5) * 1.5;
+        const h2 = (Math.random() + Math.random() + Math.random() - 1.5) * 0.8;
+        const nx = (Math.random()*2-1) * sigma;
+        const ny = (Math.random()*2-1) * sigma;
+        const nz = (Math.random()*2-1) * sigma;
+        pts.push({
+          h1, h2,
+          x: h1*w1[0] + h2*w2[0] + nx,
+          y: h1*w1[1] + h2*w2[1] + ny,
+          z: h1*w1[2] + h2*w2[2] + nz,
+        });
+      }
+      return pts;
+    }
+    let pts = genPts();
+
+    let target = 0;       // 0 = 3D 관측, 1 = 2D 잠재(평면 사영)
+    let yaw = 0.4, pitch = 0.2;
+    let drag = false, dragKind = null, sx = 0, sy = 0;
+    canvas.addEventListener('pointerdown', (e) => {
+      drag = true; sx = e.clientX; sy = e.clientY;
+      const r = canvas.getBoundingClientRect();
+      // 좌우 드래그는 관측↔잠재 보간, 상하 드래그는 회전
+      dragKind = 'rotate';
+      canvas._yaw0 = yaw; canvas._pitch0 = pitch;
+    });
+    window.addEventListener('pointermove', (e) => {
+      if (!drag) return;
+      const dx = e.clientX - sx, dy = e.clientY - sy;
+      yaw = canvas._yaw0 + dx * 0.005;
+      pitch = Math.max(-1, Math.min(1, canvas._pitch0 + dy * 0.005));
+    });
+    window.addEventListener('pointerup', () => { drag = false; });
+
+    // 키보드 화살표로 보간 토글
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight') target = Math.min(1, target + 0.1);
+      if (e.key === 'ArrowLeft') target = Math.max(0, target - 0.1);
+    });
+
+    // 자동 진동 (드래그 안 할 때만)
+    let t0 = 0;
+    function draw() {
+      t0 += 0.005;
+      if (!drag) target = 0.5 + 0.45 * Math.sin(t0 * 0.4);
+
+      const w = canvas.clientWidth, h = 360;
+      ctx.clearRect(0,0,w,h);
+      ctx.fillStyle = '#FAF7F0'; ctx.fillRect(0,0,w,h);
+
+      const cx = w/2, cy = h/2;
+      const scale = Math.min(w, h) * 0.16;
+
+      const cy0 = Math.cos(yaw), sy0 = Math.sin(yaw);
+      const cp = Math.cos(pitch), sp = Math.sin(pitch);
+
+      function project(x, y, z) {
+        // Y회전 → X회전 → 직교 투영
+        const x1 = x * cy0 + z * sy0;
+        const z1 = -x * sy0 + z * cy0;
+        const y2 = y * cp - z1 * sp;
+        const z2 = y * sp + z1 * cp;
+        return [cx + x1 * scale, cy - y2 * scale, z2];
+      }
+      function projPlane(h1, h2) {
+        return [
+          h1*w1[0] + h2*w2[0],
+          h1*w1[1] + h2*w2[1],
+          h1*w1[2] + h2*w2[2]
+        ];
+      }
+
+      // 평면
+      const corners = [[-2.6,-2.6],[2.6,-2.6],[2.6,2.6],[-2.6,2.6]];
+      ctx.fillStyle = `rgba(192, 73, 46, ${0.04 + 0.12 * target})`;
+      ctx.strokeStyle = `rgba(192, 73, 46, ${0.25 + 0.4 * target})`;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      corners.forEach(([a,b], i) => {
+        const [X,Y,Z] = projPlane(a, b);
+        const [px, py] = project(X, Y, Z);
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      });
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+
+      // 평면 위 격자
+      ctx.strokeStyle = `rgba(192, 73, 46, ${0.10 + 0.20 * target})`;
+      ctx.lineWidth = 0.5;
+      for (let g = -2; g <= 2; g += 1) {
+        ctx.beginPath();
+        const [a1, b1, c1] = projPlane(g, -2.6);
+        const [a2, b2, c2] = projPlane(g, 2.6);
+        const [px1, py1] = project(a1, b1, c1);
+        const [px2, py2] = project(a2, b2, c2);
+        ctx.moveTo(px1, py1); ctx.lineTo(px2, py2);
+        ctx.stroke();
+        ctx.beginPath();
+        const [d1, e1, f1] = projPlane(-2.6, g);
+        const [d2, e2, f2] = projPlane(2.6, g);
+        const [px3, py3] = project(d1, e1, f1);
+        const [px4, py4] = project(d2, e2, f2);
+        ctx.moveTo(px3, py3); ctx.lineTo(px4, py4);
+        ctx.stroke();
+      }
+
+      // 점
+      const drawn = [];
+      for (let i = 0; i < N; i++) {
+        const p = pts[i];
+        const [PX, PY, PZ] = projPlane(p.h1, p.h2);
+        const x = p.x * (1 - target) + PX * target;
+        const y = p.y * (1 - target) + PY * target;
+        const z = p.z * (1 - target) + PZ * target;
+        const [px, py, pz] = project(x, y, z);
+        drawn.push({ px, py, pz });
+      }
+      drawn.sort((a,b) => a.pz - b.pz);
+      drawn.forEach(({ px, py, pz }) => {
+        const depth = (pz + 2) / 4;
+        const r = 2 + depth * 1.5;
+        ctx.fillStyle = `rgba(45, 91, 122, ${0.45 + depth * 0.45})`;
+        ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI*2); ctx.fill();
+      });
+
+      // 축 가이드
+      ctx.strokeStyle = 'rgba(38,34,28,.25)';
+      ctx.lineWidth = 1;
+      [[1.5,0,0,'x'],[0,1.5,0,'y'],[0,0,1.5,'z']].forEach(([ax,ay,az,name]) => {
+        const [px0, py0] = project(0,0,0);
+        const [px1, py1] = project(ax, ay, az);
+        ctx.beginPath(); ctx.moveTo(px0, py0); ctx.lineTo(px1, py1); ctx.stroke();
+        ctx.fillStyle = '#8E8576';
+        ctx.font = '10px "Spline Sans Mono", monospace';
+        ctx.fillText(name, px1 + 4, py1 - 2);
+      });
+
+      // 라벨 갱신
+      document.getElementById('m-view').textContent =
+        target < 0.3 ? '관측 공간 (3D)' : target > 0.7 ? '잠재 평면 (2D)' : '보간 중 — x ≈ Wh';
+
+      requestAnimationFrame(draw);
+    }
+    draw();
+  });
+</script>
+</body>
+</html>

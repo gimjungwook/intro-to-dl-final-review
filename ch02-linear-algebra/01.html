@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ch.02 · 01 스칼라·벡터·행렬·텐서</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .tensor-stage { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; padding: 1.6rem 1.4rem 1rem; align-items: start; }
+  .tensor-stage canvas { display: block; width: 100%; max-width: 340px; height: 240px; border-radius: 8px; border: 1px solid var(--line); background: #fff; margin: 0 auto; }
+  .tensor-info { font-family: var(--mono); font-size: .82rem; line-height: 1.7; color: var(--ink-soft); padding: .8rem 1rem; background: var(--paper-2); border-radius: 8px; }
+  .tensor-info b { color: var(--ink); }
+  .tensor-info .badge { display: inline-block; padding: .15rem .55rem; border-radius: 4px; font-size: .72rem; margin-right: .4rem; }
+  .tensor-info .b0 { background: var(--structure-bg); color: var(--structure); }
+  .tensor-info .b1 { background: var(--style-bg); color: var(--style); }
+  .tensor-controls { display: flex; gap: .4rem; padding: .8rem 1.2rem; justify-content: center; flex-wrap: wrap; }
+  @media (max-width: 720px) { .tensor-stage { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Ch.02 · Sub 01 · 데이터의 그릇</span>
+      <h1>스칼라·벡터·행렬·<span class="t-structure">텐서</span><br>차원이 늘어난다는 것은 무엇인가</h1>
+      <p class="lede">딥러닝의 입력, 가중치, 은닉 표현(Hidden Representation), 기울기(Gradient)는 거의 전부 이 네 가지 그릇 중 하나에 담긴다. 차원이 늘어난다는 것은 단지 복잡해진다는 뜻이 아니라, 더 많은 구조를 한 번에 표현할 수 있다는 뜻이다.</p>
+    </header>
+
+    <div class="prose">
+      <p>먼저 가장 밑바닥에서 시작하자. 컴퓨터에게 수(number)는 단 하나의 형태가 아니다. 데이터의 종류에 따라 우리는 그것을 담을 그릇의 모양을 다르게 고른다. 가장 작은 그릇은 <strong>스칼라(Scalar)</strong>, 즉 숫자 하나다. 학생의 시험 점수 87이 그렇다. 그릇을 가로로 한 줄 늘이면 <strong>벡터(Vector)</strong>가 된다. 학생 한 명의 (국어, 영어, 수학) 점수 같은 순서 있는 목록이다. 한 줄을 더 쌓아 평면을 만들면 <strong>행렬(Matrix)</strong>이고, 평면을 다시 겹쳐 올리면 <strong>텐서(Tensor)</strong>다.</p>
+
+      <h2>각 그릇의 정확한 기호</h2>
+      <p>이 사이트에서는 책의 표기 관례를 그대로 따른다. 스칼라는 보통 소문자 이탤릭으로 쓰고, 벡터는 굵은 소문자, 행렬은 굵은 대문자, 텐서는 굵은 산세리프 대문자(또는 칼리그래픽)로 쓴다. 한 번씩 눈으로 확인해 두자.</p>
+
+      <div class="math-block">$$ s \in \mathbb{R}, \quad \mathbf{x} \in \mathbb{R}^n, \quad \mathbf{A} \in \mathbb{R}^{m \times n}, \quad \mathsf{X} \in \mathbb{R}^{m \times n \times p} $$</div>
+      <p class="math-note">s는 스칼라, x는 길이 n 벡터, A는 m행 n열 행렬, X는 3차원 텐서. ℝ은 실수 집합.</p>
+
+      <p>왜 굳이 표기를 구분하나? 식 한 줄에 스칼라·벡터·행렬이 섞여 나올 때, 모양만 보고 어느 것이 무엇인지 즉시 알기 위해서다. 예를 들어 <span class="term">$\mathbf{A}\mathbf{x} + \mathbf{b}$</span> 같은 식을 보면, <strong>$\mathbf{A}$가 행렬, $\mathbf{x}$와 $\mathbf{b}$가 벡터</strong>라는 정보가 표기에서 곧장 읽힌다. 이 감각이 잡히지 않으면 뒤에 나오는 모든 신경망 식이 “기호 덩어리”로 보인다.</p>
+
+      <h2>딥러닝에서는 왜 텐서까지 가는가</h2>
+      <p>한 명의 학생 점수는 벡터로 충분하고, 한 반의 학생 점수표는 행렬로 충분하다. 그런데 딥러닝은 이미지를 다룰 때부터 곧장 텐서가 필요해진다. 그 이유를 직접 세어 보자.</p>
+
+      <div class="math-block">$$ \mathsf{X} \in \mathbb{R}^{B \times C \times H \times W} $$</div>
+      <p class="math-note">B=배치(batch), C=채널(R,G,B 등), H=세로 픽셀, W=가로 픽셀. 차원 4개.</p>
+
+      <p>예를 들어 한 번에 32장의 컬러 이미지를 64x64 크기로 신경망에 넣는다면, 입력은 $32 \times 3 \times 64 \times 64$ 모양의 텐서다. 차원이 늘어났다고 해서 새로운 종류의 수가 등장한 것이 아니다. 단지 <strong>배치, 채널, 공간 위치라는 서로 다른 축을 한 그릇에 같이 담아</strong>, 같은 연산을 한 번의 호출로 모든 샘플에 적용할 수 있게 한 것이다. 이것이 GPU가 빠른 이유이기도 하다.</p>
+
+      <div class="analogy">
+        스칼라는 <b>한 알의 콩</b>이다. 벡터는 콩이 한 줄로 늘어선 <b>한 꼬치</b>다. 행렬은 꼬치를 가로로 모아 놓은 <b>한 판</b>이다. 텐서는 판을 차곡차곡 쌓은 <b>상자</b>다. 차원이 늘어난다는 것은 새로운 물질이 생긴 것이 아니라, 같은 콩을 어떤 모양으로 정돈할지의 약속이 더 정교해진 것이다.
+      </div>
+
+      <p>아래 위젯은 같은 24개의 숫자를 스칼라 24개, 벡터 1개(길이 24), 행렬 1개(4x6), 텐서 1개(2x3x4)로 차례로 재배치한다. 데이터의 양은 같지만 <strong>의미를 부여하는 축의 수가 다르다</strong>는 점을 손가락으로 확인해 보자.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 01</span><span>같은 24개의 숫자, 네 개의 그릇</span></div>
+        <div id="tensorView" class="tensor-stage"></div>
+        <div class="tensor-controls">
+          <button class="btn ghost on" data-shape="0">스칼라 24개</button>
+          <button class="btn ghost" data-shape="1">벡터 (24)</button>
+          <button class="btn ghost" data-shape="2">행렬 (4, 6)</button>
+          <button class="btn ghost" data-shape="3">텐서 (2, 3, 4)</button>
+        </div>
+      </div>
+      <p class="widget-cap">버튼을 눌러 보면 24개의 수가 그대로지만, 그릇의 모양은 완전히 달라진다. 행렬과 텐서로 갈수록 “어느 축이 무엇을 의미하는지”라는 메타 정보가 늘어난다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>전치(Transpose) — 정보를 다른 방향에서 읽기</h2>
+      <p>표기를 익혔으면 가장 자주 쓰는 연산 하나를 함께 본다. <strong>전치(Transpose)</strong>는 행과 열을 바꾸는 연산이다. 기호 조작처럼 보이지만, 실제로는 <em>“같은 정보를 어느 방향에서 읽을 것인가”</em>를 바꾸는 행동이다.</p>
+
+      <div class="math-block">$$ (\mathbf{A}^\top)_{i,j} = \mathbf{A}_{j,i} $$</div>
+      <p class="math-note">A의 i행 j열 성분이 Aᵀ의 j행 i열로 옮겨 간다.</p>
+
+      <p>벡터의 경우, 책에서는 보통 <strong>열벡터(column vector)</strong>를 기본으로 본다. 즉 $\mathbf{x} \in \mathbb{R}^n$이라 쓰면 그것은 $n$행 1열 행렬과 같다. 그러면 $\mathbf{x}^\top$는 1행 $n$열짜리 <strong>행벡터(row vector)</strong>가 된다. 이 구분이 중요한 이유는 <strong>내적(dot product)</strong>이 $\mathbf{x}^\top \mathbf{y}$라는 행렬곱 모양으로 자연스럽게 표현되기 때문이다.</p>
+
+      <h2>왜 이 장이 딥러닝 전체의 문법인가</h2>
+      <p>신경망의 한 층(layer)은 사실상 다음과 같이 적힌다.</p>
+      <div class="math-block">$$ \mathbf{h} = f(\mathbf{W}\mathbf{x} + \mathbf{b}) $$</div>
+      <p class="math-note">x는 입력 벡터, W는 가중치 행렬, b는 편향 벡터, f는 비선형 함수, h는 다음 층 입력.</p>
+
+      <p>여기서 가중치 행렬 $\mathbf{W}$의 모양은 “입력 차원 → 출력 차원”의 변환을 정의한다. 예를 들어 입력이 784차원(28x28 픽셀을 펼친 이미지)이고 출력이 128차원(은닉 표현)이면 $\mathbf{W} \in \mathbb{R}^{128 \times 784}$이다. <strong>$\mathbf{W}$를 학습한다는 것은 그 변환을 데이터에 맞게 깎아 가는 일이다.</strong></p>
+
+      <p>그래서 이 sub-chapter의 핵심은 단순한 정의 암기가 아니다. <em>“데이터의 모양(shape)을 보면 그 데이터가 무엇을 뜻하는지 즉시 읽어 낼 수 있다”</em>는 감각을 갖는 것이다. 다음 장(<a href="02.html">02</a>)에서는 그 감각 위에 <strong>행렬 곱이 공간을 어떻게 변형하는가</strong>를 손으로 만져 본다.</p>
+
+      <h3>핵심 정리 — 이것만은 기억하자</h3>
+      <ul class="checklist">
+        <li>스칼라 / 벡터 / 행렬 / 텐서는 차원이 0·1·2·3 이상인 같은 종류의 그릇이다.</li>
+        <li>표기 관례: $s$, $\mathbf{x}$, $\mathbf{A}$, $\mathsf{X}$. 식에서 모양을 보고 즉시 종류를 읽을 수 있어야 한다.</li>
+        <li>딥러닝의 입력 텐서는 보통 (배치, 채널, 공간) 축으로 구성된다.</li>
+        <li>전치는 “같은 정보를 다른 방향에서 읽기”다. 내적은 $\mathbf{x}^\top \mathbf{y}$.</li>
+        <li>가중치 행렬의 모양 (출력 차원 × 입력 차원)이 한 층의 입출력 변환을 정의한다.</li>
+      </ul>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const CHAPTERS = [
+    { no:'01', t:'스칼라·벡터·행렬·텐서' },
+    { no:'02', t:'행렬 곱과 선형 변환' },
+    { no:'03', t:'노름과 거리' },
+    { no:'04', t:'특수 행렬과 직교성' },
+    { no:'05', t:'고유분해' },
+    { no:'06', t:'SVD — 특이값분해' },
+    { no:'07', t:'시험 대비 — 핵심 정리' },
+  ];
+  const CUR = '01';
+
+  // topbar
+  document.querySelector('.topbar').innerHTML =
+    `<a class="home" href="index.html">← Ch.02 선형대수 표지</a>` +
+    `<span class="ch-mini">SUB ${CUR} / 07</span>`;
+  // 좌측 nav
+  document.querySelector('.ch-nav ol').innerHTML = CHAPTERS.map(c =>
+    `<li><a href="${c.no}.html" ${c.no===CUR?'class="current"':''}>${c.t}</a></li>`).join('');
+  // 하단 foot
+  const idx = CHAPTERS.findIndex(c=>c.no===CUR);
+  const prev = idx>0 ? CHAPTERS[idx-1] : { no:'', t:'표지로', _:'index.html' };
+  const next = idx<CHAPTERS.length-1 ? CHAPTERS[idx+1] : { no:'', t:'표지로', _:'index.html' };
+  document.querySelector('.ch-foot').innerHTML =
+    `<a href="${prev._ || prev.no+'.html'}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+    `<a href="${next._ || next.no+'.html'}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+  // 스크롤 진행
+  const bar = document.querySelector('.scroll-progress');
+  document.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max > 0 ? (h.scrollTop/max)*100 : 0) + '%';
+  }, { passive: true });
+
+  // KaTeX 렌더
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{ left:'$$', right:'$$', display:true }, { left:'$', right:'$', display:false }],
+        throwOnError: false,
+      });
+    }
+  });
+
+  // ---------- 위젯: 24개 숫자의 그릇 ----------
+  const stage = document.getElementById('tensorView');
+  const VALS = [12, 7, 21, 3, 18, 9, 14, 6, 25, 11, 2, 19, 8, 23, 16, 4, 13, 22, 10, 17, 5, 20, 15, 1];
+  function valColor(v) {
+    const t = v / 25;
+    const r = 250 - t * 200; const g = 247 - t * 195; const b = 240 - t * 185;
+    return `rgb(${r|0},${g|0},${b|0})`;
+  }
+  function valText(v) { return v >= 12 ? '#fff' : '#26221C'; }
+  function render(shape) {
+    stage.innerHTML = '';
+    const canvas = document.createElement('canvas');
+    canvas.width = 680; canvas.height = 480;
+    const info = document.createElement('div'); info.className = 'tensor-info';
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.font = '600 22px Spline Sans Mono, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    if (shape === '0') {
+      // 24 스칼라 — 4x6 격자, 각각 독립 그릇
+      const cw = 100, ch = 70;
+      const gx = 6, gy = 4;
+      const ox = (canvas.width - gx*cw)/2;
+      const oy = (canvas.height - gy*ch)/2;
+      for (let i = 0; i < 24; i++) {
+        const r = i / 6 | 0, c = i % 6;
+        const x = ox + c*cw, y = oy + r*ch;
+        ctx.fillStyle = valColor(VALS[i]);
+        ctx.strokeStyle = '#5A5247'; ctx.lineWidth = 1.5;
+        ctx.fillRect(x+8, y+8, cw-16, ch-16);
+        ctx.strokeRect(x+8, y+8, cw-16, ch-16);
+        ctx.fillStyle = valText(VALS[i]);
+        ctx.fillText(String(VALS[i]), x+cw/2, y+ch/2);
+      }
+      info.innerHTML = `<span class="badge b0">SHAPE</span> 24개의 독립 스칼라<br>` +
+        `<span class="badge b1">차원</span> 0 (각각)<br>` +
+        `<b>의미</b>: 24개의 수가 서로 아무 관계 없이 흩어져 있다. 어느 수가 어느 학생의 것인지, 어느 시점의 것인지 알 수 없다.`;
+    } else if (shape === '1') {
+      // 벡터 (24) — 한 줄
+      const cw = 56, ch = 56;
+      const ox = (canvas.width - 24*cw)/2;
+      const oy = (canvas.height - ch)/2;
+      for (let i = 0; i < 24; i++) {
+        const x = ox + i*cw;
+        ctx.fillStyle = valColor(VALS[i]);
+        ctx.strokeStyle = '#2D5B7A'; ctx.lineWidth = 1.5;
+        ctx.fillRect(x+2, oy+2, cw-4, ch-4);
+        ctx.strokeRect(x+2, oy+2, cw-4, ch-4);
+        ctx.fillStyle = valText(VALS[i]);
+        ctx.font = '600 18px Spline Sans Mono, monospace';
+        ctx.fillText(String(VALS[i]), x+cw/2, oy+ch/2);
+      }
+      // 화살표 표시
+      ctx.strokeStyle = '#5A5247'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(ox - 20, oy + ch/2); ctx.lineTo(ox + 24*cw + 20, oy + ch/2); ctx.stroke();
+      ctx.font = '500 13px Spline Sans Mono, monospace'; ctx.fillStyle = '#8E8576';
+      ctx.fillText('순서 있는 인덱스 0 → 23', canvas.width/2, oy + ch + 28);
+      info.innerHTML = `<span class="badge b0">SHAPE</span> (24,)<br>` +
+        `<span class="badge b1">차원</span> 1<br>` +
+        `<b>의미</b>: 24개의 수가 <b>순서</b>를 가진다. x₀, x₁, ..., x₂₃. 한 학생의 24개 시험 점수, 또는 한 단어의 24차원 임베딩으로 해석 가능.`;
+    } else if (shape === '2') {
+      // 행렬 (4, 6)
+      const cw = 88, ch = 80;
+      const ox = (canvas.width - 6*cw)/2;
+      const oy = (canvas.height - 4*ch)/2;
+      for (let i = 0; i < 24; i++) {
+        const r = i / 6 | 0, c = i % 6;
+        const x = ox + c*cw, y = oy + r*ch;
+        ctx.fillStyle = valColor(VALS[i]);
+        ctx.strokeStyle = '#2D5B7A'; ctx.lineWidth = 1.5;
+        ctx.fillRect(x+3, y+3, cw-6, ch-6);
+        ctx.strokeRect(x+3, y+3, cw-6, ch-6);
+        ctx.fillStyle = valText(VALS[i]);
+        ctx.font = '600 22px Spline Sans Mono, monospace';
+        ctx.fillText(String(VALS[i]), x+cw/2, y+ch/2);
+      }
+      // 축 라벨
+      ctx.font = '500 13px Spline Sans Mono, monospace'; ctx.fillStyle = '#8E8576';
+      ctx.fillText('열 (column) 0 → 5', canvas.width/2, oy + 4*ch + 24);
+      ctx.save();
+      ctx.translate(ox - 22, canvas.height/2);
+      ctx.rotate(-Math.PI/2);
+      ctx.fillText('행 (row) 0 → 3', 0, 0);
+      ctx.restore();
+      info.innerHTML = `<span class="badge b0">SHAPE</span> (4, 6)<br>` +
+        `<span class="badge b1">차원</span> 2<br>` +
+        `<b>의미</b>: 두 개의 축이 의미를 가진다. 예: 4명의 학생 × 6개의 과목 점수표. 같은 자리의 수가 “누가, 무엇을”에 대한 점수인지 즉시 읽힌다.`;
+    } else if (shape === '3') {
+      // 텐서 (2, 3, 4) — 두 평면 겹쳐
+      const cw = 56, ch = 56;
+      const planeW = 4*cw, planeH = 3*ch;
+      const slot = (canvas.width - planeW * 2 - 80) / 2;
+      for (let p = 0; p < 2; p++) {
+        const px = slot + p*(planeW + 80);
+        const py = (canvas.height - planeH)/2;
+        // 평면 라벨
+        ctx.font = '500 14px Spline Sans Mono, monospace'; ctx.fillStyle = '#A47B2E';
+        ctx.fillText(`평면 ${p}`, px + planeW/2, py - 16);
+        for (let i = 0; i < 12; i++) {
+          const r = i / 4 | 0, c = i % 4;
+          const v = VALS[p*12 + i];
+          const x = px + c*cw, y = py + r*ch;
+          ctx.fillStyle = valColor(v);
+          ctx.strokeStyle = p === 0 ? '#2D5B7A' : '#C0492E'; ctx.lineWidth = 1.5;
+          ctx.fillRect(x+2, y+2, cw-4, ch-4);
+          ctx.strokeRect(x+2, y+2, cw-4, ch-4);
+          ctx.fillStyle = valText(v);
+          ctx.font = '600 18px Spline Sans Mono, monospace';
+          ctx.fillText(String(v), x+cw/2, y+ch/2);
+        }
+      }
+      info.innerHTML = `<span class="badge b0">SHAPE</span> (2, 3, 4)<br>` +
+        `<span class="badge b1">차원</span> 3<br>` +
+        `<b>의미</b>: 세 축이 모두 의미를 가진다. 예: 2개의 이미지 × 세로 3 × 가로 4 픽셀. 또는 2개 배치 × 3개 학급 × 4개 학생. 같은 그릇으로 훨씬 풍부한 구조를 표현한다.`;
+    }
+    stage.appendChild(canvas);
+    stage.appendChild(info);
+  }
+  render('0');
+  document.querySelectorAll('.tensor-controls .btn').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('.tensor-controls .btn').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on');
+      render(b.dataset.shape);
+    });
+  });
+</script>
+</body>
+</html>

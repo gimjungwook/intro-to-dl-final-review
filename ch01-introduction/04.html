@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>04 — 역사적 굴곡 — Ch.1</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .hist-stage { padding: 1.4rem 1.4rem 1rem; }
+  #hist-svg { width: 100%; height: auto; max-height: 360px; display: block; }
+  .hist-line { fill: none; stroke: var(--structure); stroke-width: 2.5; }
+  .hist-fill { fill: rgba(45,91,122,0.10); }
+  .hist-marker { cursor: pointer; transition: r .15s var(--ease); }
+  .hist-marker:hover, .hist-marker.active { r: 9; }
+  .hist-marker-label { font-family: var(--mono); font-size: 10px; fill: var(--ink-soft); pointer-events: none; text-anchor: middle; }
+  .hist-axis text { font-family: var(--mono); font-size: 10px; fill: var(--ink-faint); }
+  .hist-axis line { stroke: rgba(38,34,28,0.13); stroke-width: 1; }
+  .hist-band { fill: rgba(192,73,46,0.08); }
+  .hist-band-label { font-family: var(--mono); font-size: 9.5px; fill: var(--style); letter-spacing: .08em; text-anchor: middle; }
+  .hist-detail { padding: 1.1rem 1.2rem; background: var(--paper); border-top: 1px solid var(--line-soft); min-height: 140px; }
+  .hist-detail h4 { margin: 0 0 .35rem; font-family: var(--serif); font-size: 1.15rem; color: var(--ink); }
+  .hist-detail .hd-meta { font-family: var(--mono); font-size: .72rem; color: var(--style); letter-spacing: .1em; margin-bottom: .5rem; }
+  .hist-detail p { margin: 0; font-size: .9rem; color: var(--ink-soft); line-height: 1.55; }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 04 — 같은 아이디어가 세 번 죽었다 살아났다</span>
+      <h1>딥러닝의 <span class="t-style">역사적 굴곡</span> — 사이버네틱스, 연결주의, 깊이의 시대</h1>
+      <p class="lede">신경망 아이디어는 1940년대부터 있었다. 그런데 왜 2010년대가 되어서야 폭발했는가? 두 번의 “겨울(AI winter)”이 무엇이고, 무엇이 그것을 끝냈는지 따라가 보자.</p>
+    </header>
+
+    <div class="prose">
+      <p>딥러닝 개론에서 가장 자주 빠지는 함정은 “딥러닝은 2012년경 갑자기 등장한 기술”이라는 인상이다. 책 1장의 후반부는 이 인상을 정정한다. 신경망의 핵심 아이디어는 이미 1940년대부터 존재했고, 부침을 거치며 세 번의 큰 물결을 만들었다.</p>
+
+      <ol>
+        <li><strong>1940년대 - 1960년대, 사이버네틱스(cybernetics)</strong> — McCulloch-Pitts 뉴런(1943)과 퍼셉트론(perceptron, 1958)을 중심으로 “뇌처럼 작동하는 기계”의 첫 물결.</li>
+        <li><strong>1980년대 - 1990년대 중반, 연결주의(connectionism)</strong> — 역전파(backpropagation, 1986)와 분산표상(distributed representation)으로 부활. 그러나 다시 두 번째 겨울로.</li>
+        <li><strong>2006년 이후, 깊이의 시대(deep learning)</strong> — Hinton의 사전학습 논문(2006)으로 다시 부활. 2012년 AlexNet의 ImageNet 우승이 결정적 전환점.</li>
+      </ol>
+
+      <div class="analogy">
+        <b>꺼졌다 켜졌다 하는 가로등.</b> 같은 가로등이 세 번 꺼졌다 다시 켜진 셈이다. 꺼진 이유는 매번 달랐다 — 처음에는 단층 퍼셉트론의 표현력 한계(Minsky-Papert 1969), 다음에는 데이터/계산 자원 부족과 SVM 등 대안의 등장이었다. 켜진 이유도 매번 달랐다 — 역전파 알고리즘의 발견, 그다음에는 GPU와 대규모 데이터셋의 결합. <em>아이디어 자체는 죽지 않았다. 환경이 부족했을 뿐이다.</em>
+      </div>
+
+      <h2>아래 타임라인의 점을 클릭하면 그 사건의 의미가 보인다</h2>
+      <p>가로축은 1940년부터 2020년까지의 연도, 세로축은 “신경망에 대한 학계의 관심 수준”을 정성적으로 그린 곡선이다. 두 개의 붉은 띠가 1차/2차 AI 겨울이다. 점에 마우스를 올리면 해당 사건의 인물, 핵심 기여, 그리고 “왜 중요한가”가 아래에 표시된다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 04</span><span>딥러닝 80년 — 인물 점을 클릭하세요</span></div>
+        <div class="hist-stage">
+          <svg id="hist-svg" viewBox="0 0 720 320" xmlns="http://www.w3.org/2000/svg">
+            <!-- AI 겨울 띠 -->
+            <rect class="hist-band" x="180" y="20" width="80" height="240"/>
+            <text class="hist-band-label" x="220" y="38">1ST AI WINTER</text>
+            <text class="hist-band-label" x="220" y="48">(1969–1980)</text>
+            <rect class="hist-band" x="380" y="20" width="100" height="240"/>
+            <text class="hist-band-label" x="430" y="38">2ND AI WINTER</text>
+            <text class="hist-band-label" x="430" y="48">(1990–2006)</text>
+
+            <!-- 곡선 (관심도) -->
+            <path class="hist-fill" d="M 40,200 L 100,140 L 160,160 L 220,230 L 280,210 L 340,170 L 400,225 L 460,235 L 520,170 L 580,80 L 640,40 L 680,30 L 680,260 L 40,260 Z"/>
+            <path class="hist-line" d="M 40,200 L 100,140 L 160,160 L 220,230 L 280,210 L 340,170 L 400,225 L 460,235 L 520,170 L 580,80 L 640,40 L 680,30"/>
+
+            <!-- 축 -->
+            <g class="hist-axis">
+              <line x1="40" y1="260" x2="680" y2="260"/>
+              <text x="40" y="278" text-anchor="middle">1940</text>
+              <text x="120" y="278" text-anchor="middle">1960</text>
+              <text x="220" y="278" text-anchor="middle">1980</text>
+              <text x="320" y="278" text-anchor="middle">1990</text>
+              <text x="440" y="278" text-anchor="middle">2000</text>
+              <text x="560" y="278" text-anchor="middle">2010</text>
+              <text x="660" y="278" text-anchor="middle">2020</text>
+              <text x="22" y="265" text-anchor="middle" transform="rotate(-90 22 150)">관심도</text>
+            </g>
+
+            <!-- 사건 마커 -->
+            <circle class="hist-marker" data-key="mp" cx="60" cy="195" r="6" fill="#2D5B7A"/>
+            <text class="hist-marker-label" x="60" y="183">1943</text>
+
+            <circle class="hist-marker" data-key="perceptron" cx="100" cy="140" r="6" fill="#2D5B7A"/>
+            <text class="hist-marker-label" x="100" y="128">1958</text>
+
+            <circle class="hist-marker" data-key="minsky" cx="160" cy="160" r="6" fill="#C0492E"/>
+            <text class="hist-marker-label" x="160" y="148">1969</text>
+
+            <circle class="hist-marker" data-key="backprop" cx="280" cy="210" r="6" fill="#2D5B7A"/>
+            <text class="hist-marker-label" x="280" y="198">1986</text>
+
+            <circle class="hist-marker" data-key="lenet" cx="340" cy="170" r="6" fill="#2D5B7A"/>
+            <text class="hist-marker-label" x="340" y="158">1989</text>
+
+            <circle class="hist-marker" data-key="svm" cx="400" cy="225" r="6" fill="#C0492E"/>
+            <text class="hist-marker-label" x="400" y="213">1995</text>
+
+            <circle class="hist-marker" data-key="hinton06" cx="520" cy="170" r="6" fill="#2D5B7A"/>
+            <text class="hist-marker-label" x="520" y="158">2006</text>
+
+            <circle class="hist-marker" data-key="alexnet" cx="580" cy="80" r="7" fill="#A47B2E"/>
+            <text class="hist-marker-label" x="580" y="68">2012</text>
+
+            <circle class="hist-marker" data-key="transformer" cx="640" cy="40" r="6" fill="#A47B2E"/>
+            <text class="hist-marker-label" x="640" y="28">2017</text>
+
+            <circle class="hist-marker" data-key="chatgpt" cx="680" cy="30" r="6" fill="#A47B2E"/>
+            <text class="hist-marker-label" x="675" y="18">2022</text>
+          </svg>
+          <div class="hist-detail" id="hist-detail">
+            <p class="hd-meta">사건을 선택하세요</p>
+            <h4>딥러닝의 80년</h4>
+            <p>곡선의 점을 클릭하면 그 시점의 핵심 인물, 기여, 그리고 “왜 그것이 굴곡을 만들었는가”가 표시됩니다.</p>
+          </div>
+        </div>
+      </div>
+      <p class="widget-cap">2012년 AlexNet은 ImageNet 분류 오류율을 26%에서 16%로 단번에 떨어뜨렸다. 이 한 사건이 학계의 무게중심을 SVM/특징공학에서 딥러닝으로 옮겼다. 같은 ImageNet에서 ResNet(2015)은 사람의 5% 오류율을 처음으로 뚫는다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>겨울의 두 가지 원인 — 시험에서 자주 묻는 구분</h2>
+
+      <table class="symbols">
+        <tr><td><b>1차 겨울</b></td><td>1969년 Minsky &amp; Papert가 단층 퍼셉트론으로는 XOR조차 풀 수 없음을 증명. 신경망의 표현력 자체에 대한 회의가 커짐 → 자금 회수.</td></tr>
+        <tr><td><b>2차 겨울</b></td><td>1990년대 SVM, 부스팅 등 통계학 기반 “더 깔끔한” 방법론이 등장. 게다가 신경망은 데이터/계산 자원이 부족해 학습이 불안정 → 다시 외면.</td></tr>
+      </table>
+
+      <p>두 겨울의 공통점은 “아이디어가 틀려서가 아니라 환경이 부족해서”라는 점이다. 1차 때는 다층 퍼셉트론과 역전파라는 환경이, 2차 때는 GPU와 ImageNet급 데이터셋이라는 환경이 부족했다. 환경이 갖춰지자 같은 아이디어가 폭발했다.</p>
+
+      <h2>같은 이름, 다른 의미 — 용어의 변천사</h2>
+
+      <p>책 1장은 같은 분야가 시대마다 다른 이름으로 불려 왔다고 짚는다. 시험에서 “다음 중 같은 흐름에 속하지 않는 것은?” 같은 문항이 나오면 이 표가 도움이 된다.</p>
+
+      <table class="symbols">
+        <tr><td><b>사이버네틱스</b></td><td>1940년대 - 1960년대. McCulloch-Pitts 뉴런, 퍼셉트론. “생물 시스템과 기계의 공통 원리”에 무게.</td></tr>
+        <tr><td><b>연결주의</b></td><td>1980년대 - 1990년대 중반. 다층 퍼셉트론, 역전파, 분산표상. 단일 뉴런이 아니라 “연결 패턴”이 지능을 만든다.</td></tr>
+        <tr><td><b>딥러닝</b></td><td>2006년 이후. 표상을 다층으로 학습한다는 “깊이” 자체를 브랜드화. 같은 신경망 아이디어의 세 번째 이름.</td></tr>
+      </table>
+
+      <p>다음 절에서는 “환경이 갖춰지자 폭발했다”의 그 환경, 즉 <strong>데이터, 모델, 계산</strong>의 삼각형을 본다. 왜 1980년대에는 안 되고 2010년대에는 됐는지 — 그 정확한 차이를.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'표상의 문제', f:'01.html' },
+    { no:'02', t:'AI/ML/RL/DL 동심원', f:'02.html' },
+    { no:'03', t:'깊이가 만드는 것', f:'03.html' },
+    { no:'04', t:'역사적 굴곡', f:'04.html' },
+    { no:'05', t:'데이터/모델/계산 삼각형', f:'05.html' },
+    { no:'06', t:'시험 대비 체크리스트', f:'06.html' },
+  ];
+  const CURRENT = '04';
+  (function buildNav() {
+    document.querySelector('.topbar').innerHTML =
+      `<a class="home" href="index.html">← Chapter 01 — 딥러닝이란 무엇인가</a>` +
+      `<span class="ch-mini">SUB ${CURRENT} / 06</span>`;
+    document.querySelector('.ch-nav ol').innerHTML = SUBS.map(s =>
+      `<li><a href="${s.f}" ${s.no === CURRENT ? 'class="current"' : ''}>${s.t}</a></li>`).join('');
+    const i = SUBS.findIndex(s => s.no === CURRENT);
+    const prev = i > 0 ? SUBS[i-1] : { f:'index.html', t:'챕터 표지', no:'' };
+    const next = i < SUBS.length-1 ? SUBS[i+1] : { f:'index.html', t:'챕터 표지', no:'' };
+    document.querySelector('.ch-foot').innerHTML =
+      `<a href="${prev.f}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+      `<a href="${next.f}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+    const bar = document.querySelector('.scroll-progress');
+    const onScroll = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    document.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+  })();
+
+  // ===== 역사 타임라인 =====
+  (function hist() {
+    const events = {
+      mp: { year: '1943', who: 'McCulloch &amp; Pitts', title: '인공 뉴런의 첫 수학 모델', body: '신경세포의 동작을 “여러 입력의 가중합 → 임계값 → 0/1 출력”으로 단순화. 이 모델은 학습은 못 했지만 “뇌를 수식으로 적을 수 있다”는 가능성을 처음 열었다. 사이버네틱스 1차 물결의 출발점.' },
+      perceptron: { year: '1958', who: 'Frank Rosenblatt', title: '퍼셉트론 — 학습 가능한 첫 신경망', body: 'Mark I Perceptron 머신으로 가중치를 자동 조정. 언론은 “스스로 학습하는 전자 뇌”라며 열광. 하지만 단층 구조였기 때문에 곧 한계가 드러난다.' },
+      minsky: { year: '1969', who: 'Minsky &amp; Papert', title: '“퍼셉트론은 XOR도 못 푼다”', body: '<i>Perceptrons</i> 책에서 단층 퍼셉트론의 표현력 한계를 수학적으로 증명. 다층 구조의 가능성을 부정하진 않았지만 학습 방법이 없었기에, 학계와 자금이 모두 떠난다. <b>1차 AI 겨울</b>의 직접적 도화선.' },
+      backprop: { year: '1986', who: 'Rumelhart, Hinton, Williams', title: '역전파(backpropagation) 정착', body: '다층 퍼셉트론(MLP)을 학습시키는 알고리즘이 정리됨. 사실 아이디어 자체는 더 일찍 있었지만, 이 논문이 학계 표준으로 만들었다. <em>연결주의 2차 물결</em>의 신호탄.' },
+      lenet: { year: '1989', who: 'Yann LeCun', title: 'LeNet — 첫 실용 CNN', body: '우체국 우편번호 자동 인식용 LeNet-5가 등장. 합성곱(convolution)으로 이미지의 공간 구조를 활용. 한 시대를 앞서간 모델이지만, 데이터/계산 부족으로 다른 도메인으로 확장되지는 못함.' },
+      svm: { year: '1995', who: 'Cortes &amp; Vapnik', title: 'SVM의 등장 — 신경망의 2차 겨울 시작', body: 'Support Vector Machine은 수학적으로 깔끔하고 작은 데이터에서도 잘 작동했다. 게다가 신경망은 학습이 불안정했기에, 학계는 다시 신경망을 외면한다. <b>2차 AI 겨울</b>의 시작.' },
+      hinton06: { year: '2006', who: 'Geoffrey Hinton', title: '깊은 신뢰망(DBN) — “Deep Learning”의 부활', body: '층별 사전학습(layer-wise pretraining)으로 깊은 네트워크를 안정적으로 학습하는 방법을 제시. 이 시점부터 “Deep Learning”이라는 용어 자체가 정착하기 시작.' },
+      alexnet: { year: '2012', who: 'Krizhevsky, Sutskever, Hinton', title: 'AlexNet — ImageNet 대회 압승', body: 'GPU 두 장으로 학습한 8층 CNN이 ImageNet 분류 오류율을 26%에서 16%로 단번에 떨어뜨림. <em>이 한 사건이 학계의 무게중심을 통째로 옮긴다.</em> 딥러닝 3차 물결의 결정적 전환점.' },
+      transformer: { year: '2017', who: 'Vaswani et al. (Google)', title: 'Transformer — 언어모델의 표준 구조', body: '“Attention Is All You Need”. RNN을 버리고 attention만으로 시퀀스를 처리. 병렬화가 가능해 대규모 학습에 적합. BERT(2018), GPT(2018-)의 모태가 되며 LLM 시대를 연다.' },
+      chatgpt: { year: '2022', who: 'OpenAI', title: 'ChatGPT — 대중 인식의 변곡점', body: 'GPT-3.5 기반에 인간 피드백 강화학습(RLHF)을 더해 대화 정렬. 출시 5일 만에 백만 사용자. AI 겨울이 다시 올지 여부보다, 사회가 이 속도를 어떻게 따라잡을지가 더 큰 질문이 된다.' },
+    };
+    const markers = document.querySelectorAll('.hist-marker');
+    const detail = document.getElementById('hist-detail');
+    function render(k) {
+      markers.forEach(m => m.classList.toggle('active', m.dataset.key === k));
+      const e = events[k];
+      detail.innerHTML = `<p class="hd-meta">${e.year}, ${e.who}</p><h4>${e.title}</h4><p>${e.body}</p>`;
+    }
+    markers.forEach(m => {
+      m.addEventListener('mouseenter', () => render(m.dataset.key));
+      m.addEventListener('click', () => render(m.dataset.key));
+    });
+    render('alexnet');
+  })();
+
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
+        throwOnError: false,
+      });
+    }
+  });
+</script>
+</body>
+</html>

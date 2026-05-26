@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chapter 13 · 선형 요소 모델 — 인터랙티브 복습</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .masthead { position: relative; max-width: var(--wide); margin: 0 auto; padding: 1.5rem 1.4rem 0; }
+  .hero-wrap { position: relative; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: linear-gradient(180deg,#fff,var(--paper-2)); box-shadow: var(--shadow-plate); }
+  #hero { display: block; width: 100%; height: 380px; }
+  .hero-cap { position: absolute; left: 1.2rem; bottom: 1rem; font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; color: var(--ink-faint); pointer-events: none; }
+  .hero-cap b { color: var(--structure); } .hero-cap em { color: var(--style); font-style: normal; }
+  .title-block { max-width: var(--wide); margin: 2.4rem auto 0; padding-inline: 1.4rem; }
+  .title-block .kicker { display: block; margin-bottom: 1rem; }
+  .title-block h1 { font-size: clamp(2.6rem, 7vw, 5rem); margin: 0; line-height: 1.05; }
+  .title-block h1 em { color: var(--style); font-style: normal; }
+  .paper-meta { display: flex; flex-wrap: wrap; gap: .5rem 1.6rem; margin-top: 1.4rem; font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); letter-spacing: .02em; }
+  .paper-meta span b { color: var(--ink); font-weight: 500; }
+
+  .plates { max-width: var(--wide); margin: 1rem auto; padding: 2rem 1.4rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 1rem; }
+  .plate { position: relative; display: flex; flex-direction: column; text-decoration: none; color: inherit; background: #fff; border: 1px solid var(--line); border-radius: 13px; padding: 1.3rem 1.3rem 1.4rem; transition: transform .2s var(--ease), border-color .2s, box-shadow .2s; overflow: hidden; }
+  .plate:hover { transform: translateY(-4px); border-color: var(--style); box-shadow: var(--shadow-plate); }
+  .plate .pno { font-family: var(--mono); font-size: .74rem; letter-spacing: .14em; color: var(--ink-faint); }
+  .plate h3 { font-family: var(--serif); font-size: 1.3rem; margin: .5rem 0 .5rem; line-height: 1.2; }
+  .plate p { font-size: .9rem; color: var(--ink-soft); line-height: 1.5; margin: 0; }
+  .plate .spectrum { display: flex; height: 4px; border-radius: 2px; overflow: hidden; margin-bottom: 1rem; }
+  .plate .spectrum i { display: block; height: 100%; }
+  .plate .go { margin-top: 1rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; color: var(--style); opacity: 0; transform: translateX(-4px); transition: .2s var(--ease); }
+  .plate:hover .go { opacity: 1; transform: translateX(0); }
+  .plate .kw { margin-top: .8rem; font-family: var(--mono); font-size: .68rem; color: var(--ink-faint); letter-spacing: .04em; }
+
+  .section-intro { max-width: var(--measure); margin: 1rem auto 0; padding-inline: 1.4rem; }
+  .section-intro h2 { margin-top: 1rem; }
+  .twopole { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; max-width: var(--measure); margin: 1.6rem auto; padding-inline: 1.4rem; }
+  .pole { padding: 1.1rem 1.2rem; border-radius: 11px; }
+  .pole.s1 { background: var(--structure-bg); } .pole.s2 { background: var(--style-bg); }
+  .pole h4 { margin: 0 0 .4rem; font-family: var(--serif); font-size: 1.1rem; }
+  .pole.s1 h4 { color: var(--structure); } .pole.s2 h4 { color: var(--style); }
+  .pole p { margin: 0; font-size: .9rem; color: var(--ink-soft); line-height: 1.5; }
+  @media (max-width: 560px){ .twopole{ grid-template-columns: 1fr; } }
+
+  .path { max-width: var(--wide); margin: 2rem auto; padding: 1.6rem 1.4rem; }
+  .path-flow { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; font-family: var(--mono); font-size: .8rem; }
+  .path-flow a { display: inline-flex; align-items: center; gap: .4rem; text-decoration: none; color: var(--ink-soft); padding: .4rem .7rem; border: 1px solid var(--line); border-radius: 20px; transition: .15s; }
+  .path-flow a:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .path-flow a b { color: var(--style); } .path-flow a:hover b { color: var(--style-lo); }
+  .path-flow .arr { color: var(--ink-faint); }
+
+  footer.colophon { max-width: var(--measure); margin: 3rem auto 4rem; padding: 2rem 1.4rem 0; border-top: 1px solid var(--line); font-size: .85rem; color: var(--ink-soft); }
+  footer.colophon a { color: var(--structure); }
+  footer.colophon .src { font-family: var(--mono); font-size: .76rem; line-height: 1.8; }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="hero-wrap">
+    <canvas id="hero"></canvas>
+    <div class="hero-cap"><b>관측 — 고차원 점구름</b> ↔ <em>잠재 — 저차원 평면</em> · 마우스 드래그</div>
+  </div>
+</header>
+
+<div class="title-block">
+  <span class="kicker">Deep Learning Book · Chapter 13 · Linear Factor Models</span>
+  <h1>관측 뒤에 숨은<br><em>몇 개의 원인</em>을 찾아내기</h1>
+  <div class="paper-meta">
+    <span><b>딥러닝 개론</b> 기말고사 인터랙티브</span>
+    <span>제작 <b>김정욱</b></span>
+    <span>분량 <b>약 35분</b></span>
+    <span>위젯 <b>5개</b></span>
+  </div>
+</div>
+
+<section class="section-intro">
+  <h2>한 문장으로</h2>
+  <p>이 장은 <strong>"우리가 관측하는 고차원 데이터 뒤에는 사실 몇 개의 보이지 않는 원인(잠재 변수, latent variable)이 있고, 관측은 그 원인들의 <em>선형</em> 조합에 잡음을 더한 것"</strong>이라는 단 하나의 발상으로 통일된다. 모델이 달라지는 이유는 그 잠재 변수의 분포에 어떤 가정을 거느냐, 그 차이뿐이다.</p>
+  <p>처음 읽을 때 가장 중요한 점은, 이 장이 <em>"새 신경망을 가르치는"</em> 장이 <strong>아니라</strong>는 것이다. 이 장은 <span class="t-synth">생성 모델(generative model)</span>의 가장 단순한 분파를 다루며, Part III 전체 — 오토인코더, 표상 학습, 그리고 그 너머의 VAE·확산 모델 — 가 어떤 자리에서 출발하는지를 보여주는 <strong>출발선</strong>이다.</p>
+</section>
+
+<div class="twopole">
+  <div class="pole s1"><h4>잠재 변수 (원인)</h4><p>$h$. 관측되지 않는 소수의 원인. 분포 $p(h)$의 모양이 이 모델 가족의 정체성을 결정한다. 가우시안이면 FA/PPCA, 비가우시안이면 ICA, 희소면 희소 코딩.</p></div>
+  <div class="pole s2"><h4>관측 변수 (결과)</h4><p>$x = Wh + b + \text{noise}$. 잠재 원인들의 <strong>선형</strong> 조합에 잡음이 더해진 결과. $W$의 열들이 "사전(dictionary)"이라는 의미 단위가 된다.</p></div>
+</div>
+
+<section class="plates" id="plates"></section>
+
+<section class="path">
+  <span class="kicker">권장 읽기 순서</span>
+  <div class="path-flow" id="pathflow"></div>
+</section>
+
+<footer class="colophon">
+  <p>이 해설은 Goodfellow, Bengio, Courville의 Deep Learning Book Chapter 13 (Linear Factor Models)을 바텀업으로 다시 쓴 것이다. 잠재 변수의 직관에서 출발해 가우시안 가정(FA·PPCA), 비가우시안 가정(ICA), 희소 가정(희소 코딩), 그리고 매니폴드 해석까지 단계별로 쌓아 올린다. 모든 수식은 "왜 그 형태인가"를 함께 설명한다.</p>
+  <p class="src">
+    원서 · <a href="https://www.deeplearningbook.org/contents/linear_factors.html">deeplearningbook.org/contents/linear_factors.html</a><br>
+    과제 통합 요약 · <a href="../../../03-과제-제출/IntroToDL_Week9_22000168.md">IntroToDL_Week9_22000168.md</a><br>
+    상위 인덱스 · <a href="../index.html">기말고사 인터랙티브 표지</a>
+  </p>
+</footer>
+
+<script>
+  const CHAPTERS = [
+    { no:'01', t:'잠재 변수 모델 — 관측 뒤에 무엇이 있는가', d:'몇 개의 보이지 않는 원인이 모든 관측의 상관을 설명한다는 발상. 공통 템플릿 $x = Wh + b + \\text{noise}$와 $p(h)$가 모델의 정체성을 만드는 이유.', sp:['structure-lo','structure'] },
+    { no:'02', t:'요소 분석(FA)과 확률적 PCA — 가우시안 잠재공간', d:'잠재 변수에 가우시안 사전을 깐다. FA는 차원별 잡음, PPCA는 등방 잡음. 사후 분포가 닫힌 형태로 풀린다는 사실이 모든 단순함의 뿌리.', sp:['structure','synth'] },
+    { no:'03', t:'ICA — 가우시안이 아닌 독립 신호 분리', d:'칵테일 파티 문제. 가우시안 가정으로는 회전 모호성 때문에 원천 분리가 원리적으로 불가능하다. 비가우시안성은 ICA의 산소.', sp:['style','synth'] },
+    { no:'04', t:'희소 코딩 — 사전(dictionary)이라는 표상', d:'Laplace/Cauchy 같은 첨예한 사전이 $h$의 거의 모든 성분을 0에 붙인다. 추론은 매번 최적화로, 그 대가로 V1 단순세포처럼 생긴 사전을 얻는다.', sp:['style','style-lo'] },
+    { no:'05', t:'평평한 매니폴드 — Ch.14·15로 가는 다리', d:'선형 요소 모델은 결국 데이터에 평평한 저차원 부분공간을 끼워 맞춘다. 휘어진 매니폴드에는 무력하다는 한계가, 다음 장 오토인코더의 동기.', sp:['structure','style','synth'] },
+    { no:'06', t:'시험 대비 — 한 장 요약과 예상 문제', d:'PCA/PPCA/FA/ICA/희소 코딩의 분포 가정 비교표. 회전 모호성·등방 잡음·사전·매니폴드 한계의 한 줄 답안. Ch.14로 가는 다리.', sp:['ink-soft','ink'] },
+  ];
+  const colMap = { structure:'var(--structure)', 'structure-lo':'var(--structure-lo)', style:'var(--style)', 'style-lo':'var(--style-lo)', synth:'var(--synth)', ink:'var(--ink)', 'ink-soft':'var(--ink-soft)' };
+  const platesEl = document.getElementById('plates');
+  const flowEl = document.getElementById('pathflow');
+  CHAPTERS.forEach((c, idx) => {
+    const sp = c.sp.length === 1 ? [c.sp[0], c.sp[0]] : c.sp;
+    const a = document.createElement('a');
+    a.className = 'plate'; a.href = c.no + '.html';
+    a.innerHTML = `
+      <div class="spectrum">${sp.map(s=>`<i style="flex:1;background:${colMap[s]}"></i>`).join('')}</div>
+      <span class="pno">SUB-CHAPTER ${c.no}</span>
+      <h3>${c.t}</h3>
+      <p>${c.d}</p>
+      <span class="go">읽기 →</span>`;
+    platesEl.appendChild(a);
+
+    const f = document.createElement('a'); f.href = c.no + '.html';
+    f.innerHTML = `<b>${c.no}</b> ${c.t.split('—')[0].trim()}`;
+    flowEl.appendChild(f);
+    if (idx < CHAPTERS.length - 1) { const s = document.createElement('span'); s.className='arr'; s.textContent='→'; flowEl.appendChild(s); }
+  });
+
+  // 히어로 — 3D 점구름이 평평한 매니폴드(저차원 평면)에 사영
+  window.addEventListener('load', () => {
+    const canvas = document.getElementById('hero');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    function resize() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const w = canvas.clientWidth, h = 380;
+      canvas.width = w * dpr; canvas.height = h * dpr;
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    // N개의 점: 3D에서 평면에 가까이 분포 (잠재 = 2D 평면)
+    const N = 400;
+    const pts = [];
+    function rand() { return Math.random() * 2 - 1; }
+    for (let i = 0; i < N; i++) {
+      // 잠재 좌표 (2D 평면 위 분포 — 가우시안 변형)
+      const h1 = (Math.random() + Math.random() + Math.random() - 1.5) * 1.4;
+      const h2 = (Math.random() + Math.random() + Math.random() - 1.5) * 0.7;
+      // 3D 관측 = W·h + noise (W는 임의 직교 기저)
+      const w1 = [0.95, 0.18, 0.25];
+      const w2 = [-0.15, 0.86, 0.48];
+      const noise = 0.18;
+      const x = h1*w1[0] + h2*w2[0] + rand()*noise;
+      const y = h1*w1[1] + h2*w2[1] + rand()*noise;
+      const z = h1*w1[2] + h2*w2[2] + rand()*noise;
+      pts.push({ h1, h2, x, y, z });
+    }
+
+    let target = 0; // 0 = 3D 관측 / 1 = 2D 잠재 (평면 위로 사영)
+    let drag = false, dragX = 0, sx = 0;
+    canvas.addEventListener('pointerdown', (e) => { drag = true; dragX = e.clientX; sx = target; });
+    window.addEventListener('pointermove', (e) => { if (!drag) return; target = Math.max(0, Math.min(1, sx + (e.clientX - dragX) / canvas.clientWidth)); });
+    window.addEventListener('pointerup', () => { drag = false; });
+
+    let t0 = 0;
+    function draw() {
+      t0 += 0.005;
+      const w = canvas.clientWidth, h = 380;
+      ctx.clearRect(0,0,w,h);
+      ctx.fillStyle = '#FAF7F0'; ctx.fillRect(0,0,w,h);
+
+      // 부드러운 자동 진동
+      const auto = drag ? target : 0.5 + 0.45 * Math.sin(t0 * 0.6);
+
+      const cx = w/2, cy = h/2;
+      const scale = Math.min(w, h) * 0.18;
+
+      // 카메라 회전 (Y축)
+      const ry = (auto - 0.5) * 0.9 + Math.sin(t0 * 0.3) * 0.2;
+      const cosY = Math.cos(ry), sinY = Math.sin(ry);
+
+      // 평면(잠재)을 그릴 사변형의 모서리들 (h1, h2 ∈ [-2.5, 2.5])
+      const planeCorners = [
+        [-2.5,-2.5], [2.5,-2.5], [2.5,2.5], [-2.5,2.5]
+      ];
+      function projPlane(h1, h2) {
+        const w1 = [0.95, 0.18, 0.25];
+        const w2 = [-0.15, 0.86, 0.48];
+        return [
+          h1*w1[0] + h2*w2[0],
+          h1*w1[1] + h2*w2[1],
+          h1*w1[2] + h2*w2[2]
+        ];
+      }
+      function project(x, y, z) {
+        // Y 회전 후 단순 직교 투영
+        const xr = x * cosY + z * sinY;
+        const zr = -x * sinY + z * cosY;
+        return [cx + xr * scale, cy - y * scale, zr];
+      }
+
+      // 평면 그리기 (사변형)
+      ctx.strokeStyle = `rgba(192, 73, 46, ${0.20 + 0.5 * auto})`;
+      ctx.fillStyle = `rgba(192, 73, 46, ${0.04 + 0.10 * auto})`;
+      ctx.beginPath();
+      planeCorners.forEach(([h1,h2], i) => {
+        const [X, Y, Z] = projPlane(h1, h2);
+        const [px, py] = project(X, Y, Z);
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      });
+      ctx.closePath();
+      ctx.fill();
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+
+      // 점들
+      const drawn = [];
+      for (let i = 0; i < N; i++) {
+        const p = pts[i];
+        // 잠재 평면 위 좌표 (사영된 위치)
+        const [PX, PY, PZ] = projPlane(p.h1, p.h2);
+        // 보간: t=0 관측 위치, t=1 잠재 평면 위 위치
+        const x = p.x * (1 - auto) + PX * auto;
+        const y = p.y * (1 - auto) + PY * auto;
+        const z = p.z * (1 - auto) + PZ * auto;
+        const [px, py, pz] = project(x, y, z);
+        drawn.push({ px, py, pz, p });
+      }
+      drawn.sort((a,b) => a.pz - b.pz);
+      drawn.forEach(({ px, py, pz, p }) => {
+        const depth = (pz + 2) / 4;
+        const r = 2 + depth * 1.6;
+        const alpha = 0.45 + depth * 0.45;
+        ctx.fillStyle = `rgba(45, 91, 122, ${alpha})`;
+        ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI*2); ctx.fill();
+      });
+
+      // 라벨
+      ctx.fillStyle = '#8E8576';
+      ctx.font = '11px "Spline Sans Mono", monospace';
+      const label = auto < 0.3 ? 'x ∈ R³ (관측)' : auto > 0.7 ? 'h ∈ R² (잠재)' : 'x ≈ Wh + noise';
+      ctx.fillText(label, 14, h - 14);
+
+      requestAnimationFrame(draw);
+    }
+    draw();
+  });
+</script>
+</body>
+</html>

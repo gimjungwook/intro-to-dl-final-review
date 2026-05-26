@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chapter 07 · 정칙화 — 일반화 격차 줄이기</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .masthead { position: relative; max-width: var(--wide); margin: 0 auto; padding: 1.5rem 1.4rem 0; }
+  .home-link { display: inline-flex; align-items: center; gap: .35rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .12em; color: var(--ink-faint); text-decoration: none; padding: .35rem .6rem; margin-bottom: .9rem; border-radius: 6px; border: 1px solid var(--line-soft); transition: all .15s var(--ease); }
+  .home-link:hover { color: var(--ink); border-color: var(--line); background: var(--paper-2); }
+  .hero-wrap { position: relative; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: linear-gradient(180deg,#fff,var(--paper-2)); box-shadow: var(--shadow-plate); }
+  #hero { display: block; width: 100%; height: 380px; }
+  .hero-cap { position: absolute; left: 1.2rem; bottom: 1rem; font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; color: var(--ink-faint); pointer-events: none; }
+  .hero-cap b { color: var(--structure); } .hero-cap em { color: var(--style); font-style: normal; }
+
+  .title-block { max-width: var(--wide); margin: 2.4rem auto 0; padding-inline: 1.4rem; }
+  .title-block .kicker { display: block; margin-bottom: 1rem; }
+  .title-block h1 { font-size: clamp(2.6rem, 7vw, 5rem); margin: 0; }
+  .title-block h1 em { color: var(--style); font-style: normal; }
+  .paper-meta { display: flex; flex-wrap: wrap; gap: .5rem 1.6rem; margin-top: 1.4rem; font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); letter-spacing: .02em; }
+  .paper-meta span b { color: var(--ink); font-weight: 500; }
+
+  .plates { max-width: var(--wide); margin: 1rem auto; padding: 2rem 1.4rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); gap: 1rem; }
+  .plate { position: relative; display: flex; flex-direction: column; text-decoration: none; color: inherit; background: #fff; border: 1px solid var(--line); border-radius: 13px; padding: 1.3rem 1.3rem 1.4rem; transition: transform .2s var(--ease), border-color .2s, box-shadow .2s; overflow: hidden; }
+  .plate:hover { transform: translateY(-4px); border-color: var(--style-lo); box-shadow: var(--shadow-plate); }
+  .plate .pno { font-family: var(--mono); font-size: .74rem; letter-spacing: .14em; color: var(--ink-faint); }
+  .plate h3 { font-family: var(--serif); font-size: 1.32rem; margin: .5rem 0 .5rem; line-height: 1.2; }
+  .plate p { font-size: .9rem; color: var(--ink-soft); line-height: 1.5; margin: 0; }
+  .plate .spectrum { display: flex; height: 4px; border-radius: 2px; overflow: hidden; margin-bottom: 1rem; }
+  .plate .spectrum i { display: block; height: 100%; }
+  .plate .go { margin-top: 1rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; color: var(--style); opacity: 0; transform: translateX(-4px); transition: .2s var(--ease); }
+  .plate:hover .go { opacity: 1; transform: translateX(0); }
+
+  .section-intro { max-width: var(--measure); margin: 1rem auto 0; padding-inline: 1.4rem; }
+  .section-intro h2 { margin-top: 1rem; }
+  .twopole { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; max-width: var(--measure); margin: 1.6rem auto; padding-inline: 1.4rem; }
+  .pole { padding: 1.1rem 1.2rem; border-radius: 11px; }
+  .pole.s1 { background: var(--structure-bg); } .pole.s2 { background: var(--style-bg); }
+  .pole h4 { margin: 0 0 .4rem; font-family: var(--serif); font-size: 1.1rem; }
+  .pole.s1 h4 { color: var(--structure); } .pole.s2 h4 { color: var(--style); }
+  .pole p { margin: 0; font-size: .9rem; color: var(--ink-soft); line-height: 1.5; }
+  @media (max-width: 560px){ .twopole{ grid-template-columns: 1fr; } }
+
+  .path { max-width: var(--wide); margin: 2rem auto; padding: 1.6rem 1.4rem; }
+  .path-flow { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; font-family: var(--mono); font-size: .8rem; }
+  .path-flow a { display: inline-flex; align-items: center; gap: .4rem; text-decoration: none; color: var(--ink-soft); padding: .4rem .7rem; border: 1px solid var(--line); border-radius: 20px; transition: .15s; }
+  .path-flow a:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .path-flow a b { color: var(--style); } .path-flow a:hover b { color: var(--style-lo); }
+  .path-flow .arr { color: var(--ink-faint); }
+
+  footer.colophon { max-width: var(--measure); margin: 3rem auto 4rem; padding: 2rem 1.4rem 0; border-top: 1px solid var(--line); font-size: .85rem; color: var(--ink-soft); }
+  footer.colophon a { color: var(--structure); }
+  footer.colophon .src { font-family: var(--mono); font-size: .76rem; line-height: 1.8; }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <a class="home-link" href="../index.html">← 기말고사 인터랙티브 복습</a>
+  <div class="hero-wrap">
+    <canvas id="hero"></canvas>
+    <div class="hero-cap"><b>훈련 손실 — 끝없이 내려간다</b> ↔ <em>일반화 손실 — 어느 지점에서 다시 올라간다</em> · 마우스를 끌어보세요</div>
+  </div>
+</header>
+
+<div class="title-block">
+  <span class="kicker">Deep Learning Book · Chapter 07 · Regularization for Deep Learning</span>
+  <h1>큰 모델을 그대로,<br><em>일반화 격차</em>만 줄이기</h1>
+  <div class="paper-meta">
+    <span><b>딥러닝 개론</b> 기말고사 인터랙티브 복습</span>
+    <span>저자 <b>Goodfellow, Bengio, Courville (2016)</b></span>
+    <span>읽는 시간 <b>약 45분</b></span>
+    <span>D-day <b>2026-06-04</b></span>
+  </div>
+</div>
+
+<section class="section-intro">
+  <h2>한 문장으로</h2>
+  <p>7장은 <strong>“훈련 데이터에서는 잘 맞히는데 새 데이터에서는 무너지는 큰 모델을, 어떻게 작게 만들지 않고 길들일 수 있는가”</strong>에 답한다. 답은 모델 크기를 줄이는 것이 아니라, <span class="t-style">자유도(degrees of freedom)</span>를 다양한 방식으로 통제하는 것이다.</p>
+  <p>처음 읽을 때 가장 중요한 점은, 정칙화(regularization)가 <em>“하나의 기법”</em>이 아니라 <strong>“여러 기법을 하나로 묶는 관점”</strong>이라는 것이다. L2 가중치 감쇠는 가중치 공간에서, 조기 종료는 시간 축에서, 드롭아웃은 네트워크 구조에서, 데이터 증강은 입력 공간에서, 적대적 훈련은 입력 주변의 작은 근방에서 — 각각 다른 길로 같은 목적지(일반화 향상)에 도달한다.</p>
+</section>
+
+<div class="twopole">
+  <div class="pole s1"><h4>훈련 오차 (Training Error)</h4><p>모델이 본 데이터에 얼마나 잘 맞는가. 큰 모델일수록 거의 0까지 내려갈 수 있다. 이 사이트에서 <b>차분한 파랑</b>으로 표시된다.</p></div>
+  <div class="pole s2"><h4>일반화 오차 (Generalization Error)</h4><p>모델이 처음 보는 데이터에서 얼마나 잘 맞는가. 정칙화가 진짜로 줄이려는 양. 이 사이트에서 <b>웜한 주홍</b>으로 표시된다.</p></div>
+</div>
+
+<section class="plates" id="plates"></section>
+
+<section class="path">
+  <span class="kicker">권장 읽기 순서</span>
+  <div class="path-flow" id="pathflow"></div>
+</section>
+
+<footer class="colophon">
+  <p>이 해설은 Goodfellow, Bengio, Courville(2016) 7장과 4주차 과제 회고(<a href="../../../05-선행학습/Ch7-Regularization-회고.md">Ch7 회고</a>)를 함께 묶어 정리한 것이다. 회고에서 식별된 7개 이해 갭(L1/L2 기하학, 조기종료~L2 동치, 드롭아웃 앙상블 해석 등)을 시험에서 답할 수 있는 수준까지 끌어올린다.</p>
+  <p class="src">
+    원문 · <a href="https://www.deeplearningbook.org/contents/regularization.html">deeplearningbook.org/regularization</a><br>
+    선행학습 정리 · <a href="../../../05-선행학습/Deep-Learning-Book-07-Regularization-상세해설.md">Ch.7 상세해설</a><br>
+    학습 회고 · <a href="../../../05-선행학습/Ch7-Regularization-회고.md">Ch7 회고 (L1/L2 기하학·조기종료~L2 동치·드롭아웃 앙상블)</a><br>
+    과제 제출본 · <a href="../../../03-과제-제출/IntroToDL_Week4_22000168.md">Week 4 제출본</a>
+  </p>
+</footer>
+
+<script>
+  const SUBCHAPTERS = [
+    { no:'01', t:'일반화 격차 — 정칙화가 푸는 진짜 문제', d:'편향-분산 교환, 용량과 과적합. 왜 “큰 모델 + 정칙화”가 “작은 모델”보다 자주 더 좋은가. 일반화 격차 슬라이더.', sp:['structure'] },
+    { no:'02', t:'L1·L2 — 기하학과 베이지안 사전', d:'다이아몬드 vs 원의 등고선 접점. 왜 L1은 모서리에서 sparsity를, L2는 부드러운 축소를 만드는가. 가우시안 vs 라플라스 사전 해석.', sp:['structure','structure-lo'] },
+    { no:'03', t:'드롭아웃 — 무작위 서브넷 앙상블', d:'2^n개 부분모델의 기하 평균을 가중치 스케일링으로 근사. 같은 망에서 mask를 무작위로 뽑아 예측이 어떻게 평균화되는지 직접 본다.', sp:['style','style-lo'] },
+    { no:'04', t:'조기 종료 — 시간이 정칙화가 되는 이유 (L2 동치)', d:'학습 epoch 슬라이더로 가중치 노름이 점진적으로 자란다. α = 1/(ετ) 동치 관계, 2차 근사 조건까지.', sp:['synth','structure'] },
+    { no:'05', t:'데이터 증강·노이즈 주입·라벨 스무딩', d:'증강은 데이터 복제가 아니라 불변성 사전지식 주입. 입력·은닉·가중치 노이즈가 어떻게 결정경계를 부드럽게 만드는가.', sp:['style','synth'] },
+    { no:'06', t:'적대적 훈련 — 정칙화의 또 다른 얼굴 (P1 FGSM)', d:'사람 눈에 안 보이는 작은 ε 교란이 분류기를 무너뜨린다. FGSM 부호 기울기로 손실 표면의 가파른 방향을 따라간다.', sp:['style','ink'] },
+    { no:'07', t:'시험 대비 — 핵심 정의·구분·예상 질문 체크리스트', d:'L1 vs L2 기하학, 조기종료~L2 동치 유도, 드롭아웃 앙상블 해석, 적대적 vs 일반 과적합 차이. 시험 직전 한 번 더 훑을 카드.', sp:['ink'] },
+  ];
+  const colMap = { structure:'var(--structure)', 'structure-lo':'var(--structure-lo)', style:'var(--style)', 'style-lo':'var(--style-lo)', synth:'var(--synth)', ink:'var(--ink-soft)' };
+  const platesEl = document.getElementById('plates');
+  const flowEl = document.getElementById('pathflow');
+  SUBCHAPTERS.forEach((c, idx) => {
+    const sp = c.sp.length === 1 ? [c.sp[0], c.sp[0]] : c.sp;
+    const a = document.createElement('a');
+    a.className = 'plate'; a.href = c.no + '.html';
+    a.innerHTML = `
+      <div class="spectrum">${sp.map(s=>`<i style="flex:1;background:${colMap[s]}"></i>`).join('')}</div>
+      <span class="pno">SUB ${c.no}</span>
+      <h3>${c.t}</h3>
+      <p>${c.d}</p>
+      <span class="go">읽기 →</span>`;
+    platesEl.appendChild(a);
+
+    const f = document.createElement('a'); f.href = c.no + '.html';
+    const shortTitle = c.t.split('—')[0].trim().slice(0, 14);
+    f.innerHTML = `<b>${c.no}</b> ${shortTitle}…`;
+    flowEl.appendChild(f);
+    if (idx < SUBCHAPTERS.length - 1) { const s = document.createElement('span'); s.className='arr'; s.textContent='→'; flowEl.appendChild(s); }
+  });
+
+  // 표지 hero — 훈련 손실 곡선 vs 일반화 손실 곡선의 갈라짐
+  window.addEventListener('load', () => {
+    if (!window.THREE || !document.getElementById('hero')) return;
+    const canvas = document.getElementById('hero');
+    const wrap = canvas.parentElement;
+    const css = getComputedStyle(document.documentElement);
+    const C = {
+      structure: css.getPropertyValue('--structure').trim() || '#2D5B7A',
+      style: css.getPropertyValue('--style').trim() || '#C0492E',
+      synth: css.getPropertyValue('--synth').trim() || '#A47B2E',
+    };
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.setClearColor(0xffffff, 0);
+    const scene = new THREE.Scene();
+    const cam = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+    cam.position.set(0, 0, 3.0);
+
+    // 두 줄의 손실 곡선: 훈련(파랑, 단조감소), 일반화(주홍, U자형)
+    const N = 220;
+    const trainPts = new Float32Array(N * 3);
+    const genPts = new Float32Array(N * 3);
+    const W = 3.0, H = 1.6;
+    for (let i = 0; i < N; i++) {
+      const x = (i / (N - 1) - 0.5) * W;
+      const u = i / (N - 1);
+      // 훈련 손실: 부드러운 단조 감소 (1 → 0.05)
+      const train = Math.max(0.05, Math.exp(-u * 3.2));
+      // 일반화 손실: U자 (1 → 0.35 at 0.45 → 0.85 back at 1)
+      const gen = 0.35 + 0.55 * (u - 0.45) * (u - 0.45) * 3.6 + 0.05 * Math.sin(u * 9);
+      const trainY = (train - 0.5) * H * 0.9;
+      const genY = (gen - 0.5) * H * 0.9;
+      trainPts[i*3] = x; trainPts[i*3+1] = trainY; trainPts[i*3+2] = 0;
+      genPts[i*3] = x; genPts[i*3+1] = genY; genPts[i*3+2] = 0;
+    }
+
+    const trainGeo = new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(trainPts, 3));
+    const genGeo = new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(genPts, 3));
+
+    // 곡선
+    const trainLine = new THREE.Line(trainGeo, new THREE.LineBasicMaterial({ color: new THREE.Color(C.structure), transparent: true, opacity: 0.85, linewidth: 2 }));
+    const genLine = new THREE.Line(genGeo, new THREE.LineBasicMaterial({ color: new THREE.Color(C.style), transparent: true, opacity: 0.9, linewidth: 2 }));
+    scene.add(trainLine);
+    scene.add(genLine);
+
+    // 점 — 현재 epoch 위치를 표시
+    const dotGeo = new THREE.BufferGeometry();
+    dotGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array([0, 0, 0, 0, 0, 0]), 3));
+    const dotMat = new THREE.PointsMaterial({ size: 14, sizeAttenuation: false, vertexColors: false, color: 0x26221C, transparent: true, opacity: 0.95 });
+    const dots = new THREE.Points(dotGeo, dotMat);
+    scene.add(dots);
+
+    // 일반화 격차 영역 (gap) — 두 곡선 사이의 채움
+    const gapGeo = new THREE.BufferGeometry();
+    const gapPos = new Float32Array(N * 2 * 3);
+    for (let i = 0; i < N; i++) {
+      gapPos[i*6] = trainPts[i*3]; gapPos[i*6+1] = trainPts[i*3+1]; gapPos[i*6+2] = -0.02;
+      gapPos[i*6+3] = genPts[i*3]; gapPos[i*6+4] = genPts[i*3+1]; gapPos[i*6+5] = -0.02;
+    }
+    gapGeo.setAttribute('position', new THREE.BufferAttribute(gapPos, 3));
+    const gapIdx = [];
+    for (let i = 0; i < N - 1; i++) {
+      gapIdx.push(i*2, i*2+1, (i+1)*2);
+      gapIdx.push(i*2+1, (i+1)*2+1, (i+1)*2);
+    }
+    gapGeo.setIndex(gapIdx);
+    const gapMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(C.style), transparent: true, opacity: 0.07, side: THREE.DoubleSide });
+    const gap = new THREE.Mesh(gapGeo, gapMat);
+    scene.add(gap);
+
+    // 축 가이드
+    const axisMat = new THREE.LineBasicMaterial({ color: 0x888888, transparent: true, opacity: 0.25 });
+    const axGeo = new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(new Float32Array([
+      -W/2, -H/2, 0,  W/2, -H/2, 0,
+      -W/2, -H/2, 0, -W/2,  H/2, 0,
+    ]), 3));
+    const ax = new THREE.LineSegments(axGeo, axisMat);
+    scene.add(ax);
+
+    let drag = false, dragX = 0, baseT = 0.5, t = 0.5;
+    canvas.addEventListener('pointerdown', (e) => { drag = true; dragX = e.clientX; baseT = t; });
+    window.addEventListener('pointermove', (e) => {
+      if (!drag) return;
+      const rel = (e.clientX - dragX) / canvas.clientWidth;
+      t = Math.max(0, Math.min(1, baseT + rel));
+    });
+    window.addEventListener('pointerup', () => { drag = false; });
+
+    function resize() {
+      const w = wrap.clientWidth, h = 380;
+      renderer.setSize(w, h, false);
+      cam.aspect = w/h; cam.updateProjectionMatrix();
+    }
+    window.addEventListener('resize', resize); resize();
+
+    let t0 = performance.now();
+    function loop() {
+      const now = performance.now();
+      const tt = (now - t0) / 1000;
+      if (!drag) t = 0.5 + 0.42 * Math.sin(tt * 0.45);
+      const idx = Math.round(t * (N - 1));
+      // dots 위치 갱신
+      const dp = dots.geometry.attributes.position.array;
+      dp[0] = trainPts[idx*3]; dp[1] = trainPts[idx*3+1]; dp[2] = 0.01;
+      dp[3] = genPts[idx*3]; dp[4] = genPts[idx*3+1]; dp[5] = 0.01;
+      dots.geometry.attributes.position.needsUpdate = true;
+      renderer.render(scene, cam);
+      requestAnimationFrame(loop);
+    }
+    loop();
+  });
+</script>
+</body>
+</html>

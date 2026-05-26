@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chapter 11 · 실용적 방법론</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .masthead { position: relative; max-width: var(--wide); margin: 0 auto; padding: 1.5rem 1.4rem 0; }
+  .home-link { display: inline-flex; align-items: center; gap: .35rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .12em; color: var(--ink-faint); text-decoration: none; padding: .35rem .6rem; margin-bottom: .9rem; border-radius: 6px; border: 1px solid var(--line-soft); transition: all .15s var(--ease); }
+  .home-link:hover { color: var(--ink); border-color: var(--line); background: var(--paper-2); }
+  .hero-wrap { position: relative; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: linear-gradient(180deg,#fff,var(--paper-2)); box-shadow: var(--shadow-plate); }
+  #hero { display: block; width: 100%; }
+  .hero-cap { position: absolute; left: 1.2rem; bottom: 1rem; font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; color: var(--ink-faint); pointer-events: none; }
+  .hero-cap b { color: var(--structure); } .hero-cap em { color: var(--style); font-style: normal; }
+
+  .title-block { max-width: var(--wide); margin: 2.4rem auto 0; padding-inline: 1.4rem; }
+  .title-block .kicker { display: block; margin-bottom: 1rem; }
+  .title-block h1 { font-size: clamp(2.6rem, 7vw, 5rem); margin: 0; }
+  .title-block h1 em { color: var(--style); font-style: normal; }
+  .paper-meta { display: flex; flex-wrap: wrap; gap: .5rem 1.6rem; margin-top: 1.4rem; font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); letter-spacing: .02em; }
+  .paper-meta span b { color: var(--ink); font-weight: 500; }
+
+  .plates { max-width: var(--wide); margin: 1rem auto; padding: 2rem 1.4rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); gap: 1rem; }
+  .plate { position: relative; display: flex; flex-direction: column; text-decoration: none; color: inherit; background: #fff; border: 1px solid var(--line); border-radius: 13px; padding: 1.3rem 1.3rem 1.4rem; transition: transform .2s var(--ease), border-color .2s, box-shadow .2s; overflow: hidden; }
+  .plate:hover { transform: translateY(-4px); border-color: var(--structure-lo); box-shadow: var(--shadow-plate); }
+  .plate .pno { font-family: var(--mono); font-size: .74rem; letter-spacing: .14em; color: var(--ink-faint); }
+  .plate h3 { font-family: var(--serif); font-size: 1.32rem; margin: .5rem 0 .5rem; line-height: 1.2; }
+  .plate p { font-size: .9rem; color: var(--ink-soft); line-height: 1.5; margin: 0; }
+  .plate .spectrum { display: flex; height: 4px; border-radius: 2px; overflow: hidden; margin-bottom: 1rem; }
+  .plate .spectrum i { display: block; height: 100%; }
+  .plate .go { margin-top: 1rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; color: var(--structure); opacity: 0; transform: translateX(-4px); transition: .2s var(--ease); }
+  .plate:hover .go { opacity: 1; transform: translateX(0); }
+
+  .section-intro { max-width: var(--measure); margin: 1rem auto 0; padding-inline: 1.4rem; }
+  .section-intro h2 { margin-top: 1rem; }
+  .twopole { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; max-width: var(--measure); margin: 1.6rem auto; padding-inline: 1.4rem; }
+  .pole { padding: 1.1rem 1.2rem; border-radius: 11px; }
+  .pole.s1 { background: var(--structure-bg); } .pole.s2 { background: var(--style-bg); }
+  .pole h4 { margin: 0 0 .4rem; font-family: var(--serif); font-size: 1.1rem; }
+  .pole.s1 h4 { color: var(--structure); } .pole.s2 h4 { color: var(--style); }
+  .pole p { margin: 0; font-size: .9rem; color: var(--ink-soft); line-height: 1.5; }
+  @media (max-width: 560px){ .twopole{ grid-template-columns: 1fr; } }
+
+  .path { max-width: var(--wide); margin: 2rem auto; padding: 1.6rem 1.4rem; }
+  .path-flow { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; font-family: var(--mono); font-size: .8rem; }
+  .path-flow a { display: inline-flex; align-items: center; gap: .4rem; text-decoration: none; color: var(--ink-soft); padding: .4rem .7rem; border: 1px solid var(--line); border-radius: 20px; transition: .15s; }
+  .path-flow a:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .path-flow a b { color: var(--style); } .path-flow a:hover b { color: var(--style-lo); }
+  .path-flow .arr { color: var(--ink-faint); }
+
+  footer.colophon { max-width: var(--measure); margin: 3rem auto 4rem; padding: 2rem 1.4rem 0; border-top: 1px solid var(--line); font-size: .85rem; color: var(--ink-soft); }
+  footer.colophon a { color: var(--structure); }
+  footer.colophon .src { font-family: var(--mono); font-size: .76rem; line-height: 1.8; }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <a class="home-link" href="../index.html">← 기말고사 인터랙티브 복습</a>
+  <div class="hero-wrap">
+    <canvas id="hero"></canvas>
+    <div class="hero-cap"><b>알고리즘 — 무엇을</b> ↔ <em>방법론 — 어떻게</em> · 마우스를 올려 절차의 호흡을 본다</div>
+  </div>
+</header>
+
+<div class="title-block">
+  <span class="kicker">Deep Learning Book · Chapter 11 · Practical Methodology</span>
+  <h1>알고리즘보다,<br><em>절차</em>가 이긴다</h1>
+  <div class="paper-meta">
+    <span><b>딥러닝 개론</b> 기말고사 인터랙티브 복습</span>
+    <span>저자 <b>Goodfellow, Bengio, Courville (2016)</b></span>
+    <span>읽는 시간 <b>약 40분</b></span>
+    <span>D-day <b>2026-06-04</b></span>
+  </div>
+</div>
+
+<section class="section-intro">
+  <h2>한 문장으로</h2>
+  <p>11장은 <strong>“성공적인 딥러닝 응용은 새 알고리즘을 발명해서가 아니라, 평범한 알고리즘을 규율 있는 절차로 적용해서 만들어진다”</strong>는 한 문장으로 압축된다. Goodfellow는 같은 책에서 이 장이 가장 실용적이라고 말한다. 모델을 처음 만들 때, 모델이 안 되는 이유를 진단할 때, 무엇을 다음에 시도할지 결정할 때 — 이 장의 4단계 절차가 길잡이다.</p>
+  <p>처음 읽을 때 가장 중요한 점은, <em>"잘 적용된 평범한 알고리즘이 잘못 적용된 특이한 알고리즘을 보통 이긴다"</em>는 책의 명제다. Street View 주소 인식 시스템 같은 상용 프로젝트가 거대한 새 모델이 아니라 <span class="t-structure">목표 설정 → 베이스라인 → 진단 → 한 번에 한 가지 수정</span>이라는 반복 루프로 만들어졌다는 점을 기억하자.</p>
+</section>
+
+<div class="twopole">
+  <div class="pole s1"><h4>알고리즘 (무엇을)</h4><p>SGD, Adam, ReLU, BatchNorm 같은 부품. 이름은 화려하지만 부품 자체는 카탈로그에 다 적혀 있다. 이 사이트에서 <b>차분한 파랑</b>으로 표시된다.</p></div>
+  <div class="pole s2"><h4>방법론 (어떻게)</h4><p>지표를 정하고, 베이스라인을 세우고, 학습 곡선을 읽고, 디버깅 가설을 한 번에 하나만 검증하는 절차. 이 사이트에서 <b>웜한 주홍</b>으로 표시된다.</p></div>
+</div>
+
+<section class="plates" id="plates"></section>
+
+<section class="path">
+  <span class="kicker">권장 읽기 순서</span>
+  <div class="path-flow" id="pathflow"></div>
+</section>
+
+<footer class="colophon">
+  <p>이 해설은 Goodfellow, Bengio, Courville(2016) 11장 "Practical Methodology"를 바탕으로 정리한 시험 대비 자료다. Street View 주소 인식 사례를 관통선으로 깔고, 책의 네 단계 절차(<b>지표 결정 → 베이스라인 → 더 많은 데이터? → 하이퍼파라미터 · 디버깅</b>)를 위젯과 의사결정 흐름으로 직접 만질 수 있게 한다. 이 장이 시험에 직접 나오기보다는, 다른 장(Ch.7 정칙화, Ch.8 최적화, Ch.10 RNN)을 묶어 주는 운영 매뉴얼이라는 점을 의식하면서 읽는다.</p>
+  <p class="src">
+    원문 · <a href="https://www.deeplearningbook.org/contents/guidelines.html">deeplearningbook.org/guidelines</a><br>
+    과제 요약 · <a href="../../../03-과제-제출/IntroToDL_Week8_22000168.md">IntroToDL_Week8_22000168.md (Ch.11-12)</a><br>
+    선행학습 정리 · <a href="../../../05-선행학습/">05-선행학습/</a>
+  </p>
+</footer>
+
+<script>
+  const SUBCHAPTERS = [
+    { no:'01', t:'실용 방법론의 필요성 — 왜 절차가 알고리즘보다 중요한가', d:'딥러닝 모델은 부품이 너무 많아서 한 번에 한 곳만 고쳐야 한다. Street View 주소 인식 사례로 “방법론 vs 새 알고리즘” 구도를 본다.', sp:['structure'] },
+    { no:'02', t:'성능 지표 선택 — 무엇을 최적화할지 정하는 게 절반', d:'정확도가 거짓말하는 순간들. 정밀도·재현율·F-score·커버리지의 수식 형태와 그것을 왜 그렇게 적었는지. 컨퓨전 매트릭스 슬라이더로 직접 만져 본다.', sp:['style','structure'] },
+    { no:'03', t:'베이스라인부터 — 최소 동작하는 모델 먼저', d:'입력 종류별 기본 모델 카탈로그(이미지=CNN, 시퀀스=GRU/LSTM, 표=MLP). SGD+모멘텀의 위치, 전이학습이 종종 최강인 이유.', sp:['structure','synth'] },
+    { no:'04', t:'데이터를 더 모을 것인가, 모델을 키울 것인가', d:'학습 곡선 두 줄(train · validation)이 어디서 멀어지는가만 보면 결정된다. 과소적합 vs 과대적합의 시각적 진단 + 로그스케일 외삽.', sp:['structure-lo','style']},
+    { no:'05', t:'하이퍼파라미터 탐색 전략 — grid · random · bayesian', d:'학습률이 왜 단연 1순위 하이퍼파라미터인가. 같은 예산 25회 시도에서 grid·random·bayesian의 결과 차이를 시뮬레이션으로 본다.', sp:['style','synth']},
+    { no:'06', t:'디버깅과 시험 대비 — 가설 → 검증 → 한 번에 한 가지', d:'활성·기울기 히스토그램, tiny dataset 적합, 자동미분 vs 유한차분 비교. 디버깅 결정 트리. Q1·Q2 모범답안과 시험 직전 체크리스트.', sp:['ink'] },
+  ];
+  const colMap = { structure:'var(--structure)', 'structure-lo':'var(--structure-lo)', style:'var(--style)', 'style-lo':'var(--style-lo)', synth:'var(--synth)', ink:'var(--ink-soft)' };
+  const platesEl = document.getElementById('plates');
+  const flowEl = document.getElementById('pathflow');
+  SUBCHAPTERS.forEach((c, idx) => {
+    const sp = c.sp.length === 1 ? [c.sp[0], c.sp[0]] : c.sp;
+    const a = document.createElement('a');
+    a.className = 'plate'; a.href = c.no + '.html';
+    a.innerHTML = `
+      <div class="spectrum">${sp.map(s=>`<i style="flex:1;background:${colMap[s]}"></i>`).join('')}</div>
+      <span class="pno">SUB ${c.no}</span>
+      <h3>${c.t}</h3>
+      <p>${c.d}</p>
+      <span class="go">읽기 →</span>`;
+    platesEl.appendChild(a);
+
+    const f = document.createElement('a'); f.href = c.no + '.html';
+    const shortTitle = c.t.split('—')[0].trim().slice(0, 14);
+    f.innerHTML = `<b>${c.no}</b> ${shortTitle}…`;
+    flowEl.appendChild(f);
+    if (idx < SUBCHAPTERS.length - 1) { const s = document.createElement('span'); s.className='arr'; s.textContent='→'; flowEl.appendChild(s); }
+  });
+
+  // 표지 hero — 입자 모핑 (알고리즘 격자 ↔ 방법론 절차 순환)
+  window.addEventListener('load', () => {
+    if (!window.THREE || !document.getElementById('hero')) return;
+    const canvas = document.getElementById('hero');
+    const wrap = canvas.parentElement;
+    const css = getComputedStyle(document.documentElement);
+    const C = {
+      structure: css.getPropertyValue('--structure').trim() || '#2D5B7A',
+      style: css.getPropertyValue('--style').trim() || '#C0492E',
+    };
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    const scene = new THREE.Scene();
+    const cam = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+    cam.position.set(0, 0, 3.0);
+
+    const COLS = 110, ROWS = 64, N = COLS * ROWS;
+    const content = new Float32Array(N * 3);  // 알고리즘 = 정돈된 부품 격자
+    const style = new Float32Array(N * 3);    // 방법론 = 순환 절차 (네 단계 원환)
+    const rnd = new Float32Array(N);
+    const W = 3.4, H = 2.0;
+    let p = 0;
+    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++, p++) {
+      const cx = (c / (COLS - 1) - 0.5) * W;
+      const cy = (r / (ROWS - 1) - 0.5) * H;
+      content[p*3]=cx; content[p*3+1]=cy; content[p*3+2]=Math.sin(cx*1.6)*Math.cos(cy*1.6)*0.05;
+      // 방법론: 네 단계 원환 (지표→베이스라인→데이터·튜닝→디버깅 → 다시 지표)
+      const ang = Math.atan2(cy, cx);
+      const rad = Math.sqrt(cx*cx + cy*cy);
+      const stage = Math.floor(((ang + Math.PI) / (Math.PI*2)) * 4); // 0-3
+      const targetRad = 0.55 + (rad % 0.7) * 0.3;
+      const sx = Math.cos(ang) * targetRad + Math.cos(stage * Math.PI/2) * 0.45;
+      const sy = Math.sin(ang) * targetRad + Math.sin(stage * Math.PI/2) * 0.45;
+      const sz = 0.3 * Math.sin(ang*2 + rad*3);
+      style[p*3]=sx; style[p*3+1]=sy; style[p*3+2]=sz;
+      rnd[p] = Math.random();
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('aContent', new THREE.BufferAttribute(content, 3));
+    geo.setAttribute('aStyle', new THREE.BufferAttribute(style, 3));
+    geo.setAttribute('aRand', new THREE.BufferAttribute(rnd, 1));
+    geo.setAttribute('position', new THREE.BufferAttribute(content.slice(), 3));
+    const uniforms = {
+      uMix: { value: 0 }, uTime: { value: 0 }, uMouse: { value: new THREE.Vector2(99,99) },
+      uColA: { value: new THREE.Color(C.structure) }, uColB: { value: new THREE.Color(C.style) },
+      uSize: { value: 8.5 * Math.min(devicePixelRatio, 2) },
+    };
+    const mat = new THREE.ShaderMaterial({
+      uniforms, transparent: true, depthWrite: false,
+      vertexShader: `
+        attribute vec3 aContent; attribute vec3 aStyle; attribute float aRand;
+        uniform float uMix, uTime, uSize; uniform vec2 uMouse;
+        varying float vM; varying float vA;
+        void main(){
+          float m = clamp(uMix + (aRand-0.5)*0.35, 0.0, 1.0);
+          m = m*m*(3.0-2.0*m); vM = m;
+          vec3 pos = mix(aContent, aStyle, m);
+          float sw = m * 0.10;
+          float a = uTime*0.30 + aRand*6.28;
+          pos.xy += vec2(cos(a), sin(a)) * sw * 0.08;
+          vec2 d = pos.xy - uMouse;
+          float dist = length(d);
+          float push = smoothstep(0.55, 0.0, dist) * 0.40;
+          pos.xy += normalize(d + 0.0001) * push;
+          vA = 0.55 + 0.45*(1.0-m) + push*0.6;
+          vec4 mv = modelViewMatrix * vec4(pos,1.0);
+          gl_PointSize = uSize * (1.0 / -mv.z) * (0.8 + m*0.5);
+          gl_Position = projectionMatrix * mv;
+        }`,
+      fragmentShader: `
+        precision mediump float;
+        uniform vec3 uColA, uColB; varying float vM; varying float vA;
+        void main(){
+          vec2 uv = gl_PointCoord - 0.5;
+          float d = length(uv);
+          float alpha = smoothstep(0.5, 0.12, d) * vA;
+          vec3 col = mix(uColA, uColB, vM);
+          gl_FragColor = vec4(col, alpha);
+        }`,
+    });
+    const points = new THREE.Points(geo, mat);
+    scene.add(points);
+
+    const ray = new THREE.Raycaster();
+    const plane = new THREE.Plane(new THREE.Vector3(0,0,1), 0);
+    const mNDC = new THREE.Vector2(99,99);
+    let targetMouse = new THREE.Vector3(99,99,0);
+    canvas.addEventListener('pointermove', (e) => {
+      const r = canvas.getBoundingClientRect();
+      mNDC.x = ((e.clientX-r.left)/r.width)*2-1;
+      mNDC.y = -((e.clientY-r.top)/r.height)*2+1;
+      ray.setFromCamera(mNDC, cam);
+      ray.ray.intersectPlane(plane, targetMouse);
+    });
+    canvas.addEventListener('pointerleave', () => { targetMouse.set(99,99,0); });
+
+    function resize() {
+      const w = wrap.clientWidth, h = Math.min(window.innerWidth*0.46, 460);
+      renderer.setSize(w, h, false);
+      cam.aspect = w/h; cam.updateProjectionMatrix();
+    }
+    window.addEventListener('resize', resize); resize();
+
+    let t0 = performance.now();
+    function loop() {
+      const t = (performance.now() - t0) / 1000;
+      uniforms.uTime.value = t;
+      const target = (targetMouse.x < 90) ? 1.0 : (0.5 + 0.5 * Math.sin(t * 0.35));
+      uniforms.uMix.value += (target - uniforms.uMix.value) * 0.04;
+      uniforms.uMouse.value.set(targetMouse.x, targetMouse.y);
+      renderer.render(scene, cam);
+      requestAnimationFrame(loop);
+    }
+    loop();
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>04 · 희소 코딩 — 사전(dictionary)이라는 표상</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .sp-stage { display: grid; grid-template-rows: auto auto auto; padding: 1.4rem 1.1rem .6rem; gap: 1rem; }
+  .sp-input { display: grid; grid-template-columns: 1fr; gap: .4rem; }
+  .sp-input canvas { display: block; width: 100%; height: 70px; border-radius: 7px; border: 1px solid var(--line); background: #fff; cursor: crosshair; }
+  .sp-input span { font-family: var(--mono); font-size: .72rem; color: var(--ink-faint); }
+  .sp-dict { display: grid; grid-template-columns: repeat(8, 1fr); gap: .35rem; }
+  .sp-atom { display: flex; flex-direction: column; align-items: center; gap: .25rem; }
+  .sp-atom canvas { width: 100%; height: 40px; border-radius: 5px; border: 1px solid var(--line); background: #fff; }
+  .sp-atom .coef { font-family: var(--mono); font-size: .64rem; color: var(--ink-faint); }
+  .sp-atom.active canvas { box-shadow: 0 0 0 2px var(--style); }
+  .sp-atom.active .coef { color: var(--style); font-weight: 600; }
+  .sp-recon { display: grid; grid-template-columns: 1fr; gap: .4rem; }
+  .sp-recon canvas { display: block; width: 100%; height: 70px; border-radius: 7px; border: 1px solid var(--line); background: #fff; }
+  .sp-recon span { font-family: var(--mono); font-size: .72rem; color: var(--ink-faint); }
+  .sp-controls { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.2rem; padding: 1rem 1.1rem; align-items: center; }
+  @media (max-width: 700px) { .sp-controls { grid-template-columns: 1fr; } .sp-dict { grid-template-columns: repeat(4, 1fr); } }
+  .sp-meta b { color: var(--style); font-family: var(--mono); font-weight: 600; }
+  .sp-meta .lbl { display: block; font-family: var(--mono); font-size: .66rem; color: var(--ink-faint); letter-spacing: .12em; text-transform: uppercase; margin-bottom: .2rem; }
+  .sp-input-presets { display: flex; gap: .4rem; flex-wrap: wrap; }
+  .sp-input-presets button { padding: .4rem .8rem; font-family: var(--mono); font-size: .72rem; border-radius: 6px; border: 1px solid var(--line); background: #fff; cursor: pointer; color: var(--ink-soft); }
+  .sp-input-presets button:hover { background: var(--paper-2); }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar">
+  <a class="home" href="index.html">← Chapter 13 · 선형 요소 모델</a>
+  <span class="ch-mini">SUB-CHAPTER 04 / 06</span>
+</div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol>
+    <li><a href="01.html">잠재 변수 모델</a></li>
+    <li><a href="02.html">요소 분석과 확률적 PCA</a></li>
+    <li><a href="03.html">ICA — 비가우시안 독립</a></li>
+    <li><a href="04.html" class="current">희소 코딩</a></li>
+    <li><a href="05.html">평평한 매니폴드</a></li>
+    <li><a href="06.html">시험 대비 요약</a></li>
+  </ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-Chapter 04 · 사전과 첨예한 사전</span>
+      <h1>거의 모든 성분은 0,<br><span class="t-style">가끔만</span> 살아난다</h1>
+      <p class="lede">잠재의 분포를 한 번 더 극단으로 가져간다. 0 근처에 뾰족하게 솟은 사전을 깔면, 모델은 입력을 "사전(dictionary)에서 골라낸 소수의 원자(atom)들의 가중합"으로 표현하게 된다.</p>
+    </header>
+
+    <div class="prose">
+      <p>이제 잠재 사전의 모양을 한 번 더 극단으로 끌고 간다. 가우시안 같이 매끈하게 퍼진 분포도 아니고, ICA처럼 단지 "비가우시안 독립"이라는 약한 가정도 아니라, <strong>0에서 뾰족하게 솟고 양쪽 꼬리는 두꺼운</strong> 분포를 사전으로 깐다.</p>
+
+      <div class="math-block">$$ p(h_k) \propto \exp\!\left(-\lambda |h_k|\right) \quad (\text{Laplace}) $$</div>
+      <p class="math-note">Laplace 사전 — h=0에서 첨예(절댓값의 음수 지수), 양쪽 꼬리는 가우시안보다 두꺼움.</p>
+
+      <p>이 사전의 의미는 강력하다. 사전의 확률 질량 대부분이 0 근처에 몰려 있으므로, 모델은 잠재 벡터 $h$가 <strong>대부분의 성분에서 0</strong>이기를 "기대한다". 잠재가 가끔 큰 값을 가질 수는 있지만, 그것은 비싸다 — 사전 확률이 떨어진다.</p>
+
+      <div class="analogy">
+        <b>표상이 어떻게 바뀌는가?</b> 한 장면을 사진으로 받았을 때, 가우시안 사전은 "이 사진은 모든 표상 성분이 조금씩 활성화된 결과"라고 본다. 모든 변수가 적당히 켜진 흐릿한 표상이다. 희소 사전은 정반대로 "이 사진은 표상 성분 중 거의 다는 꺼져 있고, 단지 몇 개 — 가령 '둥근 가장자리' 검출기, '주황색 영역' 검출기, '왼쪽 위에 그림자' 검출기 — 가 강하게 켜진 결과"라고 본다. 표상이 <b>해석 가능</b>해진다. 어떤 원자가 켜졌는지 보면 입력의 의미가 드러난다.
+      </div>
+
+      <h2>희소 코딩의 최적화 — 추론이 비싸진다</h2>
+
+      <p>희소 코딩의 학습 목표는 두 가지를 동시에 만족시키는 것이다.</p>
+
+      <ul>
+        <li><strong>복원 오차.</strong> $x$와 $Wh$의 차이가 작아야 한다. 잠재로 입력을 잘 복원해야 한다.</li>
+        <li><strong>희소성.</strong> $h$의 대부분 성분이 0에 가까워야 한다.</li>
+      </ul>
+
+      <p>이 둘을 한 식에 묶으면, 한 관측 $x$에 대한 추론은 다음 최적화가 된다.</p>
+
+      <div class="math-block">$$ h^*(x) = \arg\min_{h} \; \underbrace{\frac{1}{2} \| x - W h \|_2^2}_{\text{복원 오차}} \; + \; \lambda \underbrace{\| h \|_1}_{\text{희소성 페널티}} $$</div>
+      <p class="math-note">앞 항은 -log p(x|h)에서 온 제곱 오차, 뒤 항은 -log p(h)에서 온 L1 페널티(라플라스 사전). λ는 둘의 균형을 조절한다.</p>
+
+      <p>왜 이 식이 그 형태인가? 베이즈 규칙에서 사후 $p(h \mid x) \propto p(x \mid h) p(h)$의 음의 로그를 취하면, 가우시안 우도가 제곱 오차로, 라플라스 사전이 L1 노름으로 정확히 떨어진다. 즉 이 두 항은 "임의로 합친" 것이 아니라, 사전 가정이 자연스럽게 강제한 형태다.</p>
+
+      <p>그러나 이 식은 PCA처럼 한 줄로 풀리지 않는다. L1은 미분 불가능한 점($h_k = 0$)이 있어 해석적 해가 없고, 매 관측마다 <strong>반복적 최적화</strong> — ISTA, FISTA, LARS, 좌표 하강 등 — 을 돌려야 한다. <strong>추론이 매우 비싸진다.</strong> FA·PPCA에서는 단순한 행렬 곱셈이었던 추론이, 희소 코딩에서는 반복 알고리즘이 된다.</p>
+
+      <div class="analogy">
+        <b>왜 이 비용을 지불해야 하는가?</b> 그 비용 대신 얻는 것이 결정적이기 때문이다. 자연 영상 패치에 희소 코딩을 학습시키면 $W$의 열들이 <b>국소적이고 방향성이 있는 가장자리 검출기</b>로 자동 정렬된다 — 그 모양이 영장류 일차 시각피질(V1)의 단순세포(simple cell)와 놀랍도록 닮아 있다. PCA로는 결코 이런 사전이 나오지 않는다. PCA의 주성분은 전 영역에 걸친 매끈한 패턴들이지, 국소적인 가장자리가 아니다.
+      </div>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 04</span><span>희소 코딩 — 8개 원자 사전으로 입력 재구성</span></div>
+        <div class="sp-stage">
+          <div class="sp-input">
+            <span>입력 신호 x (드래그하여 그리거나 프리셋 선택)</span>
+            <canvas id="sp-x"></canvas>
+            <div class="sp-input-presets">
+              <button data-p="0">바람</button>
+              <button data-p="1">충격</button>
+              <button data-p="2">상승+하락</button>
+              <button data-p="3">3개 봉우리</button>
+              <button data-p="4">랜덤 노이즈</button>
+            </div>
+          </div>
+          <div>
+            <span style="font-family: var(--mono); font-size: .72rem; color: var(--ink-faint);">사전 W의 원자들 — 각 원자 위의 숫자가 해당 계수 h_k</span>
+            <div class="sp-dict" id="sp-dict"></div>
+          </div>
+          <div class="sp-recon">
+            <span>재구성 Wh (주황) vs 입력 x (회색)</span>
+            <canvas id="sp-r"></canvas>
+          </div>
+        </div>
+        <div class="sp-controls">
+          <div class="slider">
+            <label>희소성 페널티 λ <b id="sp-lam">0.20</b></label>
+            <input id="sp-l" type="range" min="0" max="100" value="20" step="1" class="s-style">
+          </div>
+          <div class="sp-meta">
+            <span class="lbl">활성 원자 수 (h_k ≠ 0)</span><b id="sp-act">0 / 8</b>
+            <br><span class="lbl">복원 오차 ‖x - Wh‖</span><b id="sp-err">—</b>
+          </div>
+          <div class="sp-meta">
+            <span class="lbl">기록</span>
+            <span style="color: var(--ink-soft); font-size: .8rem; line-height: 1.45;">λ를 키울수록 활성 원자가 줄어들지만 복원 오차가 커진다. 둘 사이의 협상이 희소 코딩의 본질.</span>
+          </div>
+        </div>
+      </div>
+      <p class="widget-cap">사전 $W$는 8개의 1D "원자(atom)"로 구성된다 — 가우시안 봉우리, 사인 파, 가장자리 같은 단순 패턴. 입력 $x$가 들어오면, 추론은 $\|x - Wh\|^2 + \lambda\|h\|_1$를 최소화하는 $h$를 찾아 적은 수의 원자만 활성화시켜 $x$를 재구성하려 한다. 슬라이더로 λ를 키우면 더 적은 원자만 살아나고, λ가 작으면 거의 모든 원자가 조금씩 켜진다. 입력은 그래프 위에 직접 마우스로 드래그하거나 프리셋 버튼으로 바꿀 수 있다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>왜 사전(dictionary)이라고 부르는가</h2>
+
+      <p>$W$의 각 열 $W_{:,k}$를 "원자(atom)"라고 부른다. 학습된 $W$ 전체가 곧 그 도메인의 <strong>사전(dictionary)</strong>이다. 어떤 새 관측이 들어오든, 모델은 그것을 "사전에 있는 원자들 중 소수를 골라 어떤 가중치로 더한 것"으로 표현하려 한다.</p>
+
+      <p>이 비유가 단순한 말장난이 아닌 이유는, <strong>학습된 원자들이 실제로 의미 있는 빌딩 블록</strong>으로 자리잡기 때문이다. 자연 영상에서는 가장자리, 곡선, 점 같은 단순 패턴. 음성에서는 음소 조각, 짧은 음 단위. 텍스트 임베딩에서는 의미적 축 (긍/부정, 형식성 등).</p>
+
+      <h2>희소 코딩 vs 다른 가족 — 한 표로 비교</h2>
+
+      <table class="symbols">
+        <tr><td>가족</td><td>잠재 사전 $p(h)$</td><td>추론 비용</td><td>학습된 사전의 모양</td></tr>
+        <tr><td>FA / PPCA</td><td>가우시안</td><td>한 번의 행렬 곱셈 (저렴)</td><td>전역 패턴 — 매끈한 주성분</td></tr>
+        <tr><td>ICA</td><td>비가우시안 독립</td><td>고정점 반복 (중간)</td><td>독립 원천 — 자연 신호 분리</td></tr>
+        <tr><td>희소 코딩</td><td>Laplace 등 첨예 사전</td><td>매번 최적화 (비쌈)</td><td>국소적이고 해석 가능한 원자 — 가장자리 검출기 등</td></tr>
+      </table>
+
+      <h2>왜 신경과학이 이 모델을 좋아하는가</h2>
+
+      <p>Olshausen과 Field가 1996년에 자연 영상 패치에 희소 코딩을 학습시키자, 그 학습된 원자들이 영장류 V1 단순세포의 수용장(receptive field)과 놀랍도록 닮아 있다는 사실을 발견했다. 국소적이고, 방향성이 있고, 다양한 스케일에 걸쳐 있는 가장자리 검출기들. 이것이 신경과학과 머신러닝 양쪽에서 희소 코딩이 오래 회자되는 이유다 — 단순한 통계적 가정(희소성 + 선형 생성)만으로 뇌의 표상 구조 일부를 재현해낸 셈이기 때문이다.</p>
+
+      <p>물론 "닮았다"가 "뇌가 실제로 희소 코딩을 한다"를 의미하지는 않는다. 자연 영상이 가진 통계적 속성 — 가장자리가 압도적으로 많고 그 외에는 평평한 영역 — 이 어떤 합리적인 표상 학습 알고리즘이든 비슷한 해를 내놓게 만들 수도 있다. 그러나 이 정렬은 우연이라고 하기에는 너무 정확하고, 그래서 표상 학습이 단순한 데이터 압축이 아니라 자연이 가진 구조와 만나는 지점이라는 강력한 단서로 남는다.</p>
+
+      <p>다음 장에서는 이 모든 가족 — FA, PPCA, ICA, 희소 코딩 — 을 한꺼번에 묶는 기하학적 시선으로 올라간다. 모두가 결국 데이터에 <strong>저차원 평면</strong>을 끼워 맞추는 모델이라는 사실, 그리고 그 평평함이 한계라는 사실을 본다.</p>
+    </div>
+
+    <nav class="ch-foot">
+      <a href="03.html"><div class="dir">← 이전</div><div class="ti">ICA — 비가우시안 독립</div></a>
+      <a href="05.html" class="next"><div class="dir">다음 →</div><div class="ti">평평한 매니폴드</div></a>
+    </nav>
+  </main>
+</div>
+
+<script>
+  window.addEventListener('load', () => {
+    const bar = document.querySelector('.scroll-progress');
+    const onScroll = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    document.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }],
+        throwOnError: false,
+      });
+    }
+
+    // ============================ 희소 코딩 위젯 ============================
+    const D = 64; // 신호 길이
+    const K = 8;  // 원자 수
+
+    // 사전 W: 8개 원자, 각 D차원 — 가우시안 봉우리 (다른 위치/너비), 사인 패턴, 가장자리
+    const W = [];
+    function gauss(c, sigma) {
+      const v = new Float32Array(D);
+      let nrm = 0;
+      for (let i = 0; i < D; i++) {
+        v[i] = Math.exp(-((i - c)*(i - c)) / (2 * sigma * sigma));
+        nrm += v[i]*v[i];
+      }
+      nrm = Math.sqrt(nrm);
+      for (let i = 0; i < D; i++) v[i] /= nrm;
+      return v;
+    }
+    function sinp(k, ph) {
+      const v = new Float32Array(D);
+      let nrm = 0;
+      for (let i = 0; i < D; i++) { v[i] = Math.sin(2 * Math.PI * k * i / D + ph); nrm += v[i]*v[i]; }
+      nrm = Math.sqrt(nrm);
+      for (let i = 0; i < D; i++) v[i] /= nrm;
+      return v;
+    }
+    function step(c) {
+      const v = new Float32Array(D);
+      let nrm = 0;
+      for (let i = 0; i < D; i++) {
+        v[i] = i < c ? -1 : 1;
+        nrm += v[i]*v[i];
+      }
+      nrm = Math.sqrt(nrm);
+      for (let i = 0; i < D; i++) v[i] /= nrm;
+      return v;
+    }
+    W.push(gauss(12, 4));    // 좁은 봉우리 좌
+    W.push(gauss(32, 5));    // 중간 봉우리
+    W.push(gauss(50, 6));    // 봉우리 우
+    W.push(gauss(32, 14));   // 넓은 가우시안 (DC 비슷)
+    W.push(sinp(1, 0));      // 저주파 사인
+    W.push(sinp(3, 0));      // 중주파 사인
+    W.push(sinp(6, 0));      // 고주파 사인
+    W.push(step(32));        // 가장자리
+
+    // 입력 x
+    let x = new Float32Array(D);
+
+    // 프리셋
+    const presets = [
+      // 0 바람 — 매끈한 저주파
+      () => { for (let i = 0; i < D; i++) x[i] = 0.6 * Math.sin(2 * Math.PI * i / D) + 0.2 * Math.sin(6 * Math.PI * i / D); },
+      // 1 충격 — 가우시안 봉우리 두 개
+      () => { for (let i = 0; i < D; i++) x[i] = 0.9 * Math.exp(-((i-14)*(i-14))/30) + 0.6 * Math.exp(-((i-46)*(i-46))/20); },
+      // 2 상승+하락 — 가장자리
+      () => { for (let i = 0; i < D; i++) x[i] = i < 32 ? -0.5 + i*0.02 : 0.4 - (i-32)*0.012; },
+      // 3 3개 봉우리
+      () => { for (let i = 0; i < D; i++) x[i] = 0.7 * Math.exp(-((i-12)*(i-12))/20) + 0.5 * Math.exp(-((i-32)*(i-32))/15) + 0.6 * Math.exp(-((i-52)*(i-52))/18); },
+      // 4 노이즈
+      () => { for (let i = 0; i < D; i++) x[i] = (Math.random()*2-1) * 0.5; },
+    ];
+    presets[1]();
+
+    // ISTA (Iterative Soft-Thresholding) — 단순 구현
+    function inferH(lambda, iters = 200) {
+      let h = new Float32Array(K);
+      // 학습률 (L = max eigenvalue of W^T W; 단순 추정)
+      const L = 4.0;
+      const eta = 1 / L;
+      const r = new Float32Array(D);
+      for (let it = 0; it < iters; it++) {
+        // residual r = Wh - x
+        for (let i = 0; i < D; i++) {
+          let s = 0;
+          for (let k = 0; k < K; k++) s += W[k][i] * h[k];
+          r[i] = s - x[i];
+        }
+        // gradient g_k = W_k^T r
+        for (let k = 0; k < K; k++) {
+          let g = 0;
+          for (let i = 0; i < D; i++) g += W[k][i] * r[i];
+          let z = h[k] - eta * g;
+          // soft threshold
+          const thr = lambda * eta;
+          if (z > thr) h[k] = z - thr;
+          else if (z < -thr) h[k] = z + thr;
+          else h[k] = 0;
+        }
+      }
+      return h;
+    }
+
+    // 그리기
+    const cxIn = document.getElementById('sp-x'), ctxIn = cxIn.getContext('2d');
+    const cxR = document.getElementById('sp-r'), ctxR = cxR.getContext('2d');
+    function setupCanvas(cv) {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      cv.width = cv.clientWidth * dpr; cv.height = 70 * dpr;
+      cv.getContext('2d').setTransform(dpr,0,0,dpr,0,0);
+    }
+    setupCanvas(cxIn); setupCanvas(cxR);
+
+    // 사전 원자 캔버스들
+    const dictEl = document.getElementById('sp-dict');
+    const atomCanvases = [];
+    const atomEls = [];
+    for (let k = 0; k < K; k++) {
+      const w = document.createElement('div'); w.className = 'sp-atom';
+      const cv = document.createElement('canvas');
+      const lab = document.createElement('span'); lab.className = 'coef'; lab.textContent = 'h_'+(k+1)+' = 0';
+      w.appendChild(cv); w.appendChild(lab);
+      dictEl.appendChild(w);
+      atomCanvases.push(cv); atomEls.push({ w, lab });
+    }
+    requestAnimationFrame(() => {
+      atomCanvases.forEach(cv => {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        cv.width = cv.clientWidth * dpr; cv.height = 40 * dpr;
+        cv.getContext('2d').setTransform(dpr,0,0,dpr,0,0);
+      });
+      drawAll();
+    });
+
+    function plotSignal(ctx, w, h, sig, color, lw, dash) {
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = 'rgba(38,34,28,.06)';
+      ctx.beginPath(); ctx.moveTo(0, h/2); ctx.lineTo(w, h/2); ctx.stroke();
+      ctx.strokeStyle = color; ctx.lineWidth = lw; if (dash) ctx.setLineDash(dash);
+      ctx.beginPath();
+      for (let i = 0; i < sig.length; i++) {
+        const px = (i / (sig.length - 1)) * w;
+        const py = h/2 - sig[i] * (h * 0.35);
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+      if (dash) ctx.setLineDash([]);
+    }
+
+    function drawAtoms(h) {
+      let activeCount = 0;
+      atomCanvases.forEach((cv, k) => {
+        const ctx = cv.getContext('2d');
+        const w = cv.clientWidth, ht = 40;
+        const active = Math.abs(h[k]) > 1e-4;
+        if (active) activeCount++;
+        // 원자 그리기 — 활성이면 색 강조
+        ctx.clearRect(0, 0, w, ht);
+        ctx.fillStyle = active ? 'rgba(192, 73, 46, 0.05)' : '#fff';
+        ctx.fillRect(0, 0, w, ht);
+        ctx.strokeStyle = 'rgba(38,34,28,.05)';
+        ctx.beginPath(); ctx.moveTo(0, ht/2); ctx.lineTo(w, ht/2); ctx.stroke();
+        ctx.strokeStyle = active ? '#C0492E' : '#8E8576';
+        ctx.lineWidth = active ? 1.6 : 1;
+        ctx.beginPath();
+        for (let i = 0; i < D; i++) {
+          const px = (i / (D - 1)) * w;
+          const py = ht/2 - W[k][i] * ht * 1.5;
+          if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+        atomEls[k].lab.textContent = 'h_'+(k+1)+' = ' + h[k].toFixed(2);
+        atomEls[k].w.classList.toggle('active', active);
+      });
+      return activeCount;
+    }
+
+    function reconstruct(h) {
+      const r = new Float32Array(D);
+      for (let i = 0; i < D; i++) {
+        let s = 0;
+        for (let k = 0; k < K; k++) s += W[k][i] * h[k];
+        r[i] = s;
+      }
+      return r;
+    }
+
+    function l2dist(a, b) {
+      let s = 0;
+      for (let i = 0; i < D; i++) s += (a[i] - b[i]) * (a[i] - b[i]);
+      return Math.sqrt(s);
+    }
+
+    function drawAll() {
+      const lambda = +document.getElementById('sp-l').value / 100;
+      document.getElementById('sp-lam').textContent = lambda.toFixed(2);
+      const h = inferH(lambda);
+      const xhat = reconstruct(h);
+      const activeCount = drawAtoms(h);
+      document.getElementById('sp-act').textContent = activeCount + ' / ' + K;
+      document.getElementById('sp-err').textContent = l2dist(x, xhat).toFixed(3);
+
+      // 입력
+      plotSignal(ctxIn, cxIn.clientWidth, 70, x, '#5A5247', 1.8);
+      // 재구성
+      const ctx = ctxR; const w2 = cxR.clientWidth, h2 = 70;
+      ctx.clearRect(0, 0, w2, h2); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w2, h2);
+      ctx.strokeStyle = 'rgba(38,34,28,.06)';
+      ctx.beginPath(); ctx.moveTo(0, h2/2); ctx.lineTo(w2, h2/2); ctx.stroke();
+      // 원본을 옅게
+      ctx.strokeStyle = 'rgba(90,82,71,0.45)'; ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      for (let i = 0; i < D; i++) {
+        const px = (i / (D - 1)) * w2;
+        const py = h2/2 - x[i] * (h2 * 0.35);
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+      // 재구성을 강조
+      ctx.strokeStyle = '#C0492E'; ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      for (let i = 0; i < D; i++) {
+        const px = (i / (D - 1)) * w2;
+        const py = h2/2 - xhat[i] * (h2 * 0.35);
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+    }
+
+    // 슬라이더, 프리셋, 마우스 드로잉
+    document.getElementById('sp-l').addEventListener('input', drawAll);
+    document.querySelectorAll('.sp-input-presets button').forEach(b => {
+      b.addEventListener('click', () => { presets[+b.dataset.p](); drawAll(); });
+    });
+
+    // 입력 캔버스 위에서 드래그 = 신호 직접 그리기
+    let drawing = false;
+    cxIn.addEventListener('pointerdown', (e) => { drawing = true; setX(e); });
+    window.addEventListener('pointermove', (e) => { if (drawing) setX(e); });
+    window.addEventListener('pointerup', () => { drawing = false; });
+    function setX(e) {
+      const r = cxIn.getBoundingClientRect();
+      const px = (e.clientX - r.left) / r.width;
+      const py = (e.clientY - r.top) / r.height;
+      const i = Math.round(px * (D - 1));
+      if (i < 0 || i >= D) return;
+      const v = (0.5 - py) * 2.5;
+      x[i] = Math.max(-1.2, Math.min(1.2, v));
+      // 이웃도 살짝 부드럽게
+      if (i > 0) x[i-1] = (x[i-1] * 2 + x[i]) / 3;
+      if (i < D - 1) x[i+1] = (x[i+1] * 2 + x[i]) / 3;
+      drawAll();
+    }
+
+    window.addEventListener('resize', () => {
+      setupCanvas(cxIn); setupCanvas(cxR);
+      atomCanvases.forEach(cv => {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        cv.width = cv.clientWidth * dpr; cv.height = 40 * dpr;
+        cv.getContext('2d').setTransform(dpr,0,0,dpr,0,0);
+      });
+      drawAll();
+    });
+  });
+</script>
+</body>
+</html>

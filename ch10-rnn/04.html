@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ch.10 · 04 기울기 폭발/소실</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .scroll-progress { position: fixed; top: 0; left: 0; height: 3px; background: var(--style); width: 0; z-index: 999; transition: width .1s; }
+  .topbar { position: fixed; top: 0; left: 0; right: 0; padding: .55rem 1.2rem; background: rgba(250,247,240,.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line-soft); display: flex; justify-content: space-between; align-items: center; z-index: 100; font-family: var(--mono); font-size: .72rem; }
+  .topbar a.home { color: var(--ink-soft); text-decoration: none; letter-spacing: .1em; }
+  .topbar a.home:hover { color: var(--ink); }
+  .topbar .ch-mini { color: var(--ink-faint); letter-spacing: .14em; }
+  .ch-main { max-width: 44rem; margin: 4.5rem auto 0; padding: 2rem 0 6rem; }
+  .ch-head { max-width: var(--measure); margin: 0 auto 2.4rem; padding-inline: 1.4rem; }
+  .ch-head .kicker { display: block; margin-bottom: 1rem; }
+  .ch-head h1 { font-size: clamp(2rem, 5vw, 3.3rem); margin: 0 0 .8rem; line-height: 1.1; }
+  .ch-head .lede { font-family: var(--serif); font-size: 1.22rem; font-style: italic; color: var(--ink-soft); line-height: 1.5; }
+  .ch-foot { display: flex; justify-content: space-between; gap: 1rem; max-width: var(--measure); margin: 4rem auto 0; padding-inline: 1.4rem; }
+  .ch-foot a { display: block; text-decoration: none; flex: 1; padding: 1rem 1.2rem; border: 1px solid var(--line); border-radius: 10px; transition: border-color .15s, transform .15s; }
+  .ch-foot a:hover { border-color: var(--structure); transform: translateY(-2px); }
+  .ch-foot .dir { font-family: var(--mono); font-size: .7rem; letter-spacing: .14em; color: var(--ink-faint); text-transform: uppercase; }
+  .ch-foot .ti { font-family: var(--serif); font-size: 1.05rem; color: var(--ink); margin-top: .2rem; }
+  .ch-foot .next { text-align: right; }
+  .widget { max-width: var(--wide); margin: 2.4rem auto; padding-inline: 1.4rem; }
+  .widget-frame { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 1.4rem; box-shadow: var(--shadow-plate); }
+  .widget-label { display: flex; align-items: center; gap: .8rem; margin-bottom: 1rem; font-family: var(--mono); font-size: .78rem; color: var(--ink-soft); letter-spacing: .05em; }
+  .widget-label .lab-no { color: var(--style); font-weight: 600; letter-spacing: .14em; }
+  .widget-cap { max-width: var(--measure); margin: .8rem auto 0; font-size: .85rem; color: var(--ink-soft); line-height: 1.6; text-align: center; }
+  .controls { display: flex; align-items: center; gap: 1rem; margin-top: 1rem; flex-wrap: wrap; }
+  .controls label { font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); display: flex; align-items: center; gap: .6rem; }
+  .controls input[type=range] { width: 200px; accent-color: var(--structure); }
+  .controls .val { color: var(--style); font-weight: 600; min-width: 3.5em; text-align: right; }
+  canvas.viz { display: block; width: 100%; height: 340px; background: var(--paper-2); border-radius: 8px; }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar">
+  <a class="home" href="index.html">← Ch.10 표지</a>
+  <span class="ch-mini">SUB 04 / 07 · Exploding & Vanishing Gradient</span>
+</div>
+
+<main class="ch-main">
+  <header class="ch-head">
+    <span class="kicker">Chapter 10 · Sub 04</span>
+    <h1>기울기 폭발/소실 —<br><span class="t-style">깊은 시간의 저주</span></h1>
+    <p class="lede">같은 행렬이 수십 번 곱해진다. 그 결과는 폭발하거나 사라진다. RNN을 단순한 형태로는 10-20 시간 단계 이상 학습할 수 없게 만드는 근본 원인.</p>
+  </header>
+
+  <div class="prose">
+    <p>Sub.03의 BPTT 식을 다시 보자. 시점 $k$의 은닉 상태가 시점 $t$의 은닉 상태에 미치는 영향은 그 사이의 모든 야코비안의 곱이다.</p>
+
+    <div class="math-block">$$ \frac{\partial h^{(t)}}{\partial h^{(k)}} = \prod_{i=k+1}^{t} W^T \,\mathrm{diag}\!\left(\tanh'\!\left(a^{(i)}\right)\right) $$</div>
+    <p class="math-note">같은 W가 (t-k)번 반복 곱셈. 활성화 미분도 함께 들어간다.</p>
+
+    <p>여기서 핵심은 <strong>같은 행렬 $W$가 반복해서 곱해진다</strong>는 점이다. 깊은 일반 신경망과 다른 점이 바로 이것이다. 일반 깊은 신경망에서는 층마다 다른 행렬 $W_1, W_2, \ldots$이 곱해지므로, 어떤 층은 키우고 어떤 층은 줄이며 평균적으로 균형을 잡을 수 있다. 그러나 RNN은 같은 $W$가 (시퀀스 길이만큼) 반복 곱해지므로, 그 결과는 $W^n$의 행동에 의해 완전히 지배된다.</p>
+
+    <h2>고유값 한 개의 운명</h2>
+    <p>행렬 $W$를 고유분해(Eigendecomposition)하면 $W = Q \Lambda Q^T$로 쓸 수 있다 ($W$가 대각화 가능하다고 가정). 이를 $n$번 곱하면 다음과 같다.</p>
+
+    <div class="math-block">$$ W^n = Q \Lambda^n Q^T = Q\,\mathrm{diag}(\lambda_1^n, \lambda_2^n, \ldots, \lambda_d^n)\,Q^T $$</div>
+    <p class="math-note">고유값 λ_i가 n제곱된다. n번 곱해지는 행렬의 모든 동작은 λ에 달려 있다.</p>
+
+    <p>이제 명확하다. $|\lambda_i| > 1$인 고유값은 $n$이 커질수록 <strong>지수적으로 폭발</strong>하고, $|\lambda_i| < 1$인 고유값은 <strong>지수적으로 소실</strong>한다. 정확히 $|\lambda_i| = 1$인 경우만 안정하다. 그러나 학습 중에 모든 고유값이 정확히 1인 상태를 유지하는 것은 거의 불가능하다.</p>
+
+    <p>이 두 현상에 정확한 이름이 붙는다. <strong>기울기 폭발(Exploding Gradient)</strong>과 <strong>기울기 소실(Vanishing Gradient)</strong>이다. 폭발하면 학습이 불안정해져 매개변수가 갑자기 튄다 (NaN으로 가버린다). 소실되면 기울기가 너무 작아 먼 과거의 정보가 학습에 반영되지 않는다.</p>
+
+    <div class="analogy">
+      <b>1.1배율 확대 vs 0.9배율 축소를 50번 반복.</b> $1.1^{50} \approx 117$로 100배 넘게 커진다. $0.9^{50} \approx 0.005$로 200분의 1로 줄어든다. 같은 0.1의 차이가 50번 반복되면 6만 배 차이가 난다. 이것이 깊은 시간의 저주다.
+    </div>
+
+    <h2>두 손실의 비대칭</h2>
+    <p>흥미롭게도 폭발과 소실은 학습에 미치는 영향이 다르다. <strong>폭발은 비교적 다루기 쉽다</strong>. 기울기가 갑자기 거대해지면 매개변수 갱신이 너무 커서 손실 함수의 절벽(Cliff)에서 튕겨 나간다. 이를 위한 단순하고 효과적인 처방이 있다 — <strong>기울기 클리핑(Gradient Clipping)</strong>이다.</p>
+
+    <div class="math-block">$$ \text{if } \|g\| > c, \quad g \leftarrow c \cdot \frac{g}{\|g\|} $$</div>
+    <p class="math-note">기울기 벡터의 L2 노름이 임계값 c를 넘으면 방향은 보존하고 크기만 c로 줄인다.</p>
+
+    <p>방향은 보존하고 크기만 줄이는 트릭이다. 절벽에서 떨어진 등산객이 안전한 방향으로 걷되 보폭만 작게 줄이는 것과 같다. 이 단순한 처방으로 폭발 문제는 실용적으로 거의 해결된다.</p>
+
+    <p><strong>소실은 훨씬 다루기 어렵다</strong>. 기울기가 사라지면 그 자리에 어떤 정보도 남지 않아서 단순히 "키워야지" 같은 후처리가 불가능하다. 정보가 흐를 길 자체가 끊긴 것이다. 이 문제는 모델 구조 자체를 바꿔야 해결된다 — 그것이 다음 절(Sub.05)에 등장하는 <strong>LSTM·GRU의 게이트(Gate)</strong>다.</p>
+
+    <h2>왜 단순한 처방 — "큰 W 쓰면 되지" — 가 안 통하는가</h2>
+    <p>"고유값이 큰 W를 쓰면 폭발할 거니까, 적당히 작은 값을 쓰면 소실하지도 폭발하지도 않을 거 아닌가" 하는 생각이 자연스럽게 든다. 그러나 이 단순한 처방에는 함정이 있다.</p>
+
+    <p>안정적인 메모리를 가지려면 활성화 패턴을 보존해야 한다. 이를 위해서는 $W$의 야코비안이 1 근처여야 한다. 그러나 1 근처의 야코비안은 정확히 기울기 소실의 영역이다. 다시 말해, <strong>"신호를 안전하게 전달하는 W"와 "학습 신호를 유지하는 W"가 같은 영역에서 충돌</strong>한다. 활성화 신호를 안정시키려면 기울기를 죽여야 하고, 기울기를 살리려면 활성화 신호를 폭발시켜야 한다.</p>
+
+    <p>이 딜레마를 해결하려면 활성화 신호 경로와 기울기 경로를 분리해야 한다. 활성화는 안정적으로 흐르되, 기울기는 죽지 않도록. 이것이 LSTM이 <em>선형 자체 루프(Linear Self-Loop)</em>로 풀어낸 정확한 문제다.</p>
+  </div>
+
+  <div class="widget">
+    <div class="widget-frame">
+      <div class="widget-label"><span class="lab-no">위젯 04</span><span>$\|W^n\|$ — 같은 행렬을 n번 곱한 결과의 노름</span></div>
+      <canvas id="vizGrad" class="viz"></canvas>
+      <div class="controls">
+        <label>고유값 |λ| <input type="range" id="lam" min="50" max="150" step="1" value="105"><span class="val" id="lamVal">1.05</span></label>
+        <label>시퀀스 길이 n <input type="range" id="nLen" min="5" max="100" step="1" value="50"><span class="val" id="nLenVal">50</span></label>
+      </div>
+    </div>
+    <p class="widget-cap">슬라이더로 |λ|를 1.05에서 0.95까지 움직여 보면, n번 곱한 결과 $|\lambda|^n$이 지수적으로 폭발하거나 소실한다. 1.05와 0.95의 차이는 작아 보이지만, 50번 반복하면 $1.05^{50} \approx 11.5$, $0.95^{50} \approx 0.077$로 150배 차이가 난다.</p>
+  </div>
+
+  <div class="prose">
+    <h2>역사적 발견의 무게</h2>
+    <p>기울기 폭발/소실은 단지 RNN의 기술적 문제가 아니다. 이것은 <strong>왜 깊은 신경망이 1980년대에 죽고 1990년대에 다시 죽었는가</strong>에 대한 답이기도 하다. Bengio et al.(1994)이 RNN의 장기 의존성 학습 불가능성을 수학적으로 분석한 논문은 한 세대 동안 깊은 학습 연구의 비관론을 정당화했다.</p>
+
+    <p>2006년 사전훈련(Pretraining)으로 일반 깊은 네트워크가 부활하고, 2010년대 ReLU·배치 정규화(Batch Normalization)·잔차 연결(Residual Connection)로 깊이가 더 가능해질 때까지, RNN은 LSTM의 게이트 메커니즘 없이는 의미 있는 시퀀스 학습을 할 수 없었다. LSTM은 1997년 Hochreiter & Schmidhuber가 이미 제안했지만, 컴퓨팅 자원과 데이터가 충분해진 2010년대 들어서야 그 진가가 드러났다.</p>
+
+    <h2>Echo State Network — 학습 자체를 포기하는 대안</h2>
+    <p>저주를 푸는 가장 극단적 우회는 "그러면 학습을 안 하면 되지"다. <strong>Echo State Network (ESN)</strong>는 이 아이디어를 따른다. 은닉-은닉 가중치 $W$를 랜덤하게 초기화한 후 <strong>고정</strong>하고, 출력 가중치만 학습한다. 단, $W$의 스펙트럼 반지름(Spectral Radius — 가장 큰 고유값의 절댓값)을 1 근처로 신중히 설정한다.</p>
+
+    <p>이렇게 하면 폭발/소실 문제는 우회되지만, 표현력은 제한된다. 시퀀스의 동적 행동을 학습으로 발견할 수 없고, 랜덤 가중치가 만드는 우연한 동역학에 의존한다. 그래서 ESN은 작은 데이터셋이나 특수 응용에 유용하지만, 큰 일반 목적의 시퀀스 모델링에는 LSTM·GRU가 표준이 되었다.</p>
+
+    <h2>이 절이 시험에서 묻는 것</h2>
+    <p>① 왜 RNN의 기울기는 같은 행렬 $W$의 반복 곱셈으로 표현되는가. ② 고유값 $|\lambda|$가 1보다 크면 폭발, 작으면 소실한다는 사실. ③ 폭발은 클리핑으로 해결, 소실은 구조 변경(LSTM 게이트)이 필요한 이유. ④ "안정한 활성화"와 "살아 있는 기울기"가 같은 영역에서 충돌하는 딜레마. ⑤ Echo State Network가 이 문제를 우회하는 방식.</p>
+  </div>
+
+  <nav class="ch-foot">
+    <a href="03.html"><span class="dir">← 이전</span><div class="ti">03 · BPTT</div></a>
+    <a class="next" href="05.html"><span class="dir">다음 →</span><div class="ti">05 · LSTM·GRU 게이트</div></a>
+  </nav>
+</main>
+
+<script>
+  window.addEventListener('scroll', () => {
+    const sp = document.querySelector('.scroll-progress');
+    const sc = document.documentElement.scrollTop;
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    sp.style.width = (max > 0 ? (sc / max * 100) : 0) + '%';
+  });
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, { delimiters: [
+        {left:'$$', right:'$$', display:true},
+        {left:'$', right:'$', display:false}
+      ], throwOnError:false });
+    }
+  });
+
+  const cv = document.getElementById('vizGrad');
+  const ctx = cv.getContext('2d');
+  const lam = document.getElementById('lam');
+  const lamVal = document.getElementById('lamVal');
+  const nLen = document.getElementById('nLen');
+  const nLenVal = document.getElementById('nLenVal');
+
+  function fit() {
+    const r = cv.getBoundingClientRect();
+    cv.width = r.width * devicePixelRatio;
+    cv.height = r.height * devicePixelRatio;
+    ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+    draw();
+  }
+
+  function draw() {
+    const lamVal_ = +lam.value / 100;
+    const N = +nLen.value;
+    lamVal.textContent = lamVal_.toFixed(2);
+    nLenVal.textContent = N;
+    const W = cv.clientWidth, H = cv.clientHeight;
+    ctx.clearRect(0, 0, W, H);
+
+    // Log scale Y axis: |λ|^n
+    // Range: 10^-6 to 10^6
+    const pad = { l: 60, r: 30, t: 30, b: 50 };
+    const plotW = W - pad.l - pad.r;
+    const plotH = H - pad.t - pad.b;
+    const logMin = -6, logMax = 6;
+
+    // axes
+    ctx.strokeStyle = 'rgba(38,34,28,0.2)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(pad.l, pad.t);
+    ctx.lineTo(pad.l, H - pad.b);
+    ctx.lineTo(W - pad.r, H - pad.b);
+    ctx.stroke();
+
+    // y grid lines (powers of 10)
+    ctx.font = '10px Spline Sans Mono, monospace';
+    ctx.fillStyle = 'rgba(38,34,28,0.5)';
+    ctx.textAlign = 'right';
+    for (let p = logMin; p <= logMax; p++) {
+      const y = pad.t + plotH * (1 - (p - logMin) / (logMax - logMin));
+      ctx.strokeStyle = p === 0 ? 'rgba(192,73,46,0.3)' : 'rgba(38,34,28,0.05)';
+      ctx.lineWidth = p === 0 ? 1.5 : 1;
+      ctx.beginPath();
+      ctx.moveTo(pad.l, y);
+      ctx.lineTo(W - pad.r, y);
+      ctx.stroke();
+      ctx.fillStyle = p === 0 ? '#C0492E' : 'rgba(38,34,28,0.5)';
+      ctx.fillText('10^' + p, pad.l - 6, y + 3);
+    }
+    ctx.fillStyle = 'rgba(38,34,28,0.5)';
+    ctx.textAlign = 'center';
+    // x grid
+    for (let n = 0; n <= 100; n += 10) {
+      const x = pad.l + plotW * (n / 100);
+      ctx.strokeStyle = 'rgba(38,34,28,0.05)';
+      ctx.beginPath();
+      ctx.moveTo(x, pad.t);
+      ctx.lineTo(x, H - pad.b);
+      ctx.stroke();
+      ctx.fillText(n, x, H - pad.b + 16);
+    }
+    ctx.fillText('n (시퀀스 길이)', W / 2, H - pad.b + 36);
+    ctx.save();
+    ctx.translate(15, H/2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText('|λ|^n  (로그 스케일)', 0, 0);
+    ctx.restore();
+
+    // plot |λ|^n curve
+    ctx.strokeStyle = lamVal_ >= 1 ? '#C0492E' : '#2D5B7A';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    for (let n = 0; n <= 100; n += 1) {
+      const v = Math.pow(lamVal_, n);
+      const logV = v > 0 ? Math.log10(v) : -10;
+      const clampedLog = Math.max(logMin, Math.min(logMax, logV));
+      const x = pad.l + plotW * (n / 100);
+      const y = pad.t + plotH * (1 - (clampedLog - logMin) / (logMax - logMin));
+      if (n === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // Mark current N
+    const valAtN = Math.pow(lamVal_, N);
+    const logV = valAtN > 0 ? Math.log10(valAtN) : -10;
+    const clampedLog = Math.max(logMin, Math.min(logMax, logV));
+    const xN = pad.l + plotW * (N / 100);
+    const yN = pad.t + plotH * (1 - (clampedLog - logMin) / (logMax - logMin));
+    ctx.fillStyle = lamVal_ >= 1 ? '#C0492E' : '#2D5B7A';
+    ctx.beginPath();
+    ctx.arc(xN, yN, 6, 0, Math.PI * 2);
+    ctx.fill();
+    // 값 표시
+    ctx.fillStyle = '#fff';
+    ctx.font = '500 11px Spline Sans Mono, monospace';
+    ctx.textAlign = 'left';
+    const labelX = xN + 12;
+    const labelY = yN;
+    ctx.fillStyle = 'rgba(38,34,28,0.85)';
+    ctx.fillText(`|λ|^n = ${valAtN.toExponential(2)}`, labelX, labelY + 4);
+    ctx.font = '10px Spline Sans Mono, monospace';
+    ctx.fillStyle = lamVal_ >= 1 ? '#C0492E' : '#2D5B7A';
+    if (lamVal_ > 1.001) ctx.fillText('▲ EXPLODE', labelX, labelY + 18);
+    else if (lamVal_ < 0.999) ctx.fillText('▼ VANISH', labelX, labelY + 18);
+    else ctx.fillText('● STABLE', labelX, labelY + 18);
+
+    // Reference label
+    ctx.fillStyle = 'rgba(38,34,28,0.6)';
+    ctx.textAlign = 'center';
+    ctx.font = 'italic 12px Fraunces, serif';
+    ctx.fillText('|λ| > 1: 폭발 (오렌지)   |λ| < 1: 소실 (블루)   |λ| = 1: 경계', W/2, pad.t - 12);
+  }
+
+  lam.addEventListener('input', draw);
+  nLen.addEventListener('input', draw);
+  window.addEventListener('resize', fit);
+  fit();
+</script>
+</body>
+</html>

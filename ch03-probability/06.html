@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>06. 흔한 분포 카탈로그</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  /* 분포 카드 */
+  .dist-card { max-width: var(--measure); margin: 1.8rem auto; padding: 1.3rem 1.4rem 1.5rem; background: linear-gradient(180deg,#fff,var(--paper-2)); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow-plate); }
+  .dist-card .hd { display: flex; align-items: baseline; gap: .8rem; margin-bottom: .4rem; flex-wrap: wrap; }
+  .dist-card .hd h3 { margin: 0; font-family: var(--serif); font-size: 1.35rem; }
+  .dist-card .hd .en { font-family: var(--mono); font-size: .76rem; color: var(--ink-faint); letter-spacing: .04em; }
+  .dist-card .lede { font-style: italic; color: var(--ink-soft); margin: .3rem 0 .8rem; }
+  .dist-card .row { display: grid; grid-template-columns: 8rem 1fr; gap: .3rem 1rem; margin-top: .5rem; font-size: .92rem; }
+  .dist-card .row .k { font-family: var(--mono); font-size: .78rem; color: var(--ink-faint); padding-top: .15rem; }
+  .dist-card .row .v { color: var(--ink); line-height: 1.5; }
+  .dist-card .row .v code { font-family: var(--mono); background: var(--paper-sink); padding: .05em .35em; border-radius: 3px; font-size: .9em; }
+  .dist-card .dl-link { display: block; margin-top: .9rem; font-family: var(--mono); font-size: .76rem; color: var(--structure); padding: .5rem .8rem; background: var(--structure-bg); border-radius: 6px; border-left: 2px solid var(--structure); }
+  .dist-card.b { border-left: 4px solid var(--structure); }
+  .dist-card.c { border-left: 4px solid var(--structure-lo); }
+  .dist-card.g { border-left: 4px solid var(--style); }
+  .dist-card.m { border-left: 4px solid var(--synth); }
+  .dist-card.d { border-left: 4px solid var(--ink-soft); }
+
+  /* 분포 미니 시각화 (캔버스) */
+  .dist-vis { display: block; width: 100%; max-width: 360px; height: 100px; margin: .8rem auto .2rem; background: var(--paper); border-radius: 6px; border: 1px solid var(--line-soft); }
+
+  /* 최종 매핑 표 */
+  .mapping-table { max-width: var(--measure); margin: 1.4rem auto 1.8rem; border-collapse: collapse; width: 100%; font-size: .9rem; }
+  .mapping-table td, .mapping-table th { padding: .65rem .8rem; border: 1px solid var(--line-soft); }
+  .mapping-table th { background: var(--paper-2); font-family: var(--mono); font-size: .74rem; letter-spacing: .04em; color: var(--ink-soft); font-weight: 500; text-align: left; }
+  .mapping-table td:first-child { font-family: var(--mono); color: var(--style); font-size: .85rem; white-space: nowrap; }
+  .mapping-table td b.struct { color: var(--structure); }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-chapter 06. 시험에 나오는 분포 다섯</span>
+      <h1>딥러닝 출력층이 만드는<br>다섯 가지 <span class="t-style">분포</span></h1>
+      <p class="lede">Bernoulli / Categorical / Gaussian / 혼합 / Dirac. 분류기, 회귀, 생성모델의 모든 출력층이 이 다섯 가운데 하나의 파라미터를 내놓는다. 그 매핑을 한 표로 정리해 둔다.</p>
+    </header>
+
+    <div class="prose">
+      <p>여기까지 우리는 분포의 문법, 갱신, 정보이론적 측정까지 봤다. 이제 실전에서 가장 자주 등장하는 다섯 분포를 한 자리에 모아 두자. 각 카드의 구조는 같다 — <em>지원하는 값, 파라미터, PDF/PMF, 기대값과 분산, 딥러닝에서 어디에 등장하는가</em>.</p>
+    </div>
+
+    <div class="dist-card b">
+      <div class="hd"><h3>① 베르누이 분포</h3><span class="en">Bernoulli</span></div>
+      <p class="lede">두 결과 중 하나 — 가장 단순한 분포.</p>
+      <div class="row"><span class="k">지원하는 값</span><span class="v"><code>x ∈ {0, 1}</code> (실패, 성공, 음성, 양성, 아니오, 예)</span></div>
+      <div class="row"><span class="k">파라미터</span><span class="v"><code>φ ∈ [0, 1]</code> = P(X=1) 한 개</span></div>
+      <div class="row"><span class="k">PMF</span><span class="v">$P(X=x) = \phi^x (1-\phi)^{1-x}$</span></div>
+      <div class="row"><span class="k">기대값, 분산</span><span class="v">$\mathbb{E}[X] = \phi, \quad \mathrm{Var}(X) = \phi(1-\phi)$</span></div>
+      <canvas class="dist-vis" id="visBer"></canvas>
+      <span class="dl-link">딥러닝에서 — <b class="struct">이진 분류</b>의 마지막 층 <code>σ(z) = 1/(1+e⁻ᶻ)</code>(sigmoid)의 출력이 정확히 베르누이의 파라미터 φ. 손실은 <em>이진 교차 엔트로피</em>(= 베르누이의 음의 로그우도).</span>
+    </div>
+
+    <div class="dist-card c">
+      <div class="hd"><h3>② 범주분포</h3><span class="en">Categorical (Multinoulli)</span></div>
+      <p class="lede">K개 결과 중 하나 — 베르누이의 다클래스 확장.</p>
+      <div class="row"><span class="k">지원하는 값</span><span class="v"><code>x ∈ {1, 2, ..., K}</code> 원핫 인코딩 또는 인덱스</span></div>
+      <div class="row"><span class="k">파라미터</span><span class="v">$\boldsymbol{\phi} \in [0, 1]^{K-1}$, $\sum_k \phi_k = 1$ (마지막 항이 자동 결정되므로 K-1개)</span></div>
+      <div class="row"><span class="k">PMF</span><span class="v">$P(X=k) = \phi_k$</span></div>
+      <div class="row"><span class="k">기대값</span><span class="v">원핫 표기에서 $\mathbb{E}[X] = \boldsymbol{\phi}$</span></div>
+      <canvas class="dist-vis" id="visCat"></canvas>
+      <span class="dl-link">딥러닝에서 — <b class="struct">다클래스 분류</b>의 마지막 층 <code>softmax(z)ₖ = exp(zₖ) / Σ exp(zⱼ)</code>가 정확히 범주분포의 파라미터 벡터. 손실은 <em>(다클래스) 교차 엔트로피</em> = 정답 클래스의 음의 로그.</span>
+    </div>
+
+    <div class="dist-card g">
+      <div class="hd"><h3>③ 가우시안 분포</h3><span class="en">Gaussian (Normal)</span></div>
+      <p class="lede">연속 실수의 종 모양 — 자연, 공학에서 가장 흔한 분포.</p>
+      <div class="row"><span class="k">지원하는 값</span><span class="v"><code>x ∈ ℝ</code> (전 실수)</span></div>
+      <div class="row"><span class="k">파라미터</span><span class="v">평균 $\mu \in \mathbb{R}$, 분산 $\sigma^2 > 0$ 두 개</span></div>
+      <div class="row"><span class="k">PDF</span><span class="v">$p(x) = \dfrac{1}{\sqrt{2\pi\sigma^2}} \exp\!\left(-\dfrac{(x-\mu)^2}{2\sigma^2}\right)$</span></div>
+      <div class="row"><span class="k">기대값, 분산</span><span class="v">$\mathbb{E}[X] = \mu, \quad \mathrm{Var}(X) = \sigma^2$</span></div>
+      <div class="row"><span class="k">왜 자주 쓰이나</span><span class="v">중심극한정리 — 독립인 여러 잡음을 합치면 분포가 (모양에 상관없이) 가우시안으로 수렴. 분산이 같다면 <em>최대 엔트로피 분포</em>(가장 "겸손한" 가정)이기도 함.</span></div>
+      <canvas class="dist-vis" id="visGauss"></canvas>
+      <span class="dl-link">딥러닝에서 — <b class="struct">실수 회귀</b>의 출력층이 <em>(μ, σ²)</em>를 직접 내놓는 모델(예: GMM 출력)의 손실이 가우시안의 음의 로그우도. 단순 회귀의 평균 제곱 오차(MSE) 손실도, σ를 상수로 고정한 가우시안 NLL의 다른 이름이다. VAE의 prior도 표준 정규.</span>
+    </div>
+
+    <div class="dist-card g">
+      <div class="hd"><h3>③′ 다변량 가우시안</h3><span class="en">Multivariate Gaussian</span></div>
+      <p class="lede">실수 벡터의 종 모양 — 공분산 행렬이 모양을 결정.</p>
+      <div class="row"><span class="k">지원하는 값</span><span class="v"><code>𝐱 ∈ ℝⁿ</code></span></div>
+      <div class="row"><span class="k">파라미터</span><span class="v">평균 벡터 $\boldsymbol{\mu} \in \mathbb{R}^n$, 공분산 행렬 $\boldsymbol{\Sigma} \in \mathbb{R}^{n \times n}$ (대칭 양정부호)</span></div>
+      <div class="row"><span class="k">PDF</span><span class="v">$p(\mathbf{x}) = \dfrac{1}{\sqrt{(2\pi)^n \det\boldsymbol{\Sigma}}} \exp\!\left(-\tfrac{1}{2}(\mathbf{x}-\boldsymbol{\mu})^\top \boldsymbol{\Sigma}^{-1} (\mathbf{x}-\boldsymbol{\mu})\right)$</span></div>
+      <div class="row"><span class="k">기하학적 의미</span><span class="v">밀도 등고선이 타원체. 그 축의 방향과 길이가 공분산 행렬의 고유분해(2장 SVD 연결).</span></div>
+    </div>
+
+    <div class="dist-card m">
+      <div class="hd"><h3>④ 혼합 분포</h3><span class="en">Mixture (Gaussian Mixture Model, GMM)</span></div>
+      <p class="lede">여러 단순 분포의 가중합 — 한 봉우리로 안 되는 데이터에.</p>
+      <div class="row"><span class="k">PDF</span><span class="v">$p(x) = \sum_{k=1}^{K} \alpha_k \cdot p_k(x), \quad \sum_k \alpha_k = 1$</span></div>
+      <div class="row"><span class="k">파라미터</span><span class="v">컴포넌트 가중치 $\alpha_k$ + 각 컴포넌트의 자체 파라미터(예: 가우시안이면 $\mu_k, \sigma_k^2$)</span></div>
+      <div class="row"><span class="k">왜 필요한가</span><span class="v">실제 데이터는 한 봉우리(unimodal)가 아닌 경우가 많음. 예: 키 분포는 남녀 두 가우시안의 혼합.</span></div>
+      <canvas class="dist-vis" id="visMix"></canvas>
+      <span class="dl-link">딥러닝에서 — <b class="struct">Mixture Density Network(MDN)</b>이 K개 가우시안의 (가중치, 평균, 분산)을 모두 출력. 또 변분추론에서 잠재변수를 가진 모델은 모두 혼합 모델의 한 형태로 읽힌다. 13장 잠재 요인 모델의 출발점.</span>
+    </div>
+
+    <div class="dist-card d">
+      <div class="hd"><h3>⑤ Dirac 델타</h3><span class="en">Dirac delta function</span></div>
+      <p class="lede">"확률이 한 점에 모두 모인" 극단적 분포.</p>
+      <div class="row"><span class="k">PDF</span><span class="v">$p(x) = \delta(x - \mu)$ — $x = \mu$에서만 무한대, 다른 곳은 0. 적분은 1.</span></div>
+      <div class="row"><span class="k">의미</span><span class="v">완벽히 결정된 값. 분산 0의 가우시안의 극한.</span></div>
+      <div class="row"><span class="k">왜 배우는가</span><span class="v">"이산 분포를 연속 분포 위에서 적기"의 도구. 경험분포 $\hat{p}_\text{data}(x) = \tfrac{1}{m}\sum_i \delta(x - x^{(i)})$ 처럼, 데이터 포인트 자체를 분포로 표현할 때.</span></div>
+      <span class="dl-link">딥러닝에서 — 정답 라벨이 원핫일 때, 이를 연속 분포 위의 Dirac으로 보면 교차 엔트로피가 곧 음의 로그우도가 되는 이유가 매끄럽게 정리됨. 14장 자기부호화기에서 디코더가 Dirac을 출력한다고 가정하면 평균 제곱 오차 손실이 자연스럽게 도출됨.</span>
+    </div>
+
+    <div class="prose">
+      <h2>한 표로 — 딥러닝 출력층 ↔ 분포 매핑</h2>
+      <p>시험 단골 질문이다. <em>"이진 분류기에서 시그모이드는 어느 분포의 파라미터인가"</em>, <em>"평균 제곱 오차 손실은 어느 분포 가정에서 자연스러운가"</em>. 답은 모두 이 표에 있다.</p>
+
+      <table class="mapping-table">
+        <thead><tr><th>출력층</th><th>해석</th><th>대응 분포</th><th>손실</th></tr></thead>
+        <tbody>
+          <tr><td>sigmoid</td><td><b class="struct">P(Y=1 | x)</b></td><td>Bernoulli</td><td>이진 교차 엔트로피 = -log p_true</td></tr>
+          <tr><td>softmax</td><td><b class="struct">P(Y=k | x)</b> 벡터</td><td>Categorical</td><td>다클래스 교차 엔트로피 = -log p_정답</td></tr>
+          <tr><td>linear (1차원)</td><td><b class="struct">𝔼[Y|x]</b> = μ</td><td>Gaussian(μ, σ²=상수)</td><td>평균 제곱 오차 MSE = (y-μ)²</td></tr>
+          <tr><td>linear (벡터)</td><td><b class="struct">𝔼[𝐘|x]</b> = 𝛍</td><td>Multivariate Gaussian</td><td>각 차원 MSE의 합</td></tr>
+          <tr><td>(μ, σ²) 둘 다 출력</td><td><b class="struct">조건부 분산까지 학습</b></td><td>Gaussian(μ, σ²)</td><td>가우시안 음의 로그우도 (NLL)</td></tr>
+          <tr><td>(αₖ, μₖ, σₖ²) 벡터</td><td><b class="struct">다봉우리 회귀</b></td><td>Mixture of Gaussians</td><td>혼합 가우시안 NLL</td></tr>
+        </tbody>
+      </table>
+
+      <p>이 표가 시험 직전에 한 줄로 외울 수 있는 가장 진한 요약이다. 7장에서 ReLU/sigmoid/softmax의 미분 성질이 등장할 때, 9장에서 분류 손실의 그래디언트가 등장할 때, 14장 자기부호화기에서 복원 손실이 등장할 때 — 모두 이 표의 한 행을 다시 만나는 셈이다.</p>
+
+      <h2>마지막 한 가지 — Sigmoid와 Softplus의 짝</h2>
+      <p>왜 sigmoid가 베르누이의 파라미터가 되는지를 손실 식 한 줄로 보면 깔끔하다. <strong>로지스틱 함수</strong>는</p>
+
+      <div class="math-block">$$ \sigma(z) = \frac{1}{1 + e^{-z}}, \qquad 1 - \sigma(z) = \sigma(-z) $$</div>
+      <p class="math-note">출력이 항상 (0, 1) 안에 있어 확률 해석이 자연스러움.</p>
+
+      <p>이걸 베르누이 PMF에 끼우면 음의 로그우도는 다음과 같이 깔끔하게 정리된다.</p>
+
+      <div class="math-block">$$ -\log P(y \mid z) = -\log \sigma((2y - 1)z) = \zeta\!\left((1 - 2y)z\right) $$</div>
+      <p class="math-note">ζ(x) = log(1 + exp(x)) = softplus. 부드러운 ReLU.</p>
+
+      <p>이 형태가 중요한 이유는 <strong>softplus가 수치적으로 안정</strong>하기 때문이다. $-\log\sigma(z)$를 그대로 계산하면 $z$가 큰 음수일 때 오버플로, 언더플로 위험이 있는데, $\zeta(-z)$로 다시 쓰면 안전하다. 4번 sub-chapter(수치 계산)에서 이 동일성이 다시 등장한다. <em>같은 수식의 여러 얼굴을 알아보는 능력</em>이 사실 시험 점수를 결정한다.</p>
+
+      <p>다음 페이지는 시험 직전 한 번 훑을 체크리스트다. 정의, 공식, 헷갈리기 쉬운 짝, 그리고 한 줄 답을 모아 두었다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const CH = [
+    { no:'01', t:'왜 확률이 필요한가', f:'01.html' },
+    { no:'02', t:'확률변수, 분포, 조건부', f:'02.html' },
+    { no:'03', t:'기대값, 분산, 공분산', f:'03.html' },
+    { no:'04', t:'베이즈 규칙', f:'04.html' },
+    { no:'05', t:'정보이론 — 엔트로피/KL/교차 엔트로피', f:'05.html' },
+    { no:'06', t:'흔한 분포 카탈로그', f:'06.html' },
+    { no:'07', t:'시험 대비 체크리스트', f:'07.html' },
+  ];
+  function buildNav(curr) {
+    const tb = document.querySelector('.topbar');
+    if (tb) tb.innerHTML =
+      `<a class="home" href="index.html">← Ch.3 확률과 정보이론</a>` +
+      `<span class="ch-mini">SUB-CHAPTER ${curr} of 07</span>`;
+    const ol = document.querySelector('.ch-nav ol');
+    if (ol) ol.innerHTML = CH.map(c =>
+      `<li><a href="${c.f}" ${c.no === curr ? 'class="current"' : ''}>${c.t}</a></li>`).join('');
+    const foot = document.querySelector('.ch-foot');
+    if (foot) {
+      const i = CH.findIndex(c => c.no === curr);
+      const prev = i > 0 ? CH[i-1] : { f:'index.html', t:'표지로', no:'' };
+      const next = i < CH.length-1 ? CH[i+1] : { f:'index.html', t:'표지로', no:'' };
+      foot.innerHTML =
+        `<a href="${prev.f}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+        `<a href="${next.f}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+    }
+    const bar = document.querySelector('.scroll-progress');
+    if (bar) {
+      const onS = () => {
+        const h = document.documentElement;
+        const m = h.scrollHeight - h.clientHeight;
+        bar.style.width = (m > 0 ? (h.scrollTop / m) * 100 : 0) + '%';
+      };
+      document.addEventListener('scroll', onS, { passive: true });
+      onS();
+    }
+  }
+
+  /* 미니 분포 시각화 */
+  function drawBars(canvas, probs, labels, color) {
+    const ctx = canvas.getContext('2d');
+    const dpr2 = Math.min(2, window.devicePixelRatio || 1);
+    const w = canvas.clientWidth || 360, h = 100;
+    canvas.width = w * dpr2; canvas.height = h * dpr2;
+    canvas.style.height = h + 'px';
+    ctx.setTransform(dpr2, 0, 0, dpr2, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    const n = probs.length;
+    const bw = (w - 20) / n - 6;
+    probs.forEach((p, i) => {
+      const x = 10 + i * (bw + 6);
+      const bh = p * 70;
+      ctx.fillStyle = color;
+      ctx.fillRect(x, h - 20 - bh, bw, bh);
+      ctx.fillStyle = '#5A5247';
+      ctx.font = '10px ui-monospace, monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(labels[i], x + bw / 2, h - 6);
+      ctx.fillText(p.toFixed(2), x + bw / 2, h - 22 - bh - 2);
+    });
+  }
+  function drawCurve(canvas, fn, color, fillAlpha) {
+    const ctx = canvas.getContext('2d');
+    const dpr2 = Math.min(2, window.devicePixelRatio || 1);
+    const w = canvas.clientWidth || 360, h = 100;
+    canvas.width = w * dpr2; canvas.height = h * dpr2;
+    canvas.style.height = h + 'px';
+    ctx.setTransform(dpr2, 0, 0, dpr2, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    const N = 200;
+    let yMax = 0;
+    const xs = [];
+    for (let i = 0; i <= N; i++) {
+      const x = -4 + 8 * i / N;
+      const y = fn(x);
+      xs.push({ x, y });
+      if (y > yMax) yMax = y;
+    }
+    yMax *= 1.05;
+    ctx.beginPath();
+    ctx.moveTo(10, h - 10);
+    xs.forEach((p, i) => {
+      const px = 10 + (p.x + 4) / 8 * (w - 20);
+      const py = h - 10 - p.y / yMax * 70;
+      ctx.lineTo(px, py);
+    });
+    ctx.lineTo(w - 10, h - 10);
+    ctx.closePath();
+    ctx.fillStyle = color + Math.round(fillAlpha * 255).toString(16).padStart(2, '0');
+    ctx.fill();
+    ctx.beginPath();
+    xs.forEach((p, i) => {
+      const px = 10 + (p.x + 4) / 8 * (w - 20);
+      const py = h - 10 - p.y / yMax * 70;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    });
+    ctx.strokeStyle = color; ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+  function gaussPDF(x, mu, sig) {
+    return Math.exp(-0.5 * ((x - mu) / sig) ** 2) / (sig * Math.sqrt(2 * Math.PI));
+  }
+
+  window.addEventListener('load', () => {
+    buildNav('06');
+    drawBars(document.getElementById('visBer'), [0.3, 0.7], ['0', '1'], '#2D5B7A');
+    drawBars(document.getElementById('visCat'), [0.10, 0.18, 0.45, 0.20, 0.07], ['1','2','3','4','5'], '#6E97AF');
+    drawCurve(document.getElementById('visGauss'), x => gaussPDF(x, 0, 1), '#C0492E', 0.25);
+    drawCurve(document.getElementById('visMix'), x => 0.55 * gaussPDF(x, -1.2, 0.6) + 0.45 * gaussPDF(x, 1.4, 0.8), '#A47B2E', 0.25);
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$', right:'$$', display:true}, {left:'$', right:'$', display:false}],
+        throwOnError: false,
+      });
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>12.05 · 강화학습 응용 — agent-environment 루프</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .rl-stage { display: grid; grid-template-columns: 1fr 14rem; gap: 1rem; padding: 1.3rem 1.1rem 1rem; align-items: start; }
+  @media (max-width: 760px) { .rl-stage { grid-template-columns: 1fr; } }
+
+  .rl-canvas-wrap { background: #fff; border: 1px solid var(--line); border-radius: 8px; height: 380px; position: relative; overflow: hidden; }
+  .rl-canvas-wrap canvas { display: block; width: 100%; height: 100%; }
+  .rl-overlay { position: absolute; top: 8px; left: 10px; font-family: var(--mono); font-size: .72rem; color: var(--ink-soft); line-height: 1.4; pointer-events: none; }
+  .rl-overlay b { color: var(--style); }
+
+  .rl-panel { display: flex; flex-direction: column; gap: .7rem; }
+  .rl-ctrl { padding: .8rem 1rem; background: #fff; border: 1px solid var(--line); border-radius: 8px; display: flex; flex-direction: column; gap: .8rem; font-size: .82rem; }
+  .rl-ctrl .slider { width: 100%; }
+  .rl-ctrl label { font-family: var(--mono); font-size: .7rem; letter-spacing: .05em; color: var(--ink-soft); display: flex; justify-content: space-between; }
+  .rl-ctrl label b { color: var(--ink); }
+  .rl-ctrl .btn-row { display: flex; gap: .35rem; }
+  .rl-ctrl .btn-row .btn { flex: 1; }
+
+  .rl-stats { padding: .7rem 1rem; background: var(--paper-2); border-radius: 8px; font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); line-height: 1.7; }
+  .rl-stats b { color: var(--ink); }
+
+  .rl-loop { max-width: var(--measure); margin: 1.8rem auto; padding-inline: 1.4rem; }
+  .rl-loop svg { display: block; width: 100%; height: auto; }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar">
+  <a class="home" href="index.html">← Chapter 12 표지</a>
+  <span class="ch-mini">12.05 · 강화학습</span>
+</div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol id="navlist"></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-chapter 05 · 데이터가 모델의 행동으로 생긴다</span>
+      <h1>강화학습 응용 —<br>agent와 환경의 <span class="t-style">닫힌 루프</span></h1>
+      <p class="lede">지도학습은 정답이 미리 적힌 데이터셋에서 패턴을 배운다. 강화학습은 그 데이터셋이 없다. 대신 “행동해 보고, 결과를 보고, 다음 행동을 고친다”는 폐쇄 루프 안에서 스스로 데이터를 만들어 낸다. 이 차이가 모든 새로운 어려움의 원인이다.</p>
+    </header>
+
+    <div class="prose">
+      <p>강화학습(Reinforcement Learning, RL)의 그림은 단순하다. <strong>agent</strong>(학습 주체)가 어떤 시점 $t$에 환경의 <strong>상태(state)</strong> $s_t$를 관찰하고, <strong>행동(action)</strong> $a_t$를 결정한다. 환경은 그 행동에 대해 <strong>보상(reward)</strong> $r_t$를 주고, 다음 상태 $s_{t+1}$로 옮긴다. 이 과정이 무한히 반복된다.</p>
+
+      <div class="rl-loop">
+        <svg viewBox="0 0 480 200" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--synth)"/>
+            </marker>
+          </defs>
+          <rect x="40" y="60" width="160" height="80" rx="12" fill="var(--structure-bg)" stroke="var(--structure)" stroke-width="1.5"/>
+          <text x="120" y="95" font-family="Fraunces, serif" font-size="18" text-anchor="middle" fill="var(--structure)">Agent</text>
+          <text x="120" y="118" font-family="Spline Sans Mono, monospace" font-size="11" text-anchor="middle" fill="var(--ink-soft)">정책 π(a | s)</text>
+
+          <rect x="280" y="60" width="160" height="80" rx="12" fill="var(--style-bg)" stroke="var(--style)" stroke-width="1.5"/>
+          <text x="360" y="95" font-family="Fraunces, serif" font-size="18" text-anchor="middle" fill="var(--style)">Environment</text>
+          <text x="360" y="118" font-family="Spline Sans Mono, monospace" font-size="11" text-anchor="middle" fill="var(--ink-soft)">동역학 P(s' | s, a)</text>
+
+          <path d="M 200 85 Q 240 50 280 85" fill="none" stroke="var(--synth)" stroke-width="2" marker-end="url(#ar)"/>
+          <text x="240" y="48" font-family="Spline Sans Mono, monospace" font-size="11" text-anchor="middle" fill="var(--synth)">action a_t</text>
+
+          <path d="M 280 115 Q 240 155 200 115" fill="none" stroke="var(--synth)" stroke-width="2" marker-end="url(#ar)"/>
+          <text x="240" y="178" font-family="Spline Sans Mono, monospace" font-size="11" text-anchor="middle" fill="var(--synth)">state s_{t+1}, reward r_t</text>
+        </svg>
+      </div>
+
+      <p>이 그림이 비전·NLP·추천과 결정적으로 다른 점이 하나 있다. <strong>agent의 행동이 다음에 들어올 데이터를 결정한다.</strong> 비전 모델은 이미지를 “받기만” 하지만, RL agent는 행동을 통해 환경을 다음 상태로 밀어 넣는다. 그래서 “학습 데이터”와 “학습 알고리즘”이 분리되지 않는다 — 둘은 서로를 만들어 낸다.</p>
+
+      <p>이 폐쇄 루프가 만드는 가장 유명한 문제가 <strong>탐험-착취 충돌(exploration-exploitation trade-off)</strong>이다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 12.05</span><span>multi-armed bandit + ε-greedy — 슬라이더로 탐험/착취 비율 조정</span></div>
+        <div class="rl-stage">
+          <div class="rl-canvas-wrap">
+            <canvas id="rlCanvas"></canvas>
+            <div class="rl-overlay" id="rlOver">step 0 · total reward 0</div>
+          </div>
+          <div class="rl-panel">
+            <div class="rl-ctrl">
+              <div class="slider">
+                <label>ε (탐험 비율) <b id="epsVal">0.10</b></label>
+                <input type="range" id="epsSlider" min="0" max="100" step="1" value="10">
+              </div>
+              <div class="slider">
+                <label>속도 <b id="speedVal">5×</b></label>
+                <input type="range" id="speedSlider" min="1" max="20" step="1" value="5">
+              </div>
+              <div class="btn-row">
+                <button class="btn" id="btnPlay">▶/❚❚</button>
+                <button class="btn ghost" id="btnReset">↺</button>
+              </div>
+            </div>
+            <div class="rl-stats" id="rlStats"></div>
+          </div>
+        </div>
+      </div>
+      <p class="widget-cap">5개의 슬롯머신(arm). 각 arm은 정해진 평균 보상을 가지지만 agent는 모른다. agent는 매 step마다 ε 확률로 무작위 arm을 당기고(탐험), 1−ε 확률로 지금까지 평균 보상이 가장 높은 arm을 당긴다(착취). ε=0이면 한 번 좋아 보인 arm만 계속 당겨 진짜 최적 arm을 영원히 못 찾을 수도 있다. ε=1이면 무작위라 평균 누적 보상이 낮다. 좋은 ε는 둘 사이에 있다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>왜 탐험이 필요한가 — 추천 시스템과의 직접 연결</h2>
+      <p>위 위젯에서 ε을 0으로 두고 한참 돌려 보면, agent가 운 나쁘게 평균이 두 번째로 높은 arm에 일찍 “익숙해져” 진짜 최적 arm을 끝까지 못 찾는 경우가 자주 생긴다. 이것이 <strong>greedy의 함정</strong>이다. 한 번 “좋아 보인” 선택만 반복하면, 모델의 추정치는 그 선택의 데이터로만 갱신되고 다른 선택의 진짜 가치는 영원히 모르게 된다.</p>
+
+      <p>이 그림이 추천 시스템의 콜드 스타트(<a href="04.html">04장</a>)와 정확히 같은 구조다. 추천 모델이 한 번 사용자에게 “액션 영화 좋아할 것 같다”라고 추정하면, 액션만 추천하게 되고, 사용자는 액션만 보게 되고, 데이터는 액션으로만 쌓이며, 모델은 영원히 그 추정이 옳다고 믿게 된다. 사용자가 사실은 다큐멘터리도 좋아했을 가능성은 데이터에 없으니 학습되지 않는다. <strong>가끔 “예상 밖”을 보여 줘야</strong> 모델이 자라난다 — 추천 시스템의 ε-greedy이다.</p>
+
+      <h2>RL의 목적 함수 — 누적 할인 보상</h2>
+      <p>RL이 최대화하려는 양은 <strong>누적 할인 보상(discounted cumulative reward)</strong>이다.</p>
+
+      <div class="math-block">$$ G_t = \sum_{k=0}^{\infty} \gamma^k r_{t+k+1}, \qquad \gamma \in [0, 1) $$</div>
+      <p class="math-note">G_t = t 시점부터의 미래 보상 총합. γ = 할인율(0.9-0.99 흔함).</p>
+
+      <p>왜 “지금 받은 보상”이 아니라 “미래까지의 보상 합”인가? <strong>강화학습의 핵심 어려움은 행동의 결과가 즉시 오지 않는다</strong>는 점이다. 체스에서 첫 수가 좋았는지는 30수 뒤에야 알 수 있다. 그래서 한 행동의 “가치”는 그 자리에서 받은 보상이 아니라 <em>그 행동이 만들어 낸 모든 미래 보상의 합</em>으로 정의된다. 할인율 γ는 “먼 미래는 가까운 미래보다 덜 중요”하다는 사전 지식을 수치로 넣은 것이다(γ=0이면 즉시 보상만, γ=1이면 모든 미래 동등).</p>
+
+      <h2>두 갈래 — 가치 기반 vs 정책 기반</h2>
+      <p>RL 알고리즘은 크게 두 갈래로 나뉜다.</p>
+
+      <p><strong>가치 기반(value-based).</strong> 각 상태(또는 상태-행동 쌍)의 “가치” $Q(s, a)$를 학습한다. 가치는 “이 상태에서 이 행동을 한 뒤, 그 다음부터 최적으로 행동했을 때 받게 될 누적 보상의 기대값”이다. 학습이 끝나면 agent는 매 상태에서 $a^* = \arg\max_a Q(s, a)$를 선택한다.</p>
+
+      <div class="math-block">$$ Q^*(s, a) = \mathbb{E}\left[ r + \gamma \max_{a'} Q^*(s', a') \mid s, a \right] $$</div>
+      <p class="math-note">벨만 최적 방정식. Q*는 자기 자신의 “다음 상태 max Q”로 정의된다는 자가 참조.</p>
+
+      <p>이 식의 양변에 신경망 근사 $Q_\theta$를 끼워 넣고 SGD로 학습한 것이 <strong>DQN</strong>(Deep Q-Network)이다. Atari 게임 화면(픽셀)을 상태로, 조이스틱 입력을 행동으로 보고 픽셀에서 직접 Q를 학습해 인간 수준을 넘긴 2013-15년의 결과가 강화학습의 “딥러닝 시대”를 연 사건이다.</p>
+
+      <p><strong>정책 기반(policy-based).</strong> 가치를 거치지 않고, 정책 $\pi_\theta(a \mid s)$를 직접 매개변수화해 그 정책 아래의 기대 누적 보상을 최대화한다.</p>
+
+      <div class="math-block">$$ \nabla_\theta J(\theta) = \mathbb{E}_{\tau \sim \pi_\theta}\left[ \sum_t \nabla_\theta \log \pi_\theta(a_t \mid s_t)\, G_t \right] $$</div>
+      <p class="math-note">REINFORCE 정책 경사. “좋은 결과를 낸 행동의 확률은 올리고, 나쁜 결과를 낸 행동의 확률은 내린다”의 미분 가능 버전.</p>
+
+      <p>왜 이 형태인가? <strong>“보상이 큰 trajectory에서 한 행동의 로그 확률을 키운다”</strong>는 직관을 그대로 미분 가능한 손실로 옮긴 것이다. log 안에 정책이 들어 있어 그 행동을 더 자주 하도록 가중치가 갱신되고, $G_t$가 그 갱신의 부호와 크기를 결정한다. 보상이 음수면 그 행동의 확률을 줄이는 방향으로 가중치가 이동한다.</p>
+
+      <h2>지도학습과의 결정적 차이 한 줄</h2>
+      <p>위 두 식 모두에서 결정적인 점은 <strong>“정답 분포”가 데이터셋에 미리 적혀 있지 않다</strong>는 점이다. 비전 분류에서 “이 사진의 정답은 고양이”는 사람이 라벨링해 둔 것이다. RL에서는 “이 상태에서 어떤 행동이 정답인가”가 데이터에 없다. agent가 직접 행동해 본 결과(보상)를 신호로 삼아 정책 혹은 가치를 갱신한다. 이 한 줄이 RL을 어렵게 만드는 모든 것의 근원이다 — 데이터 부족, 분산이 큰 기울기, 분포 이동(distribution shift), 시뮬레이터의 필요성.</p>
+
+      <h2>한 페이지로 본 다섯 도메인 — 같은 부품, 다른 옷</h2>
+      <p>여기까지 다섯 도메인을 봤다. 다섯 모두에서 같은 뼈대가 발견된다.</p>
+      <ul>
+        <li><strong>비전</strong>: CNN 본체 + softmax + NLL. 핵심 트릭 = 사전 학습·증강.</li>
+        <li><strong>음성</strong>: 스펙트로그램 + RNN/Transformer 본체 + CTC. 핵심 트릭 = 정렬 학습.</li>
+        <li><strong>NLP</strong>: 임베딩 + 인코더-디코더 본체 + softmax + (어텐션). 핵심 트릭 = 큰 어휘 처리.</li>
+        <li><strong>추천</strong>: 행렬 분해 = 사용자/아이템 임베딩 내적 + 관찰값 손실. 핵심 트릭 = 콜드 스타트 + 탐험.</li>
+        <li><strong>RL</strong>: 정책/가치 신경망 본체 + 누적 할인 보상 + 정책 경사. 핵심 트릭 = 탐험-착취.</li>
+      </ul>
+
+      <p>이것이 12장의 큰 메시지다. <strong>딥러닝의 핵심 부품(합성곱·순환·임베딩·역전파)은 동일하다.</strong> 도메인이 다르다는 것은 입력 모양·출력 모양·데이터 생성 메커니즘이 다르다는 뜻이고, 그 차이가 사전 변환과 손실 함수의 모양을 결정한다. 마지막 장에서 시험 대비용 한 장 요약을 정리한다.</p>
+    </div>
+
+    <nav class="ch-foot">
+      <a href="04.html"><span class="dir">← Prev</span><div class="ti">04 · 추천 시스템</div></a>
+      <a href="06.html" class="next"><span class="dir">Next →</span><div class="ti">06 · 시험 대비</div></a>
+    </nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    ['01','대규모 비전 분류'],
+    ['02','음성 인식'],
+    ['03','자연어 처리'],
+    ['04','추천 시스템'],
+    ['05','강화학습 응용'],
+    ['06','시험 대비'],
+  ];
+  const here = '05';
+  const navlist = document.getElementById('navlist');
+  SUBS.forEach(([no, t]) => {
+    const li = document.createElement('li');
+    const a = document.createElement('a');
+    a.href = no + '.html';
+    a.textContent = t;
+    if (no === here) a.classList.add('current');
+    li.appendChild(a); navlist.appendChild(li);
+  });
+
+  const prog = document.querySelector('.scroll-progress');
+  window.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    prog.style.width = (h.scrollTop / (h.scrollHeight - h.clientHeight) * 100) + '%';
+  });
+
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false},
+        ],
+        throwOnError: false,
+      });
+    }
+  });
+
+  // ====== Multi-armed bandit + ε-greedy ======
+  const TRUE_MEANS = [1.2, 2.0, 3.5, 2.8, 1.8]; // arm 2 = best
+  const COLORS = ['#6E97AF', '#A47B2E', '#C0492E', '#D98E73', '#2D5B7A'];
+  const N_ARMS = TRUE_MEANS.length;
+  let step = 0, totalR = 0;
+  let counts = new Array(N_ARMS).fill(0);
+  let sums = new Array(N_ARMS).fill(0);
+  let history = []; // 최근 200 step의 reward
+  let armHist = []; // 최근 어느 arm을 당겼는지
+  let eps = 0.1, speed = 5, running = false;
+
+  function sampleArm() {
+    if (Math.random() < eps) return Math.floor(Math.random() * N_ARMS);
+    let best = 0, bestQ = -Infinity;
+    for (let a = 0; a < N_ARMS; a++) {
+      const q = counts[a] > 0 ? sums[a] / counts[a] : 0;
+      if (q > bestQ) { bestQ = q; best = a; }
+    }
+    return best;
+  }
+  function pullArm(a) {
+    return TRUE_MEANS[a] + (Math.random() - 0.5) * 1.6;  // 노이즈
+  }
+  function tick() {
+    const a = sampleArm();
+    const r = pullArm(a);
+    counts[a]++; sums[a] += r;
+    totalR += r; step++;
+    history.push(r); armHist.push(a);
+    if (history.length > 400) { history.shift(); armHist.shift(); }
+  }
+
+  const cv = document.getElementById('rlCanvas');
+  function resize() {
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const w = cv.parentElement.clientWidth, h = cv.parentElement.clientHeight;
+    cv.width = w * dpr; cv.height = h * dpr;
+    cv.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  resize();
+  window.addEventListener('resize', resize);
+  const ctx = cv.getContext('2d');
+
+  function draw() {
+    const w = cv.clientWidth, h = cv.clientHeight;
+    ctx.fillStyle = '#FAF7F0'; ctx.fillRect(0,0,w,h);
+
+    // 상단: 5개 arm의 추정 평균 (막대)
+    const topH = h * 0.45;
+    const barW = (w - 60) / N_ARMS;
+    const maxQ = 5;
+    for (let a = 0; a < N_ARMS; a++) {
+      const x = 30 + a * barW;
+      const trueQ = TRUE_MEANS[a];
+      const estQ = counts[a] > 0 ? sums[a] / counts[a] : 0;
+      // 진짜 평균 (얇은 회색 선)
+      const trueY = topH - (trueQ / maxQ) * (topH - 30);
+      ctx.strokeStyle = 'rgba(38,34,28,0.18)';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(x + 8, trueY); ctx.lineTo(x + barW - 8, trueY); ctx.stroke();
+      // 추정 평균 (색 막대)
+      const estY = topH - (estQ / maxQ) * (topH - 30);
+      ctx.fillStyle = COLORS[a];
+      ctx.globalAlpha = 0.85;
+      ctx.fillRect(x + 12, estY, barW - 24, topH - estY);
+      ctx.globalAlpha = 1;
+      // 라벨
+      ctx.fillStyle = 'var(--ink-soft)';
+      ctx.font = '11px "Spline Sans Mono", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`arm${a}`, x + barW/2, topH + 14);
+      ctx.font = '10px "Spline Sans Mono", monospace';
+      ctx.fillStyle = '#26221C';
+      ctx.fillText(`n=${counts[a]}`, x + barW/2, topH + 28);
+      ctx.fillStyle = COLORS[a];
+      ctx.fillText(`Q̂=${estQ.toFixed(2)}`, x + barW/2, topH + 42);
+    }
+    ctx.textAlign = 'left';
+
+    // 구분선
+    ctx.strokeStyle = 'rgba(38,34,28,0.1)';
+    ctx.beginPath(); ctx.moveTo(0, topH + 55); ctx.lineTo(w, topH + 55); ctx.stroke();
+
+    // 하단: 최근 행동·보상 타임라인
+    const bottomY0 = topH + 70;
+    const bottomH = h - bottomY0 - 18;
+    ctx.fillStyle = 'var(--ink-faint)';
+    ctx.font = '10px "Spline Sans Mono", monospace';
+    ctx.fillText('action history (right = recent)', 8, bottomY0 - 6);
+
+    const cellW = (w - 16) / Math.max(history.length, 100);
+    for (let i = 0; i < armHist.length; i++) {
+      const a = armHist[i];
+      ctx.fillStyle = COLORS[a];
+      const x = 8 + i * cellW;
+      const r = history[i];
+      const hi = (r / 5) * bottomH;
+      ctx.globalAlpha = 0.75;
+      ctx.fillRect(x, bottomY0 + bottomH - hi, Math.max(cellW - 0.5, 1), hi);
+    }
+    ctx.globalAlpha = 1;
+
+    // overlay
+    document.getElementById('rlOver').innerHTML = `step <b>${step}</b> · total reward <b>${totalR.toFixed(1)}</b>`;
+    const avg = step > 0 ? (totalR / step) : 0;
+    const bestArm = TRUE_MEANS.indexOf(Math.max(...TRUE_MEANS));
+    const bestRate = step > 0 ? (counts[bestArm] / step * 100).toFixed(1) : '0.0';
+    document.getElementById('rlStats').innerHTML = `
+      평균 보상 <b>${avg.toFixed(3)}</b><br>
+      최적 arm 선택률 <b>${bestRate}%</b><br>
+      최적 arm = <b>arm${bestArm}</b> (true Q=${TRUE_MEANS[bestArm]})<br>
+      현재 ε = <b>${eps.toFixed(2)}</b>
+    `;
+  }
+
+  function loop() {
+    if (running) {
+      for (let i = 0; i < speed; i++) tick();
+    }
+    draw();
+    requestAnimationFrame(loop);
+  }
+  loop();
+
+  document.getElementById('epsSlider').addEventListener('input', (e) => {
+    eps = e.target.value / 100;
+    document.getElementById('epsVal').textContent = eps.toFixed(2);
+  });
+  document.getElementById('speedSlider').addEventListener('input', (e) => {
+    speed = +e.target.value;
+    document.getElementById('speedVal').textContent = speed + '×';
+  });
+  document.getElementById('btnPlay').addEventListener('click', () => { running = !running; });
+  document.getElementById('btnReset').addEventListener('click', () => {
+    step = 0; totalR = 0;
+    counts.fill(0); sums.fill(0);
+    history = []; armHist = [];
+  });
+  running = true;
+</script>
+</body>
+</html>

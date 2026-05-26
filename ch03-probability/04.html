@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>04. 베이즈 규칙 — 사전이 사후로</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  /* 베이즈 갱신 위젯 */
+  .bay-stage { padding: 1.4rem 1.1rem; }
+  .bay-stage canvas { display: block; width: 100%; height: 240px; background: #fff; border: 1px solid var(--line-soft); border-radius: 8px; }
+  .bay-meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: .9rem; margin-top: .8rem; }
+  .bay-meta .m { padding: .65rem .8rem; border-radius: 8px; background: var(--paper); border: 1px solid var(--line-soft); }
+  .bay-meta .m h6 { margin: 0 0 .25rem; font-family: var(--mono); font-size: .62rem; letter-spacing: .14em; color: var(--ink-faint); text-transform: uppercase; }
+  .bay-meta .m .val { font-family: var(--mono); font-size: 1.05rem; color: var(--ink); }
+  .bay-meta .m .sub { font-family: var(--mono); font-size: .72rem; color: var(--ink-faint); margin-top: .1rem; }
+  .bay-obs { display: flex; flex-wrap: wrap; gap: .35rem; padding: .7rem 0; min-height: 2.3rem; }
+  .bay-obs .o { display: inline-block; width: 1.4rem; height: 1.4rem; border-radius: 50%; font-family: var(--mono); font-size: .78rem; font-weight: 700; line-height: 1.4rem; text-align: center; color: #fff; }
+  .bay-obs .o.h { background: var(--style); } .bay-obs .o.t { background: var(--structure); }
+  @media (max-width: 720px){ .bay-meta{ grid-template-columns: 1fr; } }
+
+  .med-table { max-width: var(--measure); margin: 1.2rem auto 1.8rem; border-collapse: collapse; width: 100%; font-size: .9rem; }
+  .med-table td, .med-table th { padding: .55rem .8rem; border: 1px solid var(--line-soft); text-align: center; }
+  .med-table th { background: var(--paper-2); font-family: var(--mono); font-size: .76rem; letter-spacing: .04em; color: var(--ink-soft); font-weight: 500; }
+  .med-table td:first-child { font-family: var(--mono); color: var(--structure); }
+  .med-table tr.total td { background: var(--paper-2); font-weight: 600; }
+
+  .four-pieces { display: grid; grid-template-columns: repeat(2, 1fr); gap: .8rem; max-width: var(--measure); margin: 1.4rem auto; padding-inline: 1.4rem; }
+  .four-pieces .p { padding: .9rem 1.1rem; border-radius: 10px; border: 1px solid var(--line); background: #fff; }
+  .four-pieces .p .lab { font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; color: var(--style); text-transform: uppercase; }
+  .four-pieces .p .name { font-family: var(--serif); font-size: 1.05rem; color: var(--ink); margin: .2rem 0 .25rem; }
+  .four-pieces .p .desc { font-size: .82rem; color: var(--ink-soft); line-height: 1.5; }
+  @media (max-width: 560px){ .four-pieces{ grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-chapter 04. 믿음이 갱신되는 단 하나의 식</span>
+      <h1>베이즈 규칙 —<br>사전이 <span class="t-style">사후</span>로 바뀌는 방식</h1>
+      <p class="lede">새 관측이 들어왔을 때 우리의 믿음은 어떻게 갱신되는가. 이 한 식이 분류기, 검출기, 생성모델, 강화학습 모두의 뼈대를 만든다.</p>
+    </header>
+
+    <div class="prose">
+      <p>2번 sub-chapter에서 조건부확률을 만났다. <em>"X를 알고 있을 때 Y의 분포는 어떤가"</em>를 묻는 도구였다. 그 정의를 단 한 번 뒤집으면, 우리가 평소 살아가는 방식과 정확히 같은 추론이 식 한 줄로 떨어진다 — <strong>가지고 있던 믿음(사전, prior)을 가진 사람이 새 관측을 만나면, 그 믿음이 어떻게 바뀌는가(사후, posterior)</strong>.</p>
+
+      <p>이 한 식이 베이즈 규칙(Bayes' rule)이다.</p>
+
+      <div class="math-block">$$ \underbrace{P(\theta \mid \mathcal{D})}_{\text{사후 posterior}} = \frac{\overbrace{P(\mathcal{D} \mid \theta)}^{\text{우도 likelihood}} \cdot \overbrace{P(\theta)}^{\text{사전 prior}}}{\underbrace{P(\mathcal{D})}_{\text{증거 evidence}}} $$</div>
+      <p class="math-note">θ = 알고 싶은 파라미터 또는 가설. D = 관측한 데이터.</p>
+
+      <h2>네 조각이 하는 일</h2>
+      <p>이 식의 네 항이 각자 다른 역할을 한다. 이름과 역할을 분리해서 잡아 두면 시험 문제가 어느 항을 묻고 있는지 빠르게 보인다.</p>
+    </div>
+
+    <div class="four-pieces">
+      <div class="p">
+        <span class="lab">prior</span>
+        <div class="name">$P(\theta)$ — 사전</div>
+        <div class="desc">데이터를 보기 <b>전에</b> 가지고 있던 믿음. 도메인 지식, 과거 경험, 디폴트 가정에서 옴.</div>
+      </div>
+      <div class="p">
+        <span class="lab">likelihood</span>
+        <div class="name">$P(\mathcal{D} \mid \theta)$ — 우도</div>
+        <div class="desc">"이 θ가 진실이라면 이런 데이터가 나올 가능성이 얼마인가". 모델이 만들어 내는 부분.</div>
+      </div>
+      <div class="p">
+        <span class="lab">posterior</span>
+        <div class="name">$P(\theta \mid \mathcal{D})$ — 사후</div>
+        <div class="desc">데이터를 본 <b>뒤에</b> 갱신된 믿음. 다음 결정의 기반.</div>
+      </div>
+      <div class="p">
+        <span class="lab">evidence</span>
+        <div class="name">$P(\mathcal{D})$ — 증거</div>
+        <div class="desc">정규화 상수. 모든 θ에 대해 우도×사전을 합한 값. 보통 계산이 가장 어려운 부분.</div>
+      </div>
+    </div>
+
+    <div class="prose">
+      <h2>위젯 — 사전이 좁아지는 과정을 직접 본다</h2>
+      <p>가장 고전적인 예시로 동전 던지기를 쓴다. 동전의 앞면이 나올 확률 $\theta$를 모르는 상태에서, 우리는 어떤 <strong>사전 분포</strong>를 가지고 시작한다. 균등(아무 사전 지식 없음), 한쪽으로 치우친 분포(편향된 동전이라는 의심), 가운데에 집중된 분포(공정한 동전이라는 강한 믿음) — 사전을 슬라이더로 바꿔 보자. 그리고 관측(앞, 뒤)을 한 개씩 추가하면, 사후가 어떻게 좁아지는지 보인다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 04</span><span>베이즈 갱신 — 사전(점선) → 사후(실선)</span></div>
+        <div class="bay-stage">
+          <canvas id="bay" width="800" height="240"></canvas>
+          <div class="bay-meta">
+            <div class="m"><h6>사전 평균</h6><div class="val" id="pMean">0.50</div><div class="sub">Beta(α₀, β₀)에서</div></div>
+            <div class="m"><h6>관측</h6><div class="val" id="nObs">0 회</div><div class="sub" id="obsDetail">앞 0 / 뒤 0</div></div>
+            <div class="m"><h6>사후 평균 $\mathbb{E}[\theta \mid \mathcal{D}]$</h6><div class="val" id="postMean">0.50</div><div class="sub">Beta(α₀+앞, β₀+뒤)</div></div>
+          </div>
+          <div class="bay-obs" id="obsRow"></div>
+        </div>
+        <div class="widget-controls">
+          <div class="slider">
+            <label>사전 강도 (α₀ + β₀) <b><span id="kVal">2</span></b></label>
+            <input id="kSlider" type="range" min="1" max="40" value="2" class="s-structure">
+          </div>
+          <div class="slider">
+            <label>사전 편향 (α₀ / (α₀+β₀)) <b><span id="bVal">0.50</span></b></label>
+            <input id="bSlider" type="range" min="5" max="95" value="50" class="s-structure">
+          </div>
+          <button class="btn" id="addH">앞 + 1</button>
+          <button class="btn" id="addT">뒤 + 1</button>
+          <button class="btn ghost" id="reset">관측 초기화</button>
+        </div>
+      </div>
+      <p class="widget-cap">사전(점선)은 슬라이더로 조정하고, 관측은 버튼으로 한 번에 한 개씩 추가한다. 사후(실선)가 어떻게 좁아지는지 — 그리고 같은 관측이 와도 <b>사전이 약하면 빨리, 사전이 강하면 천천히</b> 움직이는지 — 직접 확인해 보라. 사전이 강할수록 새 데이터에 보수적인 갱신이 일어난다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>구체 예시 — 의료 검사의 함정</h2>
+      <p>베이즈 규칙이 직관과 가장 어긋나는 곳이 의료 검사다. 사례 하나를 끝까지 풀어 두자. 인구의 <strong>1%</strong>가 어떤 질병에 걸려 있다. 검사는 정확도가 매우 높아서, 진짜 환자라면 <strong>99%</strong>의 확률로 양성, 정상이라면 <strong>99%</strong>의 확률로 음성이 나온다. 어떤 사람이 양성 판정을 받았다. 실제로 환자일 확률은 얼마인가.</p>
+
+      <p>처음 보면 99% 같지만 정답은 다르다. 베이즈 규칙으로 풀면 약 <strong>50%</strong>다. 왜 그런지 표로 풀자. 인구 10,000명을 가정한다.</p>
+
+      <table class="med-table">
+        <thead><tr><th></th><th>실제 환자 (100명, 1%)</th><th>실제 정상 (9,900명, 99%)</th><th>행 합</th></tr></thead>
+        <tbody>
+          <tr><td>양성 판정</td><td>99 (= 100 × 0.99)</td><td>99 (= 9,900 × 0.01)</td><td>198</td></tr>
+          <tr><td>음성 판정</td><td>1 (= 100 × 0.01)</td><td>9,801 (= 9,900 × 0.99)</td><td>9,802</td></tr>
+          <tr class="total"><td>열 합</td><td>100</td><td>9,900</td><td>10,000</td></tr>
+        </tbody>
+      </table>
+
+      <p>양성 판정을 받은 사람은 모두 198명. 그중 실제 환자는 99명. 따라서 양성 판정 + 실제 환자일 확률은 $99 / 198 = 0.5$ — 정확히 절반이다. 검사가 99% 정확해도 사전 유병률이 1%로 매우 낮으면, 거짓 양성(false positive)이 진짜 양성과 거의 같은 수가 나오는 것이다.</p>
+
+      <div class="analogy">
+        이 결과는 <b>사전이 항상 답에 영향을 준다</b>는 사실의 가장 극적인 예시다. 검사가 아무리 좋아도, 매우 드문 사건을 검출할 때는 양성 결과 하나만으로 단정할 수 없다. 그래서 의료 가이드라인은 보통 <em>"양성이 나오면 더 정밀한 두 번째 검사를 한다"</em>고 권한다. 두 번째 검사는 사후를 새 사전으로 받아 다시 베이즈 규칙을 돌리는 것이다.
+      </div>
+
+      <p>식으로 다시 적으면 이렇게 된다.</p>
+      <div class="math-block">$$ P(\text{환자} \mid \text{양성}) = \frac{P(\text{양성} \mid \text{환자}) \cdot P(\text{환자})}{P(\text{양성})} = \frac{0.99 \cdot 0.01}{0.99 \cdot 0.01 + 0.01 \cdot 0.99} = 0.5 $$</div>
+      <p class="math-note">분자: 우도×사전 = 0.0099. 분모: 우도×사전 두 항의 합 = 0.0099 + 0.0099 = 0.0198.</p>
+
+      <h2>딥러닝과의 연결</h2>
+      <p>베이즈 규칙은 단지 시험 문제가 아니다. 딥러닝 학습 자체가 베이즈 규칙의 한 변형으로 읽힌다. 모델 파라미터를 $\theta$, 훈련 데이터를 $\mathcal{D}$라 하면:</p>
+
+      <ul style="max-width: var(--measure); margin-inline: auto; padding-inline: 2.5rem; font-size: .95rem; color: var(--ink-soft); line-height: 1.7;">
+        <li><strong>최대우도(MLE)</strong>는 사전이 균등이라고 가정하고 $P(\mathcal{D} \mid \theta)$만 최대화하는 것이다.</li>
+        <li><strong>L2 정칙화(weight decay)</strong>는 사전을 평균 0의 가우시안으로 두고 사후를 최대화하는 것(MAP)과 정확히 같다.</li>
+        <li><strong>L1 정칙화(Lasso)</strong>는 사전을 라플라스로 두는 것과 같다.</li>
+        <li><strong>변분추론/VAE</strong>는 사후를 직접 못 구할 때 더 간단한 분포로 근사하는 기술.</li>
+      </ul>
+
+      <p>그래서 7장에서 정칙화를 배울 때 "왜 L2가 가우시안과 짝이 되는가"를 다시 만나면, 이 장에서 본 베이즈 규칙이 그 답이다. 다음 장에서는 또 다른 방향, <em>"두 분포가 얼마나 다른가를 어떻게 잴 것인가"</em>로 넘어간다. 그 답이 정보이론이다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const CH = [
+    { no:'01', t:'왜 확률이 필요한가', f:'01.html' },
+    { no:'02', t:'확률변수, 분포, 조건부', f:'02.html' },
+    { no:'03', t:'기대값, 분산, 공분산', f:'03.html' },
+    { no:'04', t:'베이즈 규칙', f:'04.html' },
+    { no:'05', t:'정보이론 — 엔트로피/KL/교차 엔트로피', f:'05.html' },
+    { no:'06', t:'흔한 분포 카탈로그', f:'06.html' },
+    { no:'07', t:'시험 대비 체크리스트', f:'07.html' },
+  ];
+  function buildNav(curr) {
+    const tb = document.querySelector('.topbar');
+    if (tb) tb.innerHTML =
+      `<a class="home" href="index.html">← Ch.3 확률과 정보이론</a>` +
+      `<span class="ch-mini">SUB-CHAPTER ${curr} of 07</span>`;
+    const ol = document.querySelector('.ch-nav ol');
+    if (ol) ol.innerHTML = CH.map(c =>
+      `<li><a href="${c.f}" ${c.no === curr ? 'class="current"' : ''}>${c.t}</a></li>`).join('');
+    const foot = document.querySelector('.ch-foot');
+    if (foot) {
+      const i = CH.findIndex(c => c.no === curr);
+      const prev = i > 0 ? CH[i-1] : { f:'index.html', t:'표지로', no:'' };
+      const next = i < CH.length-1 ? CH[i+1] : { f:'index.html', t:'표지로', no:'' };
+      foot.innerHTML =
+        `<a href="${prev.f}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+        `<a href="${next.f}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+    }
+    const bar = document.querySelector('.scroll-progress');
+    if (bar) {
+      const onS = () => {
+        const h = document.documentElement;
+        const m = h.scrollHeight - h.clientHeight;
+        bar.style.width = (m > 0 ? (h.scrollTop / m) * 100 : 0) + '%';
+      };
+      document.addEventListener('scroll', onS, { passive: true });
+      onS();
+    }
+  }
+
+  /* Beta(α, β) PDF — 정규화는 곡선 모양만 보면 됨. 최대값으로 스케일링. */
+  function logGamma(z) {
+    /* Stirling 근사가 아닌 Lanczos */
+    const g = 7;
+    const c = [0.99999999999980993, 676.5203681218851, -1259.1392167224028,
+               771.32342877765313, -176.61502916214059, 12.507343278686905,
+               -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
+    if (z < 0.5) return Math.log(Math.PI / Math.sin(Math.PI * z)) - logGamma(1 - z);
+    z -= 1;
+    let x = c[0];
+    for (let i = 1; i < g + 2; i++) x += c[i] / (z + i);
+    const t = z + g + 0.5;
+    return 0.5 * Math.log(2 * Math.PI) + (z + 0.5) * Math.log(t) - t + Math.log(x);
+  }
+  function betaPDF(x, a, b) {
+    if (x <= 0 || x >= 1) return 0;
+    const logB = logGamma(a) + logGamma(b) - logGamma(a + b);
+    const logP = (a - 1) * Math.log(x) + (b - 1) * Math.log(1 - x) - logB;
+    return Math.exp(logP);
+  }
+  function maxBetaPDF(a, b, N) {
+    let m = 0;
+    for (let i = 1; i < N; i++) {
+      const x = i / N;
+      const v = betaPDF(x, a, b);
+      if (v > m) m = v;
+    }
+    return m;
+  }
+
+  const canvas = document.getElementById('bay');
+  const ctx = canvas.getContext('2d');
+  const state = { k: 2, b: 0.5, h: 0, tl: 0 };
+
+  function dpr() { return Math.min(2, window.devicePixelRatio || 1); }
+  function resize() {
+    const w = canvas.clientWidth;
+    const r = dpr();
+    canvas.width = w * r;
+    canvas.height = 240 * r;
+    canvas.style.height = '240px';
+    ctx.setTransform(r, 0, 0, r, 0, 0);
+  }
+  function draw() {
+    resize();
+    const W = canvas.clientWidth, H = 240;
+    ctx.clearRect(0, 0, W, H);
+
+    /* 축 */
+    ctx.strokeStyle = 'rgba(38,34,28,0.18)';
+    ctx.beginPath();
+    ctx.moveTo(36, H - 30); ctx.lineTo(W - 16, H - 30);
+    ctx.moveTo(36, 16); ctx.lineTo(36, H - 30);
+    ctx.stroke();
+
+    ctx.fillStyle = 'var(--ink-faint)';
+    ctx.font = '11px ui-monospace, monospace';
+    ctx.textAlign = 'center';
+    for (let t = 0; t <= 1; t += 0.2) {
+      const x = 36 + t * (W - 36 - 16);
+      ctx.fillText(t.toFixed(1), x, H - 14);
+    }
+    ctx.fillText('θ (앞면 확률)', W / 2, H - 2);
+
+    const a0 = Math.max(0.5, state.k * state.b);
+    const b0 = Math.max(0.5, state.k * (1 - state.b));
+    const a1 = a0 + state.h;
+    const b1 = b0 + state.tl;
+
+    /* 공통 스케일 — 사전, 사후 둘 다 같은 y-스케일 */
+    const N = 200;
+    const yMax = Math.max(maxBetaPDF(a0, b0, N), maxBetaPDF(a1, b1, N)) * 1.05;
+
+    function drawCurve(a, b, color, dashed) {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = dashed ? 1.5 : 2.2;
+      ctx.setLineDash(dashed ? [4, 4] : []);
+      ctx.beginPath();
+      for (let i = 0; i <= N; i++) {
+        const x = i / N;
+        const v = betaPDF(x, a, b);
+        const px = 36 + x * (W - 36 - 16);
+        const py = (H - 30) - (v / yMax) * (H - 30 - 16);
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    drawCurve(a0, b0, '#5A5247', true);   /* 사전 점선 */
+    drawCurve(a1, b1, '#C0492E', false);  /* 사후 실선 */
+
+    /* 범례 */
+    ctx.font = '11px ui-monospace, monospace';
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#5A5247';
+    ctx.fillText('--- 사전 Beta(' + a0.toFixed(1) + ', ' + b0.toFixed(1) + ')', 46, 22);
+    ctx.fillStyle = '#C0492E';
+    ctx.fillText('— 사후 Beta(' + a1.toFixed(1) + ', ' + b1.toFixed(1) + ')', 46, 38);
+
+    /* 메타 */
+    document.getElementById('pMean').textContent = (a0 / (a0 + b0)).toFixed(2);
+    document.getElementById('postMean').textContent = (a1 / (a1 + b1)).toFixed(2);
+    document.getElementById('nObs').textContent = (state.h + state.tl) + ' 회';
+    document.getElementById('obsDetail').textContent = `앞 ${state.h} / 뒤 ${state.tl}`;
+
+    /* 관측 라벨 표시 */
+    const row = document.getElementById('obsRow');
+    row.innerHTML = '';
+    for (let i = 0; i < state.h; i++) {
+      const e = document.createElement('span'); e.className = 'o h'; e.textContent = 'H'; row.appendChild(e);
+    }
+    for (let i = 0; i < state.tl; i++) {
+      const e = document.createElement('span'); e.className = 'o t'; e.textContent = 'T'; row.appendChild(e);
+    }
+  }
+
+  window.addEventListener('load', () => {
+    buildNav('04');
+    const kS = document.getElementById('kSlider');
+    const bS = document.getElementById('bSlider');
+    const kV = document.getElementById('kVal');
+    const bV = document.getElementById('bVal');
+    kS.addEventListener('input', () => { state.k = parseInt(kS.value, 10); kV.textContent = state.k; draw(); });
+    bS.addEventListener('input', () => { state.b = parseInt(bS.value, 10) / 100; bV.textContent = state.b.toFixed(2); draw(); });
+    document.getElementById('addH').addEventListener('click', () => { state.h++; draw(); });
+    document.getElementById('addT').addEventListener('click', () => { state.tl++; draw(); });
+    document.getElementById('reset').addEventListener('click', () => { state.h = 0; state.tl = 0; draw(); });
+    window.addEventListener('resize', draw);
+    draw();
+
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$', right:'$$', display:true}, {left:'$', right:'$', display:false}],
+        throwOnError: false,
+      });
+    }
+  });
+</script>
+</body>
+</html>

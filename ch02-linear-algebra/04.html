@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ch.02 · 04 특수 행렬과 직교성</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .ortho-stage { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1.4rem 1.4rem 1rem; }
+  .ortho-stage canvas { display: block; width: 100%; max-width: 360px; height: 320px; background: #fff; border-radius: 8px; border: 1px solid var(--line); margin: 0 auto; }
+  .ortho-stage h4 { margin: .4rem 0 .8rem; font-family: var(--serif); font-size: 1rem; color: var(--ink); text-align: center; }
+  .ortho-stage h4.bad { color: var(--style); }
+  .ortho-stage h4.good { color: var(--structure); }
+  .ortho-info { padding: 1rem 1.2rem; background: var(--paper-2); border-radius: 8px; font-size: .9rem; line-height: 1.6; color: var(--ink-soft); }
+  .ortho-info b { color: var(--ink); }
+  .ortho-ctl { display: flex; justify-content: center; padding: .8rem 1.2rem; }
+  @media (max-width: 720px) { .ortho-stage { grid-template-columns: 1fr; } }
+  .matrix-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: .8rem; max-width: var(--measure); margin: 1.4rem auto; padding-inline: 1.4rem; }
+  .matrix-card { padding: 1.1rem 1.2rem; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+  .matrix-card h5 { margin: 0 0 .5rem; font-family: var(--serif); font-size: 1.02rem; color: var(--structure); }
+  .matrix-card p { margin: 0; font-size: .87rem; color: var(--ink-soft); line-height: 1.55; }
+  .matrix-card pre { font-family: var(--mono); font-size: .82rem; background: var(--paper-2); padding: .5rem .7rem; border-radius: 5px; color: var(--ink); margin: .5rem 0; overflow-x: auto; }
+  @media (max-width: 600px) { .matrix-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Ch.02 · Sub 04 · 좋은 행렬의 모양</span>
+      <h1>특수 행렬과 <span class="t-structure">직교성</span>,<br>학습이 무너지지 않는 이유</h1>
+      <p class="lede">대각·대칭·직교 행렬은 단순한 분류가 아니다. 어떤 모양의 행렬이 곱셈을 안정적으로 만들고, 신경망의 표현을 보존하며, 분해(decomposition)를 가능하게 하는지에 대한 처방이다.</p>
+    </header>
+
+    <div class="prose">
+      <p>이 sub-chapter는 외울 것이 가장 많아 보이지만, 사실은 단 하나의 질문에 답한다. <strong>“어떤 행렬은 다루기 쉬운가?”</strong> 일반 행렬은 어렵다. 곱셈은 $O(n^3)$, 역행렬도 $O(n^3)$, 계산 도중 수치 오차가 누적되면 결과가 완전히 빗나갈 수 있다. 하지만 특수한 구조를 가진 행렬은 훨씬 빠르고 안정적이다.</p>
+
+      <h2>대각 행렬(Diagonal Matrix) — 가장 단순한 변환</h2>
+      <p>대각선 외에 모두 0인 행렬이다.</p>
+      <div class="math-block">$$ \mathrm{diag}(\mathbf{v}) = \begin{pmatrix} v_1 & 0 & 0 \\ 0 & v_2 & 0 \\ 0 & 0 & v_3 \end{pmatrix} $$</div>
+      <p class="math-note">대각선에 v의 성분, 나머지는 0.</p>
+
+      <p>이 행렬을 벡터에 곱하면 단순히 각 성분을 $v_i$배 한다. 즉, <strong>대각 행렬은 “축마다 다른 스케일”을 매기는 변환</strong>이다. 회전도 전단도 일어나지 않는다. 그래서 곱셈, 역행렬, 행렬식이 모두 $O(n)$으로 계산된다. 역행렬은 그냥 각 성분의 역수다.</p>
+
+      <div class="math-block">$$ \mathrm{diag}(\mathbf{v})^{-1} = \mathrm{diag}\!\left(\tfrac{1}{v_1}, \tfrac{1}{v_2}, \dots, \tfrac{1}{v_n}\right) $$</div>
+      <p class="math-note">단, 모든 v_i가 0이 아닐 때만.</p>
+
+      <p>왜 중요한가? 뒤에 나올 <em>고유분해(eigendecomposition)와 SVD</em>는 본질적으로 “복잡한 행렬을 대각 행렬과 회전 행렬의 곱으로 분해”하는 작업이다. 즉, 대각 행렬은 분해의 <strong>“가장 단순한 핵심”</strong>이다.</p>
+
+      <h2>단위 행렬(Identity Matrix) — 아무것도 안 하는 행렬</h2>
+      <div class="math-block">$$ \mathbf{I} = \mathrm{diag}(1, 1, \dots, 1) $$</div>
+      <p>대각 행렬의 가장 특별한 경우다. 어떤 벡터든 그대로 둔다. <strong>$\mathbf{I}\mathbf{x} = \mathbf{x}$, $\mathbf{A}\mathbf{I} = \mathbf{A}$</strong>. 역행렬의 정의 ($\mathbf{A}\mathbf{A}^{-1} = \mathbf{I}$)에서 기준이 되는 행렬이다.</p>
+
+      <h2>대칭 행렬(Symmetric Matrix) — 정보의 균형</h2>
+      <p>전치해도 자기 자신과 같은 행렬이다.</p>
+      <div class="math-block">$$ \mathbf{A} = \mathbf{A}^\top \iff A_{i,j} = A_{j,i} $$</div>
+      <p class="math-note">i↔j 위치의 성분이 같다.</p>
+
+      <p>대칭 행렬은 자연에 매우 자주 등장한다. <strong>공분산 행렬(Covariance Matrix)</strong>이 대표적이다 — 변수 $i$와 $j$의 공분산은 $j$와 $i$의 공분산과 같으니 당연히 대칭이다. 또 그래프의 인접 행렬(Adjacency Matrix)이 무방향 그래프면 대칭이다. 신경망에서 헤시안 행렬(Hessian, 2계 미분)도 대칭이다.</p>
+
+      <p>대칭 행렬의 결정적인 성질은 <em>모든 고유값이 실수이고, 고유벡터들이 서로 직교한다</em>는 것이다 — 이것이 PCA가 깔끔하게 작동하는 이유다. (Ch.05에서 다시 본다.)</p>
+
+      <h2>직교 행렬(Orthogonal Matrix) — 길이와 각도를 보존</h2>
+      <p>가장 중요한 특수 행렬이다. 정의는 다음과 같다.</p>
+      <div class="math-block">$$ \mathbf{Q}^\top \mathbf{Q} = \mathbf{Q} \mathbf{Q}^\top = \mathbf{I} \iff \mathbf{Q}^{-1} = \mathbf{Q}^\top $$</div>
+      <p class="math-note">전치가 곧 역행렬. 계산이 사실상 공짜.</p>
+
+      <p>이 조건을 풀어 보면, $\mathbf{Q}$의 모든 <strong>열들이 서로 직교하고 길이가 1</strong>이라는 뜻이다 (정규 직교, orthonormal). 그래서 직교 행렬을 곱한다는 것은 <em>좌표계를 회전·반사하는 것</em>일 뿐, 늘이거나 줄이지 않는다.</p>
+
+      <div class="math-block">$$ \|\mathbf{Q}\mathbf{x}\|_2 = \|\mathbf{x}\|_2, \quad (\mathbf{Q}\mathbf{x})^\top (\mathbf{Q}\mathbf{y}) = \mathbf{x}^\top \mathbf{y} $$</div>
+      <p class="math-note">길이 보존, 내적 보존 → 각도 보존.</p>
+
+      <p>왜 이게 학습 안정성에 중요한가? 신경망의 깊은 층을 통과하면서 입력 벡터의 크기가 너무 커지거나 작아지면 <strong>기울기 폭발(exploding gradient)</strong> 또는 <strong>기울기 소실(vanishing gradient)</strong>이 일어난다. 가중치 행렬을 직교(또는 그에 가깝게) 초기화하면 이 현상을 막을 수 있다. 이것이 RNN의 직교 초기화(Orthogonal Initialization), LSTM의 게이트 안정성, Transformer의 회전 위치 임베딩(RoPE)의 기반이다.</p>
+
+      <p>아래 위젯에서 직교 변환과 비직교 변환을 비교해 보자. 같은 단위 원이 직교 변환에서는 원으로 유지되지만, 비직교 변환에서는 타원으로 찌그러진다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 04</span><span>직교 변환 vs 비직교 변환</span></div>
+        <div class="ortho-stage">
+          <div>
+            <h4 class="good">직교 행렬 (회전)</h4>
+            <canvas id="orthoGood" width="500" height="440"></canvas>
+          </div>
+          <div>
+            <h4 class="bad">비직교 행렬 (전단+스케일)</h4>
+            <canvas id="orthoBad" width="500" height="440"></canvas>
+          </div>
+        </div>
+        <div class="ortho-info" style="margin: 0 1.2rem 1rem">
+          <p style="margin:0"><b>왼쪽</b>: 회전 행렬 R(θ). 원은 원으로 유지된다. 모든 화살표 길이가 같다.<br>
+          <b>오른쪽</b>: 일반 행렬 A. 원이 타원으로 찌그러진다. 어떤 방향은 늘어나고 어떤 방향은 줄어든다. 이 “늘어남의 비율”의 최댓값/최솟값이 곧 <b>조건수(condition number)</b>이며, 클수록 수치적으로 불안정하다.</p>
+        </div>
+        <div class="ortho-ctl">
+          <button class="btn ghost on" id="animOrtho">애니메이션 재생/멈춤</button>
+        </div>
+      </div>
+      <p class="widget-cap">직교 변환은 원의 모양과 모든 방향의 길이를 보존한다. 그래서 가중치 행렬이 직교에 가까울수록 신호가 깊은 층을 지나가도 크기가 안정적으로 유지된다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>네 가지 특수 행렬 한눈에 보기</h2>
+
+      <div class="matrix-grid">
+        <div class="matrix-card">
+          <h5>대각 (Diagonal)</h5>
+          <pre>[ 3  0  0
+  0  2  0
+  0  0  5 ]</pre>
+          <p>각 축을 독립적으로 스케일. 곱/역/det 모두 O(n). SVD의 가운데 Σ.</p>
+        </div>
+        <div class="matrix-card">
+          <h5>단위 (Identity)</h5>
+          <pre>[ 1  0  0
+  0  1  0
+  0  0  1 ]</pre>
+          <p>아무것도 안 한다. 역행렬 정의의 기준점.</p>
+        </div>
+        <div class="matrix-card">
+          <h5>대칭 (Symmetric)</h5>
+          <pre>[ 1  2  3
+  2  4  5
+  3  5  6 ]</pre>
+          <p>A = Aᵀ. 공분산·헤시안. 고유값 실수, 고유벡터 직교.</p>
+        </div>
+        <div class="matrix-card">
+          <h5>직교 (Orthogonal)</h5>
+          <pre>[ cos θ  -sin θ
+  sin θ   cos θ ]</pre>
+          <p>Q⁻¹ = Qᵀ. 회전·반사. 길이·각도 보존. 신경망 안정성의 열쇠.</p>
+        </div>
+      </div>
+
+      <h2>양의 정부호(Positive Definite) 행렬</h2>
+      <p>대칭 행렬 중에서도 특히 중요한 부분 집합이다. <em>모든 고유값이 양수</em>인 대칭 행렬을 양의 정부호(Positive Definite, PD)라고 한다. 동치 조건은 다음과 같다.</p>
+
+      <div class="math-block">$$ \mathbf{x}^\top \mathbf{A} \mathbf{x} > 0 \quad \forall \mathbf{x} \neq \mathbf{0} $$</div>
+      <p class="math-note">0이 아닌 모든 x에 대해 이차 형식이 양수.</p>
+
+      <p>딥러닝에서 왜 중요한가? 손실 함수의 헤시안(2계 미분 행렬)이 양의 정부호면 그 점은 <strong>국소 최솟값(local minimum)</strong>이다. 양의 정부호가 아니면 안장점(saddle point)이나 최댓값일 수 있다. 즉, 양의 정부호 여부는 “이 점이 정말 학습이 끝난 자리인가”를 판정하는 기준이다. (Ch.4 수치 계산, Ch.8 최적화에서 다시 등장.)</p>
+
+      <div class="analogy">
+        직교 행렬은 <b>좋은 안경</b>과 같다. 풍경의 비율을 그대로 유지하면서 보는 각도만 바꾼다. 반면 비직교 행렬은 <b>왜곡 거울</b>과 같다 — 거기에 비친 풍경은 어떤 부분은 늘어나고 어떤 부분은 짜부라진다. 신경망에서 가중치를 직교에 가깝게 유지하려는 노력은 <em>“왜곡 거울이 깊게 쌓이면 풍경이 알아볼 수 없게 된다”</em>는 것을 막기 위한 것이다.
+      </div>
+
+      <h3>핵심 정리 — 이것만은 기억하자</h3>
+      <ul class="checklist">
+        <li>대각 행렬은 축마다 독립 스케일. 분해(SVD, 고유분해)의 핵심 부품.</li>
+        <li>대칭 행렬 A = Aᵀ. 공분산, 헤시안의 자연스러운 모양.</li>
+        <li>직교 행렬 Q⁻¹ = Qᵀ. 길이·각도·내적 보존. 학습 안정성의 열쇠.</li>
+        <li>대칭 행렬의 고유값은 실수, 고유벡터는 서로 직교.</li>
+        <li>양의 정부호 행렬: 모든 고유값 양수. 손실 최솟값 판정.</li>
+      </ul>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const CHAPTERS = [
+    { no:'01', t:'스칼라·벡터·행렬·텐서' },
+    { no:'02', t:'행렬 곱과 선형 변환' },
+    { no:'03', t:'노름과 거리' },
+    { no:'04', t:'특수 행렬과 직교성' },
+    { no:'05', t:'고유분해' },
+    { no:'06', t:'SVD — 특이값분해' },
+    { no:'07', t:'시험 대비 — 핵심 정리' },
+  ];
+  const CUR = '04';
+  document.querySelector('.topbar').innerHTML =
+    `<a class="home" href="index.html">← Ch.02 선형대수 표지</a>` +
+    `<span class="ch-mini">SUB ${CUR} / 07</span>`;
+  document.querySelector('.ch-nav ol').innerHTML = CHAPTERS.map(c =>
+    `<li><a href="${c.no}.html" ${c.no===CUR?'class="current"':''}>${c.t}</a></li>`).join('');
+  const idx = CHAPTERS.findIndex(c=>c.no===CUR);
+  const prev = idx>0 ? CHAPTERS[idx-1] : { no:'', t:'표지로', _:'index.html' };
+  const next = idx<CHAPTERS.length-1 ? CHAPTERS[idx+1] : { no:'', t:'표지로', _:'index.html' };
+  document.querySelector('.ch-foot').innerHTML =
+    `<a href="${prev._ || prev.no+'.html'}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+    `<a href="${next._ || next.no+'.html'}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+  const bar = document.querySelector('.scroll-progress');
+  document.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max > 0 ? (h.scrollTop/max)*100 : 0) + '%';
+  }, { passive: true });
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{ left:'$$', right:'$$', display:true }, { left:'$', right:'$', display:false }],
+        throwOnError: false,
+      });
+    }
+  });
+
+  // ---------- 위젯: 직교 vs 비직교 ----------
+  const goodCanvas = document.getElementById('orthoGood');
+  const badCanvas = document.getElementById('orthoBad');
+  const gctx = goodCanvas.getContext('2d');
+  const bctx = badCanvas.getContext('2d');
+  let theta = 0;
+  let playing = true;
+
+  function drawDisk(ctx, mat, color) {
+    const W = ctx.canvas.width, H = ctx.canvas.height;
+    ctx.clearRect(0,0,W,H);
+    const cx = W/2, cy = H/2;
+    const S = 90;
+    // 격자
+    ctx.strokeStyle = 'rgba(38,34,28,.06)'; ctx.lineWidth = 1;
+    for (let i = -2; i <= 2; i++) {
+      ctx.beginPath(); ctx.moveTo(cx + i*S, 0); ctx.lineTo(cx + i*S, H); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, cy + i*S); ctx.lineTo(W, cy + i*S); ctx.stroke();
+    }
+    // 원본 원 (회색 점선)
+    ctx.strokeStyle = 'rgba(38,34,28,.3)'; ctx.lineWidth = 1.3; ctx.setLineDash([4,3]);
+    ctx.beginPath(); ctx.arc(cx, cy, S, 0, Math.PI*2); ctx.stroke();
+    ctx.setLineDash([]);
+    // 변환된 원
+    ctx.fillStyle = color + '22';
+    ctx.strokeStyle = color; ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    const N = 80;
+    for (let k = 0; k <= N; k++) {
+      const a = k / N * Math.PI * 2;
+      const x = Math.cos(a), y = Math.sin(a);
+      const tx = mat[0]*x + mat[1]*y;
+      const ty = mat[2]*x + mat[3]*y;
+      if (k === 0) ctx.moveTo(cx + tx*S, cy - ty*S);
+      else ctx.lineTo(cx + tx*S, cy - ty*S);
+    }
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    // 6방향 화살표 — 길이 비교
+    for (let i = 0; i < 8; i++) {
+      const a = i / 8 * Math.PI * 2;
+      const x = Math.cos(a), y = Math.sin(a);
+      const tx = mat[0]*x + mat[1]*y;
+      const ty = mat[2]*x + mat[3]*y;
+      const len = Math.hypot(tx, ty);
+      ctx.strokeStyle = color; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + tx*S, cy - ty*S); ctx.stroke();
+      ctx.fillStyle = color;
+      ctx.beginPath(); ctx.arc(cx + tx*S, cy - ty*S, 3, 0, Math.PI*2); ctx.fill();
+    }
+  }
+
+  function frame() {
+    if (playing) theta += 0.012;
+    const ca = Math.cos(theta), sa = Math.sin(theta);
+    drawDisk(gctx, [ca, -sa, sa, ca], '#2D5B7A');
+    const ph = theta;
+    // 비직교: 회전 + 전단 + 스케일
+    const m = [1 + 0.6*Math.sin(ph), 0.5*Math.cos(ph*0.7), -0.3*Math.sin(ph*1.1), 1 - 0.4*Math.cos(ph*0.5)];
+    drawDisk(bctx, m, '#C0492E');
+    requestAnimationFrame(frame);
+  }
+  document.getElementById('animOrtho').addEventListener('click', () => playing = !playing);
+  frame();
+</script>
+</body>
+</html>

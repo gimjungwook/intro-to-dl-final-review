@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>07 · 시험 대비 — Ch.15</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  /* 논문 연결 카드 */
+  .paper-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; max-width: var(--measure); margin: 1.4rem auto; padding-inline: 1.4rem; }
+  .paper-card { padding: 1.2rem 1.3rem; border-radius: 12px; border: 1px solid var(--line); background: #fff; }
+  .paper-card.p1 { border-left: 3px solid var(--style); background: var(--style-bg); }
+  .paper-card.p2 { border-left: 3px solid var(--structure); background: var(--structure-bg); }
+  .paper-card h4 { margin: 0 0 .4rem; font-family: var(--serif); font-size: 1.1rem; }
+  .paper-card.p1 h4 { color: var(--style); } .paper-card.p2 h4 { color: var(--structure); }
+  .paper-card .tag { font-family: var(--mono); font-size: .68rem; letter-spacing: .04em; color: var(--ink-faint); }
+  .paper-card p { margin: .5rem 0; font-size: .9rem; color: var(--ink-soft); line-height: 1.55; }
+  .paper-card .link { display: inline-block; font-family: var(--mono); font-size: .72rem; margin-top: .5rem; color: var(--ink-soft); }
+  @media (max-width: 640px) { .paper-grid { grid-template-columns: 1fr; } }
+
+  /* Q&A 패널 (P2 디자인 시스템 차용) */
+  .qa-list { max-width: var(--measure); margin: 1.6rem auto; padding-inline: 1.4rem; }
+
+  /* 최종 한 줄 요약 카드 */
+  .oneline { max-width: var(--measure); margin: 2rem auto; padding: 1.4rem 1.6rem; background: linear-gradient(135deg, var(--structure-bg), var(--style-bg)); border: 1px solid var(--line); border-radius: 14px; }
+  .oneline .tag { font-family: var(--mono); font-size: .7rem; letter-spacing: .15em; color: var(--ink-faint); margin-bottom: .6rem; display: block; }
+  .oneline p { margin: 0; font-family: var(--serif); font-size: 1.15rem; line-height: 1.55; color: var(--ink); }
+  .oneline p b { color: var(--structure); }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 07 · 강의에서 다룬 두 논문이 15장의 어디에 닿는가</span>
+      <h1>시험 대비 — <span class="t-style">P1·P2 논문</span>에서 표상이 어떻게 쓰였는가</h1>
+      <p class="lede">15장의 추상 개념들은 강의 Week 11의 두 논문에서 살아 움직였다. 적대적 예시는 표상 공간의 선형성이 만든 부산물이고, 신경 스타일 전이는 콘텐츠와 텍스처가 표상 공간에서 분리된다는 증거다. 시험은 두 논문을 매개로 15장을 물을 가능성이 높다.</p>
+    </header>
+
+    <div class="prose">
+      <p>이제 15장의 모든 통찰을 강의에서 다룬 두 논문 — P1 적대적 예시(Goodfellow et al. 2015), P2 신경 스타일 전이(Gatys et al. 2015) — 와 묶어 본다. 시험에서 "15장의 분산 표상 개념을 적용해 P2 결과를 설명하시오"처럼 두 영역을 잇는 문제가 나올 가능성이 매우 높다. 각 논문이 15장의 어떤 절을 정확히 어떻게 사용하는지 외워 두자.</p>
+
+      <h2>두 논문 ↔ Ch.15 연결 지도</h2>
+    </div>
+
+    <div class="paper-grid">
+      <div class="paper-card p1">
+        <span class="tag">P1 · Adversarial Examples (2015)</span>
+        <h4>표상의 선형성이 만든 부작용</h4>
+        <p>책 4번 절(분산 표상)과 5번 절(깊이의 표현력)의 그림자다. 깊은 망의 표상 공간이 거의 선형으로 동작하는 것이 보편 근사를 쉽게 만드는 동시에, 작은 픽셀 변화에 큰 출력 변화를 일으키는 취약점이 된다.</p>
+        <p><b>15장 연결:</b> 좋은 표상의 조건 (1번 절)에는 "매끄러움(smoothness)" 사전이 있어야 한다. 적대적 예시는 매끄러움 사전이 표상 공간에서 깨졌다는 증거. 적대적 훈련은 매끄러움을 강제로 거는 한 형태의 정칙화 = 사전(prior, 6번 절).</p>
+        <span class="link">→ 관련: Ch.15 1번, 4번, 6번</span>
+      </div>
+      <div class="paper-card p2">
+        <span class="tag">P2 · Neural Style Transfer (2015)</span>
+        <h4>표상이 콘텐츠와 텍스처를 분리한다는 증거</h4>
+        <p>책 1번 절(좋은 표상의 인과 분리)과 3번 절(전이학습)을 시각적으로 가장 극적으로 보여 준다. ImageNet으로 학습된 VGG는 단 한 번도 "콘텐츠"와 "스타일"을 분리하라고 배운 적이 없는데, 그 부산물로 두 변동이 거의 독립적 부분공간에 들어 있다.</p>
+        <p><b>15장 연결:</b> 인과 요소 분리(1번 절)의 가장 강력한 경험적 증거. 그리고 VGG라는 사전훈련 모델을 다른 과제(스타일 전이)에 그대로 가져다 쓴다는 점에서 전이학습(2·3번 절)의 극단적 사례. "표상이 좋으면 새 과제를 학습 없이 풀 수 있다"의 시연.</p>
+        <span class="link">→ 관련: Ch.15 1번, 2번, 3번</span>
+      </div>
+    </div>
+
+    <div class="prose">
+      <h2>예상 시험 문제 7개</h2>
+      <p>다음 일곱 문제는 15장의 핵심 개념을 P1·P2와 묶어 출제할 가능성이 높은 형태로 만든 것이다. 각 문제마다 답안의 골격을 제시한다.</p>
+    </div>
+
+    <div class="qa-list">
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q1</span><span>왜 사전훈련된 모델의 얕은 층은 새 도메인에 그대로 가져다 써도 되고, 깊은 층은 다시 학습해야 하는가?</span><span class="qx">+</span></div>
+        <div class="qa-a"><div class="qa-a-inner">
+          <span class="rel">Ch.15 2번, 3번 — 전이학습의 핵심 원리</span>
+          얕은 층은 모서리·색·텍스처 같은 거의 도메인 무관한 시각적 어휘를 잡는다. 이 어휘는 자연 이미지의 통계 자체에 가까워서 의료 영상이든 위성 이미지든 거의 그대로 통한다. 반면 깊은 층은 점점 과제 특이적이 된다 — ImageNet의 깊은 층은 "골든리트리버 vs 셰퍼드"를 구분하는 표상이라서 새 과제의 클래스 구분에는 직접 쓰이지 못한다. <b>한 줄 답안:</b> "공유되는 변동 요인의 분포가 얕은 층에 집중되어 있고, 깊은 층은 도메인 특이 요인을 학습하기 때문."
+        </div></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q2</span><span>n개의 뉴런으로 one-hot은 n개의 영역을 표현하는 반면 분산 표상은 2^n개를 표현한다. 이 지수적 이득이 왜 일반화 능력으로 이어지는지 설명하라.</span><span class="qx">+</span></div>
+        <div class="qa-a"><div class="qa-a-inner">
+          <span class="rel">Ch.15 4번 — 분산 표상의 핵심</span>
+          학습 데이터에는 가능한 조합의 일부만 들어 있다. one-hot 표상이라면 학습 중 보지 못한 새 ID는 일반화의 대상이 아니다 — 처음 보는 식별자에 대해 아무 정보가 없다. 분산 표상은 다르다. 각 비트가 진짜 생성 요인(예: "동물인가", "포유류인가", "크기")을 잡았다면, 학습 중 본 적 없는 비트 조합도 각 비트의 의미를 통해 자동으로 일반화된다. 즉 표현 가능 영역의 지수적 격차가 그대로 일반화 가능 영역의 격차로 이어진다. <b>한 줄 답안:</b> "각 차원이 독립적 인과 요인이면 본 적 없는 조합도 차원별 학습 결과의 합으로 일반화된다."
+        </div></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q3</span><span>깊이가 같은 함수를 표현하는 데 폭(width)에 비해 지수적으로 효율적인 이유를 ReLU 망의 선형 영역 수 관점에서 설명하라.</span><span class="qx">+</span></div>
+        <div class="qa-a"><div class="qa-a-inner">
+          <span class="rel">Ch.15 5번 — 깊이의 지수적 표현력</span>
+          ReLU 망의 출력은 조각별 선형 함수다. 각 층을 통과할 때마다 이전 층의 모든 결정 경계가 새 층의 결정 경계와 곱해지면서 영역의 수가 곱셈으로 늘어난다. 곱셈을 L번 반복하면 지수가 된다 — Montufar et al.(2014)의 정리는 깊이 L의 망이 만드는 영역 수의 하한이 약 $(n/d)^{(L-1)d} \cdot \binom{n}{d}$ 임을 보였다. 핵심은 깊이 L이 지수의 위치에 있다는 것. <b>본질:</b> 깊은 망은 낮은 층의 특징을 높은 층이 재사용하므로 같은 자원으로 곱셈적 표현력을 얻는다.
+        </div></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q4</span><span>P2 신경 스타일 전이가 작동한다는 사실이 15장의 어떤 주장을 경험적으로 지지하는지 설명하라.</span><span class="qx">+</span></div>
+        <div class="qa-a"><div class="qa-a-inner">
+          <span class="rel">Ch.15 1번, 3번 — P2 연결</span>
+          15장 1번 절의 "좋은 표상은 인과 요인을 분리한다"는 주장의 가장 강력한 경험적 증거다. VGG는 단 한 번도 "콘텐츠를 잡아라, 스타일을 잡아라"라고 배우지 않았다 — 단지 ImageNet 분류만 학습했다. 그런데 그 표상 공간에서 콘텐츠(깊은 층의 raw feature)와 스타일(필터 간 Gram 상관)이 거의 독립적 부분공간에 들어 있다. 두 손실의 단순 가중합으로 분리·재조합이 가능하다는 사실이 곧 표상이 인과 요인을 어느 정도 분리했다는 증거. 또한 같은 VGG를 분류와 무관한 새 과제(이미지 생성)에 그대로 쓴다는 점에서 전이학습(3번 절)의 극단적 사례이기도 하다.
+        </div></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q5</span><span>P1 적대적 예시는 표상학습 관점에서 어떤 문제를 드러내는가? 매끄러움 사전과 어떻게 연결되는가?</span><span class="qx">+</span></div>
+        <div class="qa-a"><div class="qa-a-inner">
+          <span class="rel">Ch.15 1번, 6번 — P1 연결</span>
+          좋은 표상의 한 가지 조건은 "매끄러움(smoothness)" 사전이다 — 가까운 입력은 가까운 출력에 매핑되어야 한다. 적대적 예시는 이 사전이 표상 공간에서 깨졌다는 증거다. 픽셀에서 거의 보이지 않을 만큼 작은 변화가 표상 공간에서는 결정 경계를 가로지르는 큰 이동을 만든다. 이는 깊은 망이 표현력을 얻기 위해 거의 선형으로 동작하도록 설계되었기 때문이다(ReLU·LSTM·maxout 모두). FGSM은 그 선형성의 방향을 그대로 이용해 만든 공격이다. 적대적 훈련은 학습 시 손실에 "가장 나쁜 인근 점"의 페널티를 추가하는 식으로 매끄러움을 강제로 거는 정칙화 = 사전(prior)이다.
+        </div></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q6</span><span>반지도학습이 어떤 조건에서 분류 정확도를 끌어올리고, 어떤 조건에서 오히려 떨어뜨리는가? 책의 "인과 요소" 관점에서 답하라.</span><span class="qx">+</span></div>
+        <div class="qa-a"><div class="qa-a-inner">
+          <span class="rel">Ch.15 6번 — 반지도학습의 조건</span>
+          반지도학습은 입력 분포 $p(x)$를 형성하는 인과 요인과 라벨 $y$를 결정하는 인과 요인이 <b>공유될 때</b> 작동한다. 수식으로 $x = g(z), y = h(z_S)$ where $z_S \subset z$. 이 조건이면 $p(x)$를 잘 설명하는 것이 자동으로 $z_S$를 부분적으로 복원하는 것과 같아져 분류에 도움이 된다. 반대로 라벨 없는 데이터의 분포가 라벨과 무관한 변동을 많이 가지고 있으면, 그 변동을 학습하는 데 모델 용량이 낭비되어 정확도가 오히려 떨어진다(negative transfer). <b>실무 처방:</b> 자기지도 목표는 다운스트림이 의지할 인과 요인을 잡도록 설계해야 한다 — 단순한 픽셀 복원보다는 "같은 이미지의 두 뷰는 가깝게" 같은 의미 보존 목표가 일반적으로 더 좋다.
+        </div></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q"><span class="qn">Q7</span><span>15장의 마지막 통찰 — "모든 정칙화는 사전(prior)이다"를 자기 말로 설명하고, 6가지 사전을 두 가지 이상 짝지어 보라.</span><span class="qx">+</span></div>
+        <div class="qa-a"><div class="qa-a-inner">
+          <span class="rel">Ch.15 6번 — 통합적 시각</span>
+          15장의 결론은 7장의 정칙화, 14장의 오토인코더, 이 장의 반지도·전이학습이 모두 "표상에 어떤 사전을 거는가"의 변형이라는 것이다. 6가지 대표 사전:
+          <b>① 매끄러움</b>(가까운 입력 → 가까운 라벨, 데이터 증강·드롭아웃),
+          <b>② 매니폴드</b>(데이터는 얇은 면 위에, DAE·CAE),
+          <b>③ 인과 요인 분리</b>(각 차원이 독립적 의미, β-VAE·제로샷),
+          <b>④ 희소성</b>(소수 뉴런 활성, L1·ReLU),
+          <b>⑤ 시간적 일관성</b>(의미는 천천히 변함, SFA·비디오 자기지도),
+          <b>⑥ 계층적 인과</b>(낮은 추상에서 높은 추상으로 합성, 깊은 망 자체).
+          어떤 사전도 보편적으로 옳지 않다. 데이터의 성격에 따라 적절한 사전을 선택하는 것이 표상학습의 실제 기술이다. <b>한 줄 답안:</b> "모든 정칙화 기법은 모델이 만들 수 있는 표상의 공간에 어떤 모양의 사전 분포를 거는 것이고, 그 모양이 데이터의 진짜 인과 구조와 맞을 때만 정칙화가 효과를 낸다."
+        </div></div>
+      </div>
+    </div>
+
+    <div class="prose">
+      <h2>외울 핵심 한 줄 (시험 직전 카드)</h2>
+      <ul>
+        <li><b>좋은 표상 3정의:</b> 선형 분리 가능성 · 매니폴드 친화성 · 인과 요인 분리.</li>
+        <li><b>사전훈련의 핵심:</b> 라벨 없는 데이터로 가중치에 "사전(prior)"을 거는 것. 큰 데이터의 표상을 작은 과제에 빌려준다.</li>
+        <li><b>전이학습 조건:</b> 소스·타깃이 변동 요인을 공유할 때 작동. 얕은 층 공유, 깊은 층 교체가 표준.</li>
+        <li><b>분산 표상의 이득:</b> $n$ 뉴런 → $2^n$ 영역. one-hot의 $n$ 대비 지수적. 각 비트가 인과 요인이면 본 적 없는 조합도 일반화.</li>
+        <li><b>깊이의 이득:</b> 같은 함수를 얕은 망으로 흉내내려면 너비가 지수적으로 필요. 합성성 = 낮은 층의 재사용성.</li>
+        <li><b>반지도학습 조건:</b> $p(x)$와 $p(y|x)$가 같은 인과 요인을 공유할 때 작동. 무작정 사전훈련은 오히려 해.</li>
+        <li><b>통합:</b> 모든 정칙화는 표상 위의 사전(prior). 6가지 — 매끄러움·매니폴드·분리·희소성·시간일관성·계층.</li>
+      </ul>
+
+      <div class="oneline">
+        <span class="tag">CH.15 ONE-LINER</span>
+        <p>표상학습은 <b>"같은 자원으로 더 많은 개념을, 한 도메인의 학습을 다른 도메인으로 옮길 수 있게"</b> 만드는 일이다. 그것을 가능하게 하는 두 기둥은 <b>분산 표상</b>(한 층 안의 조합)과 <b>깊이</b>(층 사이의 합성)이며, 모든 정칙화·사전훈련·전이학습은 <b>표상 위에 어떤 사전(prior)을 거는가</b>라는 한 가지 메타 질문의 변형이다.</p>
+      </div>
+
+      <h2>마지막 — 표지로 돌아가 전체 챕터를 다시 한 번</h2>
+      <p>이제 7개 sub-chapter를 모두 보았다. <a href="index.html">표지로 돌아가</a> 각 카드의 한 줄 설명을 다시 읽으며 머릿속 지도를 굳히자. 핵심은 "왜"다. 분산 표상이 왜 일반화로 이어지는지, 깊이가 왜 지수적 이득을 주는지, 반지도학습이 왜 가끔만 작동하는지 — 이 "왜"들이 시험에서 외움보다 더 큰 점수 차이를 만든다.</p>
+
+      <p>그리고 15장은 책 전체의 마무리다. 1장에서 시작된 "표상학습으로서 딥러닝"의 약속이 여기서 회수된다. 시험에서 어떤 문제가 나오든, 답은 결국 한 줄로 돌아간다 — <strong>"좋은 표상을 만드는 것이 좋은 모델을 만드는 일이다."</strong></p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'좋은 표상이란', f:'01.html' },
+    { no:'02', t:'사전훈련과 미세조정', f:'02.html' },
+    { no:'03', t:'전이학습·도메인 적응', f:'03.html' },
+    { no:'04', t:'분산 표상의 힘', f:'04.html' },
+    { no:'05', t:'깊이의 지수적 표현력', f:'05.html' },
+    { no:'06', t:'인과 요소와 반지도', f:'06.html' },
+    { no:'07', t:'시험 대비', f:'07.html' },
+  ];
+  const CURRENT = '07';
+  (function buildNav() {
+    document.querySelector('.topbar').innerHTML =
+      `<a class="home" href="index.html">← Chapter 15 · 표상 학습</a>` +
+      `<span class="ch-mini">SUB ${CURRENT} / 07</span>`;
+    document.querySelector('.ch-nav ol').innerHTML = SUBS.map(s =>
+      `<li><a href="${s.f}" ${s.no === CURRENT ? 'class="current"' : ''}>${s.t}</a></li>`).join('');
+    const i = SUBS.findIndex(s => s.no === CURRENT);
+    const prev = i > 0 ? SUBS[i-1] : { f:'index.html', t:'챕터 표지', no:'' };
+    const next = i < SUBS.length-1 ? SUBS[i+1] : { f:'index.html', t:'챕터 표지', no:'' };
+    document.querySelector('.ch-foot').innerHTML =
+      `<a href="${prev.f}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+      `<a href="${next.f}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+    const bar = document.querySelector('.scroll-progress');
+    const onScroll = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    document.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+  })();
+
+  // Q&A 아코디언
+  document.querySelectorAll('.qa').forEach(q => {
+    q.querySelector('.qa-q').addEventListener('click', () => q.classList.toggle('open'));
+  });
+
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
+        throwOnError: false,
+      });
+    }
+  });
+</script>
+</body>
+</html>

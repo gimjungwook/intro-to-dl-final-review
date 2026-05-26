@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>09 / 06 / 출력 크기, 스트라이드, 패딩</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-chapter 06 / 공식과 그림</span>
+      <h1>출력 크기 / 스트라이드 /<br><span class="t-structure">패딩의 공식</span></h1>
+      <p class="lede">⌊(n + 2p − k) / s⌋ + 1. 외울 필요 없다. 그림 위에 커널을 한 칸씩 놓아 보면 같은 식이 자연스럽게 나온다. 그리고 수용 영역이 왜 층마다 커지는지도.</p>
+    </header>
+
+    <div class="prose">
+      <p>합성곱 한 층의 출력이 입력보다 얼마나 작아지는지(또는 같은지, 작아지는지)는 모델 설계와 디버깅에서 거의 매번 마주치는 계산이다. 공식은 단순하지만, 그 안에 들어가는 네 파라미터 — 입력 크기 $n$, 커널 크기 $k$, 패딩 $p$, 스트라이드 $s$ — 가 각각 어떤 역할을 하는지 그림으로 한 번 익히면 다시는 외울 필요가 없다.</p>
+
+      <h2>공식과 유도</h2>
+
+      <div class="math-block">$$ o \;=\; \left\lfloor \frac{n + 2p - k}{s} \right\rfloor + 1 $$</div>
+      <p class="math-note">입력 크기 n, 패딩 p, 커널 크기 k, 스트라이드 s가 주어질 때 출력 크기 o.</p>
+
+      <p>유도는 한 줄로 가능하다. 입력 양쪽에 패딩 $p$씩 붙이면 “유효 입력”은 $n + 2p$ 칸이다. 커널이 처음 위치에 놓이면 $k$ 칸을 차지한다. 그러고 남은 $n + 2p - k$ 칸을 스트라이드 $s$씩 건너뛰며 이동할 수 있다. 그 이동 가능한 횟수는 $\lfloor (n + 2p - k) / s \rfloor$다. 첫 번째 위치도 출력 한 칸을 만드므로 1을 더한다. 끝.</p>
+
+      <div class="symbols"><tbody>
+        <tr><td>$n$</td><td>입력의 한 축 크기(예: 32). 정사각형 입력이면 가로, 세로 모두.</td></tr>
+        <tr><td>$k$</td><td>커널의 한 축 크기(예: 3, 5). 이름의 “3×3 커널”에서 그 3.</td></tr>
+        <tr><td>$p$</td><td>패딩 — 입력 가장자리에 덧붙이는 0의 두께. 한쪽씩 $p$, 양쪽 합 $2p$.</td></tr>
+        <tr><td>$s$</td><td>스트라이드 — 커널을 한 번에 옮기는 칸 수. 1이면 모든 위치, 2면 격번 위치.</td></tr>
+        <tr><td>$o$</td><td>출력의 한 축 크기. 정사각형 출력이면 가로, 세로 모두.</td></tr>
+      </tbody></div>
+
+      <h2>세 가지 대표 설정</h2>
+
+      <p>현실에서 가장 자주 쓰는 합성곱 설정은 세 가지다.</p>
+
+      <div class="symbols"><tbody>
+        <tr><td>유효 합성곱 (Valid)</td><td>$p = 0$. 패딩 없음. 출력이 입력보다 작아진다. 예: $32 \to 30$ (3×3, $s=1$).</td></tr>
+        <tr><td>동일 합성곱 (Same)</td><td>출력 크기가 입력과 같도록 $p$를 정함. 3×3이면 $p = 1$. 여러 층을 쌓을 때 크기 계산이 편하다.</td></tr>
+        <tr><td>스트라이드 다운샘플링 (Strided)</td><td>$s = 2$로 출력 크기를 절반으로 줄인다. 풀링을 대체할 수 있다(sub-chapter 04 끝부분 참고).</td></tr>
+      </tbody></div>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 06a</span><span>스트라이드 / 패딩 / 커널 크기 슬라이더 — 출력 크기 실시간 계산</span></div>
+        <div id="outputSize"></div>
+      </div>
+      <p class="widget-cap">슬라이더로 입력 크기 n, 커널 k, 패딩 p, 스트라이드 s를 바꿔 보라. 위쪽에 입력과 커널의 첫 번째 위치가 그림으로 그려지고, 아래에 ⌊(n+2p−k)/s⌋+1 공식이 단계별로 풀린다. 같은 입력에 valid, same, strided 설정이 어떻게 다른 출력을 만드는지 직접 확인할 수 있다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>수용 영역(Receptive Field) — 깊이가 시야를 넓힌다</h2>
+
+      <p>한 합성곱 층의 한 출력 뉴런이 입력의 어느 영역에서 정보를 모으는지를 <strong>수용 영역(receptive field)</strong>이라 부른다. 단일 3×3 합성곱이면 수용 영역은 3×3이다. 여기까지는 직관적이다.</p>
+
+      <p>그러나 합성곱을 여러 층 쌓으면 깊은 층의 한 출력 뉴런은 직접적으로는 직전 층의 3×3만 보지만, 그 직전 층의 출력들이 다시 처음 입력의 더 넓은 영역에서 만들어졌으므로, <strong>간접적으로는 처음 입력의 훨씬 넓은 영역</strong>에 의존한다. 이 간접 수용 영역의 크기가 층마다 어떻게 커지는지가 CNN의 계층적 특징 추출의 직접 근거다.</p>
+
+      <p>3×3 커널(스트라이드 1, 패딩 0)을 여러 층 쌓는 경우를 보자.</p>
+
+      <div class="symbols"><tbody>
+        <tr><td>1층</td><td>수용 영역 3×3</td></tr>
+        <tr><td>2층</td><td>5×5 (2층의 한 뉴런은 1층 3×3 영역에 의존, 1층의 각 셀은 다시 3×3 입력에 의존 → 합쳐서 5×5)</td></tr>
+        <tr><td>3층</td><td>7×7</td></tr>
+        <tr><td>4층</td><td>9×9</td></tr>
+        <tr><td>L층</td><td>$2L + 1$ × $2L + 1$ (3×3, $s=1$, $p=0$ 기준)</td></tr>
+      </tbody></div>
+
+      <p>스트라이드가 들어가면 수용 영역이 더 빠르게 커진다. 풀링도 마찬가지다. 2×2 풀링(스트라이드 2)은 직후 층의 수용 영역을 사실상 두 배로 확장한다. 그래서 “합성곱 + 풀링” 블록을 몇 번만 쌓아도 깊은 층의 한 뉴런은 입력 이미지의 상당히 넓은 영역(전체의 절반 이상)을 본다.</p>
+
+      <div class="analogy">
+        한 층 뉴런이 <b>“창문 하나로 작은 풍경만 보는 사람”</b>이라면, 깊은 층 뉴런은 <b>“창문을 통해 다른 방의 창문을 통해 또 다른 방의 창문을 통해 멀리 있는 산을 보는 사람”</b>이다. 직접적으로는 작은 창문 하나뿐이지만, 창문이 연쇄로 이어져 결국 매우 멀리까지 본다. 그래서 깊은 층은 “전체 장면의 구조”를 잡을 수 있다.
+      </div>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 06b</span><span>수용 영역 — 층을 올릴수록 한 뉴런이 보는 영역이 커진다</span></div>
+        <div id="rf"></div>
+      </div>
+      <p class="widget-cap">슬라이더로 층 수 L을 바꿔 보라. 입력 이미지 위에 “L층의 한 뉴런이 의존하는 입력 영역”이 빨간 박스로 표시된다. L=1이면 3×3, L=4면 9×9, L=10이면 21×21로 커진다. 동시에 박스 가운데 깊은 층 뉴런이 그 영역의 어떤 “의미”를 잡게 되는지를 단어로 함께 표시한다 — 에지 → 텍스처 → 부분 → 객체.</p>
+    </div>
+
+    <div class="prose">
+      <h2>패딩이 왜 필요한가 — 가장자리 손실</h2>
+
+      <p>패딩이 필요한 이유는 두 가지다. 첫째, <strong>크기 보존</strong>이다. 패딩 없이 3×3 합성곱을 반복하면 32 → 30 → 28 → ... → 결국 1×1이 되어 더 이상 쌓을 수 없다. 패딩 $p = 1$을 주면 32 → 32 → 32 → ... 로 유지되어 임의 깊이까지 쌓을 수 있다.</p>
+
+      <p>둘째, <strong>가장자리 정보 보존</strong>이다. 패딩 없이 합성곱을 적용하면 입력의 가장자리 픽셀은 중앙 픽셀보다 커널에 포함되는 횟수가 적다. 예를 들어 3×3 커널이 5×5 입력에 적용될 때, 가운데 픽셀은 9개 커널 위치 모두에 포함되지만 모서리 픽셀은 단 1개의 커널 위치에만 포함된다. 깊이가 깊어질수록 가장자리는 점점 약하게 반영된다. 패딩으로 이 비대칭을 어느 정도 보정한다.</p>
+
+      <h2>실용 패턴 — 3×3 + 패딩 1 + 풀링 2의 조합</h2>
+
+      <p>VGGNet 이후 가장 흔히 쓰이는 한 블록의 모양은 다음과 같다.</p>
+
+      <ol>
+        <li><strong>3×3 합성곱, 패딩 1, 스트라이드 1</strong>: 크기 보존. 비선형성(ReLU) 한 번.</li>
+        <li><strong>3×3 합성곱, 패딩 1, 스트라이드 1</strong>: 같은 설정 한 번 더. 수용 영역 확장 + 비선형성 추가.</li>
+        <li><strong>2×2 최대 풀링, 스트라이드 2</strong>: 크기 절반으로. 다운샘플링.</li>
+      </ol>
+
+      <p>이 블록을 반복하면 채널 수는 늘어나고(64 → 128 → 256 → 512), 공간 크기는 절반씩 줄어든다(224 → 112 → 56 → 28 → 14 → 7). 마지막에 완전연결 분류기를 붙이면 표준 CNN의 골격이 완성된다. 이 패턴이 어떻게 사람들이 “쌓고 또 쌓고” 싶어하게 만들었고, 그 욕심이 어떤 문제(열화)에 부딪혀 잔차 연결로 풀렸는지는 다음 sub-chapter 07의 주제다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    { no: '01', t: '왜 완전연결은 안 되는가' },
+    { no: '02', t: '합성곱의 정의' },
+    { no: '03', t: 'CNN의 3대 핵심 속성' },
+    { no: '04', t: '풀링 — 평행이동 불변성' },
+    { no: '05', t: '신경과학적 기원' },
+    { no: '06', t: '출력 크기, 스트라이드, 패딩' },
+    { no: '07', t: '대표 아키텍처 계보' },
+    { no: '08', t: '시험 대비' },
+  ];
+  function buildNav(cur) {
+    const tb = document.querySelector('.topbar');
+    if (tb) tb.innerHTML =
+      '<a class="home" href="index.html">← Chapter 09 / 합성곱 신경망</a>' +
+      '<span class="ch-mini">SUB ' + cur + ' / 08</span>';
+    const ol = document.querySelector('.ch-nav ol');
+    if (ol) ol.innerHTML = SUBS.map(c =>
+      '<li><a href="' + c.no + '.html"' + (c.no === cur ? ' class="current"' : '') + '>' + c.t + '</a></li>').join('');
+    const foot = document.querySelector('.ch-foot');
+    if (foot) {
+      const i = SUBS.findIndex(c => c.no === cur);
+      const prev = i > 0 ? SUBS[i - 1] : { no: '', t: '표지로', _href: 'index.html' };
+      const next = i < SUBS.length - 1 ? SUBS[i + 1] : { no: '', t: '표지로', _href: 'index.html' };
+      const hp = prev._href || (prev.no + '.html');
+      const hn = next._href || (next.no + '.html');
+      foot.innerHTML =
+        '<a href="' + hp + '"><div class="dir">← 이전</div><div class="ti">' + prev.t + '</div></a>' +
+        '<a href="' + hn + '" class="next"><div class="dir">다음 →</div><div class="ti">' + next.t + '</div></a>';
+    }
+  }
+  function initScroll() {
+    const bar = document.querySelector('.scroll-progress');
+    if (!bar) return;
+    const on = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    document.addEventListener('scroll', on, { passive: true }); on();
+  }
+
+  // ─── 위젯 06a: 출력 크기 슬라이더 ─────────────────────
+  function outputSizeWidget(host) {
+    const css = getComputedStyle(document.documentElement);
+    const COL = {
+      structure: css.getPropertyValue('--structure').trim() || '#2D5B7A',
+      style: css.getPropertyValue('--style').trim() || '#C0492E',
+      synth: css.getPropertyValue('--synth').trim() || '#A47B2E',
+      ink: css.getPropertyValue('--ink-soft').trim() || '#5A5247',
+      faint: css.getPropertyValue('--ink-faint').trim() || '#8E8576',
+    };
+    let n = 7, k = 3, p = 0, s = 1;
+
+    host.innerHTML =
+      '<div style="padding:1.4rem 1rem 1.2rem;background:#fff;">' +
+      '<div id="szBoard"></div>' +
+      '<div style="margin-top:1.2rem;padding-top:1rem;border-top:1px solid var(--line-soft);display:grid;grid-template-columns:1fr 1fr;gap:.8rem;font-family:var(--mono);font-size:.74rem;">' +
+      '  <label style="display:flex;align-items:center;gap:.5rem;"><span style="color:' + COL.ink + ';width:60px;">n (입력)</span><input type="range" id="rN" min="5" max="20" value="7" style="flex:1;"><span id="lN" style="color:' + COL.style + ';font-weight:600;width:30px;text-align:right;">7</span></label>' +
+      '  <label style="display:flex;align-items:center;gap:.5rem;"><span style="color:' + COL.ink + ';width:60px;">k (커널)</span><input type="range" id="rK" min="1" max="7" step="2" value="3" style="flex:1;"><span id="lK" style="color:' + COL.style + ';font-weight:600;width:30px;text-align:right;">3</span></label>' +
+      '  <label style="display:flex;align-items:center;gap:.5rem;"><span style="color:' + COL.ink + ';width:60px;">p (패딩)</span><input type="range" id="rP" min="0" max="3" value="0" style="flex:1;"><span id="lP" style="color:' + COL.style + ';font-weight:600;width:30px;text-align:right;">0</span></label>' +
+      '  <label style="display:flex;align-items:center;gap:.5rem;"><span style="color:' + COL.ink + ';width:60px;">s (스트라이드)</span><input type="range" id="rS" min="1" max="3" value="1" style="flex:1;"><span id="lS" style="color:' + COL.style + ';font-weight:600;width:30px;text-align:right;">1</span></label>' +
+      '</div>' +
+      '<div id="szFormula" style="margin-top:1rem;padding:.7rem .9rem;background:var(--paper-2);border-radius:6px;font-family:var(--mono);font-size:.78rem;color:' + COL.ink + ';text-align:center;"></div>' +
+      '</div>';
+
+    function render() {
+      const o = Math.floor((n + 2*p - k) / s) + 1;
+      // 시각화: SVG 격자
+      const cellPx = Math.min(28, Math.floor(360 / (n + 2*p)));
+      const total = n + 2*p;
+      const w = total * cellPx, h = total * cellPx;
+      let svg = '<svg width="' + w + '" height="' + h + '" style="background:#fff;border:1px solid var(--line-soft);border-radius:6px;">';
+      // 격자
+      for (let r = 0; r < total; r++) for (let c = 0; c < total; c++) {
+        const isPad = r < p || r >= total - p || c < p || c >= total - p;
+        const fill = isPad ? 'rgba(0,0,0,0.06)' : 'rgba(45,91,122,0.18)';
+        svg += '<rect x="' + (c * cellPx) + '" y="' + (r * cellPx) + '" width="' + cellPx + '" height="' + cellPx + '" fill="' + fill + '" stroke="rgba(38,34,28,0.13)" stroke-width="0.7"/>';
+      }
+      // 커널 첫 위치
+      svg += '<rect x="0" y="0" width="' + (k * cellPx) + '" height="' + (k * cellPx) + '" fill="rgba(192,73,46,0.30)" stroke="' + COL.style + '" stroke-width="2"/>';
+      svg += '</svg>';
+
+      // 출력 격자
+      const outCellPx = Math.min(28, Math.floor(280 / Math.max(1, o)));
+      let outSvg = '<svg width="' + (o * outCellPx) + '" height="' + (o * outCellPx) + '" style="background:#fff;border:1px solid var(--line-soft);border-radius:6px;">';
+      for (let r = 0; r < o; r++) for (let c = 0; c < o; c++) {
+        outSvg += '<rect x="' + (c * outCellPx) + '" y="' + (r * outCellPx) + '" width="' + outCellPx + '" height="' + outCellPx + '" fill="rgba(192,73,46,0.30)" stroke="rgba(38,34,28,0.13)" stroke-width="0.7"/>';
+      }
+      outSvg += '</svg>';
+
+      host.querySelector('#szBoard').innerHTML =
+        '<div style="display:flex;flex-wrap:wrap;gap:1.4rem;justify-content:center;align-items:center;">' +
+        '<div style="text-align:center;"><div style="font-family:var(--mono);font-size:.7rem;color:' + COL.ink + ';margin-bottom:.4rem;">입력 + 패딩 (' + total + '×' + total + ')</div>' + svg +
+        '<div style="font-family:var(--mono);font-size:.65rem;color:' + COL.faint + ';margin-top:.3rem;">빨간 박스 = 커널 첫 위치 (' + k + '×' + k + ')</div></div>' +
+        '<div style="font-family:var(--mono);font-size:1.4rem;color:' + COL.faint + ';">→</div>' +
+        '<div style="text-align:center;"><div style="font-family:var(--mono);font-size:.7rem;color:' + COL.ink + ';margin-bottom:.4rem;">출력 (' + o + '×' + o + ')</div>' + outSvg + '</div>' +
+        '</div>';
+
+      host.querySelector('#szFormula').innerHTML =
+        'o = ⌊(' + n + ' + 2×' + p + ' − ' + k + ') / ' + s + '⌋ + 1 = ⌊' + (n + 2*p - k) + ' / ' + s + '⌋ + 1 = <b style="color:' + COL.style + ';">' + o + '</b>';
+
+      host.querySelector('#lN').textContent = n;
+      host.querySelector('#lK').textContent = k;
+      host.querySelector('#lP').textContent = p;
+      host.querySelector('#lS').textContent = s;
+    }
+    document.getElementById('rN').addEventListener('input', (e) => { n = +e.target.value; render(); });
+    document.getElementById('rK').addEventListener('input', (e) => { k = +e.target.value; render(); });
+    document.getElementById('rP').addEventListener('input', (e) => { p = +e.target.value; render(); });
+    document.getElementById('rS').addEventListener('input', (e) => { s = +e.target.value; render(); });
+    render();
+  }
+
+  // ─── 위젯 06b: 수용 영역 ─────────────────────
+  function rfWidget(host) {
+    const css = getComputedStyle(document.documentElement);
+    const COL = {
+      structure: css.getPropertyValue('--structure').trim() || '#2D5B7A',
+      style: css.getPropertyValue('--style').trim() || '#C0492E',
+      ink: css.getPropertyValue('--ink-soft').trim() || '#5A5247',
+      faint: css.getPropertyValue('--ink-faint').trim() || '#8E8576',
+    };
+    let L = 3;
+    const IMG = 32;
+
+    const interps = [
+      { L: 1,  label: '에지, 코너' },
+      { L: 3,  label: '텍스처, 반복 패턴' },
+      { L: 5,  label: '부분 구조 (눈, 창틀, 바퀴)' },
+      { L: 8,  label: '객체 전체 (얼굴, 자동차)' },
+      { L: 12, label: '장면 구조' },
+    ];
+    function meaning(l) {
+      let cur = interps[0];
+      for (const it of interps) if (it.L <= l) cur = it;
+      return cur.label;
+    }
+
+    host.innerHTML =
+      '<div style="padding:1.4rem 1rem 1.2rem;background:#fff;">' +
+      '<div id="rfBoard"></div>' +
+      '<div style="margin-top:1.2rem;padding-top:1rem;border-top:1px solid var(--line-soft);display:flex;align-items:center;gap:.8rem;font-family:var(--mono);font-size:.74rem;">' +
+      '  <span style="color:' + COL.ink + ';flex-shrink:0;">CNN 깊이 L</span>' +
+      '  <input type="range" id="rfL" min="1" max="12" value="3" style="flex:1;">' +
+      '  <span id="rfLLabel" style="color:' + COL.style + ';font-weight:600;flex-shrink:0;">3 층</span>' +
+      '</div>' +
+      '</div>';
+
+    function render() {
+      const rf = Math.min(IMG, 2 * L + 1);
+      const cellPx = 11;
+      const cx = Math.floor(IMG / 2), cy = Math.floor(IMG / 2);
+      let svg = '<svg width="' + (IMG * cellPx) + '" height="' + (IMG * cellPx) + '" style="background:#fff;border:1px solid var(--line-soft);border-radius:6px;">';
+      // 가상 이미지 (간단한 그라데이션 + 가운데 점)
+      for (let r = 0; r < IMG; r++) for (let c = 0; c < IMG; c++) {
+        const dx = c - cx, dy = r - cy;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        const v = Math.exp(-dist / 12) * 0.6 + 0.15;
+        svg += '<rect x="' + (c * cellPx) + '" y="' + (r * cellPx) + '" width="' + cellPx + '" height="' + cellPx + '" fill="rgba(45,91,122,' + v + ')"/>';
+      }
+      // 수용 영역 박스
+      const rfHalf = Math.floor(rf / 2);
+      const x0 = (cx - rfHalf) * cellPx;
+      const y0 = (cy - rfHalf) * cellPx;
+      svg += '<rect x="' + x0 + '" y="' + y0 + '" width="' + (rf * cellPx) + '" height="' + (rf * cellPx) + '" fill="rgba(192,73,46,0.25)" stroke="' + COL.style + '" stroke-width="2"/>';
+      // 중심 뉴런 표시
+      svg += '<circle cx="' + (cx * cellPx + cellPx/2) + '" cy="' + (cy * cellPx + cellPx/2) + '" r="4" fill="' + COL.style + '"/>';
+      svg += '</svg>';
+
+      host.querySelector('#rfBoard').innerHTML =
+        '<div style="display:flex;justify-content:center;">' + svg + '</div>' +
+        '<div style="text-align:center;margin-top:.7rem;font-family:var(--mono);font-size:.78rem;color:' + COL.ink + ';">' +
+        'L = ' + L + ' 층의 한 뉴런의 수용 영역: <b style="color:' + COL.style + ';">' + rf + ' × ' + rf + '</b><br>' +
+        '<span style="font-size:.7rem;color:' + COL.faint + ';">이 영역에서 추출되는 의미 ≈ <b>' + meaning(L) + '</b></span>' +
+        '</div>';
+      host.querySelector('#rfLLabel').textContent = L + ' 층';
+    }
+    document.getElementById('rfL').addEventListener('input', (e) => { L = +e.target.value; render(); });
+    render();
+  }
+
+  window.addEventListener('load', () => {
+    buildNav('06'); initScroll();
+    const o = document.getElementById('outputSize');
+    if (o) outputSizeWidget(o);
+    const r = document.getElementById('rf');
+    if (r) rfWidget(r);
+  });
+</script>
+</body>
+</html>

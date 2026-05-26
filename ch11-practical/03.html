@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>11.03 · 베이스라인부터</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  /* 베이스라인 결정 다이어그램 */
+  .bl-stage { padding: 1.5rem 1.2rem; }
+  .bl-q { font-family: var(--serif); font-size: 1.08rem; color: var(--ink); margin-bottom: .8rem; padding: 0 .4rem; }
+  .bl-choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .6rem; padding: 0 .4rem; }
+  .bl-choice { padding: .9rem 1rem; background: #fff; border: 1px solid var(--line); border-radius: 9px; cursor: pointer; font-size: .92rem; color: var(--ink-soft); text-align: center; transition: all .15s var(--ease); font-family: var(--mono); }
+  .bl-choice:hover { background: var(--paper-2); transform: translateY(-2px); }
+  .bl-choice.selected { background: var(--structure); color: var(--paper); border-color: var(--structure); }
+  .bl-result { margin-top: 1.4rem; padding: 1.4rem 1.4rem; background: linear-gradient(180deg, var(--paper-2), var(--paper)); border-radius: 10px; border-left: 3px solid var(--style); min-height: 6rem; font-size: .92rem; color: var(--ink); line-height: 1.65; }
+  .bl-result h4 { margin: 0 0 .5rem; font-family: var(--serif); font-size: 1.18rem; color: var(--style); }
+  .bl-result .rec { background: rgba(255,255,255,.6); padding: .8rem 1rem; border-radius: 6px; margin: .6rem 0; font-family: var(--mono); font-size: .82rem; color: var(--ink-soft); }
+  .bl-result .rec b { color: var(--structure); }
+  .bl-reset { margin-top: 1rem; padding: 0 .4rem; }
+
+  /* 부품 카탈로그 표 */
+  .parts-tbl { max-width: var(--measure); margin: 1.4rem auto; padding-inline: 1.4rem; }
+  .parts-tbl table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+  .parts-tbl th { text-align: left; font-family: var(--mono); font-size: .72rem; letter-spacing: .08em; color: var(--ink-faint); padding: .6rem .5rem; border-bottom: 1px solid var(--line); text-transform: uppercase; }
+  .parts-tbl td { padding: .7rem .5rem; border-bottom: 1px solid var(--line-soft); vertical-align: top; color: var(--ink-soft); }
+  .parts-tbl td:first-child { font-family: var(--mono); color: var(--structure); white-space: nowrap; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-chapter 03 · 단순함의 권력</span>
+      <h1>가장 평범한<br><span class="t-structure">베이스라인</span>으로 시작하라</h1>
+      <p class="lede">11장 두 번째 결정은 모델 선택이다. 화려한 최신 아키텍처가 아니라 <em>입력 종류별로 정해진 카탈로그 부품</em>을 먼저 끼우는 게 정답이다 — 새 알고리즘은 베이스라인이 실패한 다음에야 정당화된다.</p>
+    </header>
+
+    <div class="prose">
+      <p>11장의 두 번째 결정이 가장 자주 어겨진다. 학생 프로젝트도, 스타트업 첫 모델도, 심지어 산업 연구실의 첫 시도도 <em>최신 논문에서 본 그 모델</em>로 시작하고 싶어 한다. 책은 정확히 그 충동을 막는다.</p>
+
+      <div class="analogy">
+        <b>요리 비유.</b> 평생 처음 카레를 끓이는 사람에게 미슐랭 셰프의 30가지 향신료 레시피를 주면 결과는 보장된 실패다. 어디서 어긋났는지 알 수 없기 때문이다. 먼저 “양파 + 카레 가루 + 닭고기”의 3-재료 카레로 시작해야 한다. 맛이 부족하면 <em>한 번에 한 가지</em>를 추가한다. 딥러닝도 똑같다.
+      </div>
+
+      <p>그래서 책은 입력의 종류에 따라 <strong>시작할 모델을 미리 정해 놓는다</strong>. 이 카탈로그를 외워 두면 새 프로젝트에서 "무엇으로 시작할까"로 시간 낭비하지 않는다.</p>
+    </div>
+
+    <div class="parts-tbl">
+      <table>
+        <thead><tr><th>입력의 모습</th><th>기본 베이스라인 모델</th><th>왜 이것인가</th></tr></thead>
+        <tbody>
+          <tr><td>이미지</td><td>합성곱 신경망 (CNN) + ReLU + Dropout</td><td>공간 등가성(translation equivariance)과 파라미터 공유 덕에 같은 데이터로 더 깊게 갈 수 있다 (9장)</td></tr>
+          <tr><td>시퀀스 (텍스트 · 음성)</td><td>게이트 RNN (LSTM 또는 GRU)</td><td>긴 의존성에서 기울기 소실을 막는 게이트 구조 (10장)</td></tr>
+          <tr><td>고정 크기 벡터</td><td>MLP (다층 퍼셉트론) + ReLU</td><td>구조적 prior가 약한 데이터에서는 단순한 게 강하다 (6장)</td></tr>
+          <tr><td>기존 과제와 유사</td><td><em>처음부터 짜지 말고</em> 전이학습</td><td>ImageNet 사전훈련처럼 다른 곳에서 배운 표상을 가져와 끝부분만 fine-tune</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 03</span><span>베이스라인 결정 다이어그램 · 두 번의 클릭으로 첫 모델이 정해진다</span></div>
+        <div class="bl-stage">
+          <div class="bl-q" id="bl-q1">Q1. 입력은 무엇인가?</div>
+          <div class="bl-choices" id="bl-c1"></div>
+          <div class="bl-q" id="bl-q2" style="margin-top:1.2rem; opacity:.3;">Q2. 데이터셋 크기는?</div>
+          <div class="bl-choices" id="bl-c2" style="opacity:.3; pointer-events:none;"></div>
+          <div class="bl-result" id="bl-r">위 질문에 답하면 베이스라인 추천이 여기 나타난다.</div>
+          <div class="bl-reset"><button class="btn ghost" id="bl-rst">처음부터</button></div>
+        </div>
+      </div>
+      <p class="widget-cap">두 가지 질문에 답하면 11장이 권하는 첫 모델 조합이 자동으로 결정된다. <b>전이학습이 가능한 경우</b>가 항상 우선이라는 점, <b>10M 이상이면 Dropout/BN을 처음부터 빼도 된다</b>는 점에 주목.</p>
+    </div>
+
+    <div class="prose">
+      <h2>옵티마이저 — SGD+모멘텀이 디폴트인 이유</h2>
+      <p>모델 구조가 정해지면 옵티마이저를 골라야 한다. 책의 추천은 단호하다.</p>
+
+      <div class="math-block">$$ v_t = \beta v_{t-1} + (1-\beta) \nabla L(\theta_{t-1}), \qquad \theta_t = \theta_{t-1} - \eta \, v_t $$</div>
+      <p class="math-note">SGD with momentum. 기울기의 지수이동평균을 속도(velocity) v로 누적. β = 0.9가 표준.</p>
+
+      <p><strong>왜 이 형태인가</strong>. 일반 SGD($\theta_t = \theta_{t-1} - \eta \nabla L$)는 매 스텝의 기울기에만 의존한다. 협곡(ravine) 모양 손실면에서는 좌우로 출렁이며 진동하느라 앞으로 못 나간다. 모멘텀은 <em>이전 스텝들의 평균 방향</em>을 기억해서, 일관된 방향으로는 가속하고 진동하는 방향에서는 자연히 상쇄된다. 결과적으로 같은 학습률에서 더 빠르게 수렴한다.</p>
+
+      <div class="analogy">
+        <b>비탈에서 굴리는 공.</b> SGD는 매 순간 비탈의 기울기만 보고 발을 디딘다 — 좌우가 좁은 협곡에서는 좌우로 부딪히며 지그재그로 내려간다. 모멘텀은 공이 가진 <em>관성</em>이다 — 이전에 갔던 방향을 어느 정도 유지하므로 협곡의 긴 방향으로 빨리 굴러 내려간다.
+      </div>
+
+      <p>Adam은 “괜찮은 대안”이다. 적응적 학습률을 파라미터마다 따로 둬서 튜닝 부담을 줄인다. 다만 일부 시나리오에서 일반화가 SGD+모멘텀보다 약간 떨어진다는 보고가 있어, 책은 <strong>SGD+모멘텀을 첫 시도로 두고 학습이 너무 느리면 Adam으로 갈아끼우는</strong> 순서를 권한다.</p>
+
+      <h2>정칙화 부품 — 처음부터 끼우는 것</h2>
+      <p>책이 베이스라인에 처음부터 포함하라고 하는 것이 세 가지 있다. <strong>BatchNorm, 조기 종료(early stopping), Dropout</strong>이다. 단 한 가지 조건은 <em>데이터셋이 천만 건 미만일 때</em>다. 천만 건 이상이면 모델이 과적합되기 전에 데이터가 끝나서, 정칙화 부담이 자연히 작아진다.</p>
+      <ul>
+        <li><strong>BatchNorm</strong>: 각 층의 입력을 미니배치 단위로 정규화. 학습률을 크게 가져갈 수 있게 해 주고 최적화를 빠르게 한다 (8장).</li>
+        <li><strong>조기 종료</strong>: 검증 손실이 더 안 떨어지면 멈춘다. 사실상 L2 정칙화와 같은 효과 (7장).</li>
+        <li><strong>Dropout</strong>: 학습 중 일부 뉴런을 무작위로 끄고 학습. 여러 부분 네트워크의 앙상블 효과 (7장).</li>
+      </ul>
+
+      <h2>전이학습 — 종종 가장 강한 베이스라인</h2>
+      <p>책이 11장에서 <em>특별히 강조</em>하는 점이 있다. <strong>“유사한 과제에서 잘 동작하는 모델을 복사하거나, ImageNet 사전훈련된 특징을 재사용하는 것이 처음부터 설계하는 것보다 종종 더 강하다.”</strong></p>
+
+      <p>왜인가. 사전훈련된 모델은 이미 <em>저수준에서 고수준까지의 위계적 특징</em>을 배워 놓았다 (모서리 → 부위 → 객체). 새 과제의 데이터가 적어도 이 특징을 그대로 쓰면서 마지막 분류층만 새로 학습하면 충분하다. 처음부터 짜면 같은 양의 데이터로 그 특징을 다시 배워야 한다 — 보통 불가능하거나 매우 느리다.</p>
+
+      <div class="math-block">$$ \theta_{\text{new}} = \underbrace{\theta_{\text{pretrained}}}_{\text{고정 또는 미세조정}} + \underbrace{\theta_{\text{head}}}_{\text{새로 학습}} $$</div>
+      <p class="math-note">전이학습의 기본 형태. 백본은 고정 또는 매우 작은 학습률, 분류 헤드만 큰 학습률.</p>
+
+      <p>그래서 위젯에서 "유사 과제 사전훈련 가능"을 선택하면 <em>나머지 모든 결정에 우선해서</em> 전이학습이 추천된다. 이게 11장의 핵심 메시지를 가장 압축적으로 보여 주는 분기점이다.</p>
+
+      <h2>베이스라인이 정해진 다음</h2>
+      <p>베이스라인이 한 번 돌아가서 숫자가 나왔다면, 다음 결정이 등장한다 — <strong>데이터를 더 모을 것인가, 모델을 키울 것인가</strong>. 이 결정은 학습 곡선을 보고 판단한다. <a href="04.html">다음 장</a>에서 그 진단법을 배운다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUB = [
+    { no:'01', t:'방법론의 필요성' },
+    { no:'02', t:'성능 지표 선택' },
+    { no:'03', t:'베이스라인부터' },
+    { no:'04', t:'데이터 vs 모델 키우기' },
+    { no:'05', t:'하이퍼파라미터 탐색' },
+    { no:'06', t:'디버깅과 시험 대비' },
+  ];
+  const CUR = '03';
+
+  document.querySelector('.topbar').innerHTML =
+    `<a class="home" href="index.html">← Ch.11 실용적 방법론</a>` +
+    `<span class="ch-mini">SUB ${CUR} / 06</span>`;
+  document.querySelector('.ch-nav ol').innerHTML = SUB.map(c =>
+    `<li><a href="${c.no}.html" ${c.no === CUR ? 'class="current"' : ''}>${c.t}</a></li>`).join('');
+  const i = SUB.findIndex(c => c.no === CUR);
+  const prev = i > 0 ? SUB[i-1] : { no:'', t:'챕터 표지로' };
+  const next = i < SUB.length-1 ? SUB[i+1] : { no:'', t:'챕터 표지로' };
+  document.querySelector('.ch-foot').innerHTML =
+    `<a href="${prev.no ? prev.no + '.html' : 'index.html'}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+    `<a href="${next.no ? next.no + '.html' : 'index.html'}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+
+  const bar = document.querySelector('.scroll-progress');
+  window.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max > 0 ? (h.scrollTop/max)*100 : 0) + '%';
+  }, { passive: true });
+
+  // 베이스라인 결정 다이어그램
+  const INPUTS = [
+    { k:'image',    t:'이미지' },
+    { k:'sequence', t:'시퀀스 (텍스트·음성)' },
+    { k:'tabular',  t:'고정 크기 벡터·표' },
+    { k:'transfer', t:'유사 과제 사전훈련 가능' },
+  ];
+  const SIZES = [
+    { k:'tiny',   t:'< 10,000건' },
+    { k:'small',  t:'10K - 1M건' },
+    { k:'large',  t:'1M - 10M건' },
+    { k:'huge',   t:'> 10M건' },
+  ];
+  let pick = { input: null, size: null };
+
+  function recommend() {
+    if (!pick.input || !pick.size) {
+      document.getElementById('bl-r').innerHTML = '위 질문에 답하면 베이스라인 추천이 여기 나타난다.';
+      return;
+    }
+    let model, opt, reg, note;
+    if (pick.input === 'transfer') {
+      model = 'ImageNet 사전훈련 가중치 (ResNet 또는 EfficientNet)';
+      opt = '백본 lr = 1e-5, 헤드 lr = 1e-3, Adam';
+      reg = 'Dropout 0.3 + 작은 weight decay';
+      note = '<b>핵심</b>: 처음부터 짜는 것은 거의 항상 진다. 데이터가 매우 적어도(< 1,000) 전이학습이 동작한다. <b>이 한 결정이 데이터 부족 문제의 절반을 해결한다.</b>';
+    } else if (pick.input === 'image') {
+      model = 'CNN (VGG-style 또는 ResNet 소형) + ReLU';
+      opt = 'SGD + momentum 0.9, lr = 0.01 시작';
+      reg = pick.size === 'huge' ? '없음 (데이터가 자연 정칙화)' : 'BatchNorm + Dropout 0.5 + 조기 종료';
+      note = pick.size === 'tiny' ? '<b>경고</b>: 1만 건 미만으로 처음부터 짜는 것은 위험하다. ImageNet 전이학습으로 전환할 것.' : '평범한 카탈로그 부품 조합. 새 아키텍처 발명은 금지.';
+    } else if (pick.input === 'sequence') {
+      model = '단층 LSTM 또는 GRU (256 유닛) + 양방향';
+      opt = 'Adam, lr = 1e-3';
+      reg = pick.size === 'huge' ? 'Dropout만 (BN은 시퀀스에서 까다로움)' : 'Dropout 0.3 + 조기 종료';
+      note = pick.size === 'tiny' ? '<b>경고</b>: 1만 건 미만은 단어 임베딩 사전훈련(Word2Vec/GloVe)부터 가져와라.' : '책 출간(2016) 이후로는 Transformer가 더 자주 베이스라인이 되지만, 책의 권고는 게이트 RNN.';
+    } else { // tabular
+      model = '2-3층 MLP, 각 층 128-256 유닛 + ReLU';
+      opt = 'Adam, lr = 1e-3';
+      reg = pick.size === 'huge' ? 'BatchNorm + Dropout 0.3' : 'BatchNorm + Dropout 0.5 + 조기 종료';
+      note = '표 데이터에서는 XGBoost/LightGBM이 종종 더 강하다. 신경망은 이미지·시퀀스의 강점이 없으므로 보수적으로.';
+    }
+    document.getElementById('bl-r').innerHTML = `
+      <h4>추천 베이스라인</h4>
+      <div class="rec"><b>모델</b> · ${model}</div>
+      <div class="rec"><b>옵티마이저</b> · ${opt}</div>
+      <div class="rec"><b>정칙화</b> · ${reg}</div>
+      <p style="margin: .7rem 0 0; font-size: .9rem; color: var(--ink-soft);">${note}</p>
+    `;
+  }
+
+  const c1 = document.getElementById('bl-c1');
+  INPUTS.forEach(it => {
+    const d = document.createElement('div');
+    d.className = 'bl-choice'; d.textContent = it.t;
+    d.addEventListener('click', () => {
+      document.querySelectorAll('#bl-c1 .bl-choice').forEach(x => x.classList.remove('selected'));
+      d.classList.add('selected');
+      pick.input = it.k;
+      // Q2 활성
+      document.getElementById('bl-q2').style.opacity = '1';
+      const q2el = document.getElementById('bl-c2');
+      q2el.style.opacity = '1'; q2el.style.pointerEvents = 'auto';
+      recommend();
+    });
+    c1.appendChild(d);
+  });
+  const c2 = document.getElementById('bl-c2');
+  SIZES.forEach(it => {
+    const d = document.createElement('div');
+    d.className = 'bl-choice'; d.textContent = it.t;
+    d.addEventListener('click', () => {
+      document.querySelectorAll('#bl-c2 .bl-choice').forEach(x => x.classList.remove('selected'));
+      d.classList.add('selected');
+      pick.size = it.k;
+      recommend();
+    });
+    c2.appendChild(d);
+  });
+  document.getElementById('bl-rst').addEventListener('click', () => {
+    pick = { input: null, size: null };
+    document.querySelectorAll('.bl-choice').forEach(x => x.classList.remove('selected'));
+    document.getElementById('bl-q2').style.opacity = '.3';
+    const q2el = document.getElementById('bl-c2');
+    q2el.style.opacity = '.3'; q2el.style.pointerEvents = 'none';
+    recommend();
+  });
+
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) renderMathInElement(document.body, {
+      delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}], throwOnError:false
+    });
+  });
+</script>
+</body>
+</html>

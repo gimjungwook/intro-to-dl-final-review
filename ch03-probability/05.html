@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>05. 정보이론 — 엔트로피, KL, 교차 엔트로피</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  /* 엔트로피 슬라이더 위젯 */
+  .ent-stage { display: grid; grid-template-columns: 1fr auto; gap: 1.4rem; padding: 1.4rem 1.1rem; align-items: center; }
+  .ent-bars { display: flex; gap: .6rem; align-items: flex-end; height: 160px; padding: 0 .4rem; }
+  .ent-bars .bar { flex: 1; background: var(--structure); border-radius: 5px 5px 0 0; transition: height .2s var(--ease); position: relative; min-width: 28px; }
+  .ent-bars .bar span { position: absolute; bottom: -1.5rem; left: 50%; transform: translateX(-50%); font-family: var(--mono); font-size: .72rem; color: var(--ink-soft); }
+  .ent-info { font-family: var(--mono); font-size: .82rem; color: var(--ink); line-height: 1.7; }
+  .ent-info .big { font-size: 1.6rem; color: var(--style); margin: .2rem 0 .4rem; }
+  .ent-info .max { color: var(--ink-faint); font-size: .72rem; }
+  @media (max-width: 720px){ .ent-stage{ grid-template-columns: 1fr; } }
+
+  /* KL 가우시안 위젯 */
+  .kl-stage { padding: 1.4rem 1.1rem; }
+  .kl-stage canvas { display: block; width: 100%; height: 220px; background: #fff; border: 1px solid var(--line-soft); border-radius: 8px; }
+  .kl-info { display: grid; grid-template-columns: repeat(2, 1fr); gap: .8rem; margin-top: .8rem; }
+  .kl-info .m { padding: .7rem .9rem; border-radius: 8px; background: var(--paper); border: 1px solid var(--line-soft); }
+  .kl-info .m h6 { margin: 0 0 .3rem; font-family: var(--mono); font-size: .68rem; letter-spacing: .12em; color: var(--ink-faint); text-transform: uppercase; }
+  .kl-info .m .v { font-family: var(--mono); font-size: 1.15rem; color: var(--structure); }
+  .kl-info .m.right .v { color: var(--style); }
+
+  /* CE = -log p[true] 위젯 */
+  .ce-stage { display: grid; grid-template-columns: 1fr auto; gap: 1.3rem; padding: 1.4rem 1.1rem; align-items: center; }
+  .ce-bars { display: flex; gap: .6rem; align-items: flex-end; height: 140px; padding: 0 .4rem; position: relative; }
+  .ce-bars .bar { flex: 1; border-radius: 5px 5px 0 0; transition: height .15s var(--ease); position: relative; min-width: 40px; }
+  .ce-bars .bar.t { background: var(--ink-soft); }
+  .ce-bars .bar.p { background: var(--structure); }
+  .ce-bars .bar.p.tru { background: var(--style); }
+  .ce-bars .bar span { position: absolute; bottom: -1.5rem; left: 50%; transform: translateX(-50%); font-family: var(--mono); font-size: .68rem; color: var(--ink-soft); white-space: nowrap; }
+  .ce-pairs { display: flex; gap: 1.5rem; align-items: flex-end; }
+  .ce-pair { display: flex; gap: .4rem; flex: 1; }
+  .ce-pair > div { flex: 1; }
+  .ce-info { font-family: var(--mono); font-size: .82rem; color: var(--ink); line-height: 1.7; min-width: 180px; }
+  .ce-info .big { font-size: 1.5rem; color: var(--style); margin: .2rem 0 .4rem; }
+  @media (max-width: 720px){ .ce-stage{ grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-chapter 05. 손실함수의 정보이론적 뿌리</span>
+      <h1>분포가 얼마나 <span class="t-style">놀라운가</span>,<br>두 분포가 얼마나 <span class="t-structure">다른가</span></h1>
+      <p class="lede">엔트로피, KL 발산, 교차 엔트로피. 이 셋이 같은 한 가족이며, 딥러닝 분류기의 손실이 왜 정확히 이 형태인지를 한 번에 풀어 둔다.</p>
+    </header>
+
+    <div class="prose">
+      <p>3장 후반부의 정보이론(Information Theory) 절은 시험에 가장 자주 나오는 부분이다. 식 자체보다 <strong>왜 이런 형태인가</strong>를 잡으면 어떤 변형 문제든 풀 수 있다. 핵심은 단 한 가지 발상이다 — <em>드문 사건이 더 놀랍다, 그 놀라움의 평균을 분포의 불확실성으로 정의한다.</em></p>
+
+      <h2>자기정보 — 드문 사건의 놀라움</h2>
+      <div class="math-block">$$ I(x) = -\log P(x) $$</div>
+      <p class="math-note">P(x) 작을수록 I(x) 큼. 단위는 log 밑에 따라 비트(2) 또는 nat(e).</p>
+
+      <p>로그가 들어 있는 이유는 다음 두 가지를 동시에 만족시키기 위해서다. <strong>① 독립 사건의 정보는 더하기로 합쳐야 한다.</strong> 두 동전을 동시에 던졌을 때 "둘 다 앞" 사건의 정보는 "첫 동전 앞 + 둘째 동전 앞"의 정보 합이어야 자연스럽다. 확률은 곱으로 합쳐지는데, 로그를 취하면 곱이 합이 된다. <strong>② 확률 1인 사건(반드시 일어나는 사건)의 정보는 0이어야 한다.</strong> $\log 1 = 0$이므로 자연스럽다.</p>
+
+      <div class="analogy">
+        뉴스 헤드라인을 떠올려 보자. <b>"내일도 해가 뜬다"</b>는 정보량이 거의 0이다(놀라울 게 없다). <b>"오늘 일식 발생"</b>은 정보량이 크다(드물다). <b>"오늘 외계 함대 도착"</b>은 정보량이 어마어마하다(거의 일어나지 않을 사건). 자기정보는 이 직관을 그대로 수식화한 것뿐이다.
+      </div>
+
+      <h2>엔트로피 — 분포 전체의 평균 놀라움</h2>
+      <div class="math-block">$$ H(X) = \mathbb{E}_{x \sim P}\!\left[I(x)\right] = -\sum_{x} P(x) \log P(x) $$</div>
+      <p class="math-note">한 분포 P에서 평균적으로 얼마나 놀라운가. 평균 자기정보.</p>
+
+      <p>아래 위젯에서 3개 결과를 가진 이산 분포의 확률을 슬라이더로 움직여 보자. 어느 한 결과의 확률이 1에 가까워질수록(거의 확정) 엔트로피는 0에 가까워지고, 세 결과가 모두 $1/3$에 가까울수록(가장 불확실) 엔트로피는 최대값 $\log 3 \approx 1.585$ 비트로 올라간다. <strong>균등 분포가 가장 불확실하다</strong>는 것이 엔트로피가 우리에게 알려 주는 가장 중요한 사실이다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 05a</span><span>이산 분포의 엔트로피 — 균등일 때 최대</span></div>
+        <div class="ent-stage">
+          <div class="ent-bars" id="entBars">
+            <div class="bar" style="height: 60%"><span>A: 0.33</span></div>
+            <div class="bar" style="height: 60%"><span>B: 0.33</span></div>
+            <div class="bar" style="height: 60%"><span>C: 0.33</span></div>
+          </div>
+          <div class="ent-info">
+            엔트로피<br>
+            <span class="big" id="entVal">1.585</span> bits<br>
+            <span class="max">최대 log₂(3) ≈ 1.585 bits</span>
+          </div>
+        </div>
+        <div class="widget-controls">
+          <div class="slider">
+            <label>P(A) <b><span id="paVal">0.33</span></b></label>
+            <input id="paSlider" type="range" min="1" max="98" value="33" class="s-structure">
+          </div>
+          <div class="slider">
+            <label>P(B) <b><span id="pbVal">0.33</span></b></label>
+            <input id="pbSlider" type="range" min="1" max="98" value="33" class="s-structure">
+          </div>
+          <span style="font-family: var(--mono); font-size: .72rem; color: var(--ink-faint);">P(C) = 1 - P(A) - P(B)</span>
+        </div>
+      </div>
+      <p class="widget-cap">한 막대를 끝까지 올리면(한 결과가 거의 확정) 엔트로피가 0으로 내려간다. 세 막대를 모두 비슷하게 두면(가장 모름) 최대값 1.585 비트에 도달한다. <em>"가장 알 수 없는 분포 = 균등 분포"</em>가 곧 다음 페이지에서 max-entropy 원리로 이어진다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>KL 발산 — 두 분포가 얼마나 다른가</h2>
+      <div class="math-block">$$ D_{\mathrm{KL}}(P \,\|\, Q) = \mathbb{E}_{x \sim P}\!\left[\log\frac{P(x)}{Q(x)}\right] = \sum_x P(x) \log\frac{P(x)}{Q(x)} $$</div>
+      <p class="math-note">P를 Q로 설명할 때 평균적으로 얼마나 비효율적인가. 단위는 비트(나트).</p>
+
+      <p>KL 발산(Kullback-Leibler divergence)은 두 분포 사이의 "거리"라고 자주 부르지만, 정확히 거리는 아니다. <strong>비대칭</strong>이기 때문이다. 일반적으로 $D_{\mathrm{KL}}(P \| Q) \ne D_{\mathrm{KL}}(Q \| P)$이다. 그래도 두 가지 성질은 거리처럼 작동한다.</p>
+
+      <ul style="max-width: var(--measure); margin-inline: auto; padding-inline: 2.5rem; font-size: .95rem; color: var(--ink-soft); line-height: 1.7;">
+        <li>$D_{\mathrm{KL}}(P \| Q) \ge 0$ (항상 0 이상)</li>
+        <li>$D_{\mathrm{KL}}(P \| Q) = 0 \iff P = Q$ (둘이 같을 때만 0)</li>
+      </ul>
+
+      <p>아래 위젯에서 두 가우시안의 평균과 분산을 슬라이더로 움직이며 KL을 두 방향으로 직접 보자. <strong>두 평균을 멀리 떨어뜨릴수록 KL이 커진다.</strong> 그러나 같은 차이라도 $D(P\|Q)$와 $D(Q\|P)$가 다르다.</p>
+
+      <div class="math-block">$$ D_{\mathrm{KL}}\!\left(\mathcal{N}(\mu_1, \sigma_1^2)\,\|\,\mathcal{N}(\mu_2, \sigma_2^2)\right) = \log\frac{\sigma_2}{\sigma_1} + \frac{\sigma_1^2 + (\mu_1 - \mu_2)^2}{2\sigma_2^2} - \frac{1}{2} $$</div>
+      <p class="math-note">두 가우시안 사이의 KL 닫힌 형식. 분산이 같으면 (μ₁-μ₂)²/(2σ²)로 단순화.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 05b</span><span>두 가우시안 사이 KL — 비대칭을 직접 본다</span></div>
+        <div class="kl-stage">
+          <canvas id="kl" width="800" height="220"></canvas>
+          <div class="kl-info">
+            <div class="m"><h6>$D_{\mathrm{KL}}(P \| Q)$</h6><div class="v" id="klPQ">0.00</div></div>
+            <div class="m right"><h6>$D_{\mathrm{KL}}(Q \| P)$</h6><div class="v" id="klQP">0.00</div></div>
+          </div>
+        </div>
+        <div class="widget-controls">
+          <div class="slider">
+            <label>P 평균 μ₁ <b><span id="m1V">-1.0</span></b></label>
+            <input id="m1Slider" type="range" min="-30" max="30" value="-10" class="s-structure">
+          </div>
+          <div class="slider">
+            <label>P 분산 σ₁ <b><span id="s1V">1.0</span></b></label>
+            <input id="s1Slider" type="range" min="3" max="30" value="10" class="s-structure">
+          </div>
+          <div class="slider">
+            <label>Q 평균 μ₂ <b><span id="m2V">1.0</span></b></label>
+            <input id="m2Slider" type="range" min="-30" max="30" value="10" class="s-style">
+          </div>
+          <div class="slider">
+            <label>Q 분산 σ₂ <b><span id="s2V">1.0</span></b></label>
+            <input id="s2Slider" type="range" min="3" max="30" value="10" class="s-style">
+          </div>
+        </div>
+      </div>
+      <p class="widget-cap">파랑 = P, 주홍 = Q. 두 평균이 같고 분산도 같으면 KL은 정확히 0. 분산을 다르게 만들면 두 방향 KL의 차이가 가장 두드러진다 — <em>"좁은 분포로 넓은 분포를 흉내내는 것"</em>이 그 반대보다 훨씬 손해다(KL이 더 큼). 이 비대칭이 VAE의 ELBO와 변분추론의 forward/reverse KL 선택에 그대로 나타난다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>교차 엔트로피 — 분류기 손실의 진짜 정체</h2>
+      <div class="math-block">$$ H(P, Q) = -\sum_x P(x) \log Q(x) = H(P) + D_{\mathrm{KL}}(P \,\|\, Q) $$</div>
+      <p class="math-note">P를 Q로 설명할 때 드는 총 평균 비트. = P 자체의 본질적 불확실성 + 둘이 다른 만큼의 추가 비용.</p>
+
+      <p>이 한 식이 딥러닝 분류기 손실의 정체다. <strong>참 분포 $P$(정답 원핫)를 모델 분포 $Q$(소프트맥스 출력)로 설명할 때의 평균 비트</strong>가 교차 엔트로피다. $H(P)$는 정답 분포 자체의 엔트로피라 학습 중에 바뀌지 않는 상수다. 따라서 <em>교차 엔트로피를 최소화하는 것 = KL 발산을 최소화하는 것 = 모델 분포가 참 분포에 가까워지는 것</em>이다.</p>
+
+      <h2>교차 엔트로피 = 음의 로그우도</h2>
+      <p>여기서 또 하나의 동일성이 따라 나온다. 분류 문제에서 정답이 클래스 $c$인 한 샘플의 교차 엔트로피는</p>
+
+      <div class="math-block">$$ H(P, Q) = -1 \cdot \log Q(c) - 0 \cdot \log Q(\text{나머지}) = -\log Q(c) $$</div>
+      <p class="math-note">정답 분포가 원핫이라 비-정답 항이 모두 0. 남는 건 정답 확률의 음의 로그.</p>
+
+      <p>이게 바로 <strong>음의 로그우도(negative log-likelihood, NLL)</strong>다. 다음 위젯에서 모델이 정답 클래스에 부여한 확률을 슬라이더로 움직이며, $-\log Q(c)$가 어떻게 변하는지 보자. 모델이 정답을 1.0에 가깝게 믿을수록 손실이 0에 가까워지고, 정답을 작게 믿을수록 손실이 폭발적으로 커진다. <em>이 손실 표면이 분류기를 학습시키는 표면 그 자체다.</em></p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 05c</span><span>교차 엔트로피 손실 — 정답 확률만이 살아남는다</span></div>
+        <div class="ce-stage">
+          <div>
+            <div class="ce-pairs">
+              <div class="ce-pair">
+                <div style="font-family: var(--mono); font-size: .72rem; color: var(--ink-soft); text-align: center; margin-bottom: .4rem;">참 분포 P (정답 = 고양이)</div>
+                <div class="ce-bars" id="ceTrue">
+                  <div class="bar t" style="height: 100%"><span>고양이 1.0</span></div>
+                  <div class="bar t" style="height: 0%"><span>강아지 0.0</span></div>
+                  <div class="bar t" style="height: 0%"><span>토끼 0.0</span></div>
+                </div>
+              </div>
+              <div class="ce-pair">
+                <div style="font-family: var(--mono); font-size: .72rem; color: var(--ink-soft); text-align: center; margin-bottom: .4rem;">모델 분포 Q (소프트맥스)</div>
+                <div class="ce-bars" id="ceModel">
+                  <div class="bar p tru" style="height: 50%"><span id="qcLab">고양이 0.50</span></div>
+                  <div class="bar p" style="height: 25%"><span id="qdLab">강아지 0.25</span></div>
+                  <div class="bar p" style="height: 25%"><span id="qrLab">토끼 0.25</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="ce-info">
+            교차 엔트로피<br>
+            <span class="big" id="ceVal">1.00</span> nats<br>
+            <span style="color: var(--ink-faint); font-size: .72rem;">= -log(0.50) ≈ 0.693</span><br>
+            <span style="color: var(--ink-faint); font-size: .72rem; margin-top: .3rem; display: block;">= NLL of 정답 클래스</span>
+          </div>
+        </div>
+        <div class="widget-controls">
+          <div class="slider">
+            <label>모델이 정답(고양이)에 부여한 확률 <b><span id="qcVal">0.50</span></b></label>
+            <input id="qcSlider" type="range" min="1" max="99" value="50" class="s-style">
+          </div>
+          <span style="font-family: var(--mono); font-size: .72rem; color: var(--ink-faint);">나머지 두 클래스에는 (1-q)/2씩 균등 분배</span>
+        </div>
+      </div>
+      <p class="widget-cap">슬라이더를 0.99에 가깝게 올리면 손실이 거의 0으로 떨어진다. 반대로 0.01로 내리면 손실이 폭발적으로 커진다(약 4.6 nats). 이 비대칭(정답을 작게 본 모델은 무겁게 벌함)이 학습 신호를 만들어 낸다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>한 그림으로 — 분류기 학습이 정보이론적으로 무엇을 하는가</h2>
+      <ol style="max-width: var(--measure); margin-inline: auto; padding-inline: 2.5rem; font-size: .95rem; color: var(--ink-soft); line-height: 1.8;">
+        <li><strong>참 분포 $P$</strong>: 데이터의 진짜 라벨 분포(원핫).</li>
+        <li><strong>모델 분포 $Q$</strong>: 신경망 마지막 층의 소프트맥스 출력.</li>
+        <li>학습 목표 = <strong>$H(P, Q)$를 최소화</strong> = $D_{\mathrm{KL}}(P\|Q)$를 최소화 = $Q$를 $P$에 맞춤.</li>
+        <li>한 샘플 단위로 보면 = <strong>정답 클래스 확률의 음의 로그</strong>를 줄이는 것 = MLE.</li>
+      </ol>
+
+      <p>이게 시험에서 "교차 엔트로피 손실의 정보이론적 해석을 쓰시오" 또는 "왜 MLE와 교차 엔트로피가 같은가"라는 질문에 답해야 할 한 문장이다. 같은 학습 과정을 베이즈 관점에서 보면 MAP, 정보이론 관점에서 보면 교차 엔트로피 최소화, 우도 관점에서 보면 MLE다. <em>같은 한 가지 일을 세 언어로 표현한 것뿐</em>이다.</p>
+
+      <div class="analogy">
+        한 문장을 한국어, 영어, 일본어로 쓴 것과 같다. <b>"이 강아지는 귀엽다"</b>는 어느 언어로 쓰든 같은 의미다. MLE("우도가 가장 큰 θ를 찾는다"), MAP("사후가 가장 큰 θ를 찾는다 + 정칙화"), 교차 엔트로피 최소화("두 분포의 차이를 줄인다") — 시험 문제는 이 세 언어를 자유롭게 오갈 수 있는지를 묻는다. 식 자체가 같으므로 외울 게 하나라는 점은 다행이다.
+      </div>
+
+      <p>다음 장에서는 실전에서 가장 자주 등장하는 분포 다섯 가지(Bernoulli, Categorical, Gaussian, 혼합, Dirac)를 카탈로그로 정리한다. 분류기, 회귀기, 생성모델이 각각 어느 분포의 파라미터를 출력하는 모델인지를 보면, 이 장 전체가 한 번에 정리된다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const CH = [
+    { no:'01', t:'왜 확률이 필요한가', f:'01.html' },
+    { no:'02', t:'확률변수, 분포, 조건부', f:'02.html' },
+    { no:'03', t:'기대값, 분산, 공분산', f:'03.html' },
+    { no:'04', t:'베이즈 규칙', f:'04.html' },
+    { no:'05', t:'정보이론 — 엔트로피/KL/교차 엔트로피', f:'05.html' },
+    { no:'06', t:'흔한 분포 카탈로그', f:'06.html' },
+    { no:'07', t:'시험 대비 체크리스트', f:'07.html' },
+  ];
+  function buildNav(curr) {
+    const tb = document.querySelector('.topbar');
+    if (tb) tb.innerHTML =
+      `<a class="home" href="index.html">← Ch.3 확률과 정보이론</a>` +
+      `<span class="ch-mini">SUB-CHAPTER ${curr} of 07</span>`;
+    const ol = document.querySelector('.ch-nav ol');
+    if (ol) ol.innerHTML = CH.map(c =>
+      `<li><a href="${c.f}" ${c.no === curr ? 'class="current"' : ''}>${c.t}</a></li>`).join('');
+    const foot = document.querySelector('.ch-foot');
+    if (foot) {
+      const i = CH.findIndex(c => c.no === curr);
+      const prev = i > 0 ? CH[i-1] : { f:'index.html', t:'표지로', no:'' };
+      const next = i < CH.length-1 ? CH[i+1] : { f:'index.html', t:'표지로', no:'' };
+      foot.innerHTML =
+        `<a href="${prev.f}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+        `<a href="${next.f}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+    }
+    const bar = document.querySelector('.scroll-progress');
+    if (bar) {
+      const onS = () => {
+        const h = document.documentElement;
+        const m = h.scrollHeight - h.clientHeight;
+        bar.style.width = (m > 0 ? (h.scrollTop / m) * 100 : 0) + '%';
+      };
+      document.addEventListener('scroll', onS, { passive: true });
+      onS();
+    }
+  }
+
+  /* 05a 엔트로피 */
+  function entropy3(pa, pb, pc) {
+    const H = (p) => p > 0 ? -p * Math.log2(p) : 0;
+    return H(pa) + H(pb) + H(pc);
+  }
+  function updateEnt() {
+    let pa = parseInt(document.getElementById('paSlider').value, 10) / 100;
+    let pb = parseInt(document.getElementById('pbSlider').value, 10) / 100;
+    if (pa + pb > 0.99) {
+      const s = pa + pb;
+      pa = pa / s * 0.99;
+      pb = pb / s * 0.99;
+    }
+    const pc = Math.max(0.01, 1 - pa - pb);
+    /* 재정규화 */
+    const sum = pa + pb + pc;
+    pa /= sum; pb /= sum; const pcN = pc / sum;
+    const H = entropy3(pa, pb, pcN);
+    document.getElementById('paVal').textContent = pa.toFixed(2);
+    document.getElementById('pbVal').textContent = pb.toFixed(2);
+    document.getElementById('entVal').textContent = H.toFixed(3);
+    const bars = document.querySelectorAll('#entBars .bar');
+    const probs = [pa, pb, pcN];
+    const labels = ['A', 'B', 'C'];
+    bars.forEach((b, i) => {
+      b.style.height = (probs[i] * 100) + '%';
+      b.querySelector('span').textContent = `${labels[i]}: ${probs[i].toFixed(2)}`;
+    });
+  }
+
+  /* 05b KL 두 가우시안 */
+  function klGauss(m1, s1, m2, s2) {
+    return Math.log(s2 / s1) + (s1 * s1 + (m1 - m2) * (m1 - m2)) / (2 * s2 * s2) - 0.5;
+  }
+  function drawKL() {
+    const c = document.getElementById('kl');
+    const ctx = c.getContext('2d');
+    const dpr2 = Math.min(2, window.devicePixelRatio || 1);
+    const W = c.clientWidth;
+    c.width = W * dpr2;
+    c.height = 220 * dpr2;
+    c.style.height = '220px';
+    ctx.setTransform(dpr2, 0, 0, dpr2, 0, 0);
+    ctx.clearRect(0, 0, W, 220);
+
+    const m1 = parseInt(document.getElementById('m1Slider').value, 10) / 10;
+    const s1 = parseInt(document.getElementById('s1Slider').value, 10) / 10;
+    const m2 = parseInt(document.getElementById('m2Slider').value, 10) / 10;
+    const s2 = parseInt(document.getElementById('s2Slider').value, 10) / 10;
+
+    document.getElementById('m1V').textContent = m1.toFixed(1);
+    document.getElementById('s1V').textContent = s1.toFixed(1);
+    document.getElementById('m2V').textContent = m2.toFixed(1);
+    document.getElementById('s2V').textContent = s2.toFixed(1);
+
+    /* x range -6..6 */
+    const xMin = -6, xMax = 6;
+    function gPDF(x, mu, sig) {
+      return Math.exp(-0.5 * ((x - mu) / sig) ** 2) / (sig * Math.sqrt(2 * Math.PI));
+    }
+    /* 축 */
+    ctx.strokeStyle = 'rgba(38,34,28,0.18)';
+    ctx.beginPath();
+    ctx.moveTo(30, 190); ctx.lineTo(W - 16, 190);
+    ctx.stroke();
+    ctx.fillStyle = '#8E8576';
+    ctx.font = '11px ui-monospace, monospace';
+    ctx.textAlign = 'center';
+    for (let t = xMin; t <= xMax; t += 2) {
+      const x = 30 + (t - xMin) / (xMax - xMin) * (W - 30 - 16);
+      ctx.fillText(t.toFixed(0), x, 206);
+    }
+
+    /* 두 곡선 — 동일 스케일 */
+    const N = 400;
+    let yMax = 0;
+    for (let i = 0; i <= N; i++) {
+      const x = xMin + (xMax - xMin) * i / N;
+      yMax = Math.max(yMax, gPDF(x, m1, s1), gPDF(x, m2, s2));
+    }
+    yMax *= 1.05;
+
+    function curve(mu, sig, color, fillAlpha) {
+      ctx.fillStyle = color + Math.round(fillAlpha * 255).toString(16).padStart(2, '0');
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(30, 190);
+      for (let i = 0; i <= N; i++) {
+        const x = xMin + (xMax - xMin) * i / N;
+        const px = 30 + (x - xMin) / (xMax - xMin) * (W - 30 - 16);
+        const py = 190 - gPDF(x, mu, sig) / yMax * 160;
+        if (i === 0) { ctx.lineTo(px, py); } else { ctx.lineTo(px, py); }
+      }
+      ctx.lineTo(W - 16, 190);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.beginPath();
+      for (let i = 0; i <= N; i++) {
+        const x = xMin + (xMax - xMin) * i / N;
+        const px = 30 + (x - xMin) / (xMax - xMin) * (W - 30 - 16);
+        const py = 190 - gPDF(x, mu, sig) / yMax * 160;
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+    }
+    curve(m1, s1, '#2D5B7A', 0.22);
+    curve(m2, s2, '#C0492E', 0.22);
+
+    /* 범례 */
+    ctx.fillStyle = '#2D5B7A';
+    ctx.font = '11px ui-monospace, monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('P = N(' + m1.toFixed(1) + ', ' + s1.toFixed(1) + ')', 40, 22);
+    ctx.fillStyle = '#C0492E';
+    ctx.fillText('Q = N(' + m2.toFixed(1) + ', ' + s2.toFixed(1) + ')', 40, 38);
+
+    const dpq = klGauss(m1, s1, m2, s2);
+    const dqp = klGauss(m2, s2, m1, s1);
+    document.getElementById('klPQ').textContent = dpq.toFixed(3) + ' nats';
+    document.getElementById('klQP').textContent = dqp.toFixed(3) + ' nats';
+  }
+
+  /* 05c CE = -log q[c] */
+  function updateCE() {
+    const qc = parseInt(document.getElementById('qcSlider').value, 10) / 100;
+    const rem = (1 - qc) / 2;
+    document.getElementById('qcVal').textContent = qc.toFixed(2);
+    document.getElementById('qcLab').textContent = '고양이 ' + qc.toFixed(2);
+    document.getElementById('qdLab').textContent = '강아지 ' + rem.toFixed(2);
+    document.getElementById('qrLab').textContent = '토끼 ' + rem.toFixed(2);
+    const bars = document.querySelectorAll('#ceModel .bar');
+    bars[0].style.height = (qc * 100) + '%';
+    bars[1].style.height = (rem * 100) + '%';
+    bars[2].style.height = (rem * 100) + '%';
+    const ce = -Math.log(Math.max(1e-9, qc));
+    document.getElementById('ceVal').textContent = ce.toFixed(3);
+  }
+
+  window.addEventListener('load', () => {
+    buildNav('05');
+    ['paSlider','pbSlider'].forEach(id => document.getElementById(id).addEventListener('input', updateEnt));
+    ['m1Slider','s1Slider','m2Slider','s2Slider'].forEach(id => document.getElementById(id).addEventListener('input', drawKL));
+    document.getElementById('qcSlider').addEventListener('input', updateCE);
+    window.addEventListener('resize', drawKL);
+    updateEnt();
+    drawKL();
+    updateCE();
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$', right:'$$', display:true}, {left:'$', right:'$', display:false}],
+        throwOnError: false,
+      });
+    }
+  });
+</script>
+</body>
+</html>

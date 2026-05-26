@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ch.02 · 07 시험 대비 — 핵심 정리</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .formula-sheet { max-width: var(--measure); margin: 1.4rem auto; padding-inline: 1.4rem; }
+  .formula-card { background: #fff; border: 1px solid var(--line); border-left: 3px solid var(--structure); border-radius: 10px; padding: 1rem 1.2rem; margin: .7rem 0; }
+  .formula-card.style { border-left-color: var(--style); }
+  .formula-card.synth { border-left-color: var(--synth); }
+  .formula-card h4 { margin: 0 0 .4rem; font-family: var(--serif); font-size: 1.02rem; color: var(--ink); }
+  .formula-card .why { font-size: .88rem; color: var(--ink-soft); line-height: 1.55; margin-top: .4rem; }
+  .formula-card .why b { color: var(--ink); }
+  .formula-card .math-block { margin: .6rem 0; padding: .7rem .8rem; }
+  .intuition-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; max-width: var(--measure); margin: 1.4rem auto; padding-inline: 1.4rem; }
+  .intuition-card { padding: 1rem 1.2rem; border-radius: 10px; background: var(--paper-2); border: 1px solid var(--line); }
+  .intuition-card h5 { margin: 0 0 .4rem; font-family: var(--serif); font-size: .98rem; color: var(--structure); }
+  .intuition-card p { margin: 0; font-size: .87rem; color: var(--ink-soft); line-height: 1.6; }
+  @media (max-width: 600px) { .intuition-grid { grid-template-columns: 1fr; } }
+  .connections { max-width: var(--measure); margin: 1.4rem auto; padding-inline: 1.4rem; }
+  .conn-row { display: grid; grid-template-columns: 1fr 2fr; gap: .8rem; padding: .6rem 0; border-bottom: 1px solid var(--line-soft); font-size: .92rem; }
+  .conn-row b { font-family: var(--mono); color: var(--style); font-size: .82rem; letter-spacing: .04em; }
+  .conn-row span { color: var(--ink-soft); line-height: 1.55; }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Ch.02 · Sub 07 · 시험 직전 점검</span>
+      <h1>핵심 정리와 <span class="t-style">예상 질문</span><br>한 쪽으로 모은 Ch.02</h1>
+      <p class="lede">앞 6개 sub의 모든 핵심 수식·기하학적 직관·시험 예상 질문을 한 페이지에 모았다. 시험 전날 이 한 페이지만 다시 훑으면 된다.</p>
+    </header>
+
+    <div class="prose">
+      <h2>한 줄 요약 — Ch.02의 흐름</h2>
+      <p>이 장은 “데이터를 어떤 그릇에 담아 어떻게 변형하고 어떻게 측정하고 어떻게 분해할 것인가”라는 네 단계의 이야기다.</p>
+      <ol style="max-width: var(--measure); margin: 0 auto; padding-left: 2.4rem; font-size: .95rem; color: var(--ink-soft); line-height: 1.8;">
+        <li><strong>표현(Sub 01)</strong>: 스칼라 · 벡터 · 행렬 · 텐서 — 차원이 늘어난다는 것은 더 많은 구조를 한 번에 담는다는 뜻.</li>
+        <li><strong>변환(Sub 02)</strong>: 행렬 곱 = 선형 변환. 신경망의 한 층이 실제로 하는 일.</li>
+        <li><strong>측정(Sub 03·04)</strong>: 노름과 거리, 특수 행렬과 직교성 — 크기·각도·안정성을 어떻게 잴 것인가.</li>
+        <li><strong>분해(Sub 05·06)</strong>: 고유분해와 SVD — 행렬의 본질을 “회전·스케일·회전”으로 쪼개기.</li>
+      </ol>
+    </div>
+
+    <h2 style="max-width: var(--measure); margin: 2.6rem auto 1rem; padding-inline: 1.4rem;">시험에 나올 수식 정리</h2>
+
+    <div class="formula-sheet">
+
+      <div class="formula-card">
+        <h4>F1. 행렬 · 벡터 · 전치</h4>
+        <div class="math-block">$$ \mathbf{x} \in \mathbb{R}^n, \quad \mathbf{A} \in \mathbb{R}^{m \times n}, \quad (\mathbf{A}^\top)_{i,j} = \mathbf{A}_{j,i} $$</div>
+        <p class="why"><b>왜 이 형태인가</b>: 모양(shape) 표기가 식에서 즉시 “무엇이 어떤 종류인지” 읽히도록 하는 약속. 전치는 “같은 정보를 다른 방향에서 읽기”다.</p>
+      </div>
+
+      <div class="formula-card">
+        <h4>F2. 행렬 곱 (열 가중합 관점)</h4>
+        <div class="math-block">$$ \mathbf{A}\mathbf{x} = \sum_{j=1}^{n} x_j \, \mathbf{a}_j $$</div>
+        <p class="why"><b>왜 이 형태인가</b>: $\mathbf{x}$의 성분이 A의 각 열을 어느 정도로 섞을지 정한다. 행렬은 새 좌표계를 정의하고, 곱셈은 입력을 그 좌표계에서 다시 그린다.</p>
+      </div>
+
+      <div class="formula-card">
+        <h4>F3. 내적과 노름</h4>
+        <div class="math-block">$$ \mathbf{x}^\top \mathbf{y} = \sum_{i} x_i y_i, \quad \|\mathbf{x}\|_2 = \sqrt{\mathbf{x}^\top \mathbf{x}} $$</div>
+        <p class="why"><b>왜 이 형태인가</b>: 내적은 두 벡터가 “같은 방향으로 얼마나 가는지”의 측도이고, L2 노름은 그 내적의 자기 자신과의 제곱근이다. 즉 L2는 가장 자연스러운 유클리드 거리.</p>
+      </div>
+
+      <div class="formula-card style">
+        <h4>F4. Lp 노름</h4>
+        <div class="math-block">$$ \|\mathbf{x}\|_p = \left( \sum_i |x_i|^p \right)^{1/p}, \quad p \geq 1 $$</div>
+        <p class="why"><b>왜 이 형태인가</b>: 단위구 모양을 조절하는 일반화. p=1=마름모(축에 모서리, 희소성 유도), p=2=원(부드러움), p=∞=정사각형(최댓값). p&lt;1은 삼각 부등식이 깨져 진짜 노름이 아니다.</p>
+      </div>
+
+      <div class="formula-card">
+        <h4>F5. 단위/역행렬</h4>
+        <div class="math-block">$$ \mathbf{I} = \mathrm{diag}(1,\dots,1), \quad \mathbf{A}\mathbf{A}^{-1} = \mathbf{A}^{-1}\mathbf{A} = \mathbf{I} $$</div>
+        <p class="why"><b>왜 이 형태인가</b>: 역행렬은 A의 변환을 되돌리는 변환. 모든 A가 가지는 것이 아니다 — det(A)=0이면 정보가 사라져 복원 불가.</p>
+      </div>
+
+      <div class="formula-card">
+        <h4>F6. 직교 행렬</h4>
+        <div class="math-block">$$ \mathbf{Q}^\top \mathbf{Q} = \mathbf{I} \iff \mathbf{Q}^{-1} = \mathbf{Q}^\top $$</div>
+        <p class="why"><b>왜 이 형태인가</b>: 열이 서로 직교+정규화 → 길이·각도·내적 보존. 곱이 회전·반사일 뿐이라 깊은 층을 지나도 신호 크기가 안정적. 신경망 초기화의 표준 중 하나.</p>
+      </div>
+
+      <div class="formula-card synth">
+        <h4>F7. 고유값 방정식</h4>
+        <div class="math-block">$$ \mathbf{A}\mathbf{v} = \lambda \mathbf{v} $$</div>
+        <p class="why"><b>왜 이 형태인가</b>: 행렬 곱 후에도 방향이 바뀌지 않는 특별한 벡터 v. 그 방향에서 행렬은 단순한 스칼라 곱처럼 동작. 고유벡터들의 좌표계에서 행렬은 대각이다.</p>
+      </div>
+
+      <div class="formula-card synth">
+        <h4>F8. 고유분해 (대칭 행렬)</h4>
+        <div class="math-block">$$ \mathbf{A} = \mathbf{V} \boldsymbol{\Lambda} \mathbf{V}^\top $$</div>
+        <p class="why"><b>왜 이 형태인가</b>: 대칭 행렬은 “회전($\mathbf{V}^\top$) → 축마다 스케일($\boldsymbol{\Lambda}$) → 회전($\mathbf{V}$)”의 조합. PCA의 수학적 핵심.</p>
+      </div>
+
+      <div class="formula-card style">
+        <h4>F9. 특이값분해 (SVD)</h4>
+        <div class="math-block">$$ \mathbf{A} = \mathbf{U} \boldsymbol{\Sigma} \mathbf{V}^\top $$</div>
+        <p class="why"><b>왜 이 형태인가</b>: 모든 $m \times n$ 행렬에 대해 항상 존재. U, V는 직교, Σ는 대각에 특이값 $\sigma_1 \geq \sigma_2 \geq \dots \geq 0$. 임의의 행렬을 회전·스케일·회전으로 쪼개는 가장 일반적인 분해.</p>
+      </div>
+
+      <div class="formula-card style">
+        <h4>F10. 저랭크 근사 (Eckart-Young)</h4>
+        <div class="math-block">$$ \mathbf{A}_k = \sum_{i=1}^{k} \sigma_i \mathbf{u}_i \mathbf{v}_i^\top $$</div>
+        <p class="why"><b>왜 이 형태인가</b>: 큰 특이값 k개만 남긴 합이 프로베니우스 노름 기준 최적의 k-랭크 근사. 이미지 압축·추천 시스템·모델 압축의 기반.</p>
+      </div>
+
+      <div class="formula-card">
+        <h4>F11. 의사역행렬</h4>
+        <div class="math-block">$$ \mathbf{A}^+ = \mathbf{V} \boldsymbol{\Sigma}^+ \mathbf{U}^\top $$</div>
+        <p class="why"><b>왜 이 형태인가</b>: 직사각·특이 행렬에서도 “가장 그럴듯한 해”를 정의. $\mathbf{x} = \mathbf{A}^+ \mathbf{b}$는 해가 여럿이면 최소 노름 해, 해가 없으면 최소제곱 해. 선형 회귀의 닫힌 해.</p>
+      </div>
+
+      <div class="formula-card synth">
+        <h4>F12. 프로베니우스 노름 (행렬판 L2)</h4>
+        <div class="math-block">$$ \|\mathbf{A}\|_F = \sqrt{\sum_{i,j} A_{i,j}^2} = \sqrt{\sum_i \sigma_i^2} $$</div>
+        <p class="why"><b>왜 이 형태인가</b>: 행렬을 큰 벡터로 펼쳐 L2를 잰 것. SVD를 통하면 특이값 제곱합의 제곱근과 같다. 가중치 감쇠(Weight Decay)에서 페널티로 쓰임.</p>
+      </div>
+
+      <div class="formula-card">
+        <h4>F13. 신경망 한 층의 식</h4>
+        <div class="math-block">$$ \mathbf{h} = f(\mathbf{W}\mathbf{x} + \mathbf{b}) $$</div>
+        <p class="why"><b>왜 이 형태인가</b>: 선형 변환($\mathbf{W}\mathbf{x}$) + 평행이동($\mathbf{b}$) + 비선형 굽힘($f$). Ch.02의 모든 도구가 여기서 함께 작동한다. 가중치 행렬의 모양은 (출력 차원 × 입력 차원).</p>
+      </div>
+
+    </div>
+
+    <h2 style="max-width: var(--measure); margin: 2.6rem auto 1rem; padding-inline: 1.4rem;">기하학적 직관 — 한 줄 체크리스트</h2>
+
+    <div class="intuition-grid">
+      <div class="intuition-card">
+        <h5>행렬 곱</h5>
+        <p>입력 공간을 “회전 + 확대 + 전단”하는 변환. 첫째 열이 (1,0)의 목적지, 둘째 열이 (0,1)의 목적지.</p>
+      </div>
+      <div class="intuition-card">
+        <h5>행렬식</h5>
+        <p>|det(A)| = 변환된 단위 사각형의 넓이. 부호 = 방향 뒤집힘 여부. 0이면 정보 사라짐 (특이행렬).</p>
+      </div>
+      <div class="intuition-card">
+        <h5>L1 vs L2 단위구</h5>
+        <p>L1=마름모(축 모서리 → 희소성), L2=원(부드러움, 균등 감쇠). 정칙화에서 가중치를 어디로 누를지 결정.</p>
+      </div>
+      <div class="intuition-card">
+        <h5>직교 행렬</h5>
+        <p>회전·반사. 원을 원으로 유지. 깊은 신경망의 신호 안정성에 기여.</p>
+      </div>
+      <div class="intuition-card">
+        <h5>고유벡터</h5>
+        <p>행렬 곱 후에도 방향이 그대로인 벡터. 행렬의 “본질적 축”. 회전 의자의 회전축 비유.</p>
+      </div>
+      <div class="intuition-card">
+        <h5>SVD</h5>
+        <p>임의의 행렬을 “회전(Vᵀ) → 축마다 스케일(Σ) → 회전(U)”로 쪼갬. X선 사진처럼 골격(큰 σ)과 살(작은 σ)을 분리.</p>
+      </div>
+    </div>
+
+    <h2 style="max-width: var(--measure); margin: 2.6rem auto 1rem; padding-inline: 1.4rem;">예상 질문 8개 (시험 출제 형태)</h2>
+
+    <div id="qa-host" style="max-width: var(--measure); margin: 1rem auto; padding-inline: 1.4rem;"></div>
+
+    <h2 style="max-width: var(--measure); margin: 2.6rem auto 1rem; padding-inline: 1.4rem;">뒤 챕터와의 연결</h2>
+
+    <div class="connections">
+      <div class="conn-row"><b>Ch.03 확률·정보이론</b><span>벡터 표기 (확률 변수 묶음), 공분산 행렬(대칭+양의 정부호)이 곧장 Ch.02의 언어로 적힘. KL 발산, 교차 엔트로피도 벡터 연산.</span></div>
+      <div class="conn-row"><b>Ch.04 수치 계산</b><span>조건수 = 가장 큰 특이값 / 가장 작은 특이값. 조건수가 크면 작은 입력 변화가 큰 출력 오차로 증폭. 헤시안 양의 정부호 판정.</span></div>
+      <div class="conn-row"><b>Ch.05 ML 기초</b><span>설계 행렬(Design Matrix) X ∈ ℝᵐˣⁿ. 선형 회귀의 닫힌 해 = 의사역행렬 X⁺y.</span></div>
+      <div class="conn-row"><b>Ch.06 순방향 신경망</b><span>한 층 = Wx + b + f. 역전파는 야코비안 행렬의 연쇄곱. 가중치 모양 = (출력 차원 × 입력 차원).</span></div>
+      <div class="conn-row"><b>Ch.07 정칙화</b><span>L1 정칙화(희소성), L2 정칙화(가중치 감쇠)의 기하학적 기반이 sub 03의 단위구 모양.</span></div>
+      <div class="conn-row"><b>Ch.08 최적화</b><span>안장점 판정 = 헤시안의 고유값 부호 혼재. 모멘텀·Adam이 안장점 탈출에 설계됨.</span></div>
+      <div class="conn-row"><b>Ch.13 선형 요소 모델</b><span>PCA = 공분산 행렬의 고유분해 (또는 데이터 행렬의 SVD). Ch.02의 분해가 차원 축소로 직접 응용.</span></div>
+      <div class="conn-row"><b>Ch.14 자기부호화기</b><span>오토인코더는 PCA의 비선형 일반화. 인코더-디코더 가중치 행렬에 SVD 적용해 압축 가능.</span></div>
+    </div>
+
+    <div class="prose">
+      <h2>마지막 점검 — 시험 직전 5분</h2>
+      <p>시험 직전이라면 다음 다섯 가지만 다시 머릿속에 그려 보라.</p>
+      <ol style="max-width: var(--measure); margin: 0 auto; padding-left: 2.4rem; font-size: .95rem; color: var(--ink-soft); line-height: 1.8;">
+        <li><strong>2x2 행렬을 본 순간</strong> 단위 사각형이 어떤 평행사변형으로 가는지 머릿속에 그릴 수 있다.</li>
+        <li><strong>L1과 L2의 단위구 모양</strong>이 마름모/원으로 즉시 떠오른다. 그래서 L1은 희소성, L2는 부드러움.</li>
+        <li><strong>직교 행렬</strong>은 길이·각도·내적을 보존한다. Q⁻¹ = Qᵀ.</li>
+        <li><strong>고유분해</strong>는 대칭 행렬을 “회전+스케일+회전”으로, <strong>SVD</strong>는 모든 행렬을 그 형태로 쪼갠다.</li>
+        <li><strong>큰 특이값 몇 개만</strong> 남기면 행렬의 “골격”이 보인다. 이게 PCA, 압축, 추천 시스템의 공통 뿌리.</li>
+      </ol>
+
+      <p style="margin-top: 2rem; padding: 1rem 1.2rem; background: var(--style-bg); border-radius: 8px; font-size: .9rem; color: var(--ink-soft); border-left: 3px solid var(--style);">
+      이 페이지 외에 더 깊이 보고 싶다면 → <a href="../../../05-선행학습/Deep-Learning-Book-02-Linear-Algebra-상세해설.md">선행학습 상세해설</a> 또는 원서 <a href="https://www.deeplearningbook.org/contents/linear_algebra.html">Chapter 2 원문</a>. 시험 범위 전체는 → <a href="../index.html">기말고사 인터랙티브 표지</a>.
+      </p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const CHAPTERS = [
+    { no:'01', t:'스칼라·벡터·행렬·텐서' },
+    { no:'02', t:'행렬 곱과 선형 변환' },
+    { no:'03', t:'노름과 거리' },
+    { no:'04', t:'특수 행렬과 직교성' },
+    { no:'05', t:'고유분해' },
+    { no:'06', t:'SVD — 특이값분해' },
+    { no:'07', t:'시험 대비 — 핵심 정리' },
+  ];
+  const CUR = '07';
+  document.querySelector('.topbar').innerHTML =
+    `<a class="home" href="index.html">← Ch.02 선형대수 표지</a>` +
+    `<span class="ch-mini">SUB ${CUR} / 07</span>`;
+  document.querySelector('.ch-nav ol').innerHTML = CHAPTERS.map(c =>
+    `<li><a href="${c.no}.html" ${c.no===CUR?'class="current"':''}>${c.t}</a></li>`).join('');
+  const idx = CHAPTERS.findIndex(c=>c.no===CUR);
+  const prev = idx>0 ? CHAPTERS[idx-1] : { no:'', t:'표지로', _:'index.html' };
+  const next = idx<CHAPTERS.length-1 ? CHAPTERS[idx+1] : { no:'', t:'표지로', _:'index.html' };
+  document.querySelector('.ch-foot').innerHTML =
+    `<a href="${prev._ || prev.no+'.html'}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+    `<a href="${next._ || next.no+'.html'}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+  const bar = document.querySelector('.scroll-progress');
+  document.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max > 0 ? (h.scrollTop/max)*100 : 0) + '%';
+  }, { passive: true });
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{ left:'$$', right:'$$', display:true }, { left:'$', right:'$', display:false }],
+        throwOnError: false,
+      });
+    }
+  });
+
+  // ---------- 예상 질문 Q&A 아코디언 ----------
+  const QAS = [
+    {
+      q: '왜 신경망의 한 층을 Wx + b + 비선형 함수로 표현하는가? 각 부분이 기하학적으로 무엇을 하는가?',
+      rel: 'Sub 02 · Sub 04',
+      a: '<b>Wx</b>는 입력 공간을 새 좌표계로 옮기는 <b>선형 변환</b> (회전·전단·스케일의 조합)이다. W의 모양 (출력 차원 × 입력 차원)이 입력에서 출력으로의 변환을 정의한다. <b>+b</b>는 평행이동으로, 원점을 옮긴다. <b>비선형 함수 f</b>는 공간을 굽혀서 선형 변환만으로는 불가능한 분리 경계를 만든다. 다층으로 쌓이면 원래 데이터에서 섞여 있던 클래스들이 어느 깊이에서 한 직선으로 잘릴 만큼 펴진다 — 이것이 표현 학습의 기하학.'
+    },
+    {
+      q: '행렬식 det(A)이 0이면 어떤 문제가 생기는가? 신경망에서 이게 어떤 상황과 연결되는가?',
+      rel: 'Sub 02 · Sub 05',
+      a: 'det(A)=0이면 A의 열들이 선형 종속이므로 변환된 공간이 원래보다 차원이 낮다 (예: 2D 평면 → 1D 직선). 정보가 사라져 역행렬이 존재하지 않고, 어떤 입력이 그 출력을 만들었는지 복원할 수 없다. 신경망에서는 가중치 행렬의 랭크가 떨어지면 그 층이 표현할 수 있는 함수 공간이 줄어든다. 또 손실 함수의 헤시안에서 어떤 고유값이 0이면 그 방향으로는 곡률이 없어 (평평한 골짜기) 학습이 매우 느려진다.'
+    },
+    {
+      q: 'L1 정칙화는 가중치를 정확히 0으로 만들고, L2 정칙화는 0에 가깝게만 만든다. 왜 그런가?',
+      rel: 'Sub 03',
+      a: '정칙화는 “데이터 손실의 등고선과 노름 단위구가 만나는 점”에서 멈춘다는 기하학적 관점으로 이해할 수 있다. <b>L1의 단위구는 마름모(축 위에 뾰족한 모서리)</b>이므로, 등고선이 그 모서리에서 자주 멈춘다. 모서리는 어떤 성분이 정확히 0이라는 뜻 → 자동 특징 선택. <b>L2의 단위구는 매끈한 원</b>으로 모서리가 없으므로, 만남점이 어느 성분도 정확히 0이 아닌 자리에 있을 가능성이 크다. 그래서 L2는 모든 가중치를 균등하게 작게 누른다.'
+    },
+    {
+      q: '직교 행렬이 길이와 각도를 보존하는 이유를 식으로 보이라.',
+      rel: 'Sub 04',
+      a: '직교 행렬 Q는 QᵀQ=I를 만족한다. 길이 보존: ‖Qx‖² = (Qx)ᵀ(Qx) = xᵀQᵀQx = xᵀIx = xᵀx = ‖x‖². 내적 보존: (Qx)ᵀ(Qy) = xᵀQᵀQy = xᵀy. 각도 보존: 각도는 내적과 노름으로 정의되므로 둘 다 보존되면 각도도 보존. <b>의미</b>: 직교 변환은 좌표계를 회전·반사할 뿐 늘이거나 줄이지 않는다. 이것이 깊은 신경망 신호 안정성과 직교 초기화의 이유.'
+    },
+    {
+      q: '고유벡터와 특이벡터는 데이터의 중요한 방향을 찾는다는 점에서 어떻게 연결되는가?',
+      rel: 'Sub 05 · Sub 06',
+      a: '대칭 행렬 A의 고유분해 A=VΛVᵀ에서, 큰 고유값 λᵢ에 대응하는 고유벡터 vᵢ는 A가 가장 강하게 늘리는 방향. <b>공분산 행렬</b>이 대칭이고 양의 정부호이므로 PCA는 이 고유분해를 쓴다. 일반 직사각 행렬 X의 SVD에서 특이값 σᵢ²은 XᵀX의 고유값. 즉, X의 우특이벡터 vᵢ는 XᵀX의 고유벡터와 같다. 결국 “고유벡터=특이벡터”는 같은 직관(데이터가 가장 많이 퍼진 방향)의 두 표현. SVD는 직사각 행렬에서도 작동하므로 일반적.'
+    },
+    {
+      q: 'SVD의 저랭크 근사가 “최적”이라는 말은 어떤 의미인가 (Eckart-Young 정리)?',
+      rel: 'Sub 06',
+      a: 'A = ΣᵢσᵢuᵢvᵢᵀA의 합에서 가장 큰 k개의 항만 남긴 행렬 Aₖ를 생각하자. <b>에카르트-영(Eckart-Young) 정리</b>는 모든 k-랭크 행렬 B 중에서 ‖A - B‖_F (프로베니우스 노름)를 가장 작게 만드는 것이 Aₖ라고 보장한다. 즉 “k개의 외적 합으로 행렬을 근사하는 가능한 모든 방법 중 SVD가 최적”. 이게 이미지 압축, 추천 시스템, 모델 압축이 모두 SVD를 쓰는 이론적 근거.'
+    },
+    {
+      q: '의사역행렬 A⁺이 직사각 행렬에서 어떤 두 가지 의미를 가지는가?',
+      rel: 'Sub 06',
+      a: '의사역행렬은 SVD로 A⁺ = VΣ⁺Uᵀ로 정의 (Σ⁺는 σᵢ≠0인 자리에 1/σᵢ). x = A⁺b는: (1) <b>방정식 Ax=b가 해가 여럿이면 최소 노름 해</b> (가장 단순한 해). (2) <b>해가 없으면 ‖Ax-b‖₂를 최소화하는 최소제곱 해</b>. 선형 회귀의 닫힌 해 w = (XᵀX)⁻¹Xᵀy는 본질적으로 X⁺y와 같다. 즉, 의사역행렬은 가장 기본적인 머신러닝 모델(선형 회귀)의 정확한 해를 정의.'
+    },
+    {
+      q: '신경망의 손실 함수에서 헤시안 행렬의 고유값을 보면 무엇을 판정할 수 있는가?',
+      rel: 'Sub 04 · Sub 05',
+      a: '손실 함수 L(w)의 임계점 (∇L = 0인 점)에서 헤시안 ∇²L(w)의 고유값으로 그 점의 종류를 판정할 수 있다: <b>모두 양수</b> = 양의 정부호 → 국소 최솟값 (학습이 끝난 자리). <b>모두 음수</b> = 음의 정부호 → 국소 최댓값. <b>양수·음수 섞임</b> = 부정 부호 → <b>안장점</b> (어떤 방향은 내려가고 어떤 방향은 올라감). 어떤 고유값=0이면 평평한 골짜기. 딥러닝의 손실 지형은 안장점이 매우 많다 — 모멘텀과 Adam은 안장점을 빨리 빠져나오기 위한 설계.'
+    },
+  ];
+  const qaHost = document.getElementById('qa-host');
+  QAS.forEach((qa, i) => {
+    const d = document.createElement('div');
+    d.className = 'qa';
+    d.innerHTML = `
+      <div class="qa-q"><span class="qn">Q${i+1}</span><span class="qt">${qa.q}</span><span class="qx">+</span></div>
+      <div class="qa-a"><div class="qa-a-inner"><span class="rel">관련: ${qa.rel}</span>${qa.a}</div></div>`;
+    qaHost.appendChild(d);
+    d.querySelector('.qa-q').addEventListener('click', () => d.classList.toggle('open'));
+  });
+</script>
+</body>
+</html>

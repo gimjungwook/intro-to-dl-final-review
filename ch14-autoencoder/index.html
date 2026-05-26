@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chapter 14 · 자기부호화기 — 인터랙티브 복습</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .masthead { position: relative; max-width: var(--wide); margin: 0 auto; padding: 1.5rem 1.4rem 0; }
+  .hero-wrap { position: relative; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: linear-gradient(180deg,#fff,var(--paper-2)); box-shadow: var(--shadow-plate); }
+  #hero { display: block; width: 100%; height: 360px; }
+  .hero-cap { position: absolute; left: 1.2rem; bottom: 1rem; font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; color: var(--ink-faint); pointer-events: none; }
+  .hero-cap b { color: var(--structure); } .hero-cap em { color: var(--style); font-style: normal; }
+  .title-block { max-width: var(--wide); margin: 2.4rem auto 0; padding-inline: 1.4rem; }
+  .title-block .kicker { display: block; margin-bottom: 1rem; }
+  .title-block h1 { font-size: clamp(2.6rem, 7vw, 5rem); margin: 0; line-height: 1.05; }
+  .title-block h1 em { color: var(--synth); font-style: normal; }
+  .paper-meta { display: flex; flex-wrap: wrap; gap: .5rem 1.6rem; margin-top: 1.4rem; font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); letter-spacing: .02em; }
+  .paper-meta span b { color: var(--ink); font-weight: 500; }
+
+  .plates { max-width: var(--wide); margin: 1rem auto; padding: 2rem 1.4rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 1rem; }
+  .plate { position: relative; display: flex; flex-direction: column; text-decoration: none; color: inherit; background: #fff; border: 1px solid var(--line); border-radius: 13px; padding: 1.3rem 1.3rem 1.4rem; transition: transform .2s var(--ease), border-color .2s, box-shadow .2s; overflow: hidden; }
+  .plate:hover { transform: translateY(-4px); border-color: var(--synth); box-shadow: var(--shadow-plate); }
+  .plate .pno { font-family: var(--mono); font-size: .74rem; letter-spacing: .14em; color: var(--ink-faint); }
+  .plate h3 { font-family: var(--serif); font-size: 1.3rem; margin: .5rem 0 .5rem; line-height: 1.2; }
+  .plate p { font-size: .9rem; color: var(--ink-soft); line-height: 1.5; margin: 0; }
+  .plate .spectrum { display: flex; height: 4px; border-radius: 2px; overflow: hidden; margin-bottom: 1rem; }
+  .plate .spectrum i { display: block; height: 100%; }
+  .plate .go { margin-top: 1rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; color: var(--synth); opacity: 0; transform: translateX(-4px); transition: .2s var(--ease); }
+  .plate:hover .go { opacity: 1; transform: translateX(0); }
+
+  .section-intro { max-width: var(--measure); margin: 1rem auto 0; padding-inline: 1.4rem; }
+  .section-intro h2 { margin-top: 1rem; }
+  .twopole { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; max-width: var(--measure); margin: 1.6rem auto; padding-inline: 1.4rem; }
+  .pole { padding: 1.1rem 1.2rem; border-radius: 11px; }
+  .pole.s1 { background: var(--structure-bg); } .pole.s2 { background: var(--style-bg); }
+  .pole h4 { margin: 0 0 .4rem; font-family: var(--serif); font-size: 1.1rem; }
+  .pole.s1 h4 { color: var(--structure); } .pole.s2 h4 { color: var(--style); }
+  .pole p { margin: 0; font-size: .9rem; color: var(--ink-soft); line-height: 1.5; }
+  @media (max-width: 560px){ .twopole{ grid-template-columns: 1fr; } }
+
+  .path { max-width: var(--wide); margin: 2rem auto; padding: 1.6rem 1.4rem; }
+  .path-flow { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; font-family: var(--mono); font-size: .8rem; }
+  .path-flow a { display: inline-flex; align-items: center; gap: .4rem; text-decoration: none; color: var(--ink-soft); padding: .4rem .7rem; border: 1px solid var(--line); border-radius: 20px; transition: .15s; }
+  .path-flow a:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .path-flow a b { color: var(--synth); } .path-flow a:hover b { color: var(--style-lo); }
+  .path-flow .arr { color: var(--ink-faint); }
+
+  footer.colophon { max-width: var(--measure); margin: 3rem auto 4rem; padding: 2rem 1.4rem 0; border-top: 1px solid var(--line); font-size: .85rem; color: var(--ink-soft); }
+  footer.colophon a { color: var(--structure); }
+  footer.colophon .src { font-family: var(--mono); font-size: .76rem; line-height: 1.8; }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="hero-wrap">
+    <canvas id="hero"></canvas>
+    <div class="hero-cap"><b>입력 — 고차원 데이터</b> ↔ <em>잠재 — 좁은 병목을 통과한 압축 코드</em> · 마우스를 가로로 움직여 병목 폭을 바꿔보세요</div>
+  </div>
+</header>
+
+<div class="title-block">
+  <span class="kicker">Deep Learning Book · Chapter 14 · Autoencoders</span>
+  <h1>자기 자신을 다시 만드는<br><em>가장 작은 코드</em>를 찾기</h1>
+  <div class="paper-meta">
+    <span><b>딥러닝 개론</b> 기말고사 인터랙티브</span>
+    <span>제작 <b>김정욱</b></span>
+    <span>분량 <b>약 35분</b></span>
+    <span>위젯 <b>5개</b></span>
+  </div>
+</div>
+
+<section class="section-intro">
+  <h2>한 문장으로</h2>
+  <p>이 장은 <strong>"입력을 그대로 복사하라"는 가장 멍청해 보이는 과제가, 어떻게 데이터의 본질적 구조를 학습하는 강력한 표상 학습기로 바뀌는가</strong>를 다룬다. 정답은 <em>"멍청하게 복사할 수 없도록 손발을 묶어 두기"</em>다. 손발을 묶는 방식이 곧 자기부호화기(autoencoder)의 종류를 결정한다.</p>
+  <p>가장 깊은 통찰은 단순하다. 어떤 모델이 데이터를 <strong>완벽하게</strong> 복원할 수 있다면 그것은 곧 항등 함수(identity function)이고, 아무것도 배우지 않은 것이다. 반대로 <strong>전혀</strong> 복원할 수 없다면 모델이 너무 약하다. 좋은 자기부호화기란 이 사이의 <span class="t-synth">긴장 상태</span>에 머무르며 "복원에 정말 필요한 구조만 골라 담는" 모델이다. 그 긴장의 형태가 미완전(undercomplete), 잡음 제거(denoising), 수축적(contractive)으로 갈라진다.</p>
+</section>
+
+<div class="twopole">
+  <div class="pole s1"><h4>인코더 f(x) — 압축</h4><p>입력 x를 잠재 표상 h로 매핑. "어떤 차원이 데이터에 중요한가"를 학습. 병목·페널티·노이즈가 결정.</p></div>
+  <div class="pole s2"><h4>디코더 g(h) — 복원</h4><p>코드 h에서 입력 추정값 r = g(h)를 재구성. 재구성 손실 L(x, g(f(x)))이 인코더를 평가하는 채점자.</p></div>
+</div>
+
+<section class="plates" id="plates"></section>
+
+<section class="path">
+  <span class="kicker">권장 읽기 순서</span>
+  <div class="path-flow" id="pathflow"></div>
+</section>
+
+<footer class="colophon">
+  <p>이 해설은 Goodfellow, Bengio, Courville의 Deep Learning Book Chapter 14 (Autoencoders)을 바텀업으로 다시 쓴 것이다. 항등 함수의 위험에서 출발해 미완전·잡음 제거·수축적 자기부호화기와 매니폴드 학습의 연결까지 단계적으로 쌓아 올린다. 모든 수식은 "왜 그 형태인가"를 함께 설명한다.</p>
+  <p class="src">
+    원서 · <a href="https://www.deeplearningbook.org/contents/autoencoders.html">deeplearningbook.org/contents/autoencoders.html</a><br>
+    선행학습 노트 · <a href="../../../03-과제-제출/IntroToDL_Week9_22000168.md">Week 9 과제 (Ch.13-14)</a><br>
+    상위 인덱스 · <a href="../index.html">기말고사 인터랙티브 표지</a>
+  </p>
+</footer>
+
+<script>
+  const CHAPTERS = [
+    { no:'01', t:'자기부호화기의 기본', d:'인코더 f, 디코더 g, 재구성 손실 ||x - g(f(x))||². 왜 "완벽한 복사"가 목표가 아닌가. 항등 함수의 함정.', sp:['structure','style'] },
+    { no:'02', t:'미완전 자기부호화기', d:'잠재 차원을 입력보다 좁게. 병목이 정칙화(regularization)가 되는 이유. 선형 미완전 AE와 PCA의 관계.', sp:['structure'] },
+    { no:'03', t:'잡음 제거 자기부호화기 (DAE)', d:'입력을 손상 → 깨끗한 원본 복원. 노이즈가 가르치는 매니폴드와 점수 매칭(score matching) 해석.', sp:['style','synth'] },
+    { no:'04', t:'수축적 자기부호화기 (CAE)', d:'인코더의 자코비안에 페널티. 매니폴드 접선 방향에만 민감, 무관한 방향에는 둔감. DAE의 해석적 쌍둥이.', sp:['structure-lo','style'] },
+    { no:'05', t:'자기부호화기와 매니폴드 학습', d:'Ch.13 선형 인자 모델의 비선형 일반화. Ch.15 표상 학습으로의 다리. 비선형 차원축소·의미적 해싱(semantic hashing) 응용.', sp:['synth','structure'] },
+    { no:'06', t:'시험 대비 — 한 장 요약과 예상 문제', d:'기말 빈출 카드. 항등 함수의 위험, 미완전 vs 과완전, DAE의 score matching 해석, CAE의 자코비안, AE↔PCA 관계의 한 줄 답안.', sp:['ink-soft','ink'] },
+  ];
+  const colMap = { structure:'var(--structure)', 'structure-lo':'var(--structure-lo)', style:'var(--style)', 'style-lo':'var(--style-lo)', synth:'var(--synth)', ink:'var(--ink)', 'ink-soft':'var(--ink-soft)' };
+  const platesEl = document.getElementById('plates');
+  const flowEl = document.getElementById('pathflow');
+  CHAPTERS.forEach((c, idx) => {
+    const sp = c.sp.length === 1 ? [c.sp[0], c.sp[0]] : c.sp;
+    const a = document.createElement('a');
+    a.className = 'plate'; a.href = c.no + '.html';
+    a.innerHTML = `
+      <div class="spectrum">${sp.map(s=>`<i style="flex:1;background:${colMap[s]}"></i>`).join('')}</div>
+      <span class="pno">SUB-CHAPTER ${c.no}</span>
+      <h3>${c.t}</h3>
+      <p>${c.d}</p>
+      <span class="go">읽기 →</span>`;
+    platesEl.appendChild(a);
+
+    const f = document.createElement('a'); f.href = c.no + '.html';
+    f.innerHTML = `<b>${c.no}</b> ${c.t}`;
+    flowEl.appendChild(f);
+    if (idx < CHAPTERS.length - 1) { const s = document.createElement('span'); s.className='arr'; s.textContent='→'; flowEl.appendChild(s); }
+  });
+
+  // 히어로 — 인코더-디코더 입자 흐름: 좌(입력) → 병목(가운데) → 우(복원)
+  window.addEventListener('load', () => {
+    const canvas = document.getElementById('hero');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    function resize() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const w = canvas.clientWidth, h = 360;
+      canvas.width = w * dpr; canvas.height = h * dpr;
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    let mouseX = 0.5;
+    canvas.addEventListener('mousemove', (e) => {
+      const r = canvas.getBoundingClientRect();
+      mouseX = (e.clientX - r.left) / r.width;
+    });
+    canvas.addEventListener('mouseleave', () => { mouseX = 0.5; });
+
+    // 입력 클러스터: 좌측 격자 형태로 시작
+    const N = 160;
+    let particles = [];
+    function spawn() {
+      particles = [];
+      for (let i = 0; i < N; i++) {
+        particles.push({
+          x: Math.random(), y: Math.random(),
+          phase: Math.random(),
+          jitter: (Math.random() - 0.5) * 0.4,
+        });
+      }
+    }
+    spawn();
+
+    function draw() {
+      const w = canvas.clientWidth, h = 360;
+      ctx.clearRect(0,0,w,h);
+      ctx.fillStyle = '#FAF7F0'; ctx.fillRect(0,0,w,h);
+
+      // 병목 폭: mouseX 0→1이면 폭 0.02→0.4 (가운데 통로)
+      const bottleneck = 0.04 + mouseX * 0.36;
+      const cx = w/2;
+
+      // 좌측 영역(입력) · 가운데(병목) · 우측(복원) 안내 라벨
+      ctx.fillStyle = 'rgba(45, 91, 122, 0.06)';
+      ctx.fillRect(0, 0, w*0.32, h);
+      ctx.fillStyle = 'rgba(164, 123, 46, 0.07)';
+      ctx.fillRect(w*0.32, h*(0.5 - bottleneck/2), w*0.36, h*bottleneck);
+      ctx.fillStyle = 'rgba(192, 73, 46, 0.06)';
+      ctx.fillRect(w*0.68, 0, w*0.32, h);
+
+      // 라벨
+      ctx.fillStyle = '#8E8576';
+      ctx.font = '11px "Spline Sans Mono", monospace';
+      ctx.fillText('x  (입력)', 14, 18);
+      ctx.fillText('h = f(x)  (잠재)', cx - 50, 18);
+      ctx.fillText('r = g(h)  (복원)', w - 130, 18);
+
+      // 각 입자: 좌→가운데로 가는 동안 y를 병목 안으로 압축, 가운데→우로 가면서 다시 흩어짐
+      particles.forEach(p => {
+        p.phase += 0.0035;
+        if (p.phase > 1) { p.phase -= 1; p.y = Math.random(); p.jitter = (Math.random()-0.5)*0.4; }
+        const t = p.phase;
+        // x 위치
+        const px = t * w;
+        // y 위치: t=0 자유, t=0.5 병목 안, t=1 다시 자유
+        const tightness = 1 - Math.abs(t - 0.5) * 2;  // 0→1→0
+        const wide = (p.y - 0.5) * h * 0.85;
+        const narrow = (p.y - 0.5) * h * bottleneck;
+        const py = h/2 + wide * (1 - tightness) + narrow * tightness;
+
+        // 색: 좌측은 structure(쿨), 우측은 style(웜), 가운데는 synth(황토)
+        let r, g, b;
+        if (t < 0.5) {
+          const k = t * 2;
+          r = 45 + (164 - 45) * k;
+          g = 91 + (123 - 91) * k;
+          b = 122 + (46 - 122) * k;
+        } else {
+          const k = (t - 0.5) * 2;
+          r = 164 + (192 - 164) * k;
+          g = 123 + (73 - 123) * k;
+          b = 46 + (46 - 46) * k;
+        }
+        ctx.fillStyle = `rgba(${r|0}, ${g|0}, ${b|0}, ${0.55 + tightness*0.3})`;
+        ctx.beginPath(); ctx.arc(px, py, 2.1 + tightness*0.8, 0, Math.PI*2); ctx.fill();
+      });
+
+      // 병목 가이드 라인
+      ctx.strokeStyle = 'rgba(164, 123, 46, 0.45)';
+      ctx.lineWidth = 1.2; ctx.setLineDash([4, 4]);
+      ctx.strokeRect(w*0.32, h*(0.5 - bottleneck/2), w*0.36, h*bottleneck);
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = '#A47B2E';
+      ctx.font = '11px "Spline Sans Mono", monospace';
+      ctx.fillText(`병목 폭 ≈ ${(bottleneck*100).toFixed(0)}%  →  잠재 차원의 비유`, cx - 100, h - 14);
+
+      requestAnimationFrame(draw);
+    }
+    draw();
+  });
+</script>
+</body>
+</html>

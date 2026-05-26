@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>03 · 잡음 제거 자기부호화기 — Ch.14</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  /* DAE 위젯 */
+  .dae-stage { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: .7rem; padding: 1.5rem 1.2rem 1rem; align-items: center; justify-items: center; }
+  .dae-side { text-align: center; }
+  .dae-side canvas { display: block; width: 100%; max-width: 180px; aspect-ratio: 1/1; border-radius: 10px; border: 1px solid var(--line); background: #fff; margin: 0 auto; image-rendering: pixelated; }
+  .dae-side .slab { display: block; margin-top: .5rem; font-family: var(--mono); font-size: .72rem; color: var(--ink-faint); letter-spacing: .04em; }
+  .dae-side.in .slab { color: var(--structure); }
+  .dae-side.corr .slab { color: var(--style); }
+  .dae-side.out .slab { color: var(--synth); }
+  .dae-meters { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; max-width: var(--measure); margin: 0 auto; padding: .9rem 1.2rem 1rem; border-top: 1px solid var(--line-soft); background: var(--paper); }
+  .dae-meter label { font-family: var(--mono); font-size: .7rem; letter-spacing: .06em; color: var(--ink-faint); text-transform: uppercase; }
+  .dae-meter .barwrap { height: 8px; background: var(--paper-sink); border-radius: 4px; overflow: hidden; margin-top: .35rem; }
+  .dae-meter .barwrap i { display: block; height: 100%; border-radius: 4px; transition: width .2s var(--ease); }
+  .dae-meter .barwrap.in i { background: var(--style); }
+  .dae-meter .barwrap.out i { background: var(--synth); }
+  .dae-meter .val { display: block; margin-top: .25rem; font-family: var(--mono); font-size: .82rem; color: var(--ink); }
+  .dae-verdict { padding: .9rem 1.4rem 1rem; border-top: 1px solid var(--line-soft); font-size: .9rem; color: var(--ink-soft); line-height: 1.55; background: var(--paper-2); }
+  .dae-verdict b.s1 { color: var(--style); } .dae-verdict b.s2 { color: var(--structure); } .dae-verdict b.s3 { color: var(--synth); }
+  @media (max-width: 700px) { .dae-stage { grid-template-columns: 1fr; } .dae-meters { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 03 · 노이즈가 가르치는 매니폴드</span>
+      <h1>잡음 제거 자기부호화기 —<br><span class="t-style">손상된 입력</span>에서 <span class="t-structure">깨끗한 원본</span>으로</h1>
+      <p class="lede">손실 함수에 페널티를 더하지 않아도 정칙화는 가능하다. 입력에 노이즈를 섞기만 하면, 모델은 외우는 길을 잃고 데이터의 본질을 따라가게 된다.</p>
+    </header>
+
+    <div class="prose">
+      <p>미완전 자기부호화기는 잠재 차원을 좁혀서 항등 함수의 함정을 피했다. 그런데 우리가 충분한 잠재 차원의 표현력은 유지하면서, 그러면서도 외우지 못하게 할 수는 없을까? 잡음 제거 자기부호화기(denoising autoencoder, DAE)는 이 질문에 대한 가장 우아한 답이다. <strong>학습 데이터를 망가뜨려라.</strong></p>
+
+      <p>구체적으로, DAE는 깨끗한 입력 $x$를 노이즈로 손상시킨 버전 $\tilde{x}$를 모델에게 보여 주고, <strong>원본 $x$를 복원</strong>하라고 요구한다. 손실 함수는 다음과 같다.</p>
+
+      <div class="math-block">$$ L_{\text{DAE}} = \mathbb{E}_{x \sim \hat{p}_{\text{data}}, \; \tilde{x} \sim C(\tilde{x} | x)} \; \|x - g(f(\tilde{x}))\|^2 $$</div>
+      <p class="math-note">$\hat{p}_{\text{data}}$는 훈련 데이터 분포, $C(\tilde{x}|x)$는 손상 분포(corruption process), 모델은 손상된 $\tilde{x}$를 입력받아 깨끗한 $x$를 출력해야 한다.</p>
+
+      <p>왜 이 손실이 이 형태인가? 핵심은 <strong>입력과 타깃이 다르다</strong>는 점에 있다. 일반 자기부호화기의 손실 $\|x - g(f(x))\|^2$에서는 입력과 타깃이 같아서 모델이 항등 함수가 되면 손실이 0이 된다. DAE는 입력을 $\tilde{x}$로 바꿔 버려서 그 길을 막는다. 모델이 $g(f(\tilde{x})) = \tilde{x}$로 답하면 타깃 $x$와 어긋나기 때문에 손실이 커진다. <em>"노이즈를 그대로 베끼는" 항등 함수는 더 이상 정답이 아니다.</em></p>
+
+      <div class="analogy">
+        <b>찢어진 사진을 복원하는 사진관.</b> 사진관 주인에게 "이 사진을 그대로 복사해 주세요"라고 하면, 그 사진을 정확히 찍어서 인화하면 끝이다. 사진의 내용에 대해서는 아무것도 배우지 않는다. 그러나 "찢어진 사진의 빠진 부분을 메워 주세요"라고 하면 이야기가 다르다. 주인은 <b>찢어진 부분이 원래 어떻게 생겼을지</b>를 추측해야 한다. 그러려면 비슷한 사진들을 잔뜩 봐 두고, "보통 이런 배경에는 이런 무늬가 온다"는 데이터의 구조를 알아야 한다. DAE의 노이즈가 하는 일이 정확히 이것이다.
+      </div>
+
+      <h2>손상 분포 $C$의 종류</h2>
+      <p>실제로 입력을 어떻게 망가뜨릴 것인지는 자유롭게 선택할 수 있다. 가장 흔한 세 가지는 다음과 같다.</p>
+      <ul>
+        <li><strong>가우시안 노이즈</strong> — $\tilde{x} = x + \epsilon, \; \epsilon \sim \mathcal{N}(0, \sigma^2 I)$. 연속값 입력에서 가장 자연스럽다.</li>
+        <li><strong>마스킹 노이즈 (drop-out 손상)</strong> — 각 픽셀을 일정 확률 $p$로 0으로 만들어 가린다. "찢어진 사진" 비유에 가장 가깝다.</li>
+        <li><strong>소금-후추 노이즈</strong> — 각 픽셀을 일정 확률로 0 또는 1로 뒤집는다. 이진 입력에서 흔하다.</li>
+      </ul>
+
+      <p>어떤 손상을 선택하든 본질적인 메커니즘은 같다. 모델은 <strong>노이즈로 가려진 부분을 데이터의 구조로부터 복원해야</strong> 한다. 이 과정에서 모델은 자연스럽게 "어떤 픽셀 조합이 그럴듯한 입력인가"를 학습한다. 곧 <strong>데이터 매니폴드(data manifold)</strong>의 모양을 학습한다.</p>
+
+      <p>아래 위젯에서 노이즈 강도를 직접 조절해 보자. 같은 입력 이미지에 노이즈 강도 $\sigma$를 키워 가며 손상시키고, 모델이 그것을 어떻게 복원하는지를 본다. 작은 노이즈는 쉽게 복원되지만, 노이즈가 너무 커지면 복원 정확도가 떨어진다. 그 사이의 적절한 영역에서 모델은 가장 풍부한 매니폴드 구조를 학습한다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 03</span><span>DAE — 손상된 입력에서 깨끗한 원본으로</span></div>
+        <div class="dae-stage">
+          <div class="dae-side in">
+            <canvas id="dae-clean" width="180" height="180"></canvas>
+            <span class="slab">원본  x</span>
+          </div>
+          <div class="dae-side corr">
+            <canvas id="dae-noisy" width="180" height="180"></canvas>
+            <span class="slab">손상  x̃</span>
+          </div>
+          <div class="dae-side out">
+            <canvas id="dae-recon" width="180" height="180"></canvas>
+            <span class="slab">복원  g(f(x̃))</span>
+          </div>
+        </div>
+        <div class="widget-controls">
+          <div class="slider" style="flex:1; min-width:280px;">
+            <label>노이즈 강도 σ <b id="dae-sval">σ = 0.30</b></label>
+            <input type="range" id="dae-sigma" min="0" max="1" step="0.02" value="0.3">
+          </div>
+          <div class="toggle-row" id="dae-noise-type">
+            <button class="btn ghost on" data-type="gauss">가우시안</button>
+            <button class="btn ghost" data-type="mask">마스킹</button>
+            <button class="btn ghost" data-type="salt">소금-후추</button>
+          </div>
+        </div>
+        <div class="dae-meters">
+          <div class="dae-meter">
+            <label>입력 손상 정도 ‖x − x̃‖²</label>
+            <div class="barwrap in"><i id="dae-corr-bar" style="width:30%"></i></div>
+            <span class="val" id="dae-corr-val">0.30</span>
+          </div>
+          <div class="dae-meter">
+            <label>복원 오차 ‖x − g(f(x̃))‖²</label>
+            <div class="barwrap out"><i id="dae-rec-bar" style="width:10%"></i></div>
+            <span class="val" id="dae-rec-val">0.10</span>
+          </div>
+        </div>
+        <div class="dae-verdict" id="dae-verdict"></div>
+      </div>
+      <p class="widget-cap">손상 정도(빨강 막대)와 복원 오차(황토 막대)의 간격을 주목하자. DAE가 잘 학습되어 있으면 손상이 커져도 복원 오차는 천천히 자란다. 모델이 "이 자리에 보통 어떤 픽셀이 와야 그럴듯한 입력이 되는가"를 알기 때문에, 손상된 부분의 정보를 매니폴드 위로 끌어올린다. 이것이 매니폴드 학습의 직관적 모습이다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>가장 깊은 결과 — DAE는 점수 매칭이다</h2>
+      <p>DAE에는 표면적인 직관 너머에 강력한 이론적 결과가 있다. Vincent (2011)의 결과에 따르면, 가우시안 노이즈로 손상시킨 DAE의 재구성 함수와 손상된 입력의 차이는 <strong>데이터 분포의 로그 밀도의 기울기(score)</strong>를 추정한다. 수식으로 쓰면 다음과 같다.</p>
+
+      <div class="math-block">$$ g(f(\tilde{x})) - \tilde{x} \;\propto\; \nabla_{\tilde{x}} \log p_{\text{data}}(\tilde{x}) $$</div>
+      <p class="math-note">손상된 입력에서 복원 방향을 가리키는 벡터는, 로그 데이터 밀도의 기울기와 비례한다 — 즉 "더 그럴듯한 입력 방향"이다.</p>
+
+      <p>이 식이 왜 그런 모양인가? 직관적으로는, 손상된 $\tilde{x}$를 원본 $x$로 되돌리는 작업은 "현재 위치에서 더 확률 높은 입력 쪽으로 한 걸음 옮기는" 일과 같다. 그 한 걸음의 방향이 바로 로그 밀도의 기울기, 즉 <strong>점수(score) 함수</strong>다. 이 결과를 점수 매칭(score matching) 해석이라고 부른다.</p>
+
+      <p>이 해석의 실용적 의미는 거대하다. 첫째, DAE는 명시적으로 확률 분포를 학습하지 않으면서도 <strong>암묵적으로 데이터 분포를 모델링한다</strong>. 둘째, 학습된 DAE를 생성 모델 안에 사전 분포(prior)로 넣을 수 있다. 셋째, 이 점수 매칭 관점은 곧장 확산 모델(diffusion model)로 이어진다. 사실 현대 확산 모델은 "여러 노이즈 수준에서 학습된 DAE의 연속체"라고 봐도 무방하다. 즉 <strong>2026년의 Stable Diffusion이나 DALL-E의 뿌리에 정확히 이 장의 아이디어가 있다</strong>.</p>
+
+      <h2>왜 모델이 노이즈에 강건해지는가</h2>
+      <p>또 하나 자주 묻는 질문은 "왜 노이즈로 학습하면 모델이 일반적으로도 더 강건해지는가"이다. 답은 간단하다. DAE 손실은 입력 공간의 작은 흔들림에 대해 모델의 출력이 안정적이도록 요구한다. 같은 그림에 매번 다른 노이즈가 섞이는데도 같은 원본을 출력해야 하기 때문이다. 그 결과 학습된 인코더는 <strong>매니폴드 접선 방향에는 민감하지만 그 외 방향에는 둔감</strong>한 표현을 만든다. 이는 다음 장의 CAE가 명시적인 페널티로 추구하는 바로 그 성질이다.</p>
+
+      <h2>다음 장에서</h2>
+      <p>다음 장에서는 같은 목표 — "매니폴드 접선 방향에만 민감한 표현" — 를 노이즈가 아니라 명시적인 자코비안 페널티로 달성하는 <a href="04.html">수축적 자기부호화기(contractive autoencoder)</a>를 본다. DAE가 데이터를 통해 정칙화한다면, CAE는 손실 함수에 직접 페널티를 적어 같은 성질을 해석적으로 강제한다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  // ===== Ch.14 sub-chapter nav =====
+  const SUBS = [
+    { no:'01', t:'자기부호화기의 기본', f:'01.html' },
+    { no:'02', t:'미완전 자기부호화기', f:'02.html' },
+    { no:'03', t:'잡음 제거 AE (DAE)', f:'03.html' },
+    { no:'04', t:'수축적 AE (CAE)', f:'04.html' },
+    { no:'05', t:'AE와 매니폴드 학습', f:'05.html' },
+    { no:'06', t:'시험 대비', f:'06.html' },
+  ];
+  const CURRENT = '03';
+  (function buildNav() {
+    document.querySelector('.topbar').innerHTML =
+      `<a class="home" href="index.html">← Chapter 14 · 자기부호화기</a>` +
+      `<span class="ch-mini">SUB ${CURRENT} / 06</span>`;
+    document.querySelector('.ch-nav ol').innerHTML = SUBS.map(s =>
+      `<li><a href="${s.f}" ${s.no === CURRENT ? 'class="current"' : ''}>${s.t}</a></li>`).join('');
+    const i = SUBS.findIndex(s => s.no === CURRENT);
+    const prev = i > 0 ? SUBS[i-1] : { f:'index.html', t:'챕터 표지', no:'' };
+    const next = i < SUBS.length-1 ? SUBS[i+1] : { f:'index.html', t:'챕터 표지', no:'' };
+    document.querySelector('.ch-foot').innerHTML =
+      `<a href="${prev.f}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+      `<a href="${next.f}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+    const bar = document.querySelector('.scroll-progress');
+    const onScroll = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    document.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+  })();
+
+  // ===== 위젯: DAE 잡음 제거 =====
+  (function daeWidget() {
+    const cleanC = document.getElementById('dae-clean');
+    const noisyC = document.getElementById('dae-noisy');
+    const reconC = document.getElementById('dae-recon');
+    const slider = document.getElementById('dae-sigma');
+    const sVal = document.getElementById('dae-sval');
+    const corrBar = document.getElementById('dae-corr-bar');
+    const recBar = document.getElementById('dae-rec-bar');
+    const corrVal = document.getElementById('dae-corr-val');
+    const recVal = document.getElementById('dae-rec-val');
+    const verdict = document.getElementById('dae-verdict');
+    const typeBtns = document.querySelectorAll('#dae-noise-type .btn');
+
+    const css = getComputedStyle(document.documentElement);
+    const STRUCT = css.getPropertyValue('--structure').trim();
+    const STYLE = css.getPropertyValue('--style').trim();
+    const SYNTH = css.getPropertyValue('--synth').trim();
+
+    let noiseType = 'gauss';
+    typeBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        typeBtns.forEach(b => b.classList.remove('on'));
+        btn.classList.add('on');
+        noiseType = btn.dataset.type;
+        update();
+      });
+    });
+
+    const W = 16;
+    // 입력: 가운데 원
+    const clean = new Array(W*W).fill(0);
+    for (let y = 0; y < W; y++) {
+      for (let x = 0; x < W; x++) {
+        const dx = x - W/2 + 0.5, dy = y - W/2 + 0.5;
+        const r = Math.sqrt(dx*dx + dy*dy);
+        if (r > 3 && r < 5.5) clean[y*W + x] = 1;
+        if (r < 2) clean[y*W + x] = 1;
+      }
+    }
+
+    function corrupt(img, sigma, type) {
+      const out = new Array(img.length);
+      for (let i = 0; i < img.length; i++) {
+        if (type === 'gauss') {
+          // 가우시안 (Box-Muller)
+          const u1 = Math.random(), u2 = Math.random();
+          const z = Math.sqrt(-2*Math.log(u1)) * Math.cos(2*Math.PI*u2);
+          out[i] = Math.max(0, Math.min(1, img[i] + z * sigma));
+        } else if (type === 'mask') {
+          out[i] = Math.random() < sigma ? 0 : img[i];
+        } else {  // salt-pepper
+          if (Math.random() < sigma) out[i] = Math.random() < 0.5 ? 0 : 1;
+          else out[i] = img[i];
+        }
+      }
+      return out;
+    }
+
+    // 모델: 단순 매니폴드 사영 - 픽셀별로 "원형 매니폴드"로 끌어당김
+    // 노이즈가 작으면 거의 완벽 복원, 크면 흐릿한 평균
+    function denoise(noisy, sigma) {
+      const out = new Array(noisy.length);
+      // 노이즈가 클수록 복원이 원본의 약한 평균에 가까워짐
+      const fidelity = Math.max(0, 1 - sigma * 0.6);
+      for (let i = 0; i < noisy.length; i++) {
+        // 매니폴드 사영: 노이즈 입력을 원본 방향으로 끌어당기되, sigma에 비례한 손실
+        const meanRecon = clean[i];
+        const obs = noisy[i];
+        out[i] = fidelity * meanRecon + (1 - fidelity) * obs * 0.5 + (1 - fidelity) * 0.15;
+        out[i] = Math.max(0, Math.min(1, out[i]));
+      }
+      return out;
+    }
+
+    function l2(a, b) {
+      let s = 0;
+      for (let i = 0; i < a.length; i++) s += (a[i] - b[i]) ** 2;
+      return s / a.length;
+    }
+
+    function drawImg(canvas, vals, color) {
+      const ctx = canvas.getContext('2d');
+      const cw = canvas.width, ch = canvas.height;
+      const cell = cw / W;
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, cw, ch);
+      for (let y = 0; y < W; y++) {
+        for (let x = 0; x < W; x++) {
+          const v = vals[y*W + x];
+          if (v <= 0.02) continue;
+          if (color === STRUCT) ctx.fillStyle = `rgba(45, 91, 122, ${v})`;
+          else if (color === STYLE) ctx.fillStyle = `rgba(192, 73, 46, ${v})`;
+          else ctx.fillStyle = `rgba(164, 123, 46, ${v})`;
+          ctx.fillRect(x*cell, y*cell, cell, cell);
+        }
+      }
+    }
+
+    function update() {
+      const sigma = parseFloat(slider.value);
+      sVal.textContent = `σ = ${sigma.toFixed(2)}`;
+      const noisy = corrupt(clean, sigma, noiseType);
+      const recon = denoise(noisy, sigma);
+      drawImg(cleanC, clean, STRUCT);
+      drawImg(noisyC, noisy, STYLE);
+      drawImg(reconC, recon, SYNTH);
+      const corr = l2(clean, noisy);
+      const rec = l2(clean, recon);
+      corrBar.style.width = `${Math.min(100, corr*400)}%`;
+      recBar.style.width = `${Math.min(100, rec*400)}%`;
+      corrVal.textContent = corr.toFixed(3);
+      recVal.textContent = rec.toFixed(3);
+
+      let msg;
+      const ratio = rec / Math.max(corr, 1e-9);
+      if (sigma < 0.1) {
+        msg = `<b class="s2">노이즈가 작다 (σ=${sigma.toFixed(2)}).</b> ` +
+          `손상이 거의 없으니 복원도 거의 완벽. 학습된 모델은 작은 노이즈를 쉽게 매니폴드 위로 끌어올린다.`;
+      } else if (sigma < 0.5) {
+        msg = `<b class="s3">적정 영역 (σ=${sigma.toFixed(2)}).</b> ` +
+          `손상 ${corr.toFixed(3)} → 복원 오차 ${rec.toFixed(3)} (${(ratio*100).toFixed(0)}%로 감소). ` +
+          `모델은 노이즈를 데이터 매니폴드 방향으로 사영한다. 학습된 ‘점수 함수’가 작동 중이다.`;
+      } else {
+        msg = `<b class="s1">노이즈가 너무 크다 (σ=${sigma.toFixed(2)}).</b> ` +
+          `입력이 매니폴드에서 너무 멀어져 복원도 흐려진다. 학습 시 σ가 너무 크면 모델이 평균만 출력하는 경향이 생긴다.`;
+      }
+      verdict.innerHTML = msg;
+    }
+
+    slider.addEventListener('input', update);
+    update();
+  })();
+
+  // KaTeX
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
+        throwOnError: false,
+      });
+    }
+  });
+</script>
+</body>
+</html>

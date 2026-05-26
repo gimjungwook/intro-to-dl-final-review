@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>03 · ICA — 비가우시안 독립 신호 분리</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .ica-stage { display: grid; grid-template-columns: 1fr; padding: 1.4rem 1.1rem .6rem; }
+  .ica-stage canvas { display: block; width: 100%; height: 380px; border-radius: 9px; border: 1px solid var(--line); background: #fff; }
+  .ica-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; padding: 1rem 1.1rem; align-items: end; }
+  @media (max-width: 600px) { .ica-controls { grid-template-columns: 1fr; } }
+  .ica-toggle { display: flex; gap: .5rem; flex-wrap: wrap; }
+  .ica-toggle button { flex: 1; min-width: 120px; padding: .65rem 1rem; border-radius: 8px; border: 1px solid var(--line); background: #fff; color: var(--ink-soft); font-family: var(--mono); font-size: .8rem; cursor: pointer; transition: .15s; }
+  .ica-toggle button.on { background: var(--style); color: #fff; border-color: var(--style); }
+  .ica-meta { font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); }
+  .ica-meta .lbl { display: block; font-size: .66rem; color: var(--ink-faint); letter-spacing: .12em; text-transform: uppercase; margin-bottom: .2rem; }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar">
+  <a class="home" href="index.html">← Chapter 13 · 선형 요소 모델</a>
+  <span class="ch-mini">SUB-CHAPTER 03 / 06</span>
+</div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol>
+    <li><a href="01.html">잠재 변수 모델</a></li>
+    <li><a href="02.html">요소 분석과 확률적 PCA</a></li>
+    <li><a href="03.html" class="current">ICA — 비가우시안 독립</a></li>
+    <li><a href="04.html">희소 코딩</a></li>
+    <li><a href="05.html">평평한 매니폴드</a></li>
+    <li><a href="06.html">시험 대비 요약</a></li>
+  </ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-Chapter 03 · 칵테일 파티 문제</span>
+      <h1>가우시안을 벗으면<br><span class="t-style">진짜 원천</span>이 보인다</h1>
+      <p class="lede">PCA는 직교성으로 만족하지만, 그 직교 방향이 진짜 원인이라는 보장은 없다. ICA는 잠재의 비가우시안성을 무기로, 회전 모호성을 깨고 원천 신호를 복원한다.</p>
+    </header>
+
+    <div class="prose">
+      <p>지금까지의 모델 — FA와 PPCA — 의 공통점은 <strong>잠재 변수가 가우시안</strong>이라는 점이었다. 이 가정이 적분을 깔끔하게 만들어 주었다. 그런데 같은 가정이 <strong>치명적인 한계</strong>를 가져온다는 사실이 ICA의 출발점이다.</p>
+
+      <h2>가우시안 잠재는 회전 모호성을 안고 있다</h2>
+
+      <p>관측 모델이 $x = Wh$ 이고 $h \sim \mathcal{N}(0, I)$ 라고 하자. 어떤 직교 회전 행렬 $R$ ($R R^\top = I$)을 끼워 넣어 다음과 같이 다시 쓸 수 있다.</p>
+
+      <div class="math-block">$$ x = W h = W R^\top R h = (W R^\top)(R h) = W' h' $$</div>
+      <p class="math-note">새로운 잠재 h' = Rh와 새로운 가중치 W' = WR^T를 정의하면 같은 x가 나온다.</p>
+
+      <p>여기서 결정적인 사실은, <strong>$h' = R h$ 역시 평균 0, 공분산 $I$인 가우시안</strong>이라는 점이다. 가우시안 분포는 직교 회전에 대해 정확히 자기 자신으로 돌아간다. 그러므로 데이터만 봐서는 $W$ 인지 $W' = W R^\top$ 인지 <strong>구분할 수 없다</strong>. 회전 자유도가 통째로 남아 있다.</p>
+
+      <div class="analogy">
+        <b>왜 이게 문제인가?</b> "이 데이터를 만든 진짜 원천 신호는 무엇인가"를 묻고 싶을 때 — 즉 칵테일 파티에서 사람 A의 목소리와 사람 B의 목소리를 마이크 녹음에서 갈라내고 싶을 때 — 가우시안 가정으로는 <b>원리적으로</b> 갈라낼 수가 없다. 어떤 회전으로 섞어 놓아도 모델 입장에서는 똑같이 좋아 보이기 때문이다. PCA가 찾는 주성분 방향은 통계적으로 가장 분산이 큰 직교 축일 뿐, 진짜 사람 A와 사람 B의 목소리 방향이라는 보장이 없다.
+      </div>
+
+      <h2>비가우시안 — 회전 자유도를 깨는 무기</h2>
+
+      <p>ICA(<strong>Independent Component Analysis</strong>, 독립 성분 분석)는 정확히 이 회전 모호성을 깨려고 가정 하나를 바꾼다. 잠재 변수가 <strong>비가우시안</strong>이고 서로 <strong>통계적으로 독립</strong>이라고 본다.</p>
+
+      <div class="math-block">$$ p(h) = \prod_{k=1}^{K} p_k(h_k), \quad p_k \text{ is non-Gaussian} $$</div>
+      <p class="math-note">잠재 각 성분이 서로 독립이며, 그 주변 분포가 가우시안이 아니다. 보통 첨예한 모양(Laplace, logistic) 또는 평평한 모양을 가정한다.</p>
+
+      <p>왜 비가우시안이 회전 모호성을 깰까? 가우시안이 아닌 두 독립 신호를 임의의 직교 회전으로 섞으면, 그 혼합은 <strong>덜 비가우시안</strong>해진다. 중심극한정리(central limit theorem)의 효과로, 독립적인 것들을 더할수록 결과는 점점 더 가우시안에 가까워지기 때문이다. 그러므로 데이터를 다양한 방향으로 회전시키며 "어느 방향이 가장 비가우시안한가"를 측정하면 — 그 방향이 바로 원래 독립 원천이 놓여 있던 방향이다.</p>
+
+      <div class="analogy">
+        <b>비가우시안성 = 신호의 지문이다.</b> 음성, 음악, EEG 같은 자연 신호들은 보통 비가우시안하다 — 한참 조용하다가 갑자기 큰 값이 튀는 패턴(첨예한 분포)을 가진다. 이런 신호 두 개를 마이크가 섞어 녹음하면, 그 혼합 신호는 두 첨예함이 더해져 좀 더 매끄러운(즉 더 가우시안한) 분포를 띤다. ICA는 이 매끄러워진 혼합을 다시 "최대한 첨예한" 방향으로 풀어 헤쳐서, 원래의 두 신호를 복원한다.
+      </div>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 03</span><span>ICA vs PCA — 같은 데이터, 다른 분해</span></div>
+        <div class="ica-stage">
+          <canvas id="ica"></canvas>
+        </div>
+        <div class="ica-controls">
+          <div class="ica-toggle">
+            <button id="m-pca" class="on">PCA — 분산 최대 직교</button>
+            <button id="m-ica">ICA — 비가우시안 독립</button>
+          </div>
+          <div class="ica-meta">
+            <span class="lbl">원천 분포</span>
+            <b id="src-type">Laplace (첨예, 비가우시안)</b>
+            <br><span class="lbl">방향 일치도</span>
+            <b id="ica-match">PCA: 회전 자유 — 원천 못 맞춤</b>
+          </div>
+        </div>
+      </div>
+      <p class="widget-cap">두 개의 비가우시안 독립 원천 $s_1, s_2$를 만든 뒤, 임의의 행렬 $A$로 섞어 관측 $x = As$를 얻는다. <b>파란 점</b>이 관측. PCA는 이 점들의 공분산을 대각화해서 직교 두 축(주황 실선)을 그린다 — 데이터의 분산이 큰 방향과 그 직교 방향. ICA는 다른 기준 — 비가우시안성 극대화 — 으로 두 축(보라 실선)을 찾는다. 진짜 원천 방향(연두 점선)과 비교하면, PCA는 어긋나는 반면 ICA는 거의 정확히 정렬된다는 것을 볼 수 있다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>ICA는 단일 알고리즘이 아니라 가족이다</h2>
+
+      <p>ICA를 처음 만날 때 흔히 가지는 오해는 "ICA = 어떤 한 알고리즘"이라는 것이다. 실제로 ICA는 <strong>여러 알고리즘들의 가족</strong>이다. 모두 같은 목적 — 비가우시안성 극대화 또는 동등한 기준 — 을 추구하지만, 그 측정 방법은 다양하다.</p>
+
+      <ul>
+        <li><strong>첨도(kurtosis) 기반.</strong> 분포의 첨예함을 직접 재서 그것을 최대화한다. 외부 잡음에 약하다.</li>
+        <li><strong>FastICA (negentropy 기반).</strong> 가우시안과의 거리(음의 엔트로피)를 근사 함수로 측정하여 최대화한다. 빠르고 안정적이다.</li>
+        <li><strong>최대우도 ICA.</strong> 잠재 사전을 명시적으로 깔고($p_k$) MLE로 직접 푼다. 사전 선택이 결과에 영향을 준다.</li>
+        <li><strong>Infomax.</strong> 비선형 변환 후 출력 엔트로피를 최대화한다. 신경과학과 연결된 해석을 가진다.</li>
+      </ul>
+
+      <p>책의 핵심 메시지는 "특정 알고리즘이 아니라, 잠재의 사전 분포가 모델이 무엇을 갈라낼 수 있는지를 결정한다"는 것이다. 비가우시안 사전이라는 가정만으로 회전 모호성이 깨지고, 진짜 원천이 회복 가능해진다 — 이것이 ICA의 본질이다.</p>
+
+      <h2>전처리 — 화이트닝(whitening)</h2>
+
+      <p>실전에서 ICA는 거의 항상 두 단계로 수행된다. 먼저 데이터에 PCA로 화이트닝(whitening)을 가해 공분산을 단위행렬로 만든 뒤, 그 위에서 직교 회전만 추가로 찾으면 ICA가 끝난다. 왜인가? 화이트닝 후에는 모든 직교 회전이 공분산을 보존하므로, 남은 자유도가 정확히 우리가 비가우시안성으로 깨려는 그 직교 회전 자유도와 일치한다.</p>
+
+      <div class="math-block">$$ \tilde{x} = D^{-1/2} U^\top x, \qquad \mathrm{Cov}(\tilde{x}) = I $$</div>
+      <p class="math-note">UDU^T는 데이터 공분산의 고유분해. 화이트닝 후 공분산이 단위행렬이 되어, 남은 자유도는 직교 회전뿐이다.</p>
+
+      <p>이 분해 — PCA로 2차 통계 정리, ICA로 더 높은 차원 통계로 직교 자유도 깨기 — 는 ICA가 PCA의 "확장"이 아니라 "그 다음 단계"임을 분명히 보여 준다. PCA는 분포의 평균과 공분산만 본다. ICA는 그 너머의 비가우시안 정보 — 첨도, 더 높은 모먼트, 음의 엔트로피 — 까지 동원해서, 가우시안 가정으로는 결코 얻을 수 없던 분리를 얻어낸다.</p>
+
+      <h2>한계 — 무엇은 회복되지 않는가</h2>
+
+      <p>ICA가 모든 모호성을 푸는 것은 아니다. 두 가지 자유도는 원리적으로 남는다.</p>
+
+      <ul>
+        <li><strong>크기(scale).</strong> $s_k$를 두 배로 늘리고 $W$의 그 열을 절반으로 줄이면 같은 $x$가 나온다.</li>
+        <li><strong>순서(permutation).</strong> 원천들의 번호를 바꾸어도 관측은 같다.</li>
+      </ul>
+
+      <p>실전에서 이 두 자유도는 데이터의 의미(어느 신호가 "사람 A의 목소리"인지 등)로 후처리해서 해결한다.</p>
+
+      <p>다음 장에서는 잠재의 사전을 또 다른 방향으로 더 극단화한다. 가우시안도 아니고, 단지 비가우시안인 정도가 아니라, <strong>거의 모든 성분이 0이고 가끔만 살아나는</strong> 사전 — 희소 코딩으로 간다.</p>
+    </div>
+
+    <nav class="ch-foot">
+      <a href="02.html"><div class="dir">← 이전</div><div class="ti">요소 분석과 확률적 PCA</div></a>
+      <a href="04.html" class="next"><div class="dir">다음 →</div><div class="ti">희소 코딩</div></a>
+    </nav>
+  </main>
+</div>
+
+<script>
+  window.addEventListener('load', () => {
+    const bar = document.querySelector('.scroll-progress');
+    const onScroll = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    document.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }],
+        throwOnError: false,
+      });
+    }
+
+    // ============================ ICA vs PCA ============================
+    const canvas = document.getElementById('ica');
+    const ctx = canvas.getContext('2d');
+    function resize() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const w = canvas.clientWidth, h = 380;
+      canvas.width = w * dpr; canvas.height = h * dpr;
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    // 라플라스 분포에서 샘플 (비가우시안, 첨예)
+    function laplace() {
+      const u = Math.random() - 0.5;
+      return -Math.sign(u) * Math.log(1 - 2 * Math.abs(u));
+    }
+
+    // 두 독립 원천 (라플라스), 임의 행렬 A로 혼합
+    const N = 320;
+    const A = [[Math.cos(0.5), -Math.sin(1.1)], [Math.sin(0.5), Math.cos(1.1)]];
+    // 정규화
+    const s11 = A[0][0], s12 = A[0][1], s21 = A[1][0], s22 = A[1][1];
+
+    const data = [];
+    const srcs = [];
+    for (let i = 0; i < N; i++) {
+      const s1 = laplace() * 0.6;
+      const s2 = laplace() * 0.6;
+      srcs.push([s1, s2]);
+      const x = s11 * s1 + s12 * s2;
+      const y = s21 * s1 + s22 * s2;
+      data.push({ x, y });
+    }
+    // 중심 정렬
+    const mx = data.reduce((s,p)=>s+p.x,0)/N, my = data.reduce((s,p)=>s+p.y,0)/N;
+    data.forEach(p => { p.x -= mx; p.y -= my; });
+
+    // PCA — 공분산 행렬의 고유분해
+    let cxx = 0, cyy = 0, cxy = 0;
+    data.forEach(p => { cxx += p.x*p.x; cyy += p.y*p.y; cxy += p.x*p.y; });
+    cxx /= N; cyy /= N; cxy /= N;
+    // 2x2 대칭 행렬 고유값
+    const tr = cxx + cyy, det = cxx * cyy - cxy * cxy;
+    const disc = Math.sqrt(tr*tr/4 - det);
+    const lam1 = tr/2 + disc, lam2 = tr/2 - disc;
+    // 첫 고유벡터
+    let pcaTheta;
+    if (Math.abs(cxy) > 1e-10) {
+      pcaTheta = Math.atan2(lam1 - cxx, cxy);
+    } else {
+      pcaTheta = cxx >= cyy ? 0 : Math.PI/2;
+    }
+
+    // ICA — 화이트닝 후 FastICA-like (단순 1단계)
+    // 화이트닝: 데이터를 단위 공분산으로
+    function whiten(pts) {
+      // 고유분해
+      const a = cxx, b = cxy, c = cxy, d = cyy;
+      const trc = a + d, dec = a*d - b*c;
+      const dx = Math.sqrt(Math.max(0, trc*trc/4 - dec));
+      const l1 = trc/2 + dx, l2 = trc/2 - dx;
+      const v1x = b, v1y = l1 - a;
+      const v1n = Math.hypot(v1x, v1y);
+      const ux = v1x / v1n, uy = v1y / v1n;
+      // 두 번째 고유벡터는 직교
+      const wx = -uy, wy = ux;
+      // 화이트닝 변환: pts -> (pts·u / sqrt(l1), pts·w / sqrt(l2))
+      return pts.map(p => ({
+        u: (p.x * ux + p.y * uy) / Math.sqrt(Math.max(l1, 1e-9)),
+        v: (p.x * wx + p.y * wy) / Math.sqrt(Math.max(l2, 1e-9)),
+        ux, uy, wx, wy, l1, l2
+      }));
+    }
+    const W = whiten(data);
+
+    // 화이트닝된 공간에서 회전 θ로 사영했을 때의 |kurt| 측정 → 최대화
+    function kurtAt(theta) {
+      const c = Math.cos(theta), s = Math.sin(theta);
+      let m2 = 0, m4 = 0;
+      W.forEach(p => {
+        const t = c * p.u + s * p.v;
+        m2 += t*t; m4 += t*t*t*t;
+      });
+      m2 /= N; m4 /= N;
+      // excess kurtosis
+      return Math.abs(m4 / (m2*m2) - 3);
+    }
+    let bestTheta = 0, bestK = -1;
+    for (let d = 0; d <= 180; d++) {
+      const k = kurtAt(d * Math.PI / 180);
+      if (k > bestK) { bestK = k; bestTheta = d * Math.PI / 180; }
+    }
+    // 화이트닝된 공간에서의 ICA 축을 원공간으로 되돌리기
+    const ux = W[0].ux, uy = W[0].uy, wx = W[0].wx, wy = W[0].wy;
+    const sl1 = Math.sqrt(Math.max(W[0].l1, 1e-9));
+    const sl2 = Math.sqrt(Math.max(W[0].l2, 1e-9));
+    const ct = Math.cos(bestTheta), st = Math.sin(bestTheta);
+    const icaAx1 = [ct * sl1 * ux + st * sl2 * wx, ct * sl1 * uy + st * sl2 * wy];
+    const ica1Theta = Math.atan2(icaAx1[1], icaAx1[0]);
+    const ica2Theta = ica1Theta + Math.PI/2; // 두 번째 축
+
+    // 진짜 원천 방향
+    const true1 = Math.atan2(A[1][0], A[0][0]); // 원천 s1 방향이 관측 공간에서 가리키는 방향
+    const true2 = Math.atan2(A[1][1], A[0][1]);
+
+    // 모드
+    let mode = 'pca';
+    const bPca = document.getElementById('m-pca'), bIca = document.getElementById('m-ica');
+    bPca.addEventListener('click', () => { mode = 'pca'; bPca.classList.add('on'); bIca.classList.remove('on'); draw(); });
+    bIca.addEventListener('click', () => { mode = 'ica'; bIca.classList.add('on'); bPca.classList.remove('on'); draw(); });
+
+    function draw() {
+      const w = canvas.clientWidth, h = 380;
+      ctx.clearRect(0,0,w,h);
+      ctx.fillStyle = '#FAF7F0'; ctx.fillRect(0,0,w,h);
+
+      const cx = w/2, cy = h/2;
+      const scale = Math.min(w, h) * 0.13;
+
+      // 축 가이드
+      ctx.strokeStyle = 'rgba(38,34,28,.10)';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(w, cy); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, h); ctx.stroke();
+
+      // 데이터 점
+      data.forEach(p => {
+        ctx.fillStyle = 'rgba(45, 91, 122, 0.6)';
+        ctx.beginPath(); ctx.arc(cx + p.x * scale, cy - p.y * scale, 2.4, 0, Math.PI*2); ctx.fill();
+      });
+
+      const L = Math.min(w, h) * 0.42;
+      function drawAxis(theta, color, dash, lw) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = lw;
+        ctx.setLineDash(dash || []);
+        ctx.beginPath();
+        const c = Math.cos(theta), s = Math.sin(theta);
+        ctx.moveTo(cx - c * L, cy + s * L);
+        ctx.lineTo(cx + c * L, cy - s * L);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      // 진짜 원천 방향 (항상 그림)
+      drawAxis(true1, 'rgba(96, 140, 96, 0.8)', [4, 4], 2);
+      drawAxis(true2, 'rgba(96, 140, 96, 0.8)', [4, 4], 2);
+
+      if (mode === 'pca') {
+        drawAxis(pcaTheta, '#C0492E', [], 2.4);
+        drawAxis(pcaTheta + Math.PI/2, '#C0492E', [], 2.4);
+        document.getElementById('ica-match').textContent = 'PCA: 직교만 보장, 원천 방향과 어긋남';
+      } else {
+        drawAxis(ica1Theta, '#7747B5', [], 2.4);
+        drawAxis(ica2Theta, '#7747B5', [], 2.4);
+        document.getElementById('ica-match').textContent = 'ICA: 비가우시안성으로 원천 방향 회복';
+      }
+
+      // 범례
+      ctx.fillStyle = '#8E8576';
+      ctx.font = '11px "Spline Sans Mono", monospace';
+      ctx.fillText('파란 점 = 관측 x = As (혼합)', 14, h - 30);
+      ctx.fillText('연두 점선 = 진짜 원천 방향 / ' + (mode === 'pca' ? '주황 = PCA 축' : '보라 = ICA 축'), 14, h - 14);
+    }
+    draw();
+  });
+</script>
+</body>
+</html>

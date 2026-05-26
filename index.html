@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>딥러닝 개론 — 기말고사 인터랙티브 복습</title>
+<link rel="stylesheet" href="assets/site.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+  .masthead { position: relative; max-width: var(--wide); margin: 0 auto; padding: 1.5rem 1.4rem 0; }
+  .hero-wrap { position: relative; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: linear-gradient(180deg,#fff,var(--paper-2)); box-shadow: var(--shadow-plate); }
+  #hero { display: block; width: 100%; height: 380px; }
+  .hero-cap { position: absolute; left: 1.2rem; bottom: 1rem; font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; color: var(--ink-faint); pointer-events: none; }
+  .hero-cap b { color: var(--structure); } .hero-cap em { color: var(--style); font-style: normal; }
+  .title-block { max-width: var(--wide); margin: 2.4rem auto 0; padding-inline: 1.4rem; }
+  .title-block .kicker { display: block; margin-bottom: 1rem; }
+  .title-block h1 { font-size: clamp(2.6rem, 7vw, 5rem); margin: 0; line-height: 1.05; }
+  .title-block h1 em { color: var(--style); font-style: normal; }
+  .paper-meta { display: flex; flex-wrap: wrap; gap: .5rem 1.6rem; margin-top: 1.4rem; font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); letter-spacing: .02em; }
+  .paper-meta span b { color: var(--ink); font-weight: 500; }
+
+  .toc-section { max-width: var(--measure); margin: 2.6rem auto 1rem; padding-inline: 1.4rem; }
+  .toc-section h2 { margin-top: 0; }
+  .part-label { display: inline-block; margin: 2.6rem auto 0; padding: .35rem .9rem; font-family: var(--mono); font-size: .7rem; letter-spacing: .18em; color: var(--ink-faint); border: 1px solid var(--line); border-radius: 999px; }
+  .part-wrap { max-width: var(--wide); margin: 0 auto; padding: 0 1.4rem; }
+
+  .plates { max-width: var(--wide); margin: 1rem auto; padding: 1.4rem 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 1rem; }
+  .plate { position: relative; display: flex; flex-direction: column; text-decoration: none; color: inherit; background: #fff; border: 1px solid var(--line); border-radius: 13px; padding: 1.3rem 1.3rem 1.4rem; transition: transform .2s var(--ease), border-color .2s, box-shadow .2s; overflow: hidden; }
+  .plate:hover { transform: translateY(-4px); border-color: var(--structure-lo); box-shadow: var(--shadow-plate); }
+  .plate .pno { font-family: var(--mono); font-size: .74rem; letter-spacing: .14em; color: var(--ink-faint); }
+  .plate h3 { font-family: var(--serif); font-size: 1.3rem; margin: .5rem 0 .5rem; line-height: 1.2; }
+  .plate p { font-size: .9rem; color: var(--ink-soft); line-height: 1.5; margin: 0; }
+  .plate .spectrum { display: flex; height: 4px; border-radius: 2px; overflow: hidden; margin-bottom: 1rem; }
+  .plate .spectrum i { display: block; height: 100%; }
+  .plate .go { margin-top: 1rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; color: var(--structure); opacity: 0; transform: translateX(-4px); transition: .2s var(--ease); }
+  .plate:hover .go { opacity: 1; transform: translateX(0); }
+  .plate .kw { margin-top: .8rem; font-family: var(--mono); font-size: .68rem; color: var(--ink-faint); letter-spacing: .04em; }
+
+  .priority { max-width: var(--measure); margin: 2rem auto; padding: 1.2rem 1.4rem; border: 1px solid var(--line); border-radius: 12px; background: var(--paper-2); }
+  .priority h4 { margin: 0 0 .6rem; font-family: var(--serif); font-size: 1.1rem; color: var(--structure); }
+  .priority ol { margin: 0; padding-left: 1.2rem; }
+  .priority li { margin: .3rem 0; font-size: .92rem; color: var(--ink-soft); }
+  .priority li b { color: var(--ink); }
+
+  footer.colophon { max-width: var(--measure); margin: 3rem auto 4rem; padding: 2rem 1.4rem 0; border-top: 1px solid var(--line); font-size: .85rem; color: var(--ink-soft); }
+  footer.colophon a { color: var(--structure); }
+  footer.colophon .src { font-family: var(--mono); font-size: .76rem; line-height: 1.8; }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="hero-wrap">
+    <canvas id="hero"></canvas>
+    <div class="hero-cap"><b>표상의 사다리</b> ↔ <em>Ch.1 픽셀 → Ch.15 학습된 표상</em> · 마우스 드래그</div>
+  </div>
+</header>
+
+<div class="title-block">
+  <span class="kicker">Deep Learning Book · Goodfellow, Bengio, Courville · 2016 · 기말고사 복습</span>
+  <h1>픽셀에서 <em>표상</em>까지,<br>딥러닝의 15장</h1>
+  <div class="paper-meta">
+    <span><b>딥러닝 개론</b> 기말고사 인터랙티브 복습</span>
+    <span>제작 <b>김정욱</b></span>
+    <span>시험 <b>2026-06-04 (목)</b></span>
+    <span>구성 <b>15 챕터 · mini 사이트</b></span>
+  </div>
+</div>
+
+<section class="toc-section">
+  <h2>이 사이트의 사용법</h2>
+  <p>각 챕터는 <strong>독립된 mini 사이트</strong>다. 카드를 누르면 그 챕터의 표지로 이동하고, 표지에서 다시 sub-chapter들로 들어간다. P2 신경 스타일 전이 해설과 동일한 라이트 테마, 동일한 위젯 문법을 쓴다.</p>
+  <p>각 챕터의 본문은 <strong>“왜 그 형태인가”</strong>를 늘 함께 설명한다. 정의만 나열하지 않는다. 수식은 KaTeX로, 시각화는 캔버스/SVG 위젯으로, 비유는 본문 안에서 직접 든다. 이 사이트의 모든 인터랙션은 <em>이해를 깊게 하는 것이 목적이지 외울 것을 줄이는 것이 아니다</em>.</p>
+</section>
+
+<section class="priority">
+  <h4>시험 D-9, 우선순위 추천 경로</h4>
+  <ol>
+    <li><b>Ch.6-9 (Part II 핵심)</b> — Feedforward · Regularization · Optimization · CNN. 시험 비중 1순위.</li>
+    <li><b>Ch.10-12</b> — RNN · Practical Methodology · Applications. 강의에서 다룬 비중 큼.</li>
+    <li><b>Ch.13-15</b> — Linear Factor · Autoencoder · Representation Learning. 후반부 진도 직접 출제.</li>
+    <li><b>Ch.1-5</b> — Intro · Linear Algebra · Probability · Numerical · ML Basics. 선행 개념 보완.</li>
+  </ol>
+</section>
+
+<div class="part-wrap">
+  <span class="part-label">PART I · 응용 수학과 기계학습 기초</span>
+  <section class="plates" id="part1"></section>
+
+  <span class="part-label">PART II · 깊은 네트워크 — 현대적 실천</span>
+  <section class="plates" id="part2"></section>
+
+  <span class="part-label">PART III · 깊은 표상 학습</span>
+  <section class="plates" id="part3"></section>
+</div>
+
+<footer class="colophon">
+  <p>이 사이트는 Deep Learning Book (Goodfellow, Bengio, Courville, MIT Press 2016) 1-15장을 바탕으로 작성된 기말고사 복습 자료다. 모든 챕터는 P2 신경 스타일 전이 해설(<a href="../../../../5-Archives/딥러닝개론-P2-신경스타일전이/P2-신경스타일전이-해설/index.html">아카이브</a>)의 디자인 시스템을 따른다.</p>
+  <p class="src">
+    원서 · <a href="https://www.deeplearningbook.org/">deeplearningbook.org</a><br>
+    선행학습 노트 · <a href="../../05-선행학습/">05-선행학습/</a><br>
+    과제 제출본 · <a href="../../03-과제-제출/">03-과제-제출/</a>
+  </p>
+</footer>
+
+<script>
+const CHAPTERS = [
+  { no:'01', dir:'ch01-introduction',    t:'딥러닝이란 무엇인가',                    d:'표상(representation) 학습으로서 딥러닝. 왜 깊이가 필요한가, AI/ML/DL 계층 구조, 데이터·과제·평가 삼각형.', sp:['ink-soft','ink'], part:1, kw:'표상 · 깊이 · 역사적 흐름' },
+  { no:'02', dir:'ch02-linear-algebra',  t:'선형대수 — 데이터의 기하학',             d:'벡터·행렬·텐서. 노름과 거리, 고유분해, SVD. 신경망의 가중치 행렬이 무엇을 회전하고 늘리는지.', sp:['structure-lo','structure'], part:1, kw:'행렬 · 고유분해 · SVD · 노름' },
+  { no:'03', dir:'ch03-probability',     t:'확률과 정보이론',                        d:'확률분포·기대값·분산. 베이즈 규칙. 엔트로피·KL 발산·교차 엔트로피. 손실 함수의 정보이론적 뿌리.', sp:['structure','synth'], part:1, kw:'베이즈 · KL · 교차 엔트로피' },
+  { no:'04', dir:'ch04-numerical',       t:'수치 계산',                              d:'언더플로/오버플로. 조건수. 경사하강의 1·2계 방법. 제약 최적화와 KKT.', sp:['synth','ink-soft'], part:1, kw:'경사하강 · 헤시안 · 조건수' },
+  { no:'05', dir:'ch05-ml-basics',       t:'기계학습 기초',                          d:'학습/검증/시험 분할. 편향-분산. 최대우도. 정칙화. 베이지안 추정. 학습 곡선과 용량.', sp:['structure','style'], part:1, kw:'편향-분산 · MLE · 정칙화 · 용량' },
+  { no:'06', dir:'ch06-feedforward',     t:'깊은 순방향 신경망',                    d:'XOR 예제로부터 다층 퍼셉트론. 활성화 함수. 역전파의 미적분. 출력 단위와 비용 함수의 짝.', sp:['structure','structure-lo'], part:2, kw:'MLP · 역전파 · ReLU · 출력층' },
+  { no:'07', dir:'ch07-regularization',  t:'정칙화 — 일반화 격차 줄이기',           d:'L1/L2의 기하학. 데이터 증강. 노이즈 주입. 조기 종료 ≈ L2. 드롭아웃 = 앙상블. 적대적 훈련.', sp:['style','style-lo'], part:2, kw:'L1/L2 · 조기 종료 · 드롭아웃' },
+  { no:'08', dir:'ch08-optimization',    t:'최적화 — 학습이 실제로 어떻게 작동하나', d:'안장점. 모멘텀과 네스테로프. AdaGrad → RMSProp → Adam. 배치 정규화. 학습률 스케줄.', sp:['synth','structure'], part:2, kw:'Adam · 안장점 · BN · 모멘텀' },
+  { no:'09', dir:'ch09-cnn',             t:'합성곱 신경망',                          d:'희소 상호작용 · 파라미터 공유 · 변환 등가성. 풀링. 신경과학적 기원. LeNet→AlexNet→VGG→ResNet.', sp:['structure','synth'], part:2, kw:'CNN · 풀링 · 등가성 · 아키텍처' },
+  { no:'10', dir:'ch10-rnn',             t:'순환 신경망과 시퀀스 모델',              d:'시간 펼치기. BPTT. 기울기 폭발/소실. LSTM·GRU 게이트. 양방향·인코더-디코더. Attention 직전까지.', sp:['style','synth'], part:2, kw:'RNN · BPTT · LSTM · GRU' },
+  { no:'11', dir:'ch11-practical',       t:'실용적 방법론',                          d:'성능 지표 선택. 기본 베이스라인. 데이터 추가 결정. 하이퍼파라미터 튜닝. 디버깅 전략.', sp:['ink','ink-soft'], part:2, kw:'베이스라인 · 디버깅 · 튜닝' },
+  { no:'12', dir:'ch12-applications',    t:'응용 — 비전 · NLP · 음성 · 강화학습',   d:'대규모 비전 분류. 음성 인식. 자연어 처리. 추천 시스템. 강화학습. 응용에서의 실전 트릭.', sp:['style','structure'], part:2, kw:'비전 · NLP · 음성 · RL' },
+  { no:'13', dir:'ch13-linear-factor',   t:'선형 요소 모델',                         d:'요소 분석(FA). 확률적 PCA. ICA. 희소 코딩. Slow Feature Analysis. 매니폴드의 첫 등장.', sp:['structure-lo','style-lo'], part:3, kw:'PCA · ICA · 희소 코딩' },
+  { no:'14', dir:'ch14-autoencoder',     t:'자기부호화기',                           d:'미완전·과완전 오토인코더. 잡음 제거(DAE). 수축적 오토인코더(CAE). 매니폴드 학습.', sp:['style','synth'], part:3, kw:'DAE · CAE · 매니폴드' },
+  { no:'15', dir:'ch15-representation',  t:'표상 학습',                              d:'사전훈련 · 전이학습. 분산 표상. 깊이의 지수적 이득. 인과 요소 기반 반지도학습. 사전(prior).', sp:['structure','style','synth'], part:3, kw:'전이학습 · 분산 표상 · 사전훈련' },
+];
+const colMap = { structure:'var(--structure)', 'structure-lo':'var(--structure-lo)', style:'var(--style)', 'style-lo':'var(--style-lo)', synth:'var(--synth)', ink:'var(--ink)', 'ink-soft':'var(--ink-soft)' };
+
+['part1','part2','part3'].forEach((id, idx) => {
+  const part = idx + 1;
+  const host = document.getElementById(id);
+  CHAPTERS.filter(c => c.part === part).forEach(c => {
+    const sp = c.sp.length === 1 ? [c.sp[0], c.sp[0]] : c.sp;
+    const a = document.createElement('a');
+    a.className = 'plate';
+    a.href = c.dir + '/index.html';
+    a.innerHTML = `
+      <div class="spectrum">${sp.map(s=>`<i style="flex:1;background:${colMap[s]}"></i>`).join('')}</div>
+      <span class="pno">CHAPTER ${c.no}</span>
+      <h3>${c.t}</h3>
+      <p>${c.d}</p>
+      <span class="kw">${c.kw}</span>
+      <span class="go">읽기 →</span>`;
+    host.appendChild(a);
+  });
+});
+
+// 표지 히어로 — 표상의 사다리 입자 애니메이션
+window.addEventListener('load', () => {
+  const canvas = document.getElementById('hero');
+  if (!canvas || !window.THREE) return;
+  const w = canvas.clientWidth || canvas.parentElement.clientWidth;
+  const h = 380;
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(50, w/h, 0.1, 100);
+  camera.position.set(0, 0, 18);
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+  renderer.setSize(w, h, false);
+  renderer.setClearColor(0xffffff, 0);
+
+  const N = 1500;
+  const geo = new THREE.BufferGeometry();
+  const positions = new Float32Array(N * 3);
+  const colors = new Float32Array(N * 3);
+  const targetsA = new Float32Array(N * 3);  // pixel grid
+  const targetsB = new Float32Array(N * 3);  // representation hierarchy
+  for (let i = 0; i < N; i++) {
+    // pixel grid
+    const gx = (i % 40) - 20;
+    const gy = Math.floor(i / 40) % 40 - 20;
+    targetsA[i*3]   = gx * 0.32;
+    targetsA[i*3+1] = gy * 0.18;
+    targetsA[i*3+2] = 0;
+
+    // hierarchy — 5 layers
+    const layer = Math.floor(i / (N / 5));
+    const inLayer = i - layer * (N / 5);
+    const theta = (inLayer / (N / 5)) * Math.PI * 2;
+    const r = 3 + layer * 0.6;
+    targetsB[i*3]   = Math.cos(theta) * r + (layer - 2) * 2.5;
+    targetsB[i*3+1] = Math.sin(theta) * r * 0.4;
+    targetsB[i*3+2] = (layer - 2) * 0.8;
+
+    positions[i*3]   = targetsA[i*3];
+    positions[i*3+1] = targetsA[i*3+1];
+    positions[i*3+2] = targetsA[i*3+2];
+
+    const c = new THREE.Color().setHSL(0.6 - 0.15 * (i / N), 0.55, 0.55);
+    colors[i*3]   = c.r; colors[i*3+1] = c.g; colors[i*3+2] = c.b;
+  }
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  const mat = new THREE.PointsMaterial({ size: 0.09, vertexColors: true, transparent: true, opacity: 0.85 });
+  const pts = new THREE.Points(geo, mat);
+  scene.add(pts);
+
+  let t = 0;
+  let target = 0.5;
+  let drag = false, dragX = 0, sx = 0;
+  canvas.addEventListener('pointerdown', (e) => { drag = true; dragX = e.clientX; sx = target; });
+  window.addEventListener('pointermove', (e) => { if (!drag) return; target = Math.max(0, Math.min(1, sx + (e.clientX - dragX) / canvas.clientWidth)); });
+  window.addEventListener('pointerup', () => { drag = false; });
+
+  function tick() {
+    t += 0.005;
+    if (!drag) target = 0.5 + 0.45 * Math.sin(t);
+    const p = pts.geometry.attributes.position.array;
+    for (let i = 0; i < N; i++) {
+      const j = i * 3;
+      p[j]   = targetsA[j]   * (1 - target) + targetsB[j]   * target;
+      p[j+1] = targetsA[j+1] * (1 - target) + targetsB[j+1] * target;
+      p[j+2] = targetsA[j+2] * (1 - target) + targetsB[j+2] * target;
+    }
+    pts.geometry.attributes.position.needsUpdate = true;
+    pts.rotation.y = (target - 0.5) * 0.6;
+    renderer.render(scene, camera);
+    requestAnimationFrame(tick);
+  }
+  tick();
+
+  window.addEventListener('resize', () => {
+    const w2 = canvas.parentElement.clientWidth;
+    renderer.setSize(w2, h, false);
+    camera.aspect = w2 / h;
+    camera.updateProjectionMatrix();
+  });
+});
+</script>
+</body>
+</html>

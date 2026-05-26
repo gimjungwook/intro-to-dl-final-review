@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ch.10 · 05 LSTM·GRU 게이트</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .scroll-progress { position: fixed; top: 0; left: 0; height: 3px; background: var(--style); width: 0; z-index: 999; transition: width .1s; }
+  .topbar { position: fixed; top: 0; left: 0; right: 0; padding: .55rem 1.2rem; background: rgba(250,247,240,.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line-soft); display: flex; justify-content: space-between; align-items: center; z-index: 100; font-family: var(--mono); font-size: .72rem; }
+  .topbar a.home { color: var(--ink-soft); text-decoration: none; letter-spacing: .1em; }
+  .topbar a.home:hover { color: var(--ink); }
+  .topbar .ch-mini { color: var(--ink-faint); letter-spacing: .14em; }
+  .ch-main { max-width: 44rem; margin: 4.5rem auto 0; padding: 2rem 0 6rem; }
+  .ch-head { max-width: var(--measure); margin: 0 auto 2.4rem; padding-inline: 1.4rem; }
+  .ch-head .kicker { display: block; margin-bottom: 1rem; }
+  .ch-head h1 { font-size: clamp(2rem, 5vw, 3.3rem); margin: 0 0 .8rem; line-height: 1.1; }
+  .ch-head .lede { font-family: var(--serif); font-size: 1.22rem; font-style: italic; color: var(--ink-soft); line-height: 1.5; }
+  .ch-foot { display: flex; justify-content: space-between; gap: 1rem; max-width: var(--measure); margin: 4rem auto 0; padding-inline: 1.4rem; }
+  .ch-foot a { display: block; text-decoration: none; flex: 1; padding: 1rem 1.2rem; border: 1px solid var(--line); border-radius: 10px; transition: border-color .15s, transform .15s; }
+  .ch-foot a:hover { border-color: var(--structure); transform: translateY(-2px); }
+  .ch-foot .dir { font-family: var(--mono); font-size: .7rem; letter-spacing: .14em; color: var(--ink-faint); text-transform: uppercase; }
+  .ch-foot .ti { font-family: var(--serif); font-size: 1.05rem; color: var(--ink); margin-top: .2rem; }
+  .ch-foot .next { text-align: right; }
+  .widget { max-width: var(--wide); margin: 2.4rem auto; padding-inline: 1.4rem; }
+  .widget-frame { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 1.4rem; box-shadow: var(--shadow-plate); }
+  .widget-label { display: flex; align-items: center; gap: .8rem; margin-bottom: 1rem; font-family: var(--mono); font-size: .78rem; color: var(--ink-soft); letter-spacing: .05em; }
+  .widget-label .lab-no { color: var(--style); font-weight: 600; letter-spacing: .14em; }
+  .widget-cap { max-width: var(--measure); margin: .8rem auto 0; font-size: .85rem; color: var(--ink-soft); line-height: 1.6; text-align: center; }
+  .controls { display: flex; align-items: center; gap: 1rem; margin-top: 1rem; flex-wrap: wrap; }
+  .controls label { font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); display: flex; align-items: center; gap: .6rem; }
+  .controls input[type=range] { width: 180px; accent-color: var(--structure); }
+  .controls .val { color: var(--style); font-weight: 600; min-width: 3em; text-align: right; }
+  canvas.viz { display: block; width: 100%; height: 420px; background: var(--paper-2); border-radius: 8px; }
+  .compare-table { max-width: var(--measure); margin: 1.4rem auto; padding-inline: 1.4rem; }
+  .compare-table table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+  .compare-table th, .compare-table td { padding: .6rem .8rem; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+  .compare-table th { font-family: var(--mono); font-size: .74rem; color: var(--ink-faint); letter-spacing: .08em; text-transform: uppercase; font-weight: 500; }
+  .compare-table th.lstm-col { color: var(--structure); }
+  .compare-table th.gru-col { color: var(--style); }
+  .compare-table tr td:first-child { font-weight: 600; color: var(--ink); width: 28%; }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar">
+  <a class="home" href="index.html">← Ch.10 표지</a>
+  <span class="ch-mini">SUB 05 / 07 · LSTM & GRU Gated Units</span>
+</div>
+
+<main class="ch-main">
+  <header class="ch-head">
+    <span class="kicker">Chapter 10 · Sub 05</span>
+    <h1>LSTM·GRU —<br><span class="t-structure">게이트</span>가 푸는 문제</h1>
+    <p class="lede">활성화 신호의 안정성과 기울기의 생존을 분리한다. 게이트가 결정하는 "선형 자체 루프"가 기울기의 고속도로다.</p>
+  </header>
+
+  <div class="prose">
+    <p>Sub.04에서 본 딜레마를 다시 떠올리자. 신호를 안정적으로 보존하는 가중치는 기울기를 죽이고, 기울기를 살리는 가중치는 신호를 폭발시킨다. 같은 비선형 변환이 두 역할을 동시에 맡으려 하기 때문이다.</p>
+
+    <p>해결의 핵심 아이디어는 단순하지만 우아하다. <strong>활성화 신호 경로와 기울기 경로를 구조적으로 분리</strong>한다. 비선형 변환 옆에 별도의 <em>선형 자체 루프(Linear Self-Loop)</em>를 만들어, 그 길로 기울기가 죽지 않고 흘러가게 한다. 그리고 그 루프의 흐름을 <strong>게이트(Gate)</strong>가 조절한다 — 언제 정보를 더할지, 언제 잊을지, 언제 내보낼지.</p>
+
+    <h2>LSTM — 가장 영향력 있는 게이트 회로</h2>
+    <p><strong>Long Short-Term Memory (LSTM)</strong>는 Hochreiter & Schmidhuber가 1997년에 제안했다. 핵심은 <strong>셀 상태(Cell State) $c^{(t)}$</strong>라는 별도의 메모리 라인을 두고, 그 라인 위에 게이트들이 정보를 넣고 빼는 구조다.</p>
+
+    <p>LSTM에는 네 가지 주요 부품이 있다.</p>
+
+    <div class="math-block">$$ f^{(t)} = \sigma\!\left(W_f \cdot [h^{(t-1)}, x^{(t)}] + b_f\right) \quad \text{(forget gate)} $$</div>
+    <div class="math-block">$$ i^{(t)} = \sigma\!\left(W_i \cdot [h^{(t-1)}, x^{(t)}] + b_i\right) \quad \text{(input gate)} $$</div>
+    <div class="math-block">$$ \tilde{c}^{(t)} = \tanh\!\left(W_c \cdot [h^{(t-1)}, x^{(t)}] + b_c\right) \quad \text{(candidate cell)} $$</div>
+    <div class="math-block">$$ c^{(t)} = f^{(t)} \odot c^{(t-1)} + i^{(t)} \odot \tilde{c}^{(t)} \quad \text{(cell update)} $$</div>
+    <div class="math-block">$$ o^{(t)} = \sigma\!\left(W_o \cdot [h^{(t-1)}, x^{(t)}] + b_o\right) \quad \text{(output gate)} $$</div>
+    <div class="math-block">$$ h^{(t)} = o^{(t)} \odot \tanh\!\left(c^{(t)}\right) \quad \text{(hidden output)} $$</div>
+    <p class="math-note">σ: 시그모이드 (0-1 게이트 값). ⊙: 요소별 곱 (Hadamard). [·,·]: 벡터 결합 (concatenation).</p>
+
+    <h2>각 게이트가 하는 일</h2>
+    <p>여섯 줄의 수식을 비유로 풀자. 셀 상태 $c^{(t)}$는 <strong>장기 메모리 칠판</strong>이다.</p>
+
+    <p><strong>망각 게이트 $f^{(t)}$</strong> — "이전 메모리에서 무엇을 지울 것인가." 시그모이드 출력이 0이면 그 자리는 완전히 지우고, 1이면 그대로 보존한다. 0.5면 절반만 남긴다.</p>
+
+    <p><strong>입력 게이트 $i^{(t)}$</strong> — "새 정보 중 무엇을 메모리에 적을 것인가." 후보 셀 $\tilde{c}^{(t)}$가 "쓸 만한 새 정보"를 제안하고, 입력 게이트가 그중 어느 부분을 받아들일지 결정한다.</p>
+
+    <p><strong>출력 게이트 $o^{(t)}$</strong> — "메모리에 적힌 것 중 무엇을 지금 밖으로 내보낼 것인가." 셀 상태 전체가 매 시점 출력되는 것이 아니다. 게이트가 필터 역할을 한다.</p>
+
+    <p>왜 이렇게 분리할까. 메모리에 <em>저장된 정보</em>와 <em>지금 사용할 정보</em>가 다를 수 있기 때문이다. 책을 읽을 때 처음 페이지의 등장인물 이름을 100페이지 후반에 다시 꺼내 쓰는 식이다. 그동안에는 메모리에 들고만 있고 출력하지 않는다.</p>
+
+    <div class="analogy">
+      <b>셀 상태는 컨베이어 벨트, 게이트는 작업자들.</b> 셀 상태 $c$는 공장 한가운데를 가로지르는 컨베이어 벨트다. 망각 게이트 작업자는 벨트 위 물건 중 일부를 골라 떨어뜨린다. 입력 게이트 작업자는 새 물건을 벨트 위에 올린다. 출력 게이트 작업자는 벨트 위 물건 중 일부를 지금 검수하러 가져온다. 벨트 자체는 한 방향으로 일정하게 흐르고 — 이것이 기울기의 고속도로다.
+    </div>
+
+    <h2>왜 이 구조가 기울기 소실을 해결하는가</h2>
+    <p>핵심 식은 셀 업데이트다.</p>
+
+    <div class="math-block">$$ c^{(t)} = f^{(t)} \odot c^{(t-1)} + i^{(t)} \odot \tilde{c}^{(t)} $$</div>
+
+    <p>이 식의 첫 항 $f^{(t)} \odot c^{(t-1)}$이 <strong>선형 자체 루프</strong>다. $c^{(t-1)}$에서 $c^{(t)}$로 가는 길에는 비선형 함수가 없다 (요소별 곱만 있다). 야코비안 $\partial c^{(t)} / \partial c^{(t-1)} = \mathrm{diag}(f^{(t)})$는 망각 게이트 값들로 이루어진 대각 행렬이다.</p>
+
+    <p>이 야코비안의 곱셈 사슬은 $\prod_t \mathrm{diag}(f^{(t)})$가 된다. 만약 모델이 "지금 메모리를 유지해야 한다"고 학습했다면 $f^{(t)} \approx 1$로 두어, 이 곱은 1 근처에 머무른다 — <strong>기울기가 죽지 않는다</strong>. 반대로 "지금부터 새 일 시작이니 옛 메모리 다 잊어"라고 학습하면 $f^{(t)} \approx 0$으로 두어 적극적으로 메모리를 지운다.</p>
+
+    <p>일반 RNN의 결정적 차이는 이것이다. 일반 RNN에서는 $W$ 하나가 "보존할까 잊을까"를 시점과 무관하게 고정된 값으로 결정한다. LSTM에서는 <strong>망각 게이트가 시점마다 입력에 따라 결정</strong>한다. 학습 자체가 "언제 보존하고 언제 잊을지"를 결정하는 동적 메커니즘으로 바뀐다.</p>
+  </div>
+
+  <div class="widget">
+    <div class="widget-frame">
+      <div class="widget-label"><span class="lab-no">위젯 05</span><span>LSTM 게이트 — 4개 게이트의 활성도와 셀 상태 흐름</span></div>
+      <canvas id="vizLSTM" class="viz"></canvas>
+      <div class="controls">
+        <label>입력 신호 x <input type="range" id="xInp" min="-100" max="100" step="1" value="40"><span class="val" id="xInpVal">+0.40</span></label>
+        <label>이전 은닉 h <input type="range" id="hInp" min="-100" max="100" step="1" value="30"><span class="val" id="hInpVal">+0.30</span></label>
+        <label>이전 셀 c <input type="range" id="cInp" min="-100" max="100" step="1" value="50"><span class="val" id="cInpVal">+0.50</span></label>
+      </div>
+    </div>
+    <p class="widget-cap">슬라이더로 입력 신호를 움직이면 망각·입력·후보·출력 게이트의 활성도가 실시간으로 변한다. 셀 상태 $c$가 어떻게 흐르고 갱신되는지, 그리고 그 출력이 어떻게 새 은닉 $h$가 되는지 시각화. 선형 자체 루프(파란색 경로)가 기울기 고속도로 역할.</p>
+  </div>
+
+  <div class="prose">
+    <h2>GRU — 더 단순한 사촌</h2>
+    <p><strong>Gated Recurrent Unit (GRU)</strong>는 2014년 Cho et al.이 제안한 단순화된 변형이다. LSTM의 망각·입력 게이트를 하나의 <strong>업데이트 게이트(Update Gate) $z^{(t)}$</strong>로 합치고, 셀 상태와 은닉 상태를 합치고, 새 <strong>리셋 게이트(Reset Gate) $r^{(t)}$</strong>를 도입한다.</p>
+
+    <div class="math-block">$$ z^{(t)} = \sigma\!\left(W_z \cdot [h^{(t-1)}, x^{(t)}]\right) \quad \text{(update gate)} $$</div>
+    <div class="math-block">$$ r^{(t)} = \sigma\!\left(W_r \cdot [h^{(t-1)}, x^{(t)}]\right) \quad \text{(reset gate)} $$</div>
+    <div class="math-block">$$ \tilde{h}^{(t)} = \tanh\!\left(W \cdot [r^{(t)} \odot h^{(t-1)}, x^{(t)}]\right) \quad \text{(candidate)} $$</div>
+    <div class="math-block">$$ h^{(t)} = (1 - z^{(t)}) \odot h^{(t-1)} + z^{(t)} \odot \tilde{h}^{(t)} $$</div>
+    <p class="math-note">업데이트 게이트가 "얼마나 새 후보로 갱신할지 vs 옛것을 유지할지"를 한 번에 결정.</p>
+
+    <p>마지막 줄이 핵심이다. $z^{(t)} \approx 0$이면 옛 은닉 상태를 그대로 유지하고, $z^{(t)} \approx 1$이면 새 후보로 완전히 갈아엎는다. 두 극단 사이에서 부드럽게 보간한다. LSTM의 망각 게이트와 입력 게이트가 독립적이었던 것과 달리, GRU는 "잊는 만큼 받아들인다"는 보존 법칙 비슷한 제약을 가진다.</p>
+
+    <h2>LSTM vs GRU — 무엇을 고를까</h2>
+
+    <div class="compare-table">
+      <table>
+        <thead><tr><th>비교 축</th><th class="lstm-col">LSTM</th><th class="gru-col">GRU</th></tr></thead>
+        <tbody>
+          <tr><td>게이트 수</td><td>3개 (forget, input, output) + candidate</td><td>2개 (update, reset)</td></tr>
+          <tr><td>상태 변수</td><td>2개 (cell c, hidden h)</td><td>1개 (hidden h)</td></tr>
+          <tr><td>매개변수 수</td><td>약 4 × (n+m) × n</td><td>약 3 × (n+m) × n  (LSTM의 75%)</td></tr>
+          <tr><td>표현력</td><td>이론적으로 더 유연 (출력과 메모리 분리)</td><td>제약 있지만 충분히 표현력 있음</td></tr>
+          <tr><td>학습 속도</td><td>약간 느림</td><td>약간 빠름</td></tr>
+          <tr><td>실험적 성능</td><td>긴 시퀀스·복잡 과제에서 우위</td><td>작은 데이터셋·단순 과제에서 비슷하거나 우위</td></tr>
+          <tr><td>발표 시점</td><td>1997</td><td>2014</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>실제 사용에서는 둘 중 하나가 압도적으로 우월하지는 않다. Goodfellow 책의 결론도 같다 — "<em>어떤 변형도 두 가지를 명확히 능가한다고 보고되지 않았다</em>". 그래서 실용적 선택의 기준은 모델 크기, 학습 데이터 규모, 과제 복잡도에 따라 달라진다.</p>
+
+    <h2>이 절이 시험에서 묻는 것</h2>
+    <p>① "선형 자체 루프"가 왜 기울기를 살리는가 — 비선형 변환 없이 $\partial c^{(t)}/\partial c^{(t-1)} = \mathrm{diag}(f^{(t)})$이기 때문. ② LSTM의 4개 게이트(forget, input, output, candidate)가 각각 결정하는 것. ③ GRU의 update gate가 LSTM의 어느 두 게이트를 합친 것인지 — forget과 input. ④ LSTM과 GRU의 매개변수 수 차이가 어디서 오는지. ⑤ 학습이 결정하는 것은 "보존할까 잊을까"의 동적 선택이라는 점.</p>
+  </div>
+
+  <nav class="ch-foot">
+    <a href="04.html"><span class="dir">← 이전</span><div class="ti">04 · 기울기 폭발/소실</div></a>
+    <a class="next" href="06.html"><span class="dir">다음 →</span><div class="ti">06 · 양방향·인코더-디코더</div></a>
+  </nav>
+</main>
+
+<script>
+  window.addEventListener('scroll', () => {
+    const sp = document.querySelector('.scroll-progress');
+    const sc = document.documentElement.scrollTop;
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    sp.style.width = (max > 0 ? (sc / max * 100) : 0) + '%';
+  });
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, { delimiters: [
+        {left:'$$', right:'$$', display:true},
+        {left:'$', right:'$', display:false}
+      ], throwOnError:false });
+    }
+  });
+
+  const cv = document.getElementById('vizLSTM');
+  const ctx = cv.getContext('2d');
+  const xInp = document.getElementById('xInp');
+  const hInp = document.getElementById('hInp');
+  const cInp = document.getElementById('cInp');
+  const xInpVal = document.getElementById('xInpVal');
+  const hInpVal = document.getElementById('hInpVal');
+  const cInpVal = document.getElementById('cInpVal');
+
+  function fit() {
+    const r = cv.getBoundingClientRect();
+    cv.width = r.width * devicePixelRatio;
+    cv.height = r.height * devicePixelRatio;
+    ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+    draw();
+  }
+
+  if (!CanvasRenderingContext2D.prototype.roundRect) {
+    CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+      this.beginPath();
+      this.moveTo(x + r, y);
+      this.arcTo(x + w, y, x + w, y + h, r);
+      this.arcTo(x + w, y + h, x, y + h, r);
+      this.arcTo(x, y + h, x, y, r);
+      this.arcTo(x, y, x + w, y, r);
+      this.closePath();
+    };
+  }
+
+  function sigmoid(x) { return 1 / (1 + Math.exp(-x)); }
+  function tanh(x) { return Math.tanh(x); }
+
+  function draw() {
+    const x = +xInp.value / 100;
+    const h = +hInp.value / 100;
+    const c_prev = +cInp.value / 100;
+    xInpVal.textContent = (x >= 0 ? '+' : '') + x.toFixed(2);
+    hInpVal.textContent = (h >= 0 ? '+' : '') + h.toFixed(2);
+    cInpVal.textContent = (c_prev >= 0 ? '+' : '') + c_prev.toFixed(2);
+
+    // 가짜 가중치 (시각화용)
+    const Wf = 1.2, Wi = 1.0, Wc = 0.9, Wo = 1.1;
+    const f_gate = sigmoid(Wf * (h + x) - 0.2);
+    const i_gate = sigmoid(Wi * (h + x) - 0.3);
+    const c_tilde = tanh(Wc * (h + x));
+    const o_gate = sigmoid(Wo * (h + x) - 0.1);
+    const c_new = f_gate * c_prev + i_gate * c_tilde;
+    const h_new = o_gate * tanh(c_new);
+
+    const W = cv.clientWidth, H = cv.clientHeight;
+    ctx.clearRect(0, 0, W, H);
+
+    // 셀 상태 라인 (위쪽 컨베이어 벨트)
+    const yCell = 60;
+    ctx.strokeStyle = '#2D5B7A';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(50, yCell);
+    ctx.lineTo(W - 50, yCell);
+    ctx.stroke();
+    // 셀 라벨
+    ctx.fillStyle = '#2D5B7A';
+    ctx.font = '500 12px Spline Sans Mono, monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('c (cell state — 선형 자체 루프, 기울기 고속도로)', 50, yCell - 12);
+    ctx.fillText('c⁽ᵗ⁻¹⁾', 18, yCell + 4);
+    ctx.fillText('c⁽ᵗ⁾', W - 38, yCell + 4);
+
+    // 입력 (왼쪽 아래)
+    const yIn = H - 60;
+    const xLab = ['x⁽ᵗ⁾', 'h⁽ᵗ⁻¹⁾'];
+    const xVals = [x, h];
+    const xCols = ['#A47B2E', '#D98E73'];
+    for (let i = 0; i < 2; i++) {
+      const px = 50 + i * 40;
+      ctx.fillStyle = xCols[i];
+      ctx.beginPath();
+      ctx.arc(px, yIn, 13, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.font = '600 9px Spline Sans Mono, monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(xLab[i], px, yIn);
+      ctx.fillStyle = xCols[i];
+      ctx.font = '10px Spline Sans Mono, monospace';
+      ctx.fillText(xVals[i].toFixed(2), px, yIn + 22);
+    }
+
+    // 게이트 박스들 (가운데 줄)
+    const gateY = (yCell + yIn) / 2 + 20;
+    const gateBoxes = [
+      { name: 'forget', sym: 'f', val: f_gate, x: W * 0.22, color: '#C0492E', desc: '얼마나 잊을까' },
+      { name: 'input', sym: 'i', val: i_gate, x: W * 0.40, color: '#2D5B7A', desc: '얼마나 받아들일까' },
+      { name: 'candidate', sym: 'c̃', val: c_tilde, x: W * 0.58, color: '#A47B2E', desc: '새 후보 정보' },
+      { name: 'output', sym: 'o', val: o_gate, x: W * 0.78, color: '#6E97AF', desc: '얼마나 내보낼까' },
+    ];
+    for (const g of gateBoxes) {
+      // 게이트 강도에 비례한 배경 채움
+      const fillAlpha = g.name === 'candidate' ? Math.abs(g.val) : g.val;
+      // 박스
+      ctx.fillStyle = g.color + 'cc';
+      ctx.strokeStyle = g.color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(g.x - 35, gateY - 22, 70, 44, 8);
+      ctx.fill();
+      ctx.stroke();
+      // 게이트 활성도 막대 (안쪽)
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      const barH = 6;
+      const barW = 60 * fillAlpha;
+      ctx.fillRect(g.x - 30, gateY + 10, barW, barH);
+      // 라벨
+      ctx.fillStyle = '#fff';
+      ctx.font = '600 13px Spline Sans Mono, monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(g.sym, g.x, gateY - 5);
+      ctx.font = '9px Spline Sans Mono, monospace';
+      ctx.fillText(g.val.toFixed(2), g.x, gateY + 7);
+      // 외부 라벨
+      ctx.fillStyle = g.color;
+      ctx.font = '500 10px Spline Sans Mono, monospace';
+      ctx.fillText(g.name, g.x, gateY - 32);
+      ctx.font = '9px Spline Sans Mono, monospace';
+      ctx.fillStyle = 'rgba(38,34,28,0.55)';
+      ctx.fillText(g.desc, g.x, gateY + 36);
+    }
+
+    // 화살표: 입력 → 게이트들
+    ctx.strokeStyle = 'rgba(38,34,28,0.2)';
+    ctx.lineWidth = 1;
+    for (const g of gateBoxes) {
+      ctx.beginPath();
+      ctx.moveTo(70, yIn - 15);
+      ctx.lineTo(g.x, gateY + 22);
+      ctx.stroke();
+    }
+
+    // 화살표: forget 게이트 → 셀 라인 (곱하기)
+    const fX = gateBoxes[0].x;
+    ctx.strokeStyle = '#C0492E';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(fX, gateY - 22);
+    ctx.lineTo(fX, yCell + 8);
+    ctx.stroke();
+    // ⊗ 기호 on cell line
+    ctx.fillStyle = '#C0492E';
+    ctx.font = '600 14px Spline Sans Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('⊗', fX, yCell + 5);
+
+    // input × candidate → 합산점 → 셀
+    const iX = gateBoxes[1].x;
+    const ctX = gateBoxes[2].x;
+    const mergeX = (iX + ctX) / 2;
+    const mergeY = gateY - 60;
+    // i, c̃ → merge
+    ctx.strokeStyle = '#2D5B7A';
+    ctx.beginPath();
+    ctx.moveTo(iX, gateY - 22);
+    ctx.lineTo(mergeX - 10, mergeY);
+    ctx.stroke();
+    ctx.strokeStyle = '#A47B2E';
+    ctx.beginPath();
+    ctx.moveTo(ctX, gateY - 22);
+    ctx.lineTo(mergeX + 10, mergeY);
+    ctx.stroke();
+    // ⊗ at merge
+    ctx.fillStyle = '#A47B2E';
+    ctx.font = '600 14px Spline Sans Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('⊗', mergeX, mergeY + 4);
+    // merge → cell line (+)
+    ctx.strokeStyle = '#A47B2E';
+    ctx.beginPath();
+    ctx.moveTo(mergeX, mergeY - 8);
+    ctx.lineTo(mergeX, yCell + 8);
+    ctx.stroke();
+    // ⊕ on cell line
+    ctx.fillStyle = '#A47B2E';
+    ctx.fillText('⊕', mergeX, yCell + 5);
+
+    // output → tanh(c) → h
+    const oX = gateBoxes[3].x;
+    // tanh(c) point
+    const tanhX = oX + 30;
+    ctx.strokeStyle = '#2D5B7A';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(W - 50, yCell);
+    ctx.lineTo(tanhX, yCell);
+    ctx.lineTo(tanhX, gateY + 8);
+    ctx.stroke();
+    // tanh box
+    ctx.fillStyle = '#6E97AF';
+    ctx.beginPath();
+    ctx.roundRect(tanhX - 18, gateY - 10, 36, 18, 4);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = '600 11px Spline Sans Mono, monospace';
+    ctx.fillText('tanh', tanhX, gateY);
+    // o → tanh(c) (⊗)
+    ctx.strokeStyle = '#6E97AF';
+    ctx.beginPath();
+    ctx.moveTo(oX, gateY - 22);
+    ctx.lineTo(tanhX - 18, gateY);
+    ctx.stroke();
+
+    // h_new output
+    const hX = tanhX + 50;
+    ctx.strokeStyle = '#D98E73';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(tanhX + 18, gateY);
+    ctx.lineTo(hX - 15, gateY);
+    ctx.stroke();
+    ctx.fillStyle = '#D98E73';
+    ctx.beginPath();
+    ctx.arc(hX, gateY, 15, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = '600 10px Spline Sans Mono, monospace';
+    ctx.fillText('h⁽ᵗ⁾', hX, gateY);
+    ctx.fillStyle = '#D98E73';
+    ctx.font = '10px Spline Sans Mono, monospace';
+    ctx.fillText(h_new.toFixed(2), hX, gateY + 22);
+
+    // Cell new value
+    ctx.fillStyle = '#2D5B7A';
+    ctx.font = '500 10px Spline Sans Mono, monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(`c⁽ᵗ⁾ = ${c_new.toFixed(3)}  (= ${f_gate.toFixed(2)}·${c_prev.toFixed(2)} + ${i_gate.toFixed(2)}·${c_tilde.toFixed(2)})`, 50, H - 14);
+    ctx.fillStyle = '#D98E73';
+    ctx.fillText(`h⁽ᵗ⁾ = ${h_new.toFixed(3)}  (= ${o_gate.toFixed(2)}·tanh(${c_new.toFixed(2)}))`, 50, H - 30);
+  }
+  xInp.addEventListener('input', draw);
+  hInp.addEventListener('input', draw);
+  cInp.addEventListener('input', draw);
+  window.addEventListener('resize', fit);
+  fit();
+</script>
+</body>
+</html>

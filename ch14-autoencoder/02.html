@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>02 · 미완전 자기부호화기 — Ch.14</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  /* 미완전 vs 과완전 위젯 */
+  .uc-stage { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1.5rem 1.2rem 1rem; align-items: center; justify-items: center; }
+  .uc-side { text-align: center; }
+  .uc-side canvas { display: block; width: 100%; max-width: 260px; aspect-ratio: 1/1; border-radius: 10px; border: 1px solid var(--line); background: #fff; margin: 0 auto; }
+  .uc-side .slab { display: block; margin-top: .5rem; font-family: var(--mono); font-size: .74rem; color: var(--ink-faint); letter-spacing: .04em; }
+  .uc-meters { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; max-width: var(--measure); margin: 0 auto; padding: .9rem 1.2rem 1rem; border-top: 1px solid var(--line-soft); background: var(--paper); }
+  .uc-meter label { font-family: var(--mono); font-size: .7rem; letter-spacing: .06em; color: var(--ink-faint); text-transform: uppercase; }
+  .uc-meter .barwrap { height: 8px; background: var(--paper-sink); border-radius: 4px; overflow: hidden; margin-top: .35rem; }
+  .uc-meter .barwrap i { display: block; height: 100%; border-radius: 4px; transition: width .2s var(--ease); }
+  .uc-meter .barwrap.train i { background: var(--structure); }
+  .uc-meter .barwrap.test i { background: var(--style); }
+  .uc-meter .val { display: block; margin-top: .25rem; font-family: var(--mono); font-size: .82rem; color: var(--ink); }
+  .uc-verdict { padding: .9rem 1.4rem 1rem; border-top: 1px solid var(--line-soft); font-size: .9rem; color: var(--ink-soft); line-height: 1.55; background: var(--paper-2); }
+  .uc-verdict b.warn { color: var(--style); } .uc-verdict b.ok { color: var(--structure); } .uc-verdict b.danger { color: var(--style); background: var(--style-bg); padding: .05em .35em; border-radius: 3px; }
+  @media (max-width: 600px) { .uc-stage { grid-template-columns: 1fr; } .uc-meters { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 02 · 병목이 정칙화가 되는 이유</span>
+      <h1>미완전 자기부호화기 —<br><span class="t-structure">좁은 병목</span>이 가르치는 본질</h1>
+      <p class="lede">잠재 차원을 입력보다 좁게 두면, 모델은 모든 것을 담을 수 없게 되어 가장 중요한 것만 골라 담는다. 이 단순한 제약이 PCA와 그 비선형 일반화로 곧장 이어진다.</p>
+    </header>
+
+    <div class="prose">
+      <p>자기부호화기가 항등 함수가 되는 가장 흔한 경로는 "잠재 코드의 크기가 입력과 같거나 더 큰" 경우다. 그러면 모델은 그저 차원마다 입력 값을 그대로 옮겨 적을 수 있다. 이 결과를 막는 가장 직관적인 방법이, 잠재 코드의 차원을 입력보다 <strong>의도적으로 좁게</strong> 두는 것이다. 이런 모델을 <strong>미완전 자기부호화기(undercomplete autoencoder)</strong>라 부른다.</p>
+
+      <div class="math-block">$$ \dim(h) < \dim(x) $$</div>
+      <p class="math-note">잠재 차원 dim(h)가 입력 차원 dim(x)보다 작다. 이것이 "미완전(undercomplete)"의 정의다.</p>
+
+      <div class="analogy">
+        <b>한 페이지 요약 과제.</b> 1,000페이지짜리 책을 한 페이지에 요약하라고 했다고 하자. 모든 문장을 그대로 적을 수는 없다. 어쩔 수 없이 줄거리, 주요 인물, 핵심 메시지만 골라 적게 된다. 페이지 수의 제약이 곧 <b>의미적 압축</b>을 강요한 것이다. 잠재 차원의 제약도 같은 일을 한다. 좁아진 통로는 "복원에 가장 유용한 차원이 무엇인가"라는 질문을 모델에게 강제로 묻는다.
+      </div>
+
+      <h2>왜 그것이 PCA와 같은 부분공간을 학습하는가</h2>
+      <p>여기서 책이 던지는 가장 유명한 결과 하나가 등장한다. 인코더와 디코더가 모두 선형이고, 손실이 평균 제곱 오차(mean squared error)일 때 — 즉</p>
+
+      <div class="math-block">$$ f(x) = W_e x, \qquad g(h) = W_d h, \qquad L = \|x - W_d W_e x\|^2 $$</div>
+      <p class="math-note">$W_e$는 인코더 가중치 행렬, $W_d$는 디코더 가중치 행렬, 평균 제곱 오차로 학습.</p>
+
+      <p>위 조건의 미완전 자기부호화기는 <strong>PCA(주성분 분석)와 정확히 같은 부분공간을 학습한다</strong>. 단, 그 부분공간을 표현하는 <em>축</em>은 PCA처럼 서로 직교한다는 보장이 없다. 회전된 좌표계로 같은 평면을 표현한다고 생각하면 된다. 이것이 "AE는 PCA의 일반화"라는 흔한 표현의 정확한 의미다. <strong>같은 부분공간, 다른 좌표.</strong></p>
+
+      <p>왜 같은 부분공간이 나오는가? 직관적으로는, "$k$차원으로 압축했다가 다시 펼쳤을 때 평균 제곱 오차를 가장 작게 하는 $k$차원 부분공간"은 데이터의 분산을 가장 많이 보존하는 방향, 즉 PCA가 찾는 그 방향과 정확히 같기 때문이다. 손실 함수가 같고, 압축 한도가 같으면, 도달하는 부분공간도 같을 수밖에 없다.</p>
+
+      <h2>비선형으로 풀면 PCA를 뛰어넘는다</h2>
+      <p>인코더와 디코더를 비선형 신경망으로 바꾸면 이 그림은 극적으로 확장된다. 이제 모델은 <em>직선 부분공간</em>이 아니라 <em>휘어진 매니폴드(manifold)</em>를 따라 코드를 매길 수 있다. 데이터가 실제로 휘어 있는 한 — 그리고 자연 데이터는 거의 항상 휘어 있다 — 비선형 미완전 AE는 PCA보다 본질적으로 더 적은 차원으로 더 잘 복원할 수 있다.</p>
+
+      <p>그러나 비선형의 능력은 양날의 검이다. 인코더와 디코더가 충분히 강력하다면, <strong>잠재 차원이 단 1차원이어도 모든 훈련 예제에 일대일로 고유 번호를 매겨</strong> 완벽하게 복원할 수 있다. 예를 들어 인코더가 첫 번째 훈련 이미지에는 $h = 0.001$을, 두 번째에는 $h = 0.002$를… N번째에는 $h = N/1000$을 할당하고, 디코더가 그 작은 차이를 보고 해당 이미지를 통째로 외워서 출력해 버리는 것이다. 손실은 0이지만 학습한 것은 "훈련셋 색인표"일 뿐이다. 항등 함수의 위험은 이렇게 다른 옷을 입고 다시 등장한다. 그래서 다음 장들의 <strong>정칙화 자기부호화기(regularized autoencoder)</strong>가 필요해진다.</p>
+
+      <p>아래 위젯에서 미완전·딱 맞음·과완전 세 영역의 동작을 직접 비교해 보자. 슬라이더로 잠재 차원을 바꾸면 훈련 손실과 일반화 손실이 어떻게 변하는지, 그리고 잠재 차원이 0에 가까워질 때 그리고 입력 차원을 넘어설 때 각각 어떤 일이 일어나는지가 한눈에 보인다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 02</span><span>병목 폭과 학습 — 미완전 · 딱 맞음 · 과완전</span></div>
+        <div class="uc-stage">
+          <div class="uc-side">
+            <canvas id="uc-loss" width="320" height="240"></canvas>
+            <span class="slab">잠재 차원 k에 따른 손실 곡선</span>
+          </div>
+          <div class="uc-side">
+            <canvas id="uc-pic" width="320" height="240"></canvas>
+            <span class="slab">현재 k에서 복원된 샘플 이미지</span>
+          </div>
+        </div>
+        <div class="widget-controls">
+          <div class="slider" style="flex:1; min-width:280px;">
+            <label>잠재 차원 <b id="uc-kval">k = 8</b> · 입력 차원 d = 16</label>
+            <input type="range" id="uc-k" min="1" max="24" step="1" value="8">
+          </div>
+        </div>
+        <div class="uc-meters">
+          <div class="uc-meter">
+            <label>훈련 손실 (train loss)</label>
+            <div class="barwrap train"><i id="uc-train-bar" style="width:30%"></i></div>
+            <span class="val" id="uc-train-val">0.30</span>
+          </div>
+          <div class="uc-meter">
+            <label>일반화 손실 (test loss)</label>
+            <div class="barwrap test"><i id="uc-test-bar" style="width:32%"></i></div>
+            <span class="val" id="uc-test-val">0.32</span>
+          </div>
+        </div>
+        <div class="uc-verdict" id="uc-verdict"></div>
+      </div>
+      <p class="widget-cap">k가 너무 작으면 훈련·테스트 모두 손실이 크다(병목이 너무 좁아 정보가 잘려 나간다). k가 입력 차원에 근접하면 훈련 손실은 0에 가까워지지만, 테스트 손실은 갑자기 치솟는다 — 모델이 훈련셋을 통째로 외워 버린 항등 함수 영역이다. 좋은 자기부호화기는 그 사이의 좁은 영역에 있다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>왜 손실 곡선이 그런 모양인가</h2>
+      <p>위 곡선에서 가장 중요한 신호는 "훈련 손실과 테스트 손실이 갈라지는 지점"이다. 잠재 차원이 작을 때는 두 손실이 거의 같이 움직인다. 둘 다 정보 손실이 본질이기 때문이다. 그런데 잠재 차원이 입력 차원에 가까워지는 순간, <strong>훈련 손실은 0으로 향하지만 테스트 손실은 다시 올라가기 시작한다</strong>. 이 갈라짐이 곧 "모델이 데이터의 구조가 아니라 색인표를 외우기 시작했다"는 신호다.</p>
+      <p>이 현상의 깊은 이유는 <strong>모델 용량(capacity)과 학습 목표 사이의 불일치</strong>다. 자기부호화기의 목표인 "재구성"은 데이터를 외울 때 가장 잘 달성된다. 그래서 용량이 충분하면 모델은 데이터의 구조보다 훈련 예제 그 자체를 외우는 길을 택한다. 이를 막으려면 두 가지 길이 있다.</p>
+      <ul>
+        <li><strong>구조적 제약 (architectural)</strong> — 이번 장에서 본 미완전 자기부호화기처럼 잠재 차원을 강제로 좁힌다. 외울 수 있는 용량 자체를 줄인다.</li>
+        <li><strong>벌점 제약 (regularization)</strong> — 잠재 차원은 자유롭게 두되, 손실 함수에 페널티를 더해 "외우는 방향"을 직접 비싸게 만든다. <a href="03.html">DAE</a>와 <a href="04.html">CAE</a>가 이 길이다.</li>
+      </ul>
+
+      <h2>다음 장에서</h2>
+      <p>다음 장에서는 두 번째 길 중 가장 영향력 있는 방법, 즉 <a href="03.html">잡음 제거 자기부호화기(denoising autoencoder)</a>를 본다. 페널티를 손실 함수에 명시적으로 더하는 대신, 입력에 노이즈를 섞어서 모델이 자연스럽게 "외우기"가 아니라 "구조 복원"으로 향하게 만드는 우아한 방법이다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  // ===== Ch.14 sub-chapter nav =====
+  const SUBS = [
+    { no:'01', t:'자기부호화기의 기본', f:'01.html' },
+    { no:'02', t:'미완전 자기부호화기', f:'02.html' },
+    { no:'03', t:'잡음 제거 AE (DAE)', f:'03.html' },
+    { no:'04', t:'수축적 AE (CAE)', f:'04.html' },
+    { no:'05', t:'AE와 매니폴드 학습', f:'05.html' },
+    { no:'06', t:'시험 대비', f:'06.html' },
+  ];
+  const CURRENT = '02';
+  (function buildNav() {
+    document.querySelector('.topbar').innerHTML =
+      `<a class="home" href="index.html">← Chapter 14 · 자기부호화기</a>` +
+      `<span class="ch-mini">SUB ${CURRENT} / 06</span>`;
+    document.querySelector('.ch-nav ol').innerHTML = SUBS.map(s =>
+      `<li><a href="${s.f}" ${s.no === CURRENT ? 'class="current"' : ''}>${s.t}</a></li>`).join('');
+    const i = SUBS.findIndex(s => s.no === CURRENT);
+    const prev = i > 0 ? SUBS[i-1] : { f:'index.html', t:'챕터 표지', no:'' };
+    const next = i < SUBS.length-1 ? SUBS[i+1] : { f:'index.html', t:'챕터 표지', no:'' };
+    document.querySelector('.ch-foot').innerHTML =
+      `<a href="${prev.f}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+      `<a href="${next.f}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+    const bar = document.querySelector('.scroll-progress');
+    const onScroll = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    document.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+  })();
+
+  // ===== 위젯: 미완전 vs 과완전 =====
+  (function ucWidget() {
+    const lossC = document.getElementById('uc-loss');
+    const picC = document.getElementById('uc-pic');
+    const slider = document.getElementById('uc-k');
+    const kVal = document.getElementById('uc-kval');
+    const trainBar = document.getElementById('uc-train-bar');
+    const testBar = document.getElementById('uc-test-bar');
+    const trainVal = document.getElementById('uc-train-val');
+    const testVal = document.getElementById('uc-test-val');
+    const verdict = document.getElementById('uc-verdict');
+
+    const css = getComputedStyle(document.documentElement);
+    const STRUCT = css.getPropertyValue('--structure').trim();
+    const STYLE = css.getPropertyValue('--style').trim();
+    const SYNTH = css.getPropertyValue('--synth').trim();
+    const INK = css.getPropertyValue('--ink').trim();
+    const FAINT = css.getPropertyValue('--ink-faint').trim();
+
+    const D = 16;  // 입력 차원
+
+    // 손실 모델: train_loss(k) = max(0, (D-k)/D) * 0.9  (단, k>D 영역은 갑자기 0으로)
+    // test_loss(k) 는 U자: k<D 영역에서 train과 비슷, k>D부터 급격히 상승 (외움)
+    function trainLoss(k) {
+      if (k >= D) return 0.02;  // 충분히 표현 가능
+      return ((D - k) / D) * 0.85 + 0.02;
+    }
+    function testLoss(k) {
+      if (k <= D) {
+        // 압축 손실 + 약간의 일반화 갭
+        const base = ((D - k) / D) * 0.85;
+        const gap = (k / D) * 0.05;
+        return base + 0.04 + gap;
+      } else {
+        // 과완전: 항등 함수/외움 영역
+        const over = (k - D) / D;
+        return 0.06 + over * 0.55;
+      }
+    }
+
+    function drawLossCurve(currentK) {
+      const ctx = lossC.getContext('2d');
+      const W = lossC.width, H = lossC.height;
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
+      // 격자
+      ctx.strokeStyle = 'rgba(38,34,28,0.06)'; ctx.lineWidth = 1;
+      for (let i = 0; i <= 6; i++) {
+        const y = 20 + i * (H - 50) / 6;
+        ctx.beginPath(); ctx.moveTo(40, y); ctx.lineTo(W - 10, y); ctx.stroke();
+      }
+      // 축
+      ctx.strokeStyle = 'rgba(38,34,28,0.2)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(40, 20); ctx.lineTo(40, H - 30); ctx.lineTo(W - 10, H - 30); ctx.stroke();
+
+      // 축 라벨
+      ctx.fillStyle = FAINT; ctx.font = '10px "Spline Sans Mono", monospace';
+      ctx.fillText('손실', 8, 18);
+      ctx.fillText('k', W - 18, H - 14);
+      ctx.fillText('1', 20, 28);
+      ctx.fillText('0', 24, H - 28);
+      // k=D 표시
+      const kDx = 40 + (D / 24) * (W - 50);
+      ctx.strokeStyle = 'rgba(164, 123, 46, 0.5)';
+      ctx.setLineDash([3, 4]);
+      ctx.beginPath(); ctx.moveTo(kDx, 20); ctx.lineTo(kDx, H - 30); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = SYNTH; ctx.fillText('k=d', kDx - 12, 18);
+
+      function px(k) { return 40 + (k / 24) * (W - 50); }
+      function py(v) { return 20 + (1 - v) * (H - 50); }
+
+      // train curve
+      ctx.strokeStyle = STRUCT; ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let k = 1; k <= 24; k += 0.5) {
+        const v = trainLoss(k);
+        const x = px(k), y = py(v);
+        if (k === 1) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      // test curve
+      ctx.strokeStyle = STYLE; ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let k = 1; k <= 24; k += 0.5) {
+        const v = testLoss(k);
+        const x = px(k), y = py(v);
+        if (k === 1) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      // 현재 k 표시
+      const cx = px(currentK);
+      ctx.strokeStyle = INK; ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath(); ctx.moveTo(cx, 20); ctx.lineTo(cx, H - 30); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = STRUCT;
+      ctx.beginPath(); ctx.arc(cx, py(trainLoss(currentK)), 4, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = STYLE;
+      ctx.beginPath(); ctx.arc(cx, py(testLoss(currentK)), 4, 0, Math.PI*2); ctx.fill();
+
+      // 범례
+      ctx.fillStyle = STRUCT;
+      ctx.fillRect(W - 90, 30, 10, 3);
+      ctx.fillStyle = INK; ctx.font = '10px "Spline Sans Mono", monospace';
+      ctx.fillText('train', W - 75, 35);
+      ctx.fillStyle = STYLE;
+      ctx.fillRect(W - 90, 46, 10, 3);
+      ctx.fillStyle = INK;
+      ctx.fillText('test', W - 75, 51);
+    }
+
+    // 4x4 입력 패턴 (16차원)
+    const samplePattern = [
+      0, 1, 1, 0,
+      1, 0, 0, 1,
+      1, 0, 0, 1,
+      0, 1, 1, 0,
+    ];
+
+    // k 차원 압축 후 복원 시뮬레이션
+    function reconstruct(k) {
+      // 단순 모델: 처음 k개의 PCA 성분만 유지한다고 가정
+      // 여기서는 간단히 k가 작을수록 노이즈 추가 + blur, k>D면 정확
+      const N = samplePattern.length;
+      if (k >= 24) {
+        // 과완전 + 외움: 훈련 샘플은 완벽하지만 다른 샘플은 망가짐
+        // 여기서는 "약간 다른 패턴"이라고 가정하고 망가짐 표시
+        return samplePattern.map((v, i) => Math.random() < 0.3 ? 1 - v : v);
+      }
+      const noise = Math.max(0, (D - k) / D) * 0.4;
+      return samplePattern.map(v => Math.max(0, Math.min(1, v + (Math.random() - 0.5) * noise * 2)));
+    }
+
+    function drawPic(k) {
+      const ctx = picC.getContext('2d');
+      const W = picC.width, H = picC.height;
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
+      const cell = Math.min(W, H) / 5;
+      const ox = (W - cell*4) / 2, oy = 20;
+
+      // 원본 작게 좌측 상단
+      ctx.fillStyle = FAINT; ctx.font = '10px "Spline Sans Mono", monospace';
+      ctx.fillText('입력 x', 8, 14);
+      const smallCell = 8;
+      for (let y = 0; y < 4; y++) {
+        for (let x = 0; x < 4; x++) {
+          const v = samplePattern[y*4 + x];
+          ctx.fillStyle = v > 0.5 ? STRUCT : '#fff';
+          ctx.fillRect(48 + x*smallCell, 4 + y*smallCell, smallCell, smallCell);
+          ctx.strokeStyle = 'rgba(38,34,28,0.1)';
+          ctx.strokeRect(48 + x*smallCell, 4 + y*smallCell, smallCell, smallCell);
+        }
+      }
+
+      // 복원
+      ctx.fillStyle = FAINT;
+      ctx.fillText(`복원 r (k=${k})`, ox, oy - 4);
+      const recon = reconstruct(k);
+      for (let y = 0; y < 4; y++) {
+        for (let x = 0; x < 4; x++) {
+          const v = recon[y*4 + x];
+          const alpha = Math.max(0, Math.min(1, v));
+          ctx.fillStyle = `rgba(192, 73, 46, ${alpha})`;
+          ctx.fillRect(ox + x*cell, oy + y*cell, cell, cell);
+          ctx.strokeStyle = 'rgba(38,34,28,0.1)';
+          ctx.strokeRect(ox + x*cell, oy + y*cell, cell, cell);
+        }
+      }
+
+      // 라벨
+      ctx.fillStyle = FAINT; ctx.font = '10px "Spline Sans Mono", monospace';
+      ctx.fillText(`k = ${k}  /  d = ${D}`, ox, oy + cell*4 + 16);
+    }
+
+    function update() {
+      const k = parseInt(slider.value);
+      kVal.textContent = `k = ${k}`;
+      drawLossCurve(k);
+      drawPic(k);
+      const tr = trainLoss(k), te = testLoss(k);
+      trainBar.style.width = `${tr*100}%`;
+      testBar.style.width = `${Math.min(100, te*100)}%`;
+      trainVal.textContent = tr.toFixed(2);
+      testVal.textContent = te.toFixed(2);
+
+      let msg;
+      if (k <= 3) {
+        msg = `<b class="warn">병목이 너무 좁다 (k=${k}).</b> ` +
+          `훈련·테스트 모두 정보 손실이 커서 복원이 흐릿하다. 모델이 데이터의 핵심을 담기에는 차원이 부족하다.`;
+      } else if (k < D) {
+        msg = `<b class="ok">미완전 영역 (k=${k} < d=${D}).</b> ` +
+          `훈련과 테스트가 비슷한 손실 — 모델이 외우지 않고 ${k}차원으로 표현되는 구조를 학습한다. 이 구간이 ${'정확히 PCA가 작동하는 영역'}이다.`;
+      } else if (k === D) {
+        msg = `<b class="warn">딱 맞음 (k=d=${D}).</b> ` +
+          `충분히 표현 가능. 손실은 작지만 모델이 항등 함수가 되기 시작할 수 있다. 정칙화 없이는 위험한 경계.`;
+      } else {
+        msg = `<b class="danger">과완전 영역 (k=${k} > d=${D}).</b> ` +
+          `훈련 손실은 사실상 0이지만 테스트 손실이 치솟는다. 모델이 훈련셋을 색인표로 외우는 항등 함수에 빠졌다. ` +
+          `이 영역에서 의미 있는 표현을 얻으려면 노이즈(DAE)나 자코비안 페널티(CAE)가 필요하다.`;
+      }
+      verdict.innerHTML = msg;
+    }
+
+    slider.addEventListener('input', update);
+    update();
+  })();
+
+  // KaTeX
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
+        throwOnError: false,
+      });
+    }
+  });
+</script>
+</body>
+</html>

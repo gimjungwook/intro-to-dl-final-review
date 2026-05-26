@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ch.8 · 06 — 초기화 (Xavier·He)</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .init-stage { padding: 1.2rem 1rem 1rem; }
+  .init-svg { display: block; width: 100%; max-width: 720px; margin: 0 auto; height: 340px; }
+  .init-ctrl { display: flex; gap: 1rem; justify-content: center; padding: .6rem 1rem 1rem; flex-wrap: wrap; align-items: center; }
+  .init-pick { display: flex; gap: .4rem; flex-wrap: wrap; justify-content: center; padding: .6rem 1rem; border-top: 1px solid var(--line-soft); }
+  .init-pick .btn.ghost.on { background: var(--style); color: #fff; border-color: var(--style); }
+  .init-legend { display: flex; gap: 1.2rem; justify-content: center; padding: .4rem 1rem .8rem; flex-wrap: wrap; font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); }
+  .init-legend span { display: inline-flex; align-items: center; gap: .35rem; }
+  .init-legend i { width: 10px; height: 10px; border-radius: 50%; }
+
+  .sym-stage { padding: 1.2rem 1rem 1rem; }
+  .sym-svg { display: block; width: 100%; max-width: 560px; margin: 0 auto; height: 280px; }
+  .sym-ctrl { display: flex; gap: 1rem; justify-content: center; padding: .6rem 1rem 1rem; flex-wrap: wrap; }
+
+  .bias-tab { max-width: var(--measure); margin: 1.6rem auto; padding-inline: 1.4rem; }
+  .bias-tab table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+  .bias-tab th, .bias-tab td { padding: .55rem .8rem; text-align: left; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+  .bias-tab th { font-family: var(--mono); font-size: .7rem; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-faint); font-weight: 500; }
+  .bias-tab .case { font-family: var(--serif); color: var(--structure); font-weight: 600; }
+  .bias-tab .val { font-family: var(--mono); color: var(--style); }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar">
+  <a class="home" href="index.html">← Chapter 08 표지</a>
+  <span class="ch-mini">SUB 06 / 08 · Optimization</span>
+</div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol id="nav"></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-chapter 06 · 출발점이 학습을 결정한다</span>
+      <h1>모든 가중치를 0으로 두면<br><span class="t-style">모든 뉴런이 같은 함수</span>를 배운다</h1>
+      <p class="lede">신경망 초기화는 그냥 “랜덤 숫자 채우기”가 아니다. 대칭성을 깨야 하고, 가중치 크기는 너무 크지도 작지도 않아야 한다. Xavier·He 초기화는 순전파와 역전파의 분산을 동시에 맞추는 타협이다.</p>
+    </header>
+
+    <div class="prose">
+      <p>모든 옵티마이저는 “좋은 출발점이 주어졌다”고 가정한다. 그러나 신경망에서는 출발점 자체 — 가중치 초기화 — 가 학습의 성패를 좌우한다. 잘못된 초기화는 알고리즘이 아예 수렴하지 않거나, 수치적으로 폭주(NaN)하게 만든다. 이 장에서는 두 가지 원칙을 본다 — <strong>대칭성을 깬다</strong>, 그리고 <strong>가중치 크기의 분산을 맞춘다</strong>.</p>
+
+      <h2>원칙 1 — 대칭성 깨기 (symmetry breaking)</h2>
+
+      <p>딥러닝에서 가장 확실한 초기화 원칙 하나가 있다면 이것이다. <strong>같은 입력에 연결된 두 뉴런의 초기 가중치가 같으면, 두 뉴런은 영원히 같은 함수를 계산한다.</strong></p>
+
+      <p>왜 그런가? 손실의 기울기는 입력과 출력의 함수다. 두 뉴런이 같은 입력을 받고 같은 가중치를 갖는다면, 둘의 활성값이 같다. 활성값이 같으면 역전파로 받는 기울기도 같다. 그래서 두 뉴런은 모든 스텝에서 같은 양만큼 같은 방향으로 업데이트되고, 가중치는 영원히 같은 채로 남는다. 결과적으로 두 뉴런은 한 뉴런과 똑같은 일을 한다.</p>
+
+      <div class="analogy">
+        <b>두 학생이 시험에서 정확히 같은 답을 베껴 쓰기 시작했다고 하자.</b> 두 학생이 같은 정보를 보고 같은 결정을 내린다면, 다음 문제에서도 답은 똑같다. 둘은 영원히 “같은 학생”인 셈이다. 무작위 초기화(random initialization)는 두 학생에게 처음에 약간 다른 시작 답안을 주는 일이다. 다른 출발점에서 시작했기 때문에 학습을 거치면서 서로 다른 “전문 분야”를 갖게 된다.
+      </div>
+
+      <p>이것이 모든 가중치를 0으로 초기화하지 않는 이유다. 무작위 초기화(Gaussian이든 Uniform이든)는 매우 단순하지만, 이 한 가지 일을 확실하게 해 준다.</p>
+
+      <h2>원칙 2 — 가중치 크기의 분산 균형</h2>
+
+      <p>대칭성만 깨면 끝나면 좋겠지만, 분산까지 신경 써야 한다. 가중치가 너무 크면 순전파(forward propagation)에서 활성값이 층을 지날수록 폭발한다. 역전파에서는 기울기가 폭발한다. 가중치가 너무 작으면 신호와 기울기가 층을 거치며 소실된다.</p>
+
+      <p>이상적인 조건은 <strong>층을 지나도 활성값과 기울기의 분산이 유지되는 것</strong>이다. 이 조건을 만족시키는 분포가 Xavier(Glorot) 초기화다.</p>
+
+      <div class="math-block">$$ W_{i,j} \;\sim\; U\!\left(-\sqrt{\frac{6}{m+n}},\; \sqrt{\frac{6}{m+n}}\right) $$</div>
+      <p class="math-note">$m$은 입력 차원(fan-in), $n$은 출력 차원(fan-out). 균등 분포에서 뽑는다. 정규 분포 버전은 $W \sim \mathcal{N}(0, 2/(m+n))$.</p>
+
+      <p>이 공식이 왜 이 형태인지는 다음의 두 목표 사이의 타협으로 이해할 수 있다.</p>
+
+      <ul>
+        <li><strong>순전파 안정</strong> — 한 층의 출력 분산이 입력 분산과 같아지려면 $\mathrm{Var}(W) = 1/m$ 정도.</li>
+        <li><strong>역전파 안정</strong> — 한 층의 기울기 분산이 다음 층의 기울기 분산과 같아지려면 $\mathrm{Var}(W) = 1/n$ 정도.</li>
+      </ul>
+
+      <p>두 조건을 동시에 만족하려면 $m = n$이어야 하지만, 실제 신경망에서는 층마다 크기가 다르다. 그래서 두 값의 조화 평균 비슷하게 타협한 것이 $\mathrm{Var}(W) = 2/(m+n)$이다. 균등 분포 $U(-a, a)$의 분산이 $a^2/3$이므로 $a = \sqrt{6/(m+n)}$이 나온다.</p>
+
+      <p>이 유도는 “네트워크가 비선형성 없는 선형 행렬 곱의 연쇄”라고 가정한다. 실제 신경망은 ReLU 등 비선형을 쓰므로 가정이 깨진다. <strong>He 초기화(Kaiming initialization)</strong>는 이를 보정해 ReLU에 맞춘 변종이다.</p>
+
+      <div class="math-block">$$ \text{He: }\quad W_{i,j} \;\sim\; \mathcal{N}\!\left(0,\; \frac{2}{m}\right) $$</div>
+      <p class="math-note">ReLU는 입력의 약 절반을 0으로 죽이므로, 분산이 절반으로 줄어든다. 이를 보상하려면 $\mathrm{Var}(W)$를 두 배인 $2/m$으로 두어야 활성값 분산이 유지된다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 09</span><span>층 깊이에 따른 활성값 분산 — 초기화의 효과</span></div>
+        <div class="init-stage">
+          <svg class="init-svg" id="initSvg" viewBox="0 0 720 340"></svg>
+        </div>
+        <div class="init-pick">
+          <button class="btn ghost" data-init="tiny">너무 작은 가중치 ($\sigma=0.01$)</button>
+          <button class="btn ghost" data-init="big">너무 큰 가중치 ($\sigma=1.0$)</button>
+          <button class="btn ghost on" data-init="xavier">Xavier ($2/(m+n)$)</button>
+          <button class="btn ghost" data-init="he">He ($2/m$)</button>
+        </div>
+        <div class="init-legend">
+          <span><i style="background:#2D5B7A"></i> 활성값 분산</span>
+          <span style="color:var(--ink-faint)">— 30층 네트워크, ReLU 활성화 사용</span>
+        </div>
+      </div>
+      <p class="widget-cap">30층짜리 완전연결 ReLU 네트워크에 표준 정규 입력을 통과시킨다. 너무 작은 초기화는 활성값이 층을 지나며 소실되고, 너무 큰 초기화는 폭발한다. Xavier는 선형 가정이라 ReLU에서 조금 부족하고, He가 정확하게 분산을 유지한다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 10</span><span>대칭성 깨기 — 같은 초기화 vs 무작위 초기화</span></div>
+        <div class="sym-stage">
+          <svg class="sym-svg" id="symSvg" viewBox="0 0 560 280"></svg>
+        </div>
+        <div class="sym-ctrl">
+          <div class="slider"><label>학습 진행 (스텝) <b id="symStep">0</b> / 100</label>
+            <input type="range" id="symSlider" min="0" max="100" step="1" value="0">
+          </div>
+        </div>
+        <p class="batch-read" style="text-align:center; padding: 0 1rem 1rem;" id="symRead">— 슬라이더를 우측으로 움직여 학습을 진행시켜 보세요 —</p>
+      </div>
+      <p class="widget-cap">왼쪽은 모든 가중치를 같은 값으로 초기화한 네 뉴런, 오른쪽은 무작위로 초기화한 네 뉴런. 시간이 지나도 왼쪽은 네 뉴런의 가중치 값이 항상 같다 — 즉 네 개가 아닌 한 개의 뉴런으로 작동한다. 오른쪽은 각자 다른 “전문 분야”로 발달한다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>편향(bias) 초기화 — 대부분 0, 예외 두 가지</h2>
+
+      <p>가중치와 달리 편향은 일반적으로 0으로 초기화한다. 편향은 “모든 입력에 같은 상수를 더하는” 항이라 대칭성 문제를 일으키지 않기 때문이다. 다만 두 가지 예외가 있다.</p>
+    </div>
+
+    <div class="bias-tab">
+      <table>
+        <thead><tr><th>경우</th><th>편향 초기값</th><th>이유</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="case">일반 가중치</td>
+            <td class="val">$0$</td>
+            <td>대칭성 문제 없음. 무작위 가중치가 대칭을 이미 깨 줌.</td>
+          </tr>
+          <tr>
+            <td class="case">ReLU 은닉 유닛</td>
+            <td class="val">$0.1$ 등 작은 양수</td>
+            <td>초기에 활성 상태(양수 출력)를 유지해, dead ReLU 문제 완화. 0이면 기울기도 0이라 평생 죽어 있을 수 있음.</td>
+          </tr>
+          <tr>
+            <td class="case">LSTM forget gate</td>
+            <td class="val">$1$</td>
+            <td>초기에 게이트를 열어 정보가 흐르게 함. 0으로 두면 정보가 매 스텝 사라져 학습 불가.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="prose">
+      <h2>실전 — PyTorch/TensorFlow는 무엇을 쓰는가</h2>
+
+      <p>PyTorch는 nn.Linear의 기본 초기화로 $\mathrm{Var}(W) = 1/m$의 균등 분포($U(-1/\sqrt{m}, 1/\sqrt{m})$)를 사용한다. 이는 Xavier보다 약간 보수적이지만 일반적으로 잘 작동한다. 명시적으로 더 잘하고 싶다면 ReLU 계열에는 He, tanh 계열에는 Xavier를 적용하는 것이 안전하다.</p>
+
+      <div class="math-block">$$ \text{PyTorch nn.Linear: }\quad W \sim U\!\left(-\frac{1}{\sqrt{m}},\, \frac{1}{\sqrt{m}}\right) $$</div>
+
+      <p>최근의 매우 깊은 네트워크(수백 층의 ResNet 등)에서는 초기화만으로 분산을 완전히 유지하기 어렵다. 그래서 다음 장에서 다룰 <strong>배치 정규화(batch normalization)</strong>가 사실상 의무가 되었다. 배치 정규화는 매 층의 입력을 평균 0, 분산 1로 강제로 재정규화해, 초기화 실수도 자동으로 보정한다.</p>
+
+      <h2>다음 장으로</h2>
+      <p>좋은 초기화로 출발했어도, 학습이 진행되면서 층 사이의 분포가 흔들린다. <a href="07.html">7장</a>에서는 매 미니배치마다 층의 입력을 표준화해 “20층 건물의 1층 기둥이 흔들리는 일”을 막는 배치 정규화를 본다.</p>
+    </div>
+
+    <nav class="ch-foot" id="foot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUB = [
+    { no:'01', t:'순수 최적화와 ML 최적화의 차이', f:'01.html' },
+    { no:'02', t:'학습의 진짜 장애물', f:'02.html' },
+    { no:'03', t:'미니배치 SGD — 잡음 받아들이기', f:'03.html' },
+    { no:'04', t:'모멘텀과 네스테로프', f:'04.html' },
+    { no:'05', t:'적응 학습률 — AdaGrad·RMSProp·Adam', f:'05.html' },
+    { no:'06', t:'초기화 — 대칭성과 분산 균형', f:'06.html' },
+    { no:'07', t:'배치 정규화', f:'07.html' },
+    { no:'08', t:'시험 대비 — 계보·디버깅', f:'08.html' },
+  ];
+  function buildNav(curNo) {
+    const ol = document.getElementById('nav');
+    ol.innerHTML = SUB.map(c => `<li><a href="${c.f}" ${c.no===curNo?'class="current"':''}>${c.t}</a></li>`).join('');
+    const cur = SUB.findIndex(c => c.no === curNo);
+    const prev = cur > 0 ? SUB[cur-1] : { f:'index.html', t:'표지로', no:'' };
+    const next = cur < SUB.length-1 ? SUB[cur+1] : { f:'index.html', t:'표지로', no:'' };
+    document.getElementById('foot').innerHTML =
+      `<a href="${prev.f}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+      `<a href="${next.f}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+  }
+  function initProgress() {
+    const bar = document.querySelector('.scroll-progress');
+    const onScroll = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    document.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+  }
+
+  // 초기화 위젯 — 층 깊이에 따른 활성값 분산
+  function initWidget() {
+    const svg = document.getElementById('initSvg');
+    const W = 720, H = 340, PAD = 50;
+    const LAYERS = 30;
+    const DIM = 128;
+    const inits = {
+      tiny: { sigma: 0.01, label: '너무 작은 가중치' },
+      big: { sigma: 1.0, label: '너무 큰 가중치' },
+      xavier: { sigma: null, label: 'Xavier 2/(m+n)' },
+      he: { sigma: null, label: 'He 2/m' },
+    };
+
+    function relu(x) { return Math.max(0, x); }
+    function gaussian(sigma) {
+      const u = Math.random(), v = Math.random();
+      return Math.sqrt(-2*Math.log(u)) * Math.cos(2*Math.PI*v) * sigma;
+    }
+
+    function simulate(initKey) {
+      // 단순화: 입력 = N(0,1) DIM 차원, 각 층은 행렬 곱 + ReLU
+      let x = new Float32Array(DIM);
+      for (let i = 0; i < DIM; i++) x[i] = gaussian(1);
+      const variances = [];
+      const inMean = x.reduce((a,b)=>a+b,0)/DIM;
+      const inVar = x.reduce((a,b)=>a+(b-inMean)*(b-inMean),0)/DIM;
+      variances.push(inVar);
+      for (let l = 0; l < LAYERS; l++) {
+        let sigma;
+        if (initKey === 'tiny') sigma = 0.01;
+        else if (initKey === 'big') sigma = 1.0;
+        else if (initKey === 'xavier') sigma = Math.sqrt(2.0 / (DIM + DIM));
+        else sigma = Math.sqrt(2.0 / DIM);
+        const y = new Float32Array(DIM);
+        for (let i = 0; i < DIM; i++) {
+          let s = 0;
+          for (let j = 0; j < DIM; j++) s += gaussian(sigma) * x[j];
+          y[i] = relu(s);
+        }
+        x = y;
+        const m = x.reduce((a,b)=>a+b,0)/DIM;
+        const v = x.reduce((a,b)=>a+(b-m)*(b-m),0)/DIM;
+        variances.push(v);
+      }
+      return variances;
+    }
+
+    function render(initKey) {
+      const v = simulate(initKey);
+      // 로그 스케일
+      const logV = v.map(x => Math.log10(Math.max(x, 1e-30)));
+      const yMin = -20, yMax = 5;
+      function xPx(i) { return PAD + i / LAYERS * (W - 2*PAD); }
+      function yPx(lv) { return H - PAD - (lv - yMin) / (yMax - yMin) * (H - 2*PAD); }
+      let html = '';
+      // 축
+      html += `<line x1="${PAD}" y1="${H-PAD}" x2="${W-PAD}" y2="${H-PAD}" stroke="#8E8576" stroke-width="1"/>`;
+      html += `<line x1="${PAD}" y1="${PAD}" x2="${PAD}" y2="${H-PAD}" stroke="#8E8576" stroke-width="1"/>`;
+      // y축 grid
+      for (let lv = -20; lv <= 5; lv += 5) {
+        html += `<line x1="${PAD}" y1="${yPx(lv)}" x2="${W-PAD}" y2="${yPx(lv)}" stroke="#8E8576" stroke-width="0.5" opacity="0.3"/>`;
+        html += `<text x="${PAD-8}" y="${yPx(lv)+4}" font-family="Spline Sans Mono, monospace" font-size="10" fill="#5A5247" text-anchor="end">10^${lv}</text>`;
+      }
+      // 이상값 영역 (안정)
+      html += `<rect x="${PAD}" y="${yPx(2)}" width="${W-2*PAD}" height="${yPx(-2)-yPx(2)}" fill="#A47B2E" opacity="0.08"/>`;
+      html += `<text x="${W-PAD-5}" y="${yPx(0)+4}" font-family="Spline Sans Mono, monospace" font-size="10" fill="#A47B2E" text-anchor="end">안정 영역</text>`;
+      // 데이터
+      let p = `M ${xPx(0)},${yPx(logV[0])}`;
+      for (let i = 1; i < logV.length; i++) p += ` L ${xPx(i)},${yPx(logV[i])}`;
+      html += `<path d="${p}" stroke="#2D5B7A" stroke-width="2.2" fill="none"/>`;
+      logV.forEach((lv, i) => {
+        html += `<circle cx="${xPx(i)}" cy="${yPx(lv)}" r="2.5" fill="#2D5B7A"/>`;
+      });
+      // 라벨
+      html += `<text x="${W-PAD-5}" y="${H-PAD+22}" font-family="Spline Sans Mono, monospace" font-size="11" fill="#5A5247" text-anchor="end">층 깊이</text>`;
+      html += `<text x="${PAD+5}" y="${PAD+14}" font-family="Spline Sans Mono, monospace" font-size="11" fill="#5A5247">활성값 분산 (log10)</text>`;
+      // 현재 초기화
+      html += `<text x="${PAD+10}" y="${H-PAD-15}" font-family="Spline Sans Mono, monospace" font-size="11" fill="#C0492E" font-weight="600">${inits[initKey].label}</text>`;
+      svg.innerHTML = html;
+    }
+
+    document.querySelectorAll('.init-pick .btn').forEach(b => {
+      b.addEventListener('click', () => {
+        document.querySelectorAll('.init-pick .btn').forEach(x => x.classList.remove('on'));
+        b.classList.add('on');
+        render(b.dataset.init);
+      });
+    });
+    render('xavier');
+  }
+
+  // 대칭성 깨기 위젯
+  function symWidget() {
+    const svg = document.getElementById('symSvg');
+    const W = 560, H = 280;
+
+    const slider = document.getElementById('symSlider');
+    const stepOut = document.getElementById('symStep');
+    const readOut = document.getElementById('symRead');
+
+    // 가짜 학습 시뮬레이션 — 같은 초기화 4뉴런 vs 무작위 4뉴런 가중치 추이
+    function simSame(steps) {
+      // 모두 0.5에서 시작, 같은 기울기 -0.01
+      const traj = [];
+      for (let t = 0; t <= steps; t++) {
+        const w = 0.5 - 0.01 * t;
+        traj.push([w, w, w, w]);
+      }
+      return traj;
+    }
+    function simRandom(steps) {
+      // 무작위 초기화, 다른 기울기 패턴
+      const init = [0.3, -0.2, 0.6, -0.5];
+      const grads = [-0.005, 0.008, -0.012, 0.004];
+      const traj = [];
+      for (let t = 0; t <= steps; t++) {
+        traj.push(init.map((w, i) => w + grads[i] * t));
+      }
+      return traj;
+    }
+    const same = simSame(100);
+    const rand = simRandom(100);
+
+    function render() {
+      const step = parseInt(slider.value);
+      stepOut.textContent = step;
+      let html = '';
+      // 좌측: 같은 초기화
+      const leftCx = 140, rightCx = 420, cy = 80;
+      const r = 28;
+      html += `<text x="${leftCx}" y="30" font-family="Fraunces, serif" font-size="14" fill="#26221C" text-anchor="middle">동일 초기화 — 모두 같은 함수</text>`;
+      html += `<text x="${rightCx}" y="30" font-family="Fraunces, serif" font-size="14" fill="#26221C" text-anchor="middle">무작위 초기화 — 각자 다른 함수</text>`;
+
+      // 4 뉴런 표현
+      for (let i = 0; i < 4; i++) {
+        // 좌측: 4 뉴런 가로로
+        const lx = leftCx - 90 + i * 60;
+        const rx = rightCx - 90 + i * 60;
+        // 좌측 뉴런 (모두 같은 값)
+        const w = same[step][i];
+        const colorVal = w > 0 ? '#2D5B7A' : '#C0492E';
+        const intensity = Math.min(1, Math.abs(w) / 0.6);
+        html += `<circle cx="${lx}" cy="${cy + 80}" r="${r}" fill="${colorVal}" opacity="${0.3 + intensity*0.7}" stroke="#fff" stroke-width="2"/>`;
+        html += `<text x="${lx}" y="${cy + 85}" font-family="Spline Sans Mono, monospace" font-size="11" fill="#fff" text-anchor="middle">${w.toFixed(2)}</text>`;
+        // 우측 뉴런 (각자 다른 값)
+        const wr = rand[step][i];
+        const colorValR = wr > 0 ? '#2D5B7A' : '#C0492E';
+        const intensityR = Math.min(1, Math.abs(wr) / 0.6);
+        html += `<circle cx="${rx}" cy="${cy + 80}" r="${r}" fill="${colorValR}" opacity="${0.3 + intensityR*0.7}" stroke="#fff" stroke-width="2"/>`;
+        html += `<text x="${rx}" y="${cy + 85}" font-family="Spline Sans Mono, monospace" font-size="11" fill="#fff" text-anchor="middle">${wr.toFixed(2)}</text>`;
+      }
+      svg.innerHTML = html;
+
+      if (step === 0) {
+        readOut.innerHTML = '— 학습 시작: 양쪽 모두 가중치가 보임 —';
+      } else if (step < 30) {
+        readOut.innerHTML = `<b>스텝 ${step}</b> — 같은 초기화 쪽 네 뉴런이 여전히 같은 값을 유지한다.`;
+      } else if (step < 70) {
+        readOut.innerHTML = `<b>스텝 ${step}</b> — 무작위 초기화 쪽은 점점 다른 “전문 분야”로 발달. 같은 쪽은 영원히 한 뉴런.`;
+      } else {
+        readOut.innerHTML = `<b>스텝 ${step}</b> — 무작위 쪽이 풍부한 표현을 가진 네 뉴런으로 발달. 같은 쪽은 어떤 학습을 해도 사실상 한 뉴런이다.`;
+      }
+    }
+    slider.addEventListener('input', render);
+    render();
+  }
+
+  window.addEventListener('load', () => {
+    buildNav('06');
+    initProgress();
+    initWidget();
+    symWidget();
+  });
+</script>
+</body>
+</html>

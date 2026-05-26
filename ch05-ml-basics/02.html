@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>02 · 용량 · 과적합 · 과소적합</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Section 02 · 학습이 곧 일반화는 아니다</span>
+      <h1><span class="t-structure">훈련 오차</span>가 0이어도<br>좋은 모델이 <em>아닐</em> 수 있다</h1>
+      <p class="lede">머신러닝의 진짜 목표는 훈련 데이터를 외우는 것이 아니라, 보지 못한 데이터에서도 잘 작동하는 규칙을 배우는 것이다. 그 격차를 만들어내는 두 극단이 과소적합(underfitting)과 과적합(overfitting)이다.</p>
+    </header>
+
+    <div class="prose">
+      <p>1절에서 우리는 학습을 T·P·E로 정의했다. 그 정의에는 한 가지 모호함이 숨어 있다. 성능 척도 P를 <em>어떤 데이터에서</em> 재는가?</p>
+
+      <p>훈련 데이터(training set)에서만 잰다면, 모델은 그 데이터의 모든 점을 외우면 된다. 충분히 큰 모델은 N개의 점을 100% 정확히 맞히는 함수를 거의 항상 만들 수 있다. 그러나 그것은 시험 직전에 예상 문제만 통째로 암기한 학생과 같다. 출제자가 같은 문제를 그대로 내면 만점이지만, 문장이 조금만 바뀌면 전부 틀린다.</p>
+
+      <p>그래서 머신러닝은 <strong>일반화(generalization)</strong>를 진짜 목표로 둔다. 일반화란, 훈련 데이터와 같은 분포에서 나온 새 데이터(예: 시험셋)에서 잘 맞히는 능력이다. 이 거리를 <strong>일반화 격차(generalization gap)</strong>라고 부른다.</p>
+
+      <div class="math-block">$$ \text{일반화 격차} \;=\; \underbrace{\mathbb{E}_{(x,y)\sim p_{\text{test}}}[L(f(x),y)]}_{\text{시험 오차}} \;-\; \underbrace{\frac{1}{m}\sum_{i=1}^{m} L(f(x_i),y_i)}_{\text{훈련 오차}} $$</div>
+      <p class="math-note">시험 오차는 데이터 생성 분포에 대한 기댓값으로 정의된다(우리가 직접 잴 수는 없고, 시험셋으로 근사한다). 격차가 크면 외운 것이고, 작으면 일반화된 것이다.</p>
+    </div>
+
+    <h2 style="max-width: var(--measure); margin-inline: auto; padding-inline: 1.4rem">왜 두 종류의 실패가 있는가</h2>
+
+    <div class="prose">
+      <p>모델이 데이터에 대해 잘못된 두 가지 방식이 있다.</p>
+      <ul style="padding-left: 1.4rem">
+        <li><strong>과소적합(underfitting)</strong>: 모델이 훈련 데이터의 패턴조차 못 잡는다. 훈련 오차가 크다. 모델이 너무 단순해서 진짜 함수의 모양을 표현할 수 없다. (예: 곡선 데이터에 직선을 적합)</li>
+        <li><strong>과적합(overfitting)</strong>: 모델이 훈련 데이터의 패턴은 물론 그 안의 잡음(noise)까지 외워버린다. 훈련 오차는 거의 0인데 시험 오차는 크다. 일반화 격차가 폭발한다. (예: 12점에 12차 다항식 적합)</li>
+      </ul>
+
+      <p>이 두 극단을 결정하는 핵심 매개변수가 <strong>용량(capacity)</strong>이다. 용량이란, 모델이 표현할 수 있는 함수의 집합(가설 공간 hypothesis space)의 크기다. 직관적으로 "이 모델이 얼마나 복잡한 함수까지 그릴 수 있나"다.</p>
+    </div>
+
+    <div class="analogy">
+      모델 용량은 <b>옷장의 크기</b>와 같다. 너무 작은 옷장은 옷을 다 넣지 못해 항상 옷이 삐져나온다(과소적합). 너무 큰 옷장은 잡동사니까지 다 넣을 수 있어 정말 입을 옷이 어느 것인지 알 수 없다(과적합). 적당한 크기의 옷장이 가장 쓸 만하다. 머신러닝의 모델 선택이 정확히 이 일이다.
+    </div>
+
+    <h2 style="max-width: var(--measure); margin-inline: auto; padding-inline: 1.4rem">위젯 — 학습 곡선</h2>
+
+    <div class="prose">
+      <p>학습 곡선(learning curve)은 훈련 데이터 크기 $m$을 늘려가며 훈련 오차와 검증 오차를 동시에 추적한 그림이다. 두 곡선의 거리가 일반화 격차이고, 그 격차가 어디서 어떻게 닫히는지를 보면 모델 진단이 가능하다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 01</span><span>학습 곡선 — 훈련 데이터 크기 m vs 오차</span></div>
+        <div id="lc"></div>
+      </div>
+      <p class="widget-cap">슬라이더로 훈련 데이터 크기 m을 늘려보면, 훈련 오차는 거의 0에서 출발해 잡음 한계까지 서서히 증가하고, 검증 오차는 큰 값에서 출발해 잡음 한계로 수렴한다. 두 곡선의 차이가 닫히는 속도가 일반화 진단의 핵심.</p>
+    </div>
+
+    <div class="prose">
+      <p>이 그림이 알려주는 시험 직출제 포인트:</p>
+      <ul style="padding-left: 1.4rem">
+        <li><strong>두 곡선이 모두 베이즈 한계보다 훨씬 높이 떠 있다 → 과소적합.</strong> 데이터를 더 모아도 소용없다. 용량을 늘려야 한다.</li>
+        <li><strong>두 곡선이 한참 떨어져 있다 → 과적합.</strong> 데이터를 더 모으면 격차가 닫힌다. 정칙화도 도움이 된다.</li>
+        <li><strong>두 곡선이 베이즈 한계 근처에서 가깝게 만난다 → 학습 완료.</strong> 더 이상 데이터로 얻을 게 없다. 잡음이 한계다.</li>
+      </ul>
+    </div>
+
+    <h2 style="max-width: var(--measure); margin-inline: auto; padding-inline: 1.4rem">용량을 어떻게 재는가</h2>
+
+    <div class="prose">
+      <p>용량은 막연한 직관이 아니다. 이론적으로는 <strong>VC 차원(Vapnik-Chervonenkis dimension)</strong>이 가장 유명한 정의다. VC 차원이란 "이 모델이 어떤 라벨링이든 완벽히 맞힐 수 있는 최대 데이터 점 수"다. 점 수가 많을수록 그 모델은 더 다양한 함수를 표현할 수 있다.</p>
+
+      <p>예를 들어 2차원 평면 위의 직선(2D 선형 분류기)의 VC 차원은 3이다. 어떤 3점에 어떤 +/− 라벨을 붙여도 직선 하나로 분리할 수 있다. 그러나 4점이 되면, 라벨을 잘 배치하면 직선 하나로는 분리 불가능한 경우가 생긴다. 그래서 직선의 VC 차원 = 3이다.</p>
+
+      <div class="math-block">$$ \text{시험 오차} \;\leq\; \text{훈련 오차} \;+\; \sqrt{\frac{\text{VC} \cdot \log(2m/\text{VC}) + \log(4/\delta)}{m}} $$</div>
+      <p class="math-note">PAC 학습의 핵심 부등식 (정확한 형태는 책마다 다름). 일반화 격차의 상한은 VC 차원에 비례하고 데이터 수 $m$의 제곱근에 반비례한다. 즉 용량을 키울수록 격차가 커지고, 데이터를 늘릴수록 격차가 줄어든다.</p>
+
+      <p>딥러닝에서는 VC 차원이 사실상 무한대인 경우가 많아 이 부등식이 실용적으로 잘 작동하지 않는다. 그러나 <strong>"용량↑ → 격차↑, 데이터↑ → 격차↓"</strong>라는 정성적 메시지는 그대로 살아 있다. 시험 출제로는 이 부등식의 정확한 형태보다 그 메시지가 더 중요하다.</p>
+
+      <h2>오캄의 면도날 (Occam's razor)</h2>
+      <p>같은 데이터를 동일한 정확도로 설명하는 두 가설이 있다면, 더 단순한 가설을 선택하라는 원칙. 머신러닝적으로는 "같은 훈련 오차를 내는 모델 둘이 있다면, 용량이 작은 쪽이 더 잘 일반화될 가능성이 높다"는 명제다. 이는 직관적 경험칙이지만, 정칙화(<a href="06.html">Sec.6</a>)에서 수식으로 구체화된다.</p>
+
+      <p>다음 절에서는 이 일반화 격차를 더 정확하게 분해한다. <strong>편향과 분산</strong>이라는 두 단어로, 같은 오차를 두 갈래로 가르는 이유가 무엇인지 — <a href="03.html">Sec.3 편향-분산 분해</a>로 이어진다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script src="../assets/widgets.js"></script>
+<script src="widgets-ch05.js"></script>
+<script>
+  window.addEventListener('load', () => {
+    NST.buildNav('02');
+    const lc = document.getElementById('lc');
+    NST.onVisible(lc, () => NST.learningCurve(lc));
+  });
+</script>
+</body>
+</html>

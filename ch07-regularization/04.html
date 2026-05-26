@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>04 · 조기 종료 — 시간이 정칙화가 되는 이유 (L2 동치)</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .topbar { position: sticky; top: 0; z-index: 40; display: flex; align-items: center; justify-content: space-between; padding: .8rem 1.4rem; background: rgba(250,247,240,.82); backdrop-filter: blur(12px) saturate(1.3); border-bottom: 1px solid var(--line-soft); }
+  .topbar .home { font-family: var(--mono); font-size: .76rem; letter-spacing: .1em; color: var(--ink-soft); text-decoration: none; }
+  .topbar .home:hover { color: var(--ink); }
+  .topbar .ch-mini { font-family: var(--mono); font-size: .72rem; letter-spacing: .14em; color: var(--ink-faint); }
+
+  .ch-layout { display: grid; grid-template-columns: 15rem 1fr; gap: 0; max-width: 68rem; margin-inline: auto; }
+  .ch-nav { position: sticky; top: 3.4rem; align-self: start; height: calc(100vh - 3.4rem); overflow-y: auto; padding: 2rem 1.2rem; border-right: 1px solid var(--line-soft); }
+  .ch-nav ol { list-style: none; margin: 0; padding: 0; counter-reset: ch; }
+  .ch-nav li { counter-increment: ch; margin: 0; }
+  .ch-nav a { display: grid; grid-template-columns: 1.7rem 1fr; gap: .5rem; align-items: baseline; padding: .5rem .5rem; border-radius: 7px; text-decoration: none; color: var(--ink-soft); font-size: .88rem; line-height: 1.35; transition: background .15s; }
+  .ch-nav a::before { content: counter(ch, decimal-leading-zero); font-family: var(--mono); font-size: .72rem; color: var(--ink-faint); }
+  .ch-nav a:hover { background: var(--paper-2); color: var(--ink); }
+  .ch-nav a.current { background: var(--ink); color: var(--paper); }
+  .ch-nav a.current::before { color: var(--style-lo); }
+  .ch-main { min-width: 0; padding: 3rem 0 6rem; }
+  .ch-head { max-width: var(--measure); margin: 0 auto 2.4rem; padding-inline: 1.4rem; }
+  .ch-head .kicker { margin-bottom: 1rem; display: block; }
+  .ch-head h1 { font-size: clamp(2rem, 5vw, 3.3rem); margin: 0 0 .8rem; }
+  .ch-head .lede { font-family: var(--serif); font-size: 1.22rem; font-style: italic; color: var(--ink-soft); line-height: 1.5; }
+  .ch-foot { display: flex; justify-content: space-between; gap: 1rem; max-width: var(--measure); margin: 4rem auto 0; padding-inline: 1.4rem; }
+  .ch-foot a { display: block; text-decoration: none; flex: 1; padding: 1rem 1.2rem; border: 1px solid var(--line); border-radius: 10px; transition: border-color .15s, transform .15s; }
+  .ch-foot a:hover { border-color: var(--style); transform: translateY(-2px); }
+  .ch-foot .dir { font-family: var(--mono); font-size: .7rem; letter-spacing: .14em; color: var(--ink-faint); text-transform: uppercase; }
+  .ch-foot .ti { font-family: var(--serif); font-size: 1.05rem; color: var(--ink); margin-top: .2rem; }
+  .ch-foot .next { text-align: right; }
+  @media (max-width: 760px) { .ch-layout { grid-template-columns: 1fr; } .ch-nav { display: none; } }
+
+  .es-stage { display: grid; grid-template-columns: 1.4fr 1fr; gap: 1rem; padding: 1.2rem 1.1rem .8rem; }
+  @media (max-width: 720px) { .es-stage { grid-template-columns: 1fr; } }
+  .es-cell { background: var(--paper); border: 1px solid var(--line); border-radius: 9px; padding: .6rem; }
+  .es-cell h5 { margin: 0 0 .4rem; font-family: var(--mono); font-size: .7rem; letter-spacing: .12em; color: var(--ink-faint); text-transform: uppercase; }
+  .es-cell canvas { width: 100%; height: 280px; display: block; border-radius: 6px; background: #fff; }
+  .es-readout { display: flex; gap: 1rem; flex-wrap: wrap; padding: 0.4rem 1.1rem 1rem; font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); }
+  .es-readout span b { color: var(--ink); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a class="home" href="index.html">← Ch.07 정칙화</a>
+  <span class="ch-mini">SUB 04 / 07</span>
+</div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol id="navlist"></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 04 · 학습을 일찍 멈추는 것 = 가중치를 작게 유지하는 것</span>
+      <h1>시간이 곧,<br><span class="t-synth">정칙화</span>가 되는 이유</h1>
+      <p class="lede">학습을 오래 할수록 가중치는 멀리까지 자란다. 조기 종료는 그 이동 거리를 잘라낸다 — 결과적으로 L2 패널티와 수학적으로 동일한 효과다.</p>
+    </header>
+
+    <div class="prose">
+      <p>조기 종료(early stopping)는 모든 정칙화 기법 중 가장 단순하다. <em>검증 오차가 더 이상 내려가지 않으면 학습을 멈춘다.</em> 그게 전부다. 추가 패널티 항도 없고, 모델 구조도 안 바꾼다. 그저 stop 버튼 하나를 누르는 시점을 정하는 것.</p>
+
+      <p>그런데 이상하다. 단순히 학습을 일찍 멈추는 것이 어떻게 정칙화일 수 있는가? 7장은 이것이 <strong>L2 가중치 감쇠와 수학적으로 동치(equivalent)</strong>임을 증명한다. 이 증명은 시험에 자주 나오는 핵심 결과다.</p>
+
+      <h2>왜 정칙화인가 — 직관적 그림</h2>
+
+      <p>경사하강법(gradient descent)은 학습 초기에 가중치를 초기값($\mathbf{w}_0$, 보통 0 근처)에서 출발시켜 손실 최소점($\mathbf{w}^*$) 쪽으로 이동시킨다. 매 epoch마다 가중치가 손실 최소점을 향해 조금씩 자란다.</p>
+
+      <p>학습을 일찍 멈추면 가중치는 $\mathbf{w}^*$까지 도달하지 못하고 그 중간 어디선가 멈춘다. 그 중간 지점은 초기값 $\mathbf{w}_0 \approx 0$에 가깝다. 즉 조기 종료는 가중치가 0에서 멀리 자라는 것을 막는다 — 이게 바로 L2가 하는 일이다.</p>
+
+      <div class="analogy">
+        손실 지형이 골짜기라고 상상하자. 가중치는 골짜기 가장자리($\mathbf{w}_0 = 0$ 근처)에서 출발해 바닥($\mathbf{w}^*$)을 향해 굴러간다. <b>L2 정칙화</b>는 골짜기 바닥에 자석을 놓고 가중치를 끌어당겨, 결국 가장자리와 바닥 사이 어딘가에 멈추게 한다. <b>조기 종료</b>는 시간이 다 되면 카운트다운이 끝나서 어디 있든 그 자리에 멈추게 한다. 결과는 놀랍게도 같다 — 둘 다 가중치를 0과 $\mathbf{w}^*$ 사이의 적당한 자리에 잡아둔다.
+      </div>
+
+      <h2>조기 종료 ≈ L2 — 수학적 유도</h2>
+
+      <p>유도는 2차 근사(quadratic approximation)와 단순 경사하강법(vanilla SGD) 가정 하에 이뤄진다. 손실 $J$를 최적값 $\mathbf{w}^*$ 근처에서 2차 테일러 전개로 근사하자.</p>
+
+      <div class="math-block">$$ J(\mathbf{w}) \approx J(\mathbf{w}^*) + \frac{1}{2}(\mathbf{w} - \mathbf{w}^*)^\top \mathbf{H} (\mathbf{w} - \mathbf{w}^*) $$</div>
+      <p class="math-note">H는 w*에서의 헤시안(2계 도함수 행렬).</p>
+
+      <p>이 근사 하에서 기울기는 $\nabla J(\mathbf{w}) = \mathbf{H}(\mathbf{w} - \mathbf{w}^*)$이다. 학습률 $\varepsilon$의 경사하강법 갱신은</p>
+
+      <div class="math-block">$$ \mathbf{w}_{\tau+1} = \mathbf{w}_\tau - \varepsilon \mathbf{H}(\mathbf{w}_\tau - \mathbf{w}^*) $$</div>
+
+      <p>이다. $\mathbf{u}_\tau = \mathbf{w}_\tau - \mathbf{w}^*$로 정의하면 $\mathbf{u}_{\tau+1} = (\mathbf{I} - \varepsilon\mathbf{H})\mathbf{u}_\tau$. 초기값 $\mathbf{w}_0 = 0$이면 $\mathbf{u}_0 = -\mathbf{w}^*$이고,</p>
+
+      <div class="math-block">$$ \mathbf{w}_\tau = \mathbf{w}^* - (\mathbf{I} - \varepsilon\mathbf{H})^\tau \mathbf{w}^* = \big(\mathbf{I} - (\mathbf{I} - \varepsilon\mathbf{H})^\tau\big)\mathbf{w}^* $$</div>
+      <p class="math-note">τ번 반복 후의 가중치. (I - εH)^τ가 핵심 인자.</p>
+
+      <p>이제 헤시안을 고유분해 $\mathbf{H} = \mathbf{Q}\mathbf{\Lambda}\mathbf{Q}^\top$로 적으면, 고유값 $\lambda_i$ 방향에서 $\tau$번 반복 후의 가중치 성분은</p>
+
+      <div class="math-block">$$ w^{(\tau)}_i = (1 - (1 - \varepsilon \lambda_i)^\tau) \cdot w^*_i $$</div>
+      <p class="math-note">고유값이 큰 방향은 빨리 자라고, 작은 방향은 천천히 자란다.</p>
+
+      <p>한편 [[02|02장]]에서 본 L2 정칙화된 해의 고유값 방향 성분은</p>
+
+      <div class="math-block">$$ \tilde{w}_i = \frac{\lambda_i}{\lambda_i + \alpha} \cdot w^*_i $$</div>
+
+      <p>이다. <strong>두 식이 같아지려면</strong> $\varepsilon \lambda_i$가 작을 때(즉 학습률이 충분히 작아 안정적일 때) 다음 동치가 성립한다.</p>
+
+      <div class="math-block">$$ \alpha = \frac{1}{\varepsilon \tau} \quad\Leftrightarrow\quad \tau = \frac{1}{\varepsilon \alpha} $$</div>
+      <p class="math-note">L2 강도 α와 조기 종료 시점 τ는 학습률 ε로 묶여 일대일 대응된다.</p>
+
+      <h2>이 식이 말하는 것</h2>
+
+      <p>이 단순한 식이 굉장히 깊은 것을 말한다.</p>
+
+      <ul>
+        <li><strong>$\tau$가 작을수록(일찍 멈출수록) $\alpha$가 커진다</strong> — 즉 정칙화가 강해진다.</li>
+        <li><strong>$\tau$가 클수록(오래 학습할수록) $\alpha$가 작아진다</strong> — 정칙화가 약해진다.</li>
+        <li><strong>학습률 $\varepsilon$도 정칙화 강도에 영향</strong> — 같은 $\tau$ 반복이라도 $\varepsilon$이 작으면 $\alpha$가 커진다(더 강한 정칙화).</li>
+      </ul>
+
+      <p>이게 왜 시험에서 자주 묻는 핵심 결과인가? L2 정칙화는 <em>매 갱신마다 추가 항을 더하는 명시적 알고리즘</em>이고, 조기 종료는 <em>그냥 일찍 멈추는 단순 휴리스틱</em>처럼 보인다. 그런데 둘이 수학적으로 동치라는 사실은, 정칙화의 정의 자체를 다시 생각하게 만든다. 정칙화는 "패널티를 더하는 것"이 아니라 "자유도를 줄이는 모든 방법"이다.</p>
+
+      <h2>위젯 — 학습 epoch를 끌면 가중치가 자란다</h2>
+
+      <p>아래 위젯에서 학습 epoch 슬라이더를 움직이면, 같은 작은 신경망의 가중치 노름($\|\mathbf{w}\|_2$)이 시간에 따라 어떻게 자라는지 보인다. 동시에 같은 모델에 다양한 $\alpha$로 L2를 적용한 해의 노름도 표시된다. 두 곡선이 어떻게 만나는지 확인해 보면, $\alpha = 1/(\varepsilon\tau)$ 동치가 그림으로 보인다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 04</span><span>조기 종료 ↔ L2 동치 · 시간 슬라이더 + 가중치 노름</span></div>
+        <div class="es-stage">
+          <div class="es-cell">
+            <h5>가중치 노름 ‖w‖₂ vs 학습 epoch τ</h5>
+            <canvas id="normCanvas" width="600" height="380"></canvas>
+          </div>
+          <div class="es-cell">
+            <h5>현재 ε · τ ↔ 동치 α</h5>
+            <canvas id="eqCanvas" width="500" height="380"></canvas>
+          </div>
+        </div>
+        <div class="es-readout">
+          <span>τ = <b id="tauVal">100</b> epoch</span>
+          <span>ε = <b id="lrVal">0.05</b></span>
+          <span>‖w_τ‖ = <b id="normVal">0.00</b></span>
+          <span>등가 α = 1/(ετ) = <b id="alphaEq">0.20</b></span>
+          <span>‖w_L2(α)‖ = <b id="l2Norm">0.00</b></span>
+        </div>
+        <div class="widget-controls">
+          <div class="slider">
+            <label>학습 epoch τ <b id="tauLab">100</b></label>
+            <input id="tauSlide" type="range" min="2" max="500" value="100" step="2">
+          </div>
+          <div class="slider">
+            <label>학습률 ε <b id="lrLab">0.05</b></label>
+            <input id="lrSlide" type="range" min="0.01" max="0.2" value="0.05" step="0.005">
+          </div>
+        </div>
+      </div>
+      <p class="widget-cap">왼쪽: 가중치 노름이 시간에 따라 0에서 ‖w*‖로 점진적으로 자라는 곡선. 현재 τ 지점에 표시. 오른쪽: 같은 τ·ε에 대응하는 L2 강도 α = 1/(ετ)에서의 L2 해 노름. 두 노름이 거의 같아진다 — 이게 동치성의 시각적 증거다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>동치의 정확한 조건</h2>
+
+      <p>위 유도에서 가정한 두 조건은 시험에서 자주 물어보는 함정이다.</p>
+
+      <ol>
+        <li><strong>2차 근사(quadratic approximation)</strong>: 손실 $J$가 $\mathbf{w}^*$ 근처에서 2차 함수처럼 굴어야 한다. 신경망의 실제 손실은 비볼록(non-convex)이라 전역적으로는 2차가 아니지만, 좋은 최저점 근처에서는 근사가 잘 맞는다.</li>
+        <li><strong>단순 SGD (모멘텀·Adam 없음)</strong>: 모멘텀이나 Adam 같은 적응형 옵티마이저를 쓰면 갱신 동역학이 달라져서 동치가 정확히는 성립하지 않는다.</li>
+        <li><strong>학습률 $\varepsilon \lambda_i$가 작음</strong>: 안정적 학습을 가정. 큰 학습률에서는 진동이 생겨 유도가 깨진다.</li>
+      </ol>
+
+      <p>실전에서는 이 조건들이 정확히 만족되지 않더라도, "조기 종료는 가중치를 0 근처에 묶어두는 효과가 있다"는 정성적 직관은 여전히 유효하다.</p>
+
+      <h2>실전에서 조기 종료 사용법</h2>
+
+      <p>알고리즘은 단순하다.</p>
+
+      <ol>
+        <li>훈련셋·검증셋·시험셋을 분리한다.</li>
+        <li>매 epoch마다(또는 매 k epoch마다) 검증셋 오차를 측정한다.</li>
+        <li>현재까지 가장 좋은 검증 오차를 갱신하면 그때의 가중치를 저장한다(체크포인트).</li>
+        <li>$p$ epoch 동안 검증 오차 개선이 없으면 학습을 중단(patience).</li>
+        <li>저장된 최선 가중치로 돌아간다.</li>
+      </ol>
+
+      <p>이 방식의 장점은 <strong>거의 공짜</strong>라는 것이다. 추가 계산 비용은 검증셋 평가뿐이고, 가중치 한 벌의 저장 공간만 추가로 든다. 그래서 거의 모든 딥러닝 학습 파이프라인이 조기 종료를 기본으로 켠다.</p>
+
+      <h2>조기 종료의 한계와 보완</h2>
+
+      <p>완벽하진 않다. 단점도 있다.</p>
+
+      <ul>
+        <li>검증셋에 의존 — 검증셋이 작거나 편향되면 멈추는 시점이 부정확.</li>
+        <li>학습률 스케줄과 상호작용 — warmup, cosine annealing 등과 함께 쓸 때 신중해야.</li>
+        <li>일찍 멈춰서 "혹시 더 학습했으면 더 좋았을지"를 알 수 없음 — patience를 적당히 길게 둬야.</li>
+        <li>큰 모델·작은 데이터에서는 L2 + 조기 종료 동시 사용이 자주 더 좋다(두 효과가 누적).</li>
+      </ul>
+
+      <p>다음 장에서는 입력 공간에서의 정칙화 — <strong>데이터 증강, 노이즈 주입, 라벨 스무딩</strong>을 본다. 이번 장의 조기 종료가 시간 축에서 작동한다면, 다음 장의 기법들은 데이터·입력·라벨에서 작동한다 — 같은 일반화 격차 문제의 또 다른 해법들.</p>
+    </div>
+
+    <nav class="ch-foot" id="chFoot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'일반화 격차' },
+    { no:'02', t:'L1·L2 기하학' },
+    { no:'03', t:'드롭아웃 앙상블' },
+    { no:'04', t:'조기 종료 ~ L2' },
+    { no:'05', t:'데이터 증강·노이즈' },
+    { no:'06', t:'적대적 훈련' },
+    { no:'07', t:'시험 대비' },
+  ];
+  const CUR = '04';
+  const navlist = document.getElementById('navlist');
+  SUBS.forEach(s => {
+    const li = document.createElement('li');
+    li.innerHTML = `<a href="${s.no}.html"${s.no===CUR?' class="current"':''}>${s.t}</a>`;
+    navlist.appendChild(li);
+  });
+  const chFoot = document.getElementById('chFoot');
+  const idx = SUBS.findIndex(s => s.no === CUR);
+  const prev = idx > 0 ? SUBS[idx-1] : { no:'index', t:'표지로' };
+  const next = idx < SUBS.length-1 ? SUBS[idx+1] : { no:'index', t:'표지로' };
+  chFoot.innerHTML =
+    `<a href="${prev.no}.html"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+    `<a href="${next.no}.html" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
+        throwOnError: false,
+      });
+    }
+  });
+
+  // ----- 위젯: 조기 종료 ~ L2 동치 -----
+  (function () {
+    const css = getComputedStyle(document.documentElement);
+    const C = {
+      structure: css.getPropertyValue('--structure').trim() || '#2D5B7A',
+      style: css.getPropertyValue('--style').trim() || '#C0492E',
+      synth: css.getPropertyValue('--synth').trim() || '#A47B2E',
+      ink: css.getPropertyValue('--ink').trim() || '#26221C',
+      faint: css.getPropertyValue('--ink-faint').trim() || '#8E8576',
+    };
+    const normC = document.getElementById('normCanvas');
+    const eqC = document.getElementById('eqCanvas');
+    const tauSlide = document.getElementById('tauSlide');
+    const lrSlide = document.getElementById('lrSlide');
+    const tauVal = document.getElementById('tauVal');
+    const tauLab = document.getElementById('tauLab');
+    const lrVal = document.getElementById('lrVal');
+    const lrLab = document.getElementById('lrLab');
+    const normVal = document.getElementById('normVal');
+    const alphaEq = document.getElementById('alphaEq');
+    const l2Norm = document.getElementById('l2Norm');
+
+    // 가상의 최적해 w* (5차원, 각 성분이 다른 고유값 방향이라고 가정)
+    const W_STAR = [1.2, 1.0, 0.7, 0.5, 0.3];
+    const LAMBDA = [4.0, 2.5, 1.5, 0.8, 0.4];  // 헤시안 고유값
+
+    // 조기 종료 (vanilla GD) τ epoch 후 가중치 노름
+    // w_i^(τ) = (1 - (1 - ε λ_i)^τ) * w_i*
+    function normGD(tau, eps) {
+      let n2 = 0;
+      for (let i = 0; i < W_STAR.length; i++) {
+        const f = 1 - Math.pow(1 - eps * LAMBDA[i], tau);
+        const w = f * W_STAR[i];
+        n2 += w * w;
+      }
+      return Math.sqrt(n2);
+    }
+    // L2 해의 노름: w_i_L2 = λ_i/(λ_i+α) * w_i*
+    function normL2(alpha) {
+      let n2 = 0;
+      for (let i = 0; i < W_STAR.length; i++) {
+        const w = LAMBDA[i] / (LAMBDA[i] + alpha) * W_STAR[i];
+        n2 += w * w;
+      }
+      return Math.sqrt(n2);
+    }
+    const NORM_STAR = Math.sqrt(W_STAR.reduce((s, w) => s + w*w, 0));
+
+    function drawNorm(tau, eps) {
+      const ctx = normC.getContext('2d');
+      const W = normC.width, H = normC.height;
+      ctx.clearRect(0, 0, W, H);
+      ctx.strokeStyle = '#eee'; ctx.lineWidth = 1;
+      for (let i = 0; i <= 4; i++) {
+        const yy = 30 + i * (H - 60) / 4;
+        ctx.beginPath(); ctx.moveTo(40, yy); ctx.lineTo(W - 20, yy); ctx.stroke();
+      }
+      const Tmax = 500;
+      const X = t => 40 + t * (W - 60) / Tmax;
+      const Y = n => 30 + (1 - n / (NORM_STAR * 1.05)) * (H - 60);
+      // 가중치 노름 곡선
+      ctx.strokeStyle = C.synth; ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      for (let t = 0; t <= Tmax; t += 2) {
+        const n = normGD(t, eps);
+        if (t === 0) ctx.moveTo(X(t), Y(n)); else ctx.lineTo(X(t), Y(n));
+      }
+      ctx.stroke();
+      // 점근선 w*
+      ctx.strokeStyle = '#ccc'; ctx.setLineDash([4, 4]); ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(40, Y(NORM_STAR)); ctx.lineTo(W - 20, Y(NORM_STAR)); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = C.faint; ctx.font = '10px monospace';
+      ctx.fillText(`‖w*‖ = ${NORM_STAR.toFixed(2)}`, W - 110, Y(NORM_STAR) - 4);
+      // 현재 τ 마커
+      ctx.strokeStyle = C.ink; ctx.lineWidth = 1.5; ctx.setLineDash([3, 3]);
+      ctx.beginPath(); ctx.moveTo(X(tau), 30); ctx.lineTo(X(tau), H - 30); ctx.stroke();
+      ctx.setLineDash([]);
+      // 현재 점
+      const nCur = normGD(tau, eps);
+      ctx.fillStyle = C.ink; ctx.beginPath(); ctx.arc(X(tau), Y(nCur), 5, 0, Math.PI*2); ctx.fill();
+      // 라벨
+      ctx.fillStyle = C.faint; ctx.font = '11px monospace';
+      ctx.fillText('τ (epoch)', W/2 - 30, H - 10);
+      ctx.fillStyle = C.synth; ctx.font = 'bold 11px monospace';
+      ctx.fillText('GD: ‖w_τ‖', 50, 22);
+      ctx.fillStyle = C.ink; ctx.font = '10px monospace';
+      ctx.fillText(`현재 ‖w_τ‖ = ${nCur.toFixed(3)}`, X(tau) + 8, Y(nCur) - 8);
+    }
+
+    function drawEq(tau, eps) {
+      const ctx = eqC.getContext('2d');
+      const W = eqC.width, H = eqC.height;
+      ctx.clearRect(0, 0, W, H);
+      // 가로축: α (log) 0.01 ~ 100
+      // 세로축: ‖w‖
+      const aMin = -2, aMax = 2;  // log10
+      const X = la => 50 + (la - aMin) / (aMax - aMin) * (W - 80);
+      const Y = n => 30 + (1 - n / (NORM_STAR * 1.05)) * (H - 60);
+      // grid
+      ctx.strokeStyle = '#eee'; ctx.lineWidth = 1;
+      for (let i = 0; i <= 4; i++) {
+        const yy = 30 + i * (H - 60) / 4;
+        ctx.beginPath(); ctx.moveTo(50, yy); ctx.lineTo(W - 20, yy); ctx.stroke();
+      }
+      // L2 곡선
+      ctx.strokeStyle = C.structure; ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      for (let la = aMin; la <= aMax; la += 0.02) {
+        const a = Math.pow(10, la);
+        const n = normL2(a);
+        const x = X(la), y = Y(n);
+        if (la === aMin) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      // 동치 α 마커
+      const alphaE = 1 / (eps * Math.max(1, tau));
+      const laE = Math.log10(alphaE);
+      ctx.strokeStyle = C.ink; ctx.lineWidth = 1.5; ctx.setLineDash([3, 3]);
+      ctx.beginPath(); ctx.moveTo(X(Math.max(aMin, Math.min(aMax, laE))), 30); ctx.lineTo(X(Math.max(aMin, Math.min(aMax, laE))), H - 30); ctx.stroke();
+      ctx.setLineDash([]);
+      // L2 해 노름
+      const nL2 = normL2(alphaE);
+      ctx.fillStyle = C.structure;
+      ctx.beginPath(); ctx.arc(X(Math.max(aMin, Math.min(aMax, laE))), Y(nL2), 5, 0, Math.PI*2); ctx.fill();
+      // 조기 종료 노름도 같은 자리에 (점 두 개가 거의 겹쳐야 함)
+      const nGD = normGD(tau, eps);
+      ctx.fillStyle = C.synth;
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(X(Math.max(aMin, Math.min(aMax, laE))), Y(nGD), 5, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+      // 라벨
+      ctx.fillStyle = C.faint; ctx.font = '10px monospace';
+      ctx.fillText('log₁₀ α', W/2 - 22, H - 10);
+      ctx.fillText('α=0.01', 36, H - 22);
+      ctx.fillText('α=100', W - 56, H - 22);
+      ctx.fillStyle = C.structure; ctx.font = 'bold 11px monospace';
+      ctx.fillText('L2: ‖w_L2(α)‖', 60, 22);
+      ctx.fillStyle = C.synth; ctx.font = 'bold 11px monospace';
+      ctx.fillText('● 조기 종료 (overlay)', 60, 40);
+      ctx.fillStyle = C.ink; ctx.font = '10px monospace';
+      ctx.fillText(`동치 α = 1/(ετ) = ${alphaE.toFixed(3)}`, X(Math.max(aMin, Math.min(aMax, laE))) + 6, 60);
+    }
+
+    function render() {
+      const tau = +tauSlide.value;
+      const eps = +lrSlide.value;
+      tauVal.textContent = tau; tauLab.textContent = tau;
+      lrVal.textContent = eps.toFixed(3); lrLab.textContent = eps.toFixed(3);
+      const nGD = normGD(tau, eps);
+      const a = 1 / (eps * Math.max(1, tau));
+      const nL2 = normL2(a);
+      normVal.textContent = nGD.toFixed(3);
+      alphaEq.textContent = a.toFixed(3);
+      l2Norm.textContent = nL2.toFixed(3);
+      drawNorm(tau, eps);
+      drawEq(tau, eps);
+    }
+    tauSlide.addEventListener('input', render);
+    lrSlide.addEventListener('input', render);
+    render();
+  })();
+</script>
+</body>
+</html>

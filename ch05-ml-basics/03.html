@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>03 · 편향-분산 분해</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Section 03 · 같은 오차를 두 갈래로 가르는 이유</span>
+      <h1><span class="t-structure">편향</span>과 <span class="t-style">분산</span>은<br>같은 오차의 두 얼굴이다</h1>
+      <p class="lede">시험 오차는 단순히 한 숫자가 아니라 세 성분의 합이다. 편향²(bias squared), 분산(variance), 그리고 환원 불가능한 잡음(irreducible noise). 모델 용량을 조정하면 편향과 분산이 서로 반대로 움직인다 — 이것이 머신러닝의 가장 근본적인 트레이드오프다.</p>
+    </header>
+
+    <div class="prose">
+      <p>2절에서 우리는 "과소적합 = 단순한 모델, 과적합 = 복잡한 모델"이라고 두 극단을 묘사했다. 그러나 이 직관에는 더 정확한 수학적 형태가 있다. 시험 오차를 <strong>편향, 분산, 잡음</strong>이라는 세 성분으로 분해하면, 왜 모델 용량을 한 방향으로만 키우면 안 되는지가 식 한 줄로 드러난다.</p>
+
+      <p>설정: 진짜 함수 $y = f(x) + \varepsilon$가 있고, $\varepsilon$은 평균 0의 잡음이라 하자. 우리는 서로 다른 훈련 데이터셋 $\mathcal{D}$를 뽑아 모델 $\hat{f}_\mathcal{D}$를 학습한다. 동일한 새 입력 $x$에 대해, 여러 $\mathcal{D}$로 학습된 예측 $\hat{f}_\mathcal{D}(x)$가 만들어진다. 이 예측들의 분산과, 그 평균이 진짜 $f(x)$와 얼마나 차이 나는지를 따로 잰다.</p>
+
+      <div class="math-block">$$
+        \mathbb{E}_{\mathcal{D},\varepsilon}\Big[(y - \hat{f}_\mathcal{D}(x))^2\Big]
+        = \underbrace{\big(\mathbb{E}_\mathcal{D}[\hat{f}_\mathcal{D}(x)] - f(x)\big)^2}_{\text{Bias}^2}
+        + \underbrace{\mathbb{E}_\mathcal{D}\big[(\hat{f}_\mathcal{D}(x) - \mathbb{E}_\mathcal{D}[\hat{f}_\mathcal{D}(x)])^2\big]}_{\text{Variance}}
+        + \underbrace{\sigma^2}_{\text{Noise}}
+      $$</div>
+      <p class="math-note">이 식은 시험에 직출제될 수 있는 핵심 등식이다. 좌변은 평균 제곱 오차, 우변은 세 양수의 합. 부호 관계로 보면 어느 항도 음수가 될 수 없다.</p>
+
+      <h2>각 항을 한 줄씩 해석</h2>
+      <ul style="padding-left: 1.4rem">
+        <li><strong>편향² (Bias²)</strong>: 우리 모델 부류(가설 공간)가 진짜 함수 $f(x)$를 평균적으로 얼마나 못 맞히는가. 모델이 너무 단순해서 진짜 함수를 표현할 능력 자체가 없으면 편향이 크다. <em>모델 부류의 구조적 한계</em>다.</li>
+        <li><strong>분산 (Variance)</strong>: 훈련 데이터셋이 조금만 바뀌어도 예측이 얼마나 달라지는가. 모델이 너무 유연해서 데이터의 잡음까지 따라가면 분산이 크다. <em>데이터에 대한 민감도</em>다.</li>
+        <li><strong>잡음 (Noise, σ²)</strong>: 진짜 함수 자체가 가진 환원 불가능한 무작위성. 어떤 모델로도 줄일 수 없다. 데이터 자체의 한계이고, 베이즈 오차(Bayes error)라고도 부른다.</li>
+      </ul>
+
+      <div class="analogy">
+        다트 던지기에 비유하자. <b>편향</b>은 모든 화살이 과녁 중심에서 같은 방향으로 빗나가는 정도다 — 조준이 잘못된 것. <b>분산</b>은 화살들이 서로 얼마나 멀리 흩어져 있는가다 — 손이 떨리는 것. 잘 학습된 모델은 조준도 맞고(편향 작음) 손도 안 떨려야 한다(분산 작음). 그러나 보통은 둘이 동시에 작아지지 않는다 — 어느 한쪽을 줄이려 하면 다른 쪽이 늘어난다.
+      </div>
+    </div>
+
+    <h2 style="max-width: var(--measure); margin-inline: auto; padding-inline: 1.4rem">위젯 — 편향-분산 트레이드오프</h2>
+
+    <div class="prose">
+      <p>모델 복잡도 $d$를 슬라이더로 움직이며 세 항이 어떻게 변하는지 본다. 편향²는 단조감소, 분산은 단조증가, 잡음은 상수. 총 오차는 U자 곡선을 그리고, 그 골짜기가 최적 용량이다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 01</span><span>편향-분산 트레이드오프 — 모델 복잡도 d</span></div>
+        <div id="bv"></div>
+      </div>
+      <p class="widget-cap">왼쪽 곡선은 d를 늘리면서 본 세 성분과 총 오차. 노란 원은 총 오차가 최소가 되는 최적 d. 오른쪽 막대는 현재 d에서 세 성분의 크기 비율. d가 작을 땐 편향이 지배, 클 땐 분산이 지배.</p>
+    </div>
+
+    <h2 style="max-width: var(--measure); margin-inline: auto; padding-inline: 1.4rem">위젯 — 다항식 차수 vs 과적합 (직접 보기)</h2>
+
+    <div class="prose">
+      <p>추상적인 분해식을 구체 회귀 문제로 옮긴다. 진짜 함수 $y = \sin(1.2x)$에서 12개 점을 잡음과 함께 뽑고, $d$차 다항식으로 적합한다. 차수가 작으면 곡선이 점들을 못 따라가고(편향), 너무 크면 점들 사이에서 미친 진동(분산)이 일어난다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 02</span><span>다항식 회귀 — 차수 d와 과적합</span></div>
+        <div id="pf"></div>
+      </div>
+      <p class="widget-cap">진짜 함수(점선)와 적합 곡선(실선), 그리고 데이터 점들을 같이 본다. d=1은 직선만 그려 데이터를 못 따라가고(과소적합), d=12 이상에서는 점들 사이에 폭주가 생긴다(과적합). 훈련 MSE는 d↑에 단조감소하지만, 검증 MSE는 U자.</p>
+    </div>
+
+    <h2 style="max-width: var(--measure); margin-inline: auto; padding-inline: 1.4rem">왜 이 분해식이 중요한가</h2>
+
+    <div class="prose">
+      <p>이 분해식이 시험에 자주 출제되는 이유는, <strong>머신러닝의 거의 모든 결정이 이 식의 어느 항을 줄이려는 시도</strong>이기 때문이다.</p>
+      <ul style="padding-left: 1.4rem">
+        <li><strong>데이터를 더 모은다</strong> → 분산 감소. 편향과 잡음은 그대로.</li>
+        <li><strong>모델 용량을 늘린다</strong> → 편향 감소, 분산 증가.</li>
+        <li><strong>정칙화를 더한다</strong> → 분산 감소, 편향 약간 증가.</li>
+        <li><strong>특징을 더 잘 설계한다</strong> → 편향 감소(같은 용량으로 더 좋은 함수 표현 가능).</li>
+        <li><strong>앙상블(예: 배깅)</strong> → 분산 감소. 편향은 거의 그대로.</li>
+        <li><strong>라벨 잡음을 줄인다</strong> → 잡음 항 감소. 진짜 한계를 낮춤.</li>
+      </ul>
+
+      <p>딥러닝의 거의 모든 기법도 이 6가지 중 하나로 분류할 수 있다. 드롭아웃은 앙상블처럼 분산을 줄이고, 가중치 감쇠는 정칙화로 분산을 줄이며, 데이터 증강은 데이터를 늘리는 효과로 분산을 줄인다. 배치 정규화도 일종의 정칙화 효과가 있다는 해석이 있다.</p>
+
+      <h2>"이중 하강(double descent)" — 현대적 관찰</h2>
+      <p>고전 편향-분산 곡선은 U자 한 번이지만, 현대 신경망에서는 용량을 더 크게 키우면 다시 한 번 시험 오차가 떨어지는 <strong>이중 하강(double descent)</strong> 현상이 보고된다. 매개변수 수가 데이터 수와 비슷한 "보간 임계점(interpolation threshold)" 부근에서 분산이 폭증하다가, 그 너머로 가면 다시 감소한다. 이는 5장의 고전적 분해식이 가지는 한계이고, 딥러닝 일반화 이론의 미해결 문제다. 시험에서는 "들어본 적이 있다" 정도로 충분.</p>
+
+      <p>다음 절에서는, 이 모든 손실 함수 — MSE도, 교차 엔트로피도 — 가 사실은 같은 한 가지 원리에서 파생된다는 것을 보인다. <a href="04.html">Sec.4 최대우도 추정</a>으로 이어진다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script src="../assets/widgets.js"></script>
+<script src="widgets-ch05.js"></script>
+<script>
+  window.addEventListener('load', () => {
+    NST.buildNav('03');
+    const bv = document.getElementById('bv'), pf = document.getElementById('pf');
+    NST.onVisible(bv, () => NST.biasVariance(bv));
+    NST.onVisible(pf, () => NST.polyFit(pf));
+  });
+</script>
+</body>
+</html>

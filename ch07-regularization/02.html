@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>02 · L1·L2 — 기하학과 베이지안 사전</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .topbar { position: sticky; top: 0; z-index: 40; display: flex; align-items: center; justify-content: space-between; padding: .8rem 1.4rem; background: rgba(250,247,240,.82); backdrop-filter: blur(12px) saturate(1.3); border-bottom: 1px solid var(--line-soft); }
+  .topbar .home { font-family: var(--mono); font-size: .76rem; letter-spacing: .1em; color: var(--ink-soft); text-decoration: none; }
+  .topbar .home:hover { color: var(--ink); }
+  .topbar .ch-mini { font-family: var(--mono); font-size: .72rem; letter-spacing: .14em; color: var(--ink-faint); }
+
+  .ch-layout { display: grid; grid-template-columns: 15rem 1fr; gap: 0; max-width: 68rem; margin-inline: auto; }
+  .ch-nav { position: sticky; top: 3.4rem; align-self: start; height: calc(100vh - 3.4rem); overflow-y: auto; padding: 2rem 1.2rem; border-right: 1px solid var(--line-soft); }
+  .ch-nav ol { list-style: none; margin: 0; padding: 0; counter-reset: ch; }
+  .ch-nav li { counter-increment: ch; margin: 0; }
+  .ch-nav a { display: grid; grid-template-columns: 1.7rem 1fr; gap: .5rem; align-items: baseline; padding: .5rem .5rem; border-radius: 7px; text-decoration: none; color: var(--ink-soft); font-size: .88rem; line-height: 1.35; transition: background .15s; }
+  .ch-nav a::before { content: counter(ch, decimal-leading-zero); font-family: var(--mono); font-size: .72rem; color: var(--ink-faint); }
+  .ch-nav a:hover { background: var(--paper-2); color: var(--ink); }
+  .ch-nav a.current { background: var(--ink); color: var(--paper); }
+  .ch-nav a.current::before { color: var(--style-lo); }
+  .ch-main { min-width: 0; padding: 3rem 0 6rem; }
+  .ch-head { max-width: var(--measure); margin: 0 auto 2.4rem; padding-inline: 1.4rem; }
+  .ch-head .kicker { margin-bottom: 1rem; display: block; }
+  .ch-head h1 { font-size: clamp(2rem, 5vw, 3.3rem); margin: 0 0 .8rem; }
+  .ch-head .lede { font-family: var(--serif); font-size: 1.22rem; font-style: italic; color: var(--ink-soft); line-height: 1.5; }
+  .ch-foot { display: flex; justify-content: space-between; gap: 1rem; max-width: var(--measure); margin: 4rem auto 0; padding-inline: 1.4rem; }
+  .ch-foot a { display: block; text-decoration: none; flex: 1; padding: 1rem 1.2rem; border: 1px solid var(--line); border-radius: 10px; transition: border-color .15s, transform .15s; }
+  .ch-foot a:hover { border-color: var(--style); transform: translateY(-2px); }
+  .ch-foot .dir { font-family: var(--mono); font-size: .7rem; letter-spacing: .14em; color: var(--ink-faint); text-transform: uppercase; }
+  .ch-foot .ti { font-family: var(--serif); font-size: 1.05rem; color: var(--ink); margin-top: .2rem; }
+  .ch-foot .next { text-align: right; }
+  @media (max-width: 760px) { .ch-layout { grid-template-columns: 1fr; } .ch-nav { display: none; } }
+
+  /* L1/L2 위젯 */
+  .l12-stage { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1.4rem 1.1rem .8rem; }
+  @media (max-width: 720px) { .l12-stage { grid-template-columns: 1fr; } }
+  .l12-cell { background: var(--paper); border: 1px solid var(--line); border-radius: 9px; padding: .6rem; }
+  .l12-cell h5 { margin: 0 0 .4rem; font-family: var(--mono); font-size: .7rem; letter-spacing: .12em; color: var(--ink-faint); text-transform: uppercase; display: flex; justify-content: space-between; }
+  .l12-cell h5 .badge { font-family: var(--mono); font-size: .68rem; padding: .12em .5em; border-radius: 3px; color: #fff; }
+  .l12-cell.l1 h5 .badge { background: var(--style); }
+  .l12-cell.l2 h5 .badge { background: var(--structure); }
+  .l12-cell canvas { width: 100%; height: 260px; display: block; border-radius: 6px; background: #fff; cursor: crosshair; }
+  .l12-readout { display: flex; gap: 1rem; flex-wrap: wrap; padding: 0.4rem 1.1rem 1rem; font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); }
+  .l12-readout span b { color: var(--ink); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a class="home" href="index.html">← Ch.07 정칙화</a>
+  <span class="ch-mini">SUB 02 / 07</span>
+</div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol id="navlist"></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 02 · 다이아몬드와 원의 기하학</span>
+      <h1>L1은 <span class="t-style">모서리</span>에서,<br>L2는 <span class="t-structure">곡선</span>에서 만난다</h1>
+      <p class="lede">왜 L1은 가중치를 정확히 0으로 보내고, L2는 모두를 부드럽게 줄이는가. 답은 패널티 영역의 모양에 있다.</p>
+    </header>
+
+    <div class="prose">
+      <p>L2 가중치 감쇠(weight decay)는 보통 다음 형태로 쓴다.</p>
+
+      <div class="math-block">$$ \tilde{J}(\mathbf{w}) = J(\mathbf{w}) + \frac{\alpha}{2} \|\mathbf{w}\|_2^2 = J(\mathbf{w}) + \frac{\alpha}{2} \sum_i w_i^2 $$</div>
+      <p class="math-note">J는 원래 손실, α는 정칙화 강도, ||w||²는 가중치의 제곱 합.</p>
+
+      <p>L1 가중치 감쇠는 제곱 대신 절댓값을 쓴다.</p>
+
+      <div class="math-block">$$ \tilde{J}(\mathbf{w}) = J(\mathbf{w}) + \alpha \|\mathbf{w}\|_1 = J(\mathbf{w}) + \alpha \sum_i |w_i| $$</div>
+      <p class="math-note">노름이 바뀐 것 외에는 같은 구조. 그러나 결과는 극적으로 다르다.</p>
+
+      <p>왜 절댓값과 제곱이라는 이 작은 차이가, 한 모델은 가중치 일부를 정확히 0으로 보내고(L1), 다른 모델은 모두를 0 근처로 부드럽게 줄이게(L2) 만드는가? 수식만 봐서는 이유가 잘 안 보인다. 답은 <strong>이 식을 제약 최적화(constrained optimization)로 다시 쓰면</strong> 드러난다.</p>
+
+      <h2>패널티 ↔ 제약: 라그랑주 관점</h2>
+
+      <p>라그랑주 승수법(Lagrange multiplier)에 의해, 패널티 형식</p>
+
+      <div class="math-block">$$ \min_{\mathbf{w}} J(\mathbf{w}) + \alpha \cdot \Omega(\mathbf{w}) $$</div>
+
+      <p>은 어떤 $k$에 대해 다음 제약 형식과 동치다.</p>
+
+      <div class="math-block">$$ \min_{\mathbf{w}} J(\mathbf{w}) \quad \text{subject to} \quad \Omega(\mathbf{w}) \leq k $$</div>
+      <p class="math-note">패널티 강도 α와 허용 반경 k는 일대일로 대응된다. α↑ ↔ k↓.</p>
+
+      <p>이제 가중치 공간에서 <em>제약 영역의 모양</em>이 핵심이 된다. 2차원 가중치 $(w_1, w_2)$를 예로 들면,</p>
+
+      <ul>
+        <li><strong>L2 제약 영역</strong>: $w_1^2 + w_2^2 \leq k$ → 반지름 $\sqrt{k}$의 <span class="t-structure">원</span>. 모든 방향이 부드럽게 둥글다.</li>
+        <li><strong>L1 제약 영역</strong>: $|w_1| + |w_2| \leq k$ → 변 길이 $k\sqrt{2}$의 <span class="t-style">다이아몬드</span>. 축 위에 네 개의 날카로운 꼭짓점이 있다.</li>
+      </ul>
+
+      <p>최적화는 손실 $J(\mathbf{w})$의 등고선(contour)이 이 제약 영역 표면과 처음 만나는 점을 찾는다. 원에는 뾰족한 부분이 없으므로 등고선은 어디서든 만날 수 있고, 만난 점에서 정확히 $w_1=0$이거나 $w_2=0$일 확률은 매우 낮다. 그러나 다이아몬드의 경우, 그 뾰족한 꼭짓점이 마치 자석처럼 등고선을 끌어당긴다 — 그리고 그 꼭짓점들은 항상 축 위에 있으므로, 만난 점은 자연스럽게 $w_1=0$ 또는 $w_2=0$이 된다.</p>
+
+      <div class="analogy">
+        실내 농구 코트에 동전을 굴려서 멈추는 자리를 보자. 코트가 <b>원형</b>이면 동전은 벽 어디서든 멈출 수 있다(L2). 코트가 <b>다이아몬드</b>면 동전은 자주 모서리 꼭짓점에 멈춘다(L1) — 한 축의 좌표가 0인 자리. <b>고차원에서는 꼭짓점이 더 많아지므로 이 효과가 더 강해진다.</b> 가중치 1만 개 중 9천 개를 0으로 보내려면 L1이 자연스러운 선택이고, 모두 작게 만들고 싶다면 L2다.
+      </div>
+
+      <h2>위젯 — 등고선이 어디서 만나는지 직접 본다</h2>
+
+      <p>아래 위젯에서 캔버스를 <strong>드래그해 손실 함수의 최저점(별 모양)을 움직여 보자</strong>. 손실의 등고선이 같이 움직이고, 제약 영역(왼쪽 다이아몬드=L1, 오른쪽 원=L2)과 처음 만나는 점이 빨간 원으로 표시된다. L1은 거의 항상 축 위에서 만나고, L2는 둘레 어디서든 만난다는 것이 직접 보인다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 02</span><span>L1 다이아몬드 vs L2 원 · 손실 등고선과의 접점</span></div>
+        <div class="l12-stage">
+          <div class="l12-cell l1">
+            <h5>L1 — |w₁| + |w₂| ≤ k <span class="badge">희소</span></h5>
+            <canvas id="l1Canvas" width="500" height="500"></canvas>
+          </div>
+          <div class="l12-cell l2">
+            <h5>L2 — w₁² + w₂² ≤ k <span class="badge">부드러움</span></h5>
+            <canvas id="l2Canvas" width="500" height="500"></canvas>
+          </div>
+        </div>
+        <div class="l12-readout">
+          <span>L1 해 = <b id="l1Sol">(0, 0)</b></span>
+          <span>L2 해 = <b id="l2Sol">(0, 0)</b></span>
+          <span>L1 비영(非零) 가중치 수 = <b id="l1Nnz">0</b> / 2</span>
+        </div>
+        <div class="widget-controls">
+          <div class="slider">
+            <label>제약 반경 k (정칙화 강도 ↓) <b id="kVal">1.0</b></label>
+            <input id="kSlide" type="range" min="0.2" max="2.5" value="1.0" step="0.05">
+          </div>
+          <button class="btn ghost" id="resetCenter">손실 중심 리셋</button>
+          <span style="font-family: var(--mono); font-size: .72rem; color: var(--ink-faint);">캔버스를 드래그해 손실 중심을 옮기세요</span>
+        </div>
+      </div>
+      <p class="widget-cap">손실 중심(별)을 축에서 떨어진 곳으로 옮겨도 L1 해는 자주 축 위 꼭짓점으로 빨려간다. L2 해는 매끄러운 원의 어떤 점이든 될 수 있다. k를 줄이면(α 늘리면) 두 해 모두 0 쪽으로 수축한다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>L2의 방향별 선택적 축소 — 헤시안 고유분해 관점</h2>
+
+      <p>L2의 또 다른 깊이 있는 성질이 있다. L2는 모든 방향을 똑같이 줄이지 않는다. <em>덜 중요한 방향을 더 강하게 줄인다.</em></p>
+
+      <p>왜 그런가? 최적값 $\mathbf{w}^*$ 근처에서 손실 $J$를 2차 테일러 근사로 적으면,</p>
+
+      <div class="math-block">$$ J(\mathbf{w}) \approx J(\mathbf{w}^*) + \frac{1}{2}(\mathbf{w} - \mathbf{w}^*)^\top \mathbf{H} (\mathbf{w} - \mathbf{w}^*) $$</div>
+      <p class="math-note">H는 헤시안. 손실이 어느 방향으로 얼마나 가파른지를 담고 있다.</p>
+
+      <p>이 근사 하에서 L2 정칙화된 해는 헤시안 H의 고유분해 $\mathbf{H} = \mathbf{Q}\mathbf{\Lambda}\mathbf{Q}^\top$를 거쳐 다음처럼 표현된다. 고유값 $\lambda_i$ 방향에서 최적 파라미터는 다음 비율로 축소된다.</p>
+
+      <div class="math-block">$$ \tilde{w}_i = \frac{\lambda_i}{\lambda_i + \alpha} \, w^*_i $$</div>
+      <p class="math-note">손실에 민감한 방향(λ 큼)은 거의 보존, 둔감한 방향(λ 작음)은 α에 의해 강하게 축소.</p>
+
+      <p>이 식은 시험에서 자주 묻는 핵심 결과다. λ가 α보다 훨씬 크면 비율이 1에 가까워 거의 보존되고, λ가 α보다 작으면 비율이 거의 0이 되어 그 방향의 가중치가 사라진다. 즉 L2는 <strong>"바보같이 모든 방향을 똑같이 줄이는 둔한 도구가 아니라, 손실에 둔감한 방향(=훈련 데이터에서 별 정보를 안 주는 방향)을 골라서 깎아내는 똑똑한 도구"</strong>다.</p>
+
+      <h2>베이지안 사전(prior) 관점 — L1·L2를 통일하는 두 번째 길</h2>
+
+      <p>L1과 L2는 또 다른 방식으로도 자연스럽게 나온다. 바로 [[Deep-Learning-Book-05-Machine-Learning-Basics-상세해설|5장의 베이지안 추정]]에서다.</p>
+
+      <p>가중치에 사전분포(prior) $p(\mathbf{w})$를 두고 사후 최대화(MAP)를 하면,</p>
+
+      <div class="math-block">$$ \hat{\mathbf{w}}_{\text{MAP}} = \arg\max_{\mathbf{w}} \log p(\mathcal{D} \mid \mathbf{w}) + \log p(\mathbf{w}) $$</div>
+      <p class="math-note">우도(likelihood)와 사전이 더해진 형태. 두 번째 항이 곧 정칙화 항이 된다.</p>
+
+      <p>가우시안 사전 $p(w_i) \propto \exp(-w_i^2 / 2\sigma^2)$을 쓰면 $\log p(w_i) = -w_i^2 / (2\sigma^2) + \text{const}$이므로 정확히 <strong>L2 정칙화</strong>가 된다. 라플라스 사전 $p(w_i) \propto \exp(-|w_i| / b)$를 쓰면 $\log p(w_i) = -|w_i|/b + \text{const}$이므로 정확히 <strong>L1 정칙화</strong>가 된다.</p>
+
+      <p>이 관점이 왜 중요한가? L1이 sparsity를 만드는 이유를 두 번째 방식으로 설명해 준다. 라플라스 분포는 0 주변에 뾰족한 봉우리를 가진다 — 즉 사전적으로 "가중치는 0이라고 강하게 가정한다"는 뜻이다. 가우시안은 0 주변이 부드러운 종 모양이라 "작긴 한데 굳이 0일 필요는 없다"고 가정한다. 사전이 다르면 결과도 다르다.</p>
+
+      <div class="symbols">
+        <tr><td>L1</td><td>패널티 = α·Σ|w_i|, 제약 영역 = 다이아몬드, 결과 = 희소, 사전 = 라플라스</td></tr>
+        <tr><td>L2</td><td>패널티 = (α/2)·Σw_i², 제약 영역 = 원, 결과 = 부드러움, 사전 = 가우시안</td></tr>
+        <tr><td>축소</td><td>L2: w*_i × λ_i/(λ_i+α). L1: 작은 w*는 0으로, 큰 w*는 α만큼 평행 이동 (soft-thresholding)</td></tr>
+        <tr><td>미분</td><td>L2: 모든 점에서 부드러움. L1: w=0에서 미분 불가 (subgradient 필요)</td></tr>
+      </div>
+
+      <h2>실전에서의 선택 — 언제 L1, 언제 L2</h2>
+
+      <p>실전 가이드는 단순하다.</p>
+      <ul>
+        <li><strong>L2 (Weight Decay)</strong>를 기본으로 쓴다 — 매끄럽고 미분 가능해서 optimizer가 잘 다룬다.</li>
+        <li><strong>L1</strong>은 <em>특징 선택(feature selection)</em>이 목적일 때, 또는 결과 모델을 해석해야 할 때 쓴다. 어떤 입력이 정말 중요한지 알 수 있다.</li>
+        <li><strong>L1 + L2 동시(Elastic Net)</strong> — 두 효과 모두 원할 때.</li>
+      </ul>
+
+      <p>다음 장에서는 가중치 공간이 아니라 <em>네트워크 구조</em> 자체를 흔드는 정칙화 — 드롭아웃을 본다. 이번 장의 L2가 가중치 공간에서의 자유도 제약이라면, 드롭아웃은 활성화 단계에서의 자유도 제약이다.</p>
+    </div>
+
+    <nav class="ch-foot" id="chFoot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'일반화 격차' },
+    { no:'02', t:'L1·L2 기하학' },
+    { no:'03', t:'드롭아웃 앙상블' },
+    { no:'04', t:'조기 종료 ~ L2' },
+    { no:'05', t:'데이터 증강·노이즈' },
+    { no:'06', t:'적대적 훈련' },
+    { no:'07', t:'시험 대비' },
+  ];
+  const CUR = '02';
+  const navlist = document.getElementById('navlist');
+  SUBS.forEach(s => {
+    const li = document.createElement('li');
+    li.innerHTML = `<a href="${s.no}.html"${s.no===CUR?' class="current"':''}>${s.t}</a>`;
+    navlist.appendChild(li);
+  });
+  const chFoot = document.getElementById('chFoot');
+  const idx = SUBS.findIndex(s => s.no === CUR);
+  const prev = idx > 0 ? SUBS[idx-1] : { no:'index', t:'표지로' };
+  const next = idx < SUBS.length-1 ? SUBS[idx+1] : { no:'index', t:'표지로' };
+  chFoot.innerHTML =
+    `<a href="${prev.no}.html"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+    `<a href="${next.no}.html" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
+        throwOnError: false,
+      });
+    }
+  });
+
+  // ----- 위젯: L1/L2 등고선 + 접점 -----
+  (function () {
+    const css = getComputedStyle(document.documentElement);
+    const C = {
+      structure: css.getPropertyValue('--structure').trim() || '#2D5B7A',
+      style: css.getPropertyValue('--style').trim() || '#C0492E',
+      synth: css.getPropertyValue('--synth').trim() || '#A47B2E',
+      ink: css.getPropertyValue('--ink').trim() || '#26221C',
+      faint: css.getPropertyValue('--ink-faint').trim() || '#8E8576',
+    };
+    let centerX = 1.3, centerY = 0.9;  // 손실 함수 J의 최저점 (w*)
+    let k = 1.0;
+    const l1C = document.getElementById('l1Canvas');
+    const l2C = document.getElementById('l2Canvas');
+    const kSlide = document.getElementById('kSlide');
+    const kVal = document.getElementById('kVal');
+    const l1Sol = document.getElementById('l1Sol');
+    const l2Sol = document.getElementById('l2Sol');
+    const l1Nnz = document.getElementById('l1Nnz');
+    const resetBtn = document.getElementById('resetCenter');
+
+    // 좌표: w ∈ [-2.5, 2.5] → 캔버스 [40, 460]
+    const RANGE = 2.5;
+    function X(canvas, w) { return canvas.width/2 + w * (canvas.width-80)/(2*RANGE); }
+    function Y(canvas, w) { return canvas.height/2 - w * (canvas.height-80)/(2*RANGE); }
+    function fromCanvas(canvas, x, y) {
+      return [
+        (x - canvas.width/2) * (2*RANGE) / (canvas.width-80),
+        -(y - canvas.height/2) * (2*RANGE) / (canvas.height-80),
+      ];
+    }
+
+    function drawCommon(ctx, canvas) {
+      const W = canvas.width, H = canvas.height;
+      ctx.clearRect(0, 0, W, H);
+      // 격자
+      ctx.strokeStyle = '#eee'; ctx.lineWidth = 1;
+      for (let g = -2; g <= 2; g++) {
+        ctx.beginPath();
+        ctx.moveTo(X(canvas, g), Y(canvas, -RANGE)); ctx.lineTo(X(canvas, g), Y(canvas, RANGE));
+        ctx.moveTo(X(canvas, -RANGE), Y(canvas, g)); ctx.lineTo(X(canvas, RANGE), Y(canvas, g));
+        ctx.stroke();
+      }
+      // 축
+      ctx.strokeStyle = '#999'; ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(X(canvas, -RANGE), Y(canvas, 0)); ctx.lineTo(X(canvas, RANGE), Y(canvas, 0));
+      ctx.moveTo(X(canvas, 0), Y(canvas, -RANGE)); ctx.lineTo(X(canvas, 0), Y(canvas, RANGE));
+      ctx.stroke();
+      ctx.fillStyle = C.faint; ctx.font = '11px monospace';
+      ctx.fillText('w₁', X(canvas, RANGE) - 14, Y(canvas, 0) - 4);
+      ctx.fillText('w₂', X(canvas, 0) + 4, Y(canvas, RANGE) + 12);
+    }
+
+    function drawLossContour(ctx, canvas, cx, cy) {
+      // J(w) = (w-cx)^2 + 1.6*(w-cy)^2 형태 — 약간 등방적이지 않게
+      // 등고선 c = 0.2, 0.6, 1.2, 2.0, 3.0
+      const levels = [0.15, 0.5, 1.0, 1.6, 2.4];
+      ctx.lineWidth = 1.4;
+      levels.forEach((lvl, i) => {
+        ctx.strokeStyle = `rgba(38, 34, 28, ${0.18 + i*0.06})`;
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        for (let t = 0; t <= 360; t += 2) {
+          const a = t * Math.PI / 180;
+          // J = (w1-cx)^2 + 1.6*(w2-cy)^2 = lvl
+          // w1 = cx + sqrt(lvl)*cos(a), w2 = cy + sqrt(lvl/1.6)*sin(a)
+          const w1 = cx + Math.sqrt(lvl) * Math.cos(a);
+          const w2 = cy + Math.sqrt(lvl/1.6) * Math.sin(a);
+          const x = X(canvas, w1), y = Y(canvas, w2);
+          if (t === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      });
+      ctx.setLineDash([]);
+      // 별 (w*)
+      ctx.fillStyle = C.ink;
+      const sx = X(canvas, cx), sy = Y(canvas, cy);
+      drawStar(ctx, sx, sy, 9, 5);
+      ctx.fillStyle = C.faint; ctx.font = '10px monospace';
+      ctx.fillText(`w* = (${cx.toFixed(2)}, ${cy.toFixed(2)})`, sx + 10, sy - 8);
+    }
+    function drawStar(ctx, x, y, R, n) {
+      const r = R * 0.45;
+      ctx.beginPath();
+      for (let i = 0; i < 2*n; i++) {
+        const a = -Math.PI/2 + i * Math.PI / n;
+        const rad = (i % 2 === 0) ? R : r;
+        const px = x + Math.cos(a)*rad, py = y + Math.sin(a)*rad;
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.closePath(); ctx.fill();
+    }
+
+    // L1 제약 영역: 다이아몬드 |w1|+|w2|=k
+    function drawL1(ctx, canvas, k) {
+      ctx.strokeStyle = C.style; ctx.fillStyle = 'rgba(192, 73, 46, 0.08)'; ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(X(canvas, k), Y(canvas, 0));
+      ctx.lineTo(X(canvas, 0), Y(canvas, k));
+      ctx.lineTo(X(canvas, -k), Y(canvas, 0));
+      ctx.lineTo(X(canvas, 0), Y(canvas, -k));
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+    }
+    // L2 제약 영역: 원 w1²+w2²=k²
+    function drawL2(ctx, canvas, k) {
+      ctx.strokeStyle = C.structure; ctx.fillStyle = 'rgba(45, 91, 122, 0.08)'; ctx.lineWidth = 2;
+      ctx.beginPath();
+      const c = canvas.width/2, h = canvas.height/2;
+      const r = k * (canvas.width-80)/(2*RANGE);
+      ctx.arc(c, h, r, 0, Math.PI*2);
+      ctx.fill(); ctx.stroke();
+    }
+
+    // L1 해: J(w) = (w1-cx)^2 + 1.6*(w2-cy)^2 s.t. |w1|+|w2|<=k. 격자 탐색으로 근사
+    function solveL1(cx, cy, k) {
+      let best = [0, 0], bestJ = Infinity;
+      // 다이아몬드 경계 + 내부 점 후보 (꼭짓점 + 변 위 샘플)
+      const candidates = [];
+      // 4 꼭짓점
+      candidates.push([k, 0], [-k, 0], [0, k], [0, -k]);
+      // 4 변 위 샘플 (변 = |w1|+|w2|=k, 사분면별)
+      for (let i = 0; i < 80; i++) {
+        const t = i / 80;
+        candidates.push([k - t*k,  t*k]);     // 우상
+        candidates.push([-t*k,     k - t*k]); // 좌상
+        candidates.push([-(k - t*k), -t*k]);  // 좌하
+        candidates.push([t*k,     -(k - t*k)]); // 우하
+      }
+      // 원점도 후보
+      candidates.push([0, 0]);
+      // 정사영 후보: w*이 다이아몬드 안이면 그게 해
+      if (Math.abs(cx) + Math.abs(cy) <= k) candidates.push([cx, cy]);
+      candidates.forEach(([w1, w2]) => {
+        // 제약 만족하지 않으면 skip
+        if (Math.abs(w1) + Math.abs(w2) > k + 1e-6) return;
+        const J = (w1 - cx)**2 + 1.6*(w2 - cy)**2;
+        if (J < bestJ) { bestJ = J; best = [w1, w2]; }
+      });
+      return best;
+    }
+    // L2 해: J(w) s.t. w1²+w2² <= k²
+    function solveL2(cx, cy, k) {
+      // 손실 J는 비등방. 라그랑주: ∇J + 2μw = 0 → (1+μ)w1=cx, (1+1.6μ for w2)*w2/1.6=cy ... 복잡
+      // 간단 솔버: 격자/이분 탐색
+      // 후보: 제약 만족이면 w*, 아니면 원 위에서 J 최소화
+      if (cx*cx + cy*cy <= k*k) return [cx, cy];
+      let best = [0, 0], bestJ = Infinity;
+      for (let i = 0; i < 720; i++) {
+        const a = i * Math.PI / 360;
+        const w1 = k*Math.cos(a), w2 = k*Math.sin(a);
+        const J = (w1 - cx)**2 + 1.6*(w2 - cy)**2;
+        if (J < bestJ) { bestJ = J; best = [w1, w2]; }
+      }
+      return best;
+    }
+
+    function drawSolution(ctx, canvas, sol, color) {
+      ctx.fillStyle = color;
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+      const sx = X(canvas, sol[0]), sy = Y(canvas, sol[1]);
+      ctx.beginPath(); ctx.arc(sx, sy, 7, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+    }
+
+    function render() {
+      kVal.textContent = k.toFixed(2);
+      // L1
+      const ctx1 = l1C.getContext('2d');
+      drawCommon(ctx1, l1C);
+      drawL1(ctx1, l1C, k);
+      drawLossContour(ctx1, l1C, centerX, centerY);
+      const s1 = solveL1(centerX, centerY, k);
+      drawSolution(ctx1, l1C, s1, C.style);
+      l1Sol.textContent = `(${s1[0].toFixed(2)}, ${s1[1].toFixed(2)})`;
+      const nnz = (Math.abs(s1[0]) > 0.01 ? 1 : 0) + (Math.abs(s1[1]) > 0.01 ? 1 : 0);
+      l1Nnz.textContent = nnz;
+
+      // L2
+      const ctx2 = l2C.getContext('2d');
+      drawCommon(ctx2, l2C);
+      drawL2(ctx2, l2C, k);
+      drawLossContour(ctx2, l2C, centerX, centerY);
+      const s2 = solveL2(centerX, centerY, k);
+      drawSolution(ctx2, l2C, s2, C.structure);
+      l2Sol.textContent = `(${s2[0].toFixed(2)}, ${s2[1].toFixed(2)})`;
+    }
+
+    function bindDrag(canvas) {
+      let drag = false;
+      canvas.addEventListener('pointerdown', (e) => {
+        drag = true;
+        const r = canvas.getBoundingClientRect();
+        const [w1, w2] = fromCanvas(canvas, (e.clientX - r.left) * canvas.width / r.width, (e.clientY - r.top) * canvas.height / r.height);
+        centerX = Math.max(-RANGE+0.2, Math.min(RANGE-0.2, w1));
+        centerY = Math.max(-RANGE+0.2, Math.min(RANGE-0.2, w2));
+        render();
+      });
+      canvas.addEventListener('pointermove', (e) => {
+        if (!drag) return;
+        const r = canvas.getBoundingClientRect();
+        const [w1, w2] = fromCanvas(canvas, (e.clientX - r.left) * canvas.width / r.width, (e.clientY - r.top) * canvas.height / r.height);
+        centerX = Math.max(-RANGE+0.2, Math.min(RANGE-0.2, w1));
+        centerY = Math.max(-RANGE+0.2, Math.min(RANGE-0.2, w2));
+        render();
+      });
+      window.addEventListener('pointerup', () => { drag = false; });
+    }
+    bindDrag(l1C); bindDrag(l2C);
+    kSlide.addEventListener('input', () => { k = +kSlide.value; render(); });
+    resetBtn.addEventListener('click', () => { centerX = 1.3; centerY = 0.9; render(); });
+    render();
+  })();
+</script>
+</body>
+</html>

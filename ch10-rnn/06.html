@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ch.10 · 06 양방향·인코더-디코더</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .scroll-progress { position: fixed; top: 0; left: 0; height: 3px; background: var(--style); width: 0; z-index: 999; transition: width .1s; }
+  .topbar { position: fixed; top: 0; left: 0; right: 0; padding: .55rem 1.2rem; background: rgba(250,247,240,.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line-soft); display: flex; justify-content: space-between; align-items: center; z-index: 100; font-family: var(--mono); font-size: .72rem; }
+  .topbar a.home { color: var(--ink-soft); text-decoration: none; letter-spacing: .1em; }
+  .topbar a.home:hover { color: var(--ink); }
+  .topbar .ch-mini { color: var(--ink-faint); letter-spacing: .14em; }
+  .ch-main { max-width: 44rem; margin: 4.5rem auto 0; padding: 2rem 0 6rem; }
+  .ch-head { max-width: var(--measure); margin: 0 auto 2.4rem; padding-inline: 1.4rem; }
+  .ch-head .kicker { display: block; margin-bottom: 1rem; }
+  .ch-head h1 { font-size: clamp(2rem, 5vw, 3.3rem); margin: 0 0 .8rem; line-height: 1.1; }
+  .ch-head .lede { font-family: var(--serif); font-size: 1.22rem; font-style: italic; color: var(--ink-soft); line-height: 1.5; }
+  .ch-foot { display: flex; justify-content: space-between; gap: 1rem; max-width: var(--measure); margin: 4rem auto 0; padding-inline: 1.4rem; }
+  .ch-foot a { display: block; text-decoration: none; flex: 1; padding: 1rem 1.2rem; border: 1px solid var(--line); border-radius: 10px; transition: border-color .15s, transform .15s; }
+  .ch-foot a:hover { border-color: var(--structure); transform: translateY(-2px); }
+  .ch-foot .dir { font-family: var(--mono); font-size: .7rem; letter-spacing: .14em; color: var(--ink-faint); text-transform: uppercase; }
+  .ch-foot .ti { font-family: var(--serif); font-size: 1.05rem; color: var(--ink); margin-top: .2rem; }
+  .ch-foot .next { text-align: right; }
+  .widget { max-width: var(--wide); margin: 2.4rem auto; padding-inline: 1.4rem; }
+  .widget-frame { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 1.4rem; box-shadow: var(--shadow-plate); }
+  .widget-label { display: flex; align-items: center; gap: .8rem; margin-bottom: 1rem; font-family: var(--mono); font-size: .78rem; color: var(--ink-soft); letter-spacing: .05em; }
+  .widget-label .lab-no { color: var(--style); font-weight: 600; letter-spacing: .14em; }
+  .widget-cap { max-width: var(--measure); margin: .8rem auto 0; font-size: .85rem; color: var(--ink-soft); line-height: 1.6; text-align: center; }
+  .controls { display: flex; align-items: center; gap: 1rem; margin-top: 1rem; flex-wrap: wrap; }
+  .controls label { font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); display: flex; align-items: center; gap: .6rem; }
+  .controls button { font-family: var(--mono); font-size: .76rem; padding: .4rem .9rem; border: 1px solid var(--line); border-radius: 6px; background: #fff; color: var(--ink-soft); cursor: pointer; transition: .15s; }
+  .controls button.active { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .controls input[type=range] { width: 180px; accent-color: var(--structure); }
+  .controls .val { color: var(--style); font-weight: 600; min-width: 3em; text-align: right; }
+  canvas.viz { display: block; width: 100%; height: 360px; background: var(--paper-2); border-radius: 8px; }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar">
+  <a class="home" href="index.html">← Ch.10 표지</a>
+  <span class="ch-mini">SUB 06 / 07 · BiRNN & Encoder-Decoder</span>
+</div>
+
+<main class="ch-main">
+  <header class="ch-head">
+    <span class="kicker">Chapter 10 · Sub 06</span>
+    <h1>양방향·인코더-디코더 —<br><span class="t-style">Attention</span>으로 가는 다리</h1>
+    <p class="lede">미래 문맥이 필요할 땐 역방향을 함께 돌린다. 시퀀스를 다른 길이로 옮길 땐 인코더-디코더를 쓴다. 그 한계가 다음 장의 Attention을 불러냈다.</p>
+  </header>
+
+  <div class="prose">
+    <p>Sub.05까지 우리는 RNN의 핵심 단위(LSTM·GRU)를 만들었다. 이제 그 단위들을 어떻게 조합해 실제 응용을 풀어내는지 본다. 두 가지 패턴이 가장 중요하다 — <strong>양방향 RNN(Bidirectional RNN)</strong>과 <strong>인코더-디코더(Encoder-Decoder)</strong>다.</p>
+
+    <h2>양방향 RNN — 미래까지 보는 시퀀스 모델</h2>
+    <p>지금까지 본 RNN은 모두 한 방향이다 — 과거에서 미래로. 시점 $t$의 은닉 상태 $h^{(t)}$는 $x^{(1)}, \ldots, x^{(t)}$에만 의존한다. 그러나 많은 응용에서는 <strong>현재 시점의 출력이 미래 입력에도 의존</strong>한다.</p>
+
+    <p>구체적인 예. 음성 인식에서 한 음소가 어떻게 들리는지는 그 뒤에 오는 음소에 따라 달라진다. "give" 다음에 오는 [n] 소리는 보통 "give in"으로 해석되지 단독으로 "given"은 아니다. 자연어 처리에서 "bank"가 강가의 둑인지 금융기관인지는 그 뒤 문맥이 결정한다. 의료 시계열에서 어떤 신호 패턴이 발작의 전조인지는 그 뒤 발작 발생 여부로 확정된다.</p>
+
+    <p>이 문제는 <strong>역방향 RNN을 함께 돌려</strong> 해결한다. 정방향 RNN은 평소처럼 $x^{(1)} \to x^{(\tau)}$로 진행한다. 역방향 RNN은 $x^{(\tau)} \to x^{(1)}$로 거꾸로 진행한다. 각 시점의 최종 출력은 두 방향의 은닉 상태를 결합한다.</p>
+
+    <div class="math-block">$$ \overrightarrow{h}^{(t)} = f\!\left(\overrightarrow{h}^{(t-1)}, x^{(t)}\right), \quad \overleftarrow{h}^{(t)} = g\!\left(\overleftarrow{h}^{(t+1)}, x^{(t)}\right) $$</div>
+    <div class="math-block">$$ y^{(t)} = \mathrm{combine}\!\left(\overrightarrow{h}^{(t)},\, \overleftarrow{h}^{(t)}\right) $$</div>
+    <p class="math-note">결합 방식은 보통 concatenation [→h; ←h], 때로는 합산.</p>
+
+    <p>이 단순한 트릭으로 $y^{(t)}$가 전체 입력 시퀀스의 모든 시점에 의존하게 된다 — 과거든 미래든. 다만 한 가지 제약이 있다. <strong>온라인(실시간) 처리에는 쓸 수 없다</strong>. 미래 입력이 다 들어와야 역방향 RNN을 시작할 수 있기 때문이다. 음성 인식의 후처리, 텍스트 분류, 의료 기록 분석 같은 오프라인 응용에 적합하다.</p>
+
+    <div class="analogy">
+      <b>두 번 읽는 독자.</b> 한 번은 처음부터 끝까지 읽으며 "지금까지의 흐름"을 머리에 누적한다. 다음에는 끝에서 처음으로 거꾸로 읽으며 "앞으로 어떻게 끝나는지"를 알고 있는 상태로 각 단어를 다시 본다. 두 읽기의 결과를 합치면 각 단어를 "전체 문맥"에서 본 셈이다. 양방향 RNN이 정확히 이렇게 작동한다.
+    </div>
+
+    <h2>인코더-디코더 — 길이가 다른 시퀀스를 잇다</h2>
+    <p>또 다른 흔한 응용은 <strong>한 시퀀스를 다른 시퀀스로 변환</strong>하는 것이다. 영어 문장을 한국어 문장으로, 음성 파형을 텍스트로, 질문을 답으로. 입력과 출력의 길이가 다르다는 게 핵심이다. "I love you"(3 단어)는 "사랑해"(1 단어)로 옮겨질 수 있다.</p>
+
+    <p>이 변환을 풀려고 Cho et al.(2014)와 Sutskever et al.(2014)이 거의 동시에 제안한 구조가 <strong>인코더-디코더 (Encoder-Decoder, seq2seq)</strong>다.</p>
+
+    <p>구조는 두 RNN으로 나뉜다. <strong>인코더</strong>는 입력 시퀀스 전체를 읽고, 그 마지막 은닉 상태를 고정 길이 벡터 $C$로 출력한다 — 입력 전체의 "요약". <strong>디코더</strong>는 그 요약 $C$로부터 시작해, 출력 시퀀스를 한 토큰씩 생성한다.</p>
+
+    <div class="math-block">$$ C = \mathrm{Encoder}\!\left(x^{(1)}, x^{(2)}, \ldots, x^{(\tau_x)}\right) $$</div>
+    <div class="math-block">$$ y^{(t)} = \mathrm{Decoder}\!\left(C,\, y^{(1)}, \ldots, y^{(t-1)}\right) $$</div>
+    <p class="math-note">컨텍스트 C는 입력 전체에서 단 한 번 만들어지고, 디코더의 모든 시점이 같은 C를 본다.</p>
+  </div>
+
+  <div class="widget">
+    <div class="widget-frame">
+      <div class="widget-label"><span class="lab-no">위젯 06</span><span>모드 전환 — 양방향 RNN ↔ 인코더-디코더</span></div>
+      <canvas id="vizBi" class="viz"></canvas>
+      <div class="controls">
+        <button id="btnBi" class="active">양방향 RNN</button>
+        <button id="btnED">인코더-디코더 (seq2seq)</button>
+      </div>
+    </div>
+    <p class="widget-cap">버튼으로 두 구조를 전환. 양방향: 같은 시점 위로 정방향+역방향이 합쳐진다. 인코더-디코더: 입력이 끝나면 단 하나의 컨텍스트 벡터 C가 만들어지고, 디코더가 그 C를 보며 다른 길이의 출력을 생성한다. C가 좁아 보이는가? 그게 다음 장 Attention의 이유다.</p>
+  </div>
+
+  <div class="prose">
+    <h2>seq2seq의 병목 — 고정 길이 컨텍스트의 한계</h2>
+    <p>이 구조의 가장 큰 약점은 정확히 그 핵심 발상에 있다. <strong>입력 전체의 의미가 단 하나의 고정 길이 벡터 $C$에 압축</strong>된다는 점이다. 입력이 길어질수록 이 압축은 무리해진다. 책 한 권을 1000차원 벡터 하나에 욱여넣는 셈이다.</p>
+
+    <p>실제 실험에서 seq2seq의 번역 성능은 입력 문장 길이가 30 단어를 넘으면 빠르게 떨어진다. Sutskever et al.은 입력 문장을 뒤집어서 넣는 트릭(reversing input)으로 어느 정도 개선했지만, 근본적 한계는 그대로였다.</p>
+
+    <p>병목의 원인은 분명하다. 디코더가 "I"를 만들 때 필요한 입력 정보(예: 영어 "I")와 "love"를 만들 때 필요한 정보(영어 "love")가 다른데, 디코더는 매 시점 같은 $C$만 본다. <strong>출력이 입력의 특정 부분에 집중적으로 의존한다는 사실</strong>이 구조에 반영되지 못한다.</p>
+
+    <h2>Attention — 병목을 우회한 답</h2>
+    <p>Bahdanau et al.(2014)이 이 문제에 답을 내놓았다. <strong>디코더가 매 시점 입력 시퀀스 전체를 다시 본다</strong>. 그리고 지금 만들어야 할 출력에 따라 입력의 어느 부분에 더 집중할지 가중치(weight)로 결정한다.</p>
+
+    <div class="math-block">$$ c^{(t)} = \sum_{i=1}^{\tau_x} \alpha_{t,i} \cdot h_i^{\text{enc}}, \qquad \sum_i \alpha_{t,i} = 1 $$</div>
+    <p class="math-note">α_{t,i}: 디코더 t시점에서 인코더 i시점에 주는 가중치. 매 디코더 시점마다 다시 계산.</p>
+
+    <p>고정 길이 $C$ 대신 <strong>매 디코더 시점마다 다른 가중합 $c^{(t)}$</strong>를 사용한다. "love"를 만들 때는 영어 "love" 주변에 큰 가중치를, "you"를 만들 때는 영어 "you" 주변에 큰 가중치를 준다. 모델이 스스로 "지금 어디를 봐야 하는가"를 결정한다.</p>
+
+    <p>이것이 <strong>Attention 메커니즘</strong>이다. Goodfellow 책의 10장 마지막은 이 어텐션을 "콘텐츠 기반 소프트 주소 지정(content-based soft addressing)"으로 일반화하며, Neural Turing Machine·Memory Network와 같은 메모리 증강 모델들이 모두 이 일반 형태의 특수 사례임을 보인다. 그리고 이 어텐션이 RNN의 순차 계산 자체를 대체할 수 있다는 통찰이, 2017년 Transformer의 출발점이 된다.</p>
+
+    <h2>관련된 패턴들</h2>
+    <p>이 외에도 RNN에는 몇 가지 변형 패턴이 더 있다. 시험을 위해 정리해 둔다.</p>
+
+    <p><strong>깊은 RNN(Deep RNN)</strong>: 은닉 상태 변환 자체를 여러 층으로 쌓는다. 입력 변환($x \to h$), 순환 변환($h \to h$), 출력 변환($h \to o$) 어디든 깊이를 더할 수 있다. 표현력이 늘지만 학습이 더 어려워진다.</p>
+
+    <p><strong>재귀 네트워크(Recursive Network)</strong>: 시퀀스를 사슬이 아니라 <strong>나무</strong>로 본다. 구문 파싱 트리 같은 계층 구조에 자연스럽다. 시퀀스 길이 $\tau$에 대해 합성 깊이가 $O(\tau)$ 대신 $O(\log \tau)$로 줄어 장기 의존성에 유리하지만, 트리 구조를 미리 알아야 한다.</p>
+
+    <p><strong>Memory Network·Neural Turing Machine</strong>: 외부 메모리 셀에 명시적으로 읽고 쓴다. 미분 가능한 어드레싱 방식으로 학습이 가능하다. 어텐션과 본질적으로 같은 아이디어 — 콘텐츠 기반 검색.</p>
+
+    <h2>이 절이 시험에서 묻는 것</h2>
+    <p>① 양방향 RNN이 단방향 RNN과 다른 점과 그 동기. ② 양방향 RNN의 제약(온라인 처리 불가). ③ 인코더-디코더의 두 구성요소와 컨텍스트 벡터 C의 역할. ④ seq2seq의 고정 길이 컨텍스트 병목 — 왜 입력이 길어질수록 성능이 떨어지는가. ⑤ Attention이 이 병목을 푸는 방식 — 디코더 시점마다 다시 가중합. ⑥ 재귀 네트워크가 합성 깊이를 $O(\tau)$에서 $O(\log \tau)$로 줄이는 이유.</p>
+  </div>
+
+  <nav class="ch-foot">
+    <a href="05.html"><span class="dir">← 이전</span><div class="ti">05 · LSTM·GRU 게이트</div></a>
+    <a class="next" href="07.html"><span class="dir">다음 →</span><div class="ti">07 · 시험 대비</div></a>
+  </nav>
+</main>
+
+<script>
+  window.addEventListener('scroll', () => {
+    const sp = document.querySelector('.scroll-progress');
+    const sc = document.documentElement.scrollTop;
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    sp.style.width = (max > 0 ? (sc / max * 100) : 0) + '%';
+  });
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, { delimiters: [
+        {left:'$$', right:'$$', display:true},
+        {left:'$', right:'$', display:false}
+      ], throwOnError:false });
+    }
+  });
+
+  const cv = document.getElementById('vizBi');
+  const ctx = cv.getContext('2d');
+  const btnBi = document.getElementById('btnBi');
+  const btnED = document.getElementById('btnED');
+  let mode = 'bi';
+
+  btnBi.addEventListener('click', () => { mode = 'bi'; btnBi.classList.add('active'); btnED.classList.remove('active'); draw(); });
+  btnED.addEventListener('click', () => { mode = 'ed'; btnED.classList.add('active'); btnBi.classList.remove('active'); draw(); });
+
+  function fit() {
+    const r = cv.getBoundingClientRect();
+    cv.width = r.width * devicePixelRatio;
+    cv.height = r.height * devicePixelRatio;
+    ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+    draw();
+  }
+
+  function arrow(x1, y1, x2, y2, color, w) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = w || 1.5;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    const ang = Math.atan2(y2 - y1, x2 - x1);
+    const ah = 7;
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - ah * Math.cos(ang - 0.4), y2 - ah * Math.sin(ang - 0.4));
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - ah * Math.cos(ang + 0.4), y2 - ah * Math.sin(ang + 0.4));
+    ctx.stroke();
+  }
+
+  function node(x, y, r, fillC, strokeC, label, labelColor) {
+    ctx.fillStyle = fillC;
+    ctx.strokeStyle = strokeC;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    if (label) {
+      ctx.fillStyle = labelColor || '#fff';
+      ctx.font = '600 10px Spline Sans Mono, monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label, x, y);
+    }
+  }
+
+  function drawBi() {
+    const W = cv.clientWidth, H = cv.clientHeight;
+    const T = 6;
+    const pad = 60;
+    const dx = (W - 2 * pad) / (T - 1);
+    const yX = H - 50;
+    const yFwd = H * 0.62;
+    const yBwd = H * 0.38;
+    const yY = H * 0.12;
+
+    // Title
+    ctx.fillStyle = 'rgba(38,34,28,0.7)';
+    ctx.font = 'italic 13px Fraunces, serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('양방향 RNN — 정방향·역방향 두 패스가 합쳐진다', W/2, 20);
+
+    function px(t) { return pad + (t - 1) * dx; }
+
+    // Forward arrows (left to right)
+    for (let t = 1; t < T; t++) {
+      arrow(px(t) + 12, yFwd, px(t+1) - 12, yFwd, '#2D5B7A', 2);
+    }
+    // Backward arrows (right to left)
+    for (let t = T; t > 1; t--) {
+      arrow(px(t) - 12, yBwd, px(t-1) + 12, yBwd, '#C0492E', 2);
+    }
+
+    // Input -> fwd and -> bwd
+    for (let t = 1; t <= T; t++) {
+      const x = px(t);
+      arrow(x, yX - 12, x, yFwd + 12, 'rgba(164,123,46,0.5)');
+      arrow(x, yX - 12, x, yBwd - 12, 'rgba(164,123,46,0.5)');
+    }
+    // fwd + bwd -> output
+    for (let t = 1; t <= T; t++) {
+      const x = px(t);
+      arrow(x, yFwd - 12, x, yY + 12, 'rgba(45,91,122,0.4)');
+      arrow(x, yBwd - 12, x, yY + 12, 'rgba(192,73,46,0.4)');
+    }
+
+    // nodes
+    for (let t = 1; t <= T; t++) {
+      const x = px(t);
+      node(x, yX, 10, '#A47B2E', '#7a5a20', 'x' + t);
+      node(x, yFwd, 12, '#2D5B7A', '#1a3f5a', '→h' + t);
+      node(x, yBwd, 12, '#C0492E', '#8a3220', '←h' + t);
+      node(x, yY, 11, '#6E97AF', '#4a7895', 'y' + t);
+    }
+
+    // Layer labels
+    ctx.fillStyle = 'rgba(38,34,28,0.5)';
+    ctx.font = '11px Spline Sans Mono, monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('출력 y⁽ᵗ⁾ = combine(→h, ←h)', 8, yY + 4);
+    ctx.fillStyle = '#2D5B7A';
+    ctx.fillText('정방향 →h', 8, yFwd + 4);
+    ctx.fillStyle = '#C0492E';
+    ctx.fillText('역방향 ←h', 8, yBwd + 4);
+    ctx.fillStyle = 'rgba(38,34,28,0.5)';
+    ctx.fillText('입력 x⁽ᵗ⁾', 8, yX + 4);
+  }
+
+  function drawED() {
+    const W = cv.clientWidth, H = cv.clientHeight;
+    const Tx = 4, Ty = 3;
+    const total = Tx + Ty;
+    const pad = 50;
+    const dx = (W - 2 * pad) / (total - 1);
+    const yEnc = H * 0.5;
+    const yDec = H * 0.5;
+    const yX = H - 50;
+    const yY = H * 0.15;
+    const splitX = pad + (Tx - 0.5) * dx;
+
+    ctx.fillStyle = 'rgba(38,34,28,0.7)';
+    ctx.font = 'italic 13px Fraunces, serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('인코더-디코더 (seq2seq) — 인코더 끝의 단일 C가 디코더 전체로 흘러간다', W/2, 20);
+
+    function px(i) { return pad + i * dx; }
+
+    // Encoder forward arrows
+    for (let t = 0; t < Tx - 1; t++) {
+      arrow(px(t) + 12, yEnc, px(t+1) - 12, yEnc, '#2D5B7A', 2);
+    }
+    // Input -> encoder
+    for (let t = 0; t < Tx; t++) {
+      arrow(px(t), yX - 12, px(t), yEnc + 12, 'rgba(164,123,46,0.5)');
+    }
+
+    // Context C from last encoder hidden
+    const cX = splitX;
+    const cY = yEnc - 60;
+    // Encoder last -> C
+    arrow(px(Tx - 1) + 8, yEnc - 8, cX - 12, cY + 12, '#A47B2E', 2.5);
+
+    // C box (highlight as bottleneck)
+    ctx.fillStyle = '#A47B2E';
+    ctx.strokeStyle = '#7a5a20';
+    ctx.lineWidth = 3;
+    if (!CanvasRenderingContext2D.prototype.roundRect) {
+      CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+        this.beginPath();
+        this.moveTo(x + r, y);
+        this.arcTo(x + w, y, x + w, y + h, r);
+        this.arcTo(x + w, y + h, x, y + h, r);
+        this.arcTo(x, y + h, x, y, r);
+        this.arcTo(x, y, x + w, y, r);
+        this.closePath();
+      };
+    }
+    ctx.beginPath();
+    ctx.roundRect(cX - 22, cY - 14, 44, 28, 6);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.font = '700 13px Spline Sans Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('C', cX, cY);
+    // "bottleneck" label
+    ctx.fillStyle = '#C0492E';
+    ctx.font = '500 10px Spline Sans Mono, monospace';
+    ctx.fillText('고정 길이 ▼ 병목', cX, cY - 24);
+
+    // C -> decoder all
+    for (let t = 0; t < Ty; t++) {
+      const i = Tx + t;
+      arrow(cX + 12, cY + 8, px(i) - 6, yDec - 12, 'rgba(164,123,46,0.5)', 1.2);
+    }
+
+    // Decoder forward
+    for (let t = 0; t < Ty - 1; t++) {
+      const i = Tx + t;
+      arrow(px(i) + 12, yDec, px(i+1) - 12, yDec, '#C0492E', 2);
+    }
+
+    // Decoder -> output
+    for (let t = 0; t < Ty; t++) {
+      const i = Tx + t;
+      arrow(px(i), yDec - 12, px(i), yY + 12, 'rgba(192,73,46,0.4)');
+    }
+    // Decoder output -> next input (autoregressive)
+    for (let t = 0; t < Ty - 1; t++) {
+      const i = Tx + t;
+      ctx.strokeStyle = 'rgba(192,73,46,0.3)';
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath();
+      ctx.moveTo(px(i), yY - 8);
+      ctx.lineTo(px(i) + dx * 0.4, yY - 24);
+      ctx.lineTo(px(i+1) - dx * 0.4, yY - 24);
+      ctx.lineTo(px(i+1), yDec - 12);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // Nodes
+    for (let t = 0; t < Tx; t++) {
+      node(px(t), yEnc, 12, '#2D5B7A', '#1a3f5a', 'h' + (t+1));
+      node(px(t), yX, 10, '#A47B2E', '#7a5a20', 'x' + (t+1));
+    }
+    for (let t = 0; t < Ty; t++) {
+      const i = Tx + t;
+      node(px(i), yDec, 12, '#C0492E', '#8a3220', 's' + (t+1));
+      node(px(i), yY, 10, '#D98E73', '#a86a4f', 'y' + (t+1));
+    }
+
+    // Encoder/Decoder labels
+    ctx.fillStyle = '#2D5B7A';
+    ctx.font = '500 11px Spline Sans Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('인코더 (입력 길이 ' + Tx + ')', pad + (Tx-1)*dx/2, H - 14);
+    ctx.fillStyle = '#C0492E';
+    ctx.fillText('디코더 (출력 길이 ' + Ty + ')', splitX + Ty*dx/2, H - 14);
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, cv.clientWidth, cv.clientHeight);
+    if (mode === 'bi') drawBi();
+    else drawED();
+  }
+  window.addEventListener('resize', fit);
+  fit();
+</script>
+</body>
+</html>

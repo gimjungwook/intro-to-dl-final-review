@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chapter 15 · 표상 학습</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .masthead { position: relative; max-width: var(--wide); margin: 0 auto; padding: 1.5rem 1.4rem 0; }
+  .home-link { display: inline-flex; align-items: center; gap: .35rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .12em; color: var(--ink-faint); text-decoration: none; padding: .35rem .6rem; margin-bottom: .9rem; border-radius: 6px; border: 1px solid var(--line-soft); transition: all .15s var(--ease); }
+  .home-link:hover { color: var(--ink); border-color: var(--line); background: var(--paper-2); }
+  .hero-wrap { position: relative; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: linear-gradient(180deg,#fff,var(--paper-2)); box-shadow: var(--shadow-plate); }
+  #hero { display: block; width: 100%; }
+  .hero-cap { position: absolute; left: 1.2rem; bottom: 1rem; font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; color: var(--ink-faint); pointer-events: none; }
+  .hero-cap b { color: var(--structure); } .hero-cap em { color: var(--style); font-style: normal; }
+
+  .title-block { max-width: var(--wide); margin: 2.4rem auto 0; padding-inline: 1.4rem; }
+  .title-block .kicker { display: block; margin-bottom: 1rem; }
+  .title-block h1 { font-size: clamp(2.6rem, 7vw, 5rem); margin: 0; }
+  .title-block h1 em { color: var(--style); }
+  .paper-meta { display: flex; flex-wrap: wrap; gap: .5rem 1.6rem; margin-top: 1.4rem; font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); letter-spacing: .02em; }
+  .paper-meta span b { color: var(--ink); font-weight: 500; }
+
+  .plates { max-width: var(--wide); margin: 1rem auto; padding: 2rem 1.4rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); gap: 1rem; }
+  .plate { position: relative; display: flex; flex-direction: column; text-decoration: none; color: inherit; background: #fff; border: 1px solid var(--line); border-radius: 13px; padding: 1.3rem 1.3rem 1.4rem; transition: transform .2s var(--ease), border-color .2s, box-shadow .2s; overflow: hidden; }
+  .plate:hover { transform: translateY(-4px); border-color: var(--structure-lo); box-shadow: var(--shadow-plate); }
+  .plate .pno { font-family: var(--mono); font-size: .74rem; letter-spacing: .14em; color: var(--ink-faint); }
+  .plate h3 { font-family: var(--serif); font-size: 1.32rem; margin: .5rem 0 .5rem; line-height: 1.2; }
+  .plate p { font-size: .9rem; color: var(--ink-soft); line-height: 1.5; margin: 0; }
+  .plate .spectrum { display: flex; height: 4px; border-radius: 2px; overflow: hidden; margin-bottom: 1rem; }
+  .plate .spectrum i { display: block; height: 100%; }
+  .plate .go { margin-top: 1rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; color: var(--structure); opacity: 0; transform: translateX(-4px); transition: .2s var(--ease); }
+  .plate:hover .go { opacity: 1; transform: translateX(0); }
+
+  .section-intro { max-width: var(--measure); margin: 1rem auto 0; padding-inline: 1.4rem; }
+  .section-intro h2 { margin-top: 1rem; }
+  .twopole { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; max-width: var(--measure); margin: 1.6rem auto; padding-inline: 1.4rem; }
+  .pole { padding: 1.1rem 1.2rem; border-radius: 11px; }
+  .pole.s1 { background: var(--structure-bg); } .pole.s2 { background: var(--style-bg); }
+  .pole h4 { margin: 0 0 .4rem; font-family: var(--serif); font-size: 1.1rem; }
+  .pole.s1 h4 { color: var(--structure); } .pole.s2 h4 { color: var(--style); }
+  .pole p { margin: 0; font-size: .9rem; color: var(--ink-soft); line-height: 1.5; }
+  @media (max-width: 560px){ .twopole{ grid-template-columns: 1fr; } }
+
+  .path { max-width: var(--wide); margin: 2rem auto; padding: 1.6rem 1.4rem; }
+  .path-flow { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; font-family: var(--mono); font-size: .8rem; }
+  .path-flow a { display: inline-flex; align-items: center; gap: .4rem; text-decoration: none; color: var(--ink-soft); padding: .4rem .7rem; border: 1px solid var(--line); border-radius: 20px; transition: .15s; }
+  .path-flow a:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .path-flow a b { color: var(--style); } .path-flow a:hover b { color: var(--style-lo); }
+  .path-flow .arr { color: var(--ink-faint); }
+
+  footer.colophon { max-width: var(--measure); margin: 3rem auto 4rem; padding: 2rem 1.4rem 0; border-top: 1px solid var(--line); font-size: .85rem; color: var(--ink-soft); }
+  footer.colophon a { color: var(--structure); }
+  footer.colophon .src { font-family: var(--mono); font-size: .76rem; line-height: 1.8; }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <a class="home-link" href="../index.html">← 기말고사 인터랙티브 복습</a>
+  <div class="hero-wrap">
+    <canvas id="hero"></canvas>
+    <div class="hero-cap"><b>사전훈련된 특징 — 다른 과제에서 빌려온 좌표계</b> ↔ <em>분산 표상 — 조합으로 커지는 개념 공간</em> · 마우스 드래그</div>
+  </div>
+</header>
+
+<div class="title-block">
+  <span class="kicker">Deep Learning Book · Chapter 15 · Representation Learning</span>
+  <h1>표상은 결국,<br><em>전이</em>되고 <em>조합</em>된다</h1>
+  <div class="paper-meta">
+    <span><b>딥러닝 개론</b> 기말고사 인터랙티브 복습</span>
+    <span>저자 <b>Goodfellow, Bengio, Courville (2016)</b></span>
+    <span>읽는 시간 <b>약 45분</b></span>
+    <span>D-day <b>2026-06-04</b></span>
+  </div>
+</div>
+
+<section class="section-intro">
+  <h2>한 문장으로</h2>
+  <p>15장은 <strong>"왜 한 과제에서 배운 표상이 다른 과제로 옮겨가고, 왜 그렇게 옮겨다닐 수 있는 표상이 일반화도 잘하는가"</strong>에 답한다. 답의 두 기둥은 <span class="t-structure">분산 표상(distributed representation)</span>과 <span class="t-style">깊이(depth)</span>다. 둘 다 같은 자원으로 지수적으로 많은 개념을 표현하게 해준다.</p>
+  <p>처음 읽을 때 가장 중요한 점은, 이 장이 <em>"새로운 알고리즘 하나를 소개하는"</em> 장이 <strong>아니라는</strong> 것이다. 이미 배운 사전훈련(pretraining), 전이학습(transfer learning), 반지도학습(semi-supervised learning), 오토인코더(autoencoder), 정칙화(regularization)를 <span class="t-synth">모두 "표상에 어떤 사전(prior)을 거는가"라는 한 시선으로 다시 묶는</span> 장이다. 1장에서 시작된 "표상" 이야기가 15장에서 닫힌다.</p>
+</section>
+
+<div class="twopole">
+  <div class="pole s1"><h4>좋은 표상의 두 얼굴</h4><p>한 과제에서 배운 특징이 <b>다른 과제로 전이</b>된다. 그리고 같은 자원으로 더 많은 개념을 <b>조합으로 표현</b>한다. 둘은 결국 같은 원리의 두 얼굴이다.</p></div>
+  <div class="pole s2"><h4>왜 이게 시험의 마지막인가</h4><p>1장의 "표상학습"이라는 약속을 15장이 회수한다. 깊이가 왜 필요했고, 사전훈련이 왜 작동했으며, 라벨이 없는 데이터가 어떻게 분류에 도움이 되는지 모두 한 줄기로 꿰진다.</p></div>
+</div>
+
+<section class="plates" id="plates"></section>
+
+<section class="path">
+  <span class="kicker">권장 읽기 순서</span>
+  <div class="path-flow" id="pathflow"></div>
+</section>
+
+<footer class="colophon">
+  <p>이 해설은 Goodfellow, Bengio, Courville(2016) 15장과 강의 Week 10 요약, 그리고 Week 11의 두 논문(P1 적대적 예시 · P2 신경 스타일 전이)에서 "표상이 실제로 어떻게 쓰이는가"를 함께 묶어 정리한 것이다. 정의만 외우지 않도록 "왜 이 원리가 필요한가"를 비유와 위젯으로 풀고, 시험에서 묻기 좋은 구분 지점을 직접 만져 볼 수 있게 했다.</p>
+  <p class="src">
+    원문 · <a href="https://www.deeplearningbook.org/contents/representation.html">deeplearningbook.org/representation</a><br>
+    주차별 요약 · <a href="../../../03-과제-제출/IntroToDL_Week10_22000168.md">Week 10 Ch.15 요약</a> · <a href="../../../03-과제-제출/IntroToDL_Week11_22000168.md">Week 11 P1·P2</a><br>
+    P2 해설 (재활용) · <a href="../../../../../../5-Archives/딥러닝개론-P2-신경스타일전이/P2-신경스타일전이-해설/index.html">신경 스타일 전이 해설</a>
+  </p>
+</footer>
+
+<script>
+  const SUBCHAPTERS = [
+    { no:'01', t:'좋은 표상이란 무엇인가 — 분리 가능성·매니폴드·인과', d:'좋은 표상의 세 가지 정량적 정의: 선형 분리 가능성, 매니폴드 위 평탄성, 진짜 생성 인과 요소와의 정렬. 이게 왜 일반화로 이어지는가.', sp:['structure'] },
+    { no:'02', t:'사전훈련과 미세조정 — 왜 작동하는가', d:'탐욕적 층별 비지도 사전훈련부터 ImageNet 사전훈련까지. 라벨 없는 데이터가 "가중치 위의 사전(prior)"으로 작동한다는 시선.', sp:['structure','synth'] },
+    { no:'03', t:'전이학습·도메인 적응 — 한 도메인이 다른 도메인을 돕는 이유', d:'얕은 층은 거의 그대로, 깊은 층만 교체. 공유 변동 요인이 많을수록 더 많이 가져갈 수 있다. 멀티태스크·원샷·제로샷까지.', sp:['style','structure'] },
+    { no:'04', t:'분산 표상의 힘 — one-hot 대비 지수적 이득', d:'n비트로 2^n개 영역을 나눌 수 있다. 각 비트가 진짜 생성 요인을 잡으면 본 적 없는 조합도 일반화된다.', sp:['style'] },
+    { no:'05', t:'깊이가 만드는 지수적 표현력 — 합성성의 이점', d:'같은 함수족을 표현하는 데 깊은 망은 폭이 좁아도 충분하다. 얕은 망은 지수적으로 더 많은 유닛이 필요하다.', sp:['structure','synth'] },
+    { no:'06', t:'인과 요소·반지도학습·사전(prior) — 라벨 없는 데이터의 가치', d:'p(x)와 p(y|x)가 인과 요인을 공유할 때 비지도 학습이 분류를 돕는다. 매끄러움·희소성·시간적 일관성도 모두 같은 종류의 사전.', sp:['synth','structure'] },
+    { no:'07', t:'시험 대비 — P1·P2 논문에서 표상이 어떻게 쓰였는가', d:'적대적 예시는 표상 공간의 선형성이 만든 부산물. 스타일 전이는 콘텐츠와 텍스처가 표상 공간에서 분리된다는 증거. 예상 문제 7개.', sp:['ink'] },
+  ];
+  const colMap = { structure:'var(--structure)', 'structure-lo':'var(--structure-lo)', style:'var(--style)', synth:'var(--synth)', ink:'var(--ink-soft)' };
+  const platesEl = document.getElementById('plates');
+  const flowEl = document.getElementById('pathflow');
+  SUBCHAPTERS.forEach((c, idx) => {
+    const sp = c.sp.length === 1 ? [c.sp[0], c.sp[0]] : c.sp;
+    const a = document.createElement('a');
+    a.className = 'plate'; a.href = c.no + '.html';
+    a.innerHTML = `
+      <div class="spectrum">${sp.map(s=>`<i style="flex:1;background:${colMap[s]}"></i>`).join('')}</div>
+      <span class="pno">SUB ${c.no}</span>
+      <h3>${c.t}</h3>
+      <p>${c.d}</p>
+      <span class="go">읽기 →</span>`;
+    platesEl.appendChild(a);
+
+    const f = document.createElement('a'); f.href = c.no + '.html';
+    const shortTitle = c.t.split('—')[0].trim().slice(0, 14);
+    f.innerHTML = `<b>${c.no}</b> ${shortTitle}…`;
+    flowEl.appendChild(f);
+    if (idx < SUBCHAPTERS.length - 1) { const s = document.createElement('span'); s.className='arr'; s.textContent='→'; flowEl.appendChild(s); }
+  });
+
+  // 표지 히어로 — 전이·분산 표상 입자 모핑
+  window.addEventListener('load', () => {
+    if (!window.THREE || !document.getElementById('hero')) return;
+    const canvas = document.getElementById('hero');
+    const wrap = canvas.parentElement;
+    const css = getComputedStyle(document.documentElement);
+    const C = {
+      structure: css.getPropertyValue('--structure').trim() || '#2D5B7A',
+      style: css.getPropertyValue('--style').trim() || '#C0492E',
+    };
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    const scene = new THREE.Scene();
+    const cam = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+    cam.position.set(0, 0, 3.0);
+
+    // 형태 A: 사전훈련된 특징 - 도메인 A의 층층이 쌓인 표상 사다리
+    // 형태 B: 분산 표상 - 같은 점들이 격자 위에서 비트 좌표로 펼쳐짐
+    const COLS = 120, ROWS = 70, N = COLS * ROWS;
+    const pretrained = new Float32Array(N * 3);
+    const distributed = new Float32Array(N * 3);
+    const rnd = new Float32Array(N);
+    const W = 3.4, H = 2.0;
+
+    // pretrained: 좌측에 도메인 A 5층 계단형, 우측에 도메인 B 화살표
+    let p = 0;
+    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++, p++) {
+      const u = c / (COLS - 1), v = r / (ROWS - 1);
+      // 5층 사다리 — 좌측 1/2: 층층이 쌓인 도메인 A 표상
+      // 우측 1/2: 같은 층이 새 과제로 전이
+      const layer = Math.floor(u * 5);  // 0..4
+      const inLayer = (u * 5) - layer;
+      const layerY = (layer - 2) * 0.35;
+      const layerW = 1.4 - layer * 0.18;
+      const x = (inLayer - 0.5) * layerW - 1.5 + Math.sin(layer * 0.7 + v * 6.28) * 0.05;
+      const y = layerY + (v - 0.5) * 0.18 + Math.cos(layer * 1.1) * 0.03;
+      pretrained[p*3] = x;
+      pretrained[p*3+1] = y;
+      pretrained[p*3+2] = -layer * 0.08;
+
+      // distributed: n개의 독립적 비트가 펼쳐낸 표상 공간 (격자)
+      const bx = (c / (COLS - 1) - 0.5) * W;
+      const by = (r / (ROWS - 1) - 0.5) * H;
+      // 각 비트가 독립적으로 on/off될 때 만들어지는 패턴
+      const bit1 = Math.sin(bx * 3.1) * 0.5;
+      const bit2 = Math.cos(by * 3.1) * 0.5;
+      const bit3 = Math.sin((bx + by) * 2.0) * 0.3;
+      distributed[p*3] = bx + bit3 * 0.04;
+      distributed[p*3+1] = by + bit1 * 0.04;
+      distributed[p*3+2] = (bit1 + bit2) * 0.3;
+
+      rnd[p] = Math.random();
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('aA', new THREE.BufferAttribute(pretrained, 3));
+    geo.setAttribute('aB', new THREE.BufferAttribute(distributed, 3));
+    geo.setAttribute('aRand', new THREE.BufferAttribute(rnd, 1));
+    geo.setAttribute('position', new THREE.BufferAttribute(pretrained.slice(), 3));
+    const uniforms = {
+      uMix: { value: 0 }, uTime: { value: 0 }, uMouse: { value: new THREE.Vector2(99,99) },
+      uColA: { value: new THREE.Color(C.structure) }, uColB: { value: new THREE.Color(C.style) },
+      uSize: { value: 8.5 * Math.min(devicePixelRatio, 2) },
+    };
+    const mat = new THREE.ShaderMaterial({
+      uniforms, transparent: true, depthWrite: false,
+      vertexShader: `
+        attribute vec3 aA; attribute vec3 aB; attribute float aRand;
+        uniform float uMix, uTime, uSize; uniform vec2 uMouse;
+        varying float vM; varying float vA;
+        void main(){
+          float m = clamp(uMix + (aRand-0.5)*0.30, 0.0, 1.0);
+          m = m*m*(3.0-2.0*m); vM = m;
+          vec3 pos = mix(aA, aB, m);
+          float a = uTime*0.25 + aRand*6.28;
+          pos.xy += vec2(cos(a), sin(a)) * 0.012;
+          vec2 d = pos.xy - uMouse;
+          float dist = length(d);
+          float push = smoothstep(0.5, 0.0, dist) * 0.4;
+          pos.xy += normalize(d + 0.0001) * push;
+          vA = 0.55 + 0.45*(1.0-m*0.5) + push*0.6;
+          vec4 mv = modelViewMatrix * vec4(pos,1.0);
+          gl_PointSize = uSize * (1.0 / -mv.z) * (0.8 + m*0.5);
+          gl_Position = projectionMatrix * mv;
+        }`,
+      fragmentShader: `
+        precision mediump float;
+        uniform vec3 uColA, uColB; varying float vM; varying float vA;
+        void main(){
+          vec2 uv = gl_PointCoord - 0.5;
+          float d = length(uv);
+          float alpha = smoothstep(0.5, 0.12, d) * vA;
+          vec3 col = mix(uColA, uColB, vM);
+          gl_FragColor = vec4(col, alpha);
+        }`,
+    });
+    const points = new THREE.Points(geo, mat);
+    scene.add(points);
+
+    const ray = new THREE.Raycaster();
+    const plane = new THREE.Plane(new THREE.Vector3(0,0,1), 0);
+    const mNDC = new THREE.Vector2(99,99);
+    let targetMouse = new THREE.Vector3(99,99,0);
+    canvas.addEventListener('pointermove', (e) => {
+      const r = canvas.getBoundingClientRect();
+      mNDC.x = ((e.clientX-r.left)/r.width)*2-1;
+      mNDC.y = -((e.clientY-r.top)/r.height)*2+1;
+      ray.setFromCamera(mNDC, cam);
+      ray.ray.intersectPlane(plane, targetMouse);
+    });
+    canvas.addEventListener('pointerleave', () => { targetMouse.set(99,99,0); });
+
+    let drag = false, dragX = 0, sx = 0, manual = 0.5, manualOn = false;
+    canvas.addEventListener('pointerdown', (e) => { drag = true; dragX = e.clientX; sx = manual; manualOn = true; });
+    window.addEventListener('pointermove', (e) => { if (!drag) return; manual = Math.max(0, Math.min(1, sx + (e.clientX - dragX) / canvas.clientWidth)); });
+    window.addEventListener('pointerup', () => { drag = false; });
+
+    function resize() {
+      const w = wrap.clientWidth, h = Math.min(window.innerWidth*0.46, 460);
+      renderer.setSize(w, h, false);
+      cam.aspect = w/h; cam.updateProjectionMatrix();
+    }
+    window.addEventListener('resize', resize); resize();
+
+    let t0 = performance.now();
+    function loop() {
+      const t = (performance.now() - t0) / 1000;
+      uniforms.uTime.value = t;
+      const target = manualOn ? manual : (0.5 + 0.45 * Math.sin(t * 0.35));
+      uniforms.uMix.value += (target - uniforms.uMix.value) * 0.04;
+      uniforms.uMouse.value.set(targetMouse.x, targetMouse.y);
+      renderer.render(scene, cam);
+      requestAnimationFrame(loop);
+    }
+    loop();
+  });
+</script>
+</body>
+</html>

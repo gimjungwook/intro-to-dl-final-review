@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>01. 왜 딥러닝에 확률이 필요한가</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .three-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; max-width: var(--measure); margin: 1.6rem auto; padding-inline: 1.4rem; }
+  .three-cards .card { padding: 1.1rem 1.2rem; border-radius: 12px; border: 1px solid var(--line); background: #fff; }
+  .three-cards .card h4 { margin: 0 0 .4rem; font-family: var(--serif); font-size: 1.05rem; color: var(--style); }
+  .three-cards .card p { margin: 0; font-size: .88rem; color: var(--ink-soft); line-height: 1.55; }
+  @media (max-width: 720px){ .three-cards{ grid-template-columns: 1fr; } }
+
+  /* 결정 vs 확률 출력 비교 위젯 */
+  .det-stage { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1.4rem 1.1rem; }
+  .det-col { padding: 1rem; background: var(--paper); border: 1px solid var(--line-soft); border-radius: 9px; }
+  .det-col h5 { margin: 0 0 .6rem; font-family: var(--serif); font-size: 1rem; }
+  .det-col.det h5 { color: var(--ink-soft); } .det-col.prob h5 { color: var(--structure); }
+  .det-bar { display: flex; align-items: center; gap: .6rem; margin: .35rem 0; font-family: var(--mono); font-size: .8rem; }
+  .det-bar .lab { width: 4.5rem; color: var(--ink-soft); }
+  .det-bar .bg { flex: 1; height: 11px; background: var(--paper-sink); border-radius: 5px; overflow: hidden; }
+  .det-bar .fg { display: block; height: 100%; background: var(--structure); border-radius: 5px; transition: width .25s var(--ease); }
+  .det-bar .val { width: 3rem; text-align: right; color: var(--ink); }
+  .det-col.det .det-bar .fg { background: var(--ink-soft); }
+  .det-col.det .winner .fg { background: var(--style); }
+  @media (max-width: 600px){ .det-stage{ grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-chapter 01. 모든 것의 출발점</span>
+      <h1>왜 딥러닝 모델은<br>정답 대신 <span class="t-structure">분포</span>를 출력하는가</h1>
+      <p class="lede">분류기 끝의 소프트맥스도, 회귀의 평균, 분산 추정도, 생성모델의 우도도 같은 한 가지 발상에서 나온다. 모델은 "이거다"라고 외치는 기계가 아니라, "이만큼 그럴듯하다"를 분포 하나로 답하는 시스템이다.</p>
+    </header>
+
+    <div class="prose">
+      <p>2장의 선형대수가 딥러닝의 <strong>문장 구조</strong>였다면, 3장의 확률은 딥러닝이 세상을 바라보는 <strong>태도</strong>다. 행렬과 텐서는 데이터를 어떻게 옮기고 곱하느냐를 다루지만, 확률은 <em>데이터 자체가 본질적으로 흐릿하다</em>는 사실을 정직하게 인정한다.</p>
+
+      <p>이 인정이 없다면 우리는 "고양이입니다, 아닙니다" 두 가지 답만 가지고 모델을 평가해야 한다. 그런데 같은 고양이 사진이라도 조명이 어둡거나, 각도가 비스듬하거나, 일부가 가려져 있으면 모델이 받는 정보는 매번 달라진다. <strong>고양이일 확률 0.82</strong>라는 답이 <strong>고양이일 확률 0.99</strong>라는 답보다 정직한 경우가 분명히 존재한다. 모델이 자신의 <em>망설임</em>을 숫자로 표현할 수 있어야, 우리는 그 망설임의 크기를 보고 학습률을 조정하고, 손실을 줄이고, 결과를 안전하게 쓸 수 있다.</p>
+
+      <div class="analogy">
+        의사가 환자를 진단할 때를 떠올려 보자. 경험 많은 의사는 <b>"폐렴입니다"</b>라고 단정하는 대신 <b>"폐렴일 가능성이 70%, 천식 악화가 20%, 단순 감기가 10% 정도입니다. 추가 검사가 필요합니다"</b>라고 말한다. 이 분포가 있어야 다음 검사를 어디에 집중할지, 항생제를 바로 쓸지 보류할지 결정할 수 있다. 딥러닝 분류기 역시 같은 이유로 분포를 출력한다 — <b>확률은 단지 수학 장식이 아니라 다음 행동을 정하기 위한 정보</b>다.
+      </div>
+
+      <h2>비교: 결정적 답 vs 분포 답</h2>
+      <p>아래 위젯은 같은 입력에 대해 두 종류의 출력을 보여준다. 왼쪽은 <strong>argmax 한 줄</strong>로 답하는 결정적 분류기, 오른쪽은 <strong>확률 분포 전체</strong>를 내보내는 확률적 분류기다. 입력의 흐릿함(노이즈)을 슬라이더로 키워 보면, 결정적 분류기는 <em>같은 확신으로</em> 답을 바꾸지만, 확률적 분류기는 확신의 크기 자체가 줄어든다. 이 차이가 모델을 안전하게 쓰는 시작점이다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 01</span><span>결정적 출력 ↔ 분포 출력</span></div>
+        <div class="det-stage">
+          <div class="det-col det">
+            <h5>결정적 분류기 — argmax 하나</h5>
+            <div id="detBars"></div>
+            <p style="font-size: .78rem; color: var(--ink-faint); margin: .8rem 0 0; line-height: 1.5;">노이즈가 커져도 답은 단호하다. 어디까지 믿어야 하는지 알 수 없다.</p>
+          </div>
+          <div class="det-col prob">
+            <h5>확률적 분류기 — 분포 전체</h5>
+            <div id="probBars"></div>
+            <p style="font-size: .78rem; color: var(--ink-faint); margin: .8rem 0 0; line-height: 1.5;">노이즈가 커지면 1등 확률이 떨어진다. 모델의 <em>망설임</em>이 그대로 보인다.</p>
+          </div>
+        </div>
+        <div class="widget-controls">
+          <div class="slider">
+            <label>입력 노이즈 <b><span id="nVal">0.20</span></b></label>
+            <input id="nSlider" type="range" min="0" max="100" value="20" class="s-structure">
+          </div>
+          <span style="font-family: var(--mono); font-size: .72rem; color: var(--ink-faint);">왼쪽: argmax / 오른쪽: softmax</span>
+        </div>
+      </div>
+      <p class="widget-cap">3종 분류(고양이, 강아지, 토끼). 노이즈를 키워 보라. 왼쪽은 1등 클래스를 <b>같은 굵기</b>로 외치지만, 오른쪽은 1등 막대가 짧아지고 2/3등이 살아난다. 이 짧아짐이 곧 모델의 망설임이고, 우리가 들고 다닐 정보다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>불확실성의 세 원천</h2>
+      <p>그렇다면 그 망설임은 어디서 오는가. 책은 불확실성을 세 가지로 나눈다. 이 분류는 단순한 분류학이 아니라, <strong>어떤 망설임은 데이터를 더 모으면 줄어들고 어떤 망설임은 그렇지 않다</strong>는 실전적 구분이다.</p>
+    </div>
+
+    <div class="three-cards">
+      <div class="card">
+        <h4>① 시스템의 본래적 무작위성</h4>
+        <p>양자역학적 측정, 카드 셔플처럼 <b>원리적으로 결정되지 않는</b> 사건. 데이터를 아무리 모아도 줄지 않는다. <em>aleatoric</em>이라 부른다.</p>
+      </div>
+      <div class="card">
+        <h4>② 불완전한 관측</h4>
+        <p>몬티 홀 문제의 닫힌 문 뒤처럼, 실제로는 결정되어 있지만 <b>우리가 못 보는</b> 정보. 카메라 너머의 사물도 같은 종류다.</p>
+      </div>
+      <div class="card">
+        <h4>③ 불완전한 모델링</h4>
+        <p>현실을 단순화해서 모델로 옮길 때 떨어져 나가는 정보. <b>더 정교한 모델, 더 많은 데이터</b>로 줄일 수 있는 종류. <em>epistemic</em>이라 부른다.</p>
+      </div>
+    </div>
+
+    <div class="prose">
+      <p>딥러닝 실전에서 우리가 가장 자주 다루는 건 ②와 ③이다. 같은 입력이라도 픽셀이 살짝 깎여 있거나, 모델이 학습 분포의 가장자리에 있는 입력을 만나면 망설임이 생긴다. 이 망설임을 <strong>숫자 하나가 아닌 분포 하나로</strong> 표현하기로 약속하는 순간, 우리는 다음 장의 <em>주변확률</em>, <em>조건부확률</em>, <em>연쇄법칙</em>, 그리고 5번 장의 <em>엔트로피</em>/<em>KL 발산</em>이라는 도구들을 그대로 받아 쓸 수 있게 된다.</p>
+
+      <h2>이 장이 시험에서 나오는 자리</h2>
+      <p>3장은 시험 직접 출제 비중이 가장 큰 장은 아니다. 그러나 이 장의 개념이 들어 있지 않으면 <strong>이후 거의 모든 손실함수가 의미를 잃는다</strong>. 6장의 출력층-비용 짝, 7장의 정칙화 해석, 8장의 최적화 목표, 9–10장의 분류, 시퀀스 손실, 13–15장의 잠재변수 모델까지 — 모두 "확률 분포 사이의 거리를 줄인다"는 한 문장의 변주다. 그래서 이 장은 <em>외운다</em>는 표현보다 <em>몸에 새긴다</em>는 표현이 어울린다.</p>
+
+      <p>다음 장에서는 그 분포를 다루는 가장 기본적인 문법인 확률변수, 분포, 조건부, 연쇄법칙을 차례로 본다. 표기 하나하나가 이후 시험 문제의 기호 그 자체이므로 한 번에 천천히 익혀 두자.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  /* ch03 내부 챕터 nav (P2 NST와 분리) */
+  const CH = [
+    { no:'01', t:'왜 확률이 필요한가', f:'01.html' },
+    { no:'02', t:'확률변수, 분포, 조건부', f:'02.html' },
+    { no:'03', t:'기대값, 분산, 공분산', f:'03.html' },
+    { no:'04', t:'베이즈 규칙', f:'04.html' },
+    { no:'05', t:'정보이론 — 엔트로피/KL/교차 엔트로피', f:'05.html' },
+    { no:'06', t:'흔한 분포 카탈로그', f:'06.html' },
+    { no:'07', t:'시험 대비 체크리스트', f:'07.html' },
+  ];
+  function buildNav(curr) {
+    const tb = document.querySelector('.topbar');
+    if (tb) tb.innerHTML =
+      `<a class="home" href="index.html">← Ch.3 확률과 정보이론</a>` +
+      `<span class="ch-mini">SUB-CHAPTER ${curr} of 07</span>`;
+    const ol = document.querySelector('.ch-nav ol');
+    if (ol) ol.innerHTML = CH.map(c =>
+      `<li><a href="${c.f}" ${c.no === curr ? 'class="current"' : ''}>${c.t}</a></li>`).join('');
+    const foot = document.querySelector('.ch-foot');
+    if (foot) {
+      const i = CH.findIndex(c => c.no === curr);
+      const prev = i > 0 ? CH[i-1] : { f:'index.html', t:'표지로', no:'' };
+      const next = i < CH.length-1 ? CH[i+1] : { f:'index.html', t:'표지로', no:'' };
+      foot.innerHTML =
+        `<a href="${prev.f}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+        `<a href="${next.f}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+    }
+    const bar = document.querySelector('.scroll-progress');
+    if (bar) {
+      const onS = () => {
+        const h = document.documentElement;
+        const m = h.scrollHeight - h.clientHeight;
+        bar.style.width = (m > 0 ? (h.scrollTop / m) * 100 : 0) + '%';
+      };
+      document.addEventListener('scroll', onS, { passive: true });
+      onS();
+    }
+  }
+
+  /* 위젯: argmax vs softmax */
+  function softmax(z) {
+    const m = Math.max(...z);
+    const e = z.map(v => Math.exp(v - m));
+    const s = e.reduce((a,b)=>a+b,0);
+    return e.map(v => v / s);
+  }
+  function randn() {
+    let u = 0, v = 0;
+    while (u === 0) u = Math.random();
+    while (v === 0) v = Math.random();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  }
+  const LABELS = ['고양이', '강아지', '토끼'];
+  /* 기준 로짓 — 고양이가 1등 */
+  const baseLogits = [3.2, 2.6, 1.4];
+  function renderBars(noise) {
+    const noisy = baseLogits.map(z => z + randn() * noise);
+    const probs = softmax(noisy);
+    /* 결정적: 가장 큰 클래스만 100% */
+    const am = noisy.indexOf(Math.max(...noisy));
+    const det = LABELS.map((_, i) => i === am ? 1 : 0);
+
+    const detHost = document.getElementById('detBars');
+    const probHost = document.getElementById('probBars');
+    detHost.innerHTML = LABELS.map((l, i) => `
+      <div class="det-bar ${det[i] ? 'winner':''}">
+        <span class="lab">${l}</span>
+        <span class="bg"><i class="fg" style="width:${(det[i]*100).toFixed(0)}%"></i></span>
+        <span class="val">${det[i] ? '예' : '아니오'}</span>
+      </div>`).join('');
+    probHost.innerHTML = LABELS.map((l, i) => `
+      <div class="det-bar">
+        <span class="lab">${l}</span>
+        <span class="bg"><i class="fg" style="width:${(probs[i]*100).toFixed(0)}%"></i></span>
+        <span class="val">${probs[i].toFixed(2)}</span>
+      </div>`).join('');
+  }
+
+  window.addEventListener('load', () => {
+    buildNav('01');
+    const slider = document.getElementById('nSlider');
+    const nVal = document.getElementById('nVal');
+    let timer = null;
+    function go() {
+      const n = parseInt(slider.value, 10) / 100 * 2.2; /* 0..2.2 */
+      nVal.textContent = (parseInt(slider.value, 10) / 100).toFixed(2);
+      renderBars(n);
+    }
+    slider.addEventListener('input', go);
+    /* 노이즈를 살짝 흔들어 분포 안정감 — 0.6초마다 한 번 재샘플 */
+    timer = setInterval(go, 600);
+    go();
+
+    /* KaTeX */
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$', right:'$$', display:true}, {left:'$', right:'$', display:false}],
+        throwOnError: false,
+      });
+    }
+  });
+</script>
+</body>
+</html>

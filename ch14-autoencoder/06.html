@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>06 · 시험 대비 — Ch.14</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  /* 시험 대비 — 요약 카드 + 비교 표 + Q&A */
+  .summary-card { max-width: var(--measure); margin: 1.8rem auto; padding: 1.6rem 1.6rem 1.4rem; border-radius: 14px; background: linear-gradient(180deg, #fff, var(--paper-2)); border: 1px solid var(--line); box-shadow: var(--shadow-plate); }
+  .summary-card h2 { margin-top: 0; font-size: 1.5rem; }
+  .summary-card .leadrow { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; margin: 1rem 0 1.4rem; }
+  .summary-card .leadrow .b { padding: .8rem .9rem; border-radius: 9px; background: var(--paper); border: 1px solid var(--line-soft); }
+  .summary-card .leadrow .b b { display: block; font-family: var(--serif); font-size: 1.05rem; color: var(--ink); margin-bottom: .25rem; }
+  .summary-card .leadrow .b span { font-size: .85rem; color: var(--ink-soft); line-height: 1.45; }
+  .summary-card .leadrow .b.q b { color: var(--style); }
+  .summary-card .leadrow .b.a b { color: var(--structure); }
+  @media (max-width: 600px) { .summary-card .leadrow { grid-template-columns: 1fr; } }
+
+  /* 비교 표 */
+  .ae-table { max-width: var(--measure); margin: 1.4rem auto 1.6rem; padding-inline: 1.4rem; }
+  .ae-table table { width: 100%; border-collapse: collapse; font-size: .9rem; background: #fff; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .ae-table th, .ae-table td { padding: .65rem .8rem; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line-soft); }
+  .ae-table th { background: var(--paper-2); font-family: var(--mono); font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-soft); }
+  .ae-table tr:last-child td { border-bottom: none; }
+  .ae-table tr:hover td { background: var(--paper); }
+  .ae-table .name { font-family: var(--serif); font-weight: 600; color: var(--structure); }
+
+  /* 키워드 칩 */
+  .keyword-row { max-width: var(--measure); margin: 1.4rem auto; padding-inline: 1.4rem; display: flex; flex-wrap: wrap; gap: .4rem; }
+  .keyword-row .k { padding: .35rem .7rem; border-radius: 14px; background: var(--paper); border: 1px solid var(--line); font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); }
+  .keyword-row .k b { color: var(--style); }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 06 · 기말고사 한 장 요약과 예상 문제</span>
+      <h1>시험 대비 —<br><span class="t-style">한 장 요약</span>과 빈출 질문 카드</h1>
+      <p class="lede">14장의 모든 내용을 한 페이지에 압축한다. 핵심 한 문장, 비교 표, 자주 나오는 다섯 가지 질문에 대한 한 줄 답안. 시험장에서 바로 떠올릴 수 있는 형태.</p>
+    </header>
+
+    <div class="prose">
+      <h2>1) 한 문장 요약</h2>
+    </div>
+
+    <div class="summary-card">
+      <h2>14장 핵심 — 한 줄</h2>
+      <p style="font-size: 1.05rem; line-height: 1.6;"><strong>자기부호화기는 입력을 입력으로 매핑하는 신경망이지만, 항등 함수가 되지 않도록 손발을 묶어 두어야 비로소 데이터의 구조를 학습한다.</strong> 손발을 묶는 방식(미완전·잡음 제거·수축적)이 자기부호화기의 종류를 결정하며, 학습 결과는 모두 같은 한 가지 — 데이터 매니폴드의 모양 — 로 수렴한다.</p>
+      <div class="leadrow">
+        <div class="b q"><b>왜 항등 함수가 위험한가</b><span>입력과 타깃이 같은 학습은 데이터를 외워서 완벽한 손실 0을 달성할 수 있다. 그러면 학습한 것은 색인표일 뿐 데이터 구조가 아니다.</span></div>
+        <div class="b a"><b>해결은 정칙화</b><span>잠재 차원을 좁히거나(미완전), 입력에 노이즈를 섞거나(DAE), 자코비안에 페널티를 주거나(CAE). 셋 다 같은 매니폴드 학습으로 귀결.</span></div>
+      </div>
+    </div>
+
+    <div class="prose">
+      <h2>2) 네 종류의 자기부호화기 비교</h2>
+      <p>시험에 가장 자주 나오는 형식이 "이 자기부호화기는 어떤 종류이고 손실 함수가 어떻게 되는가"이다. 한 표로 정리해 두면 답안 작성이 훨씬 빨라진다.</p>
+    </div>
+
+    <div class="ae-table">
+      <table>
+        <thead>
+          <tr><th>종류</th><th>제약 방식</th><th>손실 함수 (핵심항)</th><th>학습되는 것</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="name">미완전 (Undercomplete)</td>
+            <td>잠재 차원 dim(h) &lt; dim(x)</td>
+            <td>$\|x - g(f(x))\|^2$</td>
+            <td>선형이면 PCA 부분공간, 비선형이면 휘어진 매니폴드</td>
+          </tr>
+          <tr>
+            <td class="name">희소 (Sparse)</td>
+            <td>잠재 활성에 L1/KL 페널티</td>
+            <td>$\|x - g(f(x))\|^2 + \lambda \|h\|_1$</td>
+            <td>대부분 0인 코드. 희소 코딩의 feed-forward 일반화</td>
+          </tr>
+          <tr>
+            <td class="name">잡음 제거 (DAE)</td>
+            <td>입력에 노이즈 (가우시안·마스킹)</td>
+            <td>$\|x - g(f(\tilde{x}))\|^2,\; \tilde{x} \sim C(\tilde{x}\|x)$</td>
+            <td>데이터 매니폴드. 점수 매칭 해석 → 확산 모델의 뿌리</td>
+          </tr>
+          <tr>
+            <td class="name">수축적 (CAE)</td>
+            <td>인코더 자코비안에 페널티</td>
+            <td>$\|x - g(f(x))\|^2 + \lambda \|\partial f/\partial x\|_F^2$</td>
+            <td>매니폴드 접선 방향에만 민감한 코드</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="prose">
+      <h2>3) 핵심 키워드</h2>
+      <p>시험 답안에서 자연스럽게 등장해야 하는 용어들. 영어 원어를 괄호 안에 함께 쓰는 습관이 인상을 좌우한다.</p>
+    </div>
+
+    <div class="keyword-row">
+      <span class="k"><b>encoder</b>  f(x) → h</span>
+      <span class="k"><b>decoder</b>  g(h) → r</span>
+      <span class="k"><b>latent code</b>  h</span>
+      <span class="k"><b>reconstruction loss</b>  ‖x − r‖²</span>
+      <span class="k"><b>identity function</b>  항등 함수의 함정</span>
+      <span class="k"><b>undercomplete</b>  dim(h) &lt; dim(x)</span>
+      <span class="k"><b>overcomplete</b>  dim(h) ≥ dim(x)</span>
+      <span class="k"><b>denoising AE</b>  DAE</span>
+      <span class="k"><b>contractive AE</b>  CAE</span>
+      <span class="k"><b>Jacobian penalty</b>  ‖∂f/∂x‖²_F</span>
+      <span class="k"><b>score matching</b>  ∇ log p</span>
+      <span class="k"><b>manifold</b>  데이터가 사는 곡면</span>
+      <span class="k"><b>tangent space</b>  접선 공간</span>
+      <span class="k"><b>PCA equivalence</b>  선형 미완전 AE</span>
+      <span class="k"><b>semantic hashing</b>  이진 코드 해싱</span>
+    </div>
+
+    <div class="prose">
+      <h2>4) 빈출 다섯 문제 — 한 줄 답안</h2>
+      <p>아래 다섯 가지는 같은 주제로 출제되더라도 표현만 바꿔 반복적으로 등장하는 형태다. 각 카드를 눌러 답안의 핵심 한 줄과 그 근거를 펼쳐 볼 수 있다.</p>
+    </div>
+
+    <div class="qa-block" id="qa-block"></div>
+
+    <div class="prose">
+      <h2>5) 시험 직전 체크리스트</h2>
+      <p>시험장 들어가기 직전에 다섯 분 동안 머릿속에 다시 새기면 좋은 항목들. 모든 자기부호화기 문제는 결국 이 다섯 가지를 묻는다.</p>
+      <ul class="checklist">
+        <li>자기부호화기의 두 부분 — 인코더 $h = f(x)$와 디코더 $r = g(h)$. 손실은 일반적으로 $\|x - r\|^2$.</li>
+        <li>항등 함수의 함정 — 손실이 0이 되도록 외울 수 있다. 정칙화가 필요한 이유.</li>
+        <li>네 가지 정칙화 — 미완전(차원 좁힘), 희소(L1 페널티), DAE(노이즈), CAE(자코비안 페널티).</li>
+        <li>선형 미완전 AE는 PCA와 같은 부분공간을 학습한다. 단 축은 PCA와 같지 않을 수 있다(회전).</li>
+        <li>DAE는 점수 매칭과 동등하다 — $g(f(\tilde{x})) - \tilde{x} \propto \nabla \log p(\tilde{x})$. 모든 정칙화 AE는 결국 데이터 매니폴드를 학습한다.</li>
+      </ul>
+
+      <h2>6) 13장·15장과의 다리</h2>
+      <p>14장은 단독으로 출제되기보다 13장 또는 15장과 묶여 나오는 경우가 많다. 한 문장씩만 외워 두자.</p>
+      <ul>
+        <li><strong>13장 → 14장</strong>. 선형 인자 모델(PCA·인자 분석·ICA·희소 코딩)은 모두 평평한 매니폴드를 가정한다. 자기부호화기는 인코더·디코더를 비선형으로 일반화하여 휘어진 매니폴드를 배운다.</li>
+        <li><strong>14장 → 15장</strong>. 자기부호화기가 만드는 표상은 그 자체로 분류·검색·전이 학습의 입력이 된다. 15장은 "이렇게 얻은 표상이 어떤 의미에서 좋은가, 어떻게 평가하는가"를 다룬다.</li>
+      </ul>
+
+      <h2>마치며</h2>
+      <p>14장의 가장 깊은 통찰을 한 줄로 다시 적으면 다음과 같다. <strong>"좋은 자기부호화기란 데이터를 외우지 못하게 손발을 묶어 두었을 때, 그 묶임 속에서도 살아남는 표상을 만든다."</strong> 그 살아남은 표상은 항상 데이터 매니폴드의 모양과 같다. 어떤 종류의 손발 묶기든, 충분히 학습되면 같은 곳에 도달한다.</p>
+      <p>이 통찰이 다음 장의 표상 학습으로 자연스럽게 연결된다. 또한 이 장의 DAE는 2026년 현재 모든 생성형 AI의 기반이 된 <strong>확산 모델</strong>의 직계 조상이다. 1세대 자기부호화기에서 출발한 한 줄의 아이디어 — "노이즈를 제거하는 것은 데이터 분포의 기울기를 따라가는 것이다" — 가 지금 우리가 보는 Stable Diffusion, DALL-E, Imagen, Sora 모두의 핵심에서 작동하고 있다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  // ===== Ch.14 sub-chapter nav =====
+  const SUBS = [
+    { no:'01', t:'자기부호화기의 기본', f:'01.html' },
+    { no:'02', t:'미완전 자기부호화기', f:'02.html' },
+    { no:'03', t:'잡음 제거 AE (DAE)', f:'03.html' },
+    { no:'04', t:'수축적 AE (CAE)', f:'04.html' },
+    { no:'05', t:'AE와 매니폴드 학습', f:'05.html' },
+    { no:'06', t:'시험 대비', f:'06.html' },
+  ];
+  const CURRENT = '06';
+  (function buildNav() {
+    document.querySelector('.topbar').innerHTML =
+      `<a class="home" href="index.html">← Chapter 14 · 자기부호화기</a>` +
+      `<span class="ch-mini">SUB ${CURRENT} / 06</span>`;
+    document.querySelector('.ch-nav ol').innerHTML = SUBS.map(s =>
+      `<li><a href="${s.f}" ${s.no === CURRENT ? 'class="current"' : ''}>${s.t}</a></li>`).join('');
+    const i = SUBS.findIndex(s => s.no === CURRENT);
+    const prev = i > 0 ? SUBS[i-1] : { f:'index.html', t:'챕터 표지', no:'' };
+    const next = i < SUBS.length-1 ? SUBS[i+1] : { f:'index.html', t:'챕터 표지', no:'' };
+    document.querySelector('.ch-foot').innerHTML =
+      `<a href="${prev.f}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+      `<a href="${next.f}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+    const bar = document.querySelector('.scroll-progress');
+    const onScroll = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    document.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+  })();
+
+  // ===== Q&A 아코디언 =====
+  const QA = [
+    {
+      n: 'Q1',
+      q: '왜 자기부호화기는 단순히 "입력을 입력으로 매핑"하면 안 되는가?',
+      a: `<b>한 줄 답안.</b> 입력과 타깃이 같으면 모델은 항등 함수($f(x)=x, g(h)=h$)로 손실을 정확히 0으로 만들 수 있고, 이때 학습된 것은 "데이터 구조"가 아니라 "답안지 베끼기"이기 때문이다.<br><br>` +
+         `<b>근거.</b> 자기부호화기의 손실은 $\\|x - g(f(x))\\|^2$이다. 어떤 제약도 없으면 가장 쉬운 최적해는 항등 변환이고, 이때 잠재 코드 $h$는 단순히 $x$를 가리키는 이름표가 된다. 우리가 원하는 것은 데이터의 매니폴드 구조이지 색인표가 아니므로, 미완전·DAE·CAE 같은 정칙화가 필요해진다.`,
+    },
+    {
+      n: 'Q2',
+      q: '선형 미완전 자기부호화기와 PCA는 같은 것인가, 다른 것인가?',
+      a: `<b>한 줄 답안.</b> <strong>같은 부분공간</strong>을 학습하지만 <strong>같은 축</strong>을 학습하지는 않는다.<br><br>` +
+         `<b>근거.</b> 인코더와 디코더가 선형이고 손실이 평균 제곱 오차일 때, 미완전 자기부호화기는 PCA가 찾는 것과 같은 $k$차원 부분공간을 학습한다. 그러나 PCA는 그 부분공간 안에서 직교하고 분산이 큰 순서로 정렬된 축을 고르는 반면, 자기부호화기의 $W_e$는 그런 직교성을 보장하지 않는다. 같은 평면을 회전된 좌표계로 표현한다고 생각하면 된다. 비선형으로 일반화하는 순간 자기부호화기는 PCA가 도달할 수 없는 휘어진 매니폴드까지 표현할 수 있다.`,
+    },
+    {
+      n: 'Q3',
+      q: 'DAE의 손실 함수가 왜 점수 매칭(score matching)과 같다고 하는가?',
+      a: `<b>한 줄 답안.</b> 가우시안 노이즈로 학습된 DAE의 "복원 방향" $g(f(\\tilde{x})) - \\tilde{x}$가 데이터 로그 밀도의 기울기 $\\nabla_{\\tilde{x}} \\log p_{\\text{data}}(\\tilde{x})$에 비례하기 때문이다.<br><br>` +
+         `<b>근거.</b> 손상된 $\\tilde{x}$에서 원본 $x$로 가는 화살표는 "더 그럴듯한 입력으로 향하는 방향"이다. 이 방향이 곧 데이터 분포의 로그 밀도가 증가하는 방향, 즉 점수(score)다. 이 동등성 덕분에 DAE는 명시적으로 확률 분포를 학습하지 않으면서도 그 분포를 암묵적으로 모델링한다. 이 결과는 2020년 이후 확산 모델(diffusion model)의 이론적 토대가 되었다.`,
+    },
+    {
+      n: 'Q4',
+      q: 'CAE의 자코비안 페널티 $\\|\\partial f/\\partial x\\|_F^2$가 모델을 항등 함수로 만들지 않는 이유는?',
+      a: `<b>한 줄 답안.</b> 자코비안 페널티는 "코드를 무감각하게" 만들지만, <strong>재구성 손실</strong>이 "꼭 필요한 정보는 살려라"라고 반박하기 때문이다. 두 항이 충돌하면서 모델은 데이터 매니폴드의 접선 방향에만 민감한 절충점에 도달한다.<br><br>` +
+         `<b>근거.</b> 자코비안 페널티만 있으면 $f(x) = $ 상수 함수가 최적이다(감도 0). 그러나 재구성 손실은 "$h$로부터 $x$를 다시 만들 수 있어야 한다"고 요구하므로, 데이터를 구분하는 데 꼭 필요한 차원의 감도는 남겨야 한다. 결과적으로 학습된 인코더는 매니폴드 접선 방향에만 민감하고 그 외 방향에는 둔감해진다. DAE와 같은 목표를 해석적으로 달성한 것.`,
+    },
+    {
+      n: 'Q5',
+      q: '미완전 AE·DAE·CAE의 결과가 결국 같다는 것은 무슨 뜻인가?',
+      a: `<b>한 줄 답안.</b> 출발점은 다르지만(차원 제약 / 노이즈 / 페널티) 모두 데이터 매니폴드의 모양을 학습한다는 의미에서 같은 곳에 도달한다.<br><br>` +
+         `<b>근거.</b> 셋 다 자기부호화기가 "데이터 분포가 집중된 좁은 매니폴드"를 인식하고, 그 위에서만 정확히 복원하도록 학습된다. 미완전은 잠재 차원 자체를 매니폴드 좌표로 쓴다. DAE는 매니폴드로의 사영 연산자를 학습한다. CAE는 매니폴드의 국소 접선 공간을 명시적으로 직선화한다. 표현 방식이 다를 뿐 본질적으로 같은 매니폴드를 그리고 있다 — 이것이 14장이 매니폴드 학습의 통일적 관점에서 닫히는 이유다.`,
+    },
+  ];
+
+  const qaBlock = document.getElementById('qa-block');
+  QA.forEach(item => {
+    const qa = document.createElement('div');
+    qa.className = 'qa';
+    qa.innerHTML =
+      `<div class="qa-q"><span class="qn">${item.n}</span><span>${item.q}</span><span class="qx">+</span></div>` +
+      `<div class="qa-a"><div class="qa-a-inner">${item.a}</div></div>`;
+    qaBlock.appendChild(qa);
+    qa.querySelector('.qa-q').addEventListener('click', () => {
+      qa.classList.toggle('open');
+    });
+  });
+
+  // KaTeX
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
+        throwOnError: false,
+      });
+    }
+  });
+</script>
+</body>
+</html>

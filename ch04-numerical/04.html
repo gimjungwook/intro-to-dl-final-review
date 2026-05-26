@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ch.04 · 04 · 헤시안과 2계 방법</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .hn-stage { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1.2rem 1.1rem 1rem; }
+  @media (max-width: 720px) { .hn-stage { grid-template-columns: 1fr; } }
+  .hn-col { background: #fff; border: 1px solid var(--line-soft); border-radius: 10px; padding: .6rem; }
+  .hn-col h5 { margin: 0 0 .5rem; padding: 0 .3rem; font-family: var(--mono); font-size: .7rem; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-faint); display: flex; justify-content: space-between; align-items: center; }
+  .hn-col.gd h5 { color: var(--style); }
+  .hn-col.nt h5 { color: var(--structure); }
+  .hn-col canvas { display: block; width: 100%; aspect-ratio: 1 / 1; border-radius: 6px; }
+  .hn-meta { display: flex; justify-content: space-between; gap: .6rem; padding: .5rem .4rem 0; font-family: var(--mono); font-size: .72rem; color: var(--ink-soft); }
+  .hn-meta b { color: var(--ink); }
+
+  .scope { display: flex; gap: .35rem; flex-wrap: wrap; padding: 0 .3rem; }
+  .scope .btn.ghost.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-Chapter 04 · 헤시안과 2계 방법</span>
+      <h1><span class="t-structure">곡률</span>까지 알면<br>한 번에 점프할 수 있다</h1>
+      <p class="lede">기울기는 "어디로 가야 줄어드는가"만 알려 준다. 헤시안은 한 단계 더 가서 "지금 가는 방향이 앞으로도 좋을지"를 알려 준다. 그 정보를 쓰면 한 번에 큰 점프(뉴턴법)가 가능하지만, 모든 비용이 무료는 아니다.</p>
+    </header>
+
+    <div class="prose">
+      <p>앞 장에서 본 단순 경사하강은 한 번에 한 발씩 내려가는 1계 방법(first-order method)이다. 그러나 함수가 어떤 방향으로는 가파르고 다른 방향으로는 완만한 경우, 1계 방법은 학습률 하나로 두 마리 토끼를 잡을 수 없다. 곡률을 알아야 한다. 그 곡률이 바로 <strong>헤시안</strong>이다.</p>
+
+      <h2>야코비안과 헤시안 — 한 줄로</h2>
+      <p>먼저 야코비안(Jacobian)부터 정리하자. 벡터 입력, 벡터 출력 함수 $\mathbf{f}: \mathbb{R}^n \to \mathbb{R}^m$의 모든 편미분을 모은 $m \times n$ 행렬이다.</p>
+
+      <div class="math-block">$$ J_{ij} \;=\; \frac{\partial f_i}{\partial x_j}, \quad J \in \mathbb{R}^{m \times n} $$</div>
+      <p class="math-note">신경망의 한 층이 입력 벡터를 출력 벡터로 보낼 때의 1계 정보. 역전파(backprop)에서 핵심.</p>
+
+      <p>이제 헤시안(Hessian)이다. 스칼라 출력 함수 $f: \mathbb{R}^n \to \mathbb{R}$의 모든 2차 편미분을 모은 $n \times n$ 행렬이다.</p>
+
+      <div class="math-block">$$ H_{ij} \;=\; \frac{\partial^2 f}{\partial x_i \, \partial x_j}, \quad H \in \mathbb{R}^{n \times n} $$</div>
+      <p class="math-note">두 번째 미분의 모음. 슈바르츠 정리에 의해 대칭. 곡률 정보를 담는다.</p>
+
+      <p>왜 이것이 곡률인가. 한 점 $\mathbf{x}$ 근처에서 $f$를 2차 테일러 전개하면 다음과 같다.</p>
+
+      <div class="math-block">$$ f(\mathbf{x} + \boldsymbol{\delta}) \;\approx\; f(\mathbf{x}) \;+\; \boldsymbol{\delta}^\top \nabla f \;+\; \tfrac{1}{2} \boldsymbol{\delta}^\top H \boldsymbol{\delta} $$</div>
+      <p class="math-note">1차항은 기울기 방향의 변화, 2차항은 곡률 정보. δ는 작은 변위.</p>
+
+      <p>2차항 $\tfrac{1}{2} \boldsymbol{\delta}^\top H \boldsymbol{\delta}$는 방향 $\boldsymbol{\delta}$에 따라 함수가 얼마나 빠르게 휘는지 알려 준다. 어떤 방향에서는 위로 볼록(positive curvature, 그릇 모양)하고, 다른 방향에서는 아래로 볼록(negative curvature, 언덕 모양)할 수 있다. 이를 한 숫자로 요약하면 <strong>$H$의 고윳값</strong>이다.</p>
+
+      <ul>
+        <li>모든 고윳값 &gt; 0 → 모든 방향에서 위로 볼록 → <strong>국소 최소</strong></li>
+        <li>모든 고윳값 &lt; 0 → 모든 방향에서 아래로 볼록 → <strong>국소 최대</strong></li>
+        <li>일부는 양, 일부는 음 → <strong>안장점</strong> (saddle point)</li>
+        <li>일부 고윳값이 정확히 0 → 결정 불가, 더 높은 차수 필요</li>
+      </ul>
+
+      <p>이 분류가 왜 중요한가. 앞 장에서 경사하강이 멈춘 점이 진짜 최소인지 안장점인지 1계 정보만으로는 구별할 수 없다고 했다. 헤시안의 고윳값 부호가 그 구별을 가능하게 한다. 고차원 딥러닝 손실 표면에서 안장점이 국소최소보다 훨씬 흔하다는 것이 최근 연구의 결과이고, 그래서 2계 정보의 진단 가치는 항상 살아 있다.</p>
+
+      <h2>뉴턴 방법 — 2차 근사의 최솟값으로 한 번에 점프</h2>
+      <p>2차 근사가 정확하다고 믿고 그 근사함수의 최솟값으로 한 번에 가 보자. 2차항 $\tfrac{1}{2} \boldsymbol{\delta}^\top H \boldsymbol{\delta} + \boldsymbol{\delta}^\top \nabla f$를 $\boldsymbol{\delta}$로 미분해 0으로 두면, $H \boldsymbol{\delta} + \nabla f = 0$이다. 정리하면 다음 업데이트 식이 나온다.</p>
+
+      <div class="math-block">$$ \mathbf{x}_{k+1} \;=\; \mathbf{x}_k \;-\; H^{-1}(\mathbf{x}_k) \, \nabla f(\mathbf{x}_k) $$</div>
+      <p class="math-note">기울기에 헤시안 역행렬을 곱한 방향으로 점프. 학습률 ε가 없다.</p>
+
+      <p>왜 이 형태가 강력한가. 함수가 진짜 이차식이라면 한 스텝에 정확히 최솟값에 도달한다. 일반적인 경우에도 최솟값 근처에서는 2차 근사가 잘 맞기 때문에, 1계 방법보다 훨씬 적은 스텝으로 수렴한다. 그리고 학습률 ε를 따로 잡을 필요가 없다. $H^{-1}$ 자체가 각 방향마다 적절한 스케일을 자동으로 부여하기 때문이다. 사실상 헤시안이 조건수 문제를 자체적으로 보정해 준다.</p>
+
+      <div class="analogy">
+        <b>지도를 가진 등산</b>이다. 1계 방법은 발 밑의 경사만 보고 한 걸음씩 내려가는 안개 속 등산이라면, 뉴턴법은 주변 지형의 등고선 지도를 들고 골짜기의 가장 낮은 점이 어디인지 직접 가리키고 한 번에 점프하는 등산이다. 단, 그 지도가 정확하다는 전제하에.
+      </div>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 04</span><span>GD vs Newton — 같은 시작점, 다른 궤적</span></div>
+        <div class="hn-stage">
+          <div class="hn-col gd">
+            <h5><span>경사하강 (1계)</span><span id="hnGdStat">—</span></h5>
+            <canvas id="hnGd"></canvas>
+            <div class="hn-meta"><span>스텝 <b id="hnGdSteps">0</b></span><span>‖∇f‖ <b id="hnGdGn">—</b></span></div>
+          </div>
+          <div class="hn-col nt">
+            <h5><span>뉴턴법 (2계)</span><span id="hnNtStat">—</span></h5>
+            <canvas id="hnNt"></canvas>
+            <div class="hn-meta"><span>스텝 <b id="hnNtSteps">0</b></span><span>‖∇f‖ <b id="hnNtGn">—</b></span></div>
+          </div>
+        </div>
+        <div class="widget-controls">
+          <div class="slider"><label>등고선 종횡비 (조건수 √κ) <b id="hnAspect">3.0</b></label><input type="range" id="hnA" min="10" max="80" value="30" step="1"></div>
+          <div class="slider"><label>경사하강 학습률 ε <b id="hnLRLab">0.06</b></label><input type="range" id="hnLR" min="1" max="50" value="6" step="1"></div>
+          <div class="scope">
+            <button class="btn ghost on" data-scope="bowl">그릇 (양정치)</button>
+            <button class="btn ghost" data-scope="saddle">안장점</button>
+          </div>
+          <button class="btn" id="hnRun">처음부터 다시</button>
+        </div>
+      </div>
+      <p class="widget-cap">그릇 모양에서 같은 시작점·같은 종횡비 조건에서, 1계 경사하강은 지그재그로 여러 스텝을 거치지만 뉴턴법은 한두 스텝 만에 중심에 도달한다. 그러나 <b>안장점</b> 함수에서는 뉴턴법이 오히려 안장점으로 빨려 들어 정지하는 경우가 생긴다. 뉴턴은 만능이 아니다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>왜 딥러닝에서 뉴턴법이 안 쓰이는가</h2>
+      <p>그렇게 강력해 보이는 뉴턴법이 왜 실제 딥러닝 학습에서는 거의 안 쓰이는지 정리하자.</p>
+
+      <ul>
+        <li><strong>비용</strong> — 헤시안 $H$를 만들려면 $n^2$개의 원소를, 역행렬을 구하려면 $\mathcal{O}(n^3)$ 연산이 필요하다. 신경망의 파라미터 수 $n$이 수억 단위인 현대 모델에서는 헤시안을 메모리에 올리는 것조차 불가능하다.</li>
+        <li><strong>안장점 함정</strong> — 위의 위젯에서 보듯, 뉴턴법은 1계 조건 $\nabla f = 0$을 만족하는 모든 점을 "최적" 후보로 본다. 그래서 안장점에도 똑같이 빨려 든다. 1계 방법은 적어도 지나가는 안장점은 잘 통과하는 경우가 많다.</li>
+        <li><strong>$H$가 양정치가 아닐 때</strong> — 역행렬이 발산하거나 잘못된 방향으로 점프할 수 있다. 그래서 실전에서는 $H$ 대신 양정치를 보장하는 근사(예: BFGS의 양정치 갱신, Gauss-Newton의 $J^\top J$ 근사)를 쓴다.</li>
+      </ul>
+
+      <p>그래서 현대 딥러닝은 1계 방법(SGD, Adam 등)을 주축으로 쓰고, 헤시안 정보는 <em>대각 근사</em>나 <em>벡터-곱 형태(Hessian-vector product)</em>로만 간접 활용한다. Adam의 $v_t$(이차 모멘트)는 사실 헤시안의 대각 성분을 통계적으로 근사하는 것으로 해석되기도 한다.</p>
+
+      <h2>한 줄 요약 — 1계와 2계의 자리</h2>
+      <p>1계 정보는 <strong>방향</strong>을 알려 준다. 2계 정보는 <strong>스케일과 곡률</strong>을 알려 준다. 학습률을 자동으로 보정하고 싶다면, 또는 멈춘 점이 진짜 최소인지 안장점인지 가르고 싶다면, 어떤 형태로든 2계 정보가 들어와야 한다. 모멘텀, Adam, 배치 정규화 같은 현대 옵티마이저들이 사실은 2계 정보를 싸게 흉내 내는 장치라는 관점이 가능하다.</p>
+
+      <h2>다음으로</h2>
+      <p>지금까지는 제약이 없는 최소화 문제였다. 그러나 실제 문제는 종종 "해가 어떤 집합 안에 있어야 한다"는 조건을 동반한다. 가중치의 노름을 제한하거나, 확률 분포의 합이 1이 되어야 하거나. 다음 장에서는 <strong>제약 최적화</strong>의 핵심 도구인 KKT 조건을 직관적으로 본다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'부동소수점의 함정' },
+    { no:'02', t:'잘못된 조건수' },
+    { no:'03', t:'경사 기반 최적화' },
+    { no:'04', t:'헤시안과 2계 방법' },
+    { no:'05', t:'제약 최적화와 KKT' },
+    { no:'06', t:'시험 대비' },
+  ];
+  function buildNav(current) {
+    const tb = document.querySelector('.topbar');
+    if (tb) tb.innerHTML =
+      `<a class="home" href="index.html">← Ch.04 수치 계산</a>` +
+      `<span class="ch-mini">SUB ${current} / 06</span>`;
+    const ol = document.querySelector('.ch-nav ol');
+    if (ol) ol.innerHTML = SUBS.map(s =>
+      `<li><a href="${s.no}.html" ${s.no === current ? 'class="current"' : ''}>${s.t}</a></li>`).join('');
+    const foot = document.querySelector('.ch-foot');
+    if (foot) {
+      const i = SUBS.findIndex(s => s.no === current);
+      const prev = i > 0 ? SUBS[i-1] : { no:'index', t:'표지로' };
+      const next = i < SUBS.length-1 ? SUBS[i+1] : { no:'index', t:'표지로' };
+      foot.innerHTML =
+        `<a href="${prev.no === 'index' ? 'index.html' : prev.no + '.html'}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+        `<a href="${next.no === 'index' ? 'index.html' : next.no + '.html'}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+    }
+    const bar = document.querySelector('.scroll-progress');
+    if (bar) {
+      const onScroll = () => {
+        const h = document.documentElement;
+        const max = h.scrollHeight - h.clientHeight;
+        bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+      };
+      document.addEventListener('scroll', onScroll, { passive: true });
+      onScroll();
+    }
+  }
+
+  // ===== 위젯: GD vs Newton =====
+  let scope = 'bowl';
+  let runId = 0;
+
+  // 함수: 그릇 f = 0.5*(x² + a² y²), 안장 f = 0.5*x² − 0.5*a*y²
+  function gradFn(x, y, a) {
+    if (scope === 'bowl') return [x, a*a*y];
+    return [x, -a*y];
+  }
+  function hessFn(a) {
+    if (scope === 'bowl') return [[1, 0], [0, a*a]];
+    return [[1, 0], [0, -a]];
+  }
+  function invHess2x2(H) {
+    const det = H[0][0]*H[1][1] - H[0][1]*H[1][0];
+    if (Math.abs(det) < 1e-9) return null;
+    return [[H[1][1]/det, -H[0][1]/det], [-H[1][0]/det, H[0][0]/det]];
+  }
+
+  function setupOne(id) {
+    const c = document.getElementById(id);
+    const rect = c.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    c.width = rect.width * dpr;
+    c.height = rect.height * dpr;
+    const ctx = c.getContext('2d');
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    return { ctx, w: rect.width, h: rect.height };
+  }
+
+  function drawContours(ctx, w, h, a) {
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = '#FAF7F0'; ctx.fillRect(0, 0, w, h);
+    const cx = w/2, cy = h/2;
+    const scale = Math.min(w, h) * 0.42;
+
+    if (scope === 'bowl') {
+      const levels = [0.05, 0.15, 0.3, 0.5, 0.8, 1.1];
+      levels.forEach((c, idx) => {
+        ctx.strokeStyle = `rgba(45, 91, 122, ${0.13 + idx * 0.07})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (let t = 0; t <= Math.PI*2 + 0.01; t += 0.04) {
+          const x = Math.sqrt(2*c) * Math.cos(t);
+          const y = Math.sqrt(2*c) * Math.sin(t) / a;
+          const px = cx + x * scale;
+          const py = cy - y * scale;
+          if (t === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        }
+        ctx.closePath(); ctx.stroke();
+      });
+    } else {
+      // saddle: f = 0.5*x² − 0.5*a*y² → 쌍곡선 등고선
+      const levels = [-0.6, -0.3, -0.1, 0, 0.1, 0.3, 0.6];
+      levels.forEach((c, idx) => {
+        const alpha = 0.18 + Math.abs(c)*0.3;
+        ctx.strokeStyle = c > 0 ? `rgba(45, 91, 122, ${alpha})` : `rgba(192, 73, 46, ${alpha})`;
+        ctx.lineWidth = 1;
+        if (c === 0) {
+          // y = ±x/√a 직선
+          ctx.strokeStyle = 'rgba(38,34,28,0.18)';
+          ctx.setLineDash([4,3]);
+          for (const sign of [1, -1]) {
+            ctx.beginPath();
+            ctx.moveTo(cx - scale, cy + sign * scale / Math.sqrt(a));
+            ctx.lineTo(cx + scale, cy - sign * scale / Math.sqrt(a));
+            ctx.stroke();
+          }
+          ctx.setLineDash([]);
+        } else {
+          // x²/2c − a y²/2c = ±1
+          // 양수 c: x² − a y² = 2c (좌우 가지)
+          // 음수 c: −x² + a y² = −2c → 위아래 가지
+          ctx.beginPath();
+          let started = false;
+          for (let t = -1.5; t <= 1.5; t += 0.04) {
+            if (c > 0) {
+              const x2 = 2*c + a*t*t;
+              if (x2 < 0) continue;
+              const x = Math.sqrt(x2);
+              for (const sx of [1, -1]) {
+                const px = cx + sx * x * scale * 0.6;
+                const py = cy - t * scale;
+                if (Math.abs(px-cx) > scale || Math.abs(py-cy) > scale) continue;
+                if (!started) { ctx.moveTo(px, py); started = true; } else { ctx.lineTo(px, py); }
+              }
+            } else {
+              const y2 = (-2*c + t*t) / a;
+              if (y2 < 0) continue;
+              const y = Math.sqrt(y2);
+              for (const sy of [1, -1]) {
+                const px = cx + t * scale;
+                const py = cy - sy * y * scale * 0.6;
+                if (Math.abs(px-cx) > scale || Math.abs(py-cy) > scale) continue;
+                if (!started) { ctx.moveTo(px, py); started = true; } else { ctx.lineTo(px, py); }
+              }
+            }
+          }
+          ctx.stroke();
+        }
+      });
+    }
+    ctx.fillStyle = '#26221C';
+    ctx.beginPath(); ctx.arc(cx, cy, 3, 0, Math.PI*2); ctx.fill();
+    return { cx, cy, scale };
+  }
+
+  function drawTrail(ctx, geom, trail, color) {
+    ctx.strokeStyle = color + '70';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    trail.forEach((p, i) => {
+      const px = geom.cx + p.x * geom.scale;
+      const py = geom.cy - p.y * geom.scale;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    });
+    ctx.stroke();
+    trail.forEach((p, i) => {
+      const px = geom.cx + p.x * geom.scale;
+      const py = geom.cy - p.y * geom.scale;
+      const isLast = i === trail.length - 1;
+      ctx.fillStyle = isLast ? color : color + '90';
+      ctx.beginPath(); ctx.arc(px, py, isLast ? 4.5 : 2.5, 0, Math.PI*2); ctx.fill();
+    });
+    // 시작점 라벨
+    if (trail.length > 0) {
+      ctx.fillStyle = '#26221C';
+      ctx.font = '11px "Spline Sans Mono", monospace';
+      const px = geom.cx + trail[0].x * geom.scale;
+      const py = geom.cy - trail[0].y * geom.scale;
+      ctx.fillText('x₀', px + 6, py - 6);
+    }
+  }
+
+  function run() {
+    runId++;
+    const myId = runId;
+    const a = parseFloat(document.getElementById('hnA').value) / 10;
+    const lr = parseFloat(document.getElementById('hnLR').value) / 100;
+    document.getElementById('hnAspect').textContent = a.toFixed(1);
+    document.getElementById('hnLRLab').textContent = lr.toFixed(2);
+
+    const gd = setupOne('hnGd');
+    const nt = setupOne('hnNt');
+
+    const start = { x: -0.85, y: 0.3 / Math.max(a, 1) };
+
+    let gdTrail = [{ ...start }];
+    let ntTrail = [{ ...start }];
+    let gdSteps = 0, ntSteps = 0;
+    let gdDone = false, ntDone = false;
+
+    function tick() {
+      if (myId !== runId) return;
+
+      if (!gdDone) {
+        const last = gdTrail[gdTrail.length-1];
+        const [gx, gy] = gradFn(last.x, last.y, a);
+        const nx = last.x - lr * gx;
+        const ny = last.y - lr * gy;
+        const dist = Math.hypot(nx, ny);
+        if (!isFinite(dist) || dist > 50) {
+          gdDone = true;
+          document.getElementById('hnGdStat').textContent = '발산';
+        } else {
+          gdTrail.push({ x: nx, y: ny });
+          gdSteps++;
+          if (Math.hypot(gx, gy) < 0.005 && gdSteps > 1) {
+            gdDone = true;
+            document.getElementById('hnGdStat').textContent = scope === 'saddle' ? '안장점 도달' : '수렴';
+          }
+          if (gdSteps > 300) {
+            gdDone = true;
+            document.getElementById('hnGdStat').textContent = '>300';
+          }
+        }
+        document.getElementById('hnGdSteps').textContent = gdSteps;
+        const lastG = gradFn(gdTrail[gdTrail.length-1].x, gdTrail[gdTrail.length-1].y, a);
+        document.getElementById('hnGdGn').textContent = isFinite(Math.hypot(lastG[0], lastG[1])) ? Math.hypot(lastG[0], lastG[1]).toFixed(3) : '∞';
+      }
+
+      if (!ntDone) {
+        const last = ntTrail[ntTrail.length-1];
+        const [gx, gy] = gradFn(last.x, last.y, a);
+        const H = hessFn(a);
+        const Hinv = invHess2x2(H);
+        if (!Hinv) {
+          ntDone = true;
+          document.getElementById('hnNtStat').textContent = 'H 특이';
+        } else {
+          // 뉴턴 스텝을 작게 분할해서 보여주기 (시각화용 — 사실 1스텝에 끝나지만)
+          const dx = -(Hinv[0][0]*gx + Hinv[0][1]*gy);
+          const dy = -(Hinv[1][0]*gx + Hinv[1][1]*gy);
+          const subSteps = 6;
+          if (!ntDone) {
+            const t = Math.min(1, (ntSteps % subSteps + 1) / subSteps);
+            const nx = last.x + dx * t;
+            const ny = last.y + dy * t;
+            ntTrail[ntTrail.length-1] = ntTrail[ntTrail.length-1]; // 유지
+            // 보간 진행 시 trail 끝을 이동
+            const baseTrail = ntTrail.slice(0, ntTrail.length - (ntSteps % subSteps > 0 ? 1 : 0));
+            // 깔끔하게: subSteps마다 하나씩 추가
+            if (ntSteps % subSteps === subSteps - 1 || subSteps === 1) {
+              ntTrail.push({ x: last.x + dx, y: last.y + dy });
+            } else {
+              // 마지막 점만 갱신
+              if (ntTrail.length > baseTrail.length) {
+                ntTrail[ntTrail.length-1] = { x: nx, y: ny };
+              } else {
+                ntTrail.push({ x: nx, y: ny });
+              }
+            }
+          }
+          ntSteps++;
+          const trueDist = Math.hypot(dx, dy);
+          if (trueDist < 0.005 || ntSteps > 60) {
+            ntDone = true;
+            const finalG = gradFn(ntTrail[ntTrail.length-1].x, ntTrail[ntTrail.length-1].y, a);
+            const eig = scope === 'bowl' ? '+,+' : '+,−';
+            document.getElementById('hnNtStat').textContent = scope === 'saddle' ? '안장점 정지' : '한 번에 수렴';
+            document.getElementById('hnNtGn').textContent = Math.hypot(finalG[0], finalG[1]).toFixed(3);
+          }
+        }
+        document.getElementById('hnNtSteps').textContent = Math.floor(ntSteps / 6);
+      }
+
+      // redraw
+      let geom1 = drawContours(gd.ctx, gd.w, gd.h, a);
+      drawTrail(gd.ctx, geom1, gdTrail, '#C0492E');
+      let geom2 = drawContours(nt.ctx, nt.w, nt.h, a);
+      drawTrail(nt.ctx, geom2, ntTrail, '#2D5B7A');
+
+      if (!gdDone || !ntDone) setTimeout(tick, 50);
+    }
+    document.getElementById('hnGdStat').textContent = '진행';
+    document.getElementById('hnNtStat').textContent = '진행';
+    tick();
+  }
+
+  window.addEventListener('load', () => {
+    buildNav('04');
+    document.getElementById('hnA').addEventListener('input', () => {
+      document.getElementById('hnAspect').textContent = (parseFloat(document.getElementById('hnA').value) / 10).toFixed(1);
+    });
+    document.getElementById('hnLR').addEventListener('input', () => {
+      document.getElementById('hnLRLab').textContent = (parseFloat(document.getElementById('hnLR').value) / 100).toFixed(2);
+    });
+    document.getElementById('hnRun').addEventListener('click', run);
+    document.querySelectorAll('.scope .btn').forEach(b => {
+      b.addEventListener('click', () => {
+        document.querySelectorAll('.scope .btn').forEach(x => x.classList.remove('on'));
+        b.classList.add('on');
+        scope = b.dataset.scope;
+        run();
+      });
+    });
+    window.addEventListener('resize', run);
+    setTimeout(run, 100);
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [
+          { left: '$$', right: '$$', display: true },
+          { left: '$',  right: '$',  display: false }
+        ]
+      });
+    }
+  });
+</script>
+</body>
+</html>

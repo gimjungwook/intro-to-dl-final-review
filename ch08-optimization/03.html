@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ch.8 · 03 — 미니배치 SGD</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .batch-stage { padding: 1.2rem 1rem 1rem; }
+  .batch-svg { display: block; width: 100%; max-width: 640px; margin: 0 auto; height: 320px; }
+  .batch-ctrl { display: flex; gap: 1rem; justify-content: center; padding: .6rem 1rem 1rem; flex-wrap: wrap; }
+  .batch-read { max-width: var(--measure); margin: .4rem auto 0; padding: .6rem 1.4rem 1rem; font-family: var(--mono); font-size: .82rem; color: var(--ink-soft); text-align: center; }
+  .batch-read b { color: var(--ink); }
+
+  .lr-svg { display: block; width: 100%; max-width: 640px; margin: 0 auto; height: 320px; }
+  .lr-ctrl { display: flex; gap: 1rem; justify-content: center; padding: .6rem 1rem 1rem; flex-wrap: wrap; }
+
+  .factor-grid { max-width: var(--measure); margin: 1.6rem auto; padding-inline: 1.4rem; display: grid; grid-template-columns: 1fr 1fr; gap: .9rem; }
+  @media (max-width: 600px) { .factor-grid { grid-template-columns: 1fr; } }
+  .factor-card { padding: 1rem 1.2rem; background: #fff; border: 1px solid var(--line); border-radius: 11px; }
+  .factor-card h4 { margin: 0 0 .4rem; font-family: var(--serif); font-size: 1.05rem; color: var(--structure); }
+  .factor-card p { margin: 0; font-size: .88rem; color: var(--ink-soft); line-height: 1.55; }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar">
+  <a class="home" href="index.html">← Chapter 08 표지</a>
+  <span class="ch-mini">SUB 03 / 08 · Optimization</span>
+</div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol id="nav"></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-chapter 03 · 가장 기본적인 무기</span>
+      <h1>왜 우리는 일부러<br><span class="t-synth">잡음 있는 기울기</span>를 받아들이는가</h1>
+      <p class="lede">전체 훈련셋의 정확한 기울기를 한 번 계산하는 대신, 작은 표본의 대략적인 기울기를 여러 번 계산하는 것이 더 빠르다. $\sigma/\sqrt{n}$의 수확 체감(diminishing returns)이 이 모든 트레이드오프의 핵심이다.</p>
+    </header>
+
+    <div class="prose">
+      <p>훈련셋이 100만 개라고 하자. 진짜 기울기를 정확히 구하려면 100만 개 예시 모두에서 손실의 기울기를 계산해 평균을 내야 한다. 이를 <strong>배치 경사하강법(batch gradient descent)</strong>이라 한다. 정확하지만 한 번의 업데이트가 너무 무겁다.</p>
+
+      <p>반대 극단은 <strong>온라인 학습(online learning)</strong>이다. 한 예시당 한 번 업데이트. 가벼우나 한 예시의 기울기는 너무 잡음이 많다. 그 중간이 <strong>미니배치 확률적 경사하강법(minibatch stochastic gradient descent)</strong>이다. 한 번에 $m$개 예시(보통 32-256)만 뽑아 평균 기울기를 구한 뒤 업데이트한다.</p>
+
+      <div class="math-block">$$ \hat g \;=\; \frac{1}{m}\sum_{i=1}^{m} \nabla_{\theta}\, L\!\left(f(x^{(i)};\theta),\,y^{(i)}\right),\qquad \theta \leftarrow \theta - \varepsilon\,\hat g $$</div>
+      <p class="math-note">$\hat g$는 미니배치로 추정한 기울기, $\varepsilon$는 학습률. 이 한 줄이 딥러닝 학습의 99%를 차지한다.</p>
+
+      <h2>왜 미니배치가 이긴다 — $\sigma/\sqrt{n}$의 수확 체감</h2>
+
+      <p>핵심 통계적 사실은 다음이다. 모집단 표준편차가 $\sigma$일 때, $n$개 표본의 평균의 표준오차(standard error)는</p>
+
+      <div class="math-block">$$ \text{SE}(\bar g) \;=\; \frac{\sigma}{\sqrt{n}} $$</div>
+      <p class="math-note">표본 수가 4배 늘면 오차는 2배만 줄고, 100배 늘면 10배만 줄어든다. 즉 <b>표본 수의 효익은 계속 줄어든다(diminishing returns)</b>.</p>
+
+      <p>이 수확 체감이 왜 SGD를 가능하게 하는가? 계산 비용은 표본 수에 <em>비례</em>하지만, 정확도 향상은 $\sqrt{n}$밖에 안 된다. 같은 비용으로 “정확한 기울기 하나”를 구하는 것보다 “대략적인 기울기 100개”를 구해 한 번씩 업데이트하는 쪽이 진전이 훨씬 빠르다.</p>
+
+      <div class="analogy">
+        <b>두 명의 등산가</b>가 안개 낀 산을 내려간다고 하자. 등산가 A는 360도 정밀 측량 장비로 “정확한 내리막 방향”을 한 시간에 걸쳐 측정한 뒤 한 발 내딛는다. 등산가 B는 손가락에 침을 묻혀 “대충 내리막 방향”을 5초 만에 정하고 한 발 내딛는다. 한 시간 뒤 누가 더 멀리 내려와 있을까? B다. B의 한 발은 약간 비스듬해도, A보다 720배나 많은 발을 내딛었기 때문이다. 게다가 그 “비스듬함”은 다음 발에서 자연스럽게 평균이 잡힌다.
+      </div>
+
+      <p>이 직관에는 또 다른 보너스가 있다. 훈련 데이터에는 <strong>중복(redundancy)</strong>이 있다. 비슷한 손글씨 ‘7’이 수백 장 있다면, 그중 32장만 봐도 “7의 기울기 정보”는 거의 다 들어 있다. 추가 968장은 같은 신호를 반복해 거의 새 정보를 주지 못한다. 그래서 32-256 정도의 작은 배치로도 학습이 충분히 진전된다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 04</span><span>배치 크기와 기울기 추정 — 분산 직접 확인</span></div>
+        <div class="batch-stage">
+          <svg class="batch-svg" id="batchSvg" viewBox="0 0 640 320"></svg>
+        </div>
+        <div class="batch-ctrl">
+          <div class="slider"><label>배치 크기 $m$ <b id="mVal">32</b></label>
+            <input type="range" id="mSlider" min="1" max="500" step="1" value="32">
+          </div>
+          <button class="btn" id="batchRun">기울기 50번 다시 표본 추출</button>
+        </div>
+        <p class="batch-read" id="batchRead">— 슬라이더를 움직이거나 버튼을 눌러 보세요 —</p>
+      </div>
+      <p class="widget-cap">검은 점선은 진짜 기울기(전체 평균). 주황 점들은 무작위 미니배치 50개로 추정한 기울기들이다. 배치 크기 $m$을 키우면 점들이 진짜 값 주위로 몰리지만, 1에서 100으로 늘릴 때와 100에서 1000으로 늘릴 때의 “모임 정도” 차이는 점점 줄어든다 — 이것이 $1/\sqrt{m}$의 수확 체감이다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>배치 크기 결정 — 여섯 가지 요소</h2>
+      <p>배치 크기를 정할 때 고려할 요소들은 다음과 같다.</p>
+    </div>
+
+    <div class="factor-grid">
+      <div class="factor-card"><h4>기울기 정확도</h4><p>큰 배치 = 더 정확한 기울기. 그러나 $1/\sqrt{m}$의 수확 체감 — 두 배 정확하게 만들려면 네 배 배치 필요.</p></div>
+      <div class="factor-card"><h4>GPU 활용률</h4><p>너무 작은 배치는 하드웨어를 충분히 활용하지 못함. 행렬 곱이 메모리 대역폭에 묶임.</p></div>
+      <div class="factor-card"><h4>메모리 제약</h4><p>활성값과 기울기를 모두 저장하므로 배치 크기에 비례해 메모리 소모. 한계는 결국 GPU 메모리.</p></div>
+      <div class="factor-card"><h4>잡음의 정칙화 효과</h4><p>작은 배치의 잡음이 약한 정칙화 역할. 너무 큰 배치는 일반화가 오히려 나빠질 수 있음.</p></div>
+      <div class="factor-card"><h4>2의 거듭제곱</h4><p>GPU 아키텍처에 맞춰 $32, 64, 128, 256$이 효율적. 메모리 정렬과 텐서 코어 활용.</p></div>
+      <div class="factor-card"><h4>무작위 추출</h4><p>편향된 미니배치(예: 한 환자 데이터만 모임)는 기울기 추정을 비편향에서 이탈시킴. 학습 전 반드시 셔플.</p></div>
+    </div>
+
+    <div class="prose">
+      <h2>학습률 스케줄 — 잡음과의 평화 협정</h2>
+
+      <p>SGD에는 결정적인 단점이 있다. <strong>최적점에 도달해도 잡음 때문에 기울기가 0이 되지 않는다</strong>. 미니배치를 새로 뽑을 때마다 약간 다른 방향이 나오기 때문이다. 학습률 $\varepsilon$를 고정한 채로 두면, 파라미터는 최적점 근처에서 영원히 진동한다.</p>
+
+      <p>그래서 학습률을 시간에 따라 줄여야 한다. 수렴을 수학적으로 보장하는 충분조건은 다음 두 가지다.</p>
+
+      <div class="math-block">$$ \sum_{k=1}^{\infty} \varepsilon_{k} = \infty \qquad\text{그리고}\qquad \sum_{k=1}^{\infty} \varepsilon_{k}^{2} < \infty $$</div>
+      <p class="math-note">앞 조건은 “충분히 멀리 갈 수 있다”, 뒤 조건은 “잡음이 결국 사라진다”는 뜻. $\varepsilon_k = c/k$ 같은 스케줄이 두 조건을 동시에 만족한다.</p>
+
+      <p>실전에서는 보통 <strong>선형 감소(linear decay)</strong>를 쓴다. 초기 학습률 $\varepsilon_0$에서 최종 학습률 $\varepsilon_\tau$까지 $\tau$번의 반복에 걸쳐 직선으로 줄인다. 보통 $\varepsilon_\tau$를 $\varepsilon_0$의 약 1%로 두고, $\tau$는 전체 훈련셋을 수백 번 순회할 만큼으로 설정한다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 05</span><span>학습률의 영향 — 발산·진동·수렴</span></div>
+        <div class="batch-stage">
+          <svg class="lr-svg" id="lrSvg" viewBox="0 0 640 320"></svg>
+        </div>
+        <div class="lr-ctrl">
+          <div class="slider"><label>학습률 $\varepsilon$ <b id="lrVal">0.10</b></label>
+            <input type="range" id="lrSlider" min="0.001" max="2.0" step="0.001" value="0.1">
+          </div>
+          <button class="btn" id="lrRun">200스텝 실행</button>
+        </div>
+        <p class="batch-read" id="lrRead">— 학습률을 매우 작게/매우 크게 바꿔 보세요 —</p>
+      </div>
+      <p class="widget-cap">단순한 2차 함수 $J(\theta) = \tfrac{1}{2}\theta^2$ 위에서 경사하강을 200스텝 실행한다. $\varepsilon$이 너무 작으면 영영 못 가고, $1$ 근처에서 가장 빠르며, $2$를 넘으면 발산한다. 신경망은 이보다 훨씬 복잡한 표면을 가지므로 실제 학습률은 $10^{-4} \sim 10^{-1}$ 사이를 탐색한다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>일반화 오차의 기울기로 해석하기</h2>
+
+      <p>미니배치 SGD에는 흥미로운 통계적 해석이 있다. 각 미니배치를 <strong>$p_{\text{data}}$에서 새로 뽑은 표본</strong>으로 보면, 미니배치 기울기는 경험적 위험이 아니라 <strong>진짜 위험(true risk)의 비편향 추정치(unbiased estimator)</strong>가 된다.</p>
+
+      <div class="math-block">$$ \mathbb{E}_{\text{minibatch}}[\hat g] \;=\; \nabla_{\theta}\, \mathbb{E}_{(x,y)\sim p_{\text{data}}}[L] \;=\; \nabla_{\theta} J^{*}(\theta) $$</div>
+      <p class="math-note">미니배치 기울기의 기대값은 진짜 위험의 기울기와 같다. SGD는 사실 “경험적 위험”이 아니라 “진짜 위험”을 직접 줄이는 알고리즘으로 볼 수 있다.</p>
+
+      <p>이 해석은 같은 예시를 두 번 이상 사용하지 않을 때만 엄밀하게 성립한다 (단일 에폭 가정). 실전에서는 데이터를 여러 번 순회하므로 엄밀성은 깨지지만, “미니배치 잡음은 일반화 오차 표면을 직접 굴러 내려가는 것”이라는 직관은 여전히 유용하다.</p>
+
+      <h2>다음 장으로</h2>
+      <p>잡음 있는 기울기를 받아들였다. 그러나 잡음은 그대로 두면 진동을 유발한다. <a href="04.html">4장</a>에서는 <strong>모멘텀(momentum)</strong>을 도입해, 일관된 방향의 기울기는 누적·가속시키고 진동하는 방향은 평균을 내 상쇄하는 방법을 본다.</p>
+    </div>
+
+    <nav class="ch-foot" id="foot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUB = [
+    { no:'01', t:'순수 최적화와 ML 최적화의 차이', f:'01.html' },
+    { no:'02', t:'학습의 진짜 장애물', f:'02.html' },
+    { no:'03', t:'미니배치 SGD — 잡음 받아들이기', f:'03.html' },
+    { no:'04', t:'모멘텀과 네스테로프', f:'04.html' },
+    { no:'05', t:'적응 학습률 — AdaGrad·RMSProp·Adam', f:'05.html' },
+    { no:'06', t:'초기화 — 대칭성과 분산 균형', f:'06.html' },
+    { no:'07', t:'배치 정규화', f:'07.html' },
+    { no:'08', t:'시험 대비 — 계보·디버깅', f:'08.html' },
+  ];
+  function buildNav(curNo) {
+    const ol = document.getElementById('nav');
+    ol.innerHTML = SUB.map(c => `<li><a href="${c.f}" ${c.no===curNo?'class="current"':''}>${c.t}</a></li>`).join('');
+    const cur = SUB.findIndex(c => c.no === curNo);
+    const prev = cur > 0 ? SUB[cur-1] : { f:'index.html', t:'표지로', no:'' };
+    const next = cur < SUB.length-1 ? SUB[cur+1] : { f:'index.html', t:'표지로', no:'' };
+    document.getElementById('foot').innerHTML =
+      `<a href="${prev.f}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+      `<a href="${next.f}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+  }
+  function initProgress() {
+    const bar = document.querySelector('.scroll-progress');
+    const onScroll = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    document.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+  }
+
+  // 배치 위젯
+  function batchWidget() {
+    const svg = document.getElementById('batchSvg');
+    const W = 640, H = 320, PAD = 40;
+    const trueG = 0.0;
+    const sigma = 1.5;
+    // "예시별 기울기" 분포 (가짜) — 평균 0, 표준편차 1.5
+    function sampleGrads(n) {
+      const arr = [];
+      for (let i = 0; i < n; i++) {
+        const u = Math.random(), v = Math.random();
+        arr.push(Math.sqrt(-2*Math.log(u)) * Math.cos(2*Math.PI*v) * sigma + trueG);
+      }
+      return arr.reduce((a,b)=>a+b, 0) / n;
+    }
+    const slider = document.getElementById('mSlider');
+    const mOut = document.getElementById('mVal');
+    const readOut = document.getElementById('batchRead');
+    let samples = [];
+    function render() {
+      const m = parseInt(slider.value);
+      mOut.textContent = m;
+      // 통계
+      const mean = samples.reduce((a,b)=>a+b,0) / Math.max(samples.length,1);
+      const variance = samples.reduce((a,b)=>a+(b-mean)*(b-mean),0) / Math.max(samples.length-1,1);
+      const stdev = Math.sqrt(variance);
+      const theoSE = sigma / Math.sqrt(m);
+
+      function xPx(x) { return PAD + (x + 4) / 8 * (W - 2*PAD); }
+      const ymid = H/2;
+      let html = '';
+      // 축
+      html += `<line x1="${PAD}" y1="${ymid}" x2="${W-PAD}" y2="${ymid}" stroke="#8E8576" stroke-width="1"/>`;
+      // 진짜 기울기 선
+      html += `<line x1="${xPx(trueG)}" y1="${PAD}" x2="${xPx(trueG)}" y2="${H-PAD}" stroke="#26221C" stroke-width="1.5" stroke-dasharray="6 4"/>`;
+      html += `<text x="${xPx(trueG)+6}" y="${PAD+14}" font-family="Spline Sans Mono, monospace" font-size="11" fill="#26221C">진짜 기울기</text>`;
+      // ±1 SE 영역
+      html += `<rect x="${xPx(trueG - theoSE)}" y="${ymid - 50}" width="${xPx(trueG + theoSE) - xPx(trueG - theoSE)}" height="100" fill="#A47B2E" opacity="0.1"/>`;
+      html += `<text x="${xPx(trueG + theoSE) + 4}" y="${ymid + 65}" font-family="Spline Sans Mono, monospace" font-size="10" fill="#A47B2E">±σ/√m</text>`;
+      // 표본 점들
+      samples.forEach((g, i) => {
+        const x = xPx(g);
+        const y = ymid + (i % 8) * 14 - 56 + ((i / 8 | 0) % 2 === 0 ? 0 : 7);
+        html += `<circle cx="${x}" cy="${y}" r="3.5" fill="#C0492E" opacity="0.7"/>`;
+      });
+      // x축 라벨
+      html += `<text x="${W-PAD-5}" y="${H-PAD+22}" font-family="Spline Sans Mono, monospace" font-size="11" fill="#5A5247" text-anchor="end">추정 기울기</text>`;
+
+      svg.innerHTML = html;
+      readOut.innerHTML = `이론값 표준오차 σ/√m = <b>${theoSE.toFixed(3)}</b> &nbsp;·&nbsp; 실측 표본 표준편차 = <b>${stdev.toFixed(3)}</b> &nbsp;·&nbsp; 표본 개수 = <b>${samples.length}</b>`;
+    }
+    function regenerate() {
+      const m = parseInt(slider.value);
+      samples = [];
+      for (let i = 0; i < 50; i++) samples.push(sampleGrads(m));
+      render();
+    }
+    slider.addEventListener('input', regenerate);
+    document.getElementById('batchRun').addEventListener('click', regenerate);
+    regenerate();
+  }
+
+  // 학습률 위젯
+  function lrWidget() {
+    const svg = document.getElementById('lrSvg');
+    const W = 640, H = 320, PAD = 40;
+    function xPx(x) { return PAD + (x + 3) / 6 * (W - 2*PAD); }
+    function yPx(y) { return H - PAD - Math.min(Math.max(y, 0), 10) / 10 * (H - 2*PAD); }
+    function loss(t) { return 0.5 * t * t; }
+    let traj = [-2.5];
+    function render() {
+      let html = '';
+      // 손실 곡선
+      let p = `M ${xPx(-3)},${yPx(loss(-3))}`;
+      for (let i = -3; i <= 3; i += 0.05) p += ` L ${xPx(i)},${yPx(loss(i))}`;
+      html += `<path d="${p}" stroke="#8E8576" stroke-width="2" fill="none"/>`;
+      // 궤적
+      let trajPath = `M ${xPx(traj[0])},${yPx(loss(traj[0]))}`;
+      for (let i = 1; i < traj.length; i++) {
+        trajPath += ` L ${xPx(traj[i])},${yPx(loss(traj[i]))}`;
+      }
+      html += `<path d="${trajPath}" stroke="#C0492E" stroke-width="2" fill="none" opacity="0.7"/>`;
+      // 점들
+      traj.forEach((t, i) => {
+        html += `<circle cx="${xPx(t)}" cy="${yPx(loss(t))}" r="${i === traj.length-1 ? 6 : 2.5}" fill="#C0492E" opacity="${i === traj.length-1 ? 1 : 0.5}"/>`;
+      });
+      // 축
+      html += `<line x1="${PAD}" y1="${H-PAD}" x2="${W-PAD}" y2="${H-PAD}" stroke="#8E8576" stroke-width="1"/>`;
+      html += `<text x="${W-PAD-5}" y="${H-PAD+18}" font-family="Spline Sans Mono, monospace" font-size="10" fill="#5A5247" text-anchor="end">파라미터 θ</text>`;
+      html += `<text x="${PAD+5}" y="${PAD+14}" font-family="Spline Sans Mono, monospace" font-size="10" fill="#5A5247">J(θ) = θ²/2</text>`;
+      svg.innerHTML = html;
+    }
+    document.getElementById('lrSlider').addEventListener('input', (e) => {
+      document.getElementById('lrVal').textContent = parseFloat(e.target.value).toFixed(3);
+    });
+    document.getElementById('lrRun').addEventListener('click', () => {
+      const lr = parseFloat(document.getElementById('lrSlider').value);
+      traj = [-2.5];
+      const cap = document.getElementById('lrRead');
+      for (let i = 0; i < 200; i++) {
+        const t = traj[traj.length-1];
+        const g = t; // dJ/dθ = θ
+        const nt = t - lr * g;
+        if (!isFinite(nt) || Math.abs(nt) > 1e6) { traj.push(nt); break; }
+        traj.push(nt);
+      }
+      const final = traj[traj.length-1];
+      let diag;
+      if (!isFinite(final) || Math.abs(final) > 100) diag = '<b>발산</b> — 학습률이 너무 크다 ($\\varepsilon > 2$).';
+      else if (Math.abs(final) > 0.5) diag = `<b>진동</b> — 학습이 안정되지 않음. 최종 θ = ${final.toFixed(3)}`;
+      else if (Math.abs(final) > 1e-3) diag = `<b>느린 수렴</b> — 학습률이 작거나 진동 중. 최종 θ = ${final.toFixed(3)}`;
+      else diag = `<b>수렴</b> — 최종 θ = ${final.toExponential(2)}`;
+      cap.innerHTML = `학습률 $\\varepsilon$ = ${lr.toFixed(3)} → ${diag}`;
+      if (window.renderMathInElement) renderMathInElement(cap, { delimiters: [{ left:'$', right:'$', display:false }] });
+      render();
+    });
+    render();
+  }
+
+  window.addEventListener('load', () => {
+    buildNav('03');
+    initProgress();
+    batchWidget();
+    lrWidget();
+  });
+</script>
+</body>
+</html>

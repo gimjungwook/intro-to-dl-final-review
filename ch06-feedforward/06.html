@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sub 06 · 만능 근사 정리와 깊이 vs 너비 · Ch.06</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .uni-stage { display: grid; grid-template-columns: 1fr 200px; gap: 1.2rem; padding: 1.2rem 1.2rem .8rem; align-items: start; }
+  .uni-cv { display: block; border-radius: 8px; border: 1px solid var(--line); max-width: 100%; background: var(--paper); }
+  .uni-side { display: flex; flex-direction: column; gap: .7rem; }
+  .uni-stat { padding: .8rem 1rem; background: var(--paper-2); border-radius: 8px; font-size: .9rem; line-height: 1.55; color: var(--ink-soft); }
+  .uni-stat b { color: var(--ink); }
+  .uni-note { padding: .8rem 1rem; background: #fff; border: 1px solid var(--line); border-radius: 8px; font-size: .82rem; color: var(--ink-soft); line-height: 1.55; }
+  @media (max-width: 780px) { .uni-stage { grid-template-columns: 1fr; } }
+
+  .myth { max-width: var(--measure); margin: 1.4rem auto; padding: 1.1rem 1.4rem; background: var(--style-bg); border-left: 3px solid var(--style); border-radius: 0 8px 8px 0; }
+  .myth h4 { margin: 0 0 .4rem; font-family: var(--serif); color: var(--style); font-size: 1.05rem; }
+  .myth p { margin: 0; font-size: .92rem; color: var(--ink-soft); line-height: 1.6; }
+  .myth p b { color: var(--ink); }
+
+  .fact { max-width: var(--measure); margin: 1.4rem auto; padding: 1.1rem 1.4rem; background: var(--structure-bg); border-left: 3px solid var(--structure); border-radius: 0 8px 8px 0; }
+  .fact h4 { margin: 0 0 .4rem; font-family: var(--serif); color: var(--structure); font-size: 1.05rem; }
+  .fact p { margin: 0 0 .4rem; font-size: .92rem; color: var(--ink-soft); line-height: 1.6; }
+  .fact p:last-child { margin: 0; }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 06 · 가능성 vs 효율</span>
+      <h1>만능 근사 정리와<br><span class="t-style">깊이 vs 너비</span></h1>
+      <p class="lede">하나의 은닉층으로 충분히 넓다면 무엇이든 근사할 수 있다 — 그러나 “가능성”과 “효율”은 다르다.</p>
+    </header>
+
+    <div class="prose">
+      <p>만능 근사 정리(Universal Approximation Theorem, UAT)는 신경망에 대한 가장 자주 인용되는 정리다. 그런데 자주 인용되는 만큼 자주 오해된다. 이 절은 그 정리가 <strong>무엇을 말하고, 무엇을 말하지 않는지</strong>를 정확히 분리한 뒤, “왜 그럼에도 깊이가 중요한가”를 설명한다.</p>
+
+      <h2>정리의 진술 — 한 줄로</h2>
+      <p>UAT를 가장 일반적인 형태로 풀면 이렇다.</p>
+
+      <div class="math-block">$$ \text{충분히 많은 은닉 유닛을 가진 단일 은닉층 MLP는, 임의의 연속 함수를 임의의 정밀도로 근사할 수 있다.} $$</div>
+
+      <p>활성화 함수에는 약한 조건(예: 시그모이드처럼 “찌그러진 S자”이거나, ReLU처럼 “꺾인 직선”)만 붙는다. 입력 공간이 유한(예: $[0,1]^n$ 같은 닫힌 영역)이고 근사할 함수가 연속이라면, <strong>은닉 유닛을 충분히 많이 두는 것만으로</strong> 어떤 함수든 흉내낼 수 있다.</p>
+
+      <p>이 정리는 1989년 Hornik, 1989년 Cybenko, 1991년 Hornik 등의 결과로 정립되었다. 활성화 함수가 시그모이드일 때 처음 증명되었고, 이후 다양한 활성화 함수와 다양한 함수 클래스로 확장되었다.</p>
+
+      <h2>아래 위젯에서 직접 확인</h2>
+      <p>은닉 유닛 수 $N$을 슬라이더로 늘려 보자. ReLU MLP(은닉층 1개, 출력층 1개)가 목표 함수(사인파, 계단, 이중봉, 톱니파)를 흉내내는 정확도가 $N$이 커질수록 좋아진다. $N=60$쯤 되면 거의 완벽하게 따라간다. <strong>$N$만 충분히 크면 무엇이든 근사 가능하다 — UAT가 말하는 것은 정확히 이것이다.</strong></p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 06</span><span>만능 근사 정리 — 은닉 유닛 수와 근사 정확도</span></div>
+        <div id="uni"></div>
+      </div>
+      <p class="widget-cap">웜은 목표 함수, 쿨은 은닉 유닛 N개짜리 ReLU MLP의 근사. 빨간 점은 각 ReLU의 꺾임점 위치. N이 커질수록 꺾임점이 많아져 곡선을 더 정밀하게 흉내낼 수 있다. RMSE가 N과 함께 줄어드는 것을 확인할 수 있다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>가장 자주 빠지는 오해</h2>
+      <div class="myth">
+        <h4>오해</h4>
+        <p><b>“하나의 은닉층으로 충분하다면, 깊이는 사실 별로 중요하지 않다.”</b></p>
+      </div>
+
+      <div class="fact">
+        <h4>실제 의미</h4>
+        <p>이 정리는 <b>가능성</b>을 증명하는 정리이지 <b>효율</b>을 보장하는 정리가 아니다.</p>
+        <p>“하나의 얕은 층도 이론적으로는 가능하지만, 실용적으로는 엄청나게 비효율적일 수 있다”가 진짜 메시지다.</p>
+      </div>
+
+      <p>왜 그런가? 위 위젯에서 본 것처럼, 단일 은닉층 MLP가 복잡한 함수를 근사하려면 <strong>은닉 유닛 수가 함수의 “꺾임 점 수”에 비례해서 늘어나야 한다</strong>. 더 정확히 말하면, 단순한 톱니파 함수를 근사할 때 톱니가 $k$개라면 ReLU 유닛도 대략 $k$개 필요하다.</p>
+
+      <p>그런데 두 층짜리 MLP라면? <strong>“합성”이 작동한다.</strong> 1층이 “접는” 변환을 한 번 하면, 2층은 그 접힌 결과를 받아서 또 다시 접는다. 같은 함수를 “접고 또 접는” 방식으로 흉내낼 수 있다.</p>
+
+      <h2>깊이의 지수적 이득 — 종이접기 비유</h2>
+      <div class="analogy">
+        <b>종이접기로 생각해 보자.</b> 종이를 한 번도 접지 않고 가위로 1024개의 다른 모양 조각을 만들려면 가위질을 1024번 해야 한다. 하지만 종이를 10번 접고 한 번만 가위질하면 — 펼쳤을 때 $2^{10} = 1024$개의 같은 모양 조각이 나온다. 접기(깊이)는 가위질(너비)을 <b>지수적으로 절약</b>한다.
+      </div>
+
+      <p>같은 원리가 ReLU 네트워크에도 적용된다. ReLU의 꺾임은 “접기”와 같은 효과를 낸다. $L$층짜리 ReLU 네트워크는 입력 공간을 최대 $2^L$개의 영역으로 “접어” 표현할 수 있다. 같은 표현력을 1층 MLP로 흉내내려면 $2^L$개의 은닉 유닛이 필요하다.</p>
+
+      <p>이 사실을 정량적으로 증명한 결과들이 있다 — Telgarsky 2016, Eldan-Shamir 2016 등. 이들은 “어떤 함수 클래스는 $L$층 네트워크로는 $O(L)$개 유닛으로 표현되지만, 1층 네트워크로는 $\Omega(2^L)$개 유닛이 필요하다”를 명확히 증명했다.</p>
+
+      <h2>깊이가 강한 또 다른 이유 — 표현의 재사용</h2>
+      <p>깊이의 이득은 “종이접기” 비유로 다 설명되지는 않는다. 더 본질적인 이유는 <strong>표현의 재사용(reuse)</strong>이다.</p>
+
+      <p>이미지를 예로 들어 보자. 얕은 층은 에지·코너·작은 텍스처 같은 저수준 특징을 잡는다. 다음 층은 이 저수준 특징들을 조합해 “눈”, “바퀴”, “문” 같은 중간 수준 부분을 만든다. 그 다음 층은 그 부분들을 조합해 “얼굴”, “자동차”, “건물”을 만든다.</p>
+
+      <p>여기서 핵심은 <strong>“저수준 특징은 여러 고수준 객체에 공유된다”</strong>는 점이다. 얼굴을 검출하는 데 쓰이는 “수직 에지” 검출기는 자동차나 건물에도 똑같이 유용하다. 깊은 네트워크는 이런 공유 가능한 표현을 한 번만 학습해 재사용하지만, 얕은 네트워크는 각 객체마다 처음부터 다 학습해야 한다. 그래서 깊이는 표현의 <strong>모듈성(modularity)</strong>을 가능하게 한다.</p>
+
+      <h2>그렇다면 너비는 왜 중요한가</h2>
+      <p>너비(width)도 무시할 수 없다. 너비는 한 층 안에서 동시에 “서로 다른 특징”을 잡을 수 있게 한다. 너무 좁은 층은 “표현의 병목(bottleneck)”이 되어 학습 가능한 함수 클래스를 제한한다.</p>
+
+      <p>현대적 권장사항은 <strong>“충분히 넓고 매우 깊은”</strong>이다. AlexNet(8층), VGG(19층), ResNet(50-152층), Transformer 변형(수십~수백 층)이 그 경향을 잘 보여 준다. 다만 너무 깊으면 학습 안정성 문제가 생기는데, 그건 잔차 연결(residual connection), 정규화 기법 등으로 해결한다(자세한 내용은 Ch.7-8).</p>
+
+      <h2>UAT의 또 다른 한계 — 학습 가능성과 다르다</h2>
+      <p>한 가지 더 중요한 점. UAT는 “그런 함수를 표현하는 네트워크가 존재한다”는 보장이다. <strong>“그 네트워크를 경사하강법으로 실제 찾을 수 있다”는 보장은 아니다.</strong> 즉 표현 가능성(representability)과 학습 가능성(learnability)은 별개 문제다.</p>
+
+      <p>예를 들어 어떤 복잡한 함수를 표현하는 1억 개 유닛짜리 단층 MLP가 이론적으로 존재한다고 해도, 무작위 초기화에서 시작해 SGD로 그 1억 개 가중치를 정확한 값으로 수렴시킬 수 있다는 보장은 없다. 깊이가 학습 가능성에도 유리하다는 것이 경험적으로 잘 알려져 있다(특히 잔차 연결, 적절한 초기화, 배치 정규화와 함께).</p>
+
+      <h2>시험에서 자주 묻는 형태</h2>
+      <ul>
+        <li>“만능 근사 정리가 있는데 왜 깊이가 필요한가?” → <em>가능성과 효율의 구분</em>으로 답</li>
+        <li>“깊은 네트워크가 얕은 네트워크보다 표현 효율이 어떻게 좋은가?” → <em>종이접기 비유, 지수적 이득, 표현 재사용</em></li>
+        <li>“UAT는 어떤 활성화 함수에 대해서 성립하나?” → 시그모이드, ReLU 등 약한 조건이면 충분</li>
+        <li>“UAT가 보장하지 않는 것은 무엇인가?” → <em>학습 가능성, 일반화, 효율</em> 모두 별개</li>
+      </ul>
+
+      <h2>이 절이 잡아 준 그림</h2>
+      <ul>
+        <li><strong>UAT의 진술</strong> — 충분히 넓은 단층 MLP는 어떤 연속 함수든 근사 가능.</li>
+        <li><strong>가장 흔한 오해</strong> — “그럼 깊이가 필요 없다”는 결론은 정확히 반대.</li>
+        <li><strong>실제 메시지</strong> — 가능성은 보장하지만 효율은 보장하지 않는다.</li>
+        <li><strong>깊이의 이득 1</strong> — 종이접기처럼 입력 공간을 지수적으로 많이 “접을 수 있다”.</li>
+        <li><strong>깊이의 이득 2</strong> — 저수준 특징의 재사용으로 모듈성을 얻는다.</li>
+        <li><strong>UAT가 보장하지 않는 것</strong> — 학습 가능성, 일반화, 너비 결정 모두 별개.</li>
+      </ul>
+
+      <p>다음 절은 6장 전체의 <strong>시험 대비 정리</strong>다. 챕터 핵심을 한 페이지로 압축하고, 자가 점검 질문과 미니 backprop 손계산 문제 하나를 두었다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script src="widgets.js"></script>
+<script>
+  window.addEventListener('load', () => {
+    CH6.buildNav('06');
+    const u = document.getElementById('uni');
+    CH6.onVisible(u, () => CH6.universal(u));
+  });
+</script>
+</body>
+</html>

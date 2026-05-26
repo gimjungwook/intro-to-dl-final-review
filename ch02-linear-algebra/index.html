@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ch.02 선형대수 — 데이터의 기하학</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .masthead { position: relative; max-width: var(--wide); margin: 0 auto; padding: 1.5rem 1.4rem 0; }
+  .hero-wrap { position: relative; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: linear-gradient(180deg,#fff,var(--paper-2)); box-shadow: var(--shadow-plate); }
+  #hero { display: block; width: 100%; height: 340px; }
+  .hero-cap { position: absolute; left: 1.2rem; bottom: 1rem; font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; color: var(--ink-faint); pointer-events: none; }
+  .hero-cap b { color: var(--structure); } .hero-cap em { color: var(--style); font-style: normal; }
+  .title-block { max-width: var(--wide); margin: 2.4rem auto 0; padding-inline: 1.4rem; }
+  .title-block .kicker { display: block; margin-bottom: 1rem; }
+  .title-block h1 { font-size: clamp(2.4rem, 6vw, 4.6rem); margin: 0; line-height: 1.05; }
+  .title-block h1 em { color: var(--style); font-style: normal; }
+  .paper-meta { display: flex; flex-wrap: wrap; gap: .5rem 1.6rem; margin-top: 1.4rem; font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); letter-spacing: .02em; }
+  .paper-meta span b { color: var(--ink); font-weight: 500; }
+
+  .plates { max-width: var(--wide); margin: 1rem auto; padding: 2rem 1.4rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 1rem; }
+  .plate { position: relative; display: flex; flex-direction: column; text-decoration: none; color: inherit; background: #fff; border: 1px solid var(--line); border-radius: 13px; padding: 1.3rem 1.3rem 1.4rem; transition: transform .2s var(--ease), border-color .2s, box-shadow .2s; overflow: hidden; }
+  .plate:hover { transform: translateY(-4px); border-color: var(--structure-lo); box-shadow: var(--shadow-plate); }
+  .plate .pno { font-family: var(--mono); font-size: .74rem; letter-spacing: .14em; color: var(--ink-faint); }
+  .plate h3 { font-family: var(--serif); font-size: 1.3rem; margin: .5rem 0 .5rem; line-height: 1.2; }
+  .plate p { font-size: .9rem; color: var(--ink-soft); line-height: 1.5; margin: 0; }
+  .plate .spectrum { display: flex; height: 4px; border-radius: 2px; overflow: hidden; margin-bottom: 1rem; }
+  .plate .spectrum i { display: block; height: 100%; }
+  .plate .go { margin-top: 1rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; color: var(--structure); opacity: 0; transform: translateX(-4px); transition: .2s var(--ease); }
+  .plate:hover .go { opacity: 1; transform: translateX(0); }
+
+  .section-intro { max-width: var(--measure); margin: 1rem auto 0; padding-inline: 1.4rem; }
+  .section-intro h2 { margin-top: 1rem; }
+  .twopole { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; max-width: var(--measure); margin: 1.6rem auto; padding-inline: 1.4rem; }
+  .pole { padding: 1.1rem 1.2rem; border-radius: 11px; }
+  .pole.s1 { background: var(--structure-bg); } .pole.s2 { background: var(--style-bg); }
+  .pole h4 { margin: 0 0 .4rem; font-family: var(--serif); font-size: 1.1rem; }
+  .pole.s1 h4 { color: var(--structure); } .pole.s2 h4 { color: var(--style); }
+  .pole p { margin: 0; font-size: .9rem; color: var(--ink-soft); line-height: 1.5; }
+  @media (max-width: 560px){ .twopole{ grid-template-columns: 1fr; } }
+
+  .path { max-width: var(--wide); margin: 2rem auto; padding: 1.6rem 1.4rem; }
+  .path-flow { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; font-family: var(--mono); font-size: .8rem; }
+  .path-flow a { display: inline-flex; align-items: center; gap: .4rem; text-decoration: none; color: var(--ink-soft); padding: .4rem .7rem; border: 1px solid var(--line); border-radius: 20px; transition: .15s; }
+  .path-flow a:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .path-flow a b { color: var(--style); } .path-flow a:hover b { color: var(--style-lo); }
+  .path-flow .arr { color: var(--ink-faint); }
+
+  .topback { max-width: var(--wide); margin: 1rem auto -.5rem; padding-inline: 1.4rem; }
+  .topback a { font-family: var(--mono); font-size: .74rem; letter-spacing: .12em; color: var(--ink-soft); text-decoration: none; }
+  .topback a:hover { color: var(--ink); }
+
+  footer.colophon { max-width: var(--measure); margin: 3rem auto 4rem; padding: 2rem 1.4rem 0; border-top: 1px solid var(--line); font-size: .85rem; color: var(--ink-soft); }
+  footer.colophon a { color: var(--structure); }
+  footer.colophon .src { font-family: var(--mono); font-size: .76rem; line-height: 1.8; }
+</style>
+</head>
+<body>
+
+<div class="topback"><a href="../index.html">← 기말고사 인터랙티브 표지</a></div>
+
+<header class="masthead">
+  <div class="hero-wrap">
+    <canvas id="hero"></canvas>
+    <div class="hero-cap"><b>단위 사각형</b> ↔ <em>행렬 A가 비틀어 만든 평행사변형</em> · 마우스 드래그로 변환 강도</div>
+  </div>
+</header>
+
+<div class="title-block">
+  <span class="kicker">Deep Learning Book · Chapter 2 · Linear Algebra</span>
+  <h1>선형대수,<br><em>데이터의 기하학</em></h1>
+  <div class="paper-meta">
+    <span><b>딥러닝 개론</b> 기말고사 복습 · Ch.02</span>
+    <span>저본 <b>Goodfellow, Bengio, Courville (2016) Ch.2</b></span>
+    <span>읽는 시간 <b>약 35분</b></span>
+    <span>구성 <b>7 sub-chapter · 5 위젯</b></span>
+  </div>
+</div>
+
+<section class="section-intro">
+  <h2>한 문장으로</h2>
+  <p>이 장은 <strong>“신경망의 한 층(layer)이 실제로 무엇을 하는가”</strong>라는 질문에, 모든 층은 결국 <span class="t-structure">선형 변환(Linear Transformation)</span>과 비선형 함수의 조합이므로, 행렬이 공간을 회전·확대·압축하는 도구라는 기하학적 직관을 가져야 한다고 답한다.</p>
+  <p>처음 읽을 때 가장 중요한 점은, 이 장이 <em>“수학 배경 챕터”가 아니라는 것이다</em>. 가중치 행렬(Weight Matrix)이 무엇을 회전시키고 무엇을 늘리는지를 보지 못하면, 뒤에 나오는 역전파(Backpropagation)·정칙화(Regularization)·주성분 분석(PCA)·합성곱(Convolution)은 모두 <strong>“기호 덩어리”</strong>로만 보인다. 이 사이트는 그 기하학적 직관을 손가락으로 만져 보게 하는 것이 목적이다.</p>
+</section>
+
+<div class="twopole">
+  <div class="pole s1"><h4>대수(Algebra) 관점</h4><p>벡터를 숫자의 목록, 행렬을 숫자판으로 본다. 계산은 빠르지만 의미를 놓치기 쉽다. 이 사이트에서 <b>쿨한 파랑</b>으로 표시된다.</p></div>
+  <div class="pole s2"><h4>기하(Geometry) 관점</h4><p>벡터를 공간의 화살표, 행렬을 그 공간을 변형하는 변환으로 본다. 직관은 깊지만 계산은 무겁다. 이 사이트에서 <b>웜한 주홍</b>으로 표시된다.</p></div>
+</div>
+
+<section class="plates" id="plates"></section>
+
+<section class="path">
+  <span class="kicker">권장 읽기 순서</span>
+  <div class="path-flow" id="pathflow"></div>
+</section>
+
+<footer class="colophon">
+  <p>이 해설은 Goodfellow et al.(2016) Chapter 2의 흐름을 따르되, 정의 나열 대신 <strong>“왜 그 형태인가”</strong>를 늘 함께 설명한다. 모든 수식 뒤에는 산문과 기하학적 비유가 따라붙고, 인터랙티브 위젯은 그 직관을 손으로 검증할 수 있게 한다.</p>
+  <p class="src">
+    원서 · <a href="https://www.deeplearningbook.org/contents/linear_algebra.html">deeplearningbook.org / Chapter 2</a><br>
+    선행학습 상세해설 · <a href="../../../05-선행학습/Deep-Learning-Book-02-Linear-Algebra-상세해설.md">Deep-Learning-Book-02-Linear-Algebra-상세해설.md</a><br>
+    학습 가이드 · <a href="../../../05-선행학습/Deep-Learning-Book-1-5장-학습-가이드.md">Deep-Learning-Book-1-5장-학습-가이드.md</a>
+  </p>
+</footer>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'스칼라·벡터·행렬·텐서', d:'데이터를 어느 그릇에 담을까. 차원이 늘어난다는 것은 더 많은 구조를 한 번에 표현한다는 뜻이다. 이미지가 왜 텐서인지부터.', sp:['structure-lo','structure'] },
+    { no:'02', t:'행렬 곱과 선형 변환', d:'2D 행렬을 직접 조작해 단위 사각형을 비틀어 본다. 신경망의 가중치 행렬이 실제로 하는 일을 손가락으로 확인.', sp:['structure','synth'] },
+    { no:'03', t:'노름과 거리 — L1·L2·L∞의 기하학', d:'왜 여러 노름이 필요한가. 슬라이더로 p값을 바꾸면 단위구 모양이 변한다. 정칙화(Ch.7)의 기하학적 뿌리.', sp:['style','style-lo'] },
+    { no:'04', t:'특수 행렬과 직교성', d:'대각·대칭·직교 행렬. 길이와 각도를 보존하는 변환이 왜 학습 안정성에 중요한가.', sp:['structure-lo','structure'] },
+    { no:'05', t:'고유분해 — 회전이 보존하는 방향', d:'행렬을 곱해도 방향이 바뀌지 않는 특별한 벡터. 클릭으로 직접 찾아본다. 주성분 분석(Ch.13)의 뿌리.', sp:['structure','style'] },
+    { no:'06', t:'SVD — 모든 행렬의 분해', d:'특이값분해로 데이터의 중요한 방향과 덜 중요한 방향을 본다. 슬라이더로 σᵢ를 줄여 저랭크 근사를 만들어 본다.', sp:['style','synth'] },
+    { no:'07', t:'시험 대비 — 핵심 정리와 예상 질문', d:'7장의 모든 수식을 한 쪽에. 기하학적 직관 체크리스트와 시험 예상 질문 8개.', sp:['ink-soft','ink'] },
+  ];
+  const colMap = { structure:'var(--structure)', 'structure-lo':'var(--structure-lo)', style:'var(--style)', 'style-lo':'var(--style-lo)', synth:'var(--synth)', ink:'var(--ink)', 'ink-soft':'var(--ink-soft)' };
+
+  const platesEl = document.getElementById('plates');
+  const flowEl = document.getElementById('pathflow');
+  SUBS.forEach((c, idx) => {
+    const sp = c.sp.length === 1 ? [c.sp[0], c.sp[0]] : c.sp;
+    const a = document.createElement('a');
+    a.className = 'plate'; a.href = c.no + '.html';
+    a.innerHTML = `
+      <div class="spectrum">${sp.map(s=>`<i style="flex:1;background:${colMap[s]}"></i>`).join('')}</div>
+      <span class="pno">SUB ${c.no}</span>
+      <h3>${c.t}</h3>
+      <p>${c.d}</p>
+      <span class="go">읽기 →</span>`;
+    platesEl.appendChild(a);
+
+    const f = document.createElement('a'); f.href = c.no + '.html';
+    f.innerHTML = `<b>${c.no}</b> ${c.t.split('—')[0].slice(0,14)}`;
+    flowEl.appendChild(f);
+    if (idx < SUBS.length - 1) { const s = document.createElement('span'); s.className='arr'; s.textContent='→'; flowEl.appendChild(s); }
+  });
+
+  // 표지 히어로 — 2D 격자 → 행렬 A로 변환된 격자 모핑
+  window.addEventListener('load', () => {
+    const canvas = document.getElementById('hero');
+    if (!canvas || !window.THREE) return;
+    const wrap = canvas.parentElement;
+    const w = wrap.clientWidth;
+    const h = 340;
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, w/h, 0.1, 100);
+    camera.position.set(0, 0, 8);
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(2, devicePixelRatio));
+    renderer.setSize(w, h, false);
+    renderer.setClearColor(0xffffff, 0);
+
+    // 단위 사각형 위 격자점 — 32×32
+    const N = 32;
+    const total = N * N;
+    const geo = new THREE.BufferGeometry();
+    const positions = new Float32Array(total * 3);
+    const colors = new Float32Array(total * 3);
+    const orig = new Float32Array(total * 3);
+    let p = 0;
+    for (let i = 0; i < N; i++) {
+      for (let j = 0; j < N; j++, p++) {
+        const x = (i / (N-1) - .5) * 4;
+        const y = (j / (N-1) - .5) * 4;
+        orig[p*3] = x; orig[p*3+1] = y; orig[p*3+2] = 0;
+        positions[p*3] = x; positions[p*3+1] = y; positions[p*3+2] = 0;
+        // 격자 위치 → 파랑→주홍 그라데이션
+        const t = (i + j) / (2*N);
+        const r = .18 + t * .57;
+        const g = .35 - t * .15;
+        const b = .48 - t * .35;
+        colors[p*3] = r; colors[p*3+1] = g; colors[p*3+2] = b;
+      }
+    }
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    const mat = new THREE.PointsMaterial({ size: 0.08, vertexColors: true, transparent: true, opacity: .9 });
+    const pts = new THREE.Points(geo, mat);
+    scene.add(pts);
+
+    // 단위 사각형 외곽선 두 개 (원본/변환된)
+    const outlineGeo = new THREE.BufferGeometry();
+    const outlinePos = new Float32Array(5 * 3);
+    outlineGeo.setAttribute('position', new THREE.BufferAttribute(outlinePos, 3));
+    const outlineMat = new THREE.LineBasicMaterial({ color: 0xC0492E, transparent: true, opacity: .55 });
+    const outline = new THREE.Line(outlineGeo, outlineMat);
+    scene.add(outline);
+
+    let t = 0;
+    let target = 0.5;
+    let drag = false, dragX = 0, sx = 0;
+    canvas.addEventListener('pointerdown', (e) => { drag = true; dragX = e.clientX; sx = target; });
+    window.addEventListener('pointermove', (e) => { if (!drag) return; target = Math.max(0, Math.min(1, sx + (e.clientX - dragX) / canvas.clientWidth)); });
+    window.addEventListener('pointerup', () => { drag = false; });
+
+    function tick() {
+      t += 0.005;
+      if (!drag) target = 0.5 + 0.45 * Math.sin(t);
+      // 행렬 A = [[1+t*0.6, t*0.8], [t*-0.3, 1-t*0.4]] (회전+전단+스케일)
+      const m = target;
+      const ang = m * 0.7;
+      const ca = Math.cos(ang), sa = Math.sin(ang);
+      const sxv = 1 + m * 0.5;
+      const syv = 1 - m * 0.3;
+      const sh = m * 0.5;
+      // 합성: R(ang) * Shear(sh) * Scale(sxv, syv)
+      const a00 = ca * sxv - sa * sh * sxv;
+      const a01 = ca * sh * syv - sa * syv;
+      const a10 = sa * sxv + ca * sh * sxv;
+      const a11 = sa * sh * syv + ca * syv;
+      const pos = pts.geometry.attributes.position.array;
+      for (let k = 0; k < total; k++) {
+        const ox = orig[k*3], oy = orig[k*3+1];
+        pos[k*3]   = a00 * ox + a01 * oy;
+        pos[k*3+1] = a10 * ox + a11 * oy;
+        pos[k*3+2] = 0;
+      }
+      pts.geometry.attributes.position.needsUpdate = true;
+      // 외곽: 단위 사각형 (1,1) (1,-1) (-1,-1) (-1,1) (1,1)을 행렬로 변환
+      const corners = [[2,2],[2,-2],[-2,-2],[-2,2],[2,2]];
+      for (let k = 0; k < 5; k++) {
+        const ox = corners[k][0], oy = corners[k][1];
+        outlinePos[k*3]   = a00 * ox + a01 * oy;
+        outlinePos[k*3+1] = a10 * ox + a11 * oy;
+        outlinePos[k*3+2] = 0;
+      }
+      outlineGeo.attributes.position.needsUpdate = true;
+      renderer.render(scene, camera);
+      requestAnimationFrame(tick);
+    }
+    tick();
+
+    window.addEventListener('resize', () => {
+      const w2 = wrap.clientWidth;
+      renderer.setSize(w2, h, false);
+      camera.aspect = w2 / h;
+      camera.updateProjectionMatrix();
+    });
+  });
+</script>
+</body>
+</html>

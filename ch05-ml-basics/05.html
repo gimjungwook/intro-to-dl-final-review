@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>05 · 베이지안 추정과 MAP</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Section 05 · 사전이 정칙화로 화한다</span>
+      <h1>매개변수는 한 점이 아니라<br><span class="t-structure">분포</span>다 — <span class="t-style">베이지안</span>의 관점</h1>
+      <p class="lede">빈도주의(frequentist)는 매개변수 θ를 모르는 고정된 한 점으로 본다. 베이지안은 θ 자체를 분포로 본다. 데이터가 들어오기 전의 믿음(사전 prior)이 데이터(우도 likelihood)와 결합해 갱신된 믿음(사후 posterior)이 된다. 이 갱신 규칙이 베이즈 정리이고, 정칙화의 진짜 정체다.</p>
+    </header>
+
+    <div class="prose">
+      <p>4절의 MLE는 강력하지만 약점이 있다. 동전 3번 던져 3번 다 앞면이면 $p = 1$로 추정한다. 데이터가 부족할 때 MLE는 종종 극단적인 답을 준다. 게다가 MLE는 우리가 "이 동전은 양면이 거의 비슷할 가능성이 높다"라고 사전에 갖고 있던 합리적 믿음을 전혀 반영하지 못한다.</p>
+
+      <p>베이지안 접근은 이 두 문제를 한 번에 해결한다. 매개변수 $\theta$를 한 점이 아니라 <strong>분포</strong>로 본다. 데이터가 없을 때의 분포가 <strong>사전(prior)</strong> $p(\theta)$이고, 데이터를 본 뒤 갱신된 분포가 <strong>사후(posterior)</strong> $p(\theta|x)$다. 이 둘을 연결하는 것이 베이즈 정리다.</p>
+
+      <div class="math-block">$$ p(\theta|x_1,\dots,x_m) \;=\; \frac{p(x_1,\dots,x_m|\theta)\, p(\theta)}{p(x_1,\dots,x_m)} \;\propto\; \underbrace{p(x_1,\dots,x_m|\theta)}_{\text{우도}} \cdot \underbrace{p(\theta)}_{\text{사전}} $$</div>
+      <p class="math-note">분모 $p(x_1,\dots,x_m)$는 $\theta$에 의존하지 않는 정규화 상수. 그래서 $\theta$를 비교할 땐 분자만 보면 충분. "사후 ∝ 우도 × 사전"은 베이지안 사고의 핵심 슬로건.</p>
+
+      <h2>왜 "분포"가 더 정직한가</h2>
+      <p>MLE는 "내 최선의 추정은 $\hat{\theta} = 0.65$"라고 말한다. 한 점이다. 그러나 그 답이 얼마나 확실한지에 대한 정보는 없다. 데이터가 3개일 때의 0.65와 3000개일 때의 0.65는 같은 숫자지만 신뢰도가 완전히 다르다.</p>
+
+      <p>베이지안 사후 분포는 그 신뢰도를 함께 표현한다. 데이터가 적으면 사후 분포가 넓게 퍼져 있고(불확실성 큼), 많으면 좁게 모인다(불확실성 작음). 같은 평균에서도 분포 모양이 달라서 "얼마나 믿을 만한가"를 한눈에 본다.</p>
+
+      <div class="analogy">
+        법정 추리 비유 (Mom Test 식). 빈도주의 검사는 "범인은 김씨다"라고 한 명을 지목한다. 베이지안 검사는 "김씨가 범인일 확률 73%, 박씨가 18%, 다른 사람이 9%"라고 모든 후보에 확률을 매긴다. 새 증거가 들어오면 그 확률 분포가 갱신된다. 베이즈 정리는 그 갱신을 어떻게 정확히 하는지 알려주는 산수 규칙이다.
+      </div>
+    </div>
+
+    <h2 style="max-width: var(--measure); margin-inline: auto; padding-inline: 1.4rem">위젯 — 베이지안 vs 빈도주의</h2>
+
+    <div class="prose">
+      <p>가장 단순한 예: 동전 던지기. 진짜 앞면 확률은 $\theta = 0.65$지만 우리는 모른다. 사전 $p(\theta) = \mathrm{Beta}(\alpha, \alpha)$로 둔다 ($\alpha=1$이면 균등분포, $\alpha$가 커질수록 0.5 근처에 집중). 관측을 늘려가며 사전·우도·사후가 어떻게 움직이는지 본다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 01</span><span>베이지안 사후 vs 빈도주의 MLE — 동전 던지기</span></div>
+        <div id="bf"></div>
+      </div>
+      <p class="widget-cap">N=0이면 사후 = 사전이다 (데이터가 없으니 믿음이 그대로). N이 늘수록 사후가 우도 쪽으로 끌려가고, 사전의 영향은 줄어든다. α를 키우면 "사전이 강해서" 더 많은 데이터가 있어야 사후가 우도에 흡수된다. 세 점추정(MLE/MAP/사후평균)이 N과 α에 따라 어떻게 갈라지고 다시 합쳐지는지 확인.</p>
+    </div>
+
+    <h2 style="max-width: var(--measure); margin-inline: auto; padding-inline: 1.4rem">사후에서 한 점을 뽑는다 — MAP</h2>
+
+    <div class="prose">
+      <p>완전한 베이지안은 매개변수를 분포로 두고 예측할 때도 적분(주변화)을 한다. 그러나 실용적으로는 한 점만 뽑아 쓰는 경우가 많다. 가장 흔한 방법이 <strong>MAP (Maximum A Posteriori) 추정</strong>이다.</p>
+
+      <div class="math-block">$$ \theta_{\text{MAP}} \;=\; \arg\max_\theta\, p(\theta|x) \;=\; \arg\max_\theta\, \big[\log p(x|\theta) + \log p(\theta)\big] $$</div>
+      <p class="math-note">사후 분포의 최댓값(mode)을 고른다. 우변은 두 로그 항의 합 — 우도 로그 + 사전 로그. 우도 로그는 MLE 항, 사전 로그가 바로 정칙화 항이 된다.</p>
+
+      <h2>MLE와 MAP의 결정적 차이</h2>
+      <p>두 추정자의 식을 옆에 놓으면 단 하나가 다르다.</p>
+      <div class="math-block">$$
+        \theta_{\text{MLE}} = \arg\max_\theta\, \log p(x|\theta)
+        \qquad\text{vs}\qquad
+        \theta_{\text{MAP}} = \arg\max_\theta\, \log p(x|\theta) + \log p(\theta)
+      $$</div>
+      <p class="math-note">차이는 $\log p(\theta)$ 항 하나. 이 항이 "데이터에 무관하게 우리가 좋아하는 θ는 무엇인가"를 인코딩한다. 사전이 균등분포면 $\log p(\theta)$가 상수가 되어 MLE = MAP.</p>
+
+      <p>MAP는 베이지안과 빈도주의의 절충점이다. 분포 전체를 다루지 않지만, 사전을 통해 "데이터 외부의 지식"을 반영한다. 그리고 그 사전이 곧 정칙화 항이 된다는 점이 핵심이다 — 다음 절에서 이것을 정확히 본다.</p>
+
+      <h2>베이지안 예측 (full predictive)</h2>
+      <p>완전한 베이지안은 점추정 없이 사후 분포 전체로 예측을 한다. 새 입력 $x_{\text{new}}$의 라벨 $y_{\text{new}}$를 예측할 때:</p>
+      <div class="math-block">$$ p(y_{\text{new}}|x_{\text{new}}, x_{1:m}) \;=\; \int p(y_{\text{new}}|x_{\text{new}}, \theta)\, p(\theta|x_{1:m})\, d\theta $$</div>
+      <p class="math-note">모든 가능한 θ로 예측한 다음, 그 θ가 얼마나 그럴듯한지(사후)로 가중평균. 한 점이 아니라 분포로 답한다 — 따라서 신뢰구간도 자연스럽게 함께 나온다.</p>
+
+      <p>이 적분은 대부분의 경우 닫힌 형식이 없어 MCMC, 변분추론(VI) 같은 근사 기법이 필요하다. 딥러닝에서는 보통 적분을 포기하고 MAP 한 점만 쓰는 경우가 많다 (Ch.7의 정칙화 = MAP의 사전 항).</p>
+
+      <h2>실용적 정리 — 셋의 관계</h2>
+      <ul style="padding-left: 1.4rem">
+        <li><strong>MLE</strong>: 사전 없음 (또는 균등 사전). 데이터가 많을 때 자연스러운 선택.</li>
+        <li><strong>MAP</strong>: 사후의 최댓값 한 점. 사전이 정칙화 항으로 들어감.</li>
+        <li><strong>베이지안 사후평균/예측</strong>: 분포 전체. 가장 정직한 추정이지만 계산이 어려움.</li>
+      </ul>
+
+      <p>딥러닝에서 흔히 쓰는 "L2 정칙화 = 가우시안 사전의 MAP"이라는 등식이 바로 이 절과 다음 절을 잇는 다리다. <a href="06.html">Sec.6 정칙화</a>에서 그 등식을 정확히 유도한다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script src="../assets/widgets.js"></script>
+<script src="widgets-ch05.js"></script>
+<script>
+  window.addEventListener('load', () => {
+    NST.buildNav('05');
+    const bf = document.getElementById('bf');
+    NST.onVisible(bf, () => NST.bayesFreq(bf));
+  });
+</script>
+</body>
+</html>

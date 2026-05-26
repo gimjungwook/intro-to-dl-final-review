@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ch.02 · 02 행렬 곱과 선형 변환</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .lin-stage { display: grid; grid-template-columns: 1fr; padding: 1.4rem 1.4rem 0; gap: 1rem; align-items: center; }
+  .lin-stage canvas { display: block; width: 100%; max-width: 560px; margin: 0 auto; background: #fff; border-radius: 8px; border: 1px solid var(--line); }
+  .lin-matrix { font-family: var(--mono); font-size: .92rem; text-align: center; color: var(--ink-soft); line-height: 1.7; padding-bottom: .4rem; }
+  .lin-matrix .det { color: var(--style); font-weight: 600; }
+  .lin-presets { display: flex; gap: .4rem; flex-wrap: wrap; justify-content: center; padding: .8rem 1.2rem; }
+  .ctrl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem 1.2rem; padding: .8rem 1.2rem 1.2rem; }
+  @media (max-width: 600px) { .ctrl-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Ch.02 · Sub 02 · 신경망의 한 층이 하는 일</span>
+      <h1>행렬 곱은 <span class="t-style">기하학적 변환</span>이다,<br>숫자판의 곱셈 규칙이 아니다</h1>
+      <p class="lede">행렬 A에 벡터 x를 곱하면 무슨 일이 일어나는가. 답은 "x를 회전시키거나 늘리거나 비틀어 새 위치로 옮긴다"이다. 이 한 문장을 손가락으로 만질 수 있게 되면, 신경망의 가중치가 무엇을 학습하는지 보인다.</p>
+    </header>
+
+    <div class="prose">
+      <p>행렬과 벡터의 곱 $\mathbf{A}\mathbf{x}$를 처음 배울 때는 보통 다음과 같은 계산 규칙으로 본다.</p>
+
+      <div class="math-block">$$ (\mathbf{A}\mathbf{x})_i = \sum_{j=1}^{n} A_{i,j} \, x_j $$</div>
+      <p class="math-note">출력 i번째 성분은 A의 i번째 행과 x의 내적.</p>
+
+      <p>이 규칙은 정확하지만, 답이 무엇을 뜻하는지 알려 주지 않는다. 같은 식을 다른 각도에서 다시 보자. 행렬 $\mathbf{A}$의 <em>열</em>들을 $\mathbf{a}_1, \mathbf{a}_2, \dots, \mathbf{a}_n$이라 부르면 곱을 다음과 같이 쓸 수 있다.</p>
+
+      <div class="math-block">$$ \mathbf{A}\mathbf{x} = x_1 \mathbf{a}_1 + x_2 \mathbf{a}_2 + \cdots + x_n \mathbf{a}_n $$</div>
+      <p class="math-note">출력은 A의 열들을 x의 성분만큼 가중합한 결과.</p>
+
+      <p>이 두 번째 식이 훨씬 더 많은 것을 말해 준다. 입력 벡터 $\mathbf{x}$의 각 성분 $x_j$는 <strong>“열 $\mathbf{a}_j$ 방향으로 얼마나 갈지를 정하는 다이얼”</strong>이고, 결과는 그 다이얼들로 결정된 한 점이다. 즉, 행렬 $\mathbf{A}$는 <em>새 좌표계를 정의하고</em>, 곱셈은 입력을 그 새 좌표계에서 다시 그린다.</p>
+
+      <h2>2차원에서 직접 보자</h2>
+      <p>가장 간단한 경우는 $2 \times 2$ 행렬이다. 이 경우 $\mathbf{A}$는 2차원 평면을 다른 2차원 평면으로 옮기는 변환이다. 평면 위의 모든 점이 어디로 가는지 한 번에 보려면, <strong>단위 사각형</strong> $\{(0,0), (1,0), (1,1), (0,1)\}$이 어디로 옮겨지는지만 보면 된다. 행렬의 첫 번째 열이 $(1,0)$이 가는 자리, 두 번째 열이 $(0,1)$이 가는 자리이기 때문이다.</p>
+
+      <p>아래 위젯에서 슬라이더로 행렬의 네 성분을 직접 바꿔 보자. 회색 격자는 원래 좌표계, <span style="color: var(--style); font-weight: 600;">주홍색 격자</span>는 변환된 좌표계다. 단위 사각형이 어떤 평행사변형으로 바뀌는지, 그 면적(=행렬식의 절댓값)이 어떻게 변하는지 확인하라.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 02</span><span>2x2 행렬 = 2D 선형 변환</span></div>
+        <div class="lin-stage">
+          <div class="lin-matrix" id="linMat"></div>
+          <canvas id="linCanvas" width="900" height="540"></canvas>
+        </div>
+        <div class="lin-presets">
+          <button class="btn ghost on" data-preset="identity">단위 (I)</button>
+          <button class="btn ghost" data-preset="scale">스케일 2배</button>
+          <button class="btn ghost" data-preset="rotate">45° 회전</button>
+          <button class="btn ghost" data-preset="shear">수평 전단</button>
+          <button class="btn ghost" data-preset="reflect">y축 반사</button>
+          <button class="btn ghost" data-preset="degenerate">랭크 1 (특이)</button>
+        </div>
+        <div class="ctrl-grid">
+          <div class="slider"><label>A₁₁ <b id="va11">1.00</b></label><input type="range" id="a11" min="-2" max="2" step="0.05" value="1"></div>
+          <div class="slider"><label>A₁₂ <b id="va12">0.00</b></label><input type="range" id="a12" min="-2" max="2" step="0.05" value="0"></div>
+          <div class="slider"><label>A₂₁ <b id="va21">0.00</b></label><input type="range" id="a21" min="-2" max="2" step="0.05" value="0"></div>
+          <div class="slider"><label>A₂₂ <b id="va22">1.00</b></label><input type="range" id="a22" min="-2" max="2" step="0.05" value="1"></div>
+        </div>
+      </div>
+      <p class="widget-cap">슬라이더로 행렬의 네 성분을 직접 만져 보자. 첫째 열이 (1,0)의 목적지, 둘째 열이 (0,1)의 목적지다. <b>det(A)</b>의 절댓값은 변환된 사각형의 넓이, 부호는 방향이 뒤집혔는지(반사 여부)를 알려 준다. 0이면 평면이 직선으로 짜부라진다 — 그것이 <b>특이행렬(singular matrix)</b>이고 역행렬이 없다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>네 가지 변환의 정체</h2>
+      <p>위 위젯에서 만들 수 있는 변환은 본질적으로 네 종류의 조합이다. 각각이 어떤 행렬 모양인지 익혀 두면 식만 보고도 무엇을 하는지 즉시 읽을 수 있다.</p>
+
+      <table class="symbols">
+        <tr><td>스케일</td><td>$\begin{pmatrix} s_x & 0 \\ 0 & s_y \end{pmatrix}$ — 각 축을 $s_x, s_y$배 늘리거나 줄인다. 행렬식 $= s_x s_y$.</td></tr>
+        <tr><td>회전</td><td>$\begin{pmatrix} \cos\theta & -\sin\theta \\ \sin\theta & \cos\theta \end{pmatrix}$ — 평면을 $\theta$만큼 돌린다. 행렬식 $=1$, 길이·각도 보존.</td></tr>
+        <tr><td>전단(shear)</td><td>$\begin{pmatrix} 1 & k \\ 0 & 1 \end{pmatrix}$ — 평행사변형으로 비스듬히 누른다. 행렬식 $=1$, 면적 보존.</td></tr>
+        <tr><td>반사</td><td>$\begin{pmatrix} -1 & 0 \\ 0 & 1 \end{pmatrix}$ — 한 축을 뒤집는다. 행렬식 $=-1$ (음수는 “뒤집힘”의 신호).</td></tr>
+      </table>
+
+      <div class="analogy">
+        행렬은 평면 위에 놓인 <b>고무 시트</b>를 잡고 비트는 손과 같다. 각 손가락의 움직임(행렬의 한 열)이 시트의 한 모서리를 새 위치로 끌고 간다. 회전은 시트 전체를 돌리고, 스케일은 잡아 늘이고, 전단은 비스듬히 민다. 행렬식의 절댓값은 <b>시트 면적이 몇 배가 되었는가</b>이고, 부호는 <b>시트가 뒤집혔는가</b>이다.
+      </div>
+
+      <h2>특이 행렬과 역행렬의 의미</h2>
+      <p>위젯에서 “랭크 1” 프리셋을 눌러 보면, 단위 사각형이 직선으로 짜부라진다. 이때 행렬식은 0이고, <strong>이 변환은 되돌릴 수 없다</strong>. 왜인가? 한번 직선으로 눌린 점들은 원래 평면 어느 자리에서 왔는지 구별할 수 없기 때문이다. 정보가 사라졌으므로 복원이 불가능하다.</p>
+
+      <div class="math-block">$$ \mathbf{A}^{-1} \mathbf{A} = \mathbf{I}, \quad \mathbf{A} \mathbf{A}^{-1} = \mathbf{I} $$</div>
+      <p class="math-note">역행렬은 A의 변환을 정확히 되돌리는 행렬. 모든 A가 가지진 않는다.</p>
+
+      <p>역행렬 $\mathbf{A}^{-1}$은 <em>“$\mathbf{A}$가 한 변환을 정확히 되돌리는 또 다른 변환”</em>이다. 평면을 짜부라뜨리지 않는 변환만 되돌릴 수 있다. 짜부라뜨림이 일어나는 정확한 조건은 <strong>열들이 선형 독립(Linearly Independent)이 아닐 때</strong>다. 한 열이 다른 열의 배수면, 그 두 열이 만드는 평면은 평면이 아니라 직선이다.</p>
+
+      <h2>신경망의 한 층이 실제로 하는 일</h2>
+      <p>다시 한 층의 식으로 돌아가자.</p>
+      <div class="math-block">$$ \mathbf{h} = f(\mathbf{W}\mathbf{x} + \mathbf{b}) $$</div>
+
+      <p>이제 이 식을 다음과 같이 읽을 수 있다. <strong>$\mathbf{W}\mathbf{x}$는 입력 공간을 다른 표현 공간으로 회전·확대·전단하는 선형 변환</strong>이다. $\mathbf{b}$는 그 결과를 평행이동(translation)한다. 그 다음 비선형 함수 $f$가 공간을 굽혀서, 선형 변환만으로는 불가능한 영역 구분(decision boundary)을 만들어 낸다.</p>
+
+      <p>다층 신경망의 깊이가 강력한 이유도 여기서 시작된다. 각 층의 선형 변환과 비선형 굽힘이 차곡차곡 쌓이면, <em>원래 데이터에서 분리되지 않던 클래스들이 어느 깊이에서는 한 직선으로 잘릴 만큼 “펴진다”</em>. 이것이 표현 학습(Representation Learning)의 기하학적 그림이다.</p>
+
+      <h3>핵심 정리 — 이것만은 기억하자</h3>
+      <ul class="checklist">
+        <li>행렬 곱 $\mathbf{A}\mathbf{x}$는 입력을 A의 열들이 정의하는 새 좌표계로 옮긴다.</li>
+        <li>$2 \times 2$ 행렬의 첫째 열이 $(1,0)$의 목적지, 둘째 열이 $(0,1)$의 목적지다.</li>
+        <li>$|\det(\mathbf{A})|$ = 변환 후 넓이 배율. 부호 $=$ 방향 뒤집힘 여부.</li>
+        <li>$\det = 0$이면 정보가 사라진다(특이행렬, 역행렬 없음).</li>
+        <li>신경망의 한 층은 선형 변환 + 평행이동 + 비선형 굽힘이다.</li>
+      </ul>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const CHAPTERS = [
+    { no:'01', t:'스칼라·벡터·행렬·텐서' },
+    { no:'02', t:'행렬 곱과 선형 변환' },
+    { no:'03', t:'노름과 거리' },
+    { no:'04', t:'특수 행렬과 직교성' },
+    { no:'05', t:'고유분해' },
+    { no:'06', t:'SVD — 특이값분해' },
+    { no:'07', t:'시험 대비 — 핵심 정리' },
+  ];
+  const CUR = '02';
+  document.querySelector('.topbar').innerHTML =
+    `<a class="home" href="index.html">← Ch.02 선형대수 표지</a>` +
+    `<span class="ch-mini">SUB ${CUR} / 07</span>`;
+  document.querySelector('.ch-nav ol').innerHTML = CHAPTERS.map(c =>
+    `<li><a href="${c.no}.html" ${c.no===CUR?'class="current"':''}>${c.t}</a></li>`).join('');
+  const idx = CHAPTERS.findIndex(c=>c.no===CUR);
+  const prev = idx>0 ? CHAPTERS[idx-1] : { no:'', t:'표지로', _:'index.html' };
+  const next = idx<CHAPTERS.length-1 ? CHAPTERS[idx+1] : { no:'', t:'표지로', _:'index.html' };
+  document.querySelector('.ch-foot').innerHTML =
+    `<a href="${prev._ || prev.no+'.html'}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+    `<a href="${next._ || next.no+'.html'}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+  const bar = document.querySelector('.scroll-progress');
+  document.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max > 0 ? (h.scrollTop/max)*100 : 0) + '%';
+  }, { passive: true });
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{ left:'$$', right:'$$', display:true }, { left:'$', right:'$', display:false }],
+        throwOnError: false,
+      });
+    }
+  });
+
+  // ---------- 위젯: 2D 선형 변환 ----------
+  const canvas = document.getElementById('linCanvas');
+  const ctx = canvas.getContext('2d');
+  const matEl = document.getElementById('linMat');
+  const A = { 11: 1, 12: 0, 21: 0, 22: 1 };
+  const sliders = ['a11','a12','a21','a22'].map(id => document.getElementById(id));
+  const labels = ['va11','va12','va21','va22'].map(id => document.getElementById(id));
+
+  function setMat(a11, a12, a21, a22) {
+    A[11]=a11; A[12]=a12; A[21]=a21; A[22]=a22;
+    sliders[0].value = a11; sliders[1].value = a12; sliders[2].value = a21; sliders[3].value = a22;
+    redraw();
+  }
+
+  function applyA(x, y) {
+    return [A[11]*x + A[12]*y, A[21]*x + A[22]*y];
+  }
+
+  function redraw() {
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+    // 좌표계 중심 = 캔버스 중심, 1 단위 = 80px
+    const cx = W/2, cy = H/2;
+    const S = 80;
+    function px(x) { return cx + x * S; }
+    function py(y) { return cy - y * S; }
+
+    // 원본 격자 (회색)
+    ctx.strokeStyle = 'rgba(38,34,28,.08)'; ctx.lineWidth = 1;
+    for (let i = -6; i <= 6; i++) {
+      ctx.beginPath(); ctx.moveTo(px(i), py(-4)); ctx.lineTo(px(i), py(4)); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(px(-6), py(i)); ctx.lineTo(px(6), py(i)); ctx.stroke();
+    }
+    // 원본 축 (조금 진하게)
+    ctx.strokeStyle = 'rgba(38,34,28,.25)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(px(-6), py(0)); ctx.lineTo(px(6), py(0)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(px(0), py(-4)); ctx.lineTo(px(0), py(4)); ctx.stroke();
+
+    // 변환된 격자 (주홍)
+    ctx.strokeStyle = 'rgba(192,73,46,.18)'; ctx.lineWidth = 1;
+    for (let i = -4; i <= 4; i++) {
+      // 수직선 (x=i, y변화)
+      ctx.beginPath();
+      for (let j = -4; j <= 4; j += .25) {
+        const [tx, ty] = applyA(i, j);
+        if (j === -4) ctx.moveTo(px(tx), py(ty)); else ctx.lineTo(px(tx), py(ty));
+      }
+      ctx.stroke();
+      // 수평선 (y=i)
+      ctx.beginPath();
+      for (let j = -4; j <= 4; j += .25) {
+        const [tx, ty] = applyA(j, i);
+        if (j === -4) ctx.moveTo(px(tx), py(ty)); else ctx.lineTo(px(tx), py(ty));
+      }
+      ctx.stroke();
+    }
+
+    // 원본 단위 사각형 (회색 점선)
+    ctx.strokeStyle = 'rgba(38,34,28,.45)'; ctx.lineWidth = 1.5;
+    ctx.setLineDash([4,3]);
+    ctx.beginPath();
+    ctx.moveTo(px(0), py(0)); ctx.lineTo(px(1), py(0)); ctx.lineTo(px(1), py(1)); ctx.lineTo(px(0), py(1)); ctx.closePath();
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // 변환된 단위 사각형 (주홍 채움)
+    const c00 = [px(0), py(0)];
+    const [t10x, t10y] = applyA(1, 0); const c10 = [px(t10x), py(t10y)];
+    const [t11x, t11y] = applyA(1, 1); const c11 = [px(t11x), py(t11y)];
+    const [t01x, t01y] = applyA(0, 1); const c01 = [px(t01x), py(t01y)];
+    ctx.fillStyle = 'rgba(192,73,46,.16)';
+    ctx.strokeStyle = '#C0492E'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(...c00); ctx.lineTo(...c10); ctx.lineTo(...c11); ctx.lineTo(...c01); ctx.closePath();
+    ctx.fill(); ctx.stroke();
+
+    // 기저 벡터 두 개 화살표
+    function arrow(x1, y1, x2, y2, color) {
+      ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+      const ang = Math.atan2(y2-y1, x2-x1);
+      const al = 11;
+      ctx.beginPath();
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - al*Math.cos(ang-0.4), y2 - al*Math.sin(ang-0.4));
+      ctx.lineTo(x2 - al*Math.cos(ang+0.4), y2 - al*Math.sin(ang+0.4));
+      ctx.closePath(); ctx.fill();
+    }
+    arrow(px(0), py(0), c10[0], c10[1], '#2D5B7A');  // A·(1,0)
+    arrow(px(0), py(0), c01[0], c01[1], '#A47B2E');  // A·(0,1)
+
+    // 라벨
+    ctx.font = '600 13px Spline Sans Mono, monospace';
+    ctx.fillStyle = '#2D5B7A';
+    ctx.fillText('A·(1,0)', c10[0] + 7, c10[1] - 4);
+    ctx.fillStyle = '#A47B2E';
+    ctx.fillText('A·(0,1)', c01[0] + 7, c01[1] - 4);
+
+    // 행렬식
+    const det = A[11]*A[22] - A[12]*A[21];
+    matEl.innerHTML =
+      `A = [ ${A[11].toFixed(2)},  ${A[12].toFixed(2)} ;  ${A[21].toFixed(2)},  ${A[22].toFixed(2)} ]   ` +
+      `<span class="det">det(A) = ${det.toFixed(3)}</span>` +
+      (Math.abs(det) < 0.02 ? `  <span style="color:var(--style)">— 특이행렬 (역행렬 없음)</span>` :
+       det < 0 ? `  <span style="color:var(--style-lo)">— 방향 뒤집힘</span>` : '');
+
+    labels[0].textContent = A[11].toFixed(2);
+    labels[1].textContent = A[12].toFixed(2);
+    labels[2].textContent = A[21].toFixed(2);
+    labels[3].textContent = A[22].toFixed(2);
+  }
+
+  sliders.forEach((s, i) => {
+    s.addEventListener('input', () => {
+      const keys = [11,12,21,22];
+      A[keys[i]] = parseFloat(s.value);
+      // 프리셋 버튼 off
+      document.querySelectorAll('.lin-presets .btn').forEach(b => b.classList.remove('on'));
+      redraw();
+    });
+  });
+
+  const PRESETS = {
+    identity:    [1, 0, 0, 1],
+    scale:       [2, 0, 0, 2],
+    rotate:      [Math.cos(Math.PI/4), -Math.sin(Math.PI/4), Math.sin(Math.PI/4), Math.cos(Math.PI/4)],
+    shear:       [1, 0.8, 0, 1],
+    reflect:     [-1, 0, 0, 1],
+    degenerate:  [1, 1, 0.5, 0.5],
+  };
+  document.querySelectorAll('.lin-presets .btn').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('.lin-presets .btn').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on');
+      const p = PRESETS[b.dataset.preset];
+      setMat(p[0], p[1], p[2], p[3]);
+    });
+  });
+
+  redraw();
+</script>
+</body>
+</html>

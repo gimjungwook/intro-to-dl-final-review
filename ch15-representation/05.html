@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>05 · 깊이의 지수적 표현력 — Ch.15</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  /* 깊이 비교 위젯 */
+  .dp-stage { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1.4rem 1.2rem 1rem; align-items: stretch; }
+  .dp-side { border: 1px solid var(--line); border-radius: 9px; padding: 1rem 1rem .8rem; background: #fff; display: flex; flex-direction: column; }
+  .dp-side.shallow { border-left: 3px solid var(--style); }
+  .dp-side.deep { border-left: 3px solid var(--structure); }
+  .dp-side h4 { margin: 0 0 .6rem; font-family: var(--serif); font-size: 1rem; }
+  .dp-side.shallow h4 { color: var(--style); } .dp-side.deep h4 { color: var(--structure); }
+  .dp-net { display: flex; flex-direction: column; gap: .3rem; min-height: 160px; align-items: center; padding: .7rem 0; flex: 1; justify-content: center; }
+  .dp-layer { display: flex; gap: .25rem; justify-content: center; flex-wrap: wrap; }
+  .dp-neuron { width: 14px; height: 14px; border-radius: 50%; background: var(--paper-2); border: 1px solid var(--line); transition: all .25s var(--ease); }
+  .dp-side.shallow .dp-neuron { background: var(--style-lo); border-color: var(--style); }
+  .dp-side.deep .dp-neuron { background: var(--structure-lo); border-color: var(--structure); }
+  .dp-stats { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; padding-top: .8rem; border-top: 1px solid var(--line-soft); font-family: var(--mono); font-size: .76rem; }
+  .dp-stats .stat { display: flex; flex-direction: column; align-items: center; }
+  .dp-stats .stat .v { font-family: var(--serif); font-size: 1.15rem; color: var(--ink); font-weight: 600; }
+  .dp-stats .stat .l { color: var(--ink-faint); font-size: .68rem; text-align: center; }
+  .dp-verdict { padding: .9rem 1.2rem; border-top: 1px solid var(--line-soft); background: var(--paper); font-size: .9rem; color: var(--ink-soft); line-height: 1.55; }
+  .dp-verdict b { color: var(--structure); } .dp-verdict b.warn { color: var(--style); }
+  @media (max-width: 640px) { .dp-stage { grid-template-columns: 1fr; } }
+
+  /* 합성성 가시화 */
+  .compose-stage { padding: 1.4rem 1.2rem 1rem; }
+  .compose-flow { display: flex; align-items: center; justify-content: center; gap: .8rem; flex-wrap: wrap; max-width: 600px; margin: 0 auto; }
+  .compose-layer { text-align: center; padding: .7rem .8rem; border-radius: 8px; background: var(--paper-2); border: 1px solid var(--line); min-width: 5.5rem; }
+  .compose-layer .lt { font-family: var(--mono); font-size: .68rem; color: var(--ink-faint); margin-bottom: .35rem; letter-spacing: .04em; }
+  .compose-layer .ld { font-family: var(--serif); font-size: .9rem; color: var(--ink); line-height: 1.3; }
+  .compose-arrow { font-family: var(--mono); font-size: 1.1rem; color: var(--ink-faint); }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 05 · 깊이는 단순히 더 깊은 것이 아니다</span>
+      <h1>깊이의 지수적 표현력 — <span class="t-structure">합성성</span>의 이점</h1>
+      <p class="lede">2개의 층으로 표현되는 함수를 1개의 층으로 흉내내려면 폭이 지수적으로 더 넓어야 한다. 이 정리가 "왜 그냥 폭을 늘리지 않고 굳이 깊이를 쌓는가"에 대한 가장 깊은 답이다.</p>
+    </header>
+
+    <div class="prose">
+      <p>4번 절에서 본 분산 표상이 "한 층 안에서 비트들의 조합"으로 지수적 영역을 만드는 이야기였다면, 5번 절은 "여러 층 사이에서 표상들의 합성"으로 또 한 번 지수적 이득이 나오는 이야기다. 두 이득은 서로 다른 원리로 작동하며, 깊은 망은 두 가지를 곱해 진짜 폭발적인 표현력을 얻는다.</p>
+
+      <p>책의 첫 도발적 주장이다. <strong>"같은 함수족을 표현할 때, 얕은 망이 필요로 하는 유닛 수는 깊은 망의 유닛 수에 대해 지수적이다."</strong> 이는 보편 근사 정리(universal approximation theorem)와 모순처럼 들린다. 보편 근사 정리에 따르면 2층 신경망이면 임의의 연속함수를 임의 정밀도로 근사할 수 있지 않은가? 그렇다, 그러나 정리는 그러기 위해 <em>얼마나 많은 뉴런이 필요한지</em>는 말해 주지 않는다. 이 절의 정리들은 바로 그 수치를 채워 넣는다.</p>
+
+      <div class="analogy">
+        <b>레시피 책 vs 요리 단계의 합성.</b> "비빔밥 만들기"를 두 가지 방식으로 적을 수 있다. 한 가지는 모든 가능한 비빔밥 조합(밥+나물+고추장+...의 모든 조합)을 사전에 미리 적어 두는 것. 100가지 나물이 있고 각각 들어갈지 말지가 독립적이라면 2^100가지 비빔밥을 표로 만들어야 한다. 다른 한 가지는 "밥 짓기 → 나물 데치기 → 양념 만들기 → 섞기" 4단계로 적는 것. 각 단계는 단순하지만 단계의 합성으로 같은 2^100가지를 모두 만들어낼 수 있다. 후자가 깊이의 방식이다. 얕은 표는 한 줄에 모든 것을 늘어놓고, 깊은 단계는 합성으로 압축한다.
+      </div>
+
+      <h2>정리: ReLU 망의 선형 영역 수</h2>
+      <p>이 직관을 구체적 정리로 만들어 보자. ReLU 활성화의 신경망이 만드는 함수는 조각별 선형 함수(piecewise-linear function)다. 그 "조각의 수"가 함수가 얼마나 복잡한 결정 경계를 표현할 수 있는지의 정확한 측정이다. Montufar et al.(2014)의 정리는 이렇게 말한다.</p>
+
+      <div class="math-block">$$ \text{Linear regions of depth-}L\text{ ReLU net} \;\geq\; \left(\frac{n}{d}\right)^{(L-1)d} \cdot \binom{n}{d} $$</div>
+      <p class="math-note">$n$은 각 층의 너비, $d$는 입력 차원, $L$은 깊이. 깊이 $L$이 지수의 위치에 올라간다. 같은 총 파라미터 수에서 깊이를 늘리면 영역 수가 지수적으로 증가한다.</p>
+
+      <p>수식이 압도적이지만 핵심은 단순하다 — <strong>같은 총 뉴런 수를 깊게 쌓으면 표현할 수 있는 영역의 수가 깊이에 대해 지수적으로 늘어난다</strong>. 한 층을 통과할 때마다 이전 층의 모든 결정 경계가 새 층의 결정 경계와 곱해지면서, 영역의 수가 곱셈으로 늘어나기 때문이다. 곱셈을 $L$번 반복하면 지수가 된다.</p>
+
+      <h2>합성성 — 깊이가 의미하는 것</h2>
+      <p>왜 합성이 그렇게 강력한가. 핵심은 <strong>"낮은 층이 추출한 특징을 높은 층이 재사용한다"</strong>는 점이다. 한 번 학습한 모서리 검출기는 모든 객체 인식에 재사용된다. 한 번 학습한 부위 검출기는 다양한 동물 분류에 재사용된다. 이 재사용성이 곧 곱셈적 표현력의 원천이다.</p>
+
+      <div class="compose-stage">
+        <div class="compose-flow">
+          <div class="compose-layer">
+            <div class="lt">LAYER 1</div>
+            <div class="ld">픽셀</div>
+          </div>
+          <div class="compose-arrow">→</div>
+          <div class="compose-layer">
+            <div class="lt">LAYER 2</div>
+            <div class="ld">모서리·색</div>
+          </div>
+          <div class="compose-arrow">→</div>
+          <div class="compose-layer">
+            <div class="lt">LAYER 3</div>
+            <div class="ld">텍스처·패턴</div>
+          </div>
+          <div class="compose-arrow">→</div>
+          <div class="compose-layer">
+            <div class="lt">LAYER 4</div>
+            <div class="ld">부위</div>
+          </div>
+          <div class="compose-arrow">→</div>
+          <div class="compose-layer">
+            <div class="lt">LAYER 5</div>
+            <div class="ld">객체</div>
+          </div>
+        </div>
+      </div>
+
+      <p>이 사다리에서 핵심은 <em>같은 모서리 검출기가 5개 부위, 200개 객체에 모두 쓰인다</em>는 것이다. 각 층의 출력은 다음 층의 입력으로 재사용되므로, 한 번 학습한 특징은 그 위에 올라갈 모든 표상에 곱셈으로 기여한다. 얕은 망에서는 이 재사용성이 없다 — 모든 분류를 위해 픽셀로부터 직접 결정 경계를 그어야 한다. 그래서 같은 일을 하려면 지수적으로 더 많은 자원이 든다.</p>
+
+      <h2>아래 위젯 — 같은 함수, 두 망의 크기</h2>
+      <p>아래에서 깊이를 늘려가며 두 가지를 본다. (1) 같은 함수를 표현하는 데 필요한 얕은 망의 너비가 어떻게 폭발적으로 늘어나는지, (2) 깊은 망은 너비를 거의 늘리지 않아도 같은 표현력에 도달하는지.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 06</span><span>같은 표현력, 두 망의 크기 — 깊이가 곧 자원이다</span></div>
+        <div class="dp-stage">
+          <div class="dp-side shallow">
+            <h4>얕은 망 — 1 hidden layer</h4>
+            <div class="dp-net" id="dpShallow"></div>
+            <div class="dp-stats">
+              <div class="stat"><div class="v" id="dpShW">8</div><div class="l">너비 (필요)</div></div>
+              <div class="stat"><div class="v" id="dpShP">9</div><div class="l">파라미터</div></div>
+            </div>
+          </div>
+          <div class="dp-side deep">
+            <h4>깊은 망 — L hidden layers</h4>
+            <div class="dp-net" id="dpDeep"></div>
+            <div class="dp-stats">
+              <div class="stat"><div class="v" id="dpDpW">3×3</div><div class="l">너비 × 깊이</div></div>
+              <div class="stat"><div class="v" id="dpDpP">12</div><div class="l">파라미터</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="widget-controls">
+          <div class="slider" style="flex:1; min-width:260px;">
+            <label>깊은 망의 깊이 L <b id="dpLval">L = 3</b></label>
+            <input type="range" id="dpL" min="2" max="8" step="1" value="3">
+          </div>
+        </div>
+        <div class="dp-verdict" id="dpverdict"></div>
+      </div>
+      <p class="widget-cap">깊이를 1 늘리면 같은 표현력을 위한 얕은 망의 너비는 곱셈으로 늘어난다. 깊은 망은 추가 파라미터 비용이 선형이지만 표현력은 지수적으로 늘어난다. 이것이 "왜 그냥 폭을 늘리지 않고 깊이를 쌓는가"의 정확한 답이다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>경고 — 깊이가 만능은 아니다</h2>
+      <p>표현력과 학습 가능성은 다른 이야기다. 깊이가 지수적 표현력을 준다는 사실이 곧 "깊을수록 좋다"를 의미하지 않는다. 깊은 망은 다음 어려움을 동반한다.</p>
+
+      <ul>
+        <li><strong>기울기 소실/폭발:</strong> 역전파에서 기울기가 깊은 층까지 살아 닿지 못한다. ReLU·정규화·잔차 연결로 완화하지만 완전 해결은 아니다.</li>
+        <li><strong>최적화 지형의 복잡함:</strong> 안장점과 평탄한 영역이 많아진다(8장 참고).</li>
+        <li><strong>데이터의 한계:</strong> 표현력이 늘어난 만큼 과적합 위험도 늘어난다.</li>
+      </ul>
+
+      <p>책의 메시지는 균형이다. "깊이는 강력한 도구이지만 공짜는 아니다. 깊이의 지수적 이득은 8장에서 본 최적화 도구, 7장에서 본 정칙화 도구, 11장의 실용적 방법론과 함께 사용되어야 실현된다." 즉 15장의 모든 통찰은 앞 장의 도구들이 받쳐 줄 때만 살아 움직인다.</p>
+
+      <h2>분산 표상 + 깊이 = 진짜 폭발</h2>
+      <p>두 지수적 이득을 곱해 보자. $n$개의 뉴런이 분산 표상으로 한 층에서 만드는 영역은 $2^n$. 같은 너비의 층 $L$개를 쌓으면 그 영역의 수는 정리에 따라 거의 $2^{nL}$ 수준이 된다. 즉 두 개의 지수가 곱해진다. 이것이 깊은 망의 진짜 표현 자원이다.</p>
+
+      <p>왜 이 자원이 실제로 좋은 일반화로 이어지는가는 또 다른 이야기다 — 표현할 수 있다는 것과 학습할 수 있다는 것은 다르다. 그러나 표현 자원 자체가 부족하면 어떤 학습 알고리즘도 풀 수 없다. 깊이의 지수적 이득은 "최소한 가능성은 열려 있다"는 보장을 준다.</p>
+
+      <p>다음 절에서는 마지막 큰 주제 — <strong>인과 요소와 반지도학습</strong>으로 들어간다. 라벨이 없는 데이터가 어떻게 분류 정확도를 끌어올리는지, 그리고 그 모든 정칙화 기법들이 사실은 같은 한 가지 — "표상에 어떤 사전(prior)을 거는가" — 의 변형이라는 것을 본다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'좋은 표상이란', f:'01.html' },
+    { no:'02', t:'사전훈련과 미세조정', f:'02.html' },
+    { no:'03', t:'전이학습·도메인 적응', f:'03.html' },
+    { no:'04', t:'분산 표상의 힘', f:'04.html' },
+    { no:'05', t:'깊이의 지수적 표현력', f:'05.html' },
+    { no:'06', t:'인과 요소와 반지도', f:'06.html' },
+    { no:'07', t:'시험 대비', f:'07.html' },
+  ];
+  const CURRENT = '05';
+  (function buildNav() {
+    document.querySelector('.topbar').innerHTML =
+      `<a class="home" href="index.html">← Chapter 15 · 표상 학습</a>` +
+      `<span class="ch-mini">SUB ${CURRENT} / 07</span>`;
+    document.querySelector('.ch-nav ol').innerHTML = SUBS.map(s =>
+      `<li><a href="${s.f}" ${s.no === CURRENT ? 'class="current"' : ''}>${s.t}</a></li>`).join('');
+    const i = SUBS.findIndex(s => s.no === CURRENT);
+    const prev = i > 0 ? SUBS[i-1] : { f:'index.html', t:'챕터 표지', no:'' };
+    const next = i < SUBS.length-1 ? SUBS[i+1] : { f:'index.html', t:'챕터 표지', no:'' };
+    document.querySelector('.ch-foot').innerHTML =
+      `<a href="${prev.f}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+      `<a href="${next.f}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+    const bar = document.querySelector('.scroll-progress');
+    const onScroll = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    document.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+  })();
+
+  // ===== 위젯: 깊이 비교 =====
+  (function dpWidget() {
+    const slider = document.getElementById('dpL');
+    const lval = document.getElementById('dpLval');
+    const shN = document.getElementById('dpShallow');
+    const dpN = document.getElementById('dpDeep');
+
+    function render() {
+      const L = parseInt(slider.value);
+      // 깊은 망: L층 × 너비 3
+      const W = 3;
+      // 같은 표현력에 필요한 얕은 망의 너비 ≈ W^L (이론적 하한, 시각화는 적당히 축소)
+      const shallowW = Math.min(60, Math.pow(W, L));
+
+      // 깊은 망 그리기
+      dpN.innerHTML = '';
+      for (let i = 0; i < L; i++) {
+        const row = document.createElement('div');
+        row.className = 'dp-layer';
+        for (let j = 0; j < W; j++) {
+          const dot = document.createElement('div');
+          dot.className = 'dp-neuron';
+          row.appendChild(dot);
+        }
+        dpN.appendChild(row);
+      }
+
+      // 얕은 망 그리기 (한 줄)
+      shN.innerHTML = '';
+      const row = document.createElement('div');
+      row.className = 'dp-layer';
+      const displayCount = Math.min(shallowW, 80);
+      for (let j = 0; j < displayCount; j++) {
+        const dot = document.createElement('div');
+        dot.className = 'dp-neuron';
+        dot.style.width = displayCount > 20 ? '8px' : '14px';
+        dot.style.height = displayCount > 20 ? '8px' : '14px';
+        row.appendChild(dot);
+      }
+      shN.appendChild(row);
+
+      lval.textContent = 'L = ' + L;
+      document.getElementById('dpShW').textContent = shallowW + (shallowW >= 60 ? '+' : '');
+      document.getElementById('dpShP').textContent = shallowW + (shallowW >= 60 ? '+' : '');
+      document.getElementById('dpDpW').textContent = W + '×' + L;
+      document.getElementById('dpDpP').textContent = W * L + (L-1) * W;
+
+      const v = document.getElementById('dpverdict');
+      const ratio = shallowW / (W * L);
+      v.innerHTML = `깊이 L = ${L}에서 같은 표현력을 얕은 망으로 흉내내려면 너비 ≈ <b>${shallowW}${shallowW >= 60 ? '+' : ''}</b>개의 뉴런이 필요하다. 깊은 망은 ${W*L}개로 충분하다. 비율 약 <b>${ratio.toFixed(1)}배</b>${L >= 5 ? ' — 깊이가 지수의 위치에 있다.' : '.'}`;
+    }
+    slider.addEventListener('input', render);
+    render();
+  })();
+
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
+        throwOnError: false,
+      });
+    }
+  });
+</script>
+</body>
+</html>

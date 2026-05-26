@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>05 — 데이터/모델/계산 삼각형 — Ch.1</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  /* 삼각형 다이어그램 (CH06 파이프 카드 패턴 차용) */
+  .tri-stage { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1.4rem 1.4rem 1rem; align-items: center; }
+  #tri-svg { width: 100%; max-width: 320px; margin: 0 auto; display: block; }
+  .tri-vert { cursor: pointer; transition: r .15s var(--ease); }
+  .tri-vert:hover, .tri-vert.active { r: 24; }
+  .tri-vlab { font-family: var(--serif); font-size: 16px; font-weight: 600; pointer-events: none; }
+  .tri-detail { padding: 1.1rem 1.2rem; background: var(--paper); border-radius: 10px; border: 1px solid var(--line-soft); min-height: 240px; }
+  .tri-detail h4 { margin: 0 0 .4rem; font-family: var(--serif); font-size: 1.18rem; color: var(--ink); }
+  .tri-detail .td-meta { font-family: var(--mono); font-size: .72rem; color: var(--style); letter-spacing: .1em; margin-bottom: .5rem; }
+  .tri-detail p { margin: 0 0 .7rem; font-size: .9rem; color: var(--ink-soft); line-height: 1.55; }
+  .tri-detail .td-compare { padding: .6rem .8rem; background: var(--paper-2); border-radius: 7px; font-size: .82rem; color: var(--ink-soft); line-height: 1.55; }
+  .tri-detail .td-compare b { color: var(--ink); }
+  @media (max-width: 720px) { .tri-stage { grid-template-columns: 1fr; } }
+
+  /* ImageNet 슬라이더 차트 */
+  .img-chart { padding: 1.4rem 1.4rem 0; }
+  #img-svg { width: 100%; height: auto; max-height: 320px; display: block; }
+  .img-axis text { font-family: var(--mono); font-size: 10px; fill: var(--ink-faint); }
+  .img-axis line { stroke: rgba(38,34,28,0.13); stroke-width: 1; }
+  .img-bar { transition: fill .15s var(--ease); }
+  .img-bar.highlight { fill: var(--style); }
+  .img-bar-label { font-family: var(--mono); font-size: 9.5px; fill: var(--ink-soft); text-anchor: middle; pointer-events: none; }
+  .img-bar-val { font-family: var(--mono); font-size: 10px; fill: var(--ink); font-weight: 600; text-anchor: middle; pointer-events: none; }
+  .img-human-line { stroke: var(--style); stroke-width: 1.5; stroke-dasharray: 5,3; }
+  .img-human-label { font-family: var(--mono); font-size: 10px; fill: var(--style); }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 05 — 환경이 갖춰진 순간 폭발했다</span>
+      <h1>데이터, 모델, 계산의 <span class="t-synth">삼각형</span> — 왜 지금 폭발했는가</h1>
+      <p class="lede">레시피는 1980년대에도 있었다. 오븐과 재료가 모인 순간 폭발한다. 세 꼭짓점 중 하나라도 약하면 다른 두 개도 살아나지 못한다는 사실이 1장의 가장 실용적인 메시지다.</p>
+    </header>
+
+    <div class="prose">
+      <p>앞 절(<a href="04.html">Sub 04</a>)에서 “환경이 갖춰지자 폭발했다”라는 표현을 썼다. 이 절은 그 환경의 정체를 구체적으로 본다. 책 1장은 세 가지 요소를 든다.</p>
+
+      <ol>
+        <li><strong>데이터(data)</strong> — 학습할 수 있는 사례의 양과 질</li>
+        <li><strong>모델(model)</strong> — 표상을 담아낼 구조와 학습 알고리즘</li>
+        <li><strong>계산(compute)</strong> — 그 모델을 그 데이터로 실제 돌릴 수 있는 자원</li>
+      </ol>
+
+      <p>이 세 꼭짓점은 어느 하나만 강해도 시너지가 안 난다. 1980년대 LeNet은 모델은 좋았지만 데이터가 부족했고, 같은 시절 IBM은 데이터는 모으고 있었지만 계산이 부족했으며, 1990년대 SVM은 계산은 가능했지만 모델 자체의 표현력에 한계가 있었다. 셋이 모두 맞물린 시점이 2010년대 초반이고, 그 폭발이 우리가 본 ImageNet 사건이다.</p>
+
+      <div class="analogy">
+        <b>요리의 세 다리.</b> 좋은 레시피(모델)만 있다고 좋은 음식이 나오지 않는다. 신선한 재료(데이터)와 좋은 오븐(계산)이 함께 있어야 한다. 셋 중 하나가 부족하면 다른 두 개도 절반의 결과만 낸다. 게다가 세 다리는 서로를 키운다. 좋은 오븐이 있으면 더 큰 레시피가 가능해지고, 그러면 더 많은 재료를 다룰 수 있다. 한 다리가 커지면 다른 두 다리에도 압력이 걸린다.
+      </div>
+
+      <h2>아래 삼각형에서 꼭짓점을 선택하면 그 변화의 정체가 보인다</h2>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 05a</span><span>세 꼭짓점 — 클릭해서 각 요소가 1980년대 vs 2010년대에 어떻게 달랐는지 확인</span></div>
+        <div class="tri-stage">
+          <svg id="tri-svg" viewBox="0 0 300 280" xmlns="http://www.w3.org/2000/svg">
+            <!-- 삼각형 변 -->
+            <polygon points="150,40 50,230 250,230" fill="rgba(164,123,46,0.05)" stroke="rgba(38,34,28,0.2)" stroke-width="1.5"/>
+            <!-- 변 라벨 -->
+            <text x="80" y="140" font-family="Spline Sans Mono, monospace" font-size="9" fill="#8E8576" transform="rotate(-62 80 140)">상호 강화</text>
+            <text x="223" y="140" font-family="Spline Sans Mono, monospace" font-size="9" fill="#8E8576" transform="rotate(62 223 140)">상호 강화</text>
+            <text x="150" y="252" font-family="Spline Sans Mono, monospace" font-size="9" fill="#8E8576" text-anchor="middle">상호 강화</text>
+
+            <!-- 꼭짓점 -->
+            <circle class="tri-vert" data-key="data" cx="150" cy="40" r="22" fill="#2D5B7A"/>
+            <text class="tri-vlab" x="150" y="45" text-anchor="middle" fill="#fff">데이터</text>
+
+            <circle class="tri-vert" data-key="model" cx="50" cy="230" r="22" fill="#C0492E"/>
+            <text class="tri-vlab" x="50" y="235" text-anchor="middle" fill="#fff">모델</text>
+
+            <circle class="tri-vert" data-key="compute" cx="250" cy="230" r="22" fill="#A47B2E"/>
+            <text class="tri-vlab" x="250" y="235" text-anchor="middle" fill="#fff">계산</text>
+          </svg>
+          <div class="tri-detail" id="tri-detail"></div>
+        </div>
+      </div>
+      <p class="widget-cap">세 요소는 단순히 “모두 있어야 좋다”가 아니라 <em>서로를 키운다</em>. 좋은 GPU는 더 큰 모델을 가능하게 하고, 큰 모델은 더 많은 데이터를 흡수하며, 그렇게 학습된 모델은 다시 데이터 수집과 정제를 자동화하는 도구가 된다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>ImageNet 분류 정확도 — 깊이의 효과를 직접 본다</h2>
+      <p>아래 위젯은 매년 ImageNet 이미지 분류 대회(ILSVRC)에서 우승한 모델의 “Top-5 오류율”을 막대그래프로 그린 것이다. 슬라이더로 연도를 바꾸면 그 해 최고 모델이 강조되고, 점선은 사람의 오류율(약 5%)을 표시한다.</p>
+      <p>주목할 점은 두 가지다. 첫째, 2012년을 기점으로 곡선이 급격히 꺾인다 — AlexNet 등장. 둘째, 2015년 ResNet은 사상 처음으로 사람을 넘는다(3.57%). 단순히 “모델이 좋아졌다”가 아니라 <strong>같은 ImageNet 데이터셋과 비슷한 계산 자원 위에서 모델 구조의 깊이가 만든 차이</strong>다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 05b</span><span>ImageNet Top-5 오류율 — 깊이의 효과</span></div>
+        <div class="img-chart">
+          <svg id="img-svg" viewBox="0 0 720 320" xmlns="http://www.w3.org/2000/svg">
+            <!-- y축 grid -->
+            <g class="img-axis">
+              <line x1="60" y1="40" x2="690" y2="40"/>
+              <line x1="60" y1="100" x2="690" y2="100"/>
+              <line x1="60" y1="160" x2="690" y2="160"/>
+              <line x1="60" y1="220" x2="690" y2="220"/>
+              <line x1="60" y1="280" x2="690" y2="280"/>
+              <text x="55" y="44" text-anchor="end">30%</text>
+              <text x="55" y="104" text-anchor="end">22%</text>
+              <text x="55" y="164" text-anchor="end">15%</text>
+              <text x="55" y="224" text-anchor="end">8%</text>
+              <text x="55" y="284" text-anchor="end">0%</text>
+            </g>
+            <!-- 사람 라인 -->
+            <line class="img-human-line" x1="60" y1="237" x2="690" y2="237"/>
+            <text class="img-human-label" x="690" y="232" text-anchor="end">사람의 오류율 ≈ 5.1%</text>
+
+            <g id="img-bars"></g>
+
+            <g class="img-axis">
+              <line x1="60" y1="280" x2="690" y2="280"/>
+              <text x="375" y="305" text-anchor="middle" style="font-size:11px">ImageNet 우승 모델 — 연도</text>
+            </g>
+          </svg>
+        </div>
+        <div class="widget-controls">
+          <div class="slider" style="flex:1; min-width:260px;">
+            <label>연도 선택 <b id="img-year">2012 — AlexNet (16.4%)</b></label>
+            <input type="range" id="img-slider" min="0" max="7" step="1" value="3">
+          </div>
+        </div>
+        <p class="widget-cap" style="margin-top:.5rem; padding-bottom:1rem;">2010 - 2011년은 SVM 계열 “얕은 모델 + 정교한 특징공학”이 우승. 2012년 AlexNet 이후 매년 등장한 모델은 모두 더 깊은 CNN(8 → 19 → 22 → 152층)이다. 깊이는 단순한 숫자가 아니라 실제 정확도 곡선의 기울기를 바꿨다.</p>
+      </div>
+    </div>
+
+    <div class="prose">
+      <h2>왜 2010년대였는가 — 시험에서 정답을 한 줄로</h2>
+
+      <p>강의노트가 짚은 두 가지 환경 요인을 한 줄로 정리하면 다음과 같다.</p>
+
+      <ul class="checklist">
+        <li><b>대규모 데이터</b> — ImageNet(2009, 약 1,400만 장), 음성 코퍼스, 인터넷 텍스트가 “레이블된 빅데이터”를 가능하게 했다.</li>
+        <li><b>GPU 가속</b> — 게임용으로 발전한 그래픽 카드(특히 NVIDIA CUDA)가 행렬 곱셈을 수십 배 빠르게 만들었다. AlexNet은 GTX 580 두 장으로 학습됐다.</li>
+        <li><b>알고리즘 개선</b> — ReLU, dropout, batch normalization, 더 나은 초기화 같은 “깊은 네트워크를 안정적으로 학습시키는” 기법들이 누적됐다.</li>
+      </ul>
+
+      <p>세 요인 중 어느 하나만 빠져도 폭발은 일어나지 않았을 것이다. 이 점은 시험에서 “딥러닝이 지금 가능한 이유를 세 가지 들라”는 식의 문항에 그대로 답이 된다.</p>
+
+      <h2>이 절의 한 줄 요약</h2>
+      <p><strong>아이디어는 1980년대에 있었다. 데이터/모델/계산이 모두 갖춰진 2010년대에 폭발했다. 셋 중 어느 하나라도 약했다면 다른 두 개도 무력했을 것이다.</strong></p>
+
+      <p>다음, 마지막 절에서는 이 모든 내용을 시험 대비 카드로 압축한다. 정의 한 줄, 구분 한 줄, 예상 질문 다섯 개.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'표상의 문제', f:'01.html' },
+    { no:'02', t:'AI/ML/RL/DL 동심원', f:'02.html' },
+    { no:'03', t:'깊이가 만드는 것', f:'03.html' },
+    { no:'04', t:'역사적 굴곡', f:'04.html' },
+    { no:'05', t:'데이터/모델/계산 삼각형', f:'05.html' },
+    { no:'06', t:'시험 대비 체크리스트', f:'06.html' },
+  ];
+  const CURRENT = '05';
+  (function buildNav() {
+    document.querySelector('.topbar').innerHTML =
+      `<a class="home" href="index.html">← Chapter 01 — 딥러닝이란 무엇인가</a>` +
+      `<span class="ch-mini">SUB ${CURRENT} / 06</span>`;
+    document.querySelector('.ch-nav ol').innerHTML = SUBS.map(s =>
+      `<li><a href="${s.f}" ${s.no === CURRENT ? 'class="current"' : ''}>${s.t}</a></li>`).join('');
+    const i = SUBS.findIndex(s => s.no === CURRENT);
+    const prev = i > 0 ? SUBS[i-1] : { f:'index.html', t:'챕터 표지', no:'' };
+    const next = i < SUBS.length-1 ? SUBS[i+1] : { f:'index.html', t:'챕터 표지', no:'' };
+    document.querySelector('.ch-foot').innerHTML =
+      `<a href="${prev.f}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+      `<a href="${next.f}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+    const bar = document.querySelector('.scroll-progress');
+    const onScroll = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    document.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+  })();
+
+  // ===== 삼각형 꼭짓점 인터랙션 =====
+  (function tri() {
+    const data = {
+      data: {
+        meta: '꼭짓점 1 — 데이터',
+        title: '학습할 수 있는 사례의 양과 질',
+        body: '모델은 본 만큼만 일반화한다. 같은 모델이라도 100장으로 학습한 결과와 100만 장으로 학습한 결과는 완전히 다른 시스템이 된다. “label이 붙은” 데이터가 특히 귀중하다.',
+        cmp: '<b>1980년대 /</b> MNIST(약 7만 장)도 큰 데이터셋 취급. <b>2009년 /</b> ImageNet 등장 — 1,400만 장, 2만 카테고리. <b>2020년대 /</b> 인터넷 텍스트 수조 토큰, 이미지 수십억 장.',
+      },
+      model: {
+        meta: '꼭짓점 2 — 모델',
+        title: '표상을 담아낼 구조와 학습 알고리즘',
+        body: '같은 데이터로도 어떤 구조에 어떤 손실함수와 최적화를 묶느냐에 따라 결과는 달라진다. CNN은 이미지에, RNN/Transformer는 시퀀스에, GNN은 그래프 데이터에 더 적합하다. 모델은 데이터의 구조적 가정을 담는 그릇이다.',
+        cmp: '<b>1980년대 /</b> 단순 MLP, LeNet(5층). <b>2012년 /</b> AlexNet(8층). <b>2015년 /</b> ResNet(152층). <b>2017년 /</b> Transformer — RNN을 버리고 attention만으로 시퀀스 처리.',
+      },
+      compute: {
+        meta: '꼭짓점 3 — 계산',
+        title: '그 모델을 그 데이터로 실제 돌릴 수 있는 자원',
+        body: 'GPU는 게임용으로 발전한 하드웨어인데, 그 핵심 연산(병렬 행렬 곱)이 신경망 학습에 그대로 들어맞았다. NVIDIA의 CUDA(2007)가 GPU를 “과학 계산 도구”로 일반화하면서 딥러닝의 두 번째 도약이 가능해졌다.',
+        cmp: '<b>1990년대 /</b> CPU 단일 코어. <b>2012년 /</b> AlexNet은 GTX 580 두 장(약 6,000원/시간 수준). <b>2020년대 /</b> 수천 개 GPU/TPU 클러스터, GPT-4 추정 학습 비용 1억 달러 이상.',
+      },
+    };
+    const verts = document.querySelectorAll('.tri-vert');
+    const detail = document.getElementById('tri-detail');
+    function render(k) {
+      verts.forEach(v => v.classList.toggle('active', v.dataset.key === k));
+      const d = data[k];
+      detail.innerHTML = `<p class="td-meta">${d.meta}</p><h4>${d.title}</h4><p>${d.body}</p><div class="td-compare">${d.cmp}</div>`;
+    }
+    verts.forEach(v => {
+      v.addEventListener('mouseenter', () => render(v.dataset.key));
+      v.addEventListener('click', () => render(v.dataset.key));
+    });
+    render('data');
+  })();
+
+  // ===== ImageNet 막대그래프 =====
+  (function img() {
+    // y축: 0 (=280) ~ 30% (=40)
+    function y(pct) { return 280 - (pct / 30) * 240; }
+    const data = [
+      { year: '2010', model: 'NEC-UIUC', err: 28.2, type: 'SVM' },
+      { year: '2011', model: 'XRCE', err: 25.8, type: 'Fisher Vec' },
+      { year: '2012', model: 'AlexNet', err: 16.4, type: 'CNN 8층' },
+      { year: '2013', model: 'ZFNet', err: 11.7, type: 'CNN 8층' },
+      { year: '2014', model: 'VGG', err: 7.3, type: 'CNN 19층' },
+      { year: '2014b', model: 'GoogLeNet', err: 6.7, type: 'CNN 22층' },
+      { year: '2015', model: 'ResNet', err: 3.57, type: 'CNN 152층' },
+      { year: '2017', model: 'SENet', err: 2.25, type: 'CNN+attn' },
+    ];
+    const bg = document.getElementById('img-bars');
+    const W = 720, leftPad = 70, rightPad = 30;
+    const barW = (W - leftPad - rightPad) / data.length;
+    data.forEach((d, i) => {
+      const x = leftPad + i * barW + barW * 0.15;
+      const w = barW * 0.7;
+      const yTop = y(d.err);
+      const h = 280 - yTop;
+      const color = d.type.startsWith('CNN') ? '#2D5B7A' : '#8E8576';
+      bg.innerHTML += `<rect class="img-bar" data-i="${i}" x="${x}" y="${yTop}" width="${w}" height="${h}" fill="${color}" rx="2"/>` +
+        `<text class="img-bar-val" x="${x + w/2}" y="${yTop - 4}">${d.err.toFixed(1)}%</text>` +
+        `<text class="img-bar-label" x="${x + w/2}" y="295">${d.year.replace('b','')}</text>`;
+    });
+
+    const slider = document.getElementById('img-slider');
+    slider.max = data.length - 1;
+    slider.value = 2;  // 2012 AlexNet
+    const ylabel = document.getElementById('img-year');
+    function render() {
+      const idx = parseInt(slider.value);
+      const d = data[idx];
+      ylabel.textContent = `${d.year.replace('b','')} — ${d.model} (${d.err.toFixed(1)}%), ${d.type}`;
+      document.querySelectorAll('.img-bar').forEach((b, i) => {
+        b.classList.toggle('highlight', i === idx);
+      });
+    }
+    slider.addEventListener('input', render);
+    render();
+  })();
+
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
+        throwOnError: false,
+      });
+    }
+  });
+</script>
+</body>
+</html>

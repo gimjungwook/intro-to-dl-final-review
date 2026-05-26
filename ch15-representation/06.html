@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>06 · 인과 요소·반지도 — Ch.15</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  /* 반지도학습 효과 위젯 */
+  .ss-stage { padding: 1.4rem 1.2rem 1rem; }
+  .ss-chart { display: block; width: 100%; max-width: 540px; aspect-ratio: 16/10; margin: 0 auto; background: #fff; border-radius: 10px; border: 1px solid var(--line); }
+  .ss-verdict { padding: .9rem 1.2rem; border-top: 1px solid var(--line-soft); background: var(--paper); font-size: .9rem; color: var(--ink-soft); line-height: 1.55; }
+  .ss-verdict b.ok { color: var(--structure); } .ss-verdict b.warn { color: var(--style); }
+
+  /* prior 카드 */
+  .prior-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: .8rem; max-width: var(--measure); margin: 1.6rem auto; padding-inline: 1.4rem; }
+  .prior-card { padding: 1rem 1.1rem; border: 1px solid var(--line); border-radius: 10px; background: #fff; transition: border-color .2s, transform .15s; }
+  .prior-card:hover { border-color: var(--structure-lo); transform: translateY(-2px); box-shadow: var(--shadow-plate); }
+  .prior-card h4 { margin: 0 0 .5rem; font-family: var(--serif); font-size: 1.02rem; color: var(--structure); }
+  .prior-card p { margin: 0; font-size: .85rem; color: var(--ink-soft); line-height: 1.55; }
+  .prior-card .tag { display: inline-block; font-family: var(--mono); font-size: .66rem; letter-spacing: .04em; color: var(--ink-faint); margin-bottom: .35rem; }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 06 · 라벨 없는 데이터의 가치</span>
+      <h1>인과 요소·반지도학습·<span class="t-synth">사전(prior)</span></h1>
+      <p class="lede">라벨 없는 데이터의 분포 정보가 어떻게 분류 정확도를 끌어올리는가. 답은 단 한 줄 — 같은 인과 요인이 입력 분포와 라벨을 동시에 설명할 때 작동한다. 이 한 줄이 15장의 모든 정칙화·사전훈련·전이학습을 하나로 묶는다.</p>
+    </header>
+
+    <div class="prose">
+      <p>여기까지 우리는 표상이 어떤 모양이어야 좋은가(1번), 어떻게 만드는가(2번), 다른 데로 옮길 수 있는가(3번), 왜 강력한가(4·5번)를 차례로 봤다. 마지막 절은 가장 미묘하지만 가장 통합적인 주제 — <strong>라벨이 없는 데이터가 어떻게 라벨이 필요한 과제를 돕는가</strong> — 이다.</p>
+
+      <p>구체적 시나리오를 떠올려 보자. 사용자의 사진 1000장 중 100장만 "이게 우리 집 고양이"라고 라벨이 붙어 있고, 나머지 900장은 라벨이 없다. 라벨 없는 900장을 그냥 버리는 것이 옳을까? 책은 단호하게 말한다 — <strong>"버리지 마라. 단, 특정 조건에서만 작동한다."</strong> 그 조건을 정확히 이해하는 것이 이 절의 핵심이다.</p>
+
+      <h2>반지도학습이 작동하는 핵심 가정</h2>
+      <p>책의 가장 압축된 주장이다. 반지도학습은 입력 분포 $p(x)$를 형성하는 인과 요인과 라벨 $y$를 결정하는 인과 요인이 <strong>공유될 때</strong> 작동한다. 수식으로 적으면:</p>
+
+      <div class="math-block">$$ x = g(z), \quad y = h(z_S) \quad \text{where } z_S \subset z $$</div>
+      <p class="math-note">관측 $x$는 잠재 요인 $z$들로부터 생성되고, 라벨 $y$는 그 요인의 부분집합 $z_S$로 결정된다. $z$를 잘 복원하는 것은 $z_S$를 부분적으로 복원하는 것과 같다.</p>
+
+      <p>이 조건이 충족되면 라벨 없는 데이터의 분포를 학습하는 것이 자동으로 라벨 예측에 도움이 된다. 왜? $p(x)$를 잘 설명하려면 $z$의 구조를 알아야 하고, $z$를 알면 그 부분집합인 $z_S$도 알게 되고, $z_S$를 알면 $y$가 거의 결정되기 때문이다.</p>
+
+      <div class="analogy">
+        <b>한 가족 사진첩을 처음 보는 친구.</b> 처음 보는 가족의 사진첩 1000장이 주어진다. 그중 100장에는 "이게 엄마", "이게 아빠"라는 라벨이 붙어 있다. 라벨 없는 900장은 그냥 버려야 할까? 아니다. 그 900장을 차근차근 넘기다 보면 가족 구성원의 얼굴, 자주 가는 장소, 옷의 스타일, 표정 패턴 같은 <b>가족의 시각적 인과 요인</b>을 머리가 알아서 추출한다. 라벨이 붙은 100장만으로는 결코 잡지 못할 미묘한 차이를 900장이 함께 알려 준다. 단, 사진첩 안의 변동(인물·표정·시간)이 라벨(누구인지)을 결정하는 변동과 정렬되어야 작동한다. 풍경 사진만 잔뜩 있는 사진첩이라면 가족 식별에 도움이 안 된다.
+      </div>
+
+      <h2>왜 가끔은 해가 되는가</h2>
+      <p>책의 가장 정직한 부분이 여기다. 반지도학습은 만능이 아니다. 라벨 없는 데이터의 분포가 라벨과 무관한 변동을 많이 가지고 있으면, 그 변동을 학습하는 데 모델 용량이 낭비된다.</p>
+
+      <p>예를 들어 의료 영상에서 라벨은 "암 유무"인데, 라벨 없는 영상에 환자의 자세·기계 종류·촬영 시간이라는 변동이 가득하다고 하자. 반지도학습은 "자세 인코더", "기계 종류 인코더"를 열심히 만들지만, 그것들은 암 유무 예측에 전혀 도움이 안 된다. 오히려 정작 중요한 미세한 종양 패턴을 잡을 용량을 빼앗는다. 이것이 "naive pretraining can degrade accuracy"라는 책의 경고다.</p>
+
+      <p>실무적 처방: <strong>사전훈련/반지도학습 목표는 다운스트림이 진짜로 의지할 인과 요인과 정렬되도록 설계해야 한다.</strong> 무작정 입력 복원을 시키지 말고, 다운스트림에 의미 있는 자기지도 신호(같은 이미지의 두 뷰는 가깝게, 같은 문장의 단어를 마스킹하고 예측, ...)를 골라야 한다.</p>
+
+      <h2>아래 위젯 — 라벨 없는 데이터가 정확도에 미치는 영향</h2>
+      <p>두 가지 가설을 시뮬레이션한다. (1) 인과 요인이 정렬된 경우: 라벨 없는 데이터가 많을수록 정확도가 올라간다. (2) 인과 요인이 정렬되지 않은 경우: 라벨 없는 데이터가 오히려 정확도를 떨어뜨린다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 07</span><span>반지도학습 효과 — 인과 요인 정렬도에 따른 정확도</span></div>
+        <div class="ss-stage">
+          <canvas id="sschart" class="ss-chart" width="540" height="340"></canvas>
+        </div>
+        <div class="widget-controls">
+          <div class="slider" style="flex:1; min-width:260px;">
+            <label>인과 요인 정렬도 (입력 분포 ↔ 라벨) <b id="ssAval">α = 0.70</b></label>
+            <input type="range" id="ssA" min="0" max="1" step="0.02" value="0.7">
+          </div>
+          <div class="slider" style="flex:1; min-width:200px;">
+            <label>라벨 데이터 수 <b id="ssLval">L = 100</b></label>
+            <input type="range" id="ssL" min="20" max="2000" step="20" value="100">
+          </div>
+        </div>
+        <div class="ss-verdict" id="ssverdict"></div>
+      </div>
+      <p class="widget-cap">x축은 라벨 없는 데이터의 양, y축은 정확도. 인과 요인이 잘 정렬되면 라벨 없는 데이터가 많을수록 정확도가 올라간다. 정렬도가 낮으면 오히려 잡음이 되어 정확도가 떨어진다. 라벨 데이터가 적을수록 양 효과 모두 더 강하게 나타난다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>표상의 사전(prior) 동물원 — 모든 정칙화는 같은 가족이다</h2>
+      <p>15장의 마지막 통찰이 여기다. 책은 7장에서 본 모든 정칙화 기법, 14장에서 본 모든 오토인코더 변종, 그리고 이 장에서 본 반지도학습과 전이학습이 사실은 모두 <strong>"표상에 어떤 사전(prior)을 거는가"</strong>의 변형이라는 통합적 시각을 제시한다. 각각이 어떤 가정을 데이터에 거는지 다음 카드들에서 본다.</p>
+    </div>
+
+    <div class="prior-grid">
+      <div class="prior-card">
+        <span class="tag">PRIOR 1</span>
+        <h4>매끄러움 (Smoothness)</h4>
+        <p>"가까운 입력은 가까운 라벨을 가진다." 데이터 증강·노이즈 주입·드롭아웃·라벨 평활화가 모두 이 가정을 강제한다. 가장 약하지만 가장 널리 통하는 사전.</p>
+      </div>
+      <div class="prior-card">
+        <span class="tag">PRIOR 2</span>
+        <h4>매니폴드 (Manifold)</h4>
+        <p>"데이터는 입력 공간의 얇은 면 위에 있다." 잡음 제거 오토인코더(DAE), 수축적 오토인코더(CAE)가 이 면의 접평면을 학습한다. 14장의 골자.</p>
+      </div>
+      <div class="prior-card">
+        <span class="tag">PRIOR 3</span>
+        <h4>인과 요인의 분리 (Disentanglement)</h4>
+        <p>"표상의 각 차원은 독립적이고 의미 있는 요인이다." β-VAE, InfoGAN, 제로샷 학습이 이 가정에 의존. 가장 야심차지만 가장 어려운 사전.</p>
+      </div>
+      <div class="prior-card">
+        <span class="tag">PRIOR 4</span>
+        <h4>희소성 (Sparsity)</h4>
+        <p>"한 입력에 대해 활성화되는 뉴런은 소수다." 희소 코딩, L1 정칙화, ReLU의 자연스러운 0이 모두 같은 가정. 적은 자원으로 표현하는 압력.</p>
+      </div>
+      <div class="prior-card">
+        <span class="tag">PRIOR 5</span>
+        <h4>시간적 일관성 (Slowness)</h4>
+        <p>"진짜 의미 있는 특징은 천천히 변한다." Slow Feature Analysis(SFA), 비디오 자기지도 학습. 객체 정체성은 1초에 바뀌지 않지만 픽셀은 매 프레임 바뀐다.</p>
+      </div>
+      <div class="prior-card">
+        <span class="tag">PRIOR 6</span>
+        <h4>계층적 인과 (Hierarchical)</h4>
+        <p>"세상은 낮은 추상에서 높은 추상으로 합성된다." 깊은 망의 모든 정렬, 그리고 5번 절의 합성성이 이 가정에 의존. 깊이 자체가 사전이다.</p>
+      </div>
+    </div>
+
+    <div class="prose">
+      <p>책의 결론은 이렇다. <strong>"어떤 사전도 보편적으로 옳지 않다. 각 사전은 세상에 대한 어떤 가설이고, 옳은 조합을 고르는 것이 표상학습의 실제 기술이다."</strong> 이 한 줄이 15장의, 그리고 책 전체의 한 줄 요약이라 해도 과언이 아니다.</p>
+
+      <h2>왜 이것이 책의 마지막 큰 메시지인가</h2>
+      <p>1장에서 책은 "딥러닝은 표상학습이다"라고 선언했다. 15장까지의 모든 기술 — 활성화 함수, 정칙화, 최적화, CNN, RNN, 오토인코더, 사전훈련 — 은 결국 좋은 표상을 만들기 위한 도구들이었다. 15장은 그 도구들이 모두 "표상에 어떤 사전을 거는가"라는 한 가지 메타 질문으로 환원된다는 것을 보인다. 1장의 약속이 여기서 회수된다.</p>
+
+      <p>실무에서 새 문제를 만났을 때 떠올려야 할 한 줄 질문: <strong>"이 데이터의 어떤 사전이 가장 잘 맞을까?"</strong> 답이 매끄러움이면 데이터 증강, 매니폴드면 오토인코더, 인과 분리면 자기지도 표상학습, 계층적이면 깊은 망. 도구의 선택은 모두 이 한 질문의 답이다.</p>
+
+      <p>마지막 절에서는 이 모든 통찰이 우리가 Week 11에서 본 두 논문(P1 적대적 예시, P2 신경 스타일 전이)에서 어떻게 살아 움직이는지, 그리고 시험에서 어떤 형태로 출제될 가능성이 큰지를 정리한다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'좋은 표상이란', f:'01.html' },
+    { no:'02', t:'사전훈련과 미세조정', f:'02.html' },
+    { no:'03', t:'전이학습·도메인 적응', f:'03.html' },
+    { no:'04', t:'분산 표상의 힘', f:'04.html' },
+    { no:'05', t:'깊이의 지수적 표현력', f:'05.html' },
+    { no:'06', t:'인과 요소와 반지도', f:'06.html' },
+    { no:'07', t:'시험 대비', f:'07.html' },
+  ];
+  const CURRENT = '06';
+  (function buildNav() {
+    document.querySelector('.topbar').innerHTML =
+      `<a class="home" href="index.html">← Chapter 15 · 표상 학습</a>` +
+      `<span class="ch-mini">SUB ${CURRENT} / 07</span>`;
+    document.querySelector('.ch-nav ol').innerHTML = SUBS.map(s =>
+      `<li><a href="${s.f}" ${s.no === CURRENT ? 'class="current"' : ''}>${s.t}</a></li>`).join('');
+    const i = SUBS.findIndex(s => s.no === CURRENT);
+    const prev = i > 0 ? SUBS[i-1] : { f:'index.html', t:'챕터 표지', no:'' };
+    const next = i < SUBS.length-1 ? SUBS[i+1] : { f:'index.html', t:'챕터 표지', no:'' };
+    document.querySelector('.ch-foot').innerHTML =
+      `<a href="${prev.f}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+      `<a href="${next.f}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+    const bar = document.querySelector('.scroll-progress');
+    const onScroll = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    document.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+  })();
+
+  // ===== 위젯: 반지도학습 효과 곡선 =====
+  (function ssWidget() {
+    const c = document.getElementById('sschart');
+    const css = getComputedStyle(document.documentElement);
+    const STRUCT = css.getPropertyValue('--structure').trim();
+    const STYLE = css.getPropertyValue('--style').trim();
+    const SYNTH = css.getPropertyValue('--synth').trim();
+    const FAINT = css.getPropertyValue('--ink-faint').trim();
+    const SOFT = css.getPropertyValue('--ink-soft').trim();
+    const aSlider = document.getElementById('ssA');
+    const lSlider = document.getElementById('ssL');
+    const aval = document.getElementById('ssAval');
+    const lval = document.getElementById('ssLval');
+    const verdict = document.getElementById('ssverdict');
+
+    function draw() {
+      const a = parseFloat(aSlider.value);  // 정렬도
+      const L = parseInt(lSlider.value);     // 라벨 수
+      const W = c.width, H = c.height;
+      const ctx = c.getContext('2d');
+      ctx.clearRect(0,0,W,H);
+      ctx.fillStyle = '#fff'; ctx.fillRect(0,0,W,H);
+
+      const ml = 56, mr = 14, mt = 16, mb = 36;
+      const cw = W - ml - mr, ch = H - mt - mb;
+      ctx.strokeStyle = FAINT; ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(ml, mt); ctx.lineTo(ml, mt+ch); ctx.lineTo(ml+cw, mt+ch); ctx.stroke();
+      ctx.strokeStyle = 'rgba(38,34,28,0.07)';
+      for (let i = 1; i <= 4; i++) {
+        const y = mt + ch * (i/5);
+        ctx.beginPath(); ctx.moveTo(ml, y); ctx.lineTo(ml+cw, y); ctx.stroke();
+      }
+      ctx.fillStyle = SOFT; ctx.font = '11px "Spline Sans Mono", monospace';
+      for (let i = 0; i <= 5; i++) {
+        const v = 100 - i*20;
+        const y = mt + ch * (i/5);
+        ctx.fillText(v + '%', 10, y+4);
+      }
+      ctx.fillText('라벨 없는 데이터 수 U →', ml + cw/2 - 60, H-8);
+      ctx.save(); ctx.translate(16, mt + ch/2 + 30); ctx.rotate(-Math.PI/2);
+      ctx.fillText('타깃 정확도', 0, 0); ctx.restore();
+
+      // x: U = 0..20000, 로그스케일
+      function xPx(U) { return ml + cw * Math.log10(Math.max(10, U)) / Math.log10(20000); }
+      // 기준선 (라벨만): 작을수록 낮음
+      const baseAcc = 0.45 + Math.log10(L) * 0.10;  // 0.45 ~ 0.78
+      // 반지도 효과: (a - 0.5)에 의해 +/-, U에 비례
+      // a > 0.5: 도움. a < 0.5: 해.
+      // 라벨 부족할수록 양 효과 모두 강해짐 (1/log(L))
+      function semiAcc(U) {
+        const labelScale = 1 / Math.log10(L * 2 + 10);  // L 작을수록 큼
+        const uScale = Math.log10(U + 10) - 1;  // 0..3.3
+        const delta = (a - 0.5) * 2 * uScale * labelScale * 0.25;
+        return Math.max(0.05, Math.min(0.98, baseAcc + delta));
+      }
+
+      // 곡선
+      ctx.strokeStyle = STRUCT; ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      let firstX = xPx(20);
+      let firstY = mt + ch * (1 - semiAcc(20));
+      ctx.moveTo(firstX, firstY);
+      for (let U = 100; U <= 20000; U *= 1.1) {
+        const x = xPx(U);
+        const y = mt + ch * (1 - semiAcc(U));
+        ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      // 기준선 (라벨만)
+      ctx.strokeStyle = STYLE; ctx.lineWidth = 1.8; ctx.setLineDash([5,4]);
+      ctx.beginPath();
+      const baseY = mt + ch * (1 - baseAcc);
+      ctx.moveTo(ml, baseY); ctx.lineTo(ml+cw, baseY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = STYLE; ctx.font = '11px "Spline Sans Mono", monospace';
+      ctx.fillText('라벨만 사용', ml+cw-90, baseY-6);
+      ctx.fillStyle = STRUCT;
+      ctx.fillText('라벨 + 비라벨', ml+cw-100, mt + ch*(1 - semiAcc(20000)) - 6);
+
+      aval.textContent = 'α = ' + a.toFixed(2);
+      lval.textContent = 'L = ' + L;
+
+      const u20k = semiAcc(20000);
+      const lift = u20k - baseAcc;
+      let msg = '';
+      if (a > 0.7 && lift > 0.05) {
+        msg = `<b class="ok">반지도학습이 강하게 작동한다.</b> 라벨 없는 데이터 1만+ 사용 시 정확도 +${(lift*100).toFixed(0)}%p. 인과 요인이 잘 정렬됨.`;
+      } else if (a > 0.5 && lift > 0.01) {
+        msg = `<b class="ok">완만한 이득.</b> 정렬도가 충분히 높아 라벨 없는 데이터가 점진적 도움. 라벨이 적을수록 효과 큼.`;
+      } else if (a > 0.4) {
+        msg = `정렬도가 애매한 구간. 라벨 없는 데이터의 이득이 거의 없음. 자기지도 목표 설계를 다시 검토.`;
+      } else {
+        msg = `<b class="warn">Negative transfer.</b> 입력 분포의 인과 요인이 라벨과 무관함. 라벨 없는 데이터를 쓸수록 정확도 하락 — 자기지도 목표가 잘못 설계됨.`;
+      }
+      verdict.innerHTML = msg;
+    }
+    aSlider.addEventListener('input', draw);
+    lSlider.addEventListener('input', draw);
+    draw();
+  })();
+
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
+        throwOnError: false,
+      });
+    }
+  });
+</script>
+</body>
+</html>

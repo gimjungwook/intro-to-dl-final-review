@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chapter 03. 확률과 정보이론 — 인터랙티브 복습</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .masthead { position: relative; max-width: var(--wide); margin: 0 auto; padding: 1.5rem 1.4rem 0; }
+  .hero-wrap { position: relative; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: linear-gradient(180deg,#fff,var(--paper-2)); box-shadow: var(--shadow-plate); }
+  #hero { display: block; width: 100%; height: 360px; }
+  .hero-cap { position: absolute; left: 1.2rem; bottom: 1rem; font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; color: var(--ink-faint); pointer-events: none; }
+  .hero-cap b { color: var(--structure); } .hero-cap em { color: var(--style); font-style: normal; }
+  .title-block { max-width: var(--wide); margin: 2.4rem auto 0; padding-inline: 1.4rem; }
+  .title-block .kicker { display: block; margin-bottom: 1rem; }
+  .title-block h1 { font-size: clamp(2.4rem, 6.5vw, 4.4rem); margin: 0; line-height: 1.06; }
+  .title-block h1 em { color: var(--style); font-style: normal; }
+  .paper-meta { display: flex; flex-wrap: wrap; gap: .5rem 1.6rem; margin-top: 1.4rem; font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); letter-spacing: .02em; }
+  .paper-meta span b { color: var(--ink); font-weight: 500; }
+
+  .section-intro { max-width: var(--measure); margin: 2.6rem auto 0; padding-inline: 1.4rem; }
+  .section-intro h2 { margin-top: 0; }
+
+  .twopole { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; max-width: var(--measure); margin: 1.6rem auto; padding-inline: 1.4rem; }
+  .pole { padding: 1.1rem 1.2rem; border-radius: 11px; }
+  .pole.s1 { background: var(--structure-bg); } .pole.s2 { background: var(--style-bg); }
+  .pole h4 { margin: 0 0 .4rem; font-family: var(--serif); font-size: 1.1rem; }
+  .pole.s1 h4 { color: var(--structure); } .pole.s2 h4 { color: var(--style); }
+  .pole p { margin: 0; font-size: .9rem; color: var(--ink-soft); line-height: 1.5; }
+  @media (max-width: 560px){ .twopole{ grid-template-columns: 1fr; } }
+
+  .plates { max-width: var(--wide); margin: 1rem auto; padding: 2rem 1.4rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); gap: 1rem; }
+  .plate { position: relative; display: flex; flex-direction: column; text-decoration: none; color: inherit; background: #fff; border: 1px solid var(--line); border-radius: 13px; padding: 1.3rem 1.3rem 1.4rem; transition: transform .2s var(--ease), border-color .2s, box-shadow .2s; overflow: hidden; }
+  .plate:hover { transform: translateY(-4px); border-color: var(--structure-lo); box-shadow: var(--shadow-plate); }
+  .plate .pno { font-family: var(--mono); font-size: .74rem; letter-spacing: .14em; color: var(--ink-faint); }
+  .plate h3 { font-family: var(--serif); font-size: 1.3rem; margin: .5rem 0 .5rem; line-height: 1.2; }
+  .plate p { font-size: .9rem; color: var(--ink-soft); line-height: 1.5; margin: 0; }
+  .plate .spectrum { display: flex; height: 4px; border-radius: 2px; overflow: hidden; margin-bottom: 1rem; }
+  .plate .spectrum i { display: block; height: 100%; }
+  .plate .go { margin-top: 1rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; color: var(--structure); opacity: 0; transform: translateX(-4px); transition: .2s var(--ease); }
+  .plate:hover .go { opacity: 1; transform: translateX(0); }
+
+  .path { max-width: var(--wide); margin: 2rem auto; padding: 1.6rem 1.4rem; }
+  .path-flow { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; font-family: var(--mono); font-size: .8rem; }
+  .path-flow a { display: inline-flex; align-items: center; gap: .4rem; text-decoration: none; color: var(--ink-soft); padding: .4rem .7rem; border: 1px solid var(--line); border-radius: 20px; transition: .15s; }
+  .path-flow a:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .path-flow a b { color: var(--style); } .path-flow a:hover b { color: var(--style-lo); }
+  .path-flow .arr { color: var(--ink-faint); }
+
+  footer.colophon { max-width: var(--measure); margin: 3rem auto 4rem; padding: 2rem 1.4rem 0; border-top: 1px solid var(--line); font-size: .85rem; color: var(--ink-soft); }
+  footer.colophon a { color: var(--structure); }
+  footer.colophon .src { font-family: var(--mono); font-size: .76rem; line-height: 1.8; }
+</style>
+</head>
+<body>
+
+<div style="max-width: var(--wide); margin: 0 auto; padding: 1rem 1.4rem 0;">
+  <a href="../index.html" style="font-family: var(--mono); font-size: .76rem; letter-spacing: .1em; color: var(--ink-soft); text-decoration: none;">← 기말고사 인터랙티브 표지로</a>
+</div>
+
+<header class="masthead">
+  <div class="hero-wrap">
+    <canvas id="hero"></canvas>
+    <div class="hero-cap"><b>사전 — 흐릿한 믿음</b> ↔ <em>관측 — 좁아지는 분포</em> / 마우스로 드래그</div>
+  </div>
+</header>
+
+<div class="title-block">
+  <span class="kicker">Deep Learning Book / Chapter 3 / Probability and Information Theory</span>
+  <h1>불확실성을 다루는<br><em>딥러닝의 모국어</em></h1>
+  <div class="paper-meta">
+    <span><b>딥러닝 개론</b> 기말고사 복습</span>
+    <span>제작 <b>김정욱</b></span>
+    <span>시험 <b>2026-06-04 (목)</b></span>
+    <span>구성 <b>7 sub-chapter</b></span>
+  </div>
+</div>
+
+<section class="section-intro">
+  <h2>한 문장으로</h2>
+  <p>이 장은 딥러닝이 세상을 바라보는 태도를 정한다. 모델은 정답 하나를 외치는 기계가 아니라, <strong>가능성 분포 하나를 출력하는 시스템</strong>이다. 분류기 끝의 소프트맥스, 교차 엔트로피 손실, 변분추론/VAE에서 등장하는 KL 발산까지, 이후 모든 장의 손실함수와 추론은 이 장의 언어 위에 세워진다.</p>
+  <p>읽는 순서는 단순하다. <strong>왜 확률이 필요한지</strong> → <strong>분포와 조건부의 기본 문법</strong> → <strong>분포를 한 숫자로 요약하는 방법</strong> → <strong>관측이 들어왔을 때 믿음을 갱신하는 베이즈 규칙</strong> → <strong>분포의 불확실성을 재는 정보이론</strong> → <strong>실전에 자주 나오는 분포 카탈로그</strong> → <strong>시험 직전 체크리스트</strong>다.</p>
+</section>
+
+<div class="twopole">
+  <div class="pole s1"><h4>확률 (Probability)</h4><p>세상의 가능성 구조를 표현하는 언어. 분포, 조건부, 베이즈. 이 사이트에서 <b>쿨한 파랑</b>으로 표시된다.</p></div>
+  <div class="pole s2"><h4>정보이론 (Information Theory)</h4><p>분포의 불확실성과 두 분포의 차이를 재는 자. 엔트로피 / KL / 교차 엔트로피. 이 사이트에서 <b>웜한 주홍</b>으로 표시된다.</p></div>
+</div>
+
+<section class="plates" id="plates"></section>
+
+<section class="path">
+  <span class="kicker">권장 읽기 순서</span>
+  <div class="path-flow" id="pathflow"></div>
+</section>
+
+<footer class="colophon">
+  <p>이 해설은 Goodfellow, Bengio, Courville(2016)의 <em>Deep Learning</em> 3장과 한동대 딥러닝 개론 강의(최희열) 진도 전체를 바탕으로, 시험 직전 한 번에 훑기 좋게 다시 쓴 것이다. 모든 수식은 "왜 그 형태인가"를 함께 설명한다.</p>
+  <p class="src">
+    원서 / <a href="https://www.deeplearningbook.org/contents/prob.html">deeplearningbook.org/contents/prob.html</a><br>
+    선행학습 노트 / <a href="../../../05-선행학습/Deep-Learning-Book-03-Probability-and-Information-Theory-상세해설.md">Ch.3 상세해설</a><br>
+    표지로 / <a href="../index.html">기말고사 인터랙티브 인덱스</a>
+  </p>
+</footer>
+
+<script>
+  const CHAPTERS = [
+    { no:'01', t:'왜 딥러닝에 확률이 필요한가', d:'불확실성의 세 원천. 결정적 답 대신 분포 하나를 출력한다는 발상의 전환.', sp:['ink-soft','structure'] },
+    { no:'02', t:'확률변수, 분포, 조건부, 연쇄법칙', d:'PMF/PDF, 결합, 주변, 조건부. 큰 분포를 작은 조건부의 곱으로 분해하는 연쇄법칙과 독립.', sp:['structure-lo','structure'] },
+    { no:'03', t:'기대값, 분산, 공분산 — 분포를 한 숫자로', d:'평균적 위치, 퍼짐의 정도, 함께 움직이는 경향. 공분산 0 ≠ 독립인 이유.', sp:['structure','synth'] },
+    { no:'04', t:'베이즈 규칙 — 사전이 사후로', d:'관측 데이터가 들어올 때마다 믿음이 어떻게 갱신되는가. 사전을 슬라이더로 움직이며 사후가 좁아지는 과정을 직접 본다.', sp:['structure','style'] },
+    { no:'05', t:'정보이론 — 엔트로피/KL/교차 엔트로피', d:'드문 사건이 더 놀랍다. 분포 전체의 평균 놀라움이 엔트로피. 교차 엔트로피 손실이 왜 MLE의 다른 얼굴인지, KL의 비대칭은 왜 생기는지.', sp:['style','synth'] },
+    { no:'06', t:'흔한 분포 카탈로그', d:'Bernoulli / Categorical / Gaussian / 혼합 / Dirac. 시그모이드, 소프트맥스가 어느 분포의 파라미터인지.', sp:['synth','structure-lo'] },
+    { no:'07', t:'시험 대비 체크리스트', d:'정의, 수식, 해석, 전형 함정. 헷갈리기 쉬운 짝(독립 vs 무상관 등)과 객관식 빈출 한 줄 정리.', sp:['ink'] },
+  ];
+  const colMap = { structure:'var(--structure)', 'structure-lo':'var(--structure-lo)', style:'var(--style)', 'style-lo':'var(--style-lo)', synth:'var(--synth)', ink:'var(--ink)', 'ink-soft':'var(--ink-soft)' };
+  const platesEl = document.getElementById('plates');
+  const flowEl = document.getElementById('pathflow');
+  CHAPTERS.forEach((c, idx) => {
+    const sp = c.sp.length === 1 ? [c.sp[0], c.sp[0]] : c.sp;
+    const a = document.createElement('a');
+    a.className = 'plate'; a.href = c.no + '.html';
+    a.innerHTML = `
+      <div class="spectrum">${sp.map(s=>`<i style="flex:1;background:${colMap[s]}"></i>`).join('')}</div>
+      <span class="pno">SUB-CHAPTER ${c.no}</span>
+      <h3>${c.t}</h3>
+      <p>${c.d}</p>
+      <span class="go">읽기 →</span>`;
+    platesEl.appendChild(a);
+
+    const f = document.createElement('a'); f.href = c.no + '.html';
+    f.innerHTML = `<b>${c.no}</b> ${c.t.split('—')[0].split('/')[0].slice(0,14)}…`;
+    flowEl.appendChild(f);
+    if (idx < CHAPTERS.length - 1) { const s = document.createElement('span'); s.className='arr'; s.textContent='→'; flowEl.appendChild(s); }
+  });
+
+  /* Hero: 사전 분포가 관측에 의해 좁아지는 과정 — 1D Gaussian morphing on canvas */
+  window.addEventListener('load', () => {
+    const canvas = document.getElementById('hero');
+    if (!canvas || !window.THREE) return;
+    const w = canvas.clientWidth || canvas.parentElement.clientWidth;
+    const h = 360;
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(40, w/h, 0.1, 100);
+    camera.position.set(0, 0, 14);
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    renderer.setSize(w, h, false);
+    renderer.setClearColor(0xffffff, 0);
+
+    /* N개 점이 두 분포 사이를 보간:
+       prior = 넓은 균등 (-W..W 흩어짐) → posterior = 좁은 가우시안 (mean=μ, σ작음) */
+    const N = 1400;
+    const positions = new Float32Array(N * 3);
+    const colors = new Float32Array(N * 3);
+    const targetsPrior = new Float32Array(N * 3);
+    const targetsPost  = new Float32Array(N * 3);
+    const W = 8.0;
+    function gauss() {
+      let u = 0, v = 0;
+      while (u === 0) u = Math.random();
+      while (v === 0) v = Math.random();
+      return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+    }
+    for (let i = 0; i < N; i++) {
+      /* prior: 넓은 균등 + 약간 흔들림 */
+      const xp = (Math.random() - 0.5) * W * 2;
+      const yp = (Math.random() - 0.5) * 0.5 + gauss() * 0.15;
+      targetsPrior[i*3]   = xp;
+      targetsPrior[i*3+1] = yp;
+      targetsPrior[i*3+2] = 0;
+
+      /* posterior: 좁은 가우시안 (mean=0.8, σ=0.7) */
+      const xq = 0.8 + gauss() * 0.7;
+      const yq = gauss() * 0.18;
+      targetsPost[i*3]   = xq;
+      targetsPost[i*3+1] = yq;
+      targetsPost[i*3+2] = 0;
+
+      positions[i*3]   = targetsPrior[i*3];
+      positions[i*3+1] = targetsPrior[i*3+1];
+      positions[i*3+2] = 0;
+
+      const t = i / N;
+      const cStruct = new THREE.Color('#2D5B7A');
+      const cStyle = new THREE.Color('#C0492E');
+      const c = cStruct.clone().lerp(cStyle, t);
+      colors[i*3]   = c.r; colors[i*3+1] = c.g; colors[i*3+2] = c.b;
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    const mat = new THREE.PointsMaterial({ size: 0.10, vertexColors: true, transparent: true, opacity: 0.82 });
+    const pts = new THREE.Points(geo, mat);
+    scene.add(pts);
+
+    /* 분포 곡선 — 위쪽에 가우시안 PDF 라인 */
+    const curveGeo = new THREE.BufferGeometry();
+    const CP = 200;
+    const curvePos = new Float32Array(CP * 3);
+    for (let i = 0; i < CP; i++) {
+      curvePos[i*3]   = -W + (2 * W * i / (CP - 1));
+      curvePos[i*3+1] = 2.5;
+      curvePos[i*3+2] = 0;
+    }
+    curveGeo.setAttribute('position', new THREE.BufferAttribute(curvePos, 3));
+    const curveMat = new THREE.LineBasicMaterial({ color: 0x26221C, transparent: true, opacity: 0.55 });
+    const curve = new THREE.Line(curveGeo, curveMat);
+    scene.add(curve);
+
+    let target = 0.0, t = 0;
+    let drag = false, dragX = 0, sx = 0;
+    canvas.addEventListener('pointerdown', (e) => { drag = true; dragX = e.clientX; sx = target; });
+    window.addEventListener('pointermove', (e) => {
+      if (!drag) return;
+      target = Math.max(0, Math.min(1, sx + (e.clientX - dragX) / canvas.clientWidth));
+    });
+    window.addEventListener('pointerup', () => { drag = false; });
+
+    function tick() {
+      t += 0.006;
+      if (!drag) target = 0.5 + 0.5 * Math.sin(t * 0.7);
+      const p = pts.geometry.attributes.position.array;
+      for (let i = 0; i < N; i++) {
+        const j = i * 3;
+        p[j]   = targetsPrior[j]   * (1 - target) + targetsPost[j]   * target;
+        p[j+1] = targetsPrior[j+1] * (1 - target) + targetsPost[j+1] * target;
+        p[j+2] = 0;
+      }
+      pts.geometry.attributes.position.needsUpdate = true;
+
+      /* 위쪽 PDF 곡선 — prior=flat, posterior=narrow gaussian */
+      const cp = curve.geometry.attributes.position.array;
+      const mu = 0.8;
+      const sigmaPrior = W / 1.4;            /* flat */
+      const sigmaPost  = 0.7;
+      const sigma = sigmaPrior * (1 - target) + sigmaPost * target;
+      const A = 2.2;
+      for (let i = 0; i < CP; i++) {
+        const x = cp[i*3];
+        const z = (x - mu * target) / sigma;
+        const y = 2.5 + A * Math.exp(-0.5 * z * z) * (target * 0.85 + 0.15);
+        cp[i*3+1] = y;
+      }
+      curve.geometry.attributes.position.needsUpdate = true;
+      curve.material.color.setRGB(
+        0.176 * (1 - target) + 0.753 * target,
+        0.357 * (1 - target) + 0.286 * target,
+        0.478 * (1 - target) + 0.180 * target
+      );
+
+      renderer.render(scene, camera);
+      requestAnimationFrame(tick);
+    }
+    tick();
+
+    window.addEventListener('resize', () => {
+      const w2 = canvas.parentElement.clientWidth;
+      renderer.setSize(w2, h, false);
+      camera.aspect = w2 / h;
+      camera.updateProjectionMatrix();
+    });
+  });
+</script>
+</body>
+</html>

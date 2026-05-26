@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chapter 09 / 합성곱 신경망(CNN)</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .masthead { position: relative; max-width: var(--wide); margin: 0 auto; padding: 1.5rem 1.4rem 0; }
+  .home-link { display: inline-flex; align-items: center; gap: .35rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .12em; color: var(--ink-faint); text-decoration: none; padding: .35rem .6rem; margin-bottom: .9rem; border-radius: 6px; border: 1px solid var(--line-soft); transition: all .15s var(--ease); }
+  .home-link:hover { color: var(--ink); border-color: var(--line); background: var(--paper-2); }
+  .hero-wrap { position: relative; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: linear-gradient(180deg,#fff,var(--paper-2)); box-shadow: var(--shadow-plate); }
+  #hero { display: block; width: 100%; }
+  .hero-cap { position: absolute; left: 1.2rem; bottom: 1rem; font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; color: var(--ink-faint); pointer-events: none; }
+  .hero-cap b { color: var(--structure); } .hero-cap em { color: var(--style); font-style: normal; }
+
+  .title-block { max-width: var(--wide); margin: 2.4rem auto 0; padding-inline: 1.4rem; }
+  .title-block .kicker { display: block; margin-bottom: 1rem; }
+  .title-block h1 { font-size: clamp(2.6rem, 7vw, 5rem); margin: 0; }
+  .title-block h1 em { color: var(--style); }
+  .paper-meta { display: flex; flex-wrap: wrap; gap: .5rem 1.6rem; margin-top: 1.4rem; font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); letter-spacing: .02em; }
+  .paper-meta span b { color: var(--ink); font-weight: 500; }
+
+  .plates { max-width: var(--wide); margin: 1rem auto; padding: 2rem 1.4rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); gap: 1rem; }
+  .plate { position: relative; display: flex; flex-direction: column; text-decoration: none; color: inherit; background: #fff; border: 1px solid var(--line); border-radius: 13px; padding: 1.3rem 1.3rem 1.4rem; transition: transform .2s var(--ease), border-color .2s, box-shadow .2s; overflow: hidden; }
+  .plate:hover { transform: translateY(-4px); border-color: var(--structure-lo); box-shadow: var(--shadow-plate); }
+  .plate .pno { font-family: var(--mono); font-size: .74rem; letter-spacing: .14em; color: var(--ink-faint); }
+  .plate h3 { font-family: var(--serif); font-size: 1.32rem; margin: .5rem 0 .5rem; line-height: 1.2; }
+  .plate p { font-size: .9rem; color: var(--ink-soft); line-height: 1.5; margin: 0; }
+  .plate .spectrum { display: flex; height: 4px; border-radius: 2px; overflow: hidden; margin-bottom: 1rem; }
+  .plate .spectrum i { display: block; height: 100%; }
+  .plate .go { margin-top: 1rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; color: var(--structure); opacity: 0; transform: translateX(-4px); transition: .2s var(--ease); }
+  .plate:hover .go { opacity: 1; transform: translateX(0); }
+
+  .section-intro { max-width: var(--measure); margin: 1rem auto 0; padding-inline: 1.4rem; }
+  .section-intro h2 { margin-top: 1rem; }
+  .twopole { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; max-width: var(--measure); margin: 1.6rem auto; padding-inline: 1.4rem; }
+  .pole { padding: 1.1rem 1.2rem; border-radius: 11px; }
+  .pole.s1 { background: var(--structure-bg); } .pole.s2 { background: var(--style-bg); }
+  .pole h4 { margin: 0 0 .4rem; font-family: var(--serif); font-size: 1.1rem; }
+  .pole.s1 h4 { color: var(--structure); } .pole.s2 h4 { color: var(--style); }
+  .pole p { margin: 0; font-size: .9rem; color: var(--ink-soft); line-height: 1.5; }
+  @media (max-width: 560px){ .twopole{ grid-template-columns: 1fr; } }
+
+  .path { max-width: var(--wide); margin: 2rem auto; padding: 1.6rem 1.4rem; }
+  .path-flow { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; font-family: var(--mono); font-size: .8rem; }
+  .path-flow a { display: inline-flex; align-items: center; gap: .4rem; text-decoration: none; color: var(--ink-soft); padding: .4rem .7rem; border: 1px solid var(--line); border-radius: 20px; transition: .15s; }
+  .path-flow a:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .path-flow a b { color: var(--style); } .path-flow a:hover b { color: var(--style-lo); }
+  .path-flow .arr { color: var(--ink-faint); }
+
+  footer.colophon { max-width: var(--measure); margin: 3rem auto 4rem; padding: 2rem 1.4rem 0; border-top: 1px solid var(--line); font-size: .85rem; color: var(--ink-soft); }
+  footer.colophon a { color: var(--structure); }
+  footer.colophon .src { font-family: var(--mono); font-size: .76rem; line-height: 1.8; }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <a class="home-link" href="../index.html">← 기말고사 인터랙티브 복습</a>
+  <div class="hero-wrap">
+    <canvas id="hero"></canvas>
+    <div class="hero-cap"><b>완전연결 — 모든 픽셀과 모든 픽셀</b> ↔ <em>합성곱 — 같은 작은 창을 이미지 위로</em> / 마우스를 올려보세요</div>
+  </div>
+</header>
+
+<div class="title-block">
+  <span class="kicker">Deep Learning Book / Chapter 09 / Convolutional Networks</span>
+  <h1>이미지의 구조를<br><em>네트워크에 새겨</em> 넣다</h1>
+  <div class="paper-meta">
+    <span><b>딥러닝 개론</b> 기말고사 인터랙티브 복습</span>
+    <span>저자 <b>Goodfellow, Bengio, Courville (2016)</b></span>
+    <span>읽는 시간 <b>약 60분</b></span>
+    <span>D-day <b>2026-06-04</b></span>
+  </div>
+</div>
+
+<section class="section-intro">
+  <h2>한 문장으로</h2>
+  <p>9장은 <strong>“데이터의 구조적 특성을 모델 설계에 직접 새겨 넣으면 무슨 일이 일어나는가”</strong>에 답한다. 그 답이 합성곱 신경망(Convolutional Neural Network, CNN)이다. 이미지의 가까운 픽셀끼리는 멀리 떨어진 픽셀끼리보다 더 관계가 깊고, 어디에 있든 같은 패턴은 같은 패턴이라는 두 가정을 모델 구조 자체에 박아 넣으면, 같은 일을 하는 완전연결 네트워크보다 <span class="t-structure">약 5억분의 1</span> 수준의 파라미터로도 더 잘 한다.</p>
+  <p>처음 읽을 때 가장 중요한 점은, CNN을 <em>“이미지에 잘 맞는 특수한 네트워크”</em>로만 보지 않는 것이다. 9장이 강조하는 진짜 관점은, CNN이 <strong>완전연결 네트워크에 무한히 강한 사전(prior)을 건 모델</strong>이라는 것이다. 7장의 정칙화가 <span class="t-style">약한 사전</span>(가중치를 부드럽게 줄이기)이라면, CNN의 구조적 제약은 <span class="t-structure">강한 사전</span>(허용되지 않는 가중치 배치를 원천 차단)이다. 이 관점을 손에 쥐고 9장을 읽으면, 합성곱, 풀링, 아키텍처 발전사가 모두 “어떤 사전을 어떻게 새기고, 그 사전이 데이터에 맞는가”라는 단일한 줄거리로 묶인다.</p>
+</section>
+
+<div class="twopole">
+  <div class="pole s1"><h4>완전연결 (가정 없음)</h4><p>모든 입력이 모든 출력에 영향을 줄 수 있다. 가장 일반적이지만 파라미터가 폭발한다. 이 사이트에서 <b>차분한 파랑</b>으로 표시된다.</p></div>
+  <div class="pole s2"><h4>합성곱 (강한 사전)</h4><p>국소성과 이동 등가성을 구조에 박는다. 자연 이미지에는 거의 항상 맞아 압도적으로 효율적이다. 이 사이트에서 <b>웜한 주홍</b>으로 표시된다.</p></div>
+</div>
+
+<section class="plates" id="plates"></section>
+
+<section class="path">
+  <span class="kicker">권장 읽기 순서</span>
+  <div class="path-flow" id="pathflow"></div>
+</section>
+
+<footer class="colophon">
+  <p>이 해설은 Goodfellow, Bengio, Courville(2016) 9장과 최희열 교수님 6주차 강의 흐름, 그리고 직접 작성한 선행학습, 과제 노트를 묶어 정리한 것이다. 정의만 외우지 않도록 “왜 이 구조가 필요했는가”를 비유와 예시로 풀고, 시험에서 묻기 좋은 구분 지점(등가성과 불변성, 합성곱과 교차상관, 깊이와 열화)을 위젯으로 직접 만져 볼 수 있게 했다.</p>
+  <p class="src">
+    원문 / <a href="https://www.deeplearningbook.org/contents/convnets.html">deeplearningbook.org/convnets</a><br>
+    선행학습 정리 / <a href="../../../05-선행학습/Deep-Learning-Book-09-Convolutional-Networks-상세해설.md">Ch.9 상세해설</a> / <a href="../../../Deep-Learning-Book-09-Convolutional-Networks-요약.md">Ch.9 요약</a><br>
+    과제 제출본 / <a href="../../../03-과제-제출/IntroToDL_Week6_22000168_한국어.md">Week 6 한국어판</a>
+  </p>
+</footer>
+
+<script>
+  const SUBCHAPTERS = [
+    { no:'01', t:'왜 이미지에 완전연결은 안 되는가 — 파라미터 폭발', d:'256×256 한 장에 약 43억 개 가중치. 같은 일을 3×3 합성곱은 9개로 한다. 5억분의 1의 차이가 어디서 나오는지 직접 슬라이드로 확인.', sp:['structure'] },
+    { no:'02', t:'합성곱의 정의 — 슬라이드, 곱, 합', d:'커널이 이미지를 미끄러지며 가중합을 적는다. 1D 신호부터 2D 이미지, 그리고 RGB 다채널까지. 합성곱과 교차상관의 차이는 왜 신경 쓰지 않아도 되는가.', sp:['structure','style'] },
+    { no:'03', t:'CNN의 3대 핵심 속성 — 희소, 공유, 등가', d:'희소 상호작용(작은 창), 파라미터 공유(같은 자), 변환 등가성(입력 이동 → 출력 이동). 셋이 어떻게 한 가지 사전에서 갈라져 나오는지.', sp:['style','synth'] },
+    { no:'04', t:'풀링 — 작은 평행이동에 둔감해지기', d:'등가성은 “움직임을 따라간다”, 불변성은 “움직임에 둔감해진다”. 최대 풀링과 평균 풀링을 슬라이더로 직접 굴려 본다.', sp:['structure-lo','style-lo'] },
+    { no:'05', t:'신경과학적 기원 — 시각 피질에서 LeNet까지', d:'Hubel-Wiesel의 단순/복잡 세포 발견이 어떻게 합성곱과 풀링으로 옮겨졌는가. 네오코그니트론부터 LeNet까지 30년의 다리.', sp:['synth'] },
+    { no:'06', t:'출력 크기, 스트라이드, 패딩의 공식', d:'⌊(n+2p-k)/s⌋+1. 외우지 않고 그림으로 유도한다. 슬라이더로 같은 이미지에 valid, same, strided 합성곱이 어떻게 다르게 작동하는지 본다.', sp:['structure'] },
+    { no:'07', t:'대표 아키텍처 계보 — LeNet → AlexNet → VGG → ResNet', d:'각 모델이 이전 모델의 어떤 병목을 풀었는가. 3×3 두 번 vs 5×5 한 번. 잔차 연결이 “항등 매핑 학습 용이성” 관점에서 왜 자연스러운가.', sp:['structure','style','synth'] },
+    { no:'08', t:'시험 대비 — 핵심 구분, 예상 질문 체크리스트', d:'등가성 vs 불변성, 합성곱 vs 교차상관, 풀링이 항상 좋지는 않은 이유, CNN의 사전이 안 맞는 데이터 예시. 시험 직전에 한 번 더 훑을 카드.', sp:['ink'] },
+  ];
+  const colMap = { structure:'var(--structure)', 'structure-lo':'var(--structure-lo)', style:'var(--style)', 'style-lo':'var(--style-lo)', synth:'var(--synth)', ink:'var(--ink-soft)' };
+  const platesEl = document.getElementById('plates');
+  const flowEl = document.getElementById('pathflow');
+  SUBCHAPTERS.forEach((c, idx) => {
+    const sp = c.sp.length === 1 ? [c.sp[0], c.sp[0]] : c.sp;
+    const a = document.createElement('a');
+    a.className = 'plate'; a.href = c.no + '.html';
+    a.innerHTML =
+      '<div class="spectrum">' + sp.map(s => '<i style="flex:1;background:' + colMap[s] + '"></i>').join('') + '</div>' +
+      '<span class="pno">SUB ' + c.no + '</span>' +
+      '<h3>' + c.t + '</h3>' +
+      '<p>' + c.d + '</p>' +
+      '<span class="go">읽기 →</span>';
+    platesEl.appendChild(a);
+
+    const f = document.createElement('a'); f.href = c.no + '.html';
+    const shortTitle = c.t.split('—')[0].trim().slice(0, 14);
+    f.innerHTML = '<b>' + c.no + '</b> ' + shortTitle + '…';
+    flowEl.appendChild(f);
+    if (idx < SUBCHAPTERS.length - 1) { const s = document.createElement('span'); s.className='arr'; s.textContent='→'; flowEl.appendChild(s); }
+  });
+
+  // 표지 hero — 완전연결 격자(파랑) ↔ 같은 커널이 슬라이드하는 격자(주홍)
+  window.addEventListener('load', () => {
+    if (!window.THREE || !document.getElementById('hero')) return;
+    const canvas = document.getElementById('hero');
+    const wrap = canvas.parentElement;
+    const css = getComputedStyle(document.documentElement);
+    const C = {
+      structure: css.getPropertyValue('--structure').trim() || '#2D5B7A',
+      style: css.getPropertyValue('--style').trim() || '#C0492E',
+    };
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    const scene = new THREE.Scene();
+    const cam = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+    cam.position.set(0, 0, 3.0);
+
+    // 12 x 12 격자
+    const GRID = 14;
+    const N = GRID * GRID;
+    const fc = new Float32Array(N * 3);     // 완전연결: 모든 픽셀이 모든 픽셀과 (밀집 거미줄)
+    const cv = new Float32Array(N * 3);     // 합성곱: 같은 3x3 창이 이동 (모이고 흩어짐)
+    const rnd = new Float32Array(N);
+    const W = 3.0, H = 1.9;
+    let p = 0;
+    for (let r = 0; r < GRID; r++) for (let c = 0; c < GRID; c++, p++) {
+      const cx = (c / (GRID - 1) - 0.5) * W;
+      const cy = (r / (GRID - 1) - 0.5) * H;
+      fc[p*3] = cx; fc[p*3+1] = cy; fc[p*3+2] = 0;
+      // 합성곱 상태: 4개의 슬라이드 위치로 점들이 모임 (3x3 패치가 4개 위치에 찍힌 듯)
+      const cluster = Math.floor((r * 2 / GRID)) * 2 + Math.floor((c * 2 / GRID));
+      const cxC = ((cluster % 2) - 0.5) * W * 0.45;
+      const cyC = (Math.floor(cluster / 2) - 0.5) * H * 0.45;
+      const dx = ((c % (GRID/2)) / ((GRID/2)-1) - 0.5) * 0.55;
+      const dy = ((r % (GRID/2)) / ((GRID/2)-1) - 0.5) * 0.35;
+      cv[p*3] = cxC + dx; cv[p*3+1] = cyC + dy; cv[p*3+2] = 0.1;
+      rnd[p] = Math.random();
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('aFC', new THREE.BufferAttribute(fc, 3));
+    geo.setAttribute('aCV', new THREE.BufferAttribute(cv, 3));
+    geo.setAttribute('aRand', new THREE.BufferAttribute(rnd, 1));
+    geo.setAttribute('position', new THREE.BufferAttribute(fc.slice(), 3));
+    const uniforms = {
+      uMix: { value: 0 }, uTime: { value: 0 }, uMouse: { value: new THREE.Vector2(99,99) },
+      uColA: { value: new THREE.Color(C.structure) }, uColB: { value: new THREE.Color(C.style) },
+      uSize: { value: 14.0 * Math.min(devicePixelRatio, 2) },
+    };
+    const mat = new THREE.ShaderMaterial({
+      uniforms, transparent: true, depthWrite: false,
+      vertexShader:
+        'attribute vec3 aFC; attribute vec3 aCV; attribute float aRand;' +
+        'uniform float uMix, uTime, uSize; uniform vec2 uMouse;' +
+        'varying float vM; varying float vA;' +
+        'void main(){' +
+        '  float m = clamp(uMix + (aRand-0.5)*0.25, 0.0, 1.0);' +
+        '  m = m*m*(3.0-2.0*m); vM = m;' +
+        '  vec3 pos = mix(aFC, aCV, m);' +
+        '  pos.y += sin(uTime*0.4 + aRand*6.28) * 0.012;' +
+        '  vec2 d = pos.xy - uMouse;' +
+        '  float dist = length(d);' +
+        '  float push = smoothstep(0.55, 0.0, dist) * 0.35;' +
+        '  pos.xy += normalize(d + 0.0001) * push;' +
+        '  vA = 0.62 + 0.38*(1.0-m) + push*0.5;' +
+        '  vec4 mv = modelViewMatrix * vec4(pos,1.0);' +
+        '  gl_PointSize = uSize * (1.0 / -mv.z) * (0.85 + m*0.45);' +
+        '  gl_Position = projectionMatrix * mv;' +
+        '}',
+      fragmentShader:
+        'precision mediump float;' +
+        'uniform vec3 uColA, uColB; varying float vM; varying float vA;' +
+        'void main(){' +
+        '  vec2 uv = gl_PointCoord - 0.5;' +
+        '  float d = length(uv);' +
+        '  float alpha = smoothstep(0.5, 0.12, d) * vA;' +
+        '  vec3 col = mix(uColA, uColB, vM);' +
+        '  gl_FragColor = vec4(col, alpha);' +
+        '}',
+    });
+    const points = new THREE.Points(geo, mat);
+    scene.add(points);
+
+    const ray = new THREE.Raycaster();
+    const plane = new THREE.Plane(new THREE.Vector3(0,0,1), 0);
+    const mNDC = new THREE.Vector2(99,99);
+    let targetMouse = new THREE.Vector3(99,99,0);
+    canvas.addEventListener('pointermove', (e) => {
+      const r = canvas.getBoundingClientRect();
+      mNDC.x = ((e.clientX - r.left)/r.width)*2 - 1;
+      mNDC.y = -((e.clientY - r.top)/r.height)*2 + 1;
+      ray.setFromCamera(mNDC, cam);
+      ray.ray.intersectPlane(plane, targetMouse);
+    });
+    canvas.addEventListener('pointerleave', () => { targetMouse.set(99,99,0); });
+
+    function resize() {
+      const w = wrap.clientWidth, h = Math.min(window.innerWidth*0.46, 460);
+      renderer.setSize(w, h, false);
+      cam.aspect = w/h; cam.updateProjectionMatrix();
+    }
+    window.addEventListener('resize', resize); resize();
+
+    let t0 = performance.now();
+    function loop() {
+      const t = (performance.now() - t0) / 1000;
+      uniforms.uTime.value = t;
+      const target = (targetMouse.x < 90) ? 1.0 : (0.5 + 0.5 * Math.sin(t * 0.4));
+      uniforms.uMix.value += (target - uniforms.uMix.value) * 0.04;
+      uniforms.uMouse.value.set(targetMouse.x, targetMouse.y);
+      renderer.render(scene, cam);
+      requestAnimationFrame(loop);
+    }
+    loop();
+  });
+</script>
+</body>
+</html>

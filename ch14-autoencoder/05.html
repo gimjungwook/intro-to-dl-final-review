@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>05 · AE와 매니폴드 학습 — Ch.14</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  /* 매니폴드 학습 위젯 */
+  .mfd-stage { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1.5rem 1.2rem 1rem; align-items: center; justify-items: center; }
+  .mfd-side { text-align: center; }
+  .mfd-side canvas { display: block; width: 100%; max-width: 320px; aspect-ratio: 1/1; border-radius: 10px; border: 1px solid var(--line); background: #fff; margin: 0 auto; }
+  .mfd-side .slab { display: block; margin-top: .55rem; font-family: var(--mono); font-size: .74rem; color: var(--ink-faint); letter-spacing: .04em; }
+  .mfd-side.in .slab { color: var(--structure); }
+  .mfd-side.out .slab { color: var(--style); }
+  .mfd-verdict { padding: .9rem 1.4rem 1rem; border-top: 1px solid var(--line-soft); font-size: .9rem; color: var(--ink-soft); line-height: 1.55; background: var(--paper-2); }
+  .mfd-verdict b.s1 { color: var(--style); } .mfd-verdict b.s2 { color: var(--structure); } .mfd-verdict b.s3 { color: var(--synth); }
+  .connection-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; max-width: var(--measure); margin: 1.6rem auto; padding-inline: 1.4rem; }
+  .conn-card { padding: 1.1rem 1.2rem; border-radius: 11px; border: 1px solid var(--line); background: #fff; }
+  .conn-card.ch13 { border-left: 3px solid var(--structure); }
+  .conn-card.ch14 { border-left: 3px solid var(--synth); background: var(--synth-bg); }
+  .conn-card.ch15 { border-left: 3px solid var(--style); }
+  .conn-card h4 { margin: 0 0 .4rem; font-family: var(--serif); font-size: 1.02rem; }
+  .conn-card.ch13 h4 { color: var(--structure); }
+  .conn-card.ch14 h4 { color: var(--synth); }
+  .conn-card.ch15 h4 { color: var(--style); }
+  .conn-card p { margin: 0; font-size: .82rem; color: var(--ink-soft); line-height: 1.55; }
+  .conn-card .ttl { display: block; font-family: var(--mono); font-size: .68rem; color: var(--ink-faint); letter-spacing: .1em; }
+  @media (max-width: 700px) { .mfd-stage { grid-template-columns: 1fr; } .connection-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 05 · 13장 → 14장 → 15장의 다리</span>
+      <h1>자기부호화기와<br><span class="t-synth">매니폴드 학습</span></h1>
+      <p class="lede">미완전·DAE·CAE는 서로 다른 길로 출발했지만 모두 같은 곳에 도착한다. 그곳은 데이터가 실제로 살고 있는 곡면 — 매니폴드다.</p>
+    </header>
+
+    <div class="prose">
+      <p>지금까지 우리는 자기부호화기의 종류를 차례로 봤다. 출발점은 항상 같았다. <em>"항등 함수가 되는 것을 어떻게 막을 것인가?"</em> 그러나 도착점도 같았다. 모든 방법이 결국 학습하는 것은 <strong>데이터 매니폴드(data manifold)의 모양</strong>이다. 이 장은 그 그림을 명시적으로 그리고, 13장의 선형 인자 모델과 15장의 표상 학습 사이에 자기부호화기를 어떻게 자리매김할지 정리한다.</p>
+
+      <h2>매니폴드란 무엇인가</h2>
+      <p>매니폴드(manifold)는 고차원 공간 안에 들어 있는 저차원 곡면을 가리키는 수학 용어다. 가장 친숙한 예는 지구 표면이다. 지구 자체는 3차원 공간 안에 있지만 그 표면은 2차원이다. 위도와 경도라는 두 개의 좌표만 있으면 표면 위 어디든 가리킬 수 있다. 이 2차원이 매니폴드의 <em>내재 차원(intrinsic dimension)</em>이다.</p>
+
+      <p>자연 데이터에도 비슷한 일이 일어난다. 28×28 손글씨 숫자 이미지는 784차원 공간에 사는 한 점이다. 그러나 가능한 784차원 점들의 대부분은 잡음일 뿐, 진짜 숫자처럼 보이지 않는다. 실제 숫자 이미지들은 그 거대한 784차원 공간 안에서 매우 좁고 휘어진 영역에 모여 있다. 그 영역이 곧 <strong>숫자 이미지 매니폴드</strong>다. 그 매니폴드의 내재 차원은 아마도 수십 차원에 불과할 것이다 — 글씨 굵기, 기울기, 자형 변형, 작가의 손버릇 같은 몇 개의 독립적 변동 축으로 설명할 수 있을 정도로 좁다.</p>
+
+      <div class="analogy">
+        <b>거대한 도서관 안의 좁은 서가.</b> 가능한 모든 784차원 점들의 집합은 끝없이 넓은 도서관 같다. 그 안에서 "진짜 손글씨 숫자처럼 보이는 점들의 집합"은 어느 한 좁은 서가에만 모여 있다. 자기부호화기가 학습하는 것은 그 서가의 모양과 위치다. 좋은 자기부호화기는 도서관의 다른 곳을 안 보고, 그 서가 위만 따라 걷는다.
+      </div>
+
+      <h2>왜 모든 자기부호화기가 매니폴드를 학습하는가</h2>
+      <p>지금까지 본 정칙화 방법들을 매니폴드 관점에서 다시 읽어 보자.</p>
+      <ul>
+        <li><strong>미완전 자기부호화기</strong>는 잠재 차원을 좁혀 모델이 "표현할 수 있는 점들의 집합"을 작게 만든다. 그 집합이 곧 학습된 매니폴드다. 잠재 차원 $k$가 매니폴드의 내재 차원이 된다.</li>
+        <li><strong>DAE</strong>는 노이즈로 손상된 입력을 매니폴드 위로 끌어올리도록 학습한다. 학습이 끝나면 모델은 "이 위치에서 매니폴드 위 가장 가까운 점은 어디인가"라는 사영(projection) 작업을 수행한다.</li>
+        <li><strong>CAE</strong>는 매니폴드 접선 방향에만 민감한 코드를 학습한다. 즉 매니폴드의 국소 좌표계를 직접 만든다.</li>
+      </ul>
+      <p>이 세 방식은 표면적으로는 매우 달라 보이지만, 학습이 끝나고 보면 셋 다 같은 일을 한 셈이다. 데이터 매니폴드의 모양을 인코더가 알아낸 것이다. 다만 그 모양을 표현하는 방식이 다를 뿐이다 — 미완전은 매니폴드의 <em>전역 좌표</em>로, CAE는 <em>국소 접선 좌표</em>로, DAE는 <em>매니폴드로의 사영 연산자</em>로.</p>
+
+      <p>아래 위젯에서 직접 확인해 보자. 왼쪽은 2차원 공간에 흩어져 있는 데이터로, 점들이 한 곡선 — 1차원 매니폴드 — 위에 모여 있다. 오른쪽은 자기부호화기가 학습한 매니폴드 좌표 (1차원 잠재 코드 $h$). 슬라이더로 $h$를 움직이면 왼쪽에서 매니폴드 위 한 점이 따라 움직인다. <strong>1차원 코드 하나가 2차원 공간의 곡선 전체를 매개변수화한다.</strong> 이것이 매니폴드 학습의 가장 압축된 그림이다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 05</span><span>매니폴드 학습 — 2차원 데이터의 1차원 좌표</span></div>
+        <div class="mfd-stage">
+          <div class="mfd-side in">
+            <canvas id="mfd-data" width="320" height="320"></canvas>
+            <span class="slab">데이터 공간 ℝ²  (2차원)</span>
+          </div>
+          <div class="mfd-side out">
+            <canvas id="mfd-latent" width="320" height="320"></canvas>
+            <span class="slab">잠재 공간 ℝ¹  (1차원)</span>
+          </div>
+        </div>
+        <div class="widget-controls">
+          <div class="slider" style="flex:1; min-width:280px;">
+            <label>잠재 좌표 <b id="mfd-hval">h = 0.00</b></label>
+            <input type="range" id="mfd-h" min="-1" max="1" step="0.02" value="0">
+          </div>
+        </div>
+        <div class="mfd-verdict" id="mfd-verdict"></div>
+      </div>
+      <p class="widget-cap">2차원 데이터 점들은 하나의 곡선 위에 모여 있다. 자기부호화기는 그 곡선을 따라 흐르는 1차원 좌표 $h$를 학습했다. 슬라이더를 움직이면 그 좌표 한 값이 매니폴드 위 한 점을 가리킨다. 차원이 2에서 1로 줄어들었지만 정보 손실은 거의 없다 — 데이터의 본질적 자유도가 1차원이었기 때문이다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>13장 · 14장 · 15장의 연결</h2>
+      <p>이 시점에서 책 전체에서 자기부호화기의 위치를 명확히 그릴 수 있다.</p>
+    </div>
+
+    <div class="connection-grid">
+      <div class="conn-card ch13">
+        <span class="ttl">CH 13 — 선형 인자 모델</span>
+        <h4>평평한 매니폴드</h4>
+        <p>PCA, 인자 분석, ICA, 희소 코딩. 잠재 변수 $h$에서 입력으로의 매핑이 <em>선형</em>. 학습된 매니폴드는 직선 부분공간(flat manifold). 데이터가 실제로 평평할 때만 잘 동작한다.</p>
+      </div>
+      <div class="conn-card ch14">
+        <span class="ttl">CH 14 — 자기부호화기</span>
+        <h4>휘어진 매니폴드</h4>
+        <p>인코더와 디코더를 비선형 신경망으로 일반화. 학습된 매니폴드는 <em>곡면</em>. 미완전·DAE·CAE라는 정칙화 형태에 따라 같은 매니폴드를 다른 좌표계로 표현. 13장의 직접적 일반화.</p>
+      </div>
+      <div class="conn-card ch15">
+        <span class="ttl">CH 15 — 표상 학습</span>
+        <h4>의미 있는 좌표</h4>
+        <p>학습된 매니폴드의 <em>좌표축이 무엇을 의미하는가</em>. 풀린(disentangled) 표상, 사전학습(pretraining), 전이 학습(transfer learning). 자기부호화기가 만든 표상이 다른 과제에서도 유용한 이유.</p>
+      </div>
+    </div>
+
+    <div class="prose">
+      <h2>응용 — 비선형 차원축소와 의미적 해싱</h2>
+      <p>이 매니폴드 관점에서 자기부호화기의 두 가지 대표 응용이 자연스럽게 따라 나온다.</p>
+
+      <p><strong>비선형 차원축소(nonlinear dimensionality reduction).</strong> 학습된 인코더 $f$는 입력을 그것의 매니폴드 좌표로 보내는 함수다. 이를 자료 분석이나 시각화에 쓸 수 있다. 784차원 손글씨 숫자를 2차원 평면에 펼치면 비슷한 글씨끼리 모이고 다른 글씨는 떨어진다. PCA로 같은 일을 해도 비슷한 그림이 나오지만, 매니폴드가 휘어 있을수록 자기부호화기가 더 깨끗한 분리를 보여 준다. 이는 후속 분류기의 성능을 직접적으로 개선한다.</p>
+
+      <p><strong>의미적 해싱(semantic hashing).</strong> 코드 $h$를 강제로 이진 벡터(0과 1)로 만들면, 비슷한 입력이 비슷한 비트 패턴을 받게 된다. 그러면 데이터베이스에서 비슷한 문서를 찾을 때 거대한 임베딩끼리 거리를 비교하는 대신, 짧은 비트열의 해시 테이블 조회로 끝낼 수 있다. 수십억 개의 문서에서 의미적으로 비슷한 문서를 찾는 작업이 갑자기 $O(1)$ 비용이 된다. 이 아이디어는 2026년의 벡터 검색·검색 증강 생성(RAG) 시스템의 직계 조상이다.</p>
+
+      <h2>다음 장에서</h2>
+      <p>마지막 장 <a href="06.html">시험 대비</a>는 지금까지 본 모든 내용을 한 장의 요약 카드와 예상 문제로 정리한다. 어떤 자기부호화기가 어떤 정칙화 방식이고, 그것이 어떤 깊은 결과 — PCA 관계, 점수 매칭, 자코비안 페널티 — 와 연결되는지 한 번에 훑는다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  // ===== Ch.14 sub-chapter nav =====
+  const SUBS = [
+    { no:'01', t:'자기부호화기의 기본', f:'01.html' },
+    { no:'02', t:'미완전 자기부호화기', f:'02.html' },
+    { no:'03', t:'잡음 제거 AE (DAE)', f:'03.html' },
+    { no:'04', t:'수축적 AE (CAE)', f:'04.html' },
+    { no:'05', t:'AE와 매니폴드 학습', f:'05.html' },
+    { no:'06', t:'시험 대비', f:'06.html' },
+  ];
+  const CURRENT = '05';
+  (function buildNav() {
+    document.querySelector('.topbar').innerHTML =
+      `<a class="home" href="index.html">← Chapter 14 · 자기부호화기</a>` +
+      `<span class="ch-mini">SUB ${CURRENT} / 06</span>`;
+    document.querySelector('.ch-nav ol').innerHTML = SUBS.map(s =>
+      `<li><a href="${s.f}" ${s.no === CURRENT ? 'class="current"' : ''}>${s.t}</a></li>`).join('');
+    const i = SUBS.findIndex(s => s.no === CURRENT);
+    const prev = i > 0 ? SUBS[i-1] : { f:'index.html', t:'챕터 표지', no:'' };
+    const next = i < SUBS.length-1 ? SUBS[i+1] : { f:'index.html', t:'챕터 표지', no:'' };
+    document.querySelector('.ch-foot').innerHTML =
+      `<a href="${prev.f}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+      `<a href="${next.f}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+    const bar = document.querySelector('.scroll-progress');
+    const onScroll = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    document.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+  })();
+
+  // ===== 위젯: 매니폴드 학습 =====
+  (function mfdWidget() {
+    const dataC = document.getElementById('mfd-data');
+    const latC = document.getElementById('mfd-latent');
+    const slider = document.getElementById('mfd-h');
+    const hVal = document.getElementById('mfd-hval');
+    const verdict = document.getElementById('mfd-verdict');
+
+    const css = getComputedStyle(document.documentElement);
+    const STRUCT = css.getPropertyValue('--structure').trim();
+    const STYLE = css.getPropertyValue('--style').trim();
+    const SYNTH = css.getPropertyValue('--synth').trim();
+    const INK = css.getPropertyValue('--ink').trim();
+    const FAINT = css.getPropertyValue('--ink-faint').trim();
+
+    const W = dataC.width;
+
+    // 매니폴드: x = cos(2πh), y = sin(2πh) + 0.4*sin(4πh)
+    function manifold(h) {
+      // h ∈ [-1, 1]을 [0, 1]로 매핑
+      const t = (h + 1) / 2;
+      const x = Math.cos(2 * Math.PI * t);
+      const y = Math.sin(2 * Math.PI * t) + 0.4 * Math.sin(4 * Math.PI * t);
+      return { x, y };
+    }
+
+    function drawData(currentH) {
+      const ctx = dataC.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, W);
+      // 격자
+      ctx.strokeStyle = 'rgba(38,34,28,0.06)'; ctx.lineWidth = 1;
+      for (let i = 0; i <= 8; i++) {
+        const p = (i/8) * W;
+        ctx.beginPath(); ctx.moveTo(p, 0); ctx.lineTo(p, W); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, p); ctx.lineTo(W, p); ctx.stroke();
+      }
+      // 축
+      ctx.strokeStyle = 'rgba(38,34,28,0.2)';
+      ctx.beginPath();
+      ctx.moveTo(W/2, 8); ctx.lineTo(W/2, W-8);
+      ctx.moveTo(8, W/2); ctx.lineTo(W-8, W/2);
+      ctx.stroke();
+
+      function px(x) { return W/2 + x * (W/2 - 28); }
+      function py(y) { return W/2 - y * (W/2 - 28); }
+
+      // 매니폴드 곡선
+      ctx.strokeStyle = 'rgba(45, 91, 122, 0.5)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let h = -1; h <= 1.01; h += 0.01) {
+        const p = manifold(h);
+        const X = px(p.x), Y = py(p.y);
+        if (h === -1) ctx.moveTo(X, Y); else ctx.lineTo(X, Y);
+      }
+      ctx.stroke();
+
+      // 데이터 점 (시드 고정 노이즈)
+      function seed(n) { let s = n; return () => (s = (s*1664525+1013904223) % 4294967296) / 4294967296; }
+      const rnd = seed(3);
+      ctx.fillStyle = STRUCT;
+      for (let i = 0; i < 50; i++) {
+        const h = -1 + rnd() * 2;
+        const p = manifold(h);
+        const nx = (rnd() - 0.5) * 0.08;
+        const ny = (rnd() - 0.5) * 0.08;
+        ctx.beginPath();
+        ctx.arc(px(p.x + nx), py(p.y + ny), 2.5, 0, Math.PI*2);
+        ctx.fill();
+      }
+
+      // 현재 h가 가리키는 매니폴드 점
+      const cur = manifold(currentH);
+      const cX = px(cur.x), cY = py(cur.y);
+      // 펄스
+      ctx.fillStyle = SYNTH;
+      ctx.beginPath(); ctx.arc(cX, cY, 7, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = INK;
+      ctx.beginPath(); ctx.arc(cX, cY, 4, 0, Math.PI*2); ctx.fill();
+
+      // 라벨
+      ctx.fillStyle = FAINT; ctx.font = '11px "Spline Sans Mono", monospace';
+      ctx.fillText('x₁', W-14, W/2-4);
+      ctx.fillText('x₂', W/2+4, 14);
+      ctx.fillStyle = STRUCT;
+      ctx.fillText(`g(h) = (${cur.x.toFixed(2)}, ${cur.y.toFixed(2)})`, 10, W - 8);
+    }
+
+    function drawLatent(currentH) {
+      const ctx = latC.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, W);
+      // 격자
+      ctx.strokeStyle = 'rgba(38,34,28,0.06)'; ctx.lineWidth = 1;
+      for (let i = 0; i <= 8; i++) {
+        const p = (i/8) * W;
+        ctx.beginPath(); ctx.moveTo(p, 0); ctx.lineTo(p, W); ctx.stroke();
+      }
+
+      // h축 (가로 직선)
+      const cy = W / 2;
+      ctx.strokeStyle = 'rgba(38,34,28,0.3)'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(24, cy); ctx.lineTo(W-24, cy); ctx.stroke();
+      // 눈금
+      for (let v = -1; v <= 1.01; v += 0.5) {
+        const x = 24 + ((v + 1) / 2) * (W - 48);
+        ctx.beginPath(); ctx.moveTo(x, cy - 4); ctx.lineTo(x, cy + 4); ctx.stroke();
+        ctx.fillStyle = FAINT; ctx.font = '10px "Spline Sans Mono", monospace';
+        ctx.fillText(v.toFixed(1), x - 8, cy + 18);
+      }
+
+      // 데이터 점들이 h에 어떻게 매핑되는지 (PCA같은 일직선상에 작은 산포)
+      function seed(n) { let s = n; return () => (s = (s*1664525+1013904223) % 4294967296) / 4294967296; }
+      const rnd = seed(3);
+      ctx.fillStyle = STYLE;
+      for (let i = 0; i < 50; i++) {
+        const h = -1 + rnd() * 2;
+        const x = 24 + ((h + 1) / 2) * (W - 48);
+        const y = cy + (rnd() - 0.5) * 6;
+        ctx.beginPath(); ctx.arc(x, y, 2.5, 0, Math.PI*2); ctx.fill();
+      }
+
+      // 현재 h 표시
+      const hx = 24 + ((currentH + 1) / 2) * (W - 48);
+      ctx.strokeStyle = INK; ctx.lineWidth = 1.5; ctx.setLineDash([3, 3]);
+      ctx.beginPath(); ctx.moveTo(hx, 24); ctx.lineTo(hx, W - 24); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = SYNTH;
+      ctx.beginPath(); ctx.arc(hx, cy, 7, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = INK;
+      ctx.beginPath(); ctx.arc(hx, cy, 4, 0, Math.PI*2); ctx.fill();
+
+      ctx.fillStyle = STYLE; ctx.font = '11px "Spline Sans Mono", monospace';
+      ctx.fillText(`h = ${currentH.toFixed(2)}`, 10, W - 8);
+      ctx.fillStyle = FAINT;
+      ctx.fillText('h', W - 18, cy - 8);
+    }
+
+    function update() {
+      const h = parseFloat(slider.value);
+      hVal.textContent = `h = ${h.toFixed(2)}`;
+      drawData(h);
+      drawLatent(h);
+      verdict.innerHTML = `현재 잠재 좌표 <b class="s3">h = ${h.toFixed(2)}</b>가 데이터 공간의 한 점 <b class="s2">(${manifold(h).x.toFixed(2)}, ${manifold(h).y.toFixed(2)})</b>를 지정한다. ` +
+        `슬라이더를 -1에서 +1까지 쓸어 보면 1차원 코드 하나가 휘어진 곡선 전체를 매개변수화한다는 사실이 분명해진다. ` +
+        `이것이 자기부호화기가 학습하는 매니폴드 좌표의 의미다.`;
+    }
+
+    slider.addEventListener('input', update);
+    update();
+  })();
+
+  // KaTeX
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
+        throwOnError: false,
+      });
+    }
+  });
+</script>
+</body>
+</html>

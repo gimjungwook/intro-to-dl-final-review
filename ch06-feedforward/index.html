@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chapter 06 · 깊은 순방향 신경망</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .ch-cover { max-width: var(--wide); margin: 0 auto; padding: 1.5rem 1.4rem 0; }
+  .cover-wrap { position: relative; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: linear-gradient(180deg,#fff,var(--paper-2)); box-shadow: var(--shadow-plate); }
+  #cover { display: block; width: 100%; height: 320px; }
+  .cover-cap { position: absolute; left: 1.2rem; bottom: 1rem; font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; color: var(--ink-faint); pointer-events: none; }
+  .cover-cap b { color: var(--structure); } .cover-cap em { color: var(--style); font-style: normal; }
+
+  .title-block { max-width: var(--wide); margin: 2rem auto 0; padding-inline: 1.4rem; }
+  .title-block .kicker { display: block; margin-bottom: 1rem; }
+  .title-block h1 { font-size: clamp(2.4rem, 6vw, 4.4rem); margin: 0; line-height: 1.06; }
+  .title-block h1 em { color: var(--style); font-style: normal; }
+  .meta { display: flex; flex-wrap: wrap; gap: .5rem 1.6rem; margin-top: 1.4rem; font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); letter-spacing: .02em; }
+  .meta span b { color: var(--ink); font-weight: 500; }
+
+  .intro { max-width: var(--measure); margin: 2.4rem auto 1rem; padding-inline: 1.4rem; }
+  .twopole { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; max-width: var(--measure); margin: 1.4rem auto; padding-inline: 1.4rem; }
+  .pole { padding: 1.1rem 1.2rem; border-radius: 11px; }
+  .pole.s1 { background: var(--structure-bg); } .pole.s2 { background: var(--style-bg); }
+  .pole h4 { margin: 0 0 .4rem; font-family: var(--serif); font-size: 1.1rem; }
+  .pole.s1 h4 { color: var(--structure); } .pole.s2 h4 { color: var(--style); }
+  .pole p { margin: 0; font-size: .9rem; color: var(--ink-soft); line-height: 1.5; }
+  @media (max-width: 560px){ .twopole{ grid-template-columns: 1fr; } }
+
+  .plates { max-width: var(--wide); margin: 1.4rem auto; padding: 1rem 1.4rem 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(270px,1fr)); gap: 1rem; }
+  .plate { position: relative; display: flex; flex-direction: column; text-decoration: none; color: inherit; background: #fff; border: 1px solid var(--line); border-radius: 13px; padding: 1.3rem 1.3rem 1.4rem; transition: transform .2s var(--ease), border-color .2s, box-shadow .2s; overflow: hidden; }
+  .plate:hover { transform: translateY(-4px); border-color: var(--structure-lo); box-shadow: var(--shadow-plate); }
+  .plate .pno { font-family: var(--mono); font-size: .72rem; letter-spacing: .14em; color: var(--ink-faint); }
+  .plate h3 { font-family: var(--serif); font-size: 1.25rem; margin: .45rem 0 .5rem; line-height: 1.2; }
+  .plate p { font-size: .88rem; color: var(--ink-soft); line-height: 1.5; margin: 0; }
+  .plate .spectrum { display: flex; height: 4px; border-radius: 2px; overflow: hidden; margin-bottom: 1rem; }
+  .plate .spectrum i { display: block; height: 100%; }
+  .plate .go { margin-top: 1rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; color: var(--structure); opacity: 0; transform: translateX(-4px); transition: .2s var(--ease); }
+  .plate:hover .go { opacity: 1; transform: translateX(0); }
+  .plate .kw { margin-top: .8rem; font-family: var(--mono); font-size: .68rem; color: var(--ink-faint); letter-spacing: .04em; }
+
+  .path { max-width: var(--wide); margin: 1.6rem auto 0; padding: 0 1.4rem 1.6rem; }
+  .path-flow { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; font-family: var(--mono); font-size: .8rem; }
+  .path-flow a { display: inline-flex; align-items: center; gap: .4rem; text-decoration: none; color: var(--ink-soft); padding: .4rem .7rem; border: 1px solid var(--line); border-radius: 20px; transition: .15s; }
+  .path-flow a:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .path-flow a b { color: var(--style); }
+  .path-flow .arr { color: var(--ink-faint); }
+
+  .priority { max-width: var(--measure); margin: 2rem auto; padding: 1.2rem 1.4rem; border: 1px solid var(--line); border-radius: 12px; background: var(--paper-2); }
+  .priority h4 { margin: 0 0 .6rem; font-family: var(--serif); font-size: 1.08rem; color: var(--structure); }
+  .priority ul { margin: 0; padding-left: 1.2rem; }
+  .priority li { margin: .3rem 0; font-size: .92rem; color: var(--ink-soft); line-height: 1.5; }
+  .priority li b { color: var(--ink); }
+
+  .uptop { display: flex; align-items: center; justify-content: space-between; padding: .8rem 1.4rem; background: rgba(250,247,240,.82); backdrop-filter: blur(12px) saturate(1.3); border-bottom: 1px solid var(--line-soft); position: sticky; top: 0; z-index: 40; }
+  .uptop a { font-family: var(--mono); font-size: .76rem; letter-spacing: .1em; color: var(--ink-soft); text-decoration: none; }
+  .uptop a:hover { color: var(--ink); }
+  .uptop .here { font-family: var(--mono); font-size: .72rem; letter-spacing: .14em; color: var(--ink-faint); }
+
+  footer.colophon { max-width: var(--measure); margin: 3rem auto 4rem; padding: 2rem 1.4rem 0; border-top: 1px solid var(--line); font-size: .85rem; color: var(--ink-soft); }
+  footer.colophon a { color: var(--structure); }
+  footer.colophon .src { font-family: var(--mono); font-size: .76rem; line-height: 1.8; }
+</style>
+</head>
+<body>
+
+<div class="uptop">
+  <a href="../index.html">← 기말고사 인덱스</a>
+  <span class="here">CHAPTER 06 / 15</span>
+</div>
+
+<header class="ch-cover">
+  <div class="cover-wrap">
+    <canvas id="cover"></canvas>
+    <div class="cover-cap"><b>선형 분리 불가능</b> ↔ <em>은닉 표상으로 펴짐</em> · XOR가 풀리는 순간</div>
+  </div>
+</header>
+
+<div class="title-block">
+  <span class="kicker">Deep Learning Book · Chapter 06 · Deep Feedforward Networks</span>
+  <h1>입력에서 출력까지,<br><em>한 방향</em>으로 흐르는 함수</h1>
+  <div class="meta">
+    <span><b>딥러닝 개론</b> 기말고사 1순위</span>
+    <span>제작 <b>김정욱</b></span>
+    <span>시험 <b>2026-06-04 (목)</b></span>
+    <span>구성 <b>7 sub-chapter</b></span>
+  </div>
+</div>
+
+<section class="intro">
+  <h2>이 장이 답하는 한 가지 질문</h2>
+  <p>“선형 모형으로는 풀 수 없는 문제를, 어떻게 직선 변환들의 합성만으로 풀 수 있는가?” 6장의 답은 두 단어다 — <strong>비선형 활성화</strong>와 <strong>깊이</strong>. 이 둘을 얹는 순간 신경망은 함수의 모양 자체를 데이터로부터 빚어낸다.</p>
+  <p>이 장은 <em>새로운 외계 기술</em>이 아니라, 5장까지 쌓아 온 머신러닝 위에 <strong>비선형성과 표상 학습</strong>을 얹는 자연스러운 다음 걸음이다. 그 다음 걸음을 가능하게 한 두 발판이 <span class="t-structure">계산 그래프</span>와 <span class="t-style">역전파</span>다.</p>
+</section>
+
+<div class="twopole">
+  <div class="pole s1"><h4>순전파 (forward)</h4><p>입력이 한 방향으로 흘러 예측이 된다. <b>피드포워드</b>라는 이름이 여기서 나온다. 루프는 없다.</p></div>
+  <div class="pole s2"><h4>역전파 (backward)</h4><p>예측의 오차가 거꾸로 흘러 각 가중치의 책임량을 계산한다. 학습은 이 책임량을 따라 한 걸음씩 내려간다.</p></div>
+</div>
+
+<section class="path">
+  <span class="kicker" style="display:block;margin:0 0 1rem;">읽기 순서</span>
+  <div class="path-flow" id="pathflow"></div>
+</section>
+
+<section class="plates" id="plates"></section>
+
+<section class="priority">
+  <h4>시험 출제 우선순위 (D-9)</h4>
+  <ul>
+    <li><b>1순위</b> · 역전파의 미적분 (식 6.44-6.55, 체인룰 + 계산 그래프). 손으로 직접 미분 시연 가능해야 함.</li>
+    <li><b>2순위</b> · 출력 단위와 비용 함수의 짝 (회귀-MSE, 이진-BCE, 다중-CE). MLE 유도 흐름 포함.</li>
+    <li><b>3순위</b> · 활성화 함수 비교 (sigmoid, tanh, ReLU와 변종). ReLU가 이긴 이유 = 양수 구간 기울기 보존.</li>
+    <li><b>4순위</b> · XOR / 만능 근사 / 깊이 vs 너비 — 직관 문제로 등장 가능.</li>
+  </ul>
+</section>
+
+<footer class="colophon">
+  <p>이 챕터 사이트는 Deep Learning Book Chapter 6 (Goodfellow, Bengio, Courville 2016)을 바탕으로 작성된 기말고사 복습 자료다. P2 신경 스타일 전이 해설의 디자인 시스템을 따른다.</p>
+  <p class="src">
+    원서 6장 · <a href="https://www.deeplearningbook.org/contents/mlp.html">deeplearningbook.org/contents/mlp.html</a><br>
+    선행학습 노트 · <a href="../../../05-선행학습/Deep-Learning-Book-06-Deep-Feedforward-Networks-상세해설.md">06 상세해설</a><br>
+    수식 6.44-6.57 해설 · <a href="../../../05-선행학습/Deep-Learning-Book-06-수식-6.44-6.57-해설.md">backprop 수식 풀이</a>
+  </p>
+</footer>
+
+<script>
+const SUBS = [
+  { no:'01', t:'XOR — 선형 분리 불가능의 벽',          d:'네 점을 직선 하나로 가를 수 없다는 사실이 왜 딥러닝 전체의 출발점이 되는가. 표현 공간 변환의 첫 번째 시연.', sp:['ink-soft','structure-lo'], kw:'선형 분리 · 표현 공간 · 최초 동기' },
+  { no:'02', t:'다층 퍼셉트론(MLP) — 깊이가 가능하게 하는 것', d:'은닉층이 입력을 새 좌표계로 보낸다. 행렬 곱과 비선형성의 교차가 만드는 함수 합성의 기하학.', sp:['structure-lo','structure'], kw:'은닉층 · 행렬 곱 · 합성 함수' },
+  { no:'03', t:'활성화 함수 — ReLU가 이긴 이유',       d:'sigmoid, tanh, ReLU, Leaky/PReLU, ELU, GELU. 포화·기울기 소실·계산 비용·죽은 ReLU 트레이드오프.', sp:['structure','synth'], kw:'ReLU · sigmoid · 기울기 소실 · 활성화' },
+  { no:'04', t:'출력 단위와 비용의 짝 — 회귀·이진·다중', d:'MLE에서 자연스럽게 떨어지는 짝. 선형+MSE, 시그모이드+BCE, softmax+CE. 왜 “함께 설계해야” 하는가.', sp:['synth','style'], kw:'MLE · MSE · 교차 엔트로피 · softmax' },
+  { no:'05', t:'역전파의 미적분 — 체인룰·계산 그래프', d:'식 6.44에서 6.55까지. 왜 뒤에서 앞으로 미분하는가. 중복 계산을 피하는 동적계획법으로서의 backprop.', sp:['style','synth'], kw:'역전파 · 체인룰 · 자코비안 · DP' },
+  { no:'06', t:'만능 근사 정리와 깊이 vs 너비',         d:'단층 충분히 넓으면 무엇이든 근사한다 — 그러나 “가능성”과 “효율”은 다르다. 깊이가 지수적 이득을 주는 이유.', sp:['structure','style'], kw:'Universal Approximation · 깊이' },
+  { no:'07', t:'시험 대비 — 한 페이지 정리와 자가 점검', d:'챕터 핵심 요약, 자주 헷갈리는 지점, 자가 점검 질문 6개, 손으로 푸는 미니 backprop 1문제.', sp:['ink','ink-soft'], kw:'요약 · 자가 점검 · 손계산 backprop' },
+];
+const colMap = { structure:'var(--structure)', 'structure-lo':'var(--structure-lo)', style:'var(--style)', 'style-lo':'var(--style-lo)', synth:'var(--synth)', ink:'var(--ink)', 'ink-soft':'var(--ink-soft)' };
+
+const platesEl = document.getElementById('plates');
+const flowEl = document.getElementById('pathflow');
+SUBS.forEach((c, idx) => {
+  const sp = c.sp.length === 1 ? [c.sp[0], c.sp[0]] : c.sp;
+  const a = document.createElement('a');
+  a.className = 'plate'; a.href = c.no + '.html';
+  a.innerHTML = `
+    <div class="spectrum">${sp.map(s=>`<i style="flex:1;background:${colMap[s]}"></i>`).join('')}</div>
+    <span class="pno">SUB ${c.no}</span>
+    <h3>${c.t}</h3>
+    <p>${c.d}</p>
+    <span class="kw">${c.kw}</span>
+    <span class="go">읽기 →</span>`;
+  platesEl.appendChild(a);
+
+  const f = document.createElement('a'); f.href = c.no + '.html';
+  const shortT = c.t.split('—')[0].trim().slice(0, 14);
+  f.innerHTML = `<b>${c.no}</b> ${shortT}…`;
+  flowEl.appendChild(f);
+  if (idx < SUBS.length - 1) { const s = document.createElement('span'); s.className='arr'; s.textContent='→'; flowEl.appendChild(s); }
+});
+
+// 표지 캔버스 — XOR 표현 공간 변환 입자 애니메이션
+window.addEventListener('load', () => {
+  const canvas = document.getElementById('cover');
+  if (!canvas || !window.THREE) return;
+  const wrap = canvas.parentElement;
+  const w = wrap.clientWidth, h = 320;
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(50, w/h, 0.1, 100);
+  camera.position.set(0, 0, 14);
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(2, devicePixelRatio || 1));
+  renderer.setSize(w, h, false);
+  renderer.setClearColor(0xffffff, 0);
+
+  const N = 1400;
+  const geo = new THREE.BufferGeometry();
+  const pos = new Float32Array(N * 3);
+  const col = new Float32Array(N * 3);
+  const taA = new Float32Array(N * 3); // 원래 입력 공간: XOR 분리 불가
+  const taB = new Float32Array(N * 3); // 은닉 표상: 분리 가능
+  // 네 군집 — XOR
+  const centers = [
+    { x:-3.2, y:-1.8, cls: 0 }, // (0,0) -> 0
+    { x: 3.2, y:-1.8, cls: 1 }, // (1,0) -> 1
+    { x:-3.2, y: 1.8, cls: 1 }, // (0,1) -> 1
+    { x: 3.2, y: 1.8, cls: 0 }, // (1,1) -> 0
+  ];
+  for (let i = 0; i < N; i++) {
+    const c = centers[i % 4];
+    const r = Math.sqrt(Math.random()) * 0.85;
+    const th = Math.random() * Math.PI * 2;
+    taA[i*3]   = c.x + Math.cos(th) * r;
+    taA[i*3+1] = c.y + Math.sin(th) * r;
+    taA[i*3+2] = 0;
+    // 은닉 표상: 클래스 0은 위, 클래스 1은 아래로 펴짐 → 평면으로 분리 가능
+    const dx = (c.x > 0 ? 1 : -1);
+    const dy = (c.y > 0 ? 1 : -1);
+    taB[i*3]   = (c.x + dx * 0.4) * 0.7;
+    taB[i*3+1] = (c.cls === 0 ? 1.6 : -1.6) + Math.sin(th)*r*0.5;
+    taB[i*3+2] = (c.cls === 0 ? 0.6 : -0.6) + Math.cos(th)*r*0.5;
+
+    pos[i*3] = taA[i*3]; pos[i*3+1] = taA[i*3+1]; pos[i*3+2] = 0;
+    // 색: 클래스 0 = 쿨, 클래스 1 = 웜
+    if (c.cls === 0) { col[i*3] = 0.18; col[i*3+1] = 0.36; col[i*3+2] = 0.48; }
+    else             { col[i*3] = 0.75; col[i*3+1] = 0.29; col[i*3+2] = 0.18; }
+  }
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  const mat = new THREE.PointsMaterial({ size: 0.11, vertexColors: true, transparent: true, opacity: 0.86 });
+  const pts = new THREE.Points(geo, mat);
+  scene.add(pts);
+
+  let t = 0;
+  function tick() {
+    t += 0.006;
+    const m = 0.5 - 0.5 * Math.cos(t);
+    const p = pts.geometry.attributes.position.array;
+    for (let i = 0; i < N; i++) {
+      const j = i * 3;
+      p[j]   = taA[j]   * (1 - m) + taB[j]   * m;
+      p[j+1] = taA[j+1] * (1 - m) + taB[j+1] * m;
+      p[j+2] = taA[j+2] * (1 - m) + taB[j+2] * m;
+    }
+    pts.geometry.attributes.position.needsUpdate = true;
+    pts.rotation.y = (m - 0.5) * 0.4 + Math.sin(t*0.5) * 0.05;
+    renderer.render(scene, camera);
+    requestAnimationFrame(tick);
+  }
+  tick();
+
+  window.addEventListener('resize', () => {
+    const w2 = wrap.clientWidth;
+    renderer.setSize(w2, h, false);
+    camera.aspect = w2 / h;
+    camera.updateProjectionMatrix();
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>09 / 05 / 신경과학적 기원</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-chapter 05 / 시각 피질에서 LeNet까지</span>
+      <h1>신경과학적 기원 —<br><span class="t-style">고양이 뇌에서 빌려온 설계</span></h1>
+      <p class="lede">CNN은 순수한 수학에서 출발한 구조가 아니다. 1960년대 고양이의 시각 피질에서 발견된 두 종류의 뉴런이, 합성곱과 풀링의 직접적인 영감이 되었다.</p>
+    </header>
+
+    <div class="prose">
+      <p>CNN의 합성곱 + 풀링 구조는 “어쩌다 보니 잘 되어서” 정착한 것이 아니다. 그 설계의 뿌리에는 1960년대 신경과학의 결정적인 발견 두 가지가 있다. 이 sub-chapter는 그 발견부터 1980년 일본에서 만들어진 네오코그니트론, 1989년 LeCun의 LeNet으로 이어지는 30년의 다리를 짧게 정리한다. 시험에서 직접 나오지 않더라도, 이 역사를 알면 합성곱과 풀링이 왜 “자연스러운” 선택인지 더 깊이 이해된다.</p>
+
+      <h2>1. Hubel과 Wiesel의 고양이 실험 (1959–1962)</h2>
+
+      <p>1950년대 말, 미국 하버드의 신경생리학자 David Hubel과 Torsten Wiesel은 마취된 고양이의 시각 피질(visual cortex)에 미세전극을 꽂고, 고양이 눈앞의 스크린에 다양한 시각 자극을 보여 주는 실험을 시작했다. 그들의 질문은 단순했다 — “시각 피질의 한 뉴런은 정확히 무엇에 반응하는가?”</p>
+
+      <p>실험 초기에는 점이나 단순한 빛 자극으로 시작했지만, 어떤 뉴런도 그런 자극에는 잘 반응하지 않았다. 그러던 어느 날, 슬라이드 프로젝터에 끼운 유리판의 가장자리(에지)가 우연히 스크린에 그림자처럼 비쳤을 때, 한 뉴런이 갑자기 강하게 반응했다. 가만히 있으면 약한데, 그 에지를 특정한 방향으로 천천히 옮기면 폭발적으로 반응했다. 그 발견이 시각 신경과학의 새 장을 열었다.</p>
+
+      <p>여러 해에 걸친 추가 실험을 통해 두 사람은 시각 피질 1차 영역(V1)에 적어도 두 종류의 뉴런이 있음을 밝혔다. 이 발견으로 1981년 노벨 생리의학상을 받게 된다.</p>
+
+      <div class="symbols"><tbody>
+        <tr><td>단순 세포 (Simple Cell)</td><td>특정 위치에서, 특정 방향(orientation)의 에지에 강하게 반응. 위치가 조금만 바뀌어도 반응이 줄어든다. — <em>합성곱 필터와 같은 행동.</em></td></tr>
+        <tr><td>복잡 세포 (Complex Cell)</td><td>같은 방향의 에지에 반응하지만, 정확한 위치에는 둔감. 에지가 작은 범위 안에 있으면 어디에 있어도 반응. — <em>풀링과 같은 행동.</em></td></tr>
+      </tbody></div>
+
+      <div class="analogy">
+        단순 세포는 <b>“수직선 모양 자가 정확히 그 자리에 놓였을 때만 ‘딱!’ 하고 울리는 종”</b>이다. 복잡 세포는 <b>“수직선이 이 동네 어디에라도 있으면 ‘딱!’ 하고 울리는 종”</b>이다. 전자는 위치를 보존하고 후자는 위치를 흐린다. 9장이 합성곱과 풀링을 “등가성과 불변성”으로 구분하는 것과 정확히 같은 분업이다.
+      </div>
+
+      <p>단순 세포는 어떻게 그런 “특정 방향 에지 감지기”가 되었을까. Hubel과 Wiesel의 후속 모델은, 단순 세포 하나가 그보다 한 단계 앞 단계(LGN)의 여러 점-반응 세포들의 출력을 일렬로 모은 결과라고 설명했다. 점이 일렬로 모이면 선이 된다. 합성곱이 입력의 작은 영역에서 곱셈-덧셈으로 패턴을 검출하는 것과 거의 같은 직관이다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 05</span><span>단순 세포 vs 복잡 세포 — 같은 자극, 다른 반응</span></div>
+        <div id="hubel"></div>
+      </div>
+      <p class="widget-cap">스크린 위 에지의 방향(각도)과 위치를 슬라이더로 옮겨 보라. 단순 세포(파랑)는 자기가 좋아하는 방향(수직)일 때만, 그리고 정확히 자기 자리에 있을 때만 강하게 반응한다. 복잡 세포(주홍)는 같은 방향이라면 위치가 조금 바뀌어도 계속 강하게 반응한다. 이것이 “등가에서 불변으로”의 생물학적 원형이다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>2. 네오코그니트론 (Fukushima, 1980)</h2>
+
+      <p>Hubel과 Wiesel의 발견이 “인공 신경망”으로 옮겨진 첫 번째 시도가 1980년 일본 NHK 방송기술연구소의 후쿠시마 쿠니히코(福島 邦彦)가 제안한 <strong>네오코그니트론(Neocognitron)</strong>이다. 후쿠시마는 단순 세포에 대응하는 <span class="t-structure">S-cell 층</span>과 복잡 세포에 대응하는 <span class="t-style">C-cell 층</span>을 번갈아 쌓는 구조를 제안했다.</p>
+
+      <ul>
+        <li><strong>S-cell 층</strong>: 작은 입력 영역에서 특정 패턴(예: 특정 방향의 에지)에 반응. 합성곱과 같다.</li>
+        <li><strong>C-cell 층</strong>: S-cell 출력을 작은 영역에서 요약. 풀링과 같다.</li>
+      </ul>
+
+      <p>네오코그니트론은 손글씨 인식 같은 단순한 과업에서 작동하는 것이 시연됐지만, 당시에는 두 가지 결정적 한계가 있었다. 첫째, 가중치를 자동으로 학습하는 효과적인 방법(역전파)이 아직 정착하지 않았다. 둘째, 계산 자원이 절대적으로 부족했다. 그래서 네오코그니트론은 “이론적으로 옳지만 실용적으로는 일렀던 모델”로 남았다.</p>
+
+      <h2>3. LeNet (LeCun, 1989–1998)</h2>
+
+      <p>네오코그니트론의 아이디어가 “학습 가능한 합성곱 신경망”으로 완성된 것은 1989년 AT&amp;T 벨연구소의 Yann LeCun이 제안한 <strong>LeNet</strong> 시리즈를 통해서다. LeCun은 두 가지 결정적 변화를 가져왔다.</p>
+
+      <ul>
+        <li><strong>역전파로 합성곱 가중치 학습</strong>: 네오코그니트론은 가중치를 수동 또는 비지도 방식으로 정했지만, LeCun은 오류 신호를 합성곱 층까지 역전파해 모든 가중치를 데이터로 학습시켰다.</li>
+        <li><strong>전체를 미분 가능한 한 모델로 통합</strong>: 합성곱, 풀링, 완전연결을 모두 미분 가능한 연산으로 묶어, 표준적인 경사하강으로 끝부터 끝까지 학습되게 했다.</li>
+      </ul>
+
+      <p>1998년 발표된 LeNet-5는 합성곱 2개 + 풀링 2개 + 완전연결 3개의 8층 구조로, 손글씨 우편번호를 자동으로 읽는 시스템에 실제로 배치되어 미국 우편국에서 상업적으로 운용됐다. 이는 <strong>딥러닝이 실험실에서 산업으로 처음 넘어간 사건</strong> 중 하나로 기록된다.</p>
+
+      <div class="analogy">
+        Hubel-Wiesel을 <b>“시각 피질의 청사진”</b>이라고 하면, 네오코그니트론은 그 청사진을 <b>“종이로 접은 모형”</b>이었고, LeNet은 그 모형을 <b>“실제로 작동하는 기계”</b>로 만든 결과다. 30년에 걸친 이 흐름이 2012년 AlexNet에서 폭발적으로 꽃피게 되는데, 이는 sub-chapter 07에서 다룬다.
+      </div>
+
+      <h2>왜 신경과학적 기원이 중요한가</h2>
+
+      <p>이 역사가 시험에 직접 출제될 가능성은 낮지만, 9장 전체의 관점을 잡는 데는 결정적이다. CNN은 “수학자가 가장 일반적인 함수 근사기를 설계하다가 우연히 잘 작동한” 모델이 아니다. CNN은 <strong>생물학적 시각 시스템이 5억 년에 걸쳐 진화시킨 설계 원리를 인공으로 옮긴 모델</strong>이다. 그래서 자연 이미지(생물의 눈이 진화에 적응해 본 데이터)에 잘 맞는다. 같은 이유로, 자연 이미지의 통계와 동떨어진 데이터(표 형식, 그래프)에는 잘 맞지 않을 수 있다.</p>
+
+      <p>이 관점이 9장의 “CNN은 매우 강한 사전을 건 모델”이라는 문장과 직결된다. 그 사전은 추상적인 가정이 아니라, 진화가 시각 시스템에 새겨 놓은 구체적인 통계다. 가까운 픽셀끼리 의미가 모이고, 같은 패턴은 시야 어디에 있든 같은 의미라는 두 가지. CNN은 이 통계를 알고리즘의 구조로 옮겼다.</p>
+
+      <p>다음 sub-chapter는 합성곱이 만들어 내는 출력의 크기를 수식으로 정확히 계산하는 법을 다룬다. 스트라이드와 패딩이 출력 크기에 어떤 영향을 주는지, 직접 슬라이더로 만져 보면서 그 공식이 “외울 필요 없이 그림에서 자연스럽게 나온다”는 점을 확인한다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    { no: '01', t: '왜 완전연결은 안 되는가' },
+    { no: '02', t: '합성곱의 정의' },
+    { no: '03', t: 'CNN의 3대 핵심 속성' },
+    { no: '04', t: '풀링 — 평행이동 불변성' },
+    { no: '05', t: '신경과학적 기원' },
+    { no: '06', t: '출력 크기, 스트라이드, 패딩' },
+    { no: '07', t: '대표 아키텍처 계보' },
+    { no: '08', t: '시험 대비' },
+  ];
+  function buildNav(cur) {
+    const tb = document.querySelector('.topbar');
+    if (tb) tb.innerHTML =
+      '<a class="home" href="index.html">← Chapter 09 / 합성곱 신경망</a>' +
+      '<span class="ch-mini">SUB ' + cur + ' / 08</span>';
+    const ol = document.querySelector('.ch-nav ol');
+    if (ol) ol.innerHTML = SUBS.map(c =>
+      '<li><a href="' + c.no + '.html"' + (c.no === cur ? ' class="current"' : '') + '>' + c.t + '</a></li>').join('');
+    const foot = document.querySelector('.ch-foot');
+    if (foot) {
+      const i = SUBS.findIndex(c => c.no === cur);
+      const prev = i > 0 ? SUBS[i - 1] : { no: '', t: '표지로', _href: 'index.html' };
+      const next = i < SUBS.length - 1 ? SUBS[i + 1] : { no: '', t: '표지로', _href: 'index.html' };
+      const hp = prev._href || (prev.no + '.html');
+      const hn = next._href || (next.no + '.html');
+      foot.innerHTML =
+        '<a href="' + hp + '"><div class="dir">← 이전</div><div class="ti">' + prev.t + '</div></a>' +
+        '<a href="' + hn + '" class="next"><div class="dir">다음 →</div><div class="ti">' + next.t + '</div></a>';
+    }
+  }
+  function initScroll() {
+    const bar = document.querySelector('.scroll-progress');
+    if (!bar) return;
+    const on = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    document.addEventListener('scroll', on, { passive: true }); on();
+  }
+
+  // ─── 위젯 05: Hubel-Wiesel 단순/복잡 세포 ─────────────────────
+  function hubelWidget(host) {
+    const css = getComputedStyle(document.documentElement);
+    const COL = {
+      structure: css.getPropertyValue('--structure').trim() || '#2D5B7A',
+      style: css.getPropertyValue('--style').trim() || '#C0492E',
+      ink: css.getPropertyValue('--ink-soft').trim() || '#5A5247',
+      faint: css.getPropertyValue('--ink-faint').trim() || '#8E8576',
+    };
+    let angle = 90;  // 0..180 (90 = 수직)
+    let posX = 0;    // -1..1 (스크린 가로 위치)
+
+    host.innerHTML =
+      '<div style="padding:1.4rem 1rem 1.2rem;background:#fff;">' +
+      '<div id="hubelBoard"></div>' +
+      '<div style="margin-top:1.2rem;padding-top:1rem;border-top:1px solid var(--line-soft);">' +
+      '  <div style="display:flex;align-items:center;gap:.8rem;font-family:var(--mono);font-size:.74rem;margin-bottom:.5rem;">' +
+      '    <span style="color:' + COL.ink + ';flex-shrink:0;width:90px;">에지 방향 (°)</span>' +
+      '    <input type="range" id="hubAngle" min="0" max="180" value="90" style="flex:1;">' +
+      '    <span id="angleLabel" style="color:' + COL.style + ';font-weight:600;flex-shrink:0;width:55px;text-align:right;">90°</span>' +
+      '  </div>' +
+      '  <div style="display:flex;align-items:center;gap:.8rem;font-family:var(--mono);font-size:.74rem;">' +
+      '    <span style="color:' + COL.ink + ';flex-shrink:0;width:90px;">에지 위치 (x)</span>' +
+      '    <input type="range" id="hubPos" min="-100" max="100" value="0" style="flex:1;">' +
+      '    <span id="posLabel" style="color:' + COL.style + ';font-weight:600;flex-shrink:0;width:55px;text-align:right;">0.0</span>' +
+      '  </div>' +
+      '</div>' +
+      '</div>';
+
+    function render() {
+      // 단순 세포: 좋아하는 방향 = 90도(수직), 좋아하는 위치 = 0 → 가우스 반응
+      const simpleResp = Math.exp(-Math.pow((angle - 90) / 18, 2)) * Math.exp(-Math.pow(posX / 0.18, 2));
+      // 복잡 세포: 좋아하는 방향 = 90도, 위치는 [-0.45, 0.45] 범위면 모두 강하게
+      const complexResp = Math.exp(-Math.pow((angle - 90) / 22, 2)) * (Math.abs(posX) < 0.45 ? 1 : Math.exp(-Math.pow((Math.abs(posX) - 0.45) / 0.2, 2)));
+
+      // SVG 스크린
+      const W = 240, H = 160, cx = W/2, cy = H/2;
+      const rad = (angle - 90) * Math.PI / 180;
+      const px = cx + posX * 90;
+      const lineLen = 50;
+      const dx = Math.cos(rad - Math.PI/2) * lineLen;
+      const dy = Math.sin(rad - Math.PI/2) * lineLen;
+      const screen =
+        '<svg width="' + W + '" height="' + H + '" style="background:#1a1714;border:1px solid var(--line);border-radius:6px;">' +
+        '<line x1="' + (px - dx) + '" y1="' + (cy - dy) + '" x2="' + (px + dx) + '" y2="' + (cy + dy) + '" stroke="#fff" stroke-width="4" stroke-linecap="round"/>' +
+        '<text x="6" y="14" font-family="monospace" font-size="9" fill="#8E8576">고양이 스크린</text>' +
+        '</svg>';
+
+      // 두 세포의 반응 막대
+      function bar(resp, label, color) {
+        const h = 80;
+        const fill = Math.max(2, resp * h);
+        return '<div style="text-align:center;">' +
+          '<div style="font-family:var(--mono);font-size:.7rem;color:' + COL.ink + ';margin-bottom:.4rem;">' + label + '</div>' +
+          '<div style="display:flex;flex-direction:column-reverse;align-items:center;height:' + h + 'px;width:50px;background:rgba(0,0,0,.04);border-radius:4px;">' +
+          '<div style="width:80%;background:' + color + ';height:' + fill + 'px;transition:.2s var(--ease);border-radius:3px 3px 0 0;"></div>' +
+          '</div>' +
+          '<div style="font-family:var(--mono);font-size:.74rem;color:' + color + ';margin-top:.3rem;font-weight:600;">' + Math.round(resp * 100) + '%</div>' +
+          '</div>';
+      }
+
+      host.querySelector('#hubelBoard').innerHTML =
+        '<div style="display:flex;flex-wrap:wrap;gap:1.4rem;justify-content:center;align-items:center;">' +
+        screen +
+        '<div style="display:flex;gap:1.4rem;align-items:flex-end;">' +
+        bar(simpleResp, '단순 세포', COL.structure) +
+        bar(complexResp, '복잡 세포', COL.style) +
+        '</div>' +
+        '</div>' +
+        '<div style="font-family:var(--mono);font-size:.7rem;color:' + COL.faint + ';text-align:center;margin-top:.6rem;line-height:1.5;">' +
+        '단순 세포: <b style="color:' + COL.structure + ';">수직 + 정확한 자리</b>에서만 반응<br>' +
+        '복잡 세포: <b style="color:' + COL.style + ';">수직 방향이면 위치 흔들려도</b> 반응' +
+        '</div>';
+      host.querySelector('#angleLabel').textContent = angle + '°';
+      host.querySelector('#posLabel').textContent = (posX).toFixed(2);
+    }
+    document.getElementById('hubAngle').addEventListener('input', (e) => { angle = +e.target.value; render(); });
+    document.getElementById('hubPos').addEventListener('input', (e) => { posX = +e.target.value / 100; render(); });
+    render();
+  }
+
+  window.addEventListener('load', () => {
+    buildNav('05'); initScroll();
+    const h = document.getElementById('hubel');
+    if (h) hubelWidget(h);
+  });
+</script>
+</body>
+</html>

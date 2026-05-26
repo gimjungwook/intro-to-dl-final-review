@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>01 · 일반화 격차 — 정칙화가 푸는 진짜 문제</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .topbar { position: sticky; top: 0; z-index: 40; display: flex; align-items: center; justify-content: space-between; padding: .8rem 1.4rem; background: rgba(250,247,240,.82); backdrop-filter: blur(12px) saturate(1.3); border-bottom: 1px solid var(--line-soft); }
+  .topbar .home { font-family: var(--mono); font-size: .76rem; letter-spacing: .1em; color: var(--ink-soft); text-decoration: none; }
+  .topbar .home:hover { color: var(--ink); }
+  .topbar .ch-mini { font-family: var(--mono); font-size: .72rem; letter-spacing: .14em; color: var(--ink-faint); }
+
+  .ch-layout { display: grid; grid-template-columns: 15rem 1fr; gap: 0; max-width: 68rem; margin-inline: auto; }
+  .ch-nav { position: sticky; top: 3.4rem; align-self: start; height: calc(100vh - 3.4rem); overflow-y: auto; padding: 2rem 1.2rem; border-right: 1px solid var(--line-soft); }
+  .ch-nav ol { list-style: none; margin: 0; padding: 0; counter-reset: ch; }
+  .ch-nav li { counter-increment: ch; margin: 0; }
+  .ch-nav a { display: grid; grid-template-columns: 1.7rem 1fr; gap: .5rem; align-items: baseline; padding: .5rem .5rem; border-radius: 7px; text-decoration: none; color: var(--ink-soft); font-size: .88rem; line-height: 1.35; transition: background .15s; }
+  .ch-nav a::before { content: counter(ch, decimal-leading-zero); font-family: var(--mono); font-size: .72rem; color: var(--ink-faint); }
+  .ch-nav a:hover { background: var(--paper-2); color: var(--ink); }
+  .ch-nav a.current { background: var(--ink); color: var(--paper); }
+  .ch-nav a.current::before { color: var(--style-lo); }
+  .ch-main { min-width: 0; padding: 3rem 0 6rem; }
+  .ch-head { max-width: var(--measure); margin: 0 auto 2.4rem; padding-inline: 1.4rem; }
+  .ch-head .kicker { margin-bottom: 1rem; display: block; }
+  .ch-head h1 { font-size: clamp(2rem, 5vw, 3.3rem); margin: 0 0 .8rem; }
+  .ch-head .lede { font-family: var(--serif); font-size: 1.22rem; font-style: italic; color: var(--ink-soft); line-height: 1.5; }
+  .ch-foot { display: flex; justify-content: space-between; gap: 1rem; max-width: var(--measure); margin: 4rem auto 0; padding-inline: 1.4rem; }
+  .ch-foot a { display: block; text-decoration: none; flex: 1; padding: 1rem 1.2rem; border: 1px solid var(--line); border-radius: 10px; transition: border-color .15s, transform .15s; }
+  .ch-foot a:hover { border-color: var(--style); transform: translateY(-2px); }
+  .ch-foot .dir { font-family: var(--mono); font-size: .7rem; letter-spacing: .14em; color: var(--ink-faint); text-transform: uppercase; }
+  .ch-foot .ti { font-family: var(--serif); font-size: 1.05rem; color: var(--ink); margin-top: .2rem; }
+  .ch-foot .next { text-align: right; }
+  @media (max-width: 760px) { .ch-layout { grid-template-columns: 1fr; } .ch-nav { display: none; } }
+
+  /* CH7-01 위젯: 용량 슬라이더로 train/test 곡선과 데이터 적합 화면 동시 변화 */
+  .cap-stage { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1.4rem 1.1rem 0.8rem; }
+  @media (max-width: 680px) { .cap-stage { grid-template-columns: 1fr; } }
+  .cap-cell { background: var(--paper); border: 1px solid var(--line); border-radius: 9px; padding: .7rem; }
+  .cap-cell h5 { margin: 0 0 .5rem; font-family: var(--mono); font-size: .7rem; letter-spacing: .12em; color: var(--ink-faint); text-transform: uppercase; }
+  .cap-cell canvas { width: 100%; height: 200px; display: block; border-radius: 6px; background: #fff; }
+  .cap-readout { display: flex; gap: 1.2rem; padding: 0.4rem 1.1rem 1rem; font-family: var(--mono); font-size: .78rem; color: var(--ink-soft); }
+  .cap-readout span b { color: var(--ink); font-weight: 600; }
+  .cap-readout .lab.train { color: var(--structure); }
+  .cap-readout .lab.test { color: var(--style); }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a class="home" href="index.html">← Ch.07 정칙화</a>
+  <span class="ch-mini">SUB 01 / 07</span>
+</div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol id="navlist"></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 01 · 진짜 문제는 일반화 격차다</span>
+      <h1>큰 모델은 외운다,<br><span class="t-style">정칙화</span>는 그걸 막는다</h1>
+      <p class="lede">정칙화의 모든 기법은 같은 문제를 푼다. 훈련 데이터의 우연한 흔들림까지 따라가 버려서, 처음 보는 데이터에서 무너지는 현상.</p>
+    </header>
+
+    <div class="prose">
+      <p>처음 정칙화(regularization)를 만나면, 보통 "L2 패널티 항을 더한다" 같은 수식부터 본다. 하지만 그 식이 왜 거기 있는지를 알지 못하면, 7장의 모든 기법이 서로 무관한 트릭의 나열처럼 보인다. 그래서 이 장은 수식보다 먼저 <strong>문제 정의</strong>로 시작한다.</p>
+      <p>딥러닝 모델은 본질적으로 강력하다. 층을 깊이 쌓고 파라미터를 충분히 늘리면, 거의 임의의 함수를 근사할 수 있다 — 이것이 [[Deep-Learning-Book-06-Deep-Feedforward-Networks-상세해설|6장의 보편 근사 정리]]가 보장하는 것이다. 그런데 이 능력은 양날의 검이다.</p>
+      <p>모델이 너무 자유로워지면, 훈련 데이터에 우연히 들어 있는 패턴 — 측정 잡음, 라벨 오류, 표본 편향 — 까지 진짜 규칙으로 받아들인다. 비유하면 시험공부에서 핵심 개념이 아니라 예상문제집의 오타까지 외워 버린 학생과 같다. 예상문제집은 만점이지만, 새 문제 앞에서는 무너진다.</p>
+
+      <h2>훈련 오차와 일반화 오차의 갈라짐</h2>
+
+      <p>이 현상을 정확히 짚는 두 개의 양이 있다.</p>
+
+      <div class="math-block">$$ E_{\text{train}}(f) = \frac{1}{N} \sum_{i=1}^{N} \ell\big(f(x_i), y_i\big) $$</div>
+      <p class="math-note">훈련 오차. 모델 f가 본 N개의 데이터에서의 평균 손실.</p>
+
+      <div class="math-block">$$ E_{\text{gen}}(f) = \mathbb{E}_{(x,y) \sim p_{\text{data}}}\big[\ell(f(x), y)\big] $$</div>
+      <p class="math-note">일반화 오차. 데이터를 생성하는 진짜 분포에서 뽑은 무한히 많은 점에서의 기대 손실.</p>
+
+      <p>왜 이 두 식이 이렇게 다른 형태인가? 훈련 오차는 우리가 가진 N개의 표본에 대한 평균이고, 일반화 오차는 그 표본을 뽑아낸 모집단 전체에 대한 기대값이다. 우리는 모집단 전체를 결코 볼 수 없으므로, 일반화 오차는 직접 계산할 수 없고 시험셋(test set)을 통해 간접적으로 추정한다.</p>
+
+      <p>두 식 사이의 차이를 <strong>일반화 격차(generalization gap)</strong>라 부른다.</p>
+
+      <div class="math-block">$$ \text{Gap}(f) = E_{\text{gen}}(f) - E_{\text{train}}(f) $$</div>
+      <p class="math-note">모델이 본 데이터와 못 본 데이터에서 얼마나 다르게 행동하는가.</p>
+
+      <p>정칙화의 본질은 이 격차를 줄이는 것이다. 훈련 오차를 더 낮추는 것이 아니라 — 오히려 그것은 약간 희생되기도 한다 — <em>훈련 오차와 일반화 오차의 차이</em>를 줄이는 것. 이 한 줄을 머릿속에 박아 두면, 7장의 모든 기법(L1, L2, 드롭아웃, 조기 종료, 데이터 증강, 적대적 훈련)이 같은 목적의 변주처럼 보인다.</p>
+
+      <div class="analogy">
+        시험공부 중인 학생을 상상하자. 한 학생은 예상문제 1,000개를 통째로 외운다(고용량 모델). 다른 학생은 핵심 개념 50개만 깊이 이해한다(저용량 모델). 첫 번째 학생은 예상문제는 만점이지만 새 문제는 무너진다(일반화 격차 큼). 두 번째 학생은 예상문제도 80점, 새 문제도 80점(격차 작음). <b>정칙화는 첫 번째 학생에게 "오답에 부담을 주는 채점 방식"을 적용해서, 1,000개를 외우면서도 핵심 개념까지 같이 잡도록 압박하는 것이다.</b>
+      </div>
+
+      <h2>위젯 — 용량을 늘리면 두 곡선이 어떻게 갈라지는가</h2>
+
+      <p>아래 위젯에서 <strong>모델 용량(capacity)</strong>을 슬라이더로 움직여 보자. 다항식 차수가 곧 용량의 대리 지표다. 왼쪽은 데이터에 다항식이 어떻게 적합하는지, 오른쪽은 훈련 오차(파랑)와 시험 오차(주홍)가 용량에 따라 어떻게 갈라지는지를 보여 준다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 01</span><span>용량 → 일반화 격차</span></div>
+        <div class="cap-stage">
+          <div class="cap-cell">
+            <h5>데이터 + 적합 곡선</h5>
+            <canvas id="fitCanvas" width="600" height="400"></canvas>
+          </div>
+          <div class="cap-cell">
+            <h5>용량 vs 오차</h5>
+            <canvas id="curveCanvas" width="600" height="400"></canvas>
+          </div>
+        </div>
+        <div class="cap-readout">
+          <span class="lab train">훈련 오차 = <b id="readTrain">0.00</b></span>
+          <span class="lab test">시험 오차 = <b id="readTest">0.00</b></span>
+          <span>격차 = <b id="readGap">0.00</b></span>
+        </div>
+        <div class="widget-controls">
+          <div class="slider">
+            <label>모델 용량 (다항식 차수) <b id="capVal">3</b></label>
+            <input id="capSlide" type="range" min="1" max="20" value="3" step="1">
+          </div>
+          <div class="slider">
+            <label>훈련 표본 수 <b id="nVal">15</b></label>
+            <input id="nSlide" type="range" min="6" max="60" value="15" step="1">
+          </div>
+          <button class="btn ghost" id="resampleBtn">새 표본 뽑기</button>
+        </div>
+      </div>
+      <p class="widget-cap">차수 1-2: 직선이 곡선을 못 따라가 두 오차 모두 큼(과소적합). 차수 3-5: 두 오차 모두 작고 격차도 작음(스위트 스폿). 차수 12-20: 훈련 오차는 0에 가까운데 시험 오차가 폭발(과적합). 7장 정칙화는 이 우측 영역의 큰 모델을 그대로 두면서, 시험 오차만 끌어내리는 것이 목표다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>편향-분산 교환 — 정칙화가 작동하는 수학적 이유</h2>
+
+      <p>왜 큰 모델일수록 일반화 격차가 벌어지는가? 그 답은 [[Deep-Learning-Book-05-Machine-Learning-Basics-상세해설|5장의 편향-분산 분해]]에 있다. 임의의 데이터 점에서의 기대 제곱 오차는 다음처럼 분해된다.</p>
+
+      <div class="math-block">$$ \mathbb{E}\big[(y - \hat{f}(x))^2\big] = \underbrace{(y - \mathbb{E}[\hat{f}(x)])^2}_{\text{편향}^2} + \underbrace{\mathbb{V}[\hat{f}(x)]}_{\text{분산}} + \underbrace{\sigma^2}_{\text{잡음}} $$</div>
+      <p class="math-note">기대값과 분산은 훈련셋을 여러 번 뽑았을 때의 평균과 흔들림이다. σ²는 줄일 수 없는 잡음.</p>
+
+      <p>왜 이런 형태인가? 핵심은 우리가 갖는 모델 $\hat{f}$는 단 한 번 뽑힌 훈련셋에 의존하는 <em>확률 변수</em>라는 점이다. 다른 훈련셋을 뽑으면 모델도 달라진다. 그래서 "어떤 점 x에서의 예측"은 모델의 평균(편향)과 모델 간 분산(variance)으로 분해된다.</p>
+
+      <p>모델 용량이 커질수록 편향은 줄고 분산은 늘어난다. 작은 모델은 어떤 훈련셋을 줘도 비슷한 단순한 함수를 뱉지만(낮은 분산, 높은 편향), 큰 모델은 훈련셋이 조금만 바뀌어도 전혀 다른 함수를 만든다(낮은 편향, 높은 분산).</p>
+
+      <p>정칙화는 이 교환의 손잡이를 인위적으로 조정한다. 편향을 약간 늘리고 분산을 크게 줄여서 전체 기대 오차를 낮춘다. L2 가중치 감쇠가 가장 대표적인 예다 — 가중치를 0 쪽으로 조금 끌어당겨, 큰 모델이 훈련셋의 우연한 변동에 덜 흔들리게 만든다.</p>
+
+      <h2>왜 "큰 모델 + 정칙화"가 "작은 모델"보다 자주 더 좋은가</h2>
+
+      <p>여기서 초보자가 자주 빠지는 함정이 있다. "일반화 격차가 크다면 모델을 작게 만들면 되는 것 아닌가?"</p>
+
+      <p>그 답은 부분적으로만 맞다. 작은 모델은 분산은 낮아지지만 편향이 너무 커서, 결국 시험 오차의 절대 수준은 큰 모델 + 정칙화 조합보다 못한 경우가 많다. 비유하면 글자 크기를 키워서 글을 못 보는 노안을 해결하는 대신, 차라리 더 좋은 안경을 쓰는 쪽이 전체적으로 낫다는 것과 같다. 모델을 작게 만드는 것은 표현력 자체를 포기하는 것이고, 정칙화는 표현력은 유지하면서 자유도만 통제하는 것이다.</p>
+
+      <p>이 관점에서 7장의 모든 기법을 다시 보면, 모두 <em>"큰 모델의 자유도를 다른 방식으로 통제하는 시도"</em>로 통일된다.</p>
+
+      <ul>
+        <li><strong>L2 가중치 감쇠</strong> — 가중치 공간에서 0 쪽으로 끌어당겨 자유도 통제 (<a href="02.html">2장</a>)</li>
+        <li><strong>L1 가중치 감쇠</strong> — 일부 가중치를 정확히 0으로 보내 자유도 통제 (<a href="02.html">2장</a>)</li>
+        <li><strong>드롭아웃</strong> — 무작위로 뉴런을 꺼서 네트워크 구조 자유도 통제 (<a href="03.html">3장</a>)</li>
+        <li><strong>조기 종료</strong> — 시간 축에서 학습 반복을 제한해 자유도 통제 (<a href="04.html">4장</a>)</li>
+        <li><strong>데이터 증강·노이즈</strong> — 입력 공간을 늘려 자유도를 상대적으로 줄임 (<a href="05.html">5장</a>)</li>
+        <li><strong>적대적 훈련</strong> — 입력의 작은 근방에서 자유도 통제 (<a href="06.html">6장</a>)</li>
+      </ul>
+
+      <p>다음 장에서는 가장 고전적이고 기하학적으로 가장 선명한 기법, L1과 L2 가중치 감쇠를 다이아몬드와 원의 그림으로 직접 만져 본다.</p>
+    </div>
+
+    <nav class="ch-foot" id="chFoot"></nav>
+  </main>
+</div>
+
+<script>
+  // 챕터 nav
+  const SUBS = [
+    { no:'01', t:'일반화 격차' },
+    { no:'02', t:'L1·L2 기하학' },
+    { no:'03', t:'드롭아웃 앙상블' },
+    { no:'04', t:'조기 종료 ~ L2' },
+    { no:'05', t:'데이터 증강·노이즈' },
+    { no:'06', t:'적대적 훈련' },
+    { no:'07', t:'시험 대비' },
+  ];
+  const CUR = '01';
+  const navlist = document.getElementById('navlist');
+  SUBS.forEach(s => {
+    const li = document.createElement('li');
+    li.innerHTML = `<a href="${s.no}.html"${s.no===CUR?' class="current"':''}>${s.t}</a>`;
+    navlist.appendChild(li);
+  });
+  const chFoot = document.getElementById('chFoot');
+  const idx = SUBS.findIndex(s => s.no === CUR);
+  const prev = idx > 0 ? SUBS[idx-1] : { no:'index', t:'표지로' };
+  const next = idx < SUBS.length-1 ? SUBS[idx+1] : { no:'index', t:'표지로' };
+  chFoot.innerHTML =
+    `<a href="${prev.no}.html"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+    `<a href="${next.no}.html" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+
+  // KaTeX
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
+        throwOnError: false,
+      });
+    }
+  });
+
+  // ----- 위젯: 다항식 적합 + 용량 vs 오차 곡선 -----
+  (function () {
+    const css = getComputedStyle(document.documentElement);
+    const C = {
+      structure: css.getPropertyValue('--structure').trim() || '#2D5B7A',
+      style: css.getPropertyValue('--style').trim() || '#C0492E',
+      ink: css.getPropertyValue('--ink').trim() || '#26221C',
+      faint: css.getPropertyValue('--ink-faint').trim() || '#8E8576',
+      line: '#d8d2c4',
+      paper2: css.getPropertyValue('--paper-2').trim() || '#F3EEE3',
+    };
+    const fitC = document.getElementById('fitCanvas');
+    const curC = document.getElementById('curveCanvas');
+    const capSlide = document.getElementById('capSlide');
+    const nSlide = document.getElementById('nSlide');
+    const capVal = document.getElementById('capVal');
+    const nVal = document.getElementById('nVal');
+    const resampleBtn = document.getElementById('resampleBtn');
+    const readTrain = document.getElementById('readTrain');
+    const readTest = document.getElementById('readTest');
+    const readGap = document.getElementById('readGap');
+
+    let seed = 42;
+    function rng() { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; }
+    function randn() { let s=0; for (let i=0;i<6;i++) s+=rng(); return (s-3)/1.225; }
+
+    // 진짜 함수: f*(x) = sin(2πx) * 0.5
+    function fStar(x) { return Math.sin(Math.PI * 2 * x) * 0.5; }
+
+    function genData(n, noiseStd = 0.12) {
+      const xs = [], ys = [];
+      for (let i = 0; i < n; i++) {
+        const x = rng();
+        xs.push(x);
+        ys.push(fStar(x) + randn() * noiseStd);
+      }
+      return { xs, ys };
+    }
+    let train = null, test = null;
+    function regenerate() {
+      const n = +nSlide.value;
+      train = genData(n, 0.13);
+      test = genData(300, 0.13);
+    }
+    regenerate();
+
+    // 다항 회귀: normal equation으로 (X^T X)^{-1} X^T y
+    function polyFit(xs, ys, deg) {
+      const N = xs.length, D = deg + 1;
+      // X (N x D)
+      const X = [];
+      for (let i = 0; i < N; i++) {
+        const row = new Array(D);
+        let p = 1;
+        for (let j = 0; j < D; j++) { row[j] = p; p *= xs[i]; }
+        X.push(row);
+      }
+      // A = X^T X (D x D)
+      const A = Array.from({length:D}, () => new Array(D).fill(0));
+      const b = new Array(D).fill(0);
+      for (let i = 0; i < N; i++) for (let j = 0; j < D; j++) for (let k = 0; k < D; k++) A[j][k] += X[i][j] * X[i][k];
+      for (let i = 0; i < N; i++) for (let j = 0; j < D; j++) b[j] += X[i][j] * ys[i];
+      // 작은 ridge로 수치 안정성만 확보 (실험 위젯에서 정칙화 효과로 오해되지 않을 만큼 작게)
+      for (let j = 0; j < D; j++) A[j][j] += 1e-8;
+      // Gauss-Jordan
+      const aug = A.map((row, i) => [...row, b[i]]);
+      for (let i = 0; i < D; i++) {
+        // pivot
+        let piv = i;
+        for (let k = i+1; k < D; k++) if (Math.abs(aug[k][i]) > Math.abs(aug[piv][i])) piv = k;
+        [aug[i], aug[piv]] = [aug[piv], aug[i]];
+        const d = aug[i][i] || 1e-12;
+        for (let k = 0; k <= D; k++) aug[i][k] /= d;
+        for (let r = 0; r < D; r++) if (r !== i) {
+          const f = aug[r][i];
+          for (let k = 0; k <= D; k++) aug[r][k] -= f * aug[i][k];
+        }
+      }
+      const w = new Array(D);
+      for (let i = 0; i < D; i++) w[i] = aug[i][D];
+      return w;
+    }
+    function polyEval(w, x) {
+      let s = 0, p = 1;
+      for (let j = 0; j < w.length; j++) { s += w[j] * p; p *= x; }
+      return s;
+    }
+    function mse(w, xs, ys) {
+      let s = 0;
+      for (let i = 0; i < xs.length; i++) { const d = polyEval(w, xs[i]) - ys[i]; s += d*d; }
+      return s / xs.length;
+    }
+
+    function drawFit(deg) {
+      const ctx = fitC.getContext('2d');
+      const W = fitC.width, H = fitC.height;
+      ctx.clearRect(0, 0, W, H);
+      // 축
+      ctx.strokeStyle = C.line; ctx.lineWidth = 1;
+      ctx.strokeRect(0.5, 0.5, W-1, H-1);
+      // 좌표 변환: x in [0,1] -> [40, W-20], y in [-1,1] -> [H-30, 30]
+      const X = x => 40 + x * (W - 60);
+      const Y = y => 30 + (1 - (y + 1) / 2) * (H - 60);
+      // 진짜 함수
+      ctx.strokeStyle = C.faint; ctx.setLineDash([4, 4]); ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      for (let i = 0; i <= 100; i++) {
+        const x = i / 100, y = fStar(x);
+        if (i === 0) ctx.moveTo(X(x), Y(y)); else ctx.lineTo(X(x), Y(y));
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // 적합 곡선
+      const w = polyFit(train.xs, train.ys, deg);
+      ctx.strokeStyle = C.structure; ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      for (let i = 0; i <= 200; i++) {
+        const x = i / 200, y = Math.max(-1.5, Math.min(1.5, polyEval(w, x)));
+        if (i === 0) ctx.moveTo(X(x), Y(y)); else ctx.lineTo(X(x), Y(y));
+      }
+      ctx.stroke();
+      // 훈련점
+      ctx.fillStyle = C.style;
+      for (let i = 0; i < train.xs.length; i++) {
+        ctx.beginPath();
+        ctx.arc(X(train.xs[i]), Y(train.ys[i]), 3.5, 0, Math.PI*2);
+        ctx.fill();
+      }
+      // 라벨
+      ctx.fillStyle = C.faint; ctx.font = '11px monospace';
+      ctx.fillText('실선 = 적합 다항식', 8, 16);
+      ctx.fillText('점선 = 진짜 함수', 8, 30);
+      ctx.fillText('점 = 훈련 데이터', 8, 44);
+
+      // 오차 계산
+      const eTr = mse(w, train.xs, train.ys);
+      const eTe = mse(w, test.xs, test.ys);
+      readTrain.textContent = eTr.toFixed(3);
+      readTest.textContent = eTe.toFixed(3);
+      readGap.textContent = Math.max(0, eTe - eTr).toFixed(3);
+      return { eTr, eTe };
+    }
+
+    function drawCurve(currentDeg) {
+      const ctx = curC.getContext('2d');
+      const W = curC.width, H = curC.height;
+      ctx.clearRect(0, 0, W, H);
+      ctx.strokeStyle = C.line; ctx.lineWidth = 1;
+      ctx.strokeRect(0.5, 0.5, W-1, H-1);
+      // 차수 1-20에서 train/test 오차
+      const X = d => 50 + (d - 1) * (W - 80) / 19;
+      // 로그 스케일: y=0-2를 [H-30, 30]에 맵
+      const maxY = 1.0;
+      const Y = e => 30 + (1 - Math.min(1, e / maxY)) * (H - 60);
+      const trCurve = [], teCurve = [];
+      for (let d = 1; d <= 20; d++) {
+        const w = polyFit(train.xs, train.ys, d);
+        trCurve.push(mse(w, train.xs, train.ys));
+        teCurve.push(mse(w, test.xs, test.ys));
+      }
+      // 격자
+      ctx.strokeStyle = '#eee'; ctx.lineWidth = 1;
+      for (let i = 0; i <= 4; i++) {
+        const yy = 30 + i * (H - 60) / 4;
+        ctx.beginPath(); ctx.moveTo(50, yy); ctx.lineTo(W - 20, yy); ctx.stroke();
+      }
+      // train
+      ctx.strokeStyle = C.structure; ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 0; i < trCurve.length; i++) {
+        const x = X(i + 1), y = Y(trCurve[i]);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      // test
+      ctx.strokeStyle = C.style; ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 0; i < teCurve.length; i++) {
+        const x = X(i + 1), y = Y(teCurve[i]);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      // 현재 차수 표시 (수직선)
+      ctx.strokeStyle = C.ink; ctx.lineWidth = 1.5; ctx.setLineDash([3, 4]);
+      ctx.beginPath();
+      ctx.moveTo(X(currentDeg), 30); ctx.lineTo(X(currentDeg), H - 30); ctx.stroke();
+      ctx.setLineDash([]);
+      // 라벨
+      ctx.fillStyle = C.faint; ctx.font = '11px monospace';
+      ctx.fillText('차수 1', 50, H - 10);
+      ctx.fillText('20', W - 30, H - 10);
+      ctx.fillStyle = C.structure; ctx.fillText('훈련 오차', 60, 20);
+      ctx.fillStyle = C.style; ctx.fillText('시험 오차', 140, 20);
+      ctx.fillStyle = C.faint; ctx.font = '10px monospace'; ctx.fillText('MSE', 18, H/2);
+    }
+
+    function render() {
+      const deg = +capSlide.value;
+      capVal.textContent = deg;
+      nVal.textContent = nSlide.value;
+      drawFit(deg);
+      drawCurve(deg);
+    }
+    capSlide.addEventListener('input', render);
+    nSlide.addEventListener('input', () => { regenerate(); render(); });
+    resampleBtn.addEventListener('click', () => { seed = Math.floor(Math.random() * 1e6); regenerate(); render(); });
+    render();
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ch.10 · 01 왜 시퀀스에 FC·CNN은 충분하지 않은가</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .scroll-progress { position: fixed; top: 0; left: 0; height: 3px; background: var(--style); width: 0; z-index: 999; transition: width .1s; }
+  .topbar { position: fixed; top: 0; left: 0; right: 0; padding: .55rem 1.2rem; background: rgba(250,247,240,.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line-soft); display: flex; justify-content: space-between; align-items: center; z-index: 100; font-family: var(--mono); font-size: .72rem; }
+  .topbar a.home { color: var(--ink-soft); text-decoration: none; letter-spacing: .1em; }
+  .topbar a.home:hover { color: var(--ink); }
+  .topbar .ch-mini { color: var(--ink-faint); letter-spacing: .14em; }
+  .ch-main { max-width: 44rem; margin: 4.5rem auto 0; padding: 2rem 0 6rem; }
+  .ch-head { max-width: var(--measure); margin: 0 auto 2.4rem; padding-inline: 1.4rem; }
+  .ch-head .kicker { display: block; margin-bottom: 1rem; }
+  .ch-head h1 { font-size: clamp(2rem, 5vw, 3.3rem); margin: 0 0 .8rem; line-height: 1.1; }
+  .ch-head .lede { font-family: var(--serif); font-size: 1.22rem; font-style: italic; color: var(--ink-soft); line-height: 1.5; }
+  .ch-foot { display: flex; justify-content: space-between; gap: 1rem; max-width: var(--measure); margin: 4rem auto 0; padding-inline: 1.4rem; }
+  .ch-foot a { display: block; text-decoration: none; flex: 1; padding: 1rem 1.2rem; border: 1px solid var(--line); border-radius: 10px; transition: border-color .15s, transform .15s; }
+  .ch-foot a:hover { border-color: var(--structure); transform: translateY(-2px); }
+  .ch-foot .dir { font-family: var(--mono); font-size: .7rem; letter-spacing: .14em; color: var(--ink-faint); text-transform: uppercase; }
+  .ch-foot .ti { font-family: var(--serif); font-size: 1.05rem; color: var(--ink); margin-top: .2rem; }
+  .ch-foot .next { text-align: right; }
+  .widget { max-width: var(--wide); margin: 2.4rem auto; padding-inline: 1.4rem; }
+  .widget-frame { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 1.4rem; box-shadow: var(--shadow-plate); }
+  .widget-label { display: flex; align-items: center; gap: .8rem; margin-bottom: 1rem; font-family: var(--mono); font-size: .78rem; color: var(--ink-soft); letter-spacing: .05em; }
+  .widget-label .lab-no { color: var(--style); font-weight: 600; letter-spacing: .14em; }
+  .widget-cap { max-width: var(--measure); margin: .8rem auto 0; font-size: .85rem; color: var(--ink-soft); line-height: 1.6; text-align: center; }
+  .controls { display: flex; align-items: center; gap: 1rem; margin-top: 1rem; flex-wrap: wrap; }
+  .controls label { font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); display: flex; align-items: center; gap: .6rem; }
+  .controls input[type=range] { width: 200px; accent-color: var(--structure); }
+  .controls .val { color: var(--style); font-weight: 600; min-width: 2.4em; text-align: right; }
+  canvas.viz { display: block; width: 100%; height: 280px; background: var(--paper-2); border-radius: 8px; }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar">
+  <a class="home" href="index.html">← Ch.10 표지</a>
+  <span class="ch-mini">SUB 01 / 07 · 시퀀스 모델의 동기</span>
+</div>
+
+<main class="ch-main">
+  <header class="ch-head">
+    <span class="kicker">Chapter 10 · Sub 01</span>
+    <h1>왜 시퀀스에<br><span class="t-style">FC·CNN</span>은 충분하지 않은가</h1>
+    <p class="lede">같은 단어가 위치에 따라 의미가 달라지고, 시퀀스마다 길이가 다르다. 9장까지의 도구들은 이 두 조건을 동시에 만족시키지 못한다.</p>
+  </header>
+
+  <div class="prose">
+    <p>9장까지 우리는 두 종류의 신경망을 만들어 왔다. 입력의 모든 자리를 별개의 변수로 보는 <strong>완전 연결 신경망(Fully Connected Network, FC)</strong>, 그리고 입력 위에 작은 필터를 미끄러뜨려 같은 매개변수를 공간 전체에 재사용하는 <strong>합성곱 신경망(Convolutional Neural Network, CNN)</strong>이다. 이 두 도구로도 충분히 많은 문제가 풀린다 — 단, 입력이 <em>고정 크기 격자</em>일 때까지만이다.</p>
+
+    <p>그런데 일상에서 우리가 다루고 싶은 데이터 대부분은 그렇지 않다. 문장은 단어 다섯 개일 수도 있고 다섯십 개일 수도 있다. 음성 파일은 5초일 수도 5분일 수도 있다. 주가 시계열은 매일 하나씩 길어진다. 이 모든 입력에는 두 가지 공통된 특성이 있다.</p>
+
+    <p>첫째, <strong>가변 길이(Variable Length)</strong>다. 입력 시퀀스의 길이가 사례마다 다르다. 둘째, <strong>위치 독립적 의미(Position-Independent Meaning)</strong>다. 같은 패턴이 시퀀스의 어느 자리에 등장하더라도 동일하게 인식되어야 한다. "2009년에 네팔에 갔다"와 "네팔에 2009년에 갔다"에서 '2009'는 어느 자리에 있든 '연도'다.</p>
+
+    <h2>FC가 무너지는 지점</h2>
+    <p>가장 단순한 접근부터 따져 보자. 시퀀스를 길이 $T$의 벡터로 펴서 FC에 넣으면 어떻게 될까. 시퀀스의 각 위치가 완전히 다른 변수로 취급되므로, 모델은 "1번 자리의 2009"와 "6번 자리의 2009"가 같은 의미라는 사실을 따로따로 학습해야 한다. 게다가 모델이 학습할 수 있는 길이는 훈련 때 정해진 $T$ 하나로 고정된다. 새로 들어온 길이가 다른 시퀀스에는 원리적으로 손도 댈 수 없다.</p>
+
+    <div class="math-block">$$ y = W \cdot \text{flatten}(x_{1..T}) + b, \quad W \in \mathbb{R}^{d \times (T \cdot d_{in})} $$</div>
+    <p class="math-note">FC 가중치 행렬 W의 폭이 $T$에 비례한다. $T$가 달라지면 $W$의 모양 자체가 달라진다.</p>
+
+    <p>요컨대 FC는 <span class="t-style">길이 의존</span>이고 <span class="t-style">위치 의존</span>이다. 우리가 원하는 두 성질의 정반대다.</p>
+
+    <h2>CNN이 절반만 푸는 이유</h2>
+    <p>CNN은 더 영리하다. 필터를 시퀀스 위에 미끄러뜨리면 매개변수가 위치 전체에 공유되므로 <strong>위치 독립성</strong>은 자연스럽게 얻어진다. "2009"라는 토큰이 어디에 있든 같은 필터가 검출한다. 1D 합성곱은 텍스트·오디오에서 실제로 잘 작동한다.</p>
+
+    <p>그러나 CNN에는 두 가지 본질적 한계가 있다. 첫째, <strong>유한한 수용 영역(Receptive Field)</strong>이다. 필터 크기와 깊이로 결정되는 윈도우 바깥의 정보는 보지 못한다. 문장 마지막 단어가 첫 단어와 관련이 있을 때, 그 거리만큼 필터를 쌓아 올려야 한다. 둘째, <strong>가변 길이</strong>에는 풀링(Pooling)이나 패딩(Padding)이라는 부차적 트릭이 필요하다. 이는 가능하지만 우아하지 않다.</p>
+
+    <div class="analogy">
+      <b>FC는 좌석번호제 영화관, CNN은 자유석 영화관.</b> FC에서는 좌석마다 다른 손님(매개변수)이 앉아 있다. 같은 영화라도 좌석이 바뀌면 다른 손님이 본다. CNN에서는 같은 손님이 자리를 옮겨다니며 어디서든 같은 방식으로 본다. 그러나 CNN의 손님도 한 번에 볼 수 있는 시야는 정해져 있어, 영화관 끝과 끝을 연결하려면 망원경(깊이)을 한참 쌓아야 한다.
+    </div>
+
+    <p>RNN이 답하려는 질문은 분명하다. <strong>"같은 매개변수를 시간 전체에 공유하면서, 동시에 임의로 먼 과거를 단 한 번의 전파로 참조할 수 있는 구조가 가능한가?"</strong> 그 답은 다음 절(Sub.02)에서 펼치는 <em>시간 펼치기(Unfolding in Time)</em>다.</p>
+  </div>
+
+  <div class="widget">
+    <div class="widget-frame">
+      <div class="widget-label"><span class="lab-no">위젯 01</span><span>FC는 왜 가변 길이에서 무너지는가</span></div>
+      <canvas id="vizFC" class="viz"></canvas>
+      <div class="controls">
+        <label>시퀀스 길이 T <input type="range" id="lenSlider" min="3" max="14" step="1" value="6"><span class="val" id="lenVal">6</span></label>
+      </div>
+    </div>
+    <p class="widget-cap">슬라이더로 시퀀스 길이를 늘리면 FC 가중치 행렬 W의 폭이 비례해서 커진다. 같은 모델은 길이가 달라지는 순간 더 이상 같은 모델이 아니다. 반면 RNN(점선)은 $T$가 아무리 변해도 동일한 전환 함수 $f$ 하나만 가진다.</p>
+  </div>
+
+  <div class="prose">
+    <h2>시퀀스가 가지는 두 가지 차원</h2>
+    <p>이 장의 모든 논의를 이해하려면, 시퀀스 데이터가 두 가지 차원을 동시에 가진다는 사실을 분명히 해야 한다. <strong>시간 축(Temporal Axis)</strong>은 토큰들의 순서를 나타낸다. <strong>특징 축(Feature Axis)</strong>은 각 토큰을 표현하는 벡터의 차원이다.</p>
+
+    <p>이 책의 표기로는 시퀀스 한 개를 $x^{(1)}, x^{(2)}, \ldots, x^{(\tau)}$로 쓴다. 위첨자가 시간 인덱스, 각 $x^{(t)}$는 $\mathbb{R}^{d_{in}}$의 벡터다. CNN은 시간 축과 특징 축을 모두 격자처럼 보지만, RNN은 시간 축을 <em>계산의 흐름</em>으로 본다. 각 시점에서 같은 함수 $f$를 적용하고, 그 결과를 다음 시점으로 넘긴다. 이 차이가 다음 절의 출발점이다.</p>
+
+    <h2>이 절이 시험에서 묻는 것</h2>
+    <p>이 절에서 시험이 가장 묻기 좋은 구분은 셋이다. 첫째, <strong>왜 FC는 가변 길이에 약한가</strong> — 가중치 행렬의 폭이 입력 길이에 묶이기 때문. 둘째, <strong>왜 CNN으로는 충분하지 않은가</strong> — 수용 영역이 유한하고 깊이로만 멀리 갈 수 있기 때문. 셋째, <strong>RNN이 약속하는 것</strong> — 시간 축에서의 매개변수 공유로 가변 길이와 위치 독립을 한 번에 푼다는 것. 이 세 가지를 한 문장씩 말할 수 있다면 이 절은 통과다.</p>
+  </div>
+
+  <nav class="ch-foot">
+    <a href="index.html"><span class="dir">← 표지</span><div class="ti">Ch.10 표지</div></a>
+    <a class="next" href="02.html"><span class="dir">다음 →</span><div class="ti">02 · 시간 펼치기와 매개변수 공유</div></a>
+  </nav>
+</main>
+
+<script>
+  // scroll progress
+  window.addEventListener('scroll', () => {
+    const sp = document.querySelector('.scroll-progress');
+    const sc = document.documentElement.scrollTop;
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    sp.style.width = (max > 0 ? (sc / max * 100) : 0) + '%';
+  });
+
+  // KaTeX
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, { delimiters: [
+        {left:'$$', right:'$$', display:true},
+        {left:'$', right:'$', display:false}
+      ], throwOnError:false });
+    }
+  });
+
+  // FC vs RNN 폭 비교
+  const cv = document.getElementById('vizFC');
+  const ctx = cv.getContext('2d');
+  const lenSlider = document.getElementById('lenSlider');
+  const lenVal = document.getElementById('lenVal');
+  function fit() {
+    const r = cv.getBoundingClientRect();
+    cv.width = r.width * devicePixelRatio;
+    cv.height = r.height * devicePixelRatio;
+    ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+    draw();
+  }
+  function draw() {
+    const T = +lenSlider.value;
+    lenVal.textContent = T;
+    const W = cv.clientWidth, H = cv.clientHeight;
+    ctx.clearRect(0, 0, W, H);
+    // 배경 그리드
+    ctx.strokeStyle = 'rgba(38,34,28,0.05)';
+    ctx.lineWidth = 1;
+    for (let x = 0; x < W; x += 20) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+    for (let y = 0; y < H; y += 20) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+
+    const cell = 22, pad = 30;
+    const wFC = T * cell;
+    const wRNN = cell;
+    const labelY = 24;
+
+    // FC 가중치 행렬 (T에 비례)
+    ctx.fillStyle = '#C0492E';
+    ctx.font = '500 13px Spline Sans Mono, monospace';
+    ctx.fillText('FC: W ∈ ℝ^(d × T·d_in)', pad, labelY);
+    const fcY = 50;
+    for (let i = 0; i < 6; i++) {
+      for (let j = 0; j < T; j++) {
+        const a = 0.25 + 0.55 * Math.sin(i*0.7 + j*1.3) * 0.5 + 0.27;
+        ctx.fillStyle = `rgba(192,73,46,${a})`;
+        ctx.fillRect(pad + j*cell, fcY + i*cell, cell-2, cell-2);
+      }
+    }
+    ctx.fillStyle = 'rgba(38,34,28,0.55)';
+    ctx.font = '11px Spline Sans Mono, monospace';
+    ctx.fillText('T = ' + T + ' → 폭 ' + (T * 22) + 'px', pad, fcY + 6*cell + 18);
+    ctx.fillStyle = 'rgba(192,73,46,0.65)';
+    ctx.fillText('T 늘면 모델 형태 자체가 바뀐다 — 가변 길이 불가', pad, fcY + 6*cell + 36);
+
+    // RNN 전환 함수 f (T와 무관, 항상 같은 크기)
+    const rnnX = W - pad - 200;
+    ctx.fillStyle = '#2D5B7A';
+    ctx.font = '500 13px Spline Sans Mono, monospace';
+    ctx.fillText('RNN: f(h, x; θ)', rnnX, labelY);
+    // 작은 정사각형 회로
+    const rY = 50;
+    for (let i = 0; i < 6; i++) {
+      for (let j = 0; j < 4; j++) {
+        const a = 0.3 + 0.5 * Math.cos(i*1.1 + j*0.9) * 0.5 + 0.25;
+        ctx.fillStyle = `rgba(45,91,122,${a})`;
+        ctx.fillRect(rnnX + j*cell, rY + i*cell, cell-2, cell-2);
+      }
+    }
+    ctx.fillStyle = 'rgba(38,34,28,0.55)';
+    ctx.font = '11px Spline Sans Mono, monospace';
+    ctx.fillText('어떤 T에도 동일 — 폭 88px 고정', rnnX, rY + 6*cell + 18);
+    ctx.fillStyle = 'rgba(45,91,122,0.7)';
+    ctx.fillText('매개변수 공유로 길이 독립 ✓', rnnX, rY + 6*cell + 36);
+
+    // 시간축 시퀀스 (아래쪽)
+    const seqY = H - 50;
+    ctx.fillStyle = 'rgba(38,34,28,0.4)';
+    ctx.font = '11px Spline Sans Mono, monospace';
+    ctx.fillText('입력 시퀀스 x^(1) ... x^(T):', pad, seqY - 8);
+    for (let t = 0; t < T; t++) {
+      const x = pad + t * (cell + 6);
+      const col = `hsl(${30 + t * 12}, 60%, 55%)`;
+      ctx.fillStyle = col;
+      ctx.beginPath();
+      ctx.arc(x + cell/2, seqY + 10, cell/2 - 2, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.font = '10px Spline Sans Mono, monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(t+1, x + cell/2, seqY + 13);
+      ctx.textAlign = 'left';
+    }
+  }
+  lenSlider.addEventListener('input', draw);
+  window.addEventListener('resize', fit);
+  fit();
+</script>
+</body>
+</html>

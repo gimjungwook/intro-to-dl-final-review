@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>03 · 전이학습·도메인 적응 — Ch.15</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  /* 전이학습 효과 위젯 */
+  .tl-stage { padding: 1.4rem 1.2rem 1rem; }
+  .tl-controls { display: flex; flex-wrap: wrap; gap: 1.2rem; align-items: center; padding: 0 0 1rem; }
+  .tl-chart { display: block; width: 100%; max-width: 540px; aspect-ratio: 16/10; margin: 0 auto; background: #fff; border-radius: 10px; border: 1px solid var(--line); }
+  .tl-legend { display: flex; gap: 1.4rem; flex-wrap: wrap; justify-content: center; padding: .8rem 1.1rem; font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); }
+  .tl-legend i { display: inline-block; width: 14px; height: 3px; vertical-align: middle; margin-right: .4rem; border-radius: 2px; }
+  .tl-verdict { padding: .9rem 1.2rem; border-top: 1px solid var(--line-soft); background: var(--paper); font-size: .9rem; color: var(--ink-soft); line-height: 1.55; }
+  .tl-verdict b.ok { color: var(--structure); } .tl-verdict b.warn { color: var(--style); }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 03 · 한 도메인이 다른 도메인을 돕는 이유</span>
+      <h1>전이학습·도메인 적응 — <span class="t-style">변동 요인의 공유</span>가 답이다</h1>
+      <p class="lede">왜 ImageNet에서 학습한 가중치가 X선 사진이나 위성 이미지의 분류까지 살아 있는가. 그리고 왜 음향 모델은 다른 언어로도 빠르게 적응되는가. 답은 단 한 가지 — 공유되는 변동 요인이 있기 때문이다.</p>
+    </header>
+
+    <div class="prose">
+      <p>2번 절에서 본 사전훈련-미세조정은 사실 더 큰 가족의 한 특수 경우다. 그 큰 가족이 <strong>전이학습(transfer learning)</strong>이다. 책은 전이학습을 다음과 같이 정의한다.</p>
+
+      <div class="math-block">$$ \text{Source: } p_{\mathrm{src}}(x), q_{\mathrm{src}}(y \mid x) \quad\Longrightarrow\quad \text{Target: } p_{\mathrm{tgt}}(x), q_{\mathrm{tgt}}(y \mid x) $$</div>
+      <p class="math-note">소스 분포와 과제에서 무언가를 배워, 그것을 타깃 분포·과제에 가져다 쓴다. 두 분포가 얼마나 같은지에 따라 전이의 종류가 달라진다.</p>
+
+      <p>이 한 줄로 여러 변종이 한꺼번에 정의된다.</p>
+
+      <ul>
+        <li><strong>전이학습 (Transfer Learning):</strong> $q_{\mathrm{src}} \neq q_{\mathrm{tgt}}$ — 과제 자체가 다르다. ImageNet 분류 → 의료 영상 분류, 또는 일반 언어모델 → 특정 도메인 챗봇.</li>
+        <li><strong>도메인 적응 (Domain Adaptation):</strong> $q_{\mathrm{src}} = q_{\mathrm{tgt}}$ 이지만 $p_{\mathrm{src}}(x) \neq p_{\mathrm{tgt}}(x)$ — 같은 과제, 다른 분포. 미국 영어 음성인식 → 한국식 영어 음성인식.</li>
+        <li><strong>개념 표류 (Concept Drift):</strong> 시간이 흐르면서 같은 도메인에서 분포가 천천히 변한다. 사용자의 검색어 분포가 1년에 걸쳐 바뀌는 것.</li>
+      </ul>
+
+      <h2>왜 작동하나 — 변동 요인의 공유</h2>
+      <p>책의 핵심 주장은 단순하다. <strong>"전이학습이 작동하는 것은 소스와 타깃이 같은 변동 요인의 일부를 공유할 때다."</strong> 이 한 문장이 15장에서 시험에 가장 잘 나오는 한 줄이다. 의미를 풀어 보자.</p>
+
+      <div class="analogy">
+        <b>여행 가방의 옷.</b> 서울에서 도쿄로 출장 가는 사람을 떠올려 보자. 비행기에 들고 갈 가방에는 옷·세면도구·노트북이 들어 있다. 그중 옷과 세면도구는 도쿄에서도 그대로 쓴다 — 의식주의 기본은 두 도시 모두 공유한다. 그러나 한국식 콘센트 어댑터나 한국 신분증은 도쿄에서 쓸모가 없다. 좋은 전이는 짐을 잘 골라 가져가는 것이다. 공유되는 자원만 가져가고 도메인 특이적인 부분은 도착해서 새로 짠다.
+      </div>
+
+      <p>딥러닝에서 "공유되는 자원"이 바로 <strong>얕은 층</strong>이다. ImageNet으로 학습한 망의 첫 몇 층은 거의 모든 자연 이미지 도메인에 통한다 — 모서리(edge), 색 대비, 텍스처, 간단한 패턴. 이는 픽셀에 가까울수록 도메인보다 "이미지라는 매체 자체"의 통계에 더 가깝기 때문이다. 한편 깊은 층은 점점 도메인 특이적이 된다 — ImageNet의 깊은 층은 "골든리트리버 vs 셰퍼드"를 구분하는 표상이라서, 의료 영상에는 거의 무용하다.</p>
+
+      <h2>가장 극단적 경우 — 제로샷 학습</h2>
+      <p>전이학습의 가장 극단적이고 인상적인 경우가 <strong>제로샷 학습(zero-shot learning)</strong>이다. 새 클래스의 학습 예제를 단 하나도 보지 않고 그 클래스를 인식한다. 어떻게 가능한가?</p>
+
+      <p>비결은 클래스를 <strong>이산적 ID가 아니라 의미 표상 공간의 한 점</strong>으로 다루는 것이다. 예를 들어 단어 임베딩(word embedding) 공간에서 "고양이"는 한 벡터, "강아지"는 또 다른 벡터다. 이미지 분류기를 "이미지 → 단어 벡터"로 학습시키면, 학습 중에 "얼룩말"이라는 단어가 단 한 번도 라벨로 등장한 적이 없어도, 추론 시에 "얼룩말"의 단어 벡터를 분류 후보로 넣을 수 있다.</p>
+
+      <div class="math-block">$$ \hat{c} = \arg\min_{c \in \mathcal{C}} \; \| f_{\text{img}}(x) - g_{\text{word}}(c) \|_2 $$</div>
+      <p class="math-note">이미지를 단어 임베딩 공간으로 보낸 결과 $f_{\text{img}}(x)$와 가장 가까운 클래스 단어 벡터 $g_{\text{word}}(c)$를 답으로 한다. $\mathcal{C}$에 학습 중 본 적 없는 클래스를 새로 넣어도 동작한다.</p>
+
+      <p>이것이 CLIP(2021)이 한 일의 정확한 구조다. CLIP은 이미지와 텍스트를 같은 임베딩 공간에 보내도록 학습시켰다. 결과적으로 그 모델은 학습 중에 본 적 없는 임의의 텍스트 클래스로도 분류할 수 있다. 표상학습이 도달한 한 정점이다.</p>
+
+      <h2>한계 — 도메인 거리가 멀어지면</h2>
+      <p>그러나 전이학습은 만능이 아니다. 소스와 타깃이 공유하는 변동 요인이 너무 적으면 사전훈련된 가중치가 오히려 해가 된다. 자연 이미지로 학습한 망을 음향 스펙트로그램에 직접 갖다 붙이면, 얕은 층의 "이미지스러운" 텍스처 검출기들이 오디오의 진짜 통계와 어긋나 잡음을 만든다.</p>
+
+      <p>책은 이를 정량적으로 표현한다. 두 분포의 KL 발산이 크거나 변동 요인의 교집합이 작을수록 전이의 효과는 사라지고, 어느 임계점을 넘으면 무작위 초기화에서 시작하는 편이 낫다(negative transfer).</p>
+
+      <p>아래 위젯에서 도메인 거리를 직접 슬라이더로 움직이며 두 시작점(사전훈련 사용 vs 처음부터 학습)의 학습 곡선을 비교해 본다. 거리가 가까우면 사전훈련이 엄청난 이득을 주고, 멀어지면 그 이득이 점점 사라진다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 03</span><span>전이학습 효과 — 도메인 거리에 따른 두 시작점의 학습 곡선</span></div>
+        <div class="tl-stage">
+          <canvas id="tlchart" class="tl-chart" width="540" height="340"></canvas>
+        </div>
+        <div class="widget-controls">
+          <div class="slider" style="flex:1; min-width:260px;">
+            <label>도메인 거리 (Source ↔ Target) <b id="tlDval">d = 0.30</b></label>
+            <input type="range" id="tlD" min="0" max="1" step="0.02" value="0.3">
+          </div>
+          <div class="slider" style="flex:1; min-width:200px;">
+            <label>타깃 데이터셋 크기 <b id="tlNval">N = 1000</b></label>
+            <input type="range" id="tlN" min="50" max="20000" step="50" value="1000">
+          </div>
+        </div>
+        <div class="tl-legend">
+          <span><i style="background:var(--structure)"></i> 사전훈련에서 시작</span>
+          <span><i style="background:var(--style)"></i> 무작위 초기화에서 시작</span>
+        </div>
+        <div class="tl-verdict" id="tlverdict"></div>
+      </div>
+      <p class="widget-cap">도메인 거리가 가까우면 사전훈련은 시작 정확도와 최종 정확도 모두에서 큰 이득을 준다. 거리가 멀어지거나 데이터가 매우 많아지면 두 곡선의 차이가 줄어들고, 어느 지점부터는 사전훈련이 도리어 해가 될 수 있다(negative transfer).</p>
+    </div>
+
+    <div class="prose">
+      <h2>실무 의사결정 — 한 줄 요약</h2>
+      <p>전이학습을 쓸지 말지의 결정은 결국 세 변수로 압축된다.</p>
+
+      <ul>
+        <li><strong>도메인 거리:</strong> 가까울수록 사전훈련 가중치를 많이 가져가도 된다.</li>
+        <li><strong>타깃 데이터 크기:</strong> 작을수록 사전훈련에 더 많이 의존하고, 클수록 끝까지 학습할 여유가 생긴다.</li>
+        <li><strong>과제 유사성:</strong> 분류라는 형태가 같으면 분류 헤드만 갈아 끼우면 되고, 회귀·세분화처럼 출력 형태가 달라지면 헤드의 구조도 새로 짜야 한다.</li>
+      </ul>
+
+      <p>다음 절에서는 표상 자체의 본질적 힘 — <strong>분산 표상(distributed representation)</strong>으로 들어간다. 왜 같은 자원으로 표현할 수 있는 개념의 수가 지수적으로 늘어나는가, 그리고 그 이득이 일반화로 어떻게 이어지는가를 본다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'좋은 표상이란', f:'01.html' },
+    { no:'02', t:'사전훈련과 미세조정', f:'02.html' },
+    { no:'03', t:'전이학습·도메인 적응', f:'03.html' },
+    { no:'04', t:'분산 표상의 힘', f:'04.html' },
+    { no:'05', t:'깊이의 지수적 표현력', f:'05.html' },
+    { no:'06', t:'인과 요소와 반지도', f:'06.html' },
+    { no:'07', t:'시험 대비', f:'07.html' },
+  ];
+  const CURRENT = '03';
+  (function buildNav() {
+    document.querySelector('.topbar').innerHTML =
+      `<a class="home" href="index.html">← Chapter 15 · 표상 학습</a>` +
+      `<span class="ch-mini">SUB ${CURRENT} / 07</span>`;
+    document.querySelector('.ch-nav ol').innerHTML = SUBS.map(s =>
+      `<li><a href="${s.f}" ${s.no === CURRENT ? 'class="current"' : ''}>${s.t}</a></li>`).join('');
+    const i = SUBS.findIndex(s => s.no === CURRENT);
+    const prev = i > 0 ? SUBS[i-1] : { f:'index.html', t:'챕터 표지', no:'' };
+    const next = i < SUBS.length-1 ? SUBS[i+1] : { f:'index.html', t:'챕터 표지', no:'' };
+    document.querySelector('.ch-foot').innerHTML =
+      `<a href="${prev.f}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+      `<a href="${next.f}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+    const bar = document.querySelector('.scroll-progress');
+    const onScroll = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    document.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+  })();
+
+  // ===== 위젯: 전이학습 효과 곡선 =====
+  (function tlWidget() {
+    const c = document.getElementById('tlchart');
+    const css = getComputedStyle(document.documentElement);
+    const STRUCT = css.getPropertyValue('--structure').trim();
+    const STYLE = css.getPropertyValue('--style').trim();
+    const FAINT = css.getPropertyValue('--ink-faint').trim();
+    const SOFT = css.getPropertyValue('--ink-soft').trim();
+    const dSlider = document.getElementById('tlD');
+    const nSlider = document.getElementById('tlN');
+    const dval = document.getElementById('tlDval');
+    const nval = document.getElementById('tlNval');
+    const verdict = document.getElementById('tlverdict');
+
+    function draw() {
+      const d = parseFloat(dSlider.value);  // 도메인 거리 0..1
+      const N = parseInt(nSlider.value);     // 타깃 데이터 크기
+
+      const W = c.width, H = c.height;
+      const ctx = c.getContext('2d');
+      ctx.clearRect(0,0,W,H);
+      ctx.fillStyle = '#fff'; ctx.fillRect(0,0,W,H);
+
+      // 축
+      const ml = 50, mr = 14, mt = 16, mb = 36;
+      const cw = W - ml - mr, ch = H - mt - mb;
+      ctx.strokeStyle = FAINT; ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(ml, mt); ctx.lineTo(ml, mt+ch); ctx.lineTo(ml+cw, mt+ch); ctx.stroke();
+      // 격자
+      ctx.strokeStyle = 'rgba(38,34,28,0.07)';
+      for (let i = 1; i <= 4; i++) {
+        const y = mt + ch * (i/5);
+        ctx.beginPath(); ctx.moveTo(ml, y); ctx.lineTo(ml+cw, y); ctx.stroke();
+      }
+      // y 라벨
+      ctx.fillStyle = SOFT; ctx.font = '11px "Spline Sans Mono", monospace';
+      for (let i = 0; i <= 5; i++) {
+        const v = 100 - i*20;
+        const y = mt + ch * (i/5);
+        ctx.fillText(v + '%', 10, y+4);
+      }
+      ctx.fillText('학습 epoch →', ml + cw/2 - 36, H-8);
+      ctx.save(); ctx.translate(14, mt + ch/2 + 30); ctx.rotate(-Math.PI/2);
+      ctx.fillText('타깃 정확도', 0, 0); ctx.restore();
+
+      // 두 곡선 시뮬레이션
+      // 사전훈련 시작점: 60% + (1-d)*15%   (가까울수록 더 좋게 시작)
+      // 무작위 시작점: 15% + log(N)*1% 정도
+      // 미세조정 곡선: 빠른 상승
+      // 무작위 곡선: 느린 상승, 최종은 데이터 충분하면 비슷한 수준
+      // negative transfer: d > 0.7 이면 사전훈련이 더 낮은 천장
+      const epochs = 50;
+      const ptStart = 0.55 + (1-d) * 0.20;
+      const ptCeil = (d > 0.7) ? (0.88 - (d-0.7)*0.5) : (0.95 - d*0.1);
+      const rdStart = 0.12 + Math.log(N)*0.01;
+      const rdCeil = Math.min(0.93, 0.6 + Math.log(N)*0.05 - d*0.05);
+      const ptCurve = [], rdCurve = [];
+      for (let e = 0; e <= epochs; e++) {
+        const t = e / epochs;
+        // 사전훈련: 빠르게 천장으로
+        const ptVal = ptStart + (ptCeil - ptStart) * (1 - Math.exp(-t * 4.5));
+        // 무작위: 느리게 천장으로
+        const rdVal = rdStart + (rdCeil - rdStart) * (1 - Math.exp(-t * 1.8 - 0.1));
+        ptCurve.push(ptVal); rdCurve.push(rdVal);
+      }
+
+      function plot(curve, color) {
+        ctx.strokeStyle = color; ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        curve.forEach((v, i) => {
+          const x = ml + cw * (i/epochs);
+          const y = mt + ch * (1 - v);
+          if (i === 0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+        });
+        ctx.stroke();
+      }
+      plot(rdCurve, STYLE);
+      plot(ptCurve, STRUCT);
+
+      // 양 곡선 마지막에 점·라벨
+      const xEnd = ml + cw;
+      ctx.fillStyle = STRUCT;
+      ctx.beginPath(); ctx.arc(xEnd, mt + ch*(1 - ptCurve[epochs]), 4, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = STYLE;
+      ctx.beginPath(); ctx.arc(xEnd, mt + ch*(1 - rdCurve[epochs]), 4, 0, Math.PI*2); ctx.fill();
+
+      dval.textContent = 'd = ' + d.toFixed(2);
+      nval.textContent = 'N = ' + N;
+
+      const gain = ptCurve[epochs] - rdCurve[epochs];
+      let msg = '';
+      if (d < 0.25 && gain > 0.05) {
+        msg = `<b class="ok">전이학습이 강하게 작동한다.</b> 같은 epoch에서 사전훈련 사용이 ${(gain*100).toFixed(0)}%p 더 높다. 시작점도 훨씬 위.`;
+      } else if (d < 0.6 && gain > 0.02) {
+        msg = `<b class="ok">전이학습이 도움이 된다.</b> 차이 ${(gain*100).toFixed(0)}%p. 작은 데이터일수록 이득이 커진다.`;
+      } else if (gain > -0.02) {
+        msg = `<b>도메인이 멀거나 데이터가 많아 차이가 작다.</b> 사전훈련의 이점이 사라지는 영역. 학습률 신중하게.`;
+      } else {
+        msg = `<b class="warn">Negative transfer.</b> 사전훈련된 가중치가 오히려 해가 된다. 무작위 초기화가 낫다.`;
+      }
+      verdict.innerHTML = msg;
+    }
+    dSlider.addEventListener('input', draw);
+    nSlider.addEventListener('input', draw);
+    draw();
+  })();
+
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
+        throwOnError: false,
+      });
+    }
+  });
+</script>
+</body>
+</html>

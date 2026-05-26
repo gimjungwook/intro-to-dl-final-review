@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ch.8 · 08 — 시험 대비 (계보·디버깅)</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  /* 계보 다이어그램 */
+  .lineage-diag { max-width: var(--measure); margin: 1.6rem auto; padding: 1.4rem 1rem; background: linear-gradient(180deg,#fff,var(--paper-2)); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow-plate); }
+  .ld-row { display: grid; grid-template-columns: 8rem 2rem 1fr; gap: .6rem; align-items: center; padding: .55rem 0; border-bottom: 1px solid var(--line-soft); }
+  .ld-row:last-child { border-bottom: none; }
+  .ld-name { font-family: var(--mono); font-weight: 600; font-size: .92rem; color: var(--ink); padding-left: .8rem; border-left: 4px solid var(--structure); }
+  .ld-row.s2 .ld-name { border-left-color: var(--style); }
+  .ld-row.s3 .ld-name { border-left-color: var(--synth); }
+  .ld-row.s4 .ld-name { border-left-color: var(--ink); }
+  .ld-arrow { font-family: var(--mono); color: var(--ink-faint); text-align: center; }
+  .ld-add { font-size: .87rem; color: var(--ink-soft); line-height: 1.5; }
+  .ld-add b { color: var(--ink); }
+
+  /* 카드 */
+  .cards { max-width: var(--wide); margin: 1.8rem auto; padding: 0 1.4rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+  .cardx { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 1.1rem 1.2rem; transition: transform .15s var(--ease), box-shadow .15s; }
+  .cardx:hover { transform: translateY(-3px); box-shadow: var(--shadow-plate); }
+  .cardx .q { font-family: var(--serif); font-size: 1.05rem; color: var(--ink); margin: 0 0 .5rem; line-height: 1.35; }
+  .cardx .q::before { content: "Q. "; color: var(--style); font-family: var(--mono); font-size: .82rem; }
+  .cardx .a { font-size: .9rem; color: var(--ink-soft); line-height: 1.6; }
+  .cardx .a::before { content: "A. "; color: var(--structure); font-family: var(--mono); font-size: .82rem; }
+
+  /* 디버깅 결정 트리 */
+  .debug-tree { max-width: var(--measure); margin: 1.6rem auto; padding-inline: 1.4rem; }
+  .debug-node { background: #fff; border: 1px solid var(--line); border-radius: 11px; padding: 1rem 1.2rem; margin: .55rem 0; }
+  .debug-symptom { font-family: var(--serif); font-size: 1.05rem; color: var(--style); margin-bottom: .4rem; }
+  .debug-symptom::before { content: "증상 — "; font-family: var(--mono); font-size: .78rem; letter-spacing: .12em; color: var(--style); font-style: normal; text-transform: uppercase; }
+  .debug-check { font-size: .92rem; color: var(--ink-soft); line-height: 1.6; margin: .15rem 0; padding-left: 1.4rem; position: relative; }
+  .debug-check::before { content: "→"; position: absolute; left: 0; color: var(--structure); font-family: var(--mono); }
+  .debug-check b { color: var(--ink); }
+
+  /* 체크리스트 */
+  .final-check { max-width: var(--measure); margin: 1.6rem auto; padding: 1.2rem 1.4rem; border: 1px solid var(--line); border-radius: 12px; background: var(--paper-2); }
+  .final-check h4 { margin: 0 0 .6rem; font-family: var(--serif); font-size: 1.1rem; color: var(--structure); }
+  .final-check ul { list-style: none; margin: 0; padding: 0; }
+  .final-check li { padding: .4rem 0 .4rem 1.8rem; position: relative; font-size: .92rem; color: var(--ink-soft); line-height: 1.5; border-bottom: 1px solid var(--line-soft); }
+  .final-check li:last-child { border-bottom: none; }
+  .final-check li::before { content: ""; position: absolute; left: 0; top: .65rem; width: 14px; height: 14px; border: 1.5px solid var(--structure); border-radius: 3px; }
+  .final-check li b { color: var(--ink); }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar">
+  <a class="home" href="index.html">← Chapter 08 표지</a>
+  <span class="ch-mini">SUB 08 / 08 · Optimization</span>
+</div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol id="nav"></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-chapter 08 · 시험 직전에 한 번 더</span>
+      <h1>알고리즘 계보 한 장,<br><span class="t-style">실전 디버깅</span> 한 장</h1>
+      <p class="lede">8장은 분량이 크지만 시험에서 묻는 지점은 비교적 좁다. 이 장은 “계보의 한 줄기”와 “학습이 멈췄을 때 무엇을 의심할까”를 카드 형태로 묶어, 시험 직전 30분 안에 한 번 더 훑을 수 있게 만들었다.</p>
+    </header>
+
+    <div class="prose">
+      <h2>알고리즘 계보 한 장 — 이전의 약점을 채우는 진화</h2>
+
+      <p>이 표 한 장을 머릿속에 그릴 수 있으면 8장 알고리즘 단답 문제는 거의 다 풀 수 있다. 각 행은 “이전 알고리즘의 어떤 약점을 어떻게 보완했는가”다.</p>
+    </div>
+
+    <div class="lineage-diag">
+      <div class="ld-row"><div class="ld-name">SGD</div><div class="ld-arrow">·</div><div class="ld-add">$\theta \leftarrow \theta - \varepsilon g$. 기본. <b>약점</b>: 좁은 계곡 지그재그, 잡음.</div></div>
+      <div class="ld-row s2"><div class="ld-name">+ Momentum</div><div class="ld-arrow">↓</div><div class="ld-add">속도 누적 $v \leftarrow \alpha v - \varepsilon g; \theta \leftarrow \theta + v$. 진동 상쇄. 종말 속도 $\varepsilon\|g\|/(1-\alpha)$.</div></div>
+      <div class="ld-row s2"><div class="ld-name">+ Nesterov</div><div class="ld-arrow">↓</div><div class="ld-add">미리 보기 기울기 $\nabla L(\theta + \alpha v)$. 볼록 $O(1/k^2)$.</div></div>
+      <div class="ld-row s3"><div class="ld-name">AdaGrad</div><div class="ld-arrow">↓</div><div class="ld-add">파라미터별 학습률 $\varepsilon/\sqrt{r}$, $r \leftarrow r + g^2$. <b>약점</b>: $r$ 단조 증가 → 학습 정지.</div></div>
+      <div class="ld-row s3"><div class="ld-name">RMSProp</div><div class="ld-arrow">↓</div><div class="ld-add">$r$ 누적 → 지수 이동 평균 $r \leftarrow \rho r + (1-\rho) g^2$. 옛 정보 잊기.</div></div>
+      <div class="ld-row s4"><div class="ld-name">Adam</div><div class="ld-arrow">←</div><div class="ld-add">RMSProp + 모멘텀 + 편향 보정 $\hat s / (1-\rho_1^t), \hat r / (1-\rho_2^t)$. <b>현대 표준</b>.</div></div>
+    </div>
+
+    <div class="prose">
+      <h2>출제 빈도 높은 단답·서술 14문항 — 카드</h2>
+    </div>
+
+    <div class="cards">
+      <div class="cardx"><p class="q">머신러닝 최적화가 순수 최적화와 다른 핵심 한 줄?</p><p class="a">우리가 진짜 줄이고 싶은 것은 미지의 $J^{*}(\theta)$인데, 실제로 줄이는 것은 그 대리물인 경험적 위험 $J(\theta)$다.</p></div>
+      <div class="cardx"><p class="q">미니배치 SGD의 효율성을 한 줄로?</p><p class="a">표본 평균의 표준오차가 $\sigma/\sqrt{n}$로 줄어들어 수확 체감이 발생하므로, 정확한 기울기 한 번보다 대략적 기울기 여러 번이 같은 비용으로 더 많은 진전을 만든다.</p></div>
+      <div class="cardx"><p class="q">고차원에서 안장점이 지역 최솟값보다 흔한 이유?</p><p class="a">임계점이 지역 최솟값이 되려면 모든 $n$개 방향의 곡률이 양수여야 한다. 이 확률 $p^n$이 $n$이 커질수록 지수적으로 0이 된다 — 동전 던지기 비유.</p></div>
+      <div class="cardx"><p class="q">모멘텀이 좁은 계곡에서 효과적인 이유 두 가지?</p><p class="a">첫째, 계곡을 따라 일관된 기울기가 누적되어 가속. 둘째, 양쪽 벽 방향의 진동하는 기울기는 평균이 거의 0이 되어 상쇄.</p></div>
+      <div class="cardx"><p class="q">네스테로프 모멘텀의 표준 모멘텀 대비 차이?</p><p class="a">기울기를 평가하는 위치가 다르다. 표준은 현재 $\theta$, 네스테로프는 모멘텀이 데려갈 도착 예정 위치 $\theta + \alpha v$. 볼록 환경에서 $O(1/k) \to O(1/k^2)$.</p></div>
+      <div class="cardx"><p class="q">AdaGrad에서 RMSProp으로 바뀐 한 줄?</p><p class="a">기울기 제곱의 단순 누적 $r \leftarrow r + g^2$을 지수 이동 평균 $r \leftarrow \rho r + (1-\rho) g^2$으로 바꿔, 과거의 큰 기울기 영향이 영원하지 않게 했다.</p></div>
+      <div class="cardx"><p class="q">Adam의 편향 보정이 왜 필요한가?</p><p class="a">$s, r$이 0으로 초기화되어 학습 초기 추정이 0 쪽으로 편향되어 있다. $\hat s = s/(1-\rho_1^t)$와 $\hat r = r/(1-\rho_2^t)$로 나누면 첫 스텝부터 진짜 기울기/곡률을 사용할 수 있다.</p></div>
+      <div class="cardx"><p class="q">Xavier 초기화는 어떤 두 목표의 타협?</p><p class="a">순전파의 활성값 분산 유지($\mathrm{Var}(W) = 1/m$)와 역전파의 기울기 분산 유지($\mathrm{Var}(W) = 1/n$). 두 조건의 타협으로 $\mathrm{Var}(W) = 2/(m+n)$.</p></div>
+      <div class="cardx"><p class="q">대칭성을 깨야 하는 이유?</p><p class="a">같은 입력에 연결된 두 뉴런이 같은 초기 가중치를 가지면 같은 활성값, 같은 기울기, 같은 업데이트를 받아 영원히 같은 함수를 계산한다. 한 뉴런과 다름없다.</p></div>
+      <div class="cardx"><p class="q">배치 정규화의 정확한 한 줄 작용?</p><p class="a">각 미니배치에서 한 유닛의 활성값을 평균 0·분산 1로 표준화한 뒤 학습 가능한 $\gamma, \beta$로 다시 스케일·시프트. $y = \gamma\,(h-\mu)/\sqrt{\sigma^2+\epsilon} + \beta$.</p></div>
+      <div class="cardx"><p class="q">BN이 “평균을 높여라” 같은 헛된 기울기를 차단하는 원리?</p><p class="a">평균 $\mu$의 계산과 빼기 자체를 미분 그래프에 포함한다. 그래서 기울기가 “이 유닛의 평균을 높여라”라고 제안하는 순간, 그 평균은 어차피 다시 빼지므로 제안의 효과가 없음이 역전파에 반영된다.</p></div>
+      <div class="cardx"><p class="q">기울기 클리핑이 “방향은 유지”하는 이유?</p><p class="a">절벽 부근에서도 “내려가야 할 방향” 자체는 보통 옳다. 잘못된 것은 그 방향으로 너무 멀리 가는 일이다. 그래서 노름만 잘라내고 단위 벡터는 유지: $\hat g = (c/\|g\|)\,g$.</p></div>
+      <div class="cardx"><p class="q">SGD가 수렴하기 위한 학습률 스케줄 조건?</p><p class="a">$\sum \varepsilon_k = \infty$ (충분히 멀리 갈 수 있음)이고 $\sum \varepsilon_k^2 < \infty$ (잡음이 결국 사라짐). 예: $\varepsilon_k = c/k$.</p></div>
+      <div class="cardx"><p class="q">왜 뉴턴 방법은 딥러닝 실전에서 안 쓰이나?</p><p class="a">첫째, 안장점에 끌려가는 약점. 둘째, $k$개 파라미터 헤시안 역행렬에 $O(k^3)$. 파라미터가 수백만인 신경망에서 사실상 불가능. L-BFGS 등 변종도 큰 모델에서 비실용적.</p></div>
+    </div>
+
+    <div class="prose">
+      <h2>실전 디버깅 — 학습이 멈췄을 때 무엇을 의심할까</h2>
+
+      <p>시험에서는 단답이 많지만, 서술형에서는 “실제 상황에서 무엇을 의심하고 어떻게 고칠 것인가”를 묻는 경우가 있다. 다음 결정 트리는 학습이 잘 안 될 때 의심 순서다.</p>
+    </div>
+
+    <div class="debug-tree">
+      <div class="debug-node">
+        <div class="debug-symptom">손실이 NaN이 된다</div>
+        <div class="debug-check"><b>학습률이 너무 큼</b> → 1/10로 줄여 본다.</div>
+        <div class="debug-check"><b>기울기 폭발</b> → 클리핑 $c=1$ 또는 $5$ 적용.</div>
+        <div class="debug-check"><b>초기화가 너무 큼</b> → Xavier/He로 교체.</div>
+        <div class="debug-check"><b>수치 불안정 연산</b> → log·exp·sqrt 근처에 $\delta=10^{-8}$ 추가.</div>
+      </div>
+      <div class="debug-node">
+        <div class="debug-symptom">손실이 거의 안 줄어든다 (학습 정체)</div>
+        <div class="debug-check"><b>학습률이 너무 작음</b> → 10배 키워서 발산하는지 본다.</div>
+        <div class="debug-check"><b>소실 기울기</b> → 활성화 함수(sigmoid → ReLU), He 초기화, BN 도입.</div>
+        <div class="debug-check"><b>안장점·평탄 영역</b> → 모멘텀 추가, 또는 SGD → Adam으로 전환.</div>
+        <div class="debug-check"><b>AdaGrad 학습률 고갈</b> → RMSProp/Adam으로 교체.</div>
+      </div>
+      <div class="debug-node">
+        <div class="debug-symptom">손실이 진동하며 줄지 않는다</div>
+        <div class="debug-check"><b>학습률이 너무 큼</b> → 1/3 ~ 1/10로 줄임.</div>
+        <div class="debug-check"><b>배치 크기가 너무 작음</b> → 32 → 64 → 128로 키워 본다.</div>
+        <div class="debug-check"><b>학습률 스케줄 부재</b> → linear/cosine decay 추가.</div>
+      </div>
+      <div class="debug-node">
+        <div class="debug-symptom">훈련 손실은 0이지만 검증이 나쁘다 (과적합)</div>
+        <div class="debug-check"><b>이건 8장이 아니라 7장 문제</b> — 드롭아웃, L2, 데이터 증강, 조기 종료.</div>
+        <div class="debug-check"><b>일찍 멈추기</b> — 검증 손실 최솟값 시점에서 학습 종료.</div>
+      </div>
+      <div class="debug-node">
+        <div class="debug-symptom">학습 초기 몇 에폭이 매우 느리고 이후 갑자기 빨라진다</div>
+        <div class="debug-check"><b>warmup이 필요한 상황</b> — 초기 학습률을 0에서 천천히 올린 뒤 cosine으로 감소.</div>
+        <div class="debug-check"><b>BN 통계 안정화 시간</b> — 큰 배치 또는 더 긴 warmup.</div>
+      </div>
+    </div>
+
+    <div class="prose">
+      <h2>시험 직전 30분 체크리스트</h2>
+    </div>
+
+    <div class="final-check">
+      <h4>알고리즘별 한 줄 요약</h4>
+      <ul>
+        <li><b>SGD</b> — $\theta \leftarrow \theta - \varepsilon g$. 단순. 좁은 계곡에서 지그재그.</li>
+        <li><b>Momentum</b> — 속도 $v$ 누적. 진동 상쇄, 종말 속도 $\varepsilon\|g\|/(1-\alpha)$.</li>
+        <li><b>Nesterov</b> — 기울기를 $\theta + \alpha v$에서 평가. 미리 보기 보정.</li>
+        <li><b>AdaGrad</b> — $\varepsilon/\sqrt{\sum g^2}$. 파라미터별 학습률. 단조 감소가 함정.</li>
+        <li><b>RMSProp</b> — AdaGrad에 지수 이동 평균. 옛 기울기 정보를 잊는다.</li>
+        <li><b>Adam</b> — RMSProp + 모멘텀 + 편향 보정. 현대 표준.</li>
+      </ul>
+    </div>
+
+    <div class="final-check">
+      <h4>핵심 개념 정의 한 줄</h4>
+      <ul>
+        <li><b>경험적 위험 최소화(ERM)</b> — 미지의 $J^{*}$ 대신 훈련셋의 평균 손실 $J$를 최소화.</li>
+        <li><b>대리 손실(surrogate loss)</b> — 미분 불가능한 진짜 손실(0-1)을 부드러운 대용품(교차 엔트로피)으로 대체.</li>
+        <li><b>안장점</b> — 기울기 0이지만 어떤 방향은 오르막, 어떤 방향은 내리막. 고차원에서 압도적으로 흔하다.</li>
+        <li><b>기울기 클리핑</b> — 노름이 임계값 $c$ 초과 시 방향 유지, 크기만 $c$로 축소.</li>
+        <li><b>대칭성 깨기</b> — 같은 입력 받는 두 뉴런이 같은 초기 가중치를 가지면 영원히 같은 함수.</li>
+        <li><b>배치 정규화</b> — 미니배치 단위로 활성값을 평균 0·분산 1로 표준화 후 학습 가능한 $\gamma, \beta$로 복원.</li>
+        <li><b>편향 보정(bias correction)</b> — Adam에서 $s, r$이 0으로 시작해 생기는 초기 편향을 $1-\rho^t$로 나눠 제거.</li>
+      </ul>
+    </div>
+
+    <div class="final-check">
+      <h4>자주 헷갈리는 지점 다섯</h4>
+      <ul>
+        <li><b>훈련 손실 0 ≠ 최적화 성공</b>. 대개 과적합 신호. 7장의 정칙화 + 조기 종료 필요.</li>
+        <li><b>지역 최솟값 ≠ 딥러닝의 주적</b>. 고차원에서는 거의 발생하지 않음. 진짜 적은 안장점·고원·절벽.</li>
+        <li><b>모멘텀 ≠ 단순한 가속</b>. 가속 + 진동 상쇄, 두 가지를 동시에 한다.</li>
+        <li><b>Adam ≠ 항상 최선</b>. 잘 튜닝된 SGD+모멘텀이 이미지 분류 최종 성능에서 더 좋은 경우 많음.</li>
+        <li><b>배치 정규화 ≠ 정규화(regularization)</b>. BN은 최적화 도구, 7장의 정칙화는 일반화 도구.</li>
+      </ul>
+    </div>
+
+    <div class="prose">
+      <h2>마지막 한 마디</h2>
+
+      <p>8장의 모든 알고리즘은 결국 “비볼록 고차원 손실 표면 위에서, 잡음 있는 기울기로, 일반화가 잘되는 영역에 빠르게 도달하는 도구”다. 정확한 기울기에 집착하지 말고, 잡음을 받아들이며, 과거의 방향을 기억하고, 파라미터마다 다른 보폭을 자동으로 조정하는 — 이 네 가지 원칙이 SGD부터 Adam까지의 진화 계보를 관통한다.</p>
+
+      <p>시험에서 한 알고리즘의 수식이 떠오르지 않으면, 그 알고리즘이 “이전의 어떤 약점을 어떻게 보완하기 위해 나왔는가”를 떠올리자. 그 자리에서 수식이 다시 만들어진다.</p>
+
+      <h2>다음 챕터로</h2>
+      <p>8장이 끝났다. <a href="../ch09-cnn/index.html">Chapter 09 — 합성곱 신경망</a>으로 이동해 “공간적 구조를 가진 입력에 특화된 네트워크가 어떻게 작동하는가”를 본다. 시험 1순위 챕터다.</p>
+
+      <p style="margin-top: 1.5rem;"><a href="index.html" style="font-family: var(--mono); font-size: .82rem; color: var(--ink-faint);">← Chapter 08 표지로 돌아가기</a></p>
+    </div>
+
+    <nav class="ch-foot" id="foot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUB = [
+    { no:'01', t:'순수 최적화와 ML 최적화의 차이', f:'01.html' },
+    { no:'02', t:'학습의 진짜 장애물', f:'02.html' },
+    { no:'03', t:'미니배치 SGD — 잡음 받아들이기', f:'03.html' },
+    { no:'04', t:'모멘텀과 네스테로프', f:'04.html' },
+    { no:'05', t:'적응 학습률 — AdaGrad·RMSProp·Adam', f:'05.html' },
+    { no:'06', t:'초기화 — 대칭성과 분산 균형', f:'06.html' },
+    { no:'07', t:'배치 정규화', f:'07.html' },
+    { no:'08', t:'시험 대비 — 계보·디버깅', f:'08.html' },
+  ];
+  function buildNav(curNo) {
+    const ol = document.getElementById('nav');
+    ol.innerHTML = SUB.map(c => `<li><a href="${c.f}" ${c.no===curNo?'class="current"':''}>${c.t}</a></li>`).join('');
+    const cur = SUB.findIndex(c => c.no === curNo);
+    const prev = cur > 0 ? SUB[cur-1] : { f:'index.html', t:'표지로', no:'' };
+    const next = cur < SUB.length-1 ? SUB[cur+1] : { f:'index.html', t:'표지로', no:'' };
+    document.getElementById('foot').innerHTML =
+      `<a href="${prev.f}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+      `<a href="${next.f}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+  }
+  function initProgress() {
+    const bar = document.querySelector('.scroll-progress');
+    const onScroll = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    document.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+  }
+
+  window.addEventListener('load', () => {
+    buildNav('08');
+    initProgress();
+  });
+</script>
+</body>
+</html>

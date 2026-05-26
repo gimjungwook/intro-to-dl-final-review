@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>01 — 표상의 문제 — Ch.1</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  /* 좌표 변환 위젯 (이 페이지 전용) */
+  .repr-stage { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1.4rem 1.2rem 1rem; align-items: center; }
+  .repr-side { text-align: center; }
+  .repr-side canvas { display: block; width: 100%; max-width: 320px; aspect-ratio: 1/1; border-radius: 10px; border: 1px solid var(--line); background: #fff; margin: 0 auto; }
+  .repr-side .rlab { font-family: var(--mono); font-size: .76rem; color: var(--ink-faint); margin-top: .5rem; letter-spacing: .08em; }
+  .repr-verdict { padding: .9rem 1.2rem; border-top: 1px solid var(--line-soft); background: var(--paper); font-size: .9rem; color: var(--ink-soft); line-height: 1.55; }
+  .repr-verdict b.ok { color: var(--structure); } .repr-verdict b.bad { color: var(--style); }
+  @media (max-width: 640px) { .repr-stage { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 01 — 같은 데이터, 다른 표상</span>
+      <h1>표상의 문제 — 왜 입력의 <span class="t-style">모습</span>이 성패를 가르는가</h1>
+      <p class="lede">아무리 좋은 알고리즘도 입력 표상이 나쁘면 무력하고, 평범한 알고리즘도 표상만 바꿔 주면 살아난다. 1장의 가장 깊은 메시지는 이 한 문장이다.</p>
+    </header>
+
+    <div class="prose">
+      <p>딥러닝을 처음 배울 때 가장 흔한 오해는 “알고리즘이 똑똑하면 어떤 데이터든 잘 처리한다”는 생각이다. 그러나 인공지능(artificial intelligence) 역사 전체가 이 가정과 정반대 방향으로 흘렀다. 같은 알고리즘이라도 데이터를 어떤 좌표계에 올려놓느냐에 따라 정확도가 마치 다른 기술처럼 갈린다.</p>
+      <p>딥러닝 책 1장이 첫 절을 “표상(representation)”에 할애한 것은 우연이 아니다. 이 절의 핵심 주장은, 인공지능 시스템의 성능이 모델 구조보다도 <strong>“입력을 어떻게 표현했는가”</strong>에 더 크게 좌우된다는 것이다.</p>
+
+      <div class="analogy">
+        <b>같은 도시, 다른 지도.</b> 서울 지하철로 강남에서 잠실에 갈 때, 지리적으로 정확한 지도를 보면 길이 굽이쳐 보여 어렵다. 그러나 노선도(역과 환승만 표시한 단순화된 그림)를 보면 누구나 한눈에 환승 한 번이라는 답을 찾는다. 도시는 그대로다. 표현이 바뀐 것뿐이다. 그런데 그 표현의 차이가 “길 찾기”라는 같은 과제의 난이도를 결정적으로 바꿔 놓는다.
+      </div>
+
+      <h2>좌표계 비유 — 데카르트와 극좌표</h2>
+      <p>책에서 가장 자주 인용되는 예시는 좌표계 변환이다. 어떤 점 집합을 직교좌표계(Cartesian coordinates)에 그리면 두 부류를 직선으로 가를 수 없다. 그런데 같은 점 집합을 극좌표계(polar coordinates), 즉 “원점에서의 거리($r$)와 각도($\theta$)”로 다시 쓰면, 단 한 줄로 깨끗하게 분리된다. 데이터는 그대로다. 알고리즘은 똑같이 “직선 한 줄”이다. 바뀐 것은 좌표계, 즉 표상이다.</p>
+
+      <p>아래 위젯에서 직접 확인해 보자. 왼쪽은 데카르트 좌표에 그려진 두 개의 동심원(파란 점은 안쪽, 빨간 점은 바깥쪽 고리)이고, 오른쪽은 같은 점들을 극좌표 $(r, \theta)$로 옮긴 그림이다. 위쪽의 슬라이더로 결정 경계(decision boundary)를 움직여 두 부류를 갈라 보자.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 01</span><span>같은 데이터, 다른 좌표계 — 직선 한 줄로 분류 가능한가</span></div>
+        <div class="repr-stage">
+          <div class="repr-side">
+            <canvas id="repr-cart" width="320" height="320"></canvas>
+            <div class="rlab">직교좌표 (x, y)</div>
+          </div>
+          <div class="repr-side">
+            <canvas id="repr-pol" width="320" height="320"></canvas>
+            <div class="rlab">극좌표 (r, θ)</div>
+          </div>
+        </div>
+        <div class="widget-controls">
+          <div class="slider" style="flex:1; min-width:260px;">
+            <label>결정 경계 위치 <b id="repr-rval">r = 1.50</b></label>
+            <input type="range" id="repr-r" min="0.4" max="2.6" step="0.02" value="1.5">
+          </div>
+          <div class="legend">
+            <span><i style="background:var(--structure)"></i> 안쪽 부류</span>
+            <span><i style="background:var(--style)"></i> 바깥쪽 부류</span>
+            <span><i style="background:var(--ink)"></i> 결정 경계</span>
+          </div>
+        </div>
+        <div class="repr-verdict" id="repr-verdict"></div>
+      </div>
+      <p class="widget-cap">동일한 데이터, 동일한 “선형 분류기”, 그러나 결과는 정반대다. 직교좌표에서는 어떤 직선도 동심원을 갈라낼 수 없고, 극좌표에서는 $r$ 축을 가르는 수직선 하나로 끝난다. 좋은 표상이란 알고리즘의 일을 대신해 주는 표상이다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>의료 사례 — 사람이 만든 특징의 강점과 약점</h2>
+      <p>현실 데이터에서도 같은 원리가 작동한다. 환자의 사망 위험을 예측하는 모델을 생각해 보자. “나이”, “수축기 혈압”, “기존 진단명” 같은 항목은 의사가 수십 년에 걸쳐 추려 낸 좋은 표상이다. 이런 정제된 특징(feature) 위에서는 단순한 로지스틱 회귀(logistic regression)도 잘 동작한다.</p>
+      <p>그러나 음성 파형, 픽셀 텐서, 자연어 문장처럼 <strong>날것의 입력</strong>에서는 무엇이 “좋은 특징”인지를 사람이 미리 적어 두기가 거의 불가능하다. 얼굴 인식을 예로 들면, “눈의 좌표를 뽑아라”, “눈 사이 거리를 재라”라고 명시적으로 적을 수는 있다. 그러나 조명이 바뀌고, 얼굴이 약간 돌아가고, 머리카락이 가린다면? 모든 변형을 규칙으로 적어 두는 것은 사실상 불가능에 가깝다.</p>
+
+      <div class="analogy">
+        <b>요리책 하나로 세상의 모든 맛을 설명하기.</b> 김치찌개 레시피를 한 페이지로 정확히 쓸 수는 있다. 하지만 “같은 김치찌개라도 김치의 묵힘 정도가 다르고, 그날 가스불 세기가 다르고, 먹는 사람의 컨디션이 다르다”까지 모두 규칙으로 적으면 그 책은 끝나지 않는다. 현실은 예외의 예외가 무한히 이어진다. 사람이 만든 특징의 한계는 바로 여기에 있다.
+      </div>
+
+      <h2>그래서 표상학습 — 표상을 “손으로” 짜는 대신 “데이터에서” 배운다</h2>
+      <p>이 문제의식이 1장 후반부로 자연스럽게 이어진다. 사람이 좋은 좌표계를 일일이 설계할 수 없다면, 그 좌표계 자체를 데이터에서 배우게 하자는 것이다. 이 발상이 바로 <span class="t-structure">표상학습(representation learning)</span>이고, 그중에서도 표상을 여러 층으로 쌓아 단계적으로 배우는 방식이 <span class="t-synth">딥러닝(deep learning)</span>이다.</p>
+      <p>다음 장에서는 이 네 단어, 즉 <em>인공지능, 머신러닝, 표상학습, 딥러닝</em>이 어떻게 동심원처럼 점점 좁아지는지, 그리고 좁아질수록 왜 더 강력해지는지를 본다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  // ===== Ch.1 sub-chapter nav (페이지 자체 생성) =====
+  const SUBS = [
+    { no:'01', t:'표상의 문제', f:'01.html' },
+    { no:'02', t:'AI/ML/RL/DL 동심원', f:'02.html' },
+    { no:'03', t:'깊이가 만드는 것', f:'03.html' },
+    { no:'04', t:'역사적 굴곡', f:'04.html' },
+    { no:'05', t:'데이터/모델/계산 삼각형', f:'05.html' },
+    { no:'06', t:'시험 대비 체크리스트', f:'06.html' },
+  ];
+  const CURRENT = '01';
+  (function buildNav() {
+    document.querySelector('.topbar').innerHTML =
+      `<a class="home" href="index.html">← Chapter 01 — 딥러닝이란 무엇인가</a>` +
+      `<span class="ch-mini">SUB ${CURRENT} / 06</span>`;
+    document.querySelector('.ch-nav ol').innerHTML = SUBS.map(s =>
+      `<li><a href="${s.f}" ${s.no === CURRENT ? 'class="current"' : ''}>${s.t}</a></li>`).join('');
+    const i = SUBS.findIndex(s => s.no === CURRENT);
+    const prev = i > 0 ? SUBS[i-1] : { f:'index.html', t:'챕터 표지', no:'' };
+    const next = i < SUBS.length-1 ? SUBS[i+1] : { f:'index.html', t:'챕터 표지', no:'' };
+    document.querySelector('.ch-foot').innerHTML =
+      `<a href="${prev.f}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+      `<a href="${next.f}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+    // 스크롤 진행
+    const bar = document.querySelector('.scroll-progress');
+    const onScroll = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    document.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+  })();
+
+  // ===== 위젯: 데카르트 vs 극좌표 분류 =====
+  (function reprWidget() {
+    const cartC = document.getElementById('repr-cart');
+    const polC = document.getElementById('repr-pol');
+    const slider = document.getElementById('repr-r');
+    const rval = document.getElementById('repr-rval');
+    const verdict = document.getElementById('repr-verdict');
+    const css = getComputedStyle(document.documentElement);
+    const STRUCT = css.getPropertyValue('--structure').trim();
+    const STYLE = css.getPropertyValue('--style').trim();
+    const INK = css.getPropertyValue('--ink').trim();
+    const FAINT = css.getPropertyValue('--ink-faint').trim();
+
+    // 동심원 데이터 생성 (시드 고정)
+    function seed(n) { let s = n; return () => (s = (s*1664525+1013904223) % 4294967296) / 4294967296; }
+    const rnd = seed(42);
+    const inner = [], outer = [];
+    for (let i = 0; i < 60; i++) {
+      const a = rnd() * Math.PI * 2;
+      const r = 0.55 + (rnd() - 0.5) * 0.45;  // 안쪽: r ≈ 0.55
+      inner.push({ r, a, x: r*Math.cos(a), y: r*Math.sin(a) });
+    }
+    for (let i = 0; i < 60; i++) {
+      const a = rnd() * Math.PI * 2;
+      const r = 2.0 + (rnd() - 0.5) * 0.5;   // 바깥쪽: r ≈ 2.0
+      outer.push({ r, a, x: r*Math.cos(a), y: r*Math.sin(a) });
+    }
+
+    function drawCart(boundaryR) {
+      const ctx = cartC.getContext('2d');
+      const W = cartC.width, H = cartC.height;
+      ctx.fillStyle = '#fff'; ctx.fillRect(0,0,W,H);
+      // 격자
+      ctx.strokeStyle = 'rgba(38,34,28,0.06)'; ctx.lineWidth = 1;
+      for (let i = 0; i <= 8; i++) {
+        const p = i/8 * W; ctx.beginPath(); ctx.moveTo(p,0); ctx.lineTo(p,H); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0,p); ctx.lineTo(W,p); ctx.stroke();
+      }
+      // 축 (원점)
+      ctx.strokeStyle = 'rgba(38,34,28,0.16)';
+      ctx.beginPath(); ctx.moveTo(W/2, 0); ctx.lineTo(W/2, H); ctx.moveTo(0, H/2); ctx.lineTo(W, H/2); ctx.stroke();
+      const sc = W / 6;  // -3..+3
+      function px(x) { return W/2 + x*sc; }
+      function py(y) { return H/2 - y*sc; }
+      // "직선" 결정 경계 — 데카르트에서 boundaryR 의미: x = boundaryR (수직선) 시도
+      ctx.strokeStyle = INK; ctx.lineWidth = 2; ctx.setLineDash([6,4]);
+      ctx.beginPath(); ctx.moveTo(px(boundaryR - 1.5), 0); ctx.lineTo(px(boundaryR - 1.5), H); ctx.stroke();
+      ctx.setLineDash([]);
+      // 점
+      function dot(p, c) {
+        ctx.fillStyle = c;
+        ctx.beginPath(); ctx.arc(px(p.x), py(p.y), 3.2, 0, Math.PI*2); ctx.fill();
+      }
+      inner.forEach(p => dot(p, STRUCT));
+      outer.forEach(p => dot(p, STYLE));
+      // 라벨
+      ctx.fillStyle = FAINT; ctx.font = '11px "Spline Sans Mono", monospace';
+      ctx.fillText('x', W-12, H/2-4); ctx.fillText('y', W/2+5, 12);
+    }
+
+    function drawPolar(boundaryR) {
+      const ctx = polC.getContext('2d');
+      const W = polC.width, H = polC.height;
+      ctx.fillStyle = '#fff'; ctx.fillRect(0,0,W,H);
+      // 격자
+      ctx.strokeStyle = 'rgba(38,34,28,0.06)'; ctx.lineWidth = 1;
+      for (let i = 0; i <= 8; i++) {
+        const p = i/8 * W; ctx.beginPath(); ctx.moveTo(p,0); ctx.lineTo(p,H); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0,p); ctx.lineTo(W,p); ctx.stroke();
+      }
+      // 축
+      ctx.strokeStyle = 'rgba(38,34,28,0.2)';
+      ctx.beginPath(); ctx.moveTo(40, H-30); ctx.lineTo(W-10, H-30); ctx.moveTo(40, H-30); ctx.lineTo(40, 10); ctx.stroke();
+      // 매핑: r∈[0,3] → x∈[40, W-10], θ∈[-π,π] → y∈[H-30, 10]
+      function px(r) { return 40 + r/3 * (W-50); }
+      function py(a) { return (H-30) - ((a + Math.PI) / (2*Math.PI)) * (H-40); }
+      // 결정 경계: r = boundaryR (수직선)
+      ctx.strokeStyle = INK; ctx.lineWidth = 2; ctx.setLineDash([6,4]);
+      ctx.beginPath(); ctx.moveTo(px(boundaryR), 10); ctx.lineTo(px(boundaryR), H-30); ctx.stroke();
+      ctx.setLineDash([]);
+      function dot(p, c) {
+        ctx.fillStyle = c;
+        ctx.beginPath(); ctx.arc(px(p.r), py(p.a), 3.2, 0, Math.PI*2); ctx.fill();
+      }
+      inner.forEach(p => dot(p, STRUCT));
+      outer.forEach(p => dot(p, STYLE));
+      ctx.fillStyle = FAINT; ctx.font = '11px "Spline Sans Mono", monospace';
+      ctx.fillText('r →', W-30, H-15); ctx.fillText('θ ↑', 8, 22);
+    }
+
+    function score(boundaryR) {
+      // Cartesian: x = boundaryR-1.5 기준 좌/우 분리 (절대 불가능)
+      let cartOK = 0; const cartTotal = inner.length + outer.length;
+      const cartB = boundaryR - 1.5;
+      inner.forEach(p => { if (p.x < cartB) cartOK++; });
+      outer.forEach(p => { if (p.x >= cartB) cartOK++; });
+      const cartAcc = cartOK / cartTotal;
+      // Polar: r = boundaryR 기준
+      let polOK = 0;
+      inner.forEach(p => { if (p.r < boundaryR) polOK++; });
+      outer.forEach(p => { if (p.r >= boundaryR) polOK++; });
+      const polAcc = polOK / cartTotal;
+      return { cartAcc, polAcc };
+    }
+
+    function update() {
+      const r = parseFloat(slider.value);
+      rval.textContent = 'r = ' + r.toFixed(2);
+      drawCart(r);
+      drawPolar(r);
+      const { cartAcc, polAcc } = score(r);
+      verdict.innerHTML =
+        `직교좌표에서 같은 직선 분류기: <b class="bad">${(cartAcc*100).toFixed(0)}%</b> 정확도 (최적 위치에서도 50% 부근에 갇힌다), ` +
+        `극좌표에서: <b class="ok">${(polAcc*100).toFixed(0)}%</b> 정확도. ` +
+        `같은 알고리즘, 같은 데이터, 표상만 바꿨을 뿐이다.`;
+    }
+    slider.addEventListener('input', update);
+    update();
+  })();
+
+  // KaTeX
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
+        throwOnError: false,
+      });
+    }
+  });
+</script>
+</body>
+</html>

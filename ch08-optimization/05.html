@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ch.8 · 05 — 적응 학습률 (AdaGrad·RMSProp·Adam)</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .lineage-stage { padding: 1rem; }
+  .lineage-svg { display: block; width: 100%; max-width: 720px; margin: 0 auto; height: 360px; }
+  .lineage-ctrl { display: flex; gap: 1rem; justify-content: center; padding: .6rem 1rem 1rem; flex-wrap: wrap; }
+  .lineage-legend { display: flex; gap: 1.4rem; justify-content: center; padding: .4rem 1rem .8rem; flex-wrap: wrap; font-family: var(--mono); font-size: .76rem; }
+  .lineage-legend span { display: inline-flex; align-items: center; gap: .35rem; }
+  .lineage-legend i { width: 14px; height: 4px; border-radius: 2px; }
+
+  .lin-tree { max-width: var(--measure); margin: 1.6rem auto; padding-inline: 1.4rem; }
+  .lin-step { display: grid; grid-template-columns: 4.5rem 1fr; gap: 1rem; padding: .8rem 1rem; background: #fff; border: 1px solid var(--line); border-left: 3px solid var(--structure); border-radius: 10px; margin-bottom: .55rem; }
+  .lin-step.s2 { border-left-color: var(--style); }
+  .lin-step.s3 { border-left-color: var(--synth); }
+  .lin-step .name { font-family: var(--mono); font-size: .82rem; color: var(--ink); font-weight: 600; padding-top: .15rem; }
+  .lin-step .body { font-size: .9rem; color: var(--ink-soft); line-height: 1.55; }
+  .lin-step .body b { color: var(--ink); }
+
+  .params-table { max-width: var(--measure); margin: 1.6rem auto; padding-inline: 1.4rem; }
+  .params-table table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+  .params-table th, .params-table td { padding: .55rem .8rem; text-align: left; border-bottom: 1px solid var(--line-soft); }
+  .params-table th { font-family: var(--mono); font-size: .7rem; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-faint); font-weight: 500; }
+  .params-table .sym { font-family: var(--mono); color: var(--structure); }
+  .params-table .val { font-family: var(--mono); color: var(--style); }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar">
+  <a class="home" href="index.html">← Chapter 08 표지</a>
+  <span class="ch-mini">SUB 05 / 08 · Optimization</span>
+</div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol id="nav"></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-chapter 05 · 한 계보로 정리하는 현대 옵티마이저</span>
+      <h1>모든 파라미터에 똑같은 학습률을 쓰지 말자.<br><span class="t-style">자기가 알아서 조정</span>하게 만들자</h1>
+      <p class="lede">손실 표면의 곡률은 방향마다 다르다. 어떤 파라미터는 한 발 크게, 어떤 파라미터는 한 발 작게 움직여야 한다. AdaGrad → RMSProp → Adam은 이 “파라미터별 학습률”을 자동화한 진화 계보다.</p>
+    </header>
+
+    <div class="prose">
+      <p>모멘텀까지의 모든 알고리즘은 <strong>모든 파라미터에 같은 학습률 $\varepsilon$</strong>을 적용한다. 그러나 신경망의 손실 표면은 방향마다 곡률이 천차만별이다. 한 방향에서는 한 발만 잘못 디뎌도 절벽이고, 다른 방향에서는 100발을 가야 의미 있는 변화가 일어난다.</p>
+
+      <p>해결책은 <strong>파라미터마다 개별 학습률</strong>을 두는 것이다. 그러나 수백만 개 파라미터의 학습률을 사람이 일일이 설정할 수는 없다. 그래서 “과거에 큰 기울기를 자주 받은 파라미터는 학습률을 줄이고, 작은 기울기만 받은 파라미터는 그대로 두자”라는 적응 규칙(adaptive rule)을 알고리즘에 맡긴다.</p>
+
+      <h2>AdaGrad — 누적 제곱으로 학습률 깎기</h2>
+
+      <p>AdaGrad는 각 파라미터의 과거 기울기 <strong>제곱합</strong>을 누적해, 그 제곱근의 역수를 학습률에 곱한다.</p>
+
+      <div class="math-block">$$ r \;\leftarrow\; r + g \odot g $$</div>
+      <div class="math-block">$$ \Delta\theta \;=\; -\frac{\varepsilon}{\delta + \sqrt{r}} \odot g $$</div>
+      <p class="math-note">$\odot$은 원소별 곱(element-wise product). $r$은 각 파라미터마다 따로 누적되는 “기울기 제곱의 역사”. $\delta \approx 10^{-7}$은 0으로 나누기 방지용 작은 상수.</p>
+
+      <p>왜 이 형태인가? 큰 기울기를 자주 받은 파라미터는 $r$이 빨리 커진다. 그래서 분모 $\sqrt{r}$이 커지고, 실제 업데이트 $\Delta\theta$는 작아진다. 반대로 작은 기울기만 드물게 받은 파라미터는 $r$이 천천히 커지므로 학습률이 비교적 유지된다.</p>
+
+      <div class="analogy">
+        <b>높이가 다른 울타리를 여러 개 넘어야 한다고 하자.</b> 낮은 울타리에는 큰 보폭으로 성큼 다가가도 안전하다. 높은 울타리에는 작은 보폭으로 신중하게 접근해야 발이 걸리지 않는다. AdaGrad는 “이 파라미터 방향에서 과거에 기울기가 얼마나 컸는가”로 “울타리 높이”를 가늠하고, 보폭을 자동 조절한다.
+      </div>
+
+      <p>그러나 AdaGrad에는 치명적인 단점이 있다. $r$이 학습 시작부터 끝까지 <strong>단조 증가</strong>한다. 결국 모든 파라미터의 분모가 너무 커져 학습이 거의 멈춘다. 볼록 최적화에서는 이론적으로 매력적이지만, 비볼록 딥러닝에서는 학습 초기 만난 큰 기울기가 끝까지 영향을 남겨, 충분히 학습할 수 있는 단계에서도 학습률이 0에 가까워질 수 있다.</p>
+
+      <h2>RMSProp — 누적을 잊는다</h2>
+
+      <p>RMSProp은 AdaGrad의 단조 증가 문제를 <strong>지수 감쇠 이동 평균(exponentially decaying moving average)</strong>으로 해결한다.</p>
+
+      <div class="math-block">$$ r \;\leftarrow\; \rho\,r + (1-\rho)\,g \odot g $$</div>
+      <div class="math-block">$$ \Delta\theta \;=\; -\frac{\varepsilon}{\sqrt{\delta + r}} \odot g $$</div>
+      <p class="math-note">$\rho \in [0, 1)$는 감쇠율(decay rate). 보통 $0.9$ 또는 $0.99$. 옛 기울기 정보는 매 스텝마다 $\rho$배로 줄어들어 점차 잊힌다.</p>
+
+      <p>차이는 단 한 줄, 누적 $r + g^2$를 가중 평균 $\rho r + (1-\rho) g^2$로 바꾼 것이다. 이 한 줄로 “지금 이 영역에서의 기울기 통계”에 즉시 적응할 수 있게 된다. 비용함수 표면이 영역에 따라 다르게 생겼어도, 새로운 영역에 들어가면 RMSProp은 새 곡률에 맞춰 학습률을 다시 조정한다.</p>
+
+      <div class="analogy">
+        <b>AdaGrad는 과거의 모든 시험 성적을 영원히 기억하며 자신감을 조절</b>하는 사람과 같다. 10년 전 한 번 크게 실수한 일을 평생 끌고 다닌다. <b>RMSProp은 최근 몇 번의 성적만 기억하고 나머지는 잊는다.</b> 한 번의 큰 실수가 영영 발목을 잡지 않는다. 그래서 비볼록 표면처럼 영역마다 곡률이 달라지는 환경에서 더 잘 적응한다.
+      </div>
+
+      <h2>Adam — RMSProp + 모멘텀 + 편향 보정</h2>
+
+      <p>Adam(Adaptive Moments)은 RMSProp의 2차 모멘트 추정에 <strong>모멘텀</strong>의 1차 모멘트 추정을 더하고, 학습 초기 편향까지 보정한 것이다. 현대 딥러닝의 사실상 표준 옵티마이저다.</p>
+
+      <p>Adam은 두 개의 이동 평균을 유지한다.</p>
+
+      <div class="math-block">$$ s \;\leftarrow\; \rho_{1}\,s + (1-\rho_{1})\,g \qquad\text{(1차 모멘트 — 모멘텀)} $$</div>
+      <div class="math-block">$$ r \;\leftarrow\; \rho_{2}\,r + (1-\rho_{2})\,g \odot g \qquad\text{(2차 모멘트 — RMSProp)} $$</div>
+
+      <p>$s$와 $r$이 모두 0으로 초기화되기 때문에, 학습 초기에는 두 추정 모두 0 쪽으로 <strong>편향(bias)</strong>되어 있다. 이를 보정한다.</p>
+
+      <div class="math-block">$$ \hat s \;=\; \frac{s}{1-\rho_{1}^{t}} \qquad \hat r \;=\; \frac{r}{1-\rho_{2}^{t}} $$</div>
+      <p class="math-note">$t$는 스텝 수. 초기에는 분모가 작아 보정이 크고, 시간이 지나면 분모가 1에 수렴해 보정이 사라진다.</p>
+
+      <p>최종 업데이트는</p>
+
+      <div class="math-block">$$ \Delta\theta \;=\; -\varepsilon\,\frac{\hat s}{\sqrt{\hat r} + \delta} $$</div>
+      <p class="math-note">모멘텀(\hat s)으로 일관된 방향을 가속하고, 적응 학습률($1/\sqrt{\hat r}$)로 파라미터마다 보폭을 조정한다. 두 효과의 합성.</p>
+
+      <p>편향 보정이 왜 중요한가? 학습 첫 스텝에서 $s = (1-\rho_1) g = 0.1\,g$이다. 보정 없이 그대로 쓰면 “모멘텀이 진짜 평균의 10%만 반영된 상태”로 출발한다. 보정 $\hat s = s/(1-\rho_1^1) = s/0.1 = g$를 거치면 첫 스텝에서도 진짜 기울기를 그대로 사용한 셈이 된다.</p>
+    </div>
+
+    <div class="params-table">
+      <table>
+        <thead><tr><th>하이퍼파라미터</th><th>기호</th><th>권장 기본값</th><th>역할</th></tr></thead>
+        <tbody>
+          <tr><td>학습률</td><td class="sym">$\varepsilon$</td><td class="val">$0.001$</td><td>전체 업데이트 스텝 크기</td></tr>
+          <tr><td>1차 감쇠율</td><td class="sym">$\rho_1$</td><td class="val">$0.9$</td><td>모멘텀의 시간 스케일</td></tr>
+          <tr><td>2차 감쇠율</td><td class="sym">$\rho_2$</td><td class="val">$0.999$</td><td>곡률 추정의 시간 스케일</td></tr>
+          <tr><td>안정 상수</td><td class="sym">$\delta$</td><td class="val">$10^{-8}$</td><td>0 나누기 방지</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="prose">
+      <p>Adam이 인기 있는 이유는 이 기본값만으로도 대부분의 문제에서 합리적으로 작동하기 때문이다. SGD+모멘텀이 더 좋은 최종 성능을 내는 경우도 많지만, “튜닝 비용 대비 성능” 측면에서 Adam이 압도적으로 자주 이긴다. 시험에서 “현대 딥러닝 표준 옵티마이저 한 개를 들라”는 질문이 나오면 답은 Adam이다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 08</span><span>학습률 적응 그래프 — AdaGrad는 멈춘다, RMSProp은 살아남는다</span></div>
+        <div class="lineage-stage">
+          <svg class="lineage-svg" id="lineageSvg" viewBox="0 0 720 360"></svg>
+        </div>
+        <div class="lineage-legend">
+          <span><i style="background:#26221C"></i> SGD (고정 학습률)</span>
+          <span><i style="background:#2D5B7A"></i> AdaGrad (단조 감소)</span>
+          <span><i style="background:#A47B2E"></i> RMSProp (적응적)</span>
+          <span><i style="background:#C0492E"></i> Adam (적응적 + 모멘텀)</span>
+        </div>
+        <div class="lineage-ctrl">
+          <div class="slider"><label>2차 감쇠율 $\rho_2$ <b id="rhoVal">0.99</b></label>
+            <input type="range" id="rhoSlider" min="0.5" max="0.999" step="0.001" value="0.99">
+          </div>
+          <button class="btn" id="lineageRun">200스텝 다시</button>
+        </div>
+      </div>
+      <p class="widget-cap">한 파라미터에 대해 “효과적 학습률 $\varepsilon / \sqrt{r}$” 또는 “이동 거리”를 200스텝 동안 추적한다. 입력 기울기는 일정하게 $g=1$로 두었다. <b>AdaGrad</b>의 곡선이 시간이 지나며 0으로 떨어지는 반면, <b>RMSProp</b>과 <b>Adam</b>은 평형값에 수렴해 학습이 계속 진행됨이 보인다. 이것이 RMSProp이 AdaGrad를 대체한 핵심 이유다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>한 줄기 진화 — “이전의 약점을 채우는” 계보로 외우기</h2>
+    </div>
+
+    <div class="lin-tree">
+      <div class="lin-step"><div class="name">SGD</div><div class="body">$\theta \leftarrow \theta - \varepsilon g$. 가장 단순. 모든 파라미터 같은 학습률, 기울기를 그대로 사용. <b>약점</b>: 좁은 계곡에서 지그재그, 미니배치 잡음에 취약.</div></div>
+      <div class="lin-step s2"><div class="name">+ Momentum</div><div class="body">$v \leftarrow \alpha v - \varepsilon g; \theta \leftarrow \theta + v$. 속도 누적으로 일관된 방향 가속, 진동 상쇄. <b>약점</b>: 여전히 모든 파라미터 같은 학습률.</div></div>
+      <div class="lin-step s2"><div class="name">+ Nesterov</div><div class="body">$v \leftarrow \alpha v - \varepsilon \nabla L(\theta+\alpha v); \theta \leftarrow \theta+v$. 미리 보기 보정. 볼록에서 $O(1/k^2)$. <b>여전한 약점</b>: 파라미터별 학습률 없음.</div></div>
+      <div class="lin-step s3"><div class="name">AdaGrad</div><div class="body">$r \leftarrow r + g^2; \Delta\theta = -\varepsilon g/\sqrt{r+\delta}$. 파라미터별 학습률 자동화. 자주 큰 기울기 받은 방향은 학습률 ↓. <b>약점</b>: $r$이 단조 증가해 학습이 결국 멈춤.</div></div>
+      <div class="lin-step s3"><div class="name">RMSProp</div><div class="body">$r \leftarrow \rho r + (1-\rho) g^2$로 변경. <b>지수 감쇠 이동 평균</b>으로 옛 기울기 정보를 잊는다. 비볼록 환경에 적응. <b>약점</b>: 모멘텀 없음.</div></div>
+      <div class="lin-step s3"><div class="name">Adam</div><div class="body">RMSProp + 모멘텀 + 편향 보정. 1차·2차 모멘트 모두 지수 이동 평균. $\hat s/(1-\rho_1^t), \hat r/(1-\rho_2^t)$ 보정으로 초기 편향 제거. <b>현대 표준</b>.</div></div>
+    </div>
+
+    <div class="prose">
+      <h2>어떤 옵티마이저를 쓸까 — 책의 솔직한 답</h2>
+
+      <p>책은 명확한 답을 주지 않는다. 그 이유는 “최고의 옵티마이저는 문제에 따라 다르기 때문”이다. 현재 가장 많이 쓰이는 조합은 SGD+모멘텀, RMSProp, RMSProp+모멘텀, 그리고 Adam이다.</p>
+
+      <p>실전 가이드라인을 정리하면 이렇다.</p>
+
+      <ul>
+        <li><strong>처음 시도하는 새 문제</strong> → Adam (기본값으로 시작, 학습률만 조정)</li>
+        <li><strong>이미지 분류의 최종 성능 극한</strong> → 잘 튜닝된 SGD+모멘텀이 Adam보다 일반화가 좋은 경우가 많음 (ResNet 등에서 관찰)</li>
+        <li><strong>RNN/언어 모델</strong> → Adam이 안정적, 가끔 RMSProp+모멘텀</li>
+        <li><strong>희소 기울기(sparse gradient)</strong> → Adam이 적응적 학습률 덕에 유리</li>
+        <li><strong>대규모 분산 학습</strong> → SGD가 단순해 동기화에 유리, 최근에는 LAMB·LARS 같은 Adam 변종이 강세</li>
+      </ul>
+
+      <h2>다음 장으로</h2>
+      <p>옵티마이저 알고리즘은 모두 “좋은 출발점이 주어졌다”고 가정한다. 그러나 신경망에서 출발점, 즉 초기화 자체가 학습의 성패를 좌우한다. <a href="06.html">6장</a>에서는 대칭성 깨기와 분산 균형 — Xavier·He 초기화의 이유 — 를 본다.</p>
+    </div>
+
+    <nav class="ch-foot" id="foot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUB = [
+    { no:'01', t:'순수 최적화와 ML 최적화의 차이', f:'01.html' },
+    { no:'02', t:'학습의 진짜 장애물', f:'02.html' },
+    { no:'03', t:'미니배치 SGD — 잡음 받아들이기', f:'03.html' },
+    { no:'04', t:'모멘텀과 네스테로프', f:'04.html' },
+    { no:'05', t:'적응 학습률 — AdaGrad·RMSProp·Adam', f:'05.html' },
+    { no:'06', t:'초기화 — 대칭성과 분산 균형', f:'06.html' },
+    { no:'07', t:'배치 정규화', f:'07.html' },
+    { no:'08', t:'시험 대비 — 계보·디버깅', f:'08.html' },
+  ];
+  function buildNav(curNo) {
+    const ol = document.getElementById('nav');
+    ol.innerHTML = SUB.map(c => `<li><a href="${c.f}" ${c.no===curNo?'class="current"':''}>${c.t}</a></li>`).join('');
+    const cur = SUB.findIndex(c => c.no === curNo);
+    const prev = cur > 0 ? SUB[cur-1] : { f:'index.html', t:'표지로', no:'' };
+    const next = cur < SUB.length-1 ? SUB[cur+1] : { f:'index.html', t:'표지로', no:'' };
+    document.getElementById('foot').innerHTML =
+      `<a href="${prev.f}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+      `<a href="${next.f}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+  }
+  function initProgress() {
+    const bar = document.querySelector('.scroll-progress');
+    const onScroll = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    document.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+  }
+
+  function lineageWidget() {
+    const svg = document.getElementById('lineageSvg');
+    const W = 720, H = 360, PAD = 50;
+    const STEPS = 200;
+    function xPx(i) { return PAD + i / STEPS * (W - 2*PAD); }
+    function yPx(v) { return H - PAD - Math.min(Math.max(v, 0), 1.2) / 1.2 * (H - 2*PAD); }
+
+    function simulate(rho2) {
+      const lrEff = { sgd: [], adagrad: [], rmsprop: [], adam: [] };
+      // 일정한 기울기 g = 1
+      const g = 1.0;
+      const lr = 0.01;
+      let rAda = 0, rRms = 0;
+      let sAdam = 0, rAdam = 0;
+      for (let t = 0; t < STEPS; t++) {
+        // SGD: 항상 일정
+        lrEff.sgd.push(lr);
+        // AdaGrad: r = sum g^2
+        rAda += g*g;
+        lrEff.adagrad.push(lr / (Math.sqrt(rAda) + 1e-8));
+        // RMSProp
+        rRms = rho2 * rRms + (1-rho2) * g*g;
+        lrEff.rmsprop.push(lr / (Math.sqrt(rRms) + 1e-8));
+        // Adam: 편향 보정 포함
+        sAdam = 0.9 * sAdam + 0.1 * g;
+        rAdam = rho2 * rAdam + (1-rho2) * g*g;
+        const sHat = sAdam / (1 - Math.pow(0.9, t+1));
+        const rHat = rAdam / (1 - Math.pow(rho2, t+1));
+        lrEff.adam.push(lr * Math.abs(sHat) / (Math.sqrt(rHat) + 1e-8));
+      }
+      return lrEff;
+    }
+
+    function render() {
+      const rho2 = parseFloat(document.getElementById('rhoSlider').value);
+      const sim = simulate(rho2);
+      // 정규화: 최대값으로 나눠 0-1로
+      const maxV = Math.max(
+        ...sim.sgd, ...sim.adagrad, ...sim.rmsprop, ...sim.adam
+      );
+      let html = '';
+      // 축
+      html += `<line x1="${PAD}" y1="${H-PAD}" x2="${W-PAD}" y2="${H-PAD}" stroke="#8E8576" stroke-width="1"/>`;
+      html += `<line x1="${PAD}" y1="${PAD}" x2="${PAD}" y2="${H-PAD}" stroke="#8E8576" stroke-width="1"/>`;
+      html += `<text x="${W-PAD-5}" y="${H-PAD+22}" font-family="Spline Sans Mono, monospace" font-size="11" fill="#5A5247" text-anchor="end">스텝 t</text>`;
+      html += `<text x="${PAD+5}" y="${PAD+14}" font-family="Spline Sans Mono, monospace" font-size="11" fill="#5A5247">효과적 학습률</text>`;
+
+      const colors = { sgd:'#26221C', adagrad:'#2D5B7A', rmsprop:'#A47B2E', adam:'#C0492E' };
+      for (const k of ['sgd', 'adagrad', 'rmsprop', 'adam']) {
+        const series = sim[k].map(v => v / maxV);
+        let p = `M ${xPx(0)},${yPx(series[0])}`;
+        for (let i = 1; i < series.length; i++) p += ` L ${xPx(i)},${yPx(series[i])}`;
+        html += `<path d="${p}" stroke="${colors[k]}" stroke-width="2.2" fill="none" opacity="0.85"/>`;
+      }
+      svg.innerHTML = html;
+    }
+    document.getElementById('rhoSlider').addEventListener('input', e => {
+      document.getElementById('rhoVal').textContent = parseFloat(e.target.value).toFixed(3);
+      render();
+    });
+    document.getElementById('lineageRun').addEventListener('click', render);
+    render();
+  }
+
+  window.addEventListener('load', () => {
+    buildNav('05');
+    initProgress();
+    lineageWidget();
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>03 — 깊이가 만드는 것 — Ch.1</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .ladder { display: grid; grid-template-columns: 220px 1fr; gap: 1rem; padding: 1.4rem 1.4rem 1rem; align-items: stretch; }
+  .lad-rungs { display: flex; flex-direction: column; gap: .4rem; }
+  .lad-rung { display: grid; grid-template-columns: 2rem 1fr; gap: .55rem; align-items: center; padding: .7rem .8rem; background: #fff; border: 1px solid var(--line); border-radius: 9px; cursor: pointer; transition: all .15s var(--ease); }
+  .lad-rung:hover { transform: translateX(2px); border-color: var(--structure-lo); }
+  .lad-rung.active { background: var(--ink); color: var(--paper); border-color: var(--ink); transform: translateX(4px); }
+  .lad-rung .ln { font-family: var(--mono); font-size: .68rem; color: var(--ink-faint); }
+  .lad-rung.active .ln { color: var(--style-lo); }
+  .lad-rung .lt { font-family: var(--serif); font-size: .98rem; line-height: 1.25; }
+  .lad-view { padding: 1rem; background: #fff; border: 1px solid var(--line); border-radius: 10px; display: flex; flex-direction: column; gap: .8rem; }
+  .lad-canvas-wrap { position: relative; flex: 1; min-height: 320px; display: flex; align-items: center; justify-content: center; background: var(--paper-2); border-radius: 7px; overflow: hidden; }
+  .lad-canvas-wrap canvas { display: block; max-width: 100%; max-height: 320px; image-rendering: pixelated; border-radius: 4px; }
+  .lad-desc { font-size: .9rem; color: var(--ink-soft); line-height: 1.55; padding: .5rem .2rem 0; border-top: 1px solid var(--line-soft); }
+  .lad-desc b { color: var(--ink); }
+  @media (max-width: 720px) { .ladder { grid-template-columns: 1fr; } .lad-rungs { display: grid; grid-template-columns: repeat(2, 1fr); } }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar"></div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol></ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub 03 — 단순 → 복잡, 단계적으로 짓는 표상</span>
+      <h1>깊이가 만드는 것 — <span class="t-style">단순 특징</span>의 합성으로 <span class="t-structure">복잡한 개념</span>을 짓는다</h1>
+      <p class="lede">“딥러닝의 깊이”는 층 수 자랑이 아니다. 복잡한 개념을 단순한 표상의 합성으로 차곡차곡 짓는 능력 — 시험에서 깊이의 정의를 묻는다면 이 한 문장이다.</p>
+    </header>
+
+    <div class="prose">
+      <p>지금까지 우리는 표상학습이 왜 필요한지(<a href="01.html">Sub 01</a>), 그리고 그 학습이 동심원의 가장 안쪽에 놓인다는 사실(<a href="02.html">Sub 02</a>)을 보았다. 이제 그 가장 안쪽 영역인 딥러닝의 “깊이”가 정확히 무엇을 의미하는지 본다.</p>
+
+      <p>흔한 오해는 “층(layer) 수가 많을수록 좋은 게 딥러닝”이라는 것이다. 시험에서 가장 자주 깎이는 답안이기도 하다. 깊이의 진짜 의미는 다음과 같다.</p>
+
+      <div class="analogy">
+        <b>레고로 도시를 짓기.</b> 깊이가 1인 모델은 “레고 블록 더미에서 곧바로 도시를 만들어 보라”는 요구와 같다. 사실상 불가능하다. 깊이가 깊은 모델은 그 사이에 단계를 둔다 — 블록으로 먼저 <em>벽</em>을 만들고, 벽으로 <em>방</em>을, 방으로 <em>집</em>을, 집으로 <em>거리</em>를, 거리로 <em>도시</em>를 짓는다. 같은 블록 세트로 훨씬 복잡한 결과물에 닿을 수 있는 이유는 “단계적으로 합성한다”는 점에 있다.
+      </div>
+
+      <h2>이미지에서 본 사다리 — 픽셀에서 객체까지</h2>
+      <p>책 1장이 가장 자주 보여 주는 그림은 합성곱 신경망(convolutional neural network, CNN)이 이미지를 어떻게 “층마다 다르게 보는가”다. 아래 위젯의 각 칸을 클릭해 그 층의 표상을 직접 들여다보자. 같은 입력 이미지가 층을 거치며 점점 다른 종류의 정보로 바뀐다.</p>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 03</span><span>표상의 사다리 — 층을 클릭하면 그 층이 무엇을 보는지 보입니다</span></div>
+        <div class="ladder">
+          <div class="lad-rungs">
+            <div class="lad-rung active" data-stage="0"><span class="ln">L0</span><span class="lt">픽셀<br><small style="color:var(--ink-faint);font-family:var(--mono);font-size:.65rem">raw pixels</small></span></div>
+            <div class="lad-rung" data-stage="1"><span class="ln">L1</span><span class="lt">모서리/방향<br><small style="color:var(--ink-faint);font-family:var(--mono);font-size:.65rem">edges, gradients</small></span></div>
+            <div class="lad-rung" data-stage="2"><span class="ln">L2</span><span class="lt">질감/코너<br><small style="color:var(--ink-faint);font-family:var(--mono);font-size:.65rem">textures, corners</small></span></div>
+            <div class="lad-rung" data-stage="3"><span class="ln">L3</span><span class="lt">부위<br><small style="color:var(--ink-faint);font-family:var(--mono);font-size:.65rem">parts: eye, wheel</small></span></div>
+            <div class="lad-rung" data-stage="4"><span class="ln">L4</span><span class="lt">객체<br><small style="color:var(--ink-faint);font-family:var(--mono);font-size:.65rem">faces, cars</small></span></div>
+          </div>
+          <div class="lad-view">
+            <div class="lad-canvas-wrap">
+              <canvas id="lad-canvas" width="280" height="280"></canvas>
+            </div>
+            <p class="lad-desc" id="lad-desc"></p>
+          </div>
+        </div>
+      </div>
+      <p class="widget-cap">왼쪽 사다리를 위로 올라갈수록 “덜 시각적이고 더 의미적”인 표상이 된다. 한 층은 직전 층의 출력을 입력으로 받아 다음 층으로 넘긴다 — 즉 <em>층은 함수의 합성</em>이다. $f_4 \circ f_3 \circ f_2 \circ f_1$ 처럼.</p>
+    </div>
+
+    <div class="prose">
+      <h2>왜 한 층으로는 안 되는가 — “표현력은 같아도 효율이 다르다”</h2>
+      <p>수학적으로 보면 충분히 넓은 한 층(즉 unit이 매우 많은 단일 은닉층)도 어떤 함수든 근사할 수 있다는 정리(universal approximation theorem)가 있다. 그렇다면 왜 굳이 깊게 쌓는가? 답은 <strong>표현력의 차이가 아니라 효율의 차이</strong>에 있다.</p>
+
+      <p>같은 함수를 한 층으로 표현하려면 지수적으로 많은 유닛이 필요한 경우가, 여러 층으로 나누면 다항적인 유닛만으로 표현 가능한 경우가 많다. 즉 깊이는 <em>같은 일을 더 적은 부품으로 하는 능력</em>이다. 강의노트에서 교수님이 반복한 표현으로 옮기면, “정확도가 같으면 효율이 다음 척도”인 것이다.</p>
+
+      <div class="math-block">$$ y = f_L \big( f_{L-1} \big( \cdots f_2 \big( f_1(x) \big) \cdots \big) \big) $$</div>
+      <p class="math-note">x는 입력, f_l은 l번째 층, y는 최종 표상. 한 층의 단순한 비선형 변환을 여러 번 합성하면 매우 복잡한 함수를 짤 수 있다.</p>
+
+      <h2>깊이의 두 정의 — 시험 직전 다시 확인</h2>
+      <p>책에서 “깊이”는 두 가지로 정의된다. 둘 다 알아 두면 “깊이가 무엇인가”라는 시험 질문에 양면으로 답할 수 있다.</p>
+
+      <table class="symbols">
+        <tr><td><b>계산 그래프 깊이</b></td><td>입력에서 출력까지 거치는 가장 긴 연산 경로의 길이. CNN, RNN의 “층 수”가 흔히 이쪽으로 측정된다.</td></tr>
+        <tr><td><b>개념 그래프 깊이</b></td><td>“복잡한 개념이 단순 개념들의 몇 단계 합성으로 만들어지는가”. 같은 모델 구조라도 더 추상적인 개념을 다루면 개념 깊이는 더 깊어진다.</td></tr>
+      </table>
+
+      <p>두 정의는 보통 함께 가지만 항상 같지는 않다. 예를 들어 ResNet은 계산 그래프 깊이가 100층 이상이지만, 정작 학습된 개념의 단계가 그만큼 많은지는 별개의 문제다. 시험에서 “깊이는 단순히 층 수가 아니다”라고 답할 수 있다면 이 두 정의를 모두 이해한 것이다.</p>
+
+      <h2>이 절의 한 줄 요약</h2>
+      <p><strong>딥러닝의 깊이 = 복잡한 표상을 단순 표상의 단계적 합성으로 짓는 능력.</strong> 다음 절에서는 이 발상이 1980년대에도 있었는데 왜 30년 동안 묻혀 있다가 2010년대에 폭발했는지, 그 역사적 굴곡을 본다.</p>
+    </div>
+
+    <nav class="ch-foot"></nav>
+  </main>
+</div>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'표상의 문제', f:'01.html' },
+    { no:'02', t:'AI/ML/RL/DL 동심원', f:'02.html' },
+    { no:'03', t:'깊이가 만드는 것', f:'03.html' },
+    { no:'04', t:'역사적 굴곡', f:'04.html' },
+    { no:'05', t:'데이터/모델/계산 삼각형', f:'05.html' },
+    { no:'06', t:'시험 대비 체크리스트', f:'06.html' },
+  ];
+  const CURRENT = '03';
+  (function buildNav() {
+    document.querySelector('.topbar').innerHTML =
+      `<a class="home" href="index.html">← Chapter 01 — 딥러닝이란 무엇인가</a>` +
+      `<span class="ch-mini">SUB ${CURRENT} / 06</span>`;
+    document.querySelector('.ch-nav ol').innerHTML = SUBS.map(s =>
+      `<li><a href="${s.f}" ${s.no === CURRENT ? 'class="current"' : ''}>${s.t}</a></li>`).join('');
+    const i = SUBS.findIndex(s => s.no === CURRENT);
+    const prev = i > 0 ? SUBS[i-1] : { f:'index.html', t:'챕터 표지', no:'' };
+    const next = i < SUBS.length-1 ? SUBS[i+1] : { f:'index.html', t:'챕터 표지', no:'' };
+    document.querySelector('.ch-foot').innerHTML =
+      `<a href="${prev.f}"><div class="dir">← 이전</div><div class="ti">${prev.t}</div></a>` +
+      `<a href="${next.f}" class="next"><div class="dir">다음 →</div><div class="ti">${next.t}</div></a>`;
+    const bar = document.querySelector('.scroll-progress');
+    const onScroll = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    document.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+  })();
+
+  // ===== 표상의 사다리 위젯 =====
+  (function ladder() {
+    const canvas = document.getElementById('lad-canvas');
+    const desc = document.getElementById('lad-desc');
+    const rungs = document.querySelectorAll('.lad-rung');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+
+    // 정지된 “얼굴” 합성 그림을 모든 단계의 베이스로 사용
+    function drawFaceBase(target) {
+      target.fillStyle = '#EDE6D7'; target.fillRect(0,0,W,H);
+      // 얼굴 타원
+      target.fillStyle = '#D9C7A6'; target.beginPath();
+      target.ellipse(W/2, H/2+15, 92, 110, 0, 0, Math.PI*2); target.fill();
+      // 머리카락
+      target.fillStyle = '#3C3328'; target.beginPath();
+      target.ellipse(W/2, H/2-50, 100, 60, 0, Math.PI, Math.PI*2); target.fill();
+      target.fillRect(W/2-100, H/2-50, 28, 100);
+      target.fillRect(W/2+72, H/2-50, 28, 100);
+      // 눈 (두 개)
+      target.fillStyle = '#fff'; target.beginPath();
+      target.ellipse(W/2-32, H/2-10, 16, 9, 0, 0, Math.PI*2); target.fill();
+      target.beginPath(); target.ellipse(W/2+32, H/2-10, 16, 9, 0, 0, Math.PI*2); target.fill();
+      target.fillStyle = '#26221C'; target.beginPath();
+      target.arc(W/2-32, H/2-10, 5, 0, Math.PI*2); target.fill();
+      target.beginPath(); target.arc(W/2+32, H/2-10, 5, 0, Math.PI*2); target.fill();
+      // 코
+      target.strokeStyle = '#A8896A'; target.lineWidth = 2; target.beginPath();
+      target.moveTo(W/2, H/2-4); target.lineTo(W/2-6, H/2+24); target.lineTo(W/2+6, H/2+24); target.stroke();
+      // 입
+      target.strokeStyle = '#7A4030'; target.lineWidth = 3; target.beginPath();
+      target.moveTo(W/2-22, H/2+58); target.quadraticCurveTo(W/2, H/2+72, W/2+22, H/2+58); target.stroke();
+    }
+
+    function stage0_pixels() {
+      // 픽셀 격자만 부각 — 베이스를 그린 뒤 매우 작은 블록 단위 평균화 + 격자선
+      const tmp = document.createElement('canvas'); tmp.width = W; tmp.height = H;
+      drawFaceBase(tmp.getContext('2d'));
+      const src = tmp.getContext('2d').getImageData(0,0,W,H);
+      // 10x10 블록 평균
+      const bs = 10;
+      ctx.fillStyle = '#fff'; ctx.fillRect(0,0,W,H);
+      for (let y = 0; y < H; y += bs) {
+        for (let x = 0; x < W; x += bs) {
+          let r=0,g=0,b=0,n=0;
+          for (let dy = 0; dy < bs; dy++) for (let dx = 0; dx < bs; dx++) {
+            const idx = ((y+dy)*W + (x+dx))*4;
+            r += src.data[idx]; g += src.data[idx+1]; b += src.data[idx+2]; n++;
+          }
+          ctx.fillStyle = `rgb(${(r/n)|0},${(g/n)|0},${(b/n)|0})`;
+          ctx.fillRect(x,y,bs,bs);
+        }
+      }
+      // 격자 강조
+      ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = 0.5;
+      for (let i = 0; i <= W; i += bs) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,H); ctx.stroke(); }
+      for (let i = 0; i <= H; i += bs) { ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(W,i); ctx.stroke(); }
+    }
+
+    function stage1_edges() {
+      // 베이스를 그리고 Sobel-like 에지 검출
+      const tmp = document.createElement('canvas'); tmp.width = W; tmp.height = H;
+      const tctx = tmp.getContext('2d'); drawFaceBase(tctx);
+      const img = tctx.getImageData(0,0,W,H);
+      const out = ctx.createImageData(W,H);
+      function lum(x,y) {
+        const i = (y*W+x)*4;
+        return 0.3*img.data[i] + 0.59*img.data[i+1] + 0.11*img.data[i+2];
+      }
+      for (let y = 1; y < H-1; y++) for (let x = 1; x < W-1; x++) {
+        const gx = -lum(x-1,y-1) - 2*lum(x-1,y) - lum(x-1,y+1)
+                  + lum(x+1,y-1) + 2*lum(x+1,y) + lum(x+1,y+1);
+        const gy = -lum(x-1,y-1) - 2*lum(x,y-1) - lum(x+1,y-1)
+                  + lum(x-1,y+1) + 2*lum(x,y+1) + lum(x+1,y+1);
+        const mag = Math.min(255, Math.hypot(gx, gy));
+        const i = (y*W+x)*4;
+        out.data[i] = out.data[i+1] = out.data[i+2] = mag > 50 ? 38 : 250;
+        out.data[i+3] = 255;
+      }
+      ctx.fillStyle = '#fff'; ctx.fillRect(0,0,W,H);
+      ctx.putImageData(out, 0, 0);
+    }
+
+    function stage2_texture() {
+      // 에지를 약하게 + 코너/질감 강조 점들
+      stage1_edges();
+      ctx.fillStyle = 'rgba(192,73,46,0.85)';
+      const seeds = [
+        [W/2-32-16, H/2-10], [W/2-32+16, H/2-10],
+        [W/2+32-16, H/2-10], [W/2+32+16, H/2-10],
+        [W/2-22, H/2+58], [W/2+22, H/2+58],
+        [W/2, H/2+24], [W/2-100, H/2-50], [W/2+100, H/2-50],
+      ];
+      seeds.forEach(([x,y]) => {
+        ctx.beginPath(); ctx.arc(x, y, 7, 0, Math.PI*2); ctx.fill();
+      });
+      ctx.fillStyle = 'rgba(45,91,122,0.65)';
+      for (let i = 0; i < 25; i++) {
+        const x = 30 + Math.random()*(W-60), y = 30 + Math.random()*(H-60);
+        ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI*2); ctx.fill();
+      }
+    }
+
+    function stage3_parts() {
+      // 베이스를 회색으로 깔고 “부위” 박스 강조
+      drawFaceBase(ctx);
+      ctx.fillStyle = 'rgba(38,34,28,0.55)'; ctx.fillRect(0,0,W,H);
+      // 부위 박스
+      const parts = [
+        { x: W/2-50, y: H/2-26, w: 36, h: 26, lab: 'eye_L' },
+        { x: W/2+14, y: H/2-26, w: 36, h: 26, lab: 'eye_R' },
+        { x: W/2-12, y: H/2-4, w: 24, h: 34, lab: 'nose' },
+        { x: W/2-30, y: H/2+45, w: 60, h: 22, lab: 'mouth' },
+        { x: W/2-110, y: H/2-90, w: 220, h: 60, lab: 'hair' },
+      ];
+      parts.forEach(p => {
+        ctx.strokeStyle = '#C0492E'; ctx.lineWidth = 2; ctx.setLineDash([4,3]);
+        ctx.strokeRect(p.x, p.y, p.w, p.h); ctx.setLineDash([]);
+        ctx.fillStyle = '#C0492E'; ctx.font = 'bold 10px "Spline Sans Mono", monospace';
+        ctx.fillText(p.lab, p.x+2, p.y-3);
+      });
+    }
+
+    function stage4_object() {
+      drawFaceBase(ctx);
+      // 라벨 박스
+      ctx.fillStyle = 'rgba(38,34,28,0.86)';
+      ctx.fillRect(20, 20, 200, 38);
+      ctx.fillStyle = '#FAF7F0'; ctx.font = 'bold 14px "Spline Sans Mono", monospace';
+      ctx.fillText('object: FACE', 30, 38);
+      ctx.fillStyle = '#D98E73'; ctx.font = '11px "Spline Sans Mono", monospace';
+      ctx.fillText('confidence: 0.97', 30, 52);
+      // 객체 박스
+      ctx.strokeStyle = '#A47B2E'; ctx.lineWidth = 3; ctx.setLineDash([6,4]);
+      ctx.strokeRect(W/2-110, H/2-110, 220, 230); ctx.setLineDash([]);
+    }
+
+    const stages = [
+      { fn: stage0_pixels, desc: '<b>L0 — 픽셀</b>. 컴퓨터에게 이미지는 그저 224×224×3 같은 숫자 텐서다. 의미는 어디에도 없다. 가까이서 보면 격자 칸마다 (R, G, B) 세 숫자가 들어 있을 뿐이다.' },
+      { fn: stage1_edges, desc: '<b>L1 — 모서리/방향</b>. 첫 번째 층(합성곱 필터)은 인접한 픽셀 값의 변화를 잡는다. 결과적으로 가로/세로/사선 모서리 같은 “저수준 특징”이 드러난다.' },
+      { fn: stage2_texture, desc: '<b>L2 — 질감/코너</b>. 두 번째 층은 1층 출력의 패턴을 합성한다. 모서리의 교차점(코너), 반복 무늬(질감) 같은 중간 수준 특징이 생긴다.' },
+      { fn: stage3_parts, desc: '<b>L3 — 부위</b>. 더 깊이 들어가면 모델은 “눈”, “코”, “입”, “머리카락”처럼 의미 있는 부위에 반응하는 표상을 잡는다. 이 단계에서 이미 시각적이라기보다 의미적이다.' },
+      { fn: stage4_object, desc: '<b>L4 — 객체</b>. 마지막 층은 부위들의 공간적 배치를 합성해 “이것은 얼굴이다”라는 최종 판단까지 도달한다. 같은 모델 구조의 RNN/Transformer는 단어 → 구문 → 의미로 같은 사다리를 오른다.' },
+    ];
+
+    function render(idx) {
+      rungs.forEach((r, i) => r.classList.toggle('active', i === idx));
+      stages[idx].fn();
+      desc.innerHTML = stages[idx].desc;
+    }
+    rungs.forEach((r, i) => r.addEventListener('click', () => render(i)));
+    render(0);
+  })();
+
+  window.addEventListener('load', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
+        throwOnError: false,
+      });
+    }
+  });
+</script>
+</body>
+</html>

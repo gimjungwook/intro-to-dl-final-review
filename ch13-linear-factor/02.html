@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>02 · 요소 분석과 확률적 PCA — 가우시안 잠재공간</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  .pca-stage { display: grid; grid-template-columns: 1fr; padding: 1.4rem 1.1rem .6rem; }
+  .pca-stage canvas { display: block; width: 100%; height: 360px; border-radius: 9px; border: 1px solid var(--line); background: #fff; }
+  .pca-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 1.4rem; padding: 1rem 1.1rem; align-items: center; }
+  @media (max-width: 600px) { .pca-controls { grid-template-columns: 1fr; } }
+  .pca-meta { font-family: var(--mono); font-size: .8rem; color: var(--ink-soft); display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; }
+  .pca-meta .lbl { display: block; font-size: .68rem; color: var(--ink-faint); letter-spacing: .12em; text-transform: uppercase; }
+  .pca-meta b { color: var(--structure); font-weight: 600; font-size: .95rem; }
+  .pca-bar { height: 6px; background: var(--paper-sink); border-radius: 3px; overflow: hidden; margin-top: .3rem; }
+  .pca-bar i { display: block; height: 100%; background: var(--style); transition: width .25s var(--ease); }
+</style>
+</head>
+<body>
+<div class="scroll-progress"></div>
+<div class="topbar">
+  <a class="home" href="index.html">← Chapter 13 · 선형 요소 모델</a>
+  <span class="ch-mini">SUB-CHAPTER 02 / 06</span>
+</div>
+
+<div class="ch-layout">
+  <aside class="ch-nav"><nav><ol>
+    <li><a href="01.html">잠재 변수 모델</a></li>
+    <li><a href="02.html" class="current">요소 분석과 확률적 PCA</a></li>
+    <li><a href="03.html">ICA — 비가우시안 독립</a></li>
+    <li><a href="04.html">희소 코딩</a></li>
+    <li><a href="05.html">평평한 매니폴드</a></li>
+    <li><a href="06.html">시험 대비 요약</a></li>
+  </ol></nav></aside>
+  <main class="ch-main">
+
+    <header class="ch-head">
+      <span class="kicker">Sub-Chapter 02 · 가우시안 가족</span>
+      <h1>모든 것이 <span class="t-structure">가우시안</span>일 때,<br>모든 것이 단순해진다</h1>
+      <p class="lede">잠재 변수도 정규분포, 잡음도 정규분포. 이 두 가정만 깔면 추론도 학습도 적분 없이 행렬 연산만으로 풀린다. PCA가 왜 이 가족의 극한인지도 자연스럽게 보인다.</p>
+    </header>
+
+    <div class="prose">
+      <p>선형 요소 모델 가족 중에서 분석적으로 가장 깔끔한 분파는 <strong>요소 분석(factor analysis, FA)</strong>과 <strong>확률적 주성분 분석(probabilistic PCA, PPCA)</strong>이다. 둘은 같은 틀에서 잡음 가정만 다르다.</p>
+
+      <h2>FA — 잠재는 단위 가우시안, 잡음은 차원별</h2>
+
+      <p>FA의 가정은 두 줄이다.</p>
+
+      <div class="math-block">$$ h \sim \mathcal{N}(0, I) $$</div>
+      <p class="math-note">잠재 변수는 평균 0, 공분산 단위행렬 I. 각 차원이 독립이고 같은 분산 1.</p>
+
+      <div class="math-block">$$ x \mid h \sim \mathcal{N}(W h + b, \, \Psi), \quad \Psi = \mathrm{diag}(\psi_1^2, \dots, \psi_D^2) $$</div>
+      <p class="math-note">관측은 Wh+b를 평균으로, 대각 공분산 Ψ를 가진 가우시안. 차원마다 자기만의 잡음 분산 ψ_d^2를 가진다.</p>
+
+      <p>여기서 결정적인 단어는 <strong>대각(diagonal)</strong>이다. FA는 "관측 차원들 사이의 모든 상관은 공통 요소 $h$가 만들고, 각 차원에 남는 잔여 변동은 서로 독립"이라고 본다. 그래서 차원마다 다른 잔여 분산 $\psi_d^2$를 허용한다.</p>
+
+      <div class="analogy">
+        <b>왜 차원별로 다른 잡음을 두는가?</b> 환자 측정에서 혈압과 체온을 같이 본다고 하자. 혈압은 측정 장비가 정밀해서 잔여 노이즈가 작고, 체온은 환자가 막 들어왔는지 안정 상태인지에 따라 흔들림이 크다. 둘을 같은 잡음 분산으로 묶어 버리면 모델이 둘 중 하나에는 너무 관대해지거나 너무 엄격해진다. FA는 차원마다 잡음의 폭을 따로 정해서 이 불균형을 흡수한다.
+      </div>
+
+      <h2>PPCA — 등방 잡음, 그리고 PCA로의 극한</h2>
+
+      <p>PPCA는 FA의 잡음을 한 번 더 단순화한다. 모든 차원이 <strong>같은</strong> 잡음 분산을 공유한다.</p>
+
+      <div class="math-block">$$ x \mid h \sim \mathcal{N}(W h + b, \, \sigma^2 I) $$</div>
+      <p class="math-note">Ψ가 σ²I로 좁아진다. 등방(isotropic) 잡음 — 모든 방향이 같은 크기.</p>
+
+      <p>이 한 줄의 단순화 덕분에 결과 $W$가 데이터 공분산의 <strong>주성분 방향과 정확히 정렬</strong>된다. 그리고 $\sigma^2 \to 0$의 극한에서 우리는 익숙한 <strong>고전 PCA</strong>로 귀착된다.</p>
+
+      <div class="math-block">$$ \lim_{\sigma^2 \to 0} \text{PPCA} = \text{classical PCA} $$</div>
+      <p class="math-note">잡음이 사라지면 잠재 평면이 데이터 점들의 분산을 최대한 보존하는 방향(주성분)으로 정확히 자리잡는다.</p>
+
+      <div class="analogy">
+        <b>고전 PCA는 무엇이었나?</b> 데이터 점들을 어떤 축에 사영(project)했을 때 그 사영의 분산이 가장 큰 방향을 찾는 것이었다. 분산이 클수록 데이터의 "정보"가 그 축에 많이 담긴다고 본 것이다. PPCA는 같은 결과를 확률 모델로 다시 적은 것이다. "관측은 평면 + 등방 잡음"이라는 모델에서 잡음을 0으로 보내면, 평면이 데이터의 분산이 가장 큰 방향을 가리키게 된다. <b>왜?</b> 잡음이 작을수록 모델은 모든 데이터 점을 평면에 더 가까이 끌어와야 우도가 커지고, 그러려면 평면이 점들의 변동이 가장 큰 방향을 따라가야 평균 거리가 최소가 되기 때문이다.
+      </div>
+    </div>
+
+    <div class="widget">
+      <div class="widget-frame">
+        <div class="widget-label"><span class="lab-no">위젯 02</span><span>PCA 2D 투영 — 주성분 방향을 직접 돌려 보기</span></div>
+        <div class="pca-stage">
+          <canvas id="pca"></canvas>
+        </div>
+        <div class="pca-controls">
+          <div class="slider">
+            <label>주성분 각도 θ <b id="pca-theta">0°</b></label>
+            <input id="pca-th" type="range" min="0" max="180" value="0" step="1" class="s-style">
+          </div>
+          <div class="pca-meta">
+            <span><span class="lbl">설명된 분산 비율</span><b id="pca-evr">0.0%</b><div class="pca-bar"><i id="pca-bar"></i></div></span>
+            <span><span class="lbl">최적 (PCA)</span><b id="pca-opt">θ* ≈ 28°</b></span>
+          </div>
+        </div>
+      </div>
+      <p class="widget-cap">데이터(파란 점)는 어떤 방향으로 크게 늘어져 있다. 슬라이더로 사영 축의 각도 θ를 돌리면, 그 축에 사영했을 때의 분산 비율이 실시간으로 갱신된다. 분산이 최대가 되는 각도가 바로 1주성분 방향이며, 이것이 PCA가 찾는 것이다. 각도를 직접 옮겨가며 "왜 그 방향이 최선인가"를 손으로 확인할 수 있다.</p>
+    </div>
+
+    <div class="prose">
+      <h2>왜 사후 분포가 닫힌 형태로 풀리는가</h2>
+
+      <p>FA와 PPCA의 가장 큰 매력은 추론 — 즉 $p(h \mid x)$ — 이 다시 가우시안으로 떨어진다는 점이다. 그래서 적분도, 경사하강도, 어떤 반복 알고리즘도 필요 없다. 평균과 공분산을 한 번에 적을 수 있다.</p>
+
+      <div class="math-block">$$ p(h \mid x) = \mathcal{N}\!\left( \mu_{h \mid x}, \, \Sigma_{h \mid x} \right) $$</div>
+      <p class="math-note">사후도 가우시안. 그 평균과 공분산은 W, Ψ(또는 σ²I), x로부터 닫힌 식으로 결정된다.</p>
+
+      <p>왜 이 식이 그 형태인가? 핵심은 <strong>가우시안의 곱은 다시 가우시안</strong>이라는 사실이다. 사전 $p(h) = \mathcal{N}(0, I)$와 우도 $p(x \mid h) = \mathcal{N}(Wh + b, \Psi)$가 둘 다 가우시안이므로, 베이즈 규칙으로 곱한 사후 $p(h \mid x) \propto p(x \mid h) \, p(h)$ 역시 가우시안이다. 두 가우시안의 지수부에 들어 있는 이차식들을 $h$에 대해 모아 완성 제곱(complete the square)을 하면, 그 결과가 정확히 사후 평균과 사후 공분산이 된다. 적분이 필요 없는 이유가 여기 있다.</p>
+
+      <p>이것이 FA·PPCA의 <strong>강점</strong>이자 동시에 <strong>한계</strong>다. 강점은 명백하다 — 학습은 EM이나 닫힌 해, 추론은 단 한 줄의 행렬 곱셈으로 끝난다. 한계도 명백하다 — 가우시안은 평균 둘레로 부드럽게 퍼진 모양뿐이라, 데이터가 "거의 항상 0이고 가끔 큰 값"을 가지거나 "서로 통계적으로 독립인 비가우시안 신호의 혼합" 같은 구조를 가질 때는 표현이 안 된다. 다음 두 장 — ICA와 희소 코딩 — 은 정확히 이 한계를 깨려고 등장한다.</p>
+
+      <h2>EM 알고리즘 한 줄 직관</h2>
+
+      <p>실제로 데이터로부터 $W, \Psi$를 찾는 표준 절차는 <strong>EM(Expectation-Maximization) 알고리즘</strong>이다. 두 단계가 번갈아 돈다.</p>
+
+      <ul>
+        <li><strong>E-step.</strong> 현재 $W, \Psi$를 고정하고, 각 관측 $x^{(i)}$에 대해 사후 평균 $\mathbb{E}[h \mid x^{(i)}]$를 계산한다.</li>
+        <li><strong>M-step.</strong> 사후 평균을 마치 진짜 $h^{(i)}$인 양 사용해서 $W, \Psi$를 다시 최대우도 추정한다.</li>
+      </ul>
+
+      <p>두 단계가 번갈아 우도를 단조 증가시킨다는 것이 EM의 핵심 보장이다. 가우시안이 가져다 주는 단순함이 EM의 두 단계 모두를 닫힌 형태로 만든다.</p>
+
+      <p>다음 장에서는 잠재 변수에서 <strong>가우시안 가정을 벗는</strong> 순간 무엇이 일어나는지 본다. 그 첫 번째 사례가 칵테일 파티 문제에서 사람 목소리를 갈라내는 ICA다.</p>
+    </div>
+
+    <nav class="ch-foot">
+      <a href="01.html"><div class="dir">← 이전</div><div class="ti">잠재 변수 모델</div></a>
+      <a href="03.html" class="next"><div class="dir">다음 →</div><div class="ti">ICA — 비가우시안 독립</div></a>
+    </nav>
+  </main>
+</div>
+
+<script>
+  window.addEventListener('load', () => {
+    const bar = document.querySelector('.scroll-progress');
+    const onScroll = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    };
+    document.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }],
+        throwOnError: false,
+      });
+    }
+
+    // ============================ PCA 2D 위젯 ============================
+    const canvas = document.getElementById('pca');
+    const ctx = canvas.getContext('2d');
+    function resize() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const w = canvas.clientWidth, h = 360;
+      canvas.width = w * dpr; canvas.height = h * dpr;
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    // 2D 데이터 — 가우시안 + 회전된 큰 분산 방향
+    const N = 220;
+    const trueAng = 28 * Math.PI / 180;
+    const cosA = Math.cos(trueAng), sinA = Math.sin(trueAng);
+    const data = [];
+    function randn() {
+      let u = 0, v = 0;
+      while (u === 0) u = Math.random();
+      while (v === 0) v = Math.random();
+      return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+    }
+    for (let i = 0; i < N; i++) {
+      const a = randn() * 1.8;    // 큰 분산 방향
+      const b = randn() * 0.42;   // 작은 분산 방향
+      const x = a * cosA - b * sinA;
+      const y = a * sinA + b * cosA;
+      data.push({ x, y });
+    }
+    // 중심 0
+    const mx = data.reduce((s, p) => s + p.x, 0) / N;
+    const my = data.reduce((s, p) => s + p.y, 0) / N;
+    data.forEach(p => { p.x -= mx; p.y -= my; });
+
+    // 데이터 총분산
+    const totalVar = data.reduce((s, p) => s + p.x*p.x + p.y*p.y, 0) / N;
+
+    function projVar(theta) {
+      const c = Math.cos(theta), s = Math.sin(theta);
+      let v = 0;
+      data.forEach(p => { const t = p.x*c + p.y*s; v += t*t; });
+      return v / N;
+    }
+
+    // 최적 각도 표시
+    let bestTh = 0, bestV = -1;
+    for (let d = 0; d <= 180; d++) {
+      const v = projVar(d * Math.PI / 180);
+      if (v > bestV) { bestV = v; bestTh = d; }
+    }
+    document.getElementById('pca-opt').textContent = `θ* ≈ ${bestTh}°`;
+
+    const sl = document.getElementById('pca-th');
+    const lblTh = document.getElementById('pca-theta');
+    const lblEvr = document.getElementById('pca-evr');
+    const barEl = document.getElementById('pca-bar');
+
+    function draw() {
+      const w = canvas.clientWidth, h = 360;
+      ctx.clearRect(0,0,w,h);
+      ctx.fillStyle = '#FAF7F0'; ctx.fillRect(0,0,w,h);
+
+      const cx = w/2, cy = h/2;
+      const scale = Math.min(w, h) * 0.16;
+
+      // 축
+      ctx.strokeStyle = 'rgba(38,34,28,.10)';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(w, cy); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, h); ctx.stroke();
+
+      // 데이터 점
+      data.forEach(p => {
+        ctx.fillStyle = 'rgba(45, 91, 122, 0.55)';
+        ctx.beginPath(); ctx.arc(cx + p.x * scale, cy - p.y * scale, 2.5, 0, Math.PI*2); ctx.fill();
+      });
+
+      const th = +sl.value;
+      const theta = th * Math.PI / 180;
+      const c = Math.cos(theta), s = Math.sin(theta);
+
+      // 사영 선들 (각 점 → 축)
+      ctx.strokeStyle = 'rgba(192, 73, 46, 0.18)';
+      ctx.lineWidth = 0.6;
+      data.forEach(p => {
+        const t = p.x * c + p.y * s; // 축 위 좌표
+        const fx = t * c, fy = t * s;
+        ctx.beginPath();
+        ctx.moveTo(cx + p.x * scale, cy - p.y * scale);
+        ctx.lineTo(cx + fx * scale, cy - fy * scale);
+        ctx.stroke();
+      });
+
+      // 사영된 점들 (축 위)
+      data.forEach(p => {
+        const t = p.x * c + p.y * s;
+        const fx = t * c, fy = t * s;
+        ctx.fillStyle = 'rgba(192, 73, 46, 0.78)';
+        ctx.beginPath(); ctx.arc(cx + fx * scale, cy - fy * scale, 2, 0, Math.PI*2); ctx.fill();
+      });
+
+      // 주성분 축 (선)
+      const L = Math.min(w, h) * 0.42;
+      ctx.strokeStyle = '#C0492E';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(cx - c * L, cy + s * L);
+      ctx.lineTo(cx + c * L, cy - s * L);
+      ctx.stroke();
+
+      // 라벨
+      const evr = projVar(theta) / totalVar;
+      lblTh.textContent = th + '°';
+      lblEvr.textContent = (evr * 100).toFixed(1) + '%';
+      barEl.style.width = (evr * 100) + '%';
+
+      ctx.fillStyle = '#8E8576';
+      ctx.font = '11px "Spline Sans Mono", monospace';
+      ctx.fillText('데이터 (파랑) → 축에 사영 (주황)', 14, h - 14);
+    }
+    sl.addEventListener('input', draw);
+    draw();
+  });
+</script>
+</body>
+</html>
