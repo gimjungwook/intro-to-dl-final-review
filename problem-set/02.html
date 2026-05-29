@@ -32,7 +32,7 @@
 
     <!-- ===================== Q4 ===================== -->
     <div class="prose">
-      <h2 id="q4">Q4 · 경사하강법 vs 뉴턴법</h2>
+      <h2 id="q4">⛰️ Q4 · 경사하강법 vs 뉴턴법</h2>
       <p class="qtext">Describe and compare the gradient descent method and the Newton method.</p>
 
       <p>두 방법 모두 비용 $J(\theta)$를 최소화하지만, 곡면에 대해 쓰는 정보의 차수가 다르다. 경사하강은 <strong>1차(기울기)</strong>만, 뉴턴법은 <strong>2차(곡률, 헤시안)</strong>까지 쓴다.</p>
@@ -66,7 +66,12 @@
         <p class="widget-cap">조건수 κ를 키워 골짜기를 찌그러뜨릴수록 경사하강(빨강)은 가파른 축을 좌우로 튕기며 더 많은 걸음을 허비한다. 뉴턴법(파랑)은 곡률을 알기에 κ와 무관하게 늘 한 걸음에 바닥으로 점프한다.</p>
       </div>
 
-      <p class="skel-h">시험 답안 골격</p>
+      <div class="model-answer">
+        <div class="ma-label">🎯 Model Answer (English)</div>
+        <p class="ma-en"><strong>Gradient descent</strong> is a first-order method using only the gradient, $\theta \leftarrow \theta - \epsilon\nabla J$. It is cheap ($O(n)$ per step) but blind to curvature, so the learning rate must be tuned by hand and it zig-zags on ill-conditioned surfaces. <strong>Newton's method</strong> is second-order, $\theta \leftarrow \theta - H^{-1}\nabla J$, where the inverse Hessian rescales each direction by its curvature — reaching the minimum of a pure quadratic in a single step and being immune to ill-conditioning. In deep learning Newton is rarely usable: inverting the $n\times n$ Hessian costs $O(n^3)$ for millions of parameters, it can be attracted to saddle points when $H$ is not positive-definite, and the local quadratic model is inaccurate on non-convex loss surfaces. We therefore use cheap curvature-aware first-order methods such as momentum, RMSProp, and Adam.</p>
+      </div>
+
+      <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>경사하강 = 1차(기울기), 뉴턴 = 2차(헤시안). 식 $\theta-\epsilon\nabla J$ vs $\theta-H^{-1}\nabla J$.</li>
         <li>뉴턴은 곡률로 보폭 자동조정 → 조건수 면역, 이차함수는 1걸음. 경사하강은 ill-conditioned에서 지그재그.</li>
@@ -76,7 +81,7 @@
 
     <!-- ===================== Q5 ===================== -->
     <div class="prose">
-      <h2 id="q5">Q5 · 배치 / 확률적 / 미니배치 경사하강</h2>
+      <h2 id="q5">🍱 Q5 · 배치 / 확률적 / 미니배치 경사하강</h2>
       <p class="qtext">Compare the batch gradient, stochastic gradient and mini-batch gradient descent methods.</p>
 
       <p>셋의 차이는 단 하나 — <strong>한 번 업데이트할 때 기울기를 몇 개의 예제로 추정하는가</strong>다. 비용 함수가 보통 훈련 예제들에 대한 평균이므로, 진짜 기울기도 예제별 기울기의 평균이고, 그 평균을 몇 개로 추정하느냐의 문제로 환원된다.</p>
@@ -109,7 +114,12 @@
 
       <p>덤으로 미니배치의 기울기 잡음은 약한 <strong>정칙화</strong> 효과를 낸다 — 너무 큰 배치는 정확하지만 일반화가 나빠지는 경향이 보고된다. 작은 배치의 잡음이 평평한 최소점을 선호하게 만들기 때문이다.</p>
 
-      <p class="skel-h">시험 답안 골격</p>
+      <div class="model-answer">
+        <div class="ma-label">🎯 Model Answer (English)</div>
+        <p class="ma-en">The three differ only in how many examples estimate the gradient per update. <strong>Batch (full) gradient descent</strong> uses the whole training set: the gradient is exact and convergence smooth, but each update needs a full pass and large memory, which is impractical on large data. <strong>Stochastic gradient descent (SGD)</strong> uses a single example per update: updates are frequent and the noise helps escape shallow minima and saddle points, but the gradient is high-variance and cannot exploit GPU vectorisation. <strong>Mini-batch gradient descent</strong> uses $m$ examples (typically 32–256) and is the modern standard, because the estimate's standard error scales as $1/\sqrt{m}$ — diminishing returns favour small-ish batches — and GPUs process the whole batch in parallel; its residual noise even acts as a mild regulariser.</p>
+      </div>
+
+      <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>차이는 업데이트당 예제 수: 전체 / 1개 / m개.</li>
         <li>배치=정확하나 느리고 메모리↑, SGD=잦고 잡음 탈출 도움이나 분산↑·벡터화 불가, 미니배치=절충.</li>
@@ -119,7 +129,7 @@
 
     <!-- ===================== Q6 ===================== -->
     <div class="prose">
-      <h2 id="q6">Q6 · 최적화의 모멘텀(momentum)</h2>
+      <h2 id="q6">🏂 Q6 · 최적화의 모멘텀(momentum)</h2>
       <p class="qtext">What is the momentum in optimization?</p>
 
       <p>모멘텀은 과거 기울기들의 <strong>지수 감쇠 이동평균</strong>을 속도(velocity) 변수 $v$에 누적해, 매 스텝이 “지금 기울기”뿐 아니라 “지금까지의 관성”을 함께 따르게 하는 기법이다.</p>
@@ -134,7 +144,12 @@
 
       <p>모멘텀이 도달하는 종단 속도는 기울기가 일정할 때 $\dfrac{\epsilon \lVert g\rVert}{1-\alpha}$로, $\alpha=0.9$면 보폭이 약 10배로 증폭된다. 미니배치 잡음을 평균해 경로를 매끄럽게 하는 효과도 있다. 변형인 <strong>네스테로프 모멘텀</strong>은 기울기를 현재 위치가 아니라 관성으로 “미리 가 볼” 위치에서 계산해, 과도하게 지나치기 전에 교정한다.</p>
 
-      <p class="skel-h">시험 답안 골격</p>
+      <div class="model-answer">
+        <div class="ma-label">🎯 Model Answer (English)</div>
+        <p class="ma-en">Momentum accumulates an exponentially decaying moving average of past gradients into a <strong>velocity</strong> term: $v \leftarrow \alpha v - \epsilon\nabla J$, then $\theta \leftarrow \theta + v$. It helps because in an ill-conditioned ravine the oscillating directions reverse every step and cancel out on average, while the consistent downhill direction accumulates and accelerates — like a heavy ball rolling that coasts through small bumps (mini-batch noise) and shallow dips (poor local minima). With $\alpha = 0.9$ the effective step is amplified about tenfold (terminal velocity $\epsilon\lVert g\rVert/(1-\alpha)$). Nesterov momentum refines this by evaluating the gradient at the look-ahead position, correcting before it overshoots.</p>
+      </div>
+
+      <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>정의 — 과거 기울기의 지수평균을 속도 $v$에 누적: $v\leftarrow\alpha v-\epsilon\nabla J,\ \theta\leftarrow\theta+v$.</li>
         <li>효과 — 진동 축은 상쇄, 일관된 축은 누적·가속. 잡음·얕은 극소 통과. 종단속도 $\epsilon\|g\|/(1-\alpha)$.</li>
@@ -144,7 +159,7 @@
 
     <!-- ===================== Q7 ===================== -->
     <div class="prose">
-      <h2 id="q7">Q7 · 절벽(cliffs)과 기울기 폭발(exploding gradient)</h2>
+      <h2 id="q7">🧗 Q7 · 절벽(cliffs)과 기울기 폭발(exploding gradient)</h2>
       <p class="qtext">As an optimization challenge, what is the relation between cliffs and exploding gradient?</p>
 
       <p>깊은 네트워크나 RNN의 손실 곡면에는 <strong>절벽(cliff)</strong>이 흔하다 — 평평하던 지형이 갑자기 거의 수직으로 떨어지는 영역이다. 이런 절벽은 여러 층(또는 여러 시간 스텝)에 걸쳐 가중치가 <strong>반복적으로 곱해지기 때문</strong>에 생긴다. 비슷한 큰 가중치를 여러 번 곱하면 출력과 그 기울기가 지수적으로 커지는 구간이 만들어진다.</p>
@@ -159,7 +174,12 @@
 
       <p>처방은 <strong>기울기 클리핑</strong>(<a href="#q15">Q15</a>)이다. 방향은 그대로 두되 보폭의 크기만 상한으로 잘라, 절벽을 만나도 멀리 내던져지지 않고 가장자리를 따라 조심스럽게 내려가게 한다.</p>
 
-      <p class="skel-h">시험 답안 골격</p>
+      <div class="model-answer">
+        <div class="ma-label">🎯 Model Answer (English)</div>
+        <p class="ma-en">Cliffs are regions of the loss surface that drop almost vertically; they arise in deep networks and RNNs because weights are <strong>multiplied repeatedly</strong> across layers or time steps. The relation is one of cause and symptom: the <strong>cliff is the geometric cause</strong>, and the <strong>exploding gradient is the symptom</strong> at its edge. Near a cliff the gradient magnitude blows up, so a normal-sized step hurls the parameters far away and destroys prior progress. In RNNs this occurs when the recurrent weight matrix's largest eigenvalue exceeds 1, making the gradient grow exponentially with the number of time steps. The standard remedy is gradient clipping (Q15), which caps the step size while keeping its direction.</p>
+      </div>
+
+      <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>절벽 = 가중치 반복 곱으로 생긴 거의 수직인 손실 영역(기하학적 원인).</li>
         <li>기울기 폭발 = 절벽 근처에서 기울기 크기가 폭증하는 증상. 보폭 곱하면 파라미터가 멀리 날아감.</li>
@@ -169,7 +189,7 @@
 
     <!-- ===================== Q8 ===================== -->
     <div class="prose">
-      <h2 id="q8">Q8 · 가중치 공간 대칭성(weight space symmetry)</h2>
+      <h2 id="q8">🔀 Q8 · 가중치 공간 대칭성(weight space symmetry)</h2>
       <p class="qtext">What is the weight space symmetry?</p>
 
       <p>가중치 공간 대칭성이란, <strong>서로 다른 가중치 설정이 정확히 같은 입출력 함수를 구현하는 현상</strong>이다. 신경망은 “비식별(non-identifiable)” 모델이다 — 함수를 보고 가중치를 유일하게 거꾸로 알아낼 수 없다.</p>
@@ -184,7 +204,12 @@
 
       <p>함의는 셋이다. ① 비용 함수의 <strong>전역 최소점이 최소 $m!$개</strong> 존재한다(모두 동등하므로 어느 것에 도달하든 무방하다). ② 곡면이 비볼록이 되는 한 원인이다. ③ <strong>개별 가중치 값 자체에는 절대적 의미가 없다</strong> — 가중치를 직접 해석하려는 시도가 위험한 이유다. 다만 모든 사본이 동등하므로 이 대칭 자체가 최적화를 특별히 어렵게 만들지는 않는다.</p>
 
-      <p class="skel-h">시험 답안 골격</p>
+      <div class="model-answer">
+        <div class="ma-label">🎯 Model Answer (English)</div>
+        <p class="ma-en">Weight-space symmetry is the fact that <strong>many different weight settings implement exactly the same input–output function</strong>, so the network is non-identifiable — you cannot recover unique weights from the function. The most common case is hidden-unit permutation: swapping the incoming and outgoing weights of two hidden units leaves the computed function unchanged, so $m$ units yield at least $m!$ equivalent configurations; odd activations such as $\tanh$ add a sign-flip symmetry. The consequences are that the loss has at least $m!$ equivalent global minima, that this is one source of non-convexity, and that an individual weight value has no absolute meaning — but since all copies are equivalent, the symmetry itself does not make optimisation harder.</p>
+      </div>
+
+      <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>정의 — 다른 가중치가 같은 함수를 구현(비식별 모델).</li>
         <li>은닉 유닛 $m$개 재배열 → $m!$개 동등 설정. tanh는 부호반전 대칭 추가.</li>
@@ -194,7 +219,7 @@
 
     <!-- ===================== Q15 ===================== -->
     <div class="prose">
-      <h2 id="q15">Q15 · 기울기 클리핑(gradient clipping)</h2>
+      <h2 id="q15">✂️ Q15 · 기울기 클리핑(gradient clipping)</h2>
       <p class="qtext">What is gradient clipping?</p>
 
       <p>기울기 클리핑은 기울기의 <strong>크기가 임계값을 넘으면 방향은 보존한 채 크기만 임계값으로 줄이는</strong> 기법이다. 가장 흔한 노름 클리핑은 다음과 같다.</p>
@@ -209,7 +234,12 @@
 
       <p>RNN 학습의 사실상 표준 안전장치다. 요소별로 $[-v, v]$에 자르는 방식도 있으나, 노름 클리핑이 방향을 보존하므로 더 선호된다.</p>
 
-      <p class="skel-h">시험 답안 골격</p>
+      <div class="model-answer">
+        <div class="ma-label">🎯 Model Answer (English)</div>
+        <p class="ma-en">Gradient clipping rescales the gradient whenever its norm exceeds a threshold $\tau$, while <strong>preserving its direction</strong>: if $\lVert g\rVert > \tau$ then $g \leftarrow \tau\,g/\lVert g\rVert$. It is the direct remedy for cliffs and exploding gradients (Q7): when the gradient blows up near a cliff, clipping caps the step so the parameters are not catapulted away, yet the descent direction is unchanged — like a car's speed limiter that bounds how fast you go without changing where you steer. It is a standard safeguard in RNN training; an element-wise variant clipping each component to $[-v, v]$ exists, but norm clipping is preferred because it keeps the direction intact.</p>
+      </div>
+
+      <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>정의 — $\lVert g\rVert>\tau$면 $g\leftarrow\tau g/\lVert g\rVert$. 방향 보존, 크기만 상한.</li>
         <li>목적 — 절벽/기울기 폭발(Q7) 처방. 한 걸음이 파라미터를 멀리 날리는 것을 방지.</li>
@@ -219,7 +249,7 @@
 
     <!-- ===================== Q16 ===================== -->
     <div class="prose">
-      <h2 id="q16">Q16 · 그리드 탐색과 무작위 탐색</h2>
+      <h2 id="q16">🎰 Q16 · 그리드 탐색과 무작위 탐색</h2>
       <p class="qtext">In hyperparameter search, what is grid search and random search?</p>
 
       <p>하이퍼파라미터(학습률, 층 수, 정칙화 계수 등)는 경사하강으로 학습되지 않으므로 바깥에서 탐색해야 한다. 두 가지 기본 전략이 있다.</p>
@@ -262,7 +292,12 @@
 
       <p>더 똑똑한 후속 기법은 <strong>베이지안 최적화</strong>로, 지금까지의 결과로 성능 곡면의 대리 모델을 세우고 다음에 시도할 값을 똑똑하게 고른다. 하지만 단순함, 병렬성, 강건함 때문에 무작위 탐색이 여전히 강력한 기본값이다.</p>
 
-      <p class="skel-h">시험 답안 골격</p>
+      <div class="model-answer">
+        <div class="ma-label">🎯 Model Answer (English)</div>
+        <p class="ma-en">Both search hyperparameters that gradient descent cannot tune. <strong>Grid search</strong> picks a few candidate values per hyperparameter and tries every combination (the Cartesian product), so the number of trials grows exponentially with the number of hyperparameters. <strong>Random search</strong> instead samples each hyperparameter from a distribution for a fixed number of trials. Random usually wins because typically only a few hyperparameters matter: a $3\times3$ grid tests only 3 distinct values of each parameter, whereas 9 random trials test 9 distinct values of the important one — exploring it three times more finely for the same budget. Bayesian optimisation is the smarter successor, but random search remains a strong, trivially parallelisable baseline.</p>
+      </div>
+
+      <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>그리드 = 후보값들의 모든 조합. 무작위 = 분포에서 N번 추출.</li>
         <li>그리드는 차원에 지수 폭발 + 각 축을 적은 값만 시험. 무작위는 각 축을 N개 서로 다른 값으로.</li>

@@ -31,7 +31,7 @@
 
     <!-- ===================== Q1 ===================== -->
     <div class="prose">
-      <h2 id="q1">Q1 · 작은 데이터셋의 정칙화 전략</h2>
+      <h2 id="q1">📉 Q1 · 작은 데이터셋의 정칙화 전략</h2>
       <p class="qtext">When the dataset is small compared to the model size, what kind of regularization approaches can we take?</p>
 
       <p>이 질문의 뿌리는 <strong>편향-분산 트레이드오프</strong>다. 모델의 표현 용량(capacity)이 데이터 양에 비해 크면, 모델은 데이터의 신호뿐 아니라 잡음까지 외워 버린다. 훈련 오차는 0에 가까워지지만 새 데이터에서는 크게 틀린다 — 전형적인 고분산(high variance) 과적합이다. 정칙화의 본질은 <strong>“우리가 미리 알고 있는 사전 지식(prior)을 모델에 주입해, 잡음을 외우는 자유를 빼앗는 것”</strong>이다. 데이터가 적을수록 이 사전의 비중을 키워야 한다.</p>
@@ -65,7 +65,12 @@
         <tr><td>사전훈련 · 전이</td><td>외부 데이터의 사전 지식을 초기값으로 주입.</td></tr>
       </tbody></div>
 
-      <p class="skel-h">시험 답안 골격</p>
+      <div class="model-answer">
+        <div class="ma-label">🎯 Model Answer (English)</div>
+        <p class="ma-en">When the model has far more capacity than the small dataset can constrain, it overfits by memorising noise, so the cure is to <strong>inject prior knowledge that shrinks the hypothesis space</strong>. The main approaches are: (1) parameter-norm penalties — $L_2$ weight decay and $L_1$ sparsity; (2) parameter sharing or tying to reduce the number of free parameters; (3) data augmentation and noise injection (on inputs, weights, hidden units via dropout, and labels via label smoothing); (4) early stopping, which is equivalent to $L_2$ under a quadratic approximation; and (5) transfer learning or unsupervised pre-training, which import knowledge learned from external data. The smaller the dataset, the more weight these priors should carry, and transfer learning becomes especially valuable.</p>
+      </div>
+
+      <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>핵심 한 줄 — 데이터 부족 = 고분산 과적합. 정칙화 = 사전 지식 주입으로 가설 공간 축소.</li>
         <li>벌점(L2/L1) · 파라미터 공유 · 데이터 증강과 노이즈 · 드롭아웃 · 조기 종료 · 비지도 사전훈련/전이를 나열.</li>
@@ -75,7 +80,7 @@
 
     <!-- ===================== Q2 ===================== -->
     <div class="prose">
-      <h2 id="q2">Q2 · 파라미터 묶기(tying)와 파라미터 공유(sharing)</h2>
+      <h2 id="q2">🔗 Q2 · 파라미터 묶기(tying)와 파라미터 공유(sharing)</h2>
       <p class="qtext">Explain the parameter tying and parameter sharing.</p>
 
       <p>둘 다 “어떤 파라미터들이 서로 관계가 있을 것”이라는 사전 지식을 거는 방법이지만, 그 강제의 세기가 다르다.</p>
@@ -109,7 +114,12 @@
 
       <p>실용적으로 공유가 더 자주 쓰인다. 메모리 절감이라는 부수 효과가 크고, CNN처럼 “같은 패턴은 어디에 있든 같다”는 강한 가정이 자연 데이터에 잘 맞기 때문이다. 공유는 또 <strong>변환 등가성</strong>(<a href="03.html#q9">Q9</a>)이라는 공짜 보너스를 준다. 반면 두 모델이 “완전히 같지는 않지만 관련 있다”를 표현해야 할 때(예: 약간 다른 두 과제)는 묶기가 적합하다.</p>
 
-      <p class="skel-h">시험 답안 골격</p>
+      <div class="model-answer">
+        <div class="ma-label">🎯 Model Answer (English)</div>
+        <p class="ma-en">Both encode the prior that certain parameters are related; they differ in how hard that constraint is. <strong>Parameter tying</strong> adds a soft penalty such as $\lVert w_A - w_B\rVert^2$ that pulls two <em>separate</em> parameter sets close together, used when two related models or tasks should resemble each other. <strong>Parameter sharing</strong> forces parameters to be <em>exactly identical</em> — they are literally the same memory — as in CNN kernels reused across spatial positions or RNN weights reused across time steps. Sharing is the limiting case of tying with an infinite penalty, so it acts as an infinitely strong prior; it additionally saves memory and grants translation equivariance for free.</p>
+      </div>
+
+      <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>묶기 = 부드러운 벌점 $\lVert w_A-w_B\rVert^2$로 가깝게. 공유 = 정확히 같은 파라미터(하드 제약, 같은 메모리).</li>
         <li>공유는 묶기의 극단(거리 벌점 무한대) = 무한히 강한 사전.</li>
@@ -119,7 +129,7 @@
 
     <!-- ===================== Q3 ===================== -->
     <div class="prose">
-      <h2 id="q3">Q3 · 데이터 측면의 정칙화 트릭</h2>
+      <h2 id="q3">🧪 Q3 · 데이터 측면의 정칙화 트릭</h2>
       <p class="qtext">As regularization, what kind of tricks can we take regarding data? (pretraining with unlabeled data, data augmentation, noise injection, etc.)</p>
 
       <p>“데이터로 거는 정칙화”의 공통 원리는 <strong>“모델이 학습 분포를 더 넓고 더 현실적으로 보게 만들어, 좁은 훈련 표본을 통째로 외우지 못하게 한다”</strong>이다. 세 갈래로 정리한다.</p>
@@ -143,7 +153,12 @@
         세 트릭은 모두 <b>“시험 범위를 넓게 공부시키는 방법”</b>이다. 증강은 같은 문제를 여러 각도로 변형해 풀게 하고, 노이즈는 일부러 흐린 문제로도 풀게 하며, 사전훈련은 시험 과목 이전에 기초 교양을 먼저 쌓게 한다. 셋 다 “좁은 기출만 외우는” 과적합을 막는다.
       </div>
 
-      <p class="skel-h">시험 답안 골격</p>
+      <div class="model-answer">
+        <div class="ma-label">🎯 Model Answer (English)</div>
+        <p class="ma-en">These tricks regularise by making the model see a <strong>broader, more realistic input distribution</strong> so it cannot simply memorise the small training set. (1) <strong>Data augmentation</strong> generates new labelled examples through label-preserving transforms — translation, rotation, scaling, cropping, flips, colour jitter — which teaches the model known invariances, but the transform must never change the meaning (a horizontal flip ruins digit recognition by swapping 6 and 9). (2) <strong>Noise injection</strong> adds noise to inputs (mathematically close to an $L_2$ penalty), to hidden units (dropout), to weights (favouring flat, robust minima), or to labels (label smoothing, which prevents an over-confident softmax). (3) <strong>Unsupervised or semi-supervised pre-training</strong> learns structure from abundant unlabelled data and transfers it as a prior or initialisation for the supervised task.</p>
+      </div>
+
+      <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>공통 원리 — 모델이 학습 분포를 더 넓게 보게 해 표본 암기를 막음.</li>
         <li>증강(라벨 보존 변환, 불변성 주입) · 노이즈(입력·은닉=드롭아웃·가중치·라벨=평활) · 비라벨 사전훈련/전이.</li>
@@ -153,7 +168,7 @@
 
     <!-- ===================== Q22 ===================== -->
     <div class="prose">
-      <h2 id="q22">Q22 · 적대적 예제(adversarial examples)의 핵심</h2>
+      <h2 id="q22">👾 Q22 · 적대적 예제(adversarial examples)의 핵심</h2>
       <p class="qtext">What is the main point of the adversarial examples?</p>
 
       <p>적대적 예제란, 사람 눈에는 원본과 구별되지 않을 만큼 작지만 <strong>의도적으로 설계된 섭동</strong> $\eta$를 더했을 때 높은 정확도의 네트워크가 <strong>엉뚱한 클래스로 높은 확신을 가지고 오분류</strong>하게 만드는 입력이다. 대표적 생성법이 FGSM이다.</p>
@@ -176,7 +191,12 @@
 
       <p>함의는 두 가지다. 첫째, <strong>보안</strong> — 분류기를 속이는 입력을 값싸게 만들 수 있다. 둘째, 흥미롭게도 <strong>정칙화</strong> — 적대적 예제를 훈련 데이터에 섞는 <strong>적대적 훈련</strong>은 결정 경계를 데이터에서 멀어지게 밀어 강건성과 일반화를 동시에 높인다. 적대적 예제는 “모델이 의미를 이해한 게 아니라 표면적 선형 통계를 학습했다”는 사실을 드러내는 진단 도구이기도 하다. FGSM과 선형 가설의 단계별 해설은 <a href="../p1-fgsm/index.html">P1 FGSM 사이트</a>에 따로 있다.</p>
 
-      <p class="skel-h">시험 답안 골격</p>
+      <div class="model-answer">
+        <div class="ma-label">🎯 Model Answer (English)</div>
+        <p class="ma-en">An adversarial example is an input carrying a tiny, deliberately crafted perturbation — imperceptible to a human — that makes a high-accuracy network <strong>misclassify with high confidence</strong> (e.g. FGSM: $\tilde{x} = x + \epsilon\,\operatorname{sign}(\nabla_x J)$). The main point is its cause: <strong>not excessive non-linearity, but excessive linearity in high dimensions</strong>. For a linear response $w^\top x$, the perturbation $\eta = \epsilon\,\operatorname{sign}(w)$ shifts the output by $\epsilon\lVert w\rVert_1$, which grows with the input dimension $n$ — each component changes by a negligible $\epsilon$, yet thousands of aligned changes sum to a large shift. This is both a security threat and, usefully, a regulariser: adversarial training pushes decision boundaries away from the data and improves generalisation.</p>
+      </div>
+
+      <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>정의 — 미세하고 의도적인 섭동으로 고정확도 모델을 고확신 오분류시키는 입력(FGSM: $x+\epsilon\,\mathrm{sign}(\nabla_x J)$).</li>
         <li>핵심 원인은 비선형이 아니라 <b>고차원에서의 선형성</b>: 출력 변화 $=\epsilon\lVert w\rVert_1$가 차원 $n$에 비례.</li>
@@ -186,7 +206,7 @@
 
     <!-- ===================== Q23 ===================== -->
     <div class="prose">
-      <h2 id="q23">Q23 · RBF 네트워크와 적대적 예제 면역</h2>
+      <h2 id="q23">🎯 Q23 · RBF 네트워크와 적대적 예제 면역</h2>
       <p class="qtext">Describe radial basis function networks. And discuss why it does not have the adversarial example issue.</p>
 
       <p>방사 기저 함수(Radial Basis Function, RBF) 네트워크는 은닉 유닛이 입력과 <strong>원형(radial) 거리</strong>에 반응하는 네트워크다. 각 유닛은 프로토타입(중심) $\mu_i$를 가지며, 입력이 그 중심에 가까울 때만 강하게 켜진다.</p>
@@ -203,7 +223,12 @@
 
       <p>대가도 분명하다. RBF 유닛은 좁은 영역에서만 켜지므로 입력 공간을 덮으려면 많은 유닛이 필요하고, 학습이 어렵고, 보지 못한 영역으로의 일반화가 약하다. Goodfellow는 RBF 네트워크가 적대적 예제에 강건하지만 그 대가로 <strong>정확도가 낮다</strong>고 지적한다. 강건성과 정확도 사이의 트레이드오프를 보여 주는 교과서적 예다.</p>
 
-      <p class="skel-h">시험 답안 골격</p>
+      <div class="model-answer">
+        <div class="ma-label">🎯 Model Answer (English)</div>
+        <p class="ma-en">A radial basis function (RBF) network has hidden units that respond to the <strong>distance from a prototype centre</strong> $\mu_i$: $h_i(x) = \exp(-\beta_i\lVert x - \mu_i\rVert^2)$. Each unit fires only near its centre and saturates to zero far away. It resists adversarial examples precisely because it is <strong>not linear</strong>: there is no linear path along which tiny per-dimension perturbations can accumulate into a large response — moving the input in any direction merely takes it further from the centre and <em>lowers</em> the activation. As a result the network is confident only near the training data and effectively reports "I don't know" elsewhere, so adversarial inputs are rejected with low confidence. The cost is lower accuracy and harder training — a clear robustness–accuracy trade-off.</p>
+      </div>
+
+      <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>RBF 유닛 — 중심 $\mu_i$로부터의 거리에 가우시안으로 반응, 멀면 0으로 포화.</li>
         <li>적대적 면역 이유 — 선형 누적 경로가 없음. 섭동은 입력을 중심에서 멀어지게 해 응답을 오히려 줄임. 데이터 근처에서만 고확신.</li>

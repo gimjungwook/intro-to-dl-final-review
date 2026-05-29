@@ -31,7 +31,7 @@
 
     <!-- ===================== Q12 ===================== -->
     <div class="prose">
-      <h2 id="q12">Q12 · RNN은 재귀 신경망(recursive NN)의 특수 경우</h2>
+      <h2 id="q12">🌳 Q12 · RNN은 재귀 신경망(recursive NN)의 특수 경우</h2>
       <p class="qtext">Why is RNN a special case of recursive neural network?</p>
 
       <p>두 모델의 공통점부터 보자. 둘 다 <strong>같은 파라미터를 구조의 모든 노드에서 반복 적용</strong>해, 자식 표현들을 부모 표현으로 합친다. 차이는 그 “구조”의 모양이다.</p>
@@ -44,7 +44,12 @@
 
       <p>이 관점이 알려 주는 실용적 사실이 있다. RNN은 사슬이라 <strong>깊이가 시퀀스 길이 $n$에 비례</strong>해 선형으로 깊어진다. 반면 균형 잡힌 이진 트리 재귀망은 깊이가 $\log n$에 그친다. 깊이가 얕을수록 기울기가 통과해야 할 곱셈 단계가 적어, 일반 재귀망은 긴 의존성에서 기울기 소실(<a href="#q13">Q13</a>)에 더 강할 수 있다. 즉 RNN을 “재귀망의 사슬 특수 경우”로 보면, 그 장단점이 구조의 깊이에서 따라 나옴을 한눈에 이해할 수 있다.</p>
 
-      <p class="skel-h">시험 답안 골격</p>
+      <div class="model-answer">
+        <div class="ma-label">🎯 Model Answer (English)</div>
+        <p class="ma-en">Both apply the <strong>same parameters repeatedly across the nodes of a structure</strong>, combining children into a parent representation. A <strong>recursive neural network</strong> operates on a general tree (or DAG) structure — for example a sentence's parse tree, where one composition function merges two child phrases into a parent. An <strong>RNN</strong> is the special case in which that structure is a <strong>chain — a degenerate, linear tree</strong>: each step's node has a single child (the previous state) plus the current input. So an RNN is a recursive network whose topology has been narrowed to a path. A practical consequence is that an RNN's depth grows linearly with the sequence length $n$, whereas a balanced recursive tree grows only as $\log n$, so trees can be gentler on gradients over long dependencies.</p>
+      </div>
+
+      <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>공통 — 같은 파라미터를 구조의 모든 노드에 반복 적용해 자식→부모로 합침.</li>
         <li>재귀망 = 일반 트리/DAG 구조. RNN = 그 구조가 사슬(퇴화 트리)인 특수 경우.</li>
@@ -54,7 +59,7 @@
 
     <!-- ===================== Q13 ===================== -->
     <div class="prose">
-      <h2 id="q13">Q13 · LSTM의 ‘기억 소실(memory-fade-away)’ 극복</h2>
+      <h2 id="q13">🧠 Q13 · LSTM의 ‘기억 소실(memory-fade-away)’ 극복</h2>
       <p class="qtext">How does LSTM overcome the ‘memory-fade-away’ issue?</p>
 
       <p>왜 기억이 사라지는가? 바닐라 RNN에서 은닉 상태는 매 시점 같은 순환 가중치 행렬과 곱해진다. 그래서 $t$ 스텝 전의 정보가 현재에 주는 영향(기울기)은 대략 그 행렬을 $t$번 곱한 것에 비례한다.</p>
@@ -84,7 +89,12 @@
         <p class="widget-cap">바닐라 RNN(파랑)은 가중치·활성에 묶인 고정 감쇠율로 신호가 지수적으로 사라진다. LSTM(빨강)은 망각 게이트 f를 1에 가깝게 학습하면 $f^t\approx1$로 신호를 수십 스텝 보존한다. f를 낮추면 LSTM도 의도적으로 잊을 수 있음을 본다.</p>
       </div>
 
-      <p class="skel-h">시험 답안 골격</p>
+      <div class="model-answer">
+        <div class="ma-label">🎯 Model Answer (English)</div>
+        <p class="ma-en">In a vanilla RNN the hidden state is multiplied by the same recurrent weight matrix at every step, so the influence of an input $k$ steps back scales like $W^k$; if the largest eigenvalue is below 1 the gradient <strong>vanishes exponentially</strong> (and the $\tanh$ derivative, being below 1, worsens it), so long-range dependencies are lost. The LSTM fixes this with a <strong>cell state that is updated additively and gated</strong>: $c_t = f_t \odot c_{t-1} + i_t \odot g_t$. This additive self-loop is the <strong>Constant Error Carousel</strong> — when the forget gate $f_t \approx 1$ the cell state is preserved and the gradient flows along it at roughly 1, with no repeated matrix multiplication, so it does not vanish. The forget, input, and output gates let the network learn <em>when</em> to keep, write, and expose information.</p>
+      </div>
+
+      <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>원인 — 바닐라 RNN은 순환행렬 반복 곱 $\sim W^k$ → 고윳값&lt;1이면 지수 소실(+tanh 도함수&lt;1).</li>
         <li>해법 — 셀 상태의 덧셈형 갱신 $c_t=f_t\odot c_{t-1}+i_t\odot g_t$ + 게이트. CEC로 기울기 $\approx1$ 보존.</li>
@@ -94,7 +104,7 @@
 
     <!-- ===================== Q14 ===================== -->
     <div class="prose">
-      <h2 id="q14">Q14 · RNN vs CNN — 파라미터 공유와 측면 연결</h2>
+      <h2 id="q14">⚖️ Q14 · RNN vs CNN — 파라미터 공유와 측면 연결</h2>
       <p class="qtext">Compare RNN and CNN in terms of parameter sharing and lateral connection.</p>
 
       <h3>파라미터 공유 — 무엇의 축으로 공유하는가</h3>
@@ -128,7 +138,12 @@
 
       <p>요약하면, 공유 축(공간 대 시간)과 먼 의존성에 닿는 방식(깊이 대 측면 순환)이 두 모델의 성격을 가른다. RNN의 측면 연결은 원리상 무한한 문맥을 주지만 순차성과 소실의 대가가 따르고, CNN의 무측면-깊이 방식은 병렬성을 주지만 수용 영역이 깊이에 묶인다. (이 둘의 한계를 함께 넘은 것이 self-attention이다 — <a href="06.html#q25">Q25</a>.)</p>
 
-      <p class="skel-h">시험 답안 골격</p>
+      <div class="model-answer">
+        <div class="ma-label">🎯 Model Answer (English)</div>
+        <p class="ma-en">Both share parameters, but along different axes. A <strong>CNN shares across space</strong> — the same kernel is applied at every spatial position — whereas an <strong>RNN shares across time</strong> — the same transition weights are applied at every time step; both cut the number of free parameters, generalise what is learned across positions or times, and grant a form of equivariance. The decisive difference is the <strong>lateral connection</strong>: an RNN <em>has</em> lateral (recurrent) connections, so the unit at step $t$ feeds the unit at step $t{+}1$ and information flows sideways along the sequence through the hidden state; a CNN has <em>no</em> lateral connections within a layer — each output is computed independently from its local receptive field, and distant inputs are reached only by stacking layers to enlarge that field. Thus a CNN parallelises easily but its context is bounded by depth, while an RNN reaches arbitrarily far through recurrence but is sequential and prone to vanishing gradients (self-attention later overcomes both — Q25).</p>
+      </div>
+
+      <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>공유 축 — CNN=공간, RNN=시간. 둘 다 파라미터 절감 + 위치/시점 일반화 + 등가성.</li>
         <li>측면 연결 — RNN 있음(순환, 상태가 옆으로 흐름), CNN 없음(먼 입력엔 깊이로 닿음).</li>

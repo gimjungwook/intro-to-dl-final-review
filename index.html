@@ -65,7 +65,7 @@
 
 <div class="title-block">
   <span class="kicker">Deep Learning Book · Goodfellow, Bengio, Courville · 2016 · 기말고사 복습</span>
-  <h1>픽셀에서 <em>표상</em>까지,<br>딥러닝의 15장</h1>
+  <h1>🧠 픽셀에서 <em>표상</em>까지,<br>딥러닝의 15장 🌈</h1>
   <div class="paper-meta">
     <span><b>딥러닝 개론</b> 기말고사 인터랙티브 복습</span>
     <span>제작 <b>김정욱</b></span>
@@ -75,13 +75,13 @@
 </div>
 
 <section class="toc-section">
-  <h2>이 사이트의 사용법</h2>
+  <h2>📖 이 사이트의 사용법</h2>
   <p>각 챕터는 <strong>독립된 mini 사이트</strong>다. 카드를 누르면 그 챕터의 표지로 이동하고, 표지에서 다시 sub-chapter들로 들어간다. P2 신경 스타일 전이 해설과 동일한 라이트 테마, 동일한 위젯 문법을 쓴다.</p>
   <p>각 챕터의 본문은 <strong>“왜 그 형태인가”</strong>를 늘 함께 설명한다. 정의만 나열하지 않는다. 수식은 KaTeX로, 시각화는 캔버스/SVG 위젯으로, 비유는 본문 안에서 직접 든다. 이 사이트의 모든 인터랙션은 <em>이해를 깊게 하는 것이 목적이지 외울 것을 줄이는 것이 아니다</em>.</p>
 </section>
 
 <section class="priority">
-  <h4>시험 D-9, 우선순위 추천 경로</h4>
+  <h4>🚀 시험 우선순위 추천 경로</h4>
   <ol>
     <li><b>Ch.6-9 (Part II 핵심)</b> — Feedforward · Regularization · Optimization · CNN. 시험 비중 1순위.</li>
     <li><b>Ch.10-12</b> — RNN · Practical Methodology · Applications. 강의에서 다룬 비중 큼.</li>
@@ -98,16 +98,16 @@
 </a>
 
 <div class="part-wrap">
-  <span class="part-label">PART I · 응용 수학과 기계학습 기초</span>
+  <span class="part-label">🧮 PART I · 응용 수학과 기계학습 기초</span>
   <section class="plates" id="part1"></section>
 
-  <span class="part-label">PART II · 깊은 네트워크 — 현대적 실천</span>
+  <span class="part-label">🏗️ PART II · 깊은 네트워크 — 현대적 실천</span>
   <section class="plates" id="part2"></section>
 
-  <span class="part-label">PART III · 깊은 표상 학습</span>
+  <span class="part-label">🌈 PART III · 깊은 표상 학습</span>
   <section class="plates" id="part3"></section>
 
-  <span class="part-label">PART IV · 시험 범위 논문 4편 (P1-P4)</span>
+  <span class="part-label">📜 PART IV · 시험 범위 논문 4편 (P1-P4)</span>
   <section class="plates" id="part4"></section>
 </div>
 
@@ -148,6 +148,8 @@ const PAPERS = [
   { no:'P4', dir:'p4-bert',           t:'BERT — 양방향 사전훈련의 시대',           d:'Devlin et al. (2019). MLM과 NSP로 양방향 문맥을 학습한 인코더. 사전훈련-미세조정 패러다임, [CLS]·[SEP] 토큰, GLUE 벤치마크의 의미.', sp:['style','structure'], kw:'MLM · NSP · 사전훈련 · 미세조정' },
 ];
 const colMap = { structure:'var(--structure)', 'structure-lo':'var(--structure-lo)', style:'var(--style)', 'style-lo':'var(--style-lo)', synth:'var(--synth)', ink:'var(--ink)', 'ink-soft':'var(--ink-soft)' };
+const CHEMOJI = { '01':'🌱','02':'📐','03':'🎲','04':'🔢','05':'📊','06':'🧬','07':'🛡️','08':'⚙️','09':'🖼️','10':'🔁','11':'🛠️','12':'🚀','13':'🧩','14':'🪞','15':'🌈' };
+const PEMOJI = { 'P1':'👾','P2':'🎨','P3':'🔭','P4':'🤖' };
 
 ['part1','part2','part3'].forEach((id, idx) => {
   const part = idx + 1;
@@ -159,7 +161,7 @@ const colMap = { structure:'var(--structure)', 'structure-lo':'var(--structure-l
     a.href = c.dir + '/index.html';
     a.innerHTML = `
       <div class="spectrum">${sp.map(s=>`<i style="flex:1;background:${colMap[s]}"></i>`).join('')}</div>
-      <span class="pno">CHAPTER ${c.no}</span>
+      <span class="pno">${CHEMOJI[c.no]||''} CHAPTER ${c.no}</span>
       <h3>${c.t}</h3>
       <p>${c.d}</p>
       <span class="kw">${c.kw}</span>
@@ -177,7 +179,7 @@ PAPERS.forEach(p => {
   a.href = p.dir + '/index.html';
   a.innerHTML = `
     <div class="spectrum">${sp.map(s=>`<i style="flex:1;background:${colMap[s]}"></i>`).join('')}</div>
-    <span class="pno">PAPER ${p.no}</span>
+    <span class="pno">${PEMOJI[p.no]||''} PAPER ${p.no}</span>
     <h3>${p.t}</h3>
     <p>${p.d}</p>
     <span class="kw">${p.kw}</span>

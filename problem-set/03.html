@@ -31,7 +31,7 @@
 
     <!-- ===================== Q9 ===================== -->
     <div class="prose">
-      <h2 id="q9">Q9 · CNN이 이미지에 특히 강력한 이유</h2>
+      <h2 id="q9">🖼️ Q9 · CNN이 이미지에 특히 강력한 이유</h2>
       <p class="qtext">Why is CNN powerful especially on image data?</p>
 
       <p>완전연결층을 256×256 이미지에 그대로 쓰면 한 출력 픽셀이 입력 6만 5천여 픽셀과 모두 연결되어, 한 층의 가중치가 수십억 개에 이른다. CNN은 같은 일을 <strong>세 가지 구조적 속성</strong>으로 수백 배~수억 배 적은 파라미터로 해낸다. 셋은 모두 자연 이미지의 통계적 사실에서 나온다.</p>
@@ -50,7 +50,12 @@
 
       <p>이 모든 이득은 “이미지가 국소적이고 정상적”이라는 사전이 데이터에 잘 맞기 때문에 공짜로 얻어진다. 그 사전이 얼마나 강한지는 <a href="#q11">Q11</a>에서 “무한히 강한 사전”으로 정리한다.</p>
 
-      <p class="skel-h">시험 답안 골격</p>
+      <div class="model-answer">
+        <div class="ma-label">🎯 Model Answer (English)</div>
+        <p class="ma-en">A fully connected layer on a 256×256 image would link each output to about 65,000 inputs, giving billions of weights per layer. A CNN does the same job with far fewer parameters through three structural properties drawn from the statistics of natural images: <strong>sparse interactions</strong> (each output sees only a small local window), <strong>parameter sharing</strong> (the same kernel is applied at every position), and <strong>equivariant representations</strong> (shifting the input shifts the feature map). These yield a massive reduction in parameters and memory that is independent of image size, statistical efficiency (a pattern learned at one location automatically generalises to all locations), and hierarchical features — as depth grows the receptive field, edges combine into textures, parts, and finally objects. Adding pooling further produces approximate invariance to small translations.</p>
+      </div>
+
+      <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>완전연결의 파라미터 폭발 → CNN의 세 속성: 희소 상호작용 · 파라미터 공유 · 변환 등가성.</li>
         <li>위력 — 파라미터/메모리 격감, 통계적 효율(위치 일반화), 깊이에 따른 계층적 특징. + 풀링의 근사 불변성.</li>
@@ -60,7 +65,7 @@
 
     <!-- ===================== Q10 ===================== -->
     <div class="prose">
-      <h2 id="q10">Q10 · CNN의 평행이동 불변성(translation invariance)</h2>
+      <h2 id="q10">🔁 Q10 · CNN의 평행이동 불변성(translation invariance)</h2>
       <p class="qtext">What is translation invariance with CNN?</p>
 
       <p>이 문항의 핵심은 두 개념을 정확히 구분하는 데 있다.</p>
@@ -95,7 +100,12 @@
 
       <p>왜 둘 다 필요한가? 과제가 다르기 때문이다. “고양이가 어디 있는가”(위치 추정)에는 등가성이, “고양이가 있는가”(분류)에는 불변성이 필요하다. CNN은 합성곱으로 등가성을 제공하고 풀링으로 근사 불변성을 쌓아, 깊어질수록 점점 더 큰 이동에 둔감해진다. 단, 풀링이 주는 불변성은 <strong>국소적이고 근사적</strong>이라는 점, 그리고 큰 평행이동에 대한 견고함은 파라미터 공유와 깊은 풀링의 합작이라는 점을 함께 적어 주면 완성도가 높다.</p>
 
-      <p class="skel-h">시험 답안 골격</p>
+      <div class="model-answer">
+        <div class="ma-label">🎯 Model Answer (English)</div>
+        <p class="ma-en">The key is to distinguish two concepts. <strong>Equivariance</strong> means "when the input shifts, the output shifts the same way", $f(\text{Shift}(x)) = \text{Shift}(f(x))$ — this is what convolution itself provides. <strong>Invariance</strong> means "the output is unchanged when the input shifts", $f(\text{Shift}(x)) = f(x)$ — convolution alone does <em>not</em> give this. Translation invariance appears only when <strong>pooling</strong> is added: max pooling keeps the strongest response in a region, so a small shift within that region leaves the output unchanged, producing approximate invariance to small translations. Classification needs invariance ("is there a cat?"), whereas localisation needs equivariance ("where is the cat?"); a CNN supplies equivariance through convolution and stacks pooling to build up invariance, which is therefore local and only approximate.</p>
+      </div>
+
+      <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>등가성(움직이면 따라감, 합성곱) vs 불변성(움직여도 그대로, 풀링)을 먼저 구분.</li>
         <li>합성곱은 등가적이지 불변이 아님. 최대 풀링이 영역 내 최강 반응만 남겨 작은 이동에 근사 불변.</li>
@@ -105,7 +115,7 @@
 
     <!-- ===================== Q11 ===================== -->
     <div class="prose">
-      <h2 id="q11">Q11 · 무한히 강한 사전(infinitely strong prior)이 CNN에 더해지는 방식</h2>
+      <h2 id="q11">🧲 Q11 · 무한히 강한 사전(infinitely strong prior)이 CNN에 더해지는 방식</h2>
       <p class="qtext">How is the infinitely strong prior added to CNN?</p>
 
       <p>사전(prior)이란 데이터를 보기 전에 “어떤 파라미터가 그럴듯한가”에 대한 믿음을 담은 확률분포다. 사전의 세기는 그 분포의 좁기로 정해진다.</p>
@@ -123,7 +133,12 @@
 
       <p>이 관점이 왜 유용한가? 첫째, <strong>언제 CNN이 도움이 되고 언제 해가 되는지</strong>를 예측하게 해 준다. 사전이 데이터에 맞으면(자연 이미지: 국소적·정상적) 압도적으로 효율적이지만, 맞지 않으면 — 예컨대 칼럼 순서에 의미가 없는 표 형식 데이터나 격자 이웃 개념이 다른 그래프 데이터 — 모델이 표현조차 못 하는 패턴이 생겨 <strong>과소적합</strong>한다. 둘째, <strong>벤치마크 비교의 함정</strong>을 일깨운다. CNN과 완전연결망을 같은 과제로 비교할 때, CNN이 이기는 것은 “더 똑똑해서”가 아니라 “그 과제에 맞는 사전을 미리 받았기” 때문일 수 있다. 사전이 부적절한 과제에서는 그 우위가 사라진다.</p>
 
-      <p class="skel-h">시험 답안 골격</p>
+      <div class="model-answer">
+        <div class="ma-label">🎯 Model Answer (English)</div>
+        <p class="ma-en">A prior is a distribution over parameters that says which values are plausible before seeing data, and its strength is how narrow that distribution is. A weak prior (e.g. $L_2$'s Gaussian) merely discourages some values, whereas an <strong>infinitely strong prior assigns zero probability to certain parameters, forbidding them entirely</strong>. A CNN is exactly a fully connected layer carrying an infinitely strong prior on its weights: (1) a unit's weights must be zero outside a small receptive field (locality), and (2) the weights of neighbouring spatial positions must be identical (sharing) — any configuration that violates these has zero prior probability and can never be learned. Pooling is likewise an infinitely strong prior that each unit should be invariant to small translations. This view predicts when a CNN helps (when the prior matches the data, e.g. natural images) versus hurts (tabular or graph data, where it underfits), and warns that comparing a CNN against a fully connected net is unfair when the CNN's built-in prior happens to suit the task.</p>
+      </div>
+
+      <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>사전의 세기 = 분포의 좁기. 무한히 강한 사전 = 일부 파라미터에 확률 0(금지).</li>
         <li>CNN = 완전연결층 + 무한히 강한 사전: ①수용영역 밖 가중치=0(국소) ②이웃 위치 가중치 동일(공유). 풀링 = 작은 이동 불변 사전.</li>

@@ -64,7 +64,7 @@
 
 <div class="title-block">
   <span class="kicker">Deep Learning · Problem Set for Final · 공식 문제은행 풀이</span>
-  <h1>교수님이 낸 <em>26개의 질문</em>,<br>하나도 빼지 않고 답하다</h1>
+  <h1>📚 교수님이 낸 <em>26개의 질문</em>,<br>하나도 빼지 않고 답하다 ✅</h1>
   <div class="paper-meta">
     <span><b>딥러닝 개론</b> 기말 공식 문제은행</span>
     <span>제작 <b>김정욱</b></span>
@@ -74,13 +74,13 @@
 </div>
 
 <section class="toc-section">
-  <h2>이 페이지의 사용법</h2>
+  <h2>📖 이 페이지의 사용법</h2>
   <p>교수님이 배포한 <strong>Problem Set for Final</strong>의 26문항을 주제별 여섯 갈래로 묶고, 각 문항을 <strong>“정의 → 왜 그런가 → 비유 → 시험 답안 골격”</strong>의 순서로 풀었다. 아래 카드를 누르면 해당 문항의 답안 위치로 곧장 이동한다.</p>
   <p>모든 답은 15장 인터랙티브 복습 사이트와 같은 라이트 테마, 같은 위젯 문법을 쓴다. 수식은 KaTeX로, 비교는 카드로, 핵심 직관은 캔버스/SVG 위젯으로 직접 만져 볼 수 있다. 각 문항 끝의 <strong>“시험 답안 골격”</strong> 체크리스트는 시험장에서 1분 안에 적을 수 있는 최소 골자다.</p>
 </section>
 
 <section class="priority">
-  <h4>D-6, 우선순위 추천 경로</h4>
+  <h4>🚀 D-6, 우선순위 추천 경로</h4>
   <ol>
     <li><b>1갈래 정칙화 · 2갈래 최적화</b> — 13문항(Q1-8, 15-16, 22-23)이 여기 몰려 있다. 출제 비중 1순위.</li>
     <li><b>3갈래 CNN · 4갈래 RNN</b> — 구조적 사전(prior)과 파라미터 공유라는 한 줄거리로 묶어 외운다(Q9-14).</li>
@@ -90,27 +90,27 @@
 </section>
 
 <div class="part-wrap">
-  <span class="part-label">갈래 1 · 정칙화와 일반화</span>
+  <span class="part-label">🛡️ 갈래 1 · 정칙화와 일반화</span>
   <p class="part-desc">데이터가 모델보다 작을 때 과적합을 어떻게 막는가. 7장의 정칙화 전체와 적대적 예제, RBF 네트워크까지.</p>
   <section class="plates" id="part1"></section>
 
-  <span class="part-label">갈래 2 · 최적화와 하이퍼파라미터</span>
+  <span class="part-label">⚙️ 갈래 2 · 최적화와 하이퍼파라미터</span>
   <p class="part-desc">손실 곡면 위에서 학습이 실제로 어떻게 움직이는가. 1차·2차 방법, 미니배치, 모멘텀, 절벽, 대칭성, 클리핑, 그리고 탐색 전략.</p>
   <section class="plates" id="part2"></section>
 
-  <span class="part-label">갈래 3 · 합성곱 신경망(CNN)</span>
+  <span class="part-label">🖼️ 갈래 3 · 합성곱 신경망(CNN)</span>
   <p class="part-desc">이미지의 구조를 네트워크에 새겨 넣는 세 가지 사전. 무한히 강한 사전이라는 9장의 핵심 관점.</p>
   <section class="plates" id="part3"></section>
 
-  <span class="part-label">갈래 4 · 순환 신경망과 시퀀스</span>
+  <span class="part-label">🔁 갈래 4 · 순환 신경망과 시퀀스</span>
   <p class="part-desc">시간을 펼친 그래프. RNN과 재귀 신경망의 관계, LSTM의 기억 보존, RNN과 CNN의 파라미터 공유 비교.</p>
   <section class="plates" id="part4"></section>
 
-  <span class="part-label">갈래 5 · 비지도 학습과 표상</span>
+  <span class="part-label">🧭 갈래 5 · 비지도 학습과 표상</span>
   <p class="part-desc">라벨 없이 무엇을 배우는가. SFA, 오토인코더와 PCA, 정칙화된 오토인코더, 분산 표상의 위력.</p>
   <section class="plates" id="part5"></section>
 
-  <span class="part-label">갈래 6 · 핵심 논문</span>
+  <span class="part-label">📜 갈래 6 · 핵심 논문</span>
   <p class="part-desc">강의에서 직접 다룬 세 논문의 단 하나의 핵심 — 신경 스타일 전이, Transformer, 그리고 BERT 대 GPT.</p>
   <section class="plates" id="part6"></section>
 </div>
@@ -165,6 +165,7 @@ const QUESTIONS = [
   { q:'26', page:'06', t:'BERT vs GPT', d:'같은 Transformer, 인코더 대 디코더 — 언제 무엇을 쓰나.', sp:['structure','style','synth'], part:6, src:'2018-' },
 ];
 const colMap = { structure:'var(--structure)', 'structure-lo':'var(--structure-lo)', style:'var(--style)', 'style-lo':'var(--style-lo)', synth:'var(--synth)', ink:'var(--ink)', 'ink-soft':'var(--ink-soft)' };
+const QEMOJI = { '01':'📉','02':'🔗','03':'🧪','22':'👾','23':'🎯','04':'⛰️','05':'🍱','06':'🏂','07':'🧗','08':'🔀','15':'✂️','16':'🎰','09':'🖼️','10':'🔁','11':'🧲','12':'🌳','13':'🧠','14':'⚖️','17':'🐢','18':'🪞','19':'🧹','20':'🧭','21':'🌈','24':'🎨','25':'🔭','26':'🤖' };
 
 [1,2,3,4,5,6].forEach(part => {
   const host = document.getElementById('part' + part);
@@ -176,7 +177,7 @@ const colMap = { structure:'var(--structure)', 'structure-lo':'var(--structure-l
     a.href = c.page + '.html#q' + c.q.replace(/^0/, '');
     a.innerHTML =
       '<div class="spectrum">' + sp.map(s => '<i style="flex:1;background:' + colMap[s] + '"></i>').join('') + '</div>' +
-      '<span class="qno">Q' + c.q.replace(/^0/,'') + '</span>' +
+      '<span class="qno">' + (QEMOJI[c.q] || '') + ' Q' + c.q.replace(/^0/,'') + '</span>' +
       '<h3>' + c.t + '</h3>' +
       '<p>' + c.d + '</p>' +
       '<span class="src">' + c.src + '</span>' +
