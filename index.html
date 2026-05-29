@@ -42,6 +42,13 @@
   .priority li { margin: .3rem 0; font-size: .92rem; color: var(--ink-soft); }
   .priority li b { color: var(--ink); }
 
+  .qbank-banner { display: block; max-width: var(--measure); margin: 2rem auto; padding: 1.4rem 1.6rem; border-radius: 14px; text-decoration: none; color: inherit; background: linear-gradient(135deg, var(--structure-bg), var(--style-bg)); border: 1px solid var(--structure-lo); box-shadow: var(--shadow-plate); transition: transform .2s var(--ease), box-shadow .2s; }
+  .qbank-banner:hover { transform: translateY(-3px); box-shadow: 0 10px 36px -14px rgba(38,34,28,.3); }
+  .qbank-banner .bk { font-family: var(--mono); font-size: .7rem; letter-spacing: .16em; text-transform: uppercase; color: var(--style); }
+  .qbank-banner h3 { font-family: var(--serif); font-size: 1.5rem; margin: .4rem 0 .4rem; color: var(--ink); }
+  .qbank-banner p { margin: 0; font-size: .92rem; color: var(--ink-soft); line-height: 1.55; }
+  .qbank-banner .go { display: inline-block; margin-top: .7rem; font-family: var(--mono); font-size: .74rem; letter-spacing: .1em; color: var(--structure); }
+
   footer.colophon { max-width: var(--measure); margin: 3rem auto 4rem; padding: 2rem 1.4rem 0; border-top: 1px solid var(--line); font-size: .85rem; color: var(--ink-soft); }
   footer.colophon a { color: var(--structure); }
   footer.colophon .src { font-family: var(--mono); font-size: .76rem; line-height: 1.8; }
@@ -82,6 +89,13 @@
     <li><b>Ch.1-5</b> — Intro · Linear Algebra · Probability · Numerical · ML Basics. 선행 개념 보완.</li>
   </ol>
 </section>
+
+<a class="qbank-banner" href="problem-set/index.html">
+  <span class="bk">★ 교수님 공식 문제은행 · Problem Set for Final</span>
+  <h3>기말 문제은행 26문항 — 하나도 빼지 않고 풀이</h3>
+  <p>교수님이 배포한 26개의 시험 질문을 주제별 여섯 갈래로 묶고, 각 문항을 “정의 → 왜 → 비유 → 시험 답안 골격”으로 풀었다. 15장 복습과 같은 위젯·수식·테마. 시험 직전 최우선 복습 코스.</p>
+  <span class="go">26문항 풀이로 →</span>
+</a>
 
 <div class="part-wrap">
   <span class="part-label">PART I · 응용 수학과 기계학습 기초</span>
