@@ -27,6 +27,11 @@
     <p class="qtext">What is the main point of the “Attention is all you need” paper?</p>
   </header>
 
+  <div class="q-interpret">
+    <div class="qi-label">📌 질문 해석</div>
+    <p>“이 논문(<strong>Attention Is All You Need</strong>)의 main point는?” 한 문장 — <strong>순환·합성곱 없이 self-attention만으로</strong> 시퀀스를 모델링.</p>
+  </div>
+
 <div class="prose">
 <p>🔭 한 문장 핵심: <strong>순환(RNN)도 합성곱(CNN)도 없이, 오직 (self-)attention만으로 시퀀스를 모델링</strong>할 수 있다. 이 구조가 <strong>Transformer</strong>다.</p>
 <p>🎯 <strong>Self-attention</strong>은 각 위치에 대해 <strong>모든 위치의 value를 가중합</strong>한다. 가중치는 그 위치의 <strong>query</strong>와 다른 위치들의 <strong>key</strong>가 얼마나 닮았는지를 softmax로 정규화한 것:</p>
@@ -55,6 +60,7 @@
         <li>이점 — 긴 의존성 경로 $O(1)$ + 완전 병렬. 보조 = 위치 인코딩·멀티헤드.</li>
       </ul>
 
+  
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:96.2%"></div></div>
     <div class="qprog-txt"><b>25</b> / 26 문항 · 핵심 논문</div>

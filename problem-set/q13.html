@@ -27,6 +27,11 @@
     <p class="qtext">How does LSTM overcome the ‘memory-fade-away’ issue?</p>
   </header>
 
+  <div class="q-interpret">
+    <div class="qi-label">📌 질문 해석</div>
+    <p>“LSTM이 <strong>memory-fade-away</strong>를 어떻게 극복하나?” 먼저 <strong>왜 사라지는지(vanishing gradient)</strong>, 그다음 <strong>해법(cell state + gate)</strong> 순서로.</p>
+  </div>
+
 <div class="prose">
 <p>😶‍🌫️ 왜 기억이 사라지나? 바닐라 RNN의 hidden state는 매 시점 같은 순환 가중치 행렬과 곱해진다. 그래서 $k$ 스텝 전 입력이 현재에 주는 영향(gradient)은 대략 그 행렬을 $k$번 곱한 것에 비례:</p>
 <div class="math-block">$$ \frac{\partial h_t}{\partial h_{t-k}} \;\sim\; W^{k} $$</div>
@@ -64,6 +69,7 @@
         <li>게이트(망각·입력·출력)로 언제 기억/망각할지 학습. 행렬 반복 곱이 없어 소실 제거.</li>
       </ul>
 
+  
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:65.4%"></div></div>
     <div class="qprog-txt"><b>17</b> / 26 문항 · 순환 신경망과 시퀀스</div>

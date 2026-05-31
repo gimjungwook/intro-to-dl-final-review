@@ -27,6 +27,11 @@
     <p class="qtext">Compare the batch gradient, stochastic gradient and mini-batch gradient descent methods.</p>
   </header>
 
+  <div class="q-interpret">
+    <div class="qi-label">📌 질문 해석</div>
+    <p>“<strong>batch / stochastic / mini-batch</strong> gradient descent를 비교하라.” 셋을 <strong>업데이트당 예제 수</strong>라는 한 축으로 꿰고 trade-off를 보이는 게 핵심.</p>
+  </div>
+
 <div class="prose">
 <p>🍱 셋의 차이는 단 하나 — <strong>한 번 업데이트에 gradient를 몇 개 예제로 추정하는가</strong>. 비용이 보통 예제들의 평균이므로 진짜 gradient도 예제별 gradient의 평균, 그 평균을 몇 개로 추정하느냐의 문제다.</p>
 <div class="cmp">
@@ -59,6 +64,7 @@
         <li>미니배치가 표준인 이유 — 분산 $\propto 1/\sqrt m$ 수확체감 + GPU 병렬효율 + 잡음의 약한 정칙화.</li>
       </ul>
 
+  
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:26.9%"></div></div>
     <div class="qprog-txt"><b>7</b> / 26 문항 · 최적화와 하이퍼파라미터</div>

@@ -27,6 +27,11 @@
     <p class="qtext">What is the weight space symmetry?</p>
   </header>
 
+  <div class="q-interpret">
+    <div class="qi-label">📌 질문 해석</div>
+    <p>“<strong>weight space symmetry</strong>란?” 정의 + 대표 예(은닉 유닛 교환) + <strong>$m!$개의 동등 최소점</strong>이라는 함의까지.</p>
+  </div>
+
 <div class="prose">
 <p>🔀 <strong>Weight space symmetry</strong>란 <strong>서로 다른 가중치 설정이 정확히 같은 입출력 함수를 구현하는 현상</strong>이다. 신경망은 <strong>non-identifiable</strong>(비식별) 모델 — 함수를 보고 가중치를 유일하게 거꾸로 알 수 없다 🕵️.</p>
 <p>🔁 가장 흔한 예가 <strong>hidden unit permutation</strong>(은닉 유닛 교환). 은닉층에 유닛이 $m$개일 때, 두 유닛의 들어오는 가중치와 나가는 가중치를 함께 맞바꾸면 함수는 전혀 안 변한다 — 유닛은 이름표만 바뀐 셈. $m$개 재배열은 $m!$가지이므로 <strong>같은 함수를 주는 동등한 가중치 설정이 최소 $m!$개</strong> 존재한다 🤯.</p>
@@ -47,6 +52,7 @@
         <li>함의 — 동등 전역최소 $m!$개, 비볼록성 한 원인, 개별 가중치 해석 불가.</li>
       </ul>
 
+  
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:38.5%"></div></div>
     <div class="qprog-txt"><b>10</b> / 26 문항 · 최적화와 하이퍼파라미터</div>

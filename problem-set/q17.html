@@ -27,6 +27,11 @@
     <p class="qtext">What is slow feature analysis (SFA)?</p>
   </header>
 
+  <div class="q-interpret">
+    <div class="qi-label">📌 질문 해석</div>
+    <p>“<strong>slow feature analysis(SFA)</strong>란?” 느림 원리 + 목적함수(시간 변화율 최소화) + <strong>자명해를 막는 제약</strong>까지.</p>
+  </div>
+
 <div class="prose">
 <p>🐢 <strong>SFA (Slow Feature Analysis)</strong>는 <strong>slowness principle</strong>(느림 원리)에 기반한 비지도 특징 학습이다. 핵심 가정: “환경의 중요한 고수준 특징은 원시 감각 입력보다 <strong>천천히 변한다</strong>”.</p>
 <div class="analogy">🦓 얼룩말이 화면을 가로질러 달릴 때, 한 픽셀 값은 검정↔흰색을 <b>매 순간 빠르게</b> 오간다(줄무늬가 지나가므로). 그러나 “얼룩말이 있다”는 사실은 <b>여러 프레임에 걸쳐 천천히</b> 변한다. 빠르게 진동하는 픽셀이 아니라 천천히 변하는 “얼룩말의 존재”가 우리가 원하는 특징.</div>
@@ -48,6 +53,7 @@
         <li>제약 — 평균0·분산1(자명해 배제) + 직교(붕괴 방지). 불변 특징을 비지도로 학습.</li>
       </ul>
 
+  
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:73.1%"></div></div>
     <div class="qprog-txt"><b>19</b> / 26 문항 · 비지도 학습과 표상</div>

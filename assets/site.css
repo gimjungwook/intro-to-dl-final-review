@@ -604,6 +604,12 @@ hr.rule { max-width: var(--measure); margin: 3rem auto; border: none; border-top
 .skel-h { max-width: var(--measure); margin: 1.9rem auto .5rem; padding-inline: 1.4rem; font-family: var(--mono); font-size: .74rem; letter-spacing: .1em; text-transform: uppercase; color: var(--style); font-weight: 700; }
 .prose h2[id] { scroll-margin-top: 5rem; }
 
+/* 질문 해석 콜아웃 — 답 설명 전에 "이 문제가 뭘 묻나" */
+.q-interpret { max-width: var(--measure); margin: 0 auto 1.8rem; padding: 1.15rem 1.45rem; background: var(--structure-bg); border: 1px solid var(--structure-lo); border-radius: 16px; }
+.q-interpret .qi-label { display: flex; align-items: center; gap: .4rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: var(--structure); font-weight: 700; margin-bottom: .55rem; }
+.q-interpret p { margin: 0; font-size: .98rem; color: var(--ink); line-height: 1.72; }
+.q-interpret strong { color: #1B64DA; }
+
 .qbar { position: sticky; top: 0; z-index: 40; display: flex; align-items: center; justify-content: space-between; gap: .8rem; padding: .8rem 1.4rem; background: rgba(242,244,246,.86); backdrop-filter: blur(12px) saturate(1.2); border-bottom: 1px solid var(--line); }
 .qbar .home { font-family: var(--mono); font-size: .74rem; color: var(--ink-soft); text-decoration: none; font-weight: 600; white-space: nowrap; }
 .qbar .home:hover { color: var(--structure); }

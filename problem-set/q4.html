@@ -27,6 +27,11 @@
     <p class="qtext">Describe and compare the gradient descent method and the Newton method.</p>
   </header>
 
+  <div class="q-interpret">
+    <div class="qi-label">📌 질문 해석</div>
+    <p>“<strong>gradient descent</strong>와 <strong>Newton's method</strong>를 기술하고 비교하라.” 각 정의 + <strong>1차 vs 2차(곡률 사용)</strong> 차이 + 딥러닝에서의 실용성까지.</p>
+  </div>
+
 <div class="prose">
 <p>⛰️ 둘 다 비용 $J(\theta)$를 최소화하지만 곡면 정보의 <em>차수</em>가 다르다. <strong>Gradient descent</strong>는 <strong>1차(gradient)</strong>만, <strong>Newton's method</strong>는 <strong>2차(curvature, Hessian)</strong>까지 쓴다.</p>
 <p>🚶 <strong>Gradient descent</strong>: 기울기 반대 방향으로 일정 보폭.</p>
@@ -65,6 +70,7 @@
         <li>딥넷에서 뉴턴 못 쓰는 이유 — $O(n^3)$ 비용, 안장점에서 비양정부호, 비볼록. → 모멘텀/Adam이 절충.</li>
       </ul>
 
+  
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:23.1%"></div></div>
     <div class="qprog-txt"><b>6</b> / 26 문항 · 최적화와 하이퍼파라미터</div>

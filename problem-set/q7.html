@@ -27,6 +27,11 @@
     <p class="qtext">As an optimization challenge, what is the relation between cliffs and exploding gradient?</p>
   </header>
 
+  <div class="q-interpret">
+    <div class="qi-label">📌 질문 해석</div>
+    <p>“<strong>cliff</strong>와 <strong>exploding gradient</strong>의 관계는?” 둘을 따로가 아니라 <strong>원인(절벽)–증상(폭발)</strong>으로 연결하라는 질문.</p>
+  </div>
+
 <div class="prose">
 <p>🧗 깊은 네트워크나 RNN의 손실 곡면에는 <strong>cliff</strong>(절벽)이 흔하다 — 평평하던 지형이 갑자기 거의 수직으로 떨어지는 영역 📉. 여러 층(또는 여러 시간 스텝)에 걸쳐 가중치가 <strong>반복적으로 곱해지기 때문</strong>에 생긴다. 비슷한 큰 가중치를 여러 번 곱하면 출력과 gradient가 지수적으로 커지는 구간이 만들어진다.</p>
 <p>🔗 둘의 관계는 <strong>원인과 증상</strong>: <strong>cliff = 기하학적 원인</strong>, <strong>exploding gradient = 그 절벽 가장자리의 증상</strong>. 절벽 근처에서 gradient 크기가 폭증하고, 보통 learning rate로 그 거대한 gradient에 보폭을 곱하면 파라미터가 한 번에 멀리 <strong>날아가</strong> 그동안의 학습을 통째로 망친다 💥.</p>
@@ -47,6 +52,7 @@
         <li>RNN에서는 순환행렬 최대고윳값 &gt;1 → 시간에 지수적 폭발. 처방 = 기울기 클리핑(Q15).</li>
       </ul>
 
+  
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:34.6%"></div></div>
     <div class="qprog-txt"><b>9</b> / 26 문항 · 최적화와 하이퍼파라미터</div>

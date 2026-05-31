@@ -27,6 +27,11 @@
     <p class="qtext">What is gradient clipping?</p>
   </header>
 
+  <div class="q-interpret">
+    <div class="qi-label">📌 질문 해석</div>
+    <p>“<strong>gradient clipping</strong>이란?” 정의(방향 보존·크기만 상한) + <strong>어떤 문제(절벽/폭발)를 푸는지</strong>를 함께.</p>
+  </div>
+
 <div class="prose">
 <p>✂️ <strong>Gradient clipping</strong>은 gradient의 <strong>크기가 임계값을 넘으면 방향은 보존한 채 크기만 임계값으로 줄이는</strong> 기법이다. 가장 흔한 <strong>norm clipping</strong>:</p>
 <div class="math-block">$$ \text{if } \lVert g\rVert > \tau:\quad g \leftarrow \tau\,\frac{g}{\lVert g\rVert} $$</div>
@@ -48,6 +53,7 @@
         <li>RNN 표준. 방향 보존이 핵심.</li>
       </ul>
 
+  
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:42.3%"></div></div>
     <div class="qprog-txt"><b>11</b> / 26 문항 · 최적화와 하이퍼파라미터</div>

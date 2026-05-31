@@ -27,6 +27,11 @@
     <p class="qtext">Why is unsupervised learning helpful for the downstream tasks like classification?</p>
   </header>
 
+  <div class="q-interpret">
+    <div class="qi-label">📌 질문 해석</div>
+    <p>“비지도 학습이 왜 분류 같은 <strong>다운스트림 과제</strong>에 도움이 되나?” 핵심은 <strong>$p(x)$의 구조가 $p(y\mid x)$의 정보를 담는다</strong>는 가정.</p>
+  </div>
+
 <div class="prose">
 <p>🧭 핵심 가정: <strong>입력 분포 $p(x)$의 구조가 $p(y\mid x)$에 대한 정보를 담고 있다</strong>. 분류하려는 라벨 $y$를 만드는 변동 인자(factors of variation)는, 입력 $x$의 분포 모양을 결정하는 인자와 상당 부분 겹친다 🔗.</p>
 <p>🪐 구체적으로 같은 클래스 예제들은 입력 공간에서 <strong>cluster</strong>를 이루거나 같은 <strong>manifold</strong> 위에 놓인다. 비지도 학습은 라벨 없이 이 cluster·manifold·변동 인자를 발견해 $x$의 <strong>좋은 representation</strong>(잘 분리되고 매끄러운)을 만든다. 그 표현 공간에선 decision boundary가 단순해져 <strong>더 적은 라벨</strong>로 학습되고 더 잘 일반화된다 📈.</p>
@@ -46,6 +51,7 @@
         <li>사전훈련/초기화 + 준지도. 예 단어 임베딩·오토인코더 특징. 단 $p(x)$가 $y$와 관련될 때만.</li>
       </ul>
 
+  
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:84.6%"></div></div>
     <div class="qprog-txt"><b>22</b> / 26 문항 · 비지도 학습과 표상</div>

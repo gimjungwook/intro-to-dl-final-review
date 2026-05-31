@@ -27,6 +27,11 @@
     <p class="qtext">Compare Autoencoder and PCA.</p>
   </header>
 
+  <div class="q-interpret">
+    <div class="qi-label">📌 질문 해석</div>
+    <p>“<strong>autoencoder와 PCA를 비교하라.</strong>” 핵심은 <strong>linear AE = PCA</strong>이고 non-linear AE가 그걸 일반화한다는 점.</p>
+  </div>
+
 <div class="prose">
 <p>🪞 둘 다 입력을 저차원 code로 압축했다 복원하며 핵심 구조를 잡는다. 결정적 차이는 <strong>linear냐 non-linear냐</strong>.</p>
 <p>📐 <strong>PCA</strong>는 분산이 가장 큰 직교 방향(<strong>principal components</strong>)을 찾아 그 부분공간에 <strong>linear</strong> 투영한다(복원도 linear). 핵심 사실: <strong>은닉층 하나 + linear 활성 + squared error를 쓰는 autoencoder는 PCA와 같은 부분공간을 학습</strong>한다 → linear autoencoder = PCA 🟰.</p>
@@ -58,6 +63,7 @@
         <li>AE — 비선형·깊이로 표현력↑, 단 항등 학습 위험 → 정칙화 필요.</li>
       </ul>
 
+  
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:76.9%"></div></div>
     <div class="qprog-txt"><b>20</b> / 26 문항 · 비지도 학습과 표상</div>

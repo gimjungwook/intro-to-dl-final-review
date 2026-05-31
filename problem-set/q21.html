@@ -27,6 +27,11 @@
     <p class="qtext">What is distributed representation? Why is it so important in deep learning? Compare compact and sparse representations.</p>
   </header>
 
+  <div class="q-interpret">
+    <div class="qi-label">📌 질문 해석</div>
+    <p>세 갈래 — ① <strong>distributed representation</strong>이 무엇인지, ② <strong>왜 그렇게 중요한지</strong>($2^n$), ③ <strong>compact vs sparse</strong> 비교.</p>
+  </div>
+
 <div class="prose">
 <p>🌈 <strong>Distributed representation</strong>이란 하나의 개념을 <strong>여러 유닛에 걸친 활성 패턴</strong>으로 나타내고, 동시에 <strong>각 유닛이 여러 개념 표현에 참여</strong>하는 방식이다. 반대는 <strong>local / one-hot</strong>(한 개념당 한 유닛).</p>
 <p>💥 왜 중요? 표현력이 <strong>exponential</strong>이라서다. $n$개의 binary feature는 서로 다른 패턴으로 최대 <strong>$2^n$개</strong>의 영역을 구별한다. local 표상은 $n$개 유닛으로 $n$개 개념밖에 못 구별한다. 이 지수적 격차가 <strong>generalization의 원천</strong> — feature가 개념들 사이에서 재사용되므로 “red + car”와 “blue + truck”을 본 적 있으면 본 적 없는 “red + truck”으로 일반화한다 🚗🟥. $O(n)$ 파라미터로 $O(2^n)$ 영역을 기술하는 <strong>statistical efficiency</strong>가 딥러닝이 적은 데이터로 일반화하는 핵심 이유다.</p>
@@ -71,6 +76,7 @@
         <li>비교 — 국소(1개, 해석 쉬움) / 조밀(다수, 용량 최대, 얽힘) / 희소($k$개, 용량 크면서 해석·강건).</li>
       </ul>
 
+  
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:88.5%"></div></div>
     <div class="qprog-txt"><b>23</b> / 26 문항 · 비지도 학습과 표상</div>

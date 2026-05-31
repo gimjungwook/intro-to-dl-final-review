@@ -27,6 +27,11 @@
     <p class="qtext">What is the momentum in optimization?</p>
   </header>
 
+  <div class="q-interpret">
+    <div class="qi-label">📌 질문 해석</div>
+    <p>“최적화에서 <strong>momentum</strong>이란?” 정의(과거 gradient 누적) + <strong>왜 도움이 되는지</strong>(진동 상쇄·가속)를 함께.</p>
+  </div>
+
 <div class="prose">
 <p>🏂 <strong>Momentum</strong>은 과거 gradient들의 <strong>exponential moving average</strong>를 <strong>velocity</strong>(속도) $v$에 누적해, 매 스텝이 “지금 gradient”뿐 아니라 “지금까지의 관성”을 함께 따르게 하는 기법이다.</p>
 <div class="math-block">$$ v \leftarrow \alpha v - \epsilon\,\nabla_\theta J(\theta), \qquad \theta \leftarrow \theta + v $$</div>
@@ -48,6 +53,7 @@
         <li>네스테로프 = 미리 가본 위치에서 기울기 계산.</li>
       </ul>
 
+  
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:30.8%"></div></div>
     <div class="qprog-txt"><b>8</b> / 26 문항 · 최적화와 하이퍼파라미터</div>

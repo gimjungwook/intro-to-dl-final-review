@@ -27,6 +27,11 @@
     <p class="qtext">What is the main point of the adversarial examples?</p>
   </header>
 
+  <div class="q-interpret">
+    <div class="qi-label">📌 질문 해석</div>
+    <p>“adversarial example의 <strong>main point</strong>는?” 단순 정의를 넘어, <strong>왜 생기는지(고차원에서의 선형성)</strong>라는 핵심을 짚는 게 포인트.</p>
+  </div>
+
 <div class="prose">
 <p>👾 <strong>Adversarial example</strong>이란, 사람 눈엔 원본과 똑같아 보이지만 <strong>의도적으로 설계된 미세 섭동</strong> $\eta$를 더해 높은 정확도의 네트워크가 <strong>엉뚱한 클래스로 high confidence 오분류</strong>하게 만드는 입력이다. 대표 생성법이 <strong>FGSM</strong> 🎯.</p>
 <div class="math-block">$$ \tilde{x} = x + \epsilon\,\operatorname{sign}\!\big(\nabla_x J(\theta,x,y)\big) $$</div>
@@ -57,6 +62,7 @@
         <li>함의 — 보안 위협이자, 적대적 훈련이라는 정칙화 기회. 모델이 의미가 아닌 선형 통계를 학습했음을 폭로.</li>
       </ul>
 
+  
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:15.4%"></div></div>
     <div class="qprog-txt"><b>4</b> / 26 문항 · 정칙화와 일반화</div>

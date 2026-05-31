@@ -27,6 +27,11 @@
     <p class="qtext">When the dataset is small compared to the model size, what kind of regularization approaches can we take?</p>
   </header>
 
+  <div class="q-interpret">
+    <div class="qi-label">📌 질문 해석</div>
+    <p>이 문제는 “데이터가 모델보다 작을 때 쓸 수 있는 정칙화 <strong>접근들</strong>”을 묻는다 — 한 기법이 아니라 <strong>여러 방법을 분류해 나열</strong>하고, 각각이 왜 작은 데이터에서 과적합을 막는지까지 엮어야 만점.</p>
+  </div>
+
 <div class="prose">
 <p>🎯 이 문제의 뿌리는 <strong>bias-variance tradeoff</strong>다. 모델의 <strong>capacity</strong>(표현 용량)가 데이터 양보다 크면 모델이 신호뿐 아니라 잡음까지 외워버린다 😵 — 훈련 오차는 0에 가깝지만 새 데이터에선 무너지는 <strong>overfitting</strong>(과적합)이다.</p>
 <p>💡 정칙화(<strong>regularization</strong>)의 본질은 “우리가 미리 아는 <strong>prior</strong>(사전 지식)를 모델에 넣어, 잡음을 외울 자유를 빼앗는 것”. 데이터가 적을수록 이 prior 비중을 키운다.</p>
@@ -51,6 +56,7 @@
         <li>데이터가 적을수록 사전의 비중을 키운다, 특히 전이학습의 효과가 커진다고 마무리.</li>
       </ul>
 
+  
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:3.8%"></div></div>
     <div class="qprog-txt"><b>1</b> / 26 문항 · 정칙화와 일반화</div>

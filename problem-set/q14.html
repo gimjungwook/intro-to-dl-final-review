@@ -27,6 +27,11 @@
     <p class="qtext">Compare RNN and CNN in terms of parameter sharing and lateral connection.</p>
   </header>
 
+  <div class="q-interpret">
+    <div class="qi-label">📌 질문 해석</div>
+    <p>“RNN과 CNN을 <strong>parameter sharing</strong>과 <strong>lateral connection</strong> 관점에서 비교하라.” 두 관점 각각에서 둘을 대비시키는 게 핵심.</p>
+  </div>
+
 <div class="prose">
 <h3>🔄 Parameter sharing — 무엇의 축으로 공유하나</h3>
 <p>둘 다 파라미터를 공유하지만 공유하는 <strong>축</strong>이 다르다. <strong>CNN은 space(공간) 축</strong>으로 공유한다 — 같은 kernel이 이미지 전 위치에 적용. <strong>RNN은 time(시간) 축</strong>으로 공유한다 — 같은 transition 가중치가 모든 시점에 적용. 목적은 같다: 자유 파라미터를 줄이고, 한 위치/시점에서 배운 걸 다른 위치/시점에 일반화하고, 각각 공간 equivariance·시간 equivariance를 얻는다.</p>
@@ -60,6 +65,7 @@
         <li>대가 — CNN 병렬·수용영역 한계, RNN 무한문맥이나 순차·소실. (→ self-attention이 절충, Q25.)</li>
       </ul>
 
+  
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:69.2%"></div></div>
     <div class="qprog-txt"><b>18</b> / 26 문항 · 순환 신경망과 시퀀스</div>

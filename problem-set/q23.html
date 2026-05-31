@@ -27,6 +27,11 @@
     <p class="qtext">Describe radial basis function networks. And discuss why it does not have the adversarial example issue.</p>
   </header>
 
+  <div class="q-interpret">
+    <div class="qi-label">📌 질문 해석</div>
+    <p>두 갈래 질문 — ① <strong>RBF network가 무엇인지</strong> 기술하고, ② <strong>왜 adversarial example에 강한지</strong> 논하라. 구조와 robust 이유를 연결해야 한다.</p>
+  </div>
+
 <div class="prose">
 <p>🎯 <strong>RBF (Radial Basis Function) network</strong>는 은닉 유닛이 입력과 <strong>prototype center</strong>(중심) $\mu_i$ 사이의 <em>거리</em>에 반응하는 네트워크다. 입력이 중심에 가까울 때만 강하게 켜진다 🔆.</p>
 <div class="math-block">$$ h_i(x) = \exp\!\Big(-\beta_i\,\lVert x-\mu_i\rVert_2^2\Big), \qquad \hat y = \sum_i w_i\,h_i(x) $$</div>
@@ -48,6 +53,7 @@
         <li>트레이드오프 — 강건하지만 학습 어렵고 정확도/일반화가 낮음.</li>
       </ul>
 
+  
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:19.2%"></div></div>
     <div class="qprog-txt"><b>5</b> / 26 문항 · 정칙화와 일반화</div>
