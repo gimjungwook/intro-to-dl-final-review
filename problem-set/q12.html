@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>STEP 16 · Q12 · RNN은 재귀 신경망(recursive NN)의 특수 경우</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script defer src="../assets/widgets.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+
+<header class="qbar">
+  <a class="home" href="index.html">← 26문항 목록</a>
+  <span class="grp">🔁 순환 신경망과 시퀀스</span>
+  <span class="step">STEP <b>16</b> / 26</span>
+</header>
+
+<main class="qpage">
+  <header class="qhead">
+    <span class="kicker">🔁 순환 신경망과 시퀀스 · 16 / 26</span>
+    <h1>🌳 Q12 · RNN은 재귀 신경망(recursive NN)의 특수 경우</h1>
+    <p class="qtext">Why is RNN a special case of recursive neural network?</p>
+  </header>
+
+    <div class="prose">
+      
+      
+
+      <p>두 모델의 공통점부터 보자. 둘 다 <strong>같은 파라미터를 구조의 모든 노드에서 반복 적용</strong>해, 자식 표현들을 부모 표현으로 합친다. 차이는 그 “구조”의 모양이다.</p>
+
+      <p><strong>재귀 신경망</strong>은 일반적인 <strong>트리(또는 DAG) 구조</strong> 위에서 작동한다. 예컨대 문장의 구문 분석 트리에서, 같은 합성 함수가 두 자식 구를 한 부모 구로 합치는 일을 트리 전체에 재귀적으로 적용한다. <strong>순환 신경망(RNN)</strong>은 이 구조가 <strong>사슬(chain), 즉 한 줄로 늘어선 퇴화한 트리</strong>인 특수 경우다. 매 시점의 노드는 자식이 하나(직전 상태)뿐이고, 거기에 현재 입력을 더해 다음 상태를 만든다.</p>
+
+      <div class="analogy">
+        재귀 신경망이 <b>“가지를 자유롭게 뻗는 나무”</b>라면, RNN은 <b>“가지 없이 곧게 자란 대나무”</b>다. 둘 다 같은 마디(파라미터)를 반복해 자라지만, 대나무는 트리의 모든 분기 가능성을 한 줄로 좁힌 특수한 나무다.
+      </div>
+
+      <p>이 관점이 알려 주는 실용적 사실이 있다. RNN은 사슬이라 <strong>깊이가 시퀀스 길이 $n$에 비례</strong>해 선형으로 깊어진다. 반면 균형 잡힌 이진 트리 재귀망은 깊이가 $\log n$에 그친다. 깊이가 얕을수록 기울기가 통과해야 할 곱셈 단계가 적어, 일반 재귀망은 긴 의존성에서 기울기 소실(<a href="q13.html">Q13</a>)에 더 강할 수 있다. 즉 RNN을 “재귀망의 사슬 특수 경우”로 보면, 그 장단점이 구조의 깊이에서 따라 나옴을 한눈에 이해할 수 있다.</p>
+
+      <div class="model-answer">
+        <div class="ma-label">🎯 Model Answer (English)</div>
+        <p class="ma-en">Both apply the <strong>same parameters repeatedly across the nodes of a structure</strong>, combining children into a parent representation. A <strong>recursive neural network</strong> operates on a general tree (or DAG) structure — for example a sentence's parse tree, where one composition function merges two child phrases into a parent. An <strong>RNN</strong> is the special case in which that structure is a <strong>chain — a degenerate, linear tree</strong>: each step's node has a single child (the previous state) plus the current input. So an RNN is a recursive network whose topology has been narrowed to a path. A practical consequence is that an RNN's depth grows linearly with the sequence length $n$, whereas a balanced recursive tree grows only as $\log n$, so trees can be gentler on gradients over long dependencies.</p>
+      </div>
+
+      <p class="skel-h">📝 시험 답안 골격</p>
+      <ul class="checklist">
+        <li>공통 — 같은 파라미터를 구조의 모든 노드에 반복 적용해 자식→부모로 합침.</li>
+        <li>재귀망 = 일반 트리/DAG 구조. RNN = 그 구조가 사슬(퇴화 트리)인 특수 경우.</li>
+        <li>결과 — RNN 깊이 $\propto n$, 균형 트리 $\propto\log n$ → 트리가 긴 의존성·기울기에 유리할 수 있음.</li>
+      </ul>
+    </div>
+
+    
+
+  <div class="qprog">
+    <div class="qprog-track"><div class="qprog-fill" style="width:61.5%"></div></div>
+    <div class="qprog-txt"><b>16</b> / 26 문항 · 순환 신경망과 시퀀스</div>
+  </div>
+
+  <nav class="qnav">
+    <a href="q11.html"><div class="dir">← 이전 · STEP 15</div><div class="ti">🖼️ Q11 무한히 강한 사전(infinitely strong prior)이 CNN에 더해지는 방식</div></a>
+    <a class="next" href="q13.html"><div class="dir">다음 · STEP 17 →</div><div class="ti">🔁 Q13 LSTM의 ‘기억 소실(memory-fade-away)’ 극복</div></a>
+  </nav>
+</main>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'정칙화와 일반화' },
+    { no:'02', t:'최적화와 하이퍼파라미터' },
+    { no:'03', t:'합성곱 신경망 CNN' },
+    { no:'04', t:'순환 신경망과 시퀀스' },
+    { no:'05', t:'비지도 학습과 표상' },
+    { no:'06', t:'핵심 논문' },
+  ];
+  function buildNav(cur) {
+    const tb = document.querySelector('.topbar');
+    if (tb) tb.innerHTML =
+      '<a class="home" href="index.html">← 기말 문제은행 26문항</a>' +
+      '<span class="ch-mini">갈래 ' + cur + ' / 06</span>';
+    const ol = document.querySelector('.ch-nav ol');
+    if (ol) ol.innerHTML = SUBS.map(c =>
+      '<li><a href="' + c.no + '.html"' + (c.no === cur ? ' class="current"' : '') + '>' + c.t + '</a></li>').join('');
+    const foot = document.querySelector('.ch-foot');
+    if (foot) {
+      const i = SUBS.findIndex(c => c.no === cur);
+      const prev = i > 0 ? SUBS[i - 1] : { t: '표지로', _href: 'index.html' };
+      const next = i < SUBS.length - 1 ? SUBS[i + 1] : { t: '표지로', _href: 'index.html' };
+      const hp = prev._href || (prev.no + '.html');
+      const hn = next._href || (next.no + '.html');
+      foot.innerHTML =
+        '<a href="' + hp + '"><div class="dir">← 이전</div><div class="ti">' + prev.t + '</div></a>' +
+        '<a href="' + hn + '" class="next"><div class="dir">다음 →</div><div class="ti">' + next.t + '</div></a>';
+    }
+  }
+
+  // 위젯 13 — LSTM 기억 보존
+  function lstmMem(canvas, f) {
+    const css = getComputedStyle(document.documentElement);
+    const C = {
+      structure: css.getPropertyValue('--structure').trim() || '#2D5B7A',
+      style: css.getPropertyValue('--style').trim() || '#C0492E',
+      faint: css.getPropertyValue('--ink-faint').trim() || '#8E8576',
+      ink: css.getPropertyValue('--ink').trim() || '#26221C',
+    };
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height, padL = 50, padB = 40, padT = 24, padR = 20;
+    ctx.clearRect(0, 0, W, H);
+    const T = 20, plotW = W - padL - padR, plotH = H - padT - padB;
+    const X = t => padL + (t / T) * plotW;
+    const Y = v => padT + (1 - v) * plotH;
+
+    // 축
+    ctx.strokeStyle = 'rgba(38,34,28,.18)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(padL, padT); ctx.lineTo(padL, padT + plotH); ctx.lineTo(padL + plotW, padT + plotH); ctx.stroke();
+    ctx.font = '11px monospace'; ctx.fillStyle = C.faint;
+    ctx.fillText('남은 신호', 6, padT + 6); ctx.fillText('1.0', 24, padT + 6); ctx.fillText('0', 36, padT + plotH + 4);
+    ctx.fillText('시간 스텝 t →', padL + plotW - 90, padT + plotH + 24);
+
+    const vanilla = 0.72; // 바닐라 RNN 고정 감쇠
+    function curve(base, color, dash) {
+      ctx.beginPath(); ctx.setLineDash(dash || []);
+      for (let t = 0; t <= T; t++) { const v = Math.pow(base, t); const px = X(t), py = Y(v); t ? ctx.lineTo(px, py) : ctx.moveTo(px, py); }
+      ctx.strokeStyle = color; ctx.lineWidth = 2.4; ctx.stroke(); ctx.setLineDash([]);
+      for (let t = 0; t <= T; t++) { const v = Math.pow(base, t); ctx.beginPath(); ctx.arc(X(t), Y(v), 2.4, 0, 7); ctx.fillStyle = color; ctx.fill(); }
+    }
+    curve(vanilla, C.structure);
+    curve(f, C.style);
+
+    // 20스텝 잔존값 라벨
+    ctx.font = '12px monospace';
+    ctx.fillStyle = C.structure; ctx.fillText('RNN t=20: ' + Math.pow(vanilla, 20).toFixed(3), padL + 10, padT + 18);
+    ctx.fillStyle = C.style; ctx.fillText('LSTM t=20: ' + Math.pow(f, 20).toFixed(3), padL + 10, padT + 36);
+  }
+
+  window.addEventListener('load', () => {
+    buildNav('04');
+    if (window.NST && NST.accordion) NST.accordion(document);
+    const cv = document.getElementById('lstmmem');
+    const fv = document.querySelector('.fv');
+    const fSlider = document.getElementById('forget');
+    if (cv && fSlider) {
+      const draw = () => { const f = +fSlider.value / 100; fv.textContent = f.toFixed(2); lstmMem(cv, f); };
+      fSlider.addEventListener('input', draw); draw();
+    }
+    if (window.renderMathInElement) renderMathInElement(document.body, {
+      delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }],
+      throwOnError: false,
+    });
+  });
+</script>
+</body>
+</html>

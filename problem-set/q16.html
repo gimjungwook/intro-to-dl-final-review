@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>STEP 12 · Q16 · 그리드 탐색과 무작위 탐색</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script defer src="../assets/widgets.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+
+<header class="qbar">
+  <a class="home" href="index.html">← 26문항 목록</a>
+  <span class="grp">⚙️ 최적화와 하이퍼파라미터</span>
+  <span class="step">STEP <b>12</b> / 26</span>
+</header>
+
+<main class="qpage">
+  <header class="qhead">
+    <span class="kicker">⚙️ 최적화와 하이퍼파라미터 · 12 / 26</span>
+    <h1>🎰 Q16 · 그리드 탐색과 무작위 탐색</h1>
+    <p class="qtext">In hyperparameter search, what is grid search and random search?</p>
+  </header>
+
+    <div class="prose">
+      
+      
+
+      <p>하이퍼파라미터(학습률, 층 수, 정칙화 계수 등)는 경사하강으로 학습되지 않으므로 바깥에서 탐색해야 한다. 두 가지 기본 전략이 있다.</p>
+
+      <div class="cmp">
+        <div class="card gatys">
+          <h4>그리드 탐색 (grid search)</h4>
+          <ul>
+            <li>각 하이퍼파라미터마다 후보 값 몇 개를 정해 <b>모든 조합</b>(데카르트 곱)을 시도.</li>
+            <li>예: 학습률 3값 × 정칙화 3값 = 9회.</li>
+            <li>하이퍼파라미터 수에 따라 시도 횟수가 <b>지수적으로 폭발</b>(차원의 저주).</li>
+          </ul>
+        </div>
+        <div class="card modern">
+          <h4>무작위 탐색 (random search)</h4>
+          <ul>
+            <li>각 하이퍼파라미터를 분포에서 <b>무작위로 추출</b>해 정해진 횟수만큼 시도.</li>
+            <li>연속 범위를 자연스럽게 다루고, 시도 추가·병렬화가 쉽다.</li>
+            <li>같은 예산에서 보통 그리드보다 더 좋은 값을 찾는다.</li>
+          </ul>
+        </div>
+      </div>
+
+      <p>왜 무작위가 그리드를 이기는가? 핵심 관찰은 <strong>“대개 소수의 하이퍼파라미터만 성능에 크게 영향을 준다”</strong>는 것이다. 3×3 그리드는 9번을 쓰지만 <em>각 파라미터의 서로 다른 값은 단 3개</em>만 시험한다 — 중요한 파라미터의 해상도가 3에 묶인다. 같은 9번을 무작위로 쓰면 두 점이 같은 좌표를 공유할 일이 거의 없어 <strong>각 파라미터마다 9개의 서로 다른 값</strong>을 시험한다. 중요한 축을 3배 더 촘촘히 훑는 셈이다. 그리드는 “중요하지 않은 파라미터의 여러 값”에 시도를 낭비하지만, 무작위는 그 낭비가 없다.</p>
+
+      <div class="widget">
+        <div class="widget-frame">
+          <div class="widget-label"><span class="lab-no">위젯 16</span><span>같은 9회 예산 — 중요한 축을 몇 개의 값으로 훑는가</span></div>
+          <canvas id="gridrand" class="widget-canvas" width="720" height="340"></canvas>
+        </div>
+        <div class="widget-controls">
+          <div class="slider" style="max-width:360px;">
+            <label>시도 횟수 N <b class="nv">9</b></label>
+            <input type="range" id="ntrials" class="s-style" min="4" max="25" value="9">
+          </div>
+          <button class="btn ghost" id="reroll">새 무작위 ↻</button>
+        </div>
+        <p class="widget-cap">위쪽 곡선이 “중요한 하이퍼파라미터”의 진짜 성능, 옆 축은 “중요하지 않은 파라미터”다. 그리드(왼쪽)는 중요한 축을 $\sqrt N$개 값만 훑지만, 무작위(오른쪽)는 N개의 서로 다른 값을 훑어 봉우리를 맞힐 확률이 높다.</p>
+      </div>
+
+      <p>더 똑똑한 후속 기법은 <strong>베이지안 최적화</strong>로, 지금까지의 결과로 성능 곡면의 대리 모델을 세우고 다음에 시도할 값을 똑똑하게 고른다. 하지만 단순함, 병렬성, 강건함 때문에 무작위 탐색이 여전히 강력한 기본값이다.</p>
+
+      <div class="model-answer">
+        <div class="ma-label">🎯 Model Answer (English)</div>
+        <p class="ma-en">Both search hyperparameters that gradient descent cannot tune. <strong>Grid search</strong> picks a few candidate values per hyperparameter and tries every combination (the Cartesian product), so the number of trials grows exponentially with the number of hyperparameters. <strong>Random search</strong> instead samples each hyperparameter from a distribution for a fixed number of trials. Random usually wins because typically only a few hyperparameters matter: a $3\times3$ grid tests only 3 distinct values of each parameter, whereas 9 random trials test 9 distinct values of the important one — exploring it three times more finely for the same budget. Bayesian optimisation is the smarter successor, but random search remains a strong, trivially parallelisable baseline.</p>
+      </div>
+
+      <p class="skel-h">📝 시험 답안 골격</p>
+      <ul class="checklist">
+        <li>그리드 = 후보값들의 모든 조합. 무작위 = 분포에서 N번 추출.</li>
+        <li>그리드는 차원에 지수 폭발 + 각 축을 적은 값만 시험. 무작위는 각 축을 N개 서로 다른 값으로.</li>
+        <li>이유 — 소수 파라미터만 중요. 무작위가 중요 축을 더 촘촘히. (베이지안 최적화는 더 똑똑한 후속.)</li>
+      </ul>
+    </div>
+
+    
+
+  <div class="qprog">
+    <div class="qprog-track"><div class="qprog-fill" style="width:46.2%"></div></div>
+    <div class="qprog-txt"><b>12</b> / 26 문항 · 최적화와 하이퍼파라미터</div>
+  </div>
+
+  <nav class="qnav">
+    <a href="q15.html"><div class="dir">← 이전 · STEP 11</div><div class="ti">⚙️ Q15 기울기 클리핑(gradient clipping)</div></a>
+    <a class="next" href="q9.html"><div class="dir">다음 · STEP 13 →</div><div class="ti">🖼️ Q9 CNN이 이미지에 특히 강력한 이유</div></a>
+  </nav>
+</main>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'정칙화와 일반화' },
+    { no:'02', t:'최적화와 하이퍼파라미터' },
+    { no:'03', t:'합성곱 신경망 CNN' },
+    { no:'04', t:'순환 신경망과 시퀀스' },
+    { no:'05', t:'비지도 학습과 표상' },
+    { no:'06', t:'핵심 논문' },
+  ];
+  function buildNav(cur) {
+    const tb = document.querySelector('.topbar');
+    if (tb) tb.innerHTML =
+      '<a class="home" href="index.html">← 기말 문제은행 26문항</a>' +
+      '<span class="ch-mini">갈래 ' + cur + ' / 06</span>';
+    const ol = document.querySelector('.ch-nav ol');
+    if (ol) ol.innerHTML = SUBS.map(c =>
+      '<li><a href="' + c.no + '.html"' + (c.no === cur ? ' class="current"' : '') + '>' + c.t + '</a></li>').join('');
+    const foot = document.querySelector('.ch-foot');
+    if (foot) {
+      const i = SUBS.findIndex(c => c.no === cur);
+      const prev = i > 0 ? SUBS[i - 1] : { t: '표지로', _href: 'index.html' };
+      const next = i < SUBS.length - 1 ? SUBS[i + 1] : { t: '표지로', _href: 'index.html' };
+      const hp = prev._href || (prev.no + '.html');
+      const hn = next._href || (next.no + '.html');
+      foot.innerHTML =
+        '<a href="' + hp + '"><div class="dir">← 이전</div><div class="ti">' + prev.t + '</div></a>' +
+        '<a href="' + hn + '" class="next"><div class="dir">다음 →</div><div class="ti">' + next.t + '</div></a>';
+    }
+  }
+
+  const CSS = getComputedStyle(document.documentElement);
+  const C = {
+    structure: CSS.getPropertyValue('--structure').trim() || '#2D5B7A',
+    style: CSS.getPropertyValue('--style').trim() || '#C0492E',
+    synth: CSS.getPropertyValue('--synth').trim() || '#A47B2E',
+    ink: CSS.getPropertyValue('--ink').trim() || '#26221C',
+    faint: CSS.getPropertyValue('--ink-faint').trim() || '#8E8576',
+    line: 'rgba(38,34,28,.12)',
+  };
+
+  // ─── 위젯 04: GD vs Newton ───
+  function gdNewton(canvas, kappa) {
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+    const cx = W / 2, cy = H / 2, sc = 52;  // world→px
+    const lamMax = 1, lamMin = 1 / kappa;
+    const toPx = (x, y) => [cx + x * sc, cy - y * sc];
+
+    // 등고선 (타원)
+    ctx.lineWidth = 1;
+    for (let c = 0.4; c <= 6; c += 0.7) {
+      const ax = Math.sqrt(2 * c / lamMax) * sc;
+      const ay = Math.sqrt(2 * c / lamMin) * sc;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, ax, ay, 0, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(38,34,28,.13)';
+      ctx.stroke();
+    }
+    // 바닥
+    ctx.fillStyle = C.ink;
+    ctx.beginPath(); ctx.arc(cx, cy, 4, 0, 7); ctx.fill();
+
+    const x0 = 2.2, y0 = 2.6;
+    // 경사하강 경로
+    const lr = 1.9 / lamMax;
+    let x = x0, y = y0;
+    const path = [[x, y]];
+    for (let i = 0; i < 60; i++) {
+      x -= lr * lamMax * x; y -= lr * lamMin * y;
+      path.push([x, y]);
+      if (Math.hypot(x, y) < 0.02) break;
+    }
+    ctx.beginPath();
+    path.forEach((p, i) => { const [px, py] = toPx(p[0], p[1]); i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); });
+    ctx.strokeStyle = C.style; ctx.lineWidth = 1.8; ctx.stroke();
+    path.forEach(p => { const [px, py] = toPx(p[0], p[1]); ctx.beginPath(); ctx.arc(px, py, 2.1, 0, 7); ctx.fillStyle = C.style; ctx.fill(); });
+
+    // 뉴턴: 한 걸음
+    const [sx, sy] = toPx(x0, y0), [ex, ey] = toPx(0, 0);
+    ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey);
+    ctx.strokeStyle = C.structure; ctx.lineWidth = 2.4; ctx.stroke();
+    ctx.beginPath(); ctx.arc(sx, sy, 5, 0, 7); ctx.fillStyle = C.structure; ctx.fill();
+
+    // 시작점 라벨
+    ctx.font = '12px monospace'; ctx.fillStyle = C.faint;
+    ctx.fillText('시작', sx + 8, sy - 6);
+    ctx.fillStyle = C.style; ctx.fillText('경사하강 ' + (path.length - 1) + '걸음', 16, 24);
+    ctx.fillStyle = C.structure; ctx.fillText('뉴턴 1걸음', 16, 44);
+  }
+
+  // ─── 위젯 16: grid vs random ───
+  let rseed = 12345;
+  function rnd() { rseed = (rseed * 1103515245 + 12345) & 0x7fffffff; return rseed / 0x7fffffff; }
+  function gridRand(canvas, N, reseed) {
+    if (reseed) rseed = (Math.floor(reseed) * 2654435761) & 0x7fffffff;
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+    const pad = 46, panelW = (W - pad * 3) / 2;
+    const top = 60, plotH = H - top - 40;
+
+    // 중요한 파라미터 성능 곡선 (x축), 봉우리 위치
+    const peak = 0.62;
+    const perf = u => Math.exp(-Math.pow((u - peak) / 0.13, 2));
+
+    function panel(ox, title, pts) {
+      // 배경
+      ctx.fillStyle = '#fff'; ctx.fillRect(ox, top, panelW, plotH);
+      ctx.strokeStyle = C.line; ctx.strokeRect(ox, top, panelW, plotH);
+      // 성능 곡선 (위쪽 띠)
+      ctx.beginPath();
+      for (let i = 0; i <= 60; i++) {
+        const u = i / 60, px = ox + u * panelW, py = top + 6 + (1 - perf(u)) * 30;
+        i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+      }
+      ctx.strokeStyle = C.synth; ctx.lineWidth = 2; ctx.stroke();
+      // 점 + x축 투영
+      pts.forEach(([u, v]) => {
+        const px = ox + u * panelW, py = top + 44 + (1 - v) * (plotH - 60);
+        ctx.beginPath(); ctx.arc(px, py, 4, 0, 7);
+        ctx.fillStyle = perf(u) > 0.5 ? C.synth : C.faint; ctx.fill();
+        // 투영선
+        ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px, top + plotH);
+        ctx.strokeStyle = 'rgba(38,34,28,.18)'; ctx.lineWidth = 1; ctx.stroke();
+        ctx.beginPath(); ctx.arc(px, top + plotH, 2.6, 0, 7);
+        ctx.fillStyle = C.style; ctx.fill();
+      });
+      ctx.font = '13px monospace'; ctx.fillStyle = C.ink;
+      ctx.fillText(title, ox, top - 12);
+      // 서로 다른 x값 개수
+      const distinct = new Set(pts.map(p => Math.round(p[0] * 100) / 100)).size;
+      ctx.font = '11px monospace'; ctx.fillStyle = C.faint;
+      ctx.fillText('중요 축에서 시험한 서로 다른 값: ' + distinct, ox, top + plotH + 22);
+    }
+
+    // 그리드: g×g 격자, g = round(sqrt(N))
+    const g = Math.max(2, Math.round(Math.sqrt(N)));
+    const gpts = [];
+    for (let i = 0; i < g; i++) for (let j = 0; j < g; j++)
+      gpts.push([(i + 0.5) / g, (j + 0.5) / g]);
+    // 무작위: N점
+    const rpts = [];
+    for (let i = 0; i < N; i++) rpts.push([rnd(), rnd()]);
+
+    panel(pad, '그리드 탐색 (' + g + '×' + g + ')', gpts);
+    panel(pad * 2 + panelW, '무작위 탐색 (N=' + N + ')', rpts);
+
+    ctx.font = '11px monospace'; ctx.fillStyle = C.synth;
+    ctx.fillText('황토색 곡선 = 중요 파라미터의 진짜 성능 (봉우리를 맞히는 게 목표)', pad, 30);
+  }
+
+  window.addEventListener('load', () => {
+    buildNav('02');
+    if (window.NST && NST.accordion) NST.accordion(document);
+
+    const cv1 = document.getElementById('gdnewton');
+    const kv = document.querySelector('.kv');
+    const kSlider = document.getElementById('kappa');
+    if (cv1 && kSlider) {
+      const draw = () => { kv.textContent = kSlider.value; gdNewton(cv1, +kSlider.value); };
+      kSlider.addEventListener('input', draw); draw();
+    }
+
+    const cv2 = document.getElementById('gridrand');
+    const nv = document.querySelector('.nv');
+    const nSlider = document.getElementById('ntrials');
+    const reroll = document.getElementById('reroll');
+    if (cv2 && nSlider) {
+      const draw = (re) => { nv.textContent = nSlider.value; gridRand(cv2, +nSlider.value, re); };
+      nSlider.addEventListener('input', () => draw(0));
+      if (reroll) { let k = 7; reroll.addEventListener('click', () => draw(++k * 31 + 5)); }
+      draw(0);
+    }
+
+    if (window.renderMathInElement) renderMathInElement(document.body, {
+      delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }],
+      throwOnError: false,
+    });
+  });
+</script>
+</body>
+</html>

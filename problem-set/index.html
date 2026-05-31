@@ -3,253 +3,108 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>딥러닝 개론 — 기말 공식 문제은행 26문항 풀이</title>
+<title>딥러닝 개론 — 기말 문제은행 26문항</title>
 <link rel="stylesheet" href="../assets/site.css">
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
-  .masthead { position: relative; max-width: var(--wide); margin: 0 auto; padding: 1.5rem 1.4rem 0; }
-  .home-link { display: inline-flex; align-items: center; gap: .35rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .12em; color: var(--ink-faint); text-decoration: none; padding: .35rem .6rem; margin-bottom: .9rem; border-radius: 6px; border: 1px solid var(--line-soft); transition: all .15s var(--ease); }
-  .home-link:hover { color: var(--ink); border-color: var(--line); background: var(--paper-2); }
-  .hero-wrap { position: relative; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: linear-gradient(180deg,#fff,var(--paper-2)); box-shadow: var(--shadow-plate); }
-  #hero { display: block; width: 100%; height: 360px; }
-  .hero-cap { position: absolute; left: 1.2rem; bottom: 1rem; font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; color: var(--ink-faint); pointer-events: none; }
-  .hero-cap b { color: var(--structure); } .hero-cap em { color: var(--style); font-style: normal; }
+  .hero { max-width: 52rem; margin: 0 auto; padding: 3.5rem 1.4rem 1rem; text-align: center; }
+  .hero .kicker { display:block; margin-bottom: 1.1rem; }
+  .hero h1 { font-size: clamp(2.1rem, 5.5vw, 3.4rem); margin: 0 0 1rem; line-height: 1.18; }
+  .hero h1 em { color: var(--structure); font-style: normal; }
+  .hero p.lead { max-width: 34rem; margin: 0 auto; color: var(--ink-soft); font-size: 1.02rem; line-height: 1.7; }
+  .hero .meta { display:flex; gap:.5rem; flex-wrap:wrap; justify-content:center; margin-top:1.4rem; }
+  .hero .meta span { font-family: var(--mono); font-size:.72rem; color: var(--ink-soft); background: var(--paper-2); border:1px solid var(--line); padding:.4rem .8rem; border-radius:999px; }
+  .hero .meta b { color: var(--ink); }
+  .home-link { display:inline-block; max-width:52rem; margin: 1.4rem auto 0; padding:0 1.4rem; }
+  .home-link a { font-family: var(--mono); font-size:.74rem; color: var(--ink-faint); text-decoration:none; }
+  .home-link a:hover { color: var(--structure); }
 
-  .title-block { max-width: var(--wide); margin: 2.4rem auto 0; padding-inline: 1.4rem; }
-  .title-block .kicker { display: block; margin-bottom: 1rem; }
-  .title-block h1 { font-size: clamp(2.4rem, 6.4vw, 4.6rem); margin: 0; line-height: 1.06; }
-  .title-block h1 em { color: var(--style); font-style: normal; }
-  .paper-meta { display: flex; flex-wrap: wrap; gap: .5rem 1.6rem; margin-top: 1.4rem; font-family: var(--mono); font-size: .76rem; color: var(--ink-soft); letter-spacing: .02em; }
-  .paper-meta span b { color: var(--ink); font-weight: 500; }
-
-  .toc-section { max-width: var(--measure); margin: 2.6rem auto 1rem; padding-inline: 1.4rem; }
-  .toc-section h2 { margin-top: 0; }
-
-  .priority { max-width: var(--measure); margin: 2rem auto; padding: 1.2rem 1.4rem; border: 1px solid var(--line); border-radius: 12px; background: var(--paper-2); }
-  .priority h4 { margin: 0 0 .6rem; font-family: var(--serif); font-size: 1.1rem; color: var(--structure); }
-  .priority ol { margin: 0; padding-left: 1.2rem; }
-  .priority li { margin: .3rem 0; font-size: .92rem; color: var(--ink-soft); }
-  .priority li b { color: var(--ink); }
-
-  .part-label { display: inline-block; margin: 2.8rem auto .4rem; padding: .35rem .9rem; font-family: var(--mono); font-size: .7rem; letter-spacing: .16em; color: var(--ink-faint); border: 1px solid var(--line); border-radius: 999px; }
-  .part-wrap { max-width: var(--wide); margin: 0 auto; padding: 0 1.4rem; }
-  .part-desc { max-width: var(--measure); margin: .3rem 0 0; font-size: .92rem; color: var(--ink-soft); line-height: 1.6; }
-
-  .plates { max-width: var(--wide); margin: 1rem auto 0; padding: 1rem 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(255px,1fr)); gap: 1rem; }
-  .plate { position: relative; display: flex; flex-direction: column; text-decoration: none; color: inherit; background: #fff; border: 1px solid var(--line); border-radius: 13px; padding: 1.2rem 1.25rem 1.3rem; transition: transform .2s var(--ease), border-color .2s, box-shadow .2s; overflow: hidden; }
-  .plate:hover { transform: translateY(-4px); border-color: var(--structure-lo); box-shadow: var(--shadow-plate); }
-  .plate .qno { font-family: var(--mono); font-size: .72rem; letter-spacing: .12em; color: var(--style); }
-  .plate h3 { font-family: var(--serif); font-size: 1.18rem; margin: .45rem 0 .5rem; line-height: 1.25; }
-  .plate p { font-size: .86rem; color: var(--ink-soft); line-height: 1.5; margin: 0; }
-  .plate .spectrum { display: flex; height: 4px; border-radius: 2px; overflow: hidden; margin-bottom: .9rem; }
-  .plate .spectrum i { display: block; height: 100%; }
-  .plate .go { margin-top: .9rem; font-family: var(--mono); font-size: .7rem; letter-spacing: .1em; color: var(--structure); opacity: 0; transform: translateX(-4px); transition: .2s var(--ease); }
-  .plate:hover .go { opacity: 1; transform: translateX(0); }
-  .plate .src { margin-top: .55rem; font-family: var(--mono); font-size: .66rem; color: var(--ink-faint); letter-spacing: .03em; }
-
-  footer.colophon { max-width: var(--measure); margin: 3.5rem auto 4rem; padding: 2rem 1.4rem 0; border-top: 1px solid var(--line); font-size: .85rem; color: var(--ink-soft); }
+  .wrap { max-width: 60rem; margin: 1rem auto 5rem; padding: 0 1.4rem; }
+  .g-head { display:flex; align-items:center; gap:.7rem; margin: 2.8rem 0 1.1rem; }
+  .g-head .g-emoji { font-size:1.5rem; }
+  .g-head h2 { margin:0; font-size:1.45rem; }
+  .g-head .g-count { font-family:var(--mono); font-size:.72rem; color:var(--ink-faint); background:var(--paper-2); border:1px solid var(--line); padding:.25rem .6rem; border-radius:999px; }
+  .grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); gap:.9rem; }
+  .card { display:flex; flex-direction:column; gap:.3rem; padding:1.2rem 1.3rem; background:#fff; border:1px solid var(--line); border-radius:18px; text-decoration:none; color:inherit; transition: transform .15s var(--ease), border-color .15s, box-shadow .15s; }
+  .card:hover { transform: translateY(-4px); border-color: var(--structure-lo); box-shadow: var(--shadow-plate); }
+  .card .c-step { font-family:var(--mono); font-size:.66rem; letter-spacing:.1em; color:var(--ink-faint); }
+  .card .c-q { font-family:var(--mono); font-size:.86rem; color:var(--structure); font-weight:700; }
+  .card .c-t { font-size:1.02rem; font-weight:700; color:var(--ink); line-height:1.35; margin-top:.1rem; }
+  .card .c-go { margin-top:.7rem; font-family:var(--mono); font-size:.7rem; color:var(--structure); opacity:0; transition:.15s; }
+  .card:hover .c-go { opacity:1; }
+  footer.colophon { max-width: 60rem; margin: 2rem auto 4rem; padding: 2rem 1.4rem 0; border-top:1px solid var(--line); font-size:.85rem; color: var(--ink-soft); }
   footer.colophon a { color: var(--structure); }
-  footer.colophon .src { font-family: var(--mono); font-size: .76rem; line-height: 1.8; }
+  footer.colophon .src { font-family:var(--mono); font-size:.74rem; line-height:1.8; }
 </style>
 </head>
 <body>
-
-<header class="masthead">
-  <a class="home-link" href="../index.html">← 기말고사 인터랙티브 복습 (15장)</a>
-  <div class="hero-wrap">
-    <canvas id="hero"></canvas>
-    <div class="hero-cap"><b>흩어진 26개의 물음</b> ↔ <em>여섯 갈래의 답</em> · 마우스 드래그</div>
-  </div>
+<div class="home-link"><a href="../index.html">← 15장 + 논문 P1-P4 메인 표지</a></div>
+<header class="hero">
+  <span class="kicker">Deep Learning · Problem Set for Final</span>
+  <h1>📚 기말 <em>26문항</em>,<br>한 문제씩 격파하기 ✅</h1>
+  <p class="lead">교수님이 배포한 26개 시험 질문을 비슷한 주제끼리 여섯 갈래로 묶었습니다. 한 페이지에 한 문제씩 — 정의, 왜 그런가, 비유, 영어 모범답안, 시험 답안 골격까지. 카드를 눌러 STEP 1부터 차례로 격파하세요.</p>
+  <div class="meta"><span>📝 <b>26</b>문항</span><span>🗂️ <b>6</b>갈래</span><span>📅 시험 <b>2026-06-04 (목)</b></span><span>🎯 영어 모범답안 포함</span></div>
 </header>
 
-<div class="title-block">
-  <span class="kicker">Deep Learning · Problem Set for Final · 공식 문제은행 풀이</span>
-  <h1>📚 교수님이 낸 <em>26개의 질문</em>,<br>하나도 빼지 않고 답하다 ✅</h1>
-  <div class="paper-meta">
-    <span><b>딥러닝 개론</b> 기말 공식 문제은행</span>
-    <span>제작 <b>김정욱</b></span>
-    <span>시험 <b>2026-06-04 (목) · D-6</b></span>
-    <span>구성 <b>26문항 · 6개 갈래</b></span>
+<div class="wrap">
+  <div class="g-head"><span class="g-emoji">🛡️</span><h2>정칙화와 일반화</h2><span class="g-count">5문항</span></div>
+  <div class="grid">
+    <a class="card" href="q1.html"><span class="c-step">STEP 01</span><span class="c-q">🛡️ Q1</span><span class="c-t">작은 데이터셋의 정칙화 전략</span><span class="c-go">풀이 보기 →</span></a>
+    <a class="card" href="q2.html"><span class="c-step">STEP 02</span><span class="c-q">🛡️ Q2</span><span class="c-t">파라미터 묶기(tying)와 파라미터 공유(sharing)</span><span class="c-go">풀이 보기 →</span></a>
+    <a class="card" href="q3.html"><span class="c-step">STEP 03</span><span class="c-q">🛡️ Q3</span><span class="c-t">데이터 측면의 정칙화 트릭</span><span class="c-go">풀이 보기 →</span></a>
+    <a class="card" href="q22.html"><span class="c-step">STEP 04</span><span class="c-q">🛡️ Q22</span><span class="c-t">적대적 예제(adversarial examples)의 핵심</span><span class="c-go">풀이 보기 →</span></a>
+    <a class="card" href="q23.html"><span class="c-step">STEP 05</span><span class="c-q">🛡️ Q23</span><span class="c-t">RBF 네트워크와 적대적 예제 면역</span><span class="c-go">풀이 보기 →</span></a>
   </div>
-</div>
 
-<section class="toc-section">
-  <h2>📖 이 페이지의 사용법</h2>
-  <p>교수님이 배포한 <strong>Problem Set for Final</strong>의 26문항을 주제별 여섯 갈래로 묶고, 각 문항을 <strong>“정의 → 왜 그런가 → 비유 → 시험 답안 골격”</strong>의 순서로 풀었다. 아래 카드를 누르면 해당 문항의 답안 위치로 곧장 이동한다.</p>
-  <p>모든 답은 15장 인터랙티브 복습 사이트와 같은 라이트 테마, 같은 위젯 문법을 쓴다. 수식은 KaTeX로, 비교는 카드로, 핵심 직관은 캔버스/SVG 위젯으로 직접 만져 볼 수 있다. 각 문항 끝의 <strong>“시험 답안 골격”</strong> 체크리스트는 시험장에서 1분 안에 적을 수 있는 최소 골자다.</p>
-</section>
+  <div class="g-head"><span class="g-emoji">⚙️</span><h2>최적화와 하이퍼파라미터</h2><span class="g-count">7문항</span></div>
+  <div class="grid">
+    <a class="card" href="q4.html"><span class="c-step">STEP 06</span><span class="c-q">⚙️ Q4</span><span class="c-t">경사하강법 vs 뉴턴법</span><span class="c-go">풀이 보기 →</span></a>
+    <a class="card" href="q5.html"><span class="c-step">STEP 07</span><span class="c-q">⚙️ Q5</span><span class="c-t">배치 / 확률적 / 미니배치 경사하강</span><span class="c-go">풀이 보기 →</span></a>
+    <a class="card" href="q6.html"><span class="c-step">STEP 08</span><span class="c-q">⚙️ Q6</span><span class="c-t">최적화의 모멘텀(momentum)</span><span class="c-go">풀이 보기 →</span></a>
+    <a class="card" href="q7.html"><span class="c-step">STEP 09</span><span class="c-q">⚙️ Q7</span><span class="c-t">절벽(cliffs)과 기울기 폭발(exploding gradient)</span><span class="c-go">풀이 보기 →</span></a>
+    <a class="card" href="q8.html"><span class="c-step">STEP 10</span><span class="c-q">⚙️ Q8</span><span class="c-t">가중치 공간 대칭성(weight space symmetry)</span><span class="c-go">풀이 보기 →</span></a>
+    <a class="card" href="q15.html"><span class="c-step">STEP 11</span><span class="c-q">⚙️ Q15</span><span class="c-t">기울기 클리핑(gradient clipping)</span><span class="c-go">풀이 보기 →</span></a>
+    <a class="card" href="q16.html"><span class="c-step">STEP 12</span><span class="c-q">⚙️ Q16</span><span class="c-t">그리드 탐색과 무작위 탐색</span><span class="c-go">풀이 보기 →</span></a>
+  </div>
 
-<section class="priority">
-  <h4>🚀 D-6, 우선순위 추천 경로</h4>
-  <ol>
-    <li><b>1갈래 정칙화 · 2갈래 최적화</b> — 13문항(Q1-8, 15-16, 22-23)이 여기 몰려 있다. 출제 비중 1순위.</li>
-    <li><b>3갈래 CNN · 4갈래 RNN</b> — 구조적 사전(prior)과 파라미터 공유라는 한 줄거리로 묶어 외운다(Q9-14).</li>
-    <li><b>6갈래 핵심 논문</b> — 스타일 전이 · Transformer · BERT/GPT(Q24-26). “한 문장 핵심”을 먼저 잡는다.</li>
-    <li><b>5갈래 비지도 · 표상</b> — SFA, 오토인코더, 분산 표상(Q17-21). 후반부 진도 직접 출제.</li>
-  </ol>
-</section>
+  <div class="g-head"><span class="g-emoji">🖼️</span><h2>합성곱 신경망 CNN</h2><span class="g-count">3문항</span></div>
+  <div class="grid">
+    <a class="card" href="q9.html"><span class="c-step">STEP 13</span><span class="c-q">🖼️ Q9</span><span class="c-t">CNN이 이미지에 특히 강력한 이유</span><span class="c-go">풀이 보기 →</span></a>
+    <a class="card" href="q10.html"><span class="c-step">STEP 14</span><span class="c-q">🖼️ Q10</span><span class="c-t">CNN의 평행이동 불변성(translation invariance)</span><span class="c-go">풀이 보기 →</span></a>
+    <a class="card" href="q11.html"><span class="c-step">STEP 15</span><span class="c-q">🖼️ Q11</span><span class="c-t">무한히 강한 사전(infinitely strong prior)이 CNN에 더해지는 방식</span><span class="c-go">풀이 보기 →</span></a>
+  </div>
 
-<div class="part-wrap">
-  <span class="part-label">🛡️ 갈래 1 · 정칙화와 일반화</span>
-  <p class="part-desc">데이터가 모델보다 작을 때 과적합을 어떻게 막는가. 7장의 정칙화 전체와 적대적 예제, RBF 네트워크까지.</p>
-  <section class="plates" id="part1"></section>
+  <div class="g-head"><span class="g-emoji">🔁</span><h2>순환 신경망과 시퀀스</h2><span class="g-count">3문항</span></div>
+  <div class="grid">
+    <a class="card" href="q12.html"><span class="c-step">STEP 16</span><span class="c-q">🔁 Q12</span><span class="c-t">RNN은 재귀 신경망(recursive NN)의 특수 경우</span><span class="c-go">풀이 보기 →</span></a>
+    <a class="card" href="q13.html"><span class="c-step">STEP 17</span><span class="c-q">🔁 Q13</span><span class="c-t">LSTM의 ‘기억 소실(memory-fade-away)’ 극복</span><span class="c-go">풀이 보기 →</span></a>
+    <a class="card" href="q14.html"><span class="c-step">STEP 18</span><span class="c-q">🔁 Q14</span><span class="c-t">RNN vs CNN — 파라미터 공유와 측면 연결</span><span class="c-go">풀이 보기 →</span></a>
+  </div>
 
-  <span class="part-label">⚙️ 갈래 2 · 최적화와 하이퍼파라미터</span>
-  <p class="part-desc">손실 곡면 위에서 학습이 실제로 어떻게 움직이는가. 1차·2차 방법, 미니배치, 모멘텀, 절벽, 대칭성, 클리핑, 그리고 탐색 전략.</p>
-  <section class="plates" id="part2"></section>
+  <div class="g-head"><span class="g-emoji">🧭</span><h2>비지도 학습과 표상</h2><span class="g-count">5문항</span></div>
+  <div class="grid">
+    <a class="card" href="q17.html"><span class="c-step">STEP 19</span><span class="c-q">🧭 Q17</span><span class="c-t">느린 특징 분석(Slow Feature Analysis, SFA)</span><span class="c-go">풀이 보기 →</span></a>
+    <a class="card" href="q18.html"><span class="c-step">STEP 20</span><span class="c-q">🧭 Q18</span><span class="c-t">오토인코더 vs PCA</span><span class="c-go">풀이 보기 →</span></a>
+    <a class="card" href="q19.html"><span class="c-step">STEP 21</span><span class="c-q">🧭 Q19</span><span class="c-t">정칙화된 오토인코더(regularized autoencoders)</span><span class="c-go">풀이 보기 →</span></a>
+    <a class="card" href="q20.html"><span class="c-step">STEP 22</span><span class="c-q">🧭 Q20</span><span class="c-t">비지도 학습이 다운스트림 과제를 돕는 이유</span><span class="c-go">풀이 보기 →</span></a>
+    <a class="card" href="q21.html"><span class="c-step">STEP 23</span><span class="c-q">🧭 Q21</span><span class="c-t">분산 표상(distributed representation) — compact vs sparse</span><span class="c-go">풀이 보기 →</span></a>
+  </div>
 
-  <span class="part-label">🖼️ 갈래 3 · 합성곱 신경망(CNN)</span>
-  <p class="part-desc">이미지의 구조를 네트워크에 새겨 넣는 세 가지 사전. 무한히 강한 사전이라는 9장의 핵심 관점.</p>
-  <section class="plates" id="part3"></section>
+  <div class="g-head"><span class="g-emoji">📜</span><h2>핵심 논문</h2><span class="g-count">3문항</span></div>
+  <div class="grid">
+    <a class="card" href="q24.html"><span class="c-step">STEP 24</span><span class="c-q">📜 Q24</span><span class="c-t">“A Neural Algorithm of Artistic Style”</span><span class="c-go">풀이 보기 →</span></a>
+    <a class="card" href="q25.html"><span class="c-step">STEP 25</span><span class="c-q">📜 Q25</span><span class="c-t">“Attention Is All You Need”</span><span class="c-go">풀이 보기 →</span></a>
+    <a class="card" href="q26.html"><span class="c-step">STEP 26</span><span class="c-q">📜 Q26</span><span class="c-t">BERT vs GPT</span><span class="c-go">풀이 보기 →</span></a>
+  </div>
 
-  <span class="part-label">🔁 갈래 4 · 순환 신경망과 시퀀스</span>
-  <p class="part-desc">시간을 펼친 그래프. RNN과 재귀 신경망의 관계, LSTM의 기억 보존, RNN과 CNN의 파라미터 공유 비교.</p>
-  <section class="plates" id="part4"></section>
-
-  <span class="part-label">🧭 갈래 5 · 비지도 학습과 표상</span>
-  <p class="part-desc">라벨 없이 무엇을 배우는가. SFA, 오토인코더와 PCA, 정칙화된 오토인코더, 분산 표상의 위력.</p>
-  <section class="plates" id="part5"></section>
-
-  <span class="part-label">📜 갈래 6 · 핵심 논문</span>
-  <p class="part-desc">강의에서 직접 다룬 세 논문의 단 하나의 핵심 — 신경 스타일 전이, Transformer, 그리고 BERT 대 GPT.</p>
-  <section class="plates" id="part6"></section>
 </div>
 
 <footer class="colophon">
-  <p>이 풀이는 교수님이 배포한 기말 문제은행(Problem Set for Final, 26문항)을 Goodfellow, Bengio, Courville(2016) 7-15장과 강의에서 다룬 세 논문에 비추어 직접 정리한 것이다. 15장 인터랙티브 복습 사이트(<a href="../index.html">표지</a>)의 디자인 시스템을 그대로 따른다.</p>
+  <p>교수님 배포 기말 문제은행(Problem Set for Final, 26문항)을 Goodfellow, Bengio, Courville(2016) 7-15장과 강의 논문 4편에 비추어 직접 정리한 풀이입니다. 한 페이지 = 한 문항. 메인 표지의 15장 복습 및 논문 P1-P4와 같은 디자인 시스템을 따릅니다.</p>
   <p class="src">
     원서 · <a href="https://www.deeplearningbook.org/">deeplearningbook.org</a><br>
-    15장 + 논문 P1-P4 · <a href="../index.html">메인 표지</a><br>
+    메인 표지 · <a href="../index.html">15장 + 논문 P1-P4</a><br>
     GitHub · <a href="https://github.com/gimjungwook/intro-to-dl-final-review">intro-to-dl-final-review</a>
   </p>
 </footer>
-
-<script>
-const QUESTIONS = [
-  // part 1 — 정칙화와 일반화
-  { q:'01', page:'01', t:'작은 데이터셋의 정칙화 전략', d:'모델보다 데이터가 작을 때 쓸 수 있는 정칙화 접근들을 한자리에.', sp:['style','style-lo'], part:1, src:'Ch.7' },
-  { q:'02', page:'01', t:'파라미터 묶기와 공유', d:'parameter tying과 parameter sharing의 정확한 구분과 예시.', sp:['style'], part:1, src:'Ch.7' },
-  { q:'03', page:'01', t:'데이터 측면의 정칙화 트릭', d:'비라벨 사전훈련, 데이터 증강, 노이즈 주입 등 데이터로 거는 정칙화.', sp:['style','synth'], part:1, src:'Ch.7' },
-  { q:'22', page:'01', t:'적대적 예제의 핵심', d:'사람 눈에 안 보이는 섭동이 분류를 뒤집는 이유 — 선형성 가설.', sp:['style','structure'], part:1, src:'Ch.7' },
-  { q:'23', page:'01', t:'RBF 네트워크와 적대적 면역', d:'방사 기저 함수 네트워크는 왜 적대적 예제에 강한가.', sp:['structure','style'], part:1, src:'Ch.6-7' },
-
-  // part 2 — 최적화와 하이퍼파라미터
-  { q:'04', page:'02', t:'경사하강법 vs 뉴턴법', d:'1차 방법과 2차 방법의 비교 — 헤시안을 쓰는 값.', sp:['structure'], part:2, src:'Ch.4·8' },
-  { q:'05', page:'02', t:'배치 / 확률적 / 미니배치', d:'세 가지 경사하강의 분산-비용 트레이드오프.', sp:['structure','synth'], part:2, src:'Ch.8' },
-  { q:'06', page:'02', t:'최적화의 모멘텀', d:'속도 변수가 왜 협곡과 잡음을 통과하게 해 주는가.', sp:['synth','structure'], part:2, src:'Ch.8' },
-  { q:'07', page:'02', t:'절벽과 기울기 폭발', d:'cliffs와 exploding gradient의 관계, 그리고 처방.', sp:['style','synth'], part:2, src:'Ch.8·10' },
-  { q:'08', page:'02', t:'가중치 공간 대칭성', d:'뉴런을 맞바꿔도 같은 함수 — 등가 최소점이 많은 이유.', sp:['structure-lo','structure'], part:2, src:'Ch.8' },
-  { q:'15', page:'02', t:'기울기 클리핑', d:'폭발하는 기울기의 방향은 살리고 크기만 자르기.', sp:['synth'], part:2, src:'Ch.10' },
-  { q:'16', page:'02', t:'그리드 탐색과 무작위 탐색', d:'하이퍼파라미터 탐색에서 무작위가 그리드를 이기는 이유.', sp:['ink','structure'], part:2, src:'Ch.11' },
-
-  // part 3 — CNN
-  { q:'09', page:'03', t:'CNN이 이미지에 강력한 이유', d:'희소 상호작용 · 파라미터 공유 · 변환 등가성.', sp:['structure','synth'], part:3, src:'Ch.9' },
-  { q:'10', page:'03', t:'CNN의 평행이동 불변성', d:'등가성과 불변성의 구분 — 풀링이 만드는 근사 불변성.', sp:['structure-lo','style-lo'], part:3, src:'Ch.9' },
-  { q:'11', page:'03', t:'무한히 강한 사전(prior)', d:'CNN을 완전연결망에 무한히 강한 사전을 건 것으로 보기.', sp:['structure','style'], part:3, src:'Ch.9' },
-
-  // part 4 — RNN
-  { q:'12', page:'04', t:'RNN은 재귀 신경망의 특수 경우', d:'일반 트리 구조 재귀망에서 사슬로 좁힌 것이 RNN.', sp:['style','synth'], part:4, src:'Ch.10' },
-  { q:'13', page:'04', t:'LSTM의 기억 소실 극복', d:'게이트와 상수 오류 회전목마(CEC)가 기울기를 살린다.', sp:['style','structure'], part:4, src:'Ch.10' },
-  { q:'14', page:'04', t:'RNN vs CNN — 공유와 측면 연결', d:'시간축 공유 대 공간축 공유, 그리고 측면(lateral) 연결.', sp:['structure','style'], part:4, src:'Ch.9·10' },
-
-  // part 5 — 비지도와 표상
-  { q:'17', page:'05', t:'느린 특징 분석(SFA)', d:'시간적으로 천천히 변하는 특징을 뽑는다 — 느림 원리.', sp:['structure-lo','style-lo'], part:5, src:'Ch.13' },
-  { q:'18', page:'05', t:'오토인코더 vs PCA', d:'비선형 오토인코더는 PCA를 일반화한다.', sp:['structure','style'], part:5, src:'Ch.13·14' },
-  { q:'19', page:'05', t:'정칙화된 오토인코더', d:'왜 필요하고, sparse·denoising·contractive로 어떻게 만드나.', sp:['style','synth'], part:5, src:'Ch.14' },
-  { q:'20', page:'05', t:'비지도 학습이 돕는 이유', d:'입력 분포의 구조가 분류 같은 다운스트림 과제를 돕는다.', sp:['structure','synth'], part:5, src:'Ch.15' },
-  { q:'21', page:'05', t:'분산 표상 — compact vs sparse', d:'n개 특징으로 지수적 영역을 가르는 힘, 표상의 세 모드.', sp:['structure','style','synth'], part:5, src:'Ch.15' },
-
-  // part 6 — 논문
-  { q:'24', page:'06', t:'"A Neural Algorithm of Artistic Style"', d:'콘텐츠와 스타일을 분리해 다시 합치는 단 하나의 발상.', sp:['structure','style'], part:6, src:'Gatys 2015' },
-  { q:'25', page:'06', t:'"Attention Is All You Need"', d:'순환 없이 self-attention만으로 시퀀스를 모델링한다.', sp:['style','structure'], part:6, src:'Vaswani 2017' },
-  { q:'26', page:'06', t:'BERT vs GPT', d:'같은 Transformer, 인코더 대 디코더 — 언제 무엇을 쓰나.', sp:['structure','style','synth'], part:6, src:'2018-' },
-];
-const colMap = { structure:'var(--structure)', 'structure-lo':'var(--structure-lo)', style:'var(--style)', 'style-lo':'var(--style-lo)', synth:'var(--synth)', ink:'var(--ink)', 'ink-soft':'var(--ink-soft)' };
-const QEMOJI = { '01':'📉','02':'🔗','03':'🧪','22':'👾','23':'🎯','04':'⛰️','05':'🍱','06':'🏂','07':'🧗','08':'🔀','15':'✂️','16':'🎰','09':'🖼️','10':'🔁','11':'🧲','12':'🌳','13':'🧠','14':'⚖️','17':'🐢','18':'🪞','19':'🧹','20':'🧭','21':'🌈','24':'🎨','25':'🔭','26':'🤖' };
-
-[1,2,3,4,5,6].forEach(part => {
-  const host = document.getElementById('part' + part);
-  if (!host) return;
-  QUESTIONS.filter(c => c.part === part).forEach(c => {
-    const sp = c.sp.length === 1 ? [c.sp[0], c.sp[0]] : c.sp;
-    const a = document.createElement('a');
-    a.className = 'plate';
-    a.href = c.page + '.html#q' + c.q.replace(/^0/, '');
-    a.innerHTML =
-      '<div class="spectrum">' + sp.map(s => '<i style="flex:1;background:' + colMap[s] + '"></i>').join('') + '</div>' +
-      '<span class="qno">' + (QEMOJI[c.q] || '') + ' Q' + c.q.replace(/^0/,'') + '</span>' +
-      '<h3>' + c.t + '</h3>' +
-      '<p>' + c.d + '</p>' +
-      '<span class="src">' + c.src + '</span>' +
-      '<span class="go">답안 →</span>';
-    host.appendChild(a);
-  });
-});
-
-// 표지 hero — 흩어진 물음표 입자 ↔ 정돈된 답의 격자
-window.addEventListener('load', () => {
-  const canvas = document.getElementById('hero');
-  if (!canvas || !window.THREE) return;
-  const wrap = canvas.parentElement;
-  const css = getComputedStyle(document.documentElement);
-  const colA = new THREE.Color(css.getPropertyValue('--style').trim() || '#C0492E');
-  const colB = new THREE.Color(css.getPropertyValue('--structure').trim() || '#2D5B7A');
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-  renderer.setPixelRatio(Math.min(2, devicePixelRatio || 1));
-  renderer.setClearColor(0xffffff, 0);
-  const scene = new THREE.Scene();
-  const cam = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
-  cam.position.set(0, 0, 16);
-
-  const N = 1300, COLS = 26;
-  const geo = new THREE.BufferGeometry();
-  const pos = new Float32Array(N * 3);
-  const col = new Float32Array(N * 3);
-  const scatter = new Float32Array(N * 3);  // 흩어진 물음
-  const grid = new Float32Array(N * 3);      // 정돈된 답
-  for (let i = 0; i < N; i++) {
-    const a = Math.random() * Math.PI * 2, r = 2 + Math.random() * 7;
-    scatter[i*3]   = Math.cos(a) * r * 1.3;
-    scatter[i*3+1] = Math.sin(a) * r * 0.7;
-    scatter[i*3+2] = (Math.random() - 0.5) * 6;
-    const colIdx = i % COLS, rowIdx = Math.floor(i / COLS);
-    grid[i*3]   = (colIdx - COLS/2) * 0.62;
-    grid[i*3+1] = ((rowIdx % 24) - 12) * 0.36;
-    grid[i*3+2] = 0;
-    pos[i*3] = scatter[i*3]; pos[i*3+1] = scatter[i*3+1]; pos[i*3+2] = scatter[i*3+2];
-    const t = i / N; const c = colA.clone().lerp(colB, t);
-    col[i*3] = c.r; col[i*3+1] = c.g; col[i*3+2] = c.b;
-  }
-  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
-  const mat = new THREE.PointsMaterial({ size: 0.12, vertexColors: true, transparent: true, opacity: 0.85 });
-  const pts = new THREE.Points(geo, mat); scene.add(pts);
-
-  let drag = false, dragX = 0, sx = 0, target = 0.5;
-  canvas.addEventListener('pointerdown', e => { drag = true; dragX = e.clientX; sx = target; });
-  window.addEventListener('pointermove', e => { if (drag) target = Math.max(0, Math.min(1, sx + (e.clientX - dragX) / canvas.clientWidth)); });
-  window.addEventListener('pointerup', () => drag = false);
-
-  function resize() {
-    const w = wrap.clientWidth, h = 360;
-    renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix();
-  }
-  window.addEventListener('resize', resize); resize();
-
-  let t = 0;
-  function tick() {
-    t += 0.005;
-    if (!drag) target = 0.5 + 0.45 * Math.sin(t);
-    const p = pts.geometry.attributes.position.array;
-    const e = target < .5 ? 2*target*target : 1 - Math.pow(-2*target+2,2)/2;
-    for (let i = 0; i < N * 3; i++) p[i] = scatter[i] * (1 - e) + grid[i] * e;
-    pts.geometry.attributes.position.needsUpdate = true;
-    pts.rotation.y = (target - 0.5) * 0.5;
-    renderer.render(scene, cam);
-    requestAnimationFrame(tick);
-  }
-  tick();
-});
-</script>
 </body>
 </html>

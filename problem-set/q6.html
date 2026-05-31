@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>STEP 8 · Q6 · 최적화의 모멘텀(momentum)</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script defer src="../assets/widgets.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+
+<header class="qbar">
+  <a class="home" href="index.html">← 26문항 목록</a>
+  <span class="grp">⚙️ 최적화와 하이퍼파라미터</span>
+  <span class="step">STEP <b>8</b> / 26</span>
+</header>
+
+<main class="qpage">
+  <header class="qhead">
+    <span class="kicker">⚙️ 최적화와 하이퍼파라미터 · 8 / 26</span>
+    <h1>🏂 Q6 · 최적화의 모멘텀(momentum)</h1>
+    <p class="qtext">What is the momentum in optimization?</p>
+  </header>
+
+    <div class="prose">
+      
+      
+
+      <p>모멘텀은 과거 기울기들의 <strong>지수 감쇠 이동평균</strong>을 속도(velocity) 변수 $v$에 누적해, 매 스텝이 “지금 기울기”뿐 아니라 “지금까지의 관성”을 함께 따르게 하는 기법이다.</p>
+      <div class="math-block">$$ v \leftarrow \alpha v - \epsilon\, \nabla_\theta J(\theta), \qquad \theta \leftarrow \theta + v $$</div>
+      <p class="math-note">$\alpha\in[0,1)$는 관성 계수(보통 0.9). 과거 속도의 $\alpha$배를 유지하며 새 기울기를 더한다.</p>
+
+      <p>왜 필요한가? 병든 골짜기(<a href="q4.html">Q4</a>)에서 경사하강은 가파른 축을 따라 좌우로 튕긴다. 그런데 이 튕김은 <em>매 스텝 방향이 반대로 뒤집히므로 평균하면 상쇄</em>된다. 반대로 골짜기를 따라 내려가는 완만한 방향은 <em>매 스텝 방향이 일정하므로 누적되어 가속</em>된다. 모멘텀은 바로 이 평균을 취해 진동을 죽이고 일관된 방향에 속도를 붙인다.</p>
+
+      <div class="analogy">
+        경사하강이 <b>“매 순간 멈춰 서서 방향만 보고 한 걸음 떼는 사람”</b>이라면, 모멘텀은 <b>“언덕을 굴러 내려가는 무거운 공”</b>이다. 공은 잔돌멩이(미니배치 잡음)나 작은 웅덩이(얕은 극소)에 멈추지 않고 관성으로 통과하며, 일관된 내리막에서는 점점 빨라진다.
+      </div>
+
+      <p>모멘텀이 도달하는 종단 속도는 기울기가 일정할 때 $\dfrac{\epsilon \lVert g\rVert}{1-\alpha}$로, $\alpha=0.9$면 보폭이 약 10배로 증폭된다. 미니배치 잡음을 평균해 경로를 매끄럽게 하는 효과도 있다. 변형인 <strong>네스테로프 모멘텀</strong>은 기울기를 현재 위치가 아니라 관성으로 “미리 가 볼” 위치에서 계산해, 과도하게 지나치기 전에 교정한다.</p>
+
+      <div class="model-answer">
+        <div class="ma-label">🎯 Model Answer (English)</div>
+        <p class="ma-en">Momentum accumulates an exponentially decaying moving average of past gradients into a <strong>velocity</strong> term: $v \leftarrow \alpha v - \epsilon\nabla J$, then $\theta \leftarrow \theta + v$. It helps because in an ill-conditioned ravine the oscillating directions reverse every step and cancel out on average, while the consistent downhill direction accumulates and accelerates — like a heavy ball rolling that coasts through small bumps (mini-batch noise) and shallow dips (poor local minima). With $\alpha = 0.9$ the effective step is amplified about tenfold (terminal velocity $\epsilon\lVert g\rVert/(1-\alpha)$). Nesterov momentum refines this by evaluating the gradient at the look-ahead position, correcting before it overshoots.</p>
+      </div>
+
+      <p class="skel-h">📝 시험 답안 골격</p>
+      <ul class="checklist">
+        <li>정의 — 과거 기울기의 지수평균을 속도 $v$에 누적: $v\leftarrow\alpha v-\epsilon\nabla J,\ \theta\leftarrow\theta+v$.</li>
+        <li>효과 — 진동 축은 상쇄, 일관된 축은 누적·가속. 잡음·얕은 극소 통과. 종단속도 $\epsilon\|g\|/(1-\alpha)$.</li>
+        <li>네스테로프 = 미리 가본 위치에서 기울기 계산.</li>
+      </ul>
+    </div>
+
+    
+
+  <div class="qprog">
+    <div class="qprog-track"><div class="qprog-fill" style="width:30.8%"></div></div>
+    <div class="qprog-txt"><b>8</b> / 26 문항 · 최적화와 하이퍼파라미터</div>
+  </div>
+
+  <nav class="qnav">
+    <a href="q5.html"><div class="dir">← 이전 · STEP 7</div><div class="ti">⚙️ Q5 배치 / 확률적 / 미니배치 경사하강</div></a>
+    <a class="next" href="q7.html"><div class="dir">다음 · STEP 9 →</div><div class="ti">⚙️ Q7 절벽(cliffs)과 기울기 폭발(exploding gradient)</div></a>
+  </nav>
+</main>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'정칙화와 일반화' },
+    { no:'02', t:'최적화와 하이퍼파라미터' },
+    { no:'03', t:'합성곱 신경망 CNN' },
+    { no:'04', t:'순환 신경망과 시퀀스' },
+    { no:'05', t:'비지도 학습과 표상' },
+    { no:'06', t:'핵심 논문' },
+  ];
+  function buildNav(cur) {
+    const tb = document.querySelector('.topbar');
+    if (tb) tb.innerHTML =
+      '<a class="home" href="index.html">← 기말 문제은행 26문항</a>' +
+      '<span class="ch-mini">갈래 ' + cur + ' / 06</span>';
+    const ol = document.querySelector('.ch-nav ol');
+    if (ol) ol.innerHTML = SUBS.map(c =>
+      '<li><a href="' + c.no + '.html"' + (c.no === cur ? ' class="current"' : '') + '>' + c.t + '</a></li>').join('');
+    const foot = document.querySelector('.ch-foot');
+    if (foot) {
+      const i = SUBS.findIndex(c => c.no === cur);
+      const prev = i > 0 ? SUBS[i - 1] : { t: '표지로', _href: 'index.html' };
+      const next = i < SUBS.length - 1 ? SUBS[i + 1] : { t: '표지로', _href: 'index.html' };
+      const hp = prev._href || (prev.no + '.html');
+      const hn = next._href || (next.no + '.html');
+      foot.innerHTML =
+        '<a href="' + hp + '"><div class="dir">← 이전</div><div class="ti">' + prev.t + '</div></a>' +
+        '<a href="' + hn + '" class="next"><div class="dir">다음 →</div><div class="ti">' + next.t + '</div></a>';
+    }
+  }
+
+  const CSS = getComputedStyle(document.documentElement);
+  const C = {
+    structure: CSS.getPropertyValue('--structure').trim() || '#2D5B7A',
+    style: CSS.getPropertyValue('--style').trim() || '#C0492E',
+    synth: CSS.getPropertyValue('--synth').trim() || '#A47B2E',
+    ink: CSS.getPropertyValue('--ink').trim() || '#26221C',
+    faint: CSS.getPropertyValue('--ink-faint').trim() || '#8E8576',
+    line: 'rgba(38,34,28,.12)',
+  };
+
+  // ─── 위젯 04: GD vs Newton ───
+  function gdNewton(canvas, kappa) {
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+    const cx = W / 2, cy = H / 2, sc = 52;  // world→px
+    const lamMax = 1, lamMin = 1 / kappa;
+    const toPx = (x, y) => [cx + x * sc, cy - y * sc];
+
+    // 등고선 (타원)
+    ctx.lineWidth = 1;
+    for (let c = 0.4; c <= 6; c += 0.7) {
+      const ax = Math.sqrt(2 * c / lamMax) * sc;
+      const ay = Math.sqrt(2 * c / lamMin) * sc;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, ax, ay, 0, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(38,34,28,.13)';
+      ctx.stroke();
+    }
+    // 바닥
+    ctx.fillStyle = C.ink;
+    ctx.beginPath(); ctx.arc(cx, cy, 4, 0, 7); ctx.fill();
+
+    const x0 = 2.2, y0 = 2.6;
+    // 경사하강 경로
+    const lr = 1.9 / lamMax;
+    let x = x0, y = y0;
+    const path = [[x, y]];
+    for (let i = 0; i < 60; i++) {
+      x -= lr * lamMax * x; y -= lr * lamMin * y;
+      path.push([x, y]);
+      if (Math.hypot(x, y) < 0.02) break;
+    }
+    ctx.beginPath();
+    path.forEach((p, i) => { const [px, py] = toPx(p[0], p[1]); i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); });
+    ctx.strokeStyle = C.style; ctx.lineWidth = 1.8; ctx.stroke();
+    path.forEach(p => { const [px, py] = toPx(p[0], p[1]); ctx.beginPath(); ctx.arc(px, py, 2.1, 0, 7); ctx.fillStyle = C.style; ctx.fill(); });
+
+    // 뉴턴: 한 걸음
+    const [sx, sy] = toPx(x0, y0), [ex, ey] = toPx(0, 0);
+    ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey);
+    ctx.strokeStyle = C.structure; ctx.lineWidth = 2.4; ctx.stroke();
+    ctx.beginPath(); ctx.arc(sx, sy, 5, 0, 7); ctx.fillStyle = C.structure; ctx.fill();
+
+    // 시작점 라벨
+    ctx.font = '12px monospace'; ctx.fillStyle = C.faint;
+    ctx.fillText('시작', sx + 8, sy - 6);
+    ctx.fillStyle = C.style; ctx.fillText('경사하강 ' + (path.length - 1) + '걸음', 16, 24);
+    ctx.fillStyle = C.structure; ctx.fillText('뉴턴 1걸음', 16, 44);
+  }
+
+  // ─── 위젯 16: grid vs random ───
+  let rseed = 12345;
+  function rnd() { rseed = (rseed * 1103515245 + 12345) & 0x7fffffff; return rseed / 0x7fffffff; }
+  function gridRand(canvas, N, reseed) {
+    if (reseed) rseed = (Math.floor(reseed) * 2654435761) & 0x7fffffff;
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+    const pad = 46, panelW = (W - pad * 3) / 2;
+    const top = 60, plotH = H - top - 40;
+
+    // 중요한 파라미터 성능 곡선 (x축), 봉우리 위치
+    const peak = 0.62;
+    const perf = u => Math.exp(-Math.pow((u - peak) / 0.13, 2));
+
+    function panel(ox, title, pts) {
+      // 배경
+      ctx.fillStyle = '#fff'; ctx.fillRect(ox, top, panelW, plotH);
+      ctx.strokeStyle = C.line; ctx.strokeRect(ox, top, panelW, plotH);
+      // 성능 곡선 (위쪽 띠)
+      ctx.beginPath();
+      for (let i = 0; i <= 60; i++) {
+        const u = i / 60, px = ox + u * panelW, py = top + 6 + (1 - perf(u)) * 30;
+        i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+      }
+      ctx.strokeStyle = C.synth; ctx.lineWidth = 2; ctx.stroke();
+      // 점 + x축 투영
+      pts.forEach(([u, v]) => {
+        const px = ox + u * panelW, py = top + 44 + (1 - v) * (plotH - 60);
+        ctx.beginPath(); ctx.arc(px, py, 4, 0, 7);
+        ctx.fillStyle = perf(u) > 0.5 ? C.synth : C.faint; ctx.fill();
+        // 투영선
+        ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px, top + plotH);
+        ctx.strokeStyle = 'rgba(38,34,28,.18)'; ctx.lineWidth = 1; ctx.stroke();
+        ctx.beginPath(); ctx.arc(px, top + plotH, 2.6, 0, 7);
+        ctx.fillStyle = C.style; ctx.fill();
+      });
+      ctx.font = '13px monospace'; ctx.fillStyle = C.ink;
+      ctx.fillText(title, ox, top - 12);
+      // 서로 다른 x값 개수
+      const distinct = new Set(pts.map(p => Math.round(p[0] * 100) / 100)).size;
+      ctx.font = '11px monospace'; ctx.fillStyle = C.faint;
+      ctx.fillText('중요 축에서 시험한 서로 다른 값: ' + distinct, ox, top + plotH + 22);
+    }
+
+    // 그리드: g×g 격자, g = round(sqrt(N))
+    const g = Math.max(2, Math.round(Math.sqrt(N)));
+    const gpts = [];
+    for (let i = 0; i < g; i++) for (let j = 0; j < g; j++)
+      gpts.push([(i + 0.5) / g, (j + 0.5) / g]);
+    // 무작위: N점
+    const rpts = [];
+    for (let i = 0; i < N; i++) rpts.push([rnd(), rnd()]);
+
+    panel(pad, '그리드 탐색 (' + g + '×' + g + ')', gpts);
+    panel(pad * 2 + panelW, '무작위 탐색 (N=' + N + ')', rpts);
+
+    ctx.font = '11px monospace'; ctx.fillStyle = C.synth;
+    ctx.fillText('황토색 곡선 = 중요 파라미터의 진짜 성능 (봉우리를 맞히는 게 목표)', pad, 30);
+  }
+
+  window.addEventListener('load', () => {
+    buildNav('02');
+    if (window.NST && NST.accordion) NST.accordion(document);
+
+    const cv1 = document.getElementById('gdnewton');
+    const kv = document.querySelector('.kv');
+    const kSlider = document.getElementById('kappa');
+    if (cv1 && kSlider) {
+      const draw = () => { kv.textContent = kSlider.value; gdNewton(cv1, +kSlider.value); };
+      kSlider.addEventListener('input', draw); draw();
+    }
+
+    const cv2 = document.getElementById('gridrand');
+    const nv = document.querySelector('.nv');
+    const nSlider = document.getElementById('ntrials');
+    const reroll = document.getElementById('reroll');
+    if (cv2 && nSlider) {
+      const draw = (re) => { nv.textContent = nSlider.value; gridRand(cv2, +nSlider.value, re); };
+      nSlider.addEventListener('input', () => draw(0));
+      if (reroll) { let k = 7; reroll.addEventListener('click', () => draw(++k * 31 + 5)); }
+      draw(0);
+    }
+
+    if (window.renderMathInElement) renderMathInElement(document.body, {
+      delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }],
+      throwOnError: false,
+    });
+  });
+</script>
+</body>
+</html>

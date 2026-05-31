@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>STEP 18 · Q14 · RNN vs CNN — 파라미터 공유와 측면 연결</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script defer src="../assets/widgets.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+
+<header class="qbar">
+  <a class="home" href="index.html">← 26문항 목록</a>
+  <span class="grp">🔁 순환 신경망과 시퀀스</span>
+  <span class="step">STEP <b>18</b> / 26</span>
+</header>
+
+<main class="qpage">
+  <header class="qhead">
+    <span class="kicker">🔁 순환 신경망과 시퀀스 · 18 / 26</span>
+    <h1>⚖️ Q14 · RNN vs CNN — 파라미터 공유와 측면 연결</h1>
+    <p class="qtext">Compare RNN and CNN in terms of parameter sharing and lateral connection.</p>
+  </header>
+
+    <div class="prose">
+      
+      
+
+      <h3>파라미터 공유 — 무엇의 축으로 공유하는가</h3>
+      <p>둘 다 파라미터를 공유하지만 공유하는 <strong>축</strong>이 다르다. <strong>CNN은 공간(space) 축으로</strong> 공유한다 — 같은 커널이 이미지의 모든 위치에 적용된다. <strong>RNN은 시간(time) 축으로</strong> 공유한다 — 같은 전이 가중치가 모든 시점에 적용된다. 목적은 같다: 자유 파라미터를 줄이고, 한 위치/시점에서 배운 것을 다른 위치/시점에 일반화하며, 각각 공간 등가성과 시간 등가성을 얻는다.</p>
+
+      <h3>측면 연결(lateral connection) — 멀리 떨어진 입력에 어떻게 닿는가</h3>
+      <p>결정적 차이가 여기 있다. <strong>RNN은 측면(순환) 연결을 가진다</strong> — 같은 층의 유닛이 시간축을 따라 서로 연결되어, $t$ 시점의 상태가 $t{+}1$ 시점으로 전달된다. 정보가 상태(state)에 실려 시퀀스를 따라 옆으로 흐른다. <strong>CNN은 한 층 안에 측면 연결이 없다</strong> — 각 출력은 자기 수용 영역만 보고 독립적으로 계산된다. 멀리 떨어진 입력들을 통합하려면 <strong>층을 더 쌓아 수용 영역을 키우는</strong> 수밖에 없다.</p>
+
+      <div class="cmp">
+        <div class="card gatys">
+          <h4>CNN</h4>
+          <ul>
+            <li>공유 축 = <b>공간</b>.</li>
+            <li>측면 연결 <b>없음</b>. 먼 입력엔 <b>깊이</b>로 닿음(수용 영역 확장).</li>
+            <li>위치별 출력이 독립 → <b>병렬화</b> 쉬움.</li>
+          </ul>
+        </div>
+        <div class="card modern">
+          <h4>RNN</h4>
+          <ul>
+            <li>공유 축 = <b>시간</b>.</li>
+            <li>측면(순환) 연결 <b>있음</b>. 먼 시점엔 <b>상태 전달</b>로 닿음.</li>
+            <li>순차 계산 → 병렬화 어려움, 기울기 소실 위험.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="analogy">
+        CNN이 <b>“각자 자기 구역만 보는 여러 감시원을 층층이 쌓아 점점 넓은 시야를 만드는 조직”</b>이라면, RNN은 <b>“한 명의 전령이 메모(상태)를 들고 줄을 따라 차례로 전달하는 방식”</b>이다. 전자는 동시에 일하지만 멀리 보려면 층이 필요하고, 후자는 한 줄로 멀리까지 전하지만 순서대로여서 느리고 메모가 흐려질 수 있다.
+      </div>
+
+      <p>요약하면, 공유 축(공간 대 시간)과 먼 의존성에 닿는 방식(깊이 대 측면 순환)이 두 모델의 성격을 가른다. RNN의 측면 연결은 원리상 무한한 문맥을 주지만 순차성과 소실의 대가가 따르고, CNN의 무측면-깊이 방식은 병렬성을 주지만 수용 영역이 깊이에 묶인다. (이 둘의 한계를 함께 넘은 것이 self-attention이다 — <a href="q25.html">Q25</a>.)</p>
+
+      <div class="model-answer">
+        <div class="ma-label">🎯 Model Answer (English)</div>
+        <p class="ma-en">Both share parameters, but along different axes. A <strong>CNN shares across space</strong> — the same kernel is applied at every spatial position — whereas an <strong>RNN shares across time</strong> — the same transition weights are applied at every time step; both cut the number of free parameters, generalise what is learned across positions or times, and grant a form of equivariance. The decisive difference is the <strong>lateral connection</strong>: an RNN <em>has</em> lateral (recurrent) connections, so the unit at step $t$ feeds the unit at step $t{+}1$ and information flows sideways along the sequence through the hidden state; a CNN has <em>no</em> lateral connections within a layer — each output is computed independently from its local receptive field, and distant inputs are reached only by stacking layers to enlarge that field. Thus a CNN parallelises easily but its context is bounded by depth, while an RNN reaches arbitrarily far through recurrence but is sequential and prone to vanishing gradients (self-attention later overcomes both — Q25).</p>
+      </div>
+
+      <p class="skel-h">📝 시험 답안 골격</p>
+      <ul class="checklist">
+        <li>공유 축 — CNN=공간, RNN=시간. 둘 다 파라미터 절감 + 위치/시점 일반화 + 등가성.</li>
+        <li>측면 연결 — RNN 있음(순환, 상태가 옆으로 흐름), CNN 없음(먼 입력엔 깊이로 닿음).</li>
+        <li>대가 — CNN 병렬·수용영역 한계, RNN 무한문맥이나 순차·소실. (→ self-attention이 절충, Q25.)</li>
+      </ul>
+    </div>
+
+    
+
+  <div class="qprog">
+    <div class="qprog-track"><div class="qprog-fill" style="width:69.2%"></div></div>
+    <div class="qprog-txt"><b>18</b> / 26 문항 · 순환 신경망과 시퀀스</div>
+  </div>
+
+  <nav class="qnav">
+    <a href="q13.html"><div class="dir">← 이전 · STEP 17</div><div class="ti">🔁 Q13 LSTM의 ‘기억 소실(memory-fade-away)’ 극복</div></a>
+    <a class="next" href="q17.html"><div class="dir">다음 · STEP 19 →</div><div class="ti">🧭 Q17 느린 특징 분석(Slow Feature Analysis, SFA)</div></a>
+  </nav>
+</main>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'정칙화와 일반화' },
+    { no:'02', t:'최적화와 하이퍼파라미터' },
+    { no:'03', t:'합성곱 신경망 CNN' },
+    { no:'04', t:'순환 신경망과 시퀀스' },
+    { no:'05', t:'비지도 학습과 표상' },
+    { no:'06', t:'핵심 논문' },
+  ];
+  function buildNav(cur) {
+    const tb = document.querySelector('.topbar');
+    if (tb) tb.innerHTML =
+      '<a class="home" href="index.html">← 기말 문제은행 26문항</a>' +
+      '<span class="ch-mini">갈래 ' + cur + ' / 06</span>';
+    const ol = document.querySelector('.ch-nav ol');
+    if (ol) ol.innerHTML = SUBS.map(c =>
+      '<li><a href="' + c.no + '.html"' + (c.no === cur ? ' class="current"' : '') + '>' + c.t + '</a></li>').join('');
+    const foot = document.querySelector('.ch-foot');
+    if (foot) {
+      const i = SUBS.findIndex(c => c.no === cur);
+      const prev = i > 0 ? SUBS[i - 1] : { t: '표지로', _href: 'index.html' };
+      const next = i < SUBS.length - 1 ? SUBS[i + 1] : { t: '표지로', _href: 'index.html' };
+      const hp = prev._href || (prev.no + '.html');
+      const hn = next._href || (next.no + '.html');
+      foot.innerHTML =
+        '<a href="' + hp + '"><div class="dir">← 이전</div><div class="ti">' + prev.t + '</div></a>' +
+        '<a href="' + hn + '" class="next"><div class="dir">다음 →</div><div class="ti">' + next.t + '</div></a>';
+    }
+  }
+
+  // 위젯 13 — LSTM 기억 보존
+  function lstmMem(canvas, f) {
+    const css = getComputedStyle(document.documentElement);
+    const C = {
+      structure: css.getPropertyValue('--structure').trim() || '#2D5B7A',
+      style: css.getPropertyValue('--style').trim() || '#C0492E',
+      faint: css.getPropertyValue('--ink-faint').trim() || '#8E8576',
+      ink: css.getPropertyValue('--ink').trim() || '#26221C',
+    };
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height, padL = 50, padB = 40, padT = 24, padR = 20;
+    ctx.clearRect(0, 0, W, H);
+    const T = 20, plotW = W - padL - padR, plotH = H - padT - padB;
+    const X = t => padL + (t / T) * plotW;
+    const Y = v => padT + (1 - v) * plotH;
+
+    // 축
+    ctx.strokeStyle = 'rgba(38,34,28,.18)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(padL, padT); ctx.lineTo(padL, padT + plotH); ctx.lineTo(padL + plotW, padT + plotH); ctx.stroke();
+    ctx.font = '11px monospace'; ctx.fillStyle = C.faint;
+    ctx.fillText('남은 신호', 6, padT + 6); ctx.fillText('1.0', 24, padT + 6); ctx.fillText('0', 36, padT + plotH + 4);
+    ctx.fillText('시간 스텝 t →', padL + plotW - 90, padT + plotH + 24);
+
+    const vanilla = 0.72; // 바닐라 RNN 고정 감쇠
+    function curve(base, color, dash) {
+      ctx.beginPath(); ctx.setLineDash(dash || []);
+      for (let t = 0; t <= T; t++) { const v = Math.pow(base, t); const px = X(t), py = Y(v); t ? ctx.lineTo(px, py) : ctx.moveTo(px, py); }
+      ctx.strokeStyle = color; ctx.lineWidth = 2.4; ctx.stroke(); ctx.setLineDash([]);
+      for (let t = 0; t <= T; t++) { const v = Math.pow(base, t); ctx.beginPath(); ctx.arc(X(t), Y(v), 2.4, 0, 7); ctx.fillStyle = color; ctx.fill(); }
+    }
+    curve(vanilla, C.structure);
+    curve(f, C.style);
+
+    // 20스텝 잔존값 라벨
+    ctx.font = '12px monospace';
+    ctx.fillStyle = C.structure; ctx.fillText('RNN t=20: ' + Math.pow(vanilla, 20).toFixed(3), padL + 10, padT + 18);
+    ctx.fillStyle = C.style; ctx.fillText('LSTM t=20: ' + Math.pow(f, 20).toFixed(3), padL + 10, padT + 36);
+  }
+
+  window.addEventListener('load', () => {
+    buildNav('04');
+    if (window.NST && NST.accordion) NST.accordion(document);
+    const cv = document.getElementById('lstmmem');
+    const fv = document.querySelector('.fv');
+    const fSlider = document.getElementById('forget');
+    if (cv && fSlider) {
+      const draw = () => { const f = +fSlider.value / 100; fv.textContent = f.toFixed(2); lstmMem(cv, f); };
+      fSlider.addEventListener('input', draw); draw();
+    }
+    if (window.renderMathInElement) renderMathInElement(document.body, {
+      delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }],
+      throwOnError: false,
+    });
+  });
+</script>
+</body>
+</html>

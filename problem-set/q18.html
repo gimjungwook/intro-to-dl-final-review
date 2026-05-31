@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>STEP 20 · Q18 · 오토인코더 vs PCA</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script defer src="../assets/widgets.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+
+<header class="qbar">
+  <a class="home" href="index.html">← 26문항 목록</a>
+  <span class="grp">🧭 비지도 학습과 표상</span>
+  <span class="step">STEP <b>20</b> / 26</span>
+</header>
+
+<main class="qpage">
+  <header class="qhead">
+    <span class="kicker">🧭 비지도 학습과 표상 · 20 / 26</span>
+    <h1>🪞 Q18 · 오토인코더 vs PCA</h1>
+    <p class="qtext">Compare Autoencoder and PCA.</p>
+  </header>
+
+    <div class="prose">
+      
+      
+
+      <p>둘 다 입력을 저차원으로 압축했다가 복원하며 데이터의 핵심 구조를 잡아낸다. 결정적 차이는 <strong>선형이냐 비선형이냐</strong>다.</p>
+
+      <p><strong>PCA</strong>는 분산이 가장 큰 직교 방향(주성분)들을 찾아 그 부분공간에 <strong>선형</strong> 투영한다. 복원도 선형이다. 핵심 사실은, <strong>은닉층 하나에 선형 활성, 제곱오차를 쓰는 오토인코더는 PCA와 같은 부분공간을 학습</strong>한다는 것이다. 즉 선형 오토인코더 = PCA다.</p>
+
+      <p><strong>오토인코더</strong>는 인코더 $f$와 디코더 $g$에 <strong>비선형 활성과 여러 층</strong>을 둘 수 있어, PCA의 평평한 선형 부분공간을 넘어 <strong>휘어진 매니폴드(manifold)</strong>까지 학습한다. 그래서 오토인코더는 PCA의 비선형 일반화다.</p>
+
+      <div class="cmp">
+        <div class="card gatys">
+          <h4>PCA</h4>
+          <ul>
+            <li>선형 부분공간(평면)만.</li>
+            <li>닫힌 형식 해, 결정적, 주성분이 분산 순 정렬.</li>
+            <li>국소 최소 없음, 해석 쉬움. 표현력 제한.</li>
+          </ul>
+        </div>
+        <div class="card modern">
+          <h4>오토인코더</h4>
+          <ul>
+            <li>비선형 매니폴드까지. 표현력 큼.</li>
+            <li>경사하강 학습, 깊게 쌓기 가능.</li>
+            <li>지나치게 강력하면 항등함수를 외울 위험 → 정칙화 필요(<a href="q19.html">Q19</a>).</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="model-answer">
+        <div class="ma-label">🎯 Model Answer (English)</div>
+        <p class="ma-en">Both compress the input to a low-dimensional code and reconstruct it. <strong>PCA</strong> finds the orthogonal directions of greatest variance and projects <em>linearly</em> onto that subspace; crucially, a one-hidden-layer autoencoder with linear activations and squared-error loss learns the same subspace as PCA, so a linear autoencoder <em>is</em> PCA. An <strong>autoencoder</strong> can use non-linear activations and multiple layers, so it generalises PCA from a flat linear subspace to <strong>curved manifolds</strong>, giving far greater representational power. Trade-offs: PCA has a closed-form, deterministic solution with ordered components and is easy to interpret, whereas a non-linear autoencoder is more flexible but trained by gradient descent and, if too powerful, risks simply copying the input — hence the need for regularisation (Q19).</p>
+      </div>
+
+      <p class="skel-h">📝 시험 답안 골격</p>
+      <ul class="checklist">
+        <li>선형 AE(은닉1·선형·MSE) = PCA. 비선형 AE는 PCA의 비선형 일반화(매니폴드).</li>
+        <li>PCA — 선형 부분공간, 닫힌 해, 정렬된 성분, 해석 쉬움.</li>
+        <li>AE — 비선형·깊이로 표현력↑, 단 항등 학습 위험 → 정칙화 필요.</li>
+      </ul>
+    </div>
+
+    
+
+  <div class="qprog">
+    <div class="qprog-track"><div class="qprog-fill" style="width:76.9%"></div></div>
+    <div class="qprog-txt"><b>20</b> / 26 문항 · 비지도 학습과 표상</div>
+  </div>
+
+  <nav class="qnav">
+    <a href="q17.html"><div class="dir">← 이전 · STEP 19</div><div class="ti">🧭 Q17 느린 특징 분석(Slow Feature Analysis, SFA)</div></a>
+    <a class="next" href="q19.html"><div class="dir">다음 · STEP 21 →</div><div class="ti">🧭 Q19 정칙화된 오토인코더(regularized autoencoders)</div></a>
+  </nav>
+</main>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'정칙화와 일반화' },
+    { no:'02', t:'최적화와 하이퍼파라미터' },
+    { no:'03', t:'합성곱 신경망 CNN' },
+    { no:'04', t:'순환 신경망과 시퀀스' },
+    { no:'05', t:'비지도 학습과 표상' },
+    { no:'06', t:'핵심 논문' },
+  ];
+  function buildNav(cur) {
+    const tb = document.querySelector('.topbar');
+    if (tb) tb.innerHTML =
+      '<a class="home" href="index.html">← 기말 문제은행 26문항</a>' +
+      '<span class="ch-mini">갈래 ' + cur + ' / 06</span>';
+    const ol = document.querySelector('.ch-nav ol');
+    if (ol) ol.innerHTML = SUBS.map(c =>
+      '<li><a href="' + c.no + '.html"' + (c.no === cur ? ' class="current"' : '') + '>' + c.t + '</a></li>').join('');
+    const foot = document.querySelector('.ch-foot');
+    if (foot) {
+      const i = SUBS.findIndex(c => c.no === cur);
+      const prev = i > 0 ? SUBS[i - 1] : { t: '표지로', _href: 'index.html' };
+      const next = i < SUBS.length - 1 ? SUBS[i + 1] : { t: '표지로', _href: 'index.html' };
+      const hp = prev._href || (prev.no + '.html');
+      const hn = next._href || (next.no + '.html');
+      foot.innerHTML =
+        '<a href="' + hp + '"><div class="dir">← 이전</div><div class="ti">' + prev.t + '</div></a>' +
+        '<a href="' + hn + '" class="next"><div class="dir">다음 →</div><div class="ti">' + next.t + '</div></a>';
+    }
+  }
+
+  // 위젯 21 — 분산 표상 용량
+  function distRep(canvas, n) {
+    const css = getComputedStyle(document.documentElement);
+    const C = {
+      structure: css.getPropertyValue('--structure').trim() || '#2D5B7A',
+      style: css.getPropertyValue('--style').trim() || '#C0492E',
+      faint: css.getPropertyValue('--ink-faint').trim() || '#8E8576',
+      ink: css.getPropertyValue('--ink').trim() || '#26221C',
+    };
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+    const local = n;
+    const dist = Math.pow(2, n);
+    // 로그 스케일 막대
+    const maxLog = Math.log2(Math.pow(2, 20));
+    const baseY = H - 56, maxH = baseY - 50;
+    function bar(x, label, val, color) {
+      const h = Math.max(4, (Math.log2(val + 1) / maxLog) * maxH);
+      ctx.fillStyle = color;
+      ctx.fillRect(x, baseY - h, 150, h);
+      ctx.font = '600 15px monospace'; ctx.fillStyle = color;
+      ctx.textAlign = 'center';
+      const txt = val >= 10000 ? val.toLocaleString('en-US') : ('' + val);
+      ctx.fillText(txt, x + 75, baseY - h - 10);
+      ctx.font = '12px monospace'; ctx.fillStyle = C.faint;
+      ctx.fillText(label, x + 75, baseY + 22);
+      ctx.textAlign = 'left';
+    }
+    ctx.textAlign = 'center';
+    ctx.font = '12px monospace'; ctx.fillStyle = C.faint;
+    ctx.fillText('구별 가능한 개념 수 (로그 스케일)', W / 2, 28);
+    ctx.textAlign = 'left';
+    bar(W / 2 - 200, '국소 표상 = n', local, C.structure);
+    bar(W / 2 + 50, '분산 표상 = 2ⁿ', dist, C.style);
+    // 유닛 패턴 미니 그림 (n개 칸, 한 예시 이진 코드)
+    ctx.font = '11px monospace'; ctx.fillStyle = C.faint;
+    ctx.fillText('유닛 ' + n + '개의 한 활성 패턴 예:', 24, H - 18);
+    const cw = Math.min(16, (W - 230) / n);
+    for (let i = 0; i < n; i++) {
+      const on = ((i * 7 + 3) % 5) < 2;  // 결정적 예시 패턴
+      ctx.fillStyle = on ? C.style : '#fff';
+      ctx.strokeStyle = 'rgba(38,34,28,.25)';
+      ctx.fillRect(220 + i * (cw + 2), H - 30, cw, 16);
+      ctx.strokeRect(220 + i * (cw + 2), H - 30, cw, 16);
+    }
+  }
+
+  window.addEventListener('load', () => {
+    buildNav('05');
+    if (window.NST && NST.accordion) NST.accordion(document);
+    const cv = document.getElementById('distrep');
+    const dv = document.querySelector('.dv');
+    const nb = document.getElementById('nbits');
+    if (cv && nb) {
+      const draw = () => { dv.textContent = nb.value; distRep(cv, +nb.value); };
+      nb.addEventListener('input', draw); draw();
+    }
+    if (window.renderMathInElement) renderMathInElement(document.body, {
+      delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }],
+      throwOnError: false,
+    });
+  });
+</script>
+</body>
+</html>

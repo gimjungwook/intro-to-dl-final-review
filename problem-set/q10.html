@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>STEP 14 · Q10 · CNN의 평행이동 불변성(translation invariance)</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script defer src="../assets/widgets.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+
+<header class="qbar">
+  <a class="home" href="index.html">← 26문항 목록</a>
+  <span class="grp">🖼️ 합성곱 신경망 CNN</span>
+  <span class="step">STEP <b>14</b> / 26</span>
+</header>
+
+<main class="qpage">
+  <header class="qhead">
+    <span class="kicker">🖼️ 합성곱 신경망 CNN · 14 / 26</span>
+    <h1>🔁 Q10 · CNN의 평행이동 불변성(translation invariance)</h1>
+    <p class="qtext">What is translation invariance with CNN?</p>
+  </header>
+
+    <div class="prose">
+      
+      
+
+      <p>이 문항의 핵심은 두 개념을 정확히 구분하는 데 있다.</p>
+      <div class="cmp">
+        <div class="card gatys">
+          <h4>등가성 (equivariance)</h4>
+          <ul>
+            <li>입력이 움직이면 <b>출력도 같이 움직인다</b>.</li>
+            <li>$f(\text{Shift}(x)) = \text{Shift}(f(x))$.</li>
+            <li><b>합성곱 자체</b>가 가진 성질.</li>
+          </ul>
+        </div>
+        <div class="card modern">
+          <h4>불변성 (invariance)</h4>
+          <ul>
+            <li>입력이 움직여도 <b>출력은 그대로</b>다.</li>
+            <li>$f(\text{Shift}(x)) = f(x)$.</li>
+            <li><b>풀링</b>이 더해질 때 비로소 (근사적으로) 생김.</li>
+          </ul>
+        </div>
+      </div>
+
+      <p>흔한 오해는 “CNN은 평행이동 불변이다”라고 뭉뚱그리는 것이다. 정확히는 <strong>합성곱 층은 등가적이지 불변이 아니다</strong>. 고양이를 오른쪽으로 옮기면 특징맵의 활성도 오른쪽으로 옮겨 간다(등가). 불변성은 그 위에 <strong>풀링</strong>이 얹힐 때 생긴다. 최대 풀링은 한 영역에서 가장 강한 반응만 남기므로, 그 영역 안에서 입력이 조금 움직여도 출력이 변하지 않는다 — <strong>작은 평행이동에 대한 근사 불변성</strong>이다.</p>
+
+      <div class="widget">
+        <div class="widget-frame">
+          <div class="widget-label"><span class="lab-no">위젯 10</span><span>입력을 밀어 보라 — 특징맵은 따라가고(등가), 풀링은 버틴다(불변)</span></div>
+          <div id="poolinv"></div>
+        </div>
+        <p class="widget-cap">입력의 신호 위치를 슬라이더로 옮기면, 합성곱 특징맵(가운데)의 활성도 같은 방향으로 옮겨 간다(등가성). 그러나 풀링 출력(아래)은 신호가 같은 풀링 창 안에서 움직이는 한 변하지 않는다(근사 불변성). 창을 벗어날 만큼 크게 옮기면 풀링 출력도 바뀐다 — 불변성이 “작은” 이동에만 성립함을 보여 준다.</p>
+      </div>
+
+      <p>왜 둘 다 필요한가? 과제가 다르기 때문이다. “고양이가 어디 있는가”(위치 추정)에는 등가성이, “고양이가 있는가”(분류)에는 불변성이 필요하다. CNN은 합성곱으로 등가성을 제공하고 풀링으로 근사 불변성을 쌓아, 깊어질수록 점점 더 큰 이동에 둔감해진다. 단, 풀링이 주는 불변성은 <strong>국소적이고 근사적</strong>이라는 점, 그리고 큰 평행이동에 대한 견고함은 파라미터 공유와 깊은 풀링의 합작이라는 점을 함께 적어 주면 완성도가 높다.</p>
+
+      <div class="model-answer">
+        <div class="ma-label">🎯 Model Answer (English)</div>
+        <p class="ma-en">The key is to distinguish two concepts. <strong>Equivariance</strong> means "when the input shifts, the output shifts the same way", $f(\text{Shift}(x)) = \text{Shift}(f(x))$ — this is what convolution itself provides. <strong>Invariance</strong> means "the output is unchanged when the input shifts", $f(\text{Shift}(x)) = f(x)$ — convolution alone does <em>not</em> give this. Translation invariance appears only when <strong>pooling</strong> is added: max pooling keeps the strongest response in a region, so a small shift within that region leaves the output unchanged, producing approximate invariance to small translations. Classification needs invariance ("is there a cat?"), whereas localisation needs equivariance ("where is the cat?"); a CNN supplies equivariance through convolution and stacks pooling to build up invariance, which is therefore local and only approximate.</p>
+      </div>
+
+      <p class="skel-h">📝 시험 답안 골격</p>
+      <ul class="checklist">
+        <li>등가성(움직이면 따라감, 합성곱) vs 불변성(움직여도 그대로, 풀링)을 먼저 구분.</li>
+        <li>합성곱은 등가적이지 불변이 아님. 최대 풀링이 영역 내 최강 반응만 남겨 작은 이동에 근사 불변.</li>
+        <li>분류엔 불변성, 위치추정엔 등가성. 풀링 불변성은 국소·근사.</li>
+      </ul>
+    </div>
+
+    
+
+  <div class="qprog">
+    <div class="qprog-track"><div class="qprog-fill" style="width:53.8%"></div></div>
+    <div class="qprog-txt"><b>14</b> / 26 문항 · 합성곱 신경망 CNN</div>
+  </div>
+
+  <nav class="qnav">
+    <a href="q9.html"><div class="dir">← 이전 · STEP 13</div><div class="ti">🖼️ Q9 CNN이 이미지에 특히 강력한 이유</div></a>
+    <a class="next" href="q11.html"><div class="dir">다음 · STEP 15 →</div><div class="ti">🖼️ Q11 무한히 강한 사전(infinitely strong prior)이 CNN에 더해지는 방식</div></a>
+  </nav>
+</main>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'정칙화와 일반화' },
+    { no:'02', t:'최적화와 하이퍼파라미터' },
+    { no:'03', t:'합성곱 신경망 CNN' },
+    { no:'04', t:'순환 신경망과 시퀀스' },
+    { no:'05', t:'비지도 학습과 표상' },
+    { no:'06', t:'핵심 논문' },
+  ];
+  function buildNav(cur) {
+    const tb = document.querySelector('.topbar');
+    if (tb) tb.innerHTML =
+      '<a class="home" href="index.html">← 기말 문제은행 26문항</a>' +
+      '<span class="ch-mini">갈래 ' + cur + ' / 06</span>';
+    const ol = document.querySelector('.ch-nav ol');
+    if (ol) ol.innerHTML = SUBS.map(c =>
+      '<li><a href="' + c.no + '.html"' + (c.no === cur ? ' class="current"' : '') + '>' + c.t + '</a></li>').join('');
+    const foot = document.querySelector('.ch-foot');
+    if (foot) {
+      const i = SUBS.findIndex(c => c.no === cur);
+      const prev = i > 0 ? SUBS[i - 1] : { t: '표지로', _href: 'index.html' };
+      const next = i < SUBS.length - 1 ? SUBS[i + 1] : { t: '표지로', _href: 'index.html' };
+      const hp = prev._href || (prev.no + '.html');
+      const hn = next._href || (next.no + '.html');
+      foot.innerHTML =
+        '<a href="' + hp + '"><div class="dir">← 이전</div><div class="ti">' + prev.t + '</div></a>' +
+        '<a href="' + hn + '" class="next"><div class="dir">다음 →</div><div class="ti">' + next.t + '</div></a>';
+    }
+  }
+
+  // 위젯 10 — 등가성 vs 불변성(풀링)
+  function poolInvWidget(host) {
+    const css = getComputedStyle(document.documentElement);
+    const COL = {
+      structure: css.getPropertyValue('--structure').trim() || '#2D5B7A',
+      style: css.getPropertyValue('--style').trim() || '#C0492E',
+      synth: css.getPropertyValue('--synth').trim() || '#A47B2E',
+      ink: css.getPropertyValue('--ink-soft').trim() || '#5A5247',
+      faint: css.getPropertyValue('--ink-faint').trim() || '#8E8576',
+    };
+    const W = 12;       // 입력 길이
+    const POOL = 3;     // 풀링 창 (비중첩)
+    let pos = 4;        // 신호 중심
+
+    function bump(p) {
+      const a = new Array(W).fill(0);
+      for (let i = 0; i < W; i++) { const d = Math.abs(i - p); if (d <= 1) a[i] = 1 - d * 0.5; }
+      return a;
+    }
+    function maxpool(a) {
+      const out = [];
+      for (let i = 0; i < a.length; i += POOL) out.push(Math.max(...a.slice(i, i + POOL)));
+      return out;
+    }
+
+    host.innerHTML =
+      '<div style="padding:1.5rem 1rem 1.2rem;background:#fff;">' +
+      '<div id="piBoard"></div>' +
+      '<div style="margin-top:1.2rem;padding-top:1rem;border-top:1px solid var(--line-soft);display:flex;align-items:center;gap:.8rem;font-family:var(--mono);font-size:.74rem;">' +
+      '  <span style="color:' + COL.ink + ';flex-shrink:0;">입력 신호 위치</span>' +
+      '  <input type="range" id="piPos" min="0" max="11" value="4" style="flex:1;">' +
+      '  <span id="piLabel" style="color:' + COL.style + ';font-weight:600;flex-shrink:0;">x = 4</span>' +
+      '</div></div>';
+
+    function cells(arr, color, label, cellW, groupBy) {
+      let html = '<div style="display:flex;align-items:center;gap:.7rem;margin:.35rem 0;">' +
+        '<div style="font-family:var(--mono);font-size:.68rem;color:' + COL.faint + ';width:120px;text-align:right;flex-shrink:0;">' + label + '</div>' +
+        '<div style="display:flex;gap:' + (groupBy ? '0' : '2px') + ';">';
+      arr.forEach((v, i) => {
+        const a = Math.max(0, Math.min(1, v));
+        const rgb = color === 'structure' ? '45,91,122' : color === 'synth' ? '164,123,46' : '192,73,46';
+        const sep = (groupBy && i % groupBy === 0 && i > 0) ? 'margin-left:6px;' : '';
+        const mr = (!groupBy) ? '' : 'margin-right:2px;';
+        html += '<div style="width:' + cellW + 'px;height:30px;' + sep + mr + 'border:1px solid rgba(38,34,28,.12);border-radius:3px;background:rgba(' + rgb + ',' + (a * 0.85 + 0.06) + ');"></div>';
+      });
+      html += '</div></div>';
+      return html;
+    }
+
+    function render() {
+      const inp = bump(pos);
+      const feat = inp.slice();             // 합성곱 특징맵 ≈ 활성(등가)
+      const pooled = maxpool(feat);          // 풀링(불변)
+      const cw = 30;
+      const html =
+        cells(inp, 'structure', '입력 x', cw, 0) +
+        cells(feat, 'synth', '합성곱 특징맵 (등가)', cw, 0) +
+        cells(pooled, 'style', '최대 풀링 출력 (불변)', cw * POOL + (POOL - 1) * 2, 0) +
+        '<div style="font-family:var(--mono);font-size:.66rem;color:' + COL.faint + ';text-align:center;margin-top:.6rem;">풀링 창 = ' + POOL + ' (비중첩) · 같은 창 안 이동엔 출력 불변, 창을 넘으면 변함</div>';
+      host.querySelector('#piBoard').innerHTML = html;
+      host.querySelector('#piLabel').textContent = 'x = ' + pos;
+    }
+    host.querySelector('#piPos').addEventListener('input', e => { pos = +e.target.value; render(); });
+    render();
+  }
+
+  window.addEventListener('load', () => {
+    buildNav('03');
+    if (window.NST && NST.accordion) NST.accordion(document);
+    const p = document.getElementById('poolinv');
+    if (p) poolInvWidget(p);
+    if (window.renderMathInElement) renderMathInElement(document.body, {
+      delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }],
+      throwOnError: false,
+    });
+  });
+</script>
+</body>
+</html>

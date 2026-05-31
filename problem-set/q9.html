@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>STEP 13 · Q9 · CNN이 이미지에 특히 강력한 이유</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script defer src="../assets/widgets.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+
+<header class="qbar">
+  <a class="home" href="index.html">← 26문항 목록</a>
+  <span class="grp">🖼️ 합성곱 신경망 CNN</span>
+  <span class="step">STEP <b>13</b> / 26</span>
+</header>
+
+<main class="qpage">
+  <header class="qhead">
+    <span class="kicker">🖼️ 합성곱 신경망 CNN · 13 / 26</span>
+    <h1>🖼️ Q9 · CNN이 이미지에 특히 강력한 이유</h1>
+    <p class="qtext">Why is CNN powerful especially on image data?</p>
+  </header>
+
+    <div class="prose">
+      
+      
+
+      <p>완전연결층을 256×256 이미지에 그대로 쓰면 한 출력 픽셀이 입력 6만 5천여 픽셀과 모두 연결되어, 한 층의 가중치가 수십억 개에 이른다. CNN은 같은 일을 <strong>세 가지 구조적 속성</strong>으로 수백 배~수억 배 적은 파라미터로 해낸다. 셋은 모두 자연 이미지의 통계적 사실에서 나온다.</p>
+
+      <div class="symbols"><tbody>
+        <tr><td>희소 상호작용</td><td>한 출력은 작은 창(예: 3×3)에만 연결. “한 픽셀의 의미는 멀리가 아니라 주변에서 결정된다”는 국소성 사실.</td></tr>
+        <tr><td>파라미터 공유</td><td>같은 커널을 이미지 전 위치에서 사용. “수직 에지는 어디에 있든 수직 에지”라는 정상성(stationarity) 사실.</td></tr>
+        <tr><td>변환 등가성</td><td>입력이 옮겨지면 특징맵도 같이 옮겨짐(파라미터 공유의 자동 결과).</td></tr>
+      </tbody></div>
+
+      <p>이로부터 세 가지 위력이 나온다. ① <strong>파라미터·메모리 격감</strong> — 입력 크기와 무관하게 한 커널의 가중치 수가 고정된다. ② <strong>통계적 효율</strong> — 한 위치에서 배운 패턴 감지기가 모든 위치에 자동 일반화된다. 완전연결층은 위치마다 따로 배워야 한다. ③ <strong>계층적 특징</strong> — 층이 깊어질수록 수용 영역이 커져, 얕은 층의 에지가 질감, 부분, 물체로 단계적으로 조합된다. 여기에 풀링이 더해지면 작은 평행이동에 둔감한 <strong>근사 불변성</strong>(<a href="q10.html">Q10</a>)까지 얻는다.</p>
+
+      <div class="analogy">
+        완전연결망이 <b>“그림의 모든 위치마다 별도의 검사관을 두는 것”</b>이라면, CNN은 <b>“잘 훈련된 검사관 한 명이 같은 잣대를 들고 그림 전체를 훑는 것”</b>이다. 검사관을 한 번 키우면 어디서든 같은 패턴을 알아보고, 인건비(파라미터)도 한 명분이면 된다.
+      </div>
+
+      <p>이 모든 이득은 “이미지가 국소적이고 정상적”이라는 사전이 데이터에 잘 맞기 때문에 공짜로 얻어진다. 그 사전이 얼마나 강한지는 <a href="q11.html">Q11</a>에서 “무한히 강한 사전”으로 정리한다.</p>
+
+      <div class="model-answer">
+        <div class="ma-label">🎯 Model Answer (English)</div>
+        <p class="ma-en">A fully connected layer on a 256×256 image would link each output to about 65,000 inputs, giving billions of weights per layer. A CNN does the same job with far fewer parameters through three structural properties drawn from the statistics of natural images: <strong>sparse interactions</strong> (each output sees only a small local window), <strong>parameter sharing</strong> (the same kernel is applied at every position), and <strong>equivariant representations</strong> (shifting the input shifts the feature map). These yield a massive reduction in parameters and memory that is independent of image size, statistical efficiency (a pattern learned at one location automatically generalises to all locations), and hierarchical features — as depth grows the receptive field, edges combine into textures, parts, and finally objects. Adding pooling further produces approximate invariance to small translations.</p>
+      </div>
+
+      <p class="skel-h">📝 시험 답안 골격</p>
+      <ul class="checklist">
+        <li>완전연결의 파라미터 폭발 → CNN의 세 속성: 희소 상호작용 · 파라미터 공유 · 변환 등가성.</li>
+        <li>위력 — 파라미터/메모리 격감, 통계적 효율(위치 일반화), 깊이에 따른 계층적 특징. + 풀링의 근사 불변성.</li>
+        <li>근거 — 국소성·정상성이라는 자연 이미지 사실에 사전이 맞기 때문.</li>
+      </ul>
+    </div>
+
+    
+
+  <div class="qprog">
+    <div class="qprog-track"><div class="qprog-fill" style="width:50.0%"></div></div>
+    <div class="qprog-txt"><b>13</b> / 26 문항 · 합성곱 신경망 CNN</div>
+  </div>
+
+  <nav class="qnav">
+    <a href="q16.html"><div class="dir">← 이전 · STEP 12</div><div class="ti">⚙️ Q16 그리드 탐색과 무작위 탐색</div></a>
+    <a class="next" href="q10.html"><div class="dir">다음 · STEP 14 →</div><div class="ti">🖼️ Q10 CNN의 평행이동 불변성(translation invariance)</div></a>
+  </nav>
+</main>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'정칙화와 일반화' },
+    { no:'02', t:'최적화와 하이퍼파라미터' },
+    { no:'03', t:'합성곱 신경망 CNN' },
+    { no:'04', t:'순환 신경망과 시퀀스' },
+    { no:'05', t:'비지도 학습과 표상' },
+    { no:'06', t:'핵심 논문' },
+  ];
+  function buildNav(cur) {
+    const tb = document.querySelector('.topbar');
+    if (tb) tb.innerHTML =
+      '<a class="home" href="index.html">← 기말 문제은행 26문항</a>' +
+      '<span class="ch-mini">갈래 ' + cur + ' / 06</span>';
+    const ol = document.querySelector('.ch-nav ol');
+    if (ol) ol.innerHTML = SUBS.map(c =>
+      '<li><a href="' + c.no + '.html"' + (c.no === cur ? ' class="current"' : '') + '>' + c.t + '</a></li>').join('');
+    const foot = document.querySelector('.ch-foot');
+    if (foot) {
+      const i = SUBS.findIndex(c => c.no === cur);
+      const prev = i > 0 ? SUBS[i - 1] : { t: '표지로', _href: 'index.html' };
+      const next = i < SUBS.length - 1 ? SUBS[i + 1] : { t: '표지로', _href: 'index.html' };
+      const hp = prev._href || (prev.no + '.html');
+      const hn = next._href || (next.no + '.html');
+      foot.innerHTML =
+        '<a href="' + hp + '"><div class="dir">← 이전</div><div class="ti">' + prev.t + '</div></a>' +
+        '<a href="' + hn + '" class="next"><div class="dir">다음 →</div><div class="ti">' + next.t + '</div></a>';
+    }
+  }
+
+  // 위젯 10 — 등가성 vs 불변성(풀링)
+  function poolInvWidget(host) {
+    const css = getComputedStyle(document.documentElement);
+    const COL = {
+      structure: css.getPropertyValue('--structure').trim() || '#2D5B7A',
+      style: css.getPropertyValue('--style').trim() || '#C0492E',
+      synth: css.getPropertyValue('--synth').trim() || '#A47B2E',
+      ink: css.getPropertyValue('--ink-soft').trim() || '#5A5247',
+      faint: css.getPropertyValue('--ink-faint').trim() || '#8E8576',
+    };
+    const W = 12;       // 입력 길이
+    const POOL = 3;     // 풀링 창 (비중첩)
+    let pos = 4;        // 신호 중심
+
+    function bump(p) {
+      const a = new Array(W).fill(0);
+      for (let i = 0; i < W; i++) { const d = Math.abs(i - p); if (d <= 1) a[i] = 1 - d * 0.5; }
+      return a;
+    }
+    function maxpool(a) {
+      const out = [];
+      for (let i = 0; i < a.length; i += POOL) out.push(Math.max(...a.slice(i, i + POOL)));
+      return out;
+    }
+
+    host.innerHTML =
+      '<div style="padding:1.5rem 1rem 1.2rem;background:#fff;">' +
+      '<div id="piBoard"></div>' +
+      '<div style="margin-top:1.2rem;padding-top:1rem;border-top:1px solid var(--line-soft);display:flex;align-items:center;gap:.8rem;font-family:var(--mono);font-size:.74rem;">' +
+      '  <span style="color:' + COL.ink + ';flex-shrink:0;">입력 신호 위치</span>' +
+      '  <input type="range" id="piPos" min="0" max="11" value="4" style="flex:1;">' +
+      '  <span id="piLabel" style="color:' + COL.style + ';font-weight:600;flex-shrink:0;">x = 4</span>' +
+      '</div></div>';
+
+    function cells(arr, color, label, cellW, groupBy) {
+      let html = '<div style="display:flex;align-items:center;gap:.7rem;margin:.35rem 0;">' +
+        '<div style="font-family:var(--mono);font-size:.68rem;color:' + COL.faint + ';width:120px;text-align:right;flex-shrink:0;">' + label + '</div>' +
+        '<div style="display:flex;gap:' + (groupBy ? '0' : '2px') + ';">';
+      arr.forEach((v, i) => {
+        const a = Math.max(0, Math.min(1, v));
+        const rgb = color === 'structure' ? '45,91,122' : color === 'synth' ? '164,123,46' : '192,73,46';
+        const sep = (groupBy && i % groupBy === 0 && i > 0) ? 'margin-left:6px;' : '';
+        const mr = (!groupBy) ? '' : 'margin-right:2px;';
+        html += '<div style="width:' + cellW + 'px;height:30px;' + sep + mr + 'border:1px solid rgba(38,34,28,.12);border-radius:3px;background:rgba(' + rgb + ',' + (a * 0.85 + 0.06) + ');"></div>';
+      });
+      html += '</div></div>';
+      return html;
+    }
+
+    function render() {
+      const inp = bump(pos);
+      const feat = inp.slice();             // 합성곱 특징맵 ≈ 활성(등가)
+      const pooled = maxpool(feat);          // 풀링(불변)
+      const cw = 30;
+      const html =
+        cells(inp, 'structure', '입력 x', cw, 0) +
+        cells(feat, 'synth', '합성곱 특징맵 (등가)', cw, 0) +
+        cells(pooled, 'style', '최대 풀링 출력 (불변)', cw * POOL + (POOL - 1) * 2, 0) +
+        '<div style="font-family:var(--mono);font-size:.66rem;color:' + COL.faint + ';text-align:center;margin-top:.6rem;">풀링 창 = ' + POOL + ' (비중첩) · 같은 창 안 이동엔 출력 불변, 창을 넘으면 변함</div>';
+      host.querySelector('#piBoard').innerHTML = html;
+      host.querySelector('#piLabel').textContent = 'x = ' + pos;
+    }
+    host.querySelector('#piPos').addEventListener('input', e => { pos = +e.target.value; render(); });
+    render();
+  }
+
+  window.addEventListener('load', () => {
+    buildNav('03');
+    if (window.NST && NST.accordion) NST.accordion(document);
+    const p = document.getElementById('poolinv');
+    if (p) poolInvWidget(p);
+    if (window.renderMathInElement) renderMathInElement(document.body, {
+      delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }],
+      throwOnError: false,
+    });
+  });
+</script>
+</body>
+</html>

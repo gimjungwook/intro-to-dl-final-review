@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>STEP 23 · Q21 · 분산 표상(distributed representation) — compact vs sparse</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script defer src="../assets/widgets.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+
+<header class="qbar">
+  <a class="home" href="index.html">← 26문항 목록</a>
+  <span class="grp">🧭 비지도 학습과 표상</span>
+  <span class="step">STEP <b>23</b> / 26</span>
+</header>
+
+<main class="qpage">
+  <header class="qhead">
+    <span class="kicker">🧭 비지도 학습과 표상 · 23 / 26</span>
+    <h1>🌈 Q21 · 분산 표상(distributed representation) — compact vs sparse</h1>
+    <p class="qtext">What is distributed representation? Why is it so important in deep learning? Compare compact and sparse representations.</p>
+  </header>
+
+    <div class="prose">
+      
+      
+
+      <p><strong>분산 표상</strong>이란, 하나의 개념을 <strong>여러 유닛에 걸친 활성 패턴</strong>으로 나타내고, 동시에 <strong>각 유닛이 여러 개념을 표현하는 데 참여</strong>하는 방식이다. 반대는 국소(local)/원-핫 표상 — 한 개념당 한 유닛이 전담한다.</p>
+
+      <p><strong>왜 중요한가.</strong> 표현력이 지수적이기 때문이다. $n$개의 이진 특징은 서로 다른 패턴으로 최대 $2^n$개의 영역(구성)을 구별할 수 있다. 국소 표상은 $n$개 유닛으로 $n$개 개념밖에 구별 못 한다. 이 지수적 격차가 <strong>일반화의 원천</strong>이다 — 특징이 개념들 사이에서 재사용되므로, “빨강+자동차”와 “파랑+트럭”을 본 적 있으면 본 적 없는 “빨강+트럭”으로 일반화한다. $O(n)$개의 파라미터로 $O(2^n)$개의 영역을 기술하는 <strong>통계적 효율</strong>이 딥러닝이 적은 데이터로도 일반화하는 핵심 이유다.</p>
+
+      <div class="widget">
+        <div class="widget-frame">
+          <div class="widget-label"><span class="lab-no">위젯 21</span><span>같은 n개 유닛 — 국소는 n개, 분산은 2ⁿ개를 구별한다</span></div>
+          <canvas id="distrep" class="widget-canvas" width="720" height="300"></canvas>
+        </div>
+        <div class="widget-controls">
+          <div class="slider" style="max-width:360px;">
+            <label>유닛 수 n <b class="dv">8</b></label>
+            <input type="range" id="nbits" class="s-structure" min="1" max="20" value="8">
+          </div>
+        </div>
+        <p class="widget-cap">유닛 수 n을 키워 보라. 국소 표상이 구별하는 개념 수(파랑)는 n으로 선형으로 늘지만, 분산 표상의 구별 수(빨강)는 $2^n$으로 폭증한다. n=20이면 국소는 20개, 분산은 100만 개를 넘는다.</p>
+      </div>
+
+      <p><strong>세 모드 비교.</strong> 얼마나 많은 유닛이 동시에 켜지는가로 나뉜다.</p>
+      <div class="cmp">
+        <div class="card gatys">
+          <h4>국소 (one-hot)</h4>
+          <ul>
+            <li>정확히 1개 유닛만 활성.</li>
+            <li>$n$개로 $n$개념. 일반화·재사용 없음.</li>
+            <li>가장 해석 쉬움.</li>
+          </ul>
+        </div>
+        <div class="card modern">
+          <h4>조밀(compact) 분산</h4>
+          <ul>
+            <li>많은 유닛이 동시 활성.</li>
+            <li>용량 최대 $2^n$. 통계적 효율 최고.</li>
+            <li>해석 어렵고 특징이 얽힐(entangled) 수 있음.</li>
+          </ul>
+        </div>
+      </div>
+      <p><strong>희소(sparse) 분산</strong>은 그 중간이다 — $n$개 중 소수 $k$개만 켜진다. 용량은 $\binom{n}{k}$로 여전히 매우 크면서, 활성 유닛이 적어 <strong>해석과 분리(disentangle)가 쉽고, 잡음에 강하며, 에너지 효율적</strong>이다(생물학적 뇌와도 닮았다). 정리하면, 국소는 단순함, 조밀 분산은 최대 용량, 희소 분산은 용량과 해석성·강건성 사이의 균형을 준다.</p>
+
+      <div class="model-answer">
+        <div class="ma-label">🎯 Model Answer (English)</div>
+        <p class="ma-en">A <strong>distributed representation</strong> encodes a concept as a <em>pattern of activity over many units</em>, with each unit helping to represent many concepts; the opposite is a local (one-hot) representation, one unit per concept. It matters because its capacity is exponential: $n$ binary features can distinguish up to $2^n$ regions, whereas $n$ local units distinguish only $n$. This is the source of generalisation — features are reused across concepts, so having seen "red car" and "blue truck" the model generalises to an unseen "red truck" — and the statistical efficiency ($O(n)$ parameters describing $O(2^n)$ regions) behind deep learning. Comparing the modes: <strong>local</strong> (exactly one unit active; $n$ concepts; no reuse; most interpretable), <strong>dense/compact</strong> distributed (many units active; capacity up to $2^n$; maximal efficiency but entangled and hard to interpret), and <strong>sparse</strong> distributed ($k$ of $n$ active; capacity $\binom{n}{k}$ still huge, but more interpretable, robust, and energy-efficient) — a trade-off between capacity, interpretability, and robustness.</p>
+      </div>
+
+      <p class="skel-h">📝 시험 답안 골격</p>
+      <ul class="checklist">
+        <li>분산 표상 — 개념=여러 유닛의 패턴, 각 유닛=여러 개념에 참여. 반대 = 국소/원-핫.</li>
+        <li>중요성 — $n$ 특징 → $2^n$ 영역, 특징 재사용 → 미관측 조합으로 일반화. $O(n)$ 파라미터로 $O(2^n)$ 기술.</li>
+        <li>비교 — 국소(1개, 해석 쉬움) / 조밀(다수, 용량 최대, 얽힘) / 희소($k$개, 용량 크면서 해석·강건).</li>
+      </ul>
+    </div>
+
+    
+
+  <div class="qprog">
+    <div class="qprog-track"><div class="qprog-fill" style="width:88.5%"></div></div>
+    <div class="qprog-txt"><b>23</b> / 26 문항 · 비지도 학습과 표상</div>
+  </div>
+
+  <nav class="qnav">
+    <a href="q20.html"><div class="dir">← 이전 · STEP 22</div><div class="ti">🧭 Q20 비지도 학습이 다운스트림 과제를 돕는 이유</div></a>
+    <a class="next" href="q24.html"><div class="dir">다음 · STEP 24 →</div><div class="ti">📜 Q24 “A Neural Algorithm of Artistic Style”</div></a>
+  </nav>
+</main>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'정칙화와 일반화' },
+    { no:'02', t:'최적화와 하이퍼파라미터' },
+    { no:'03', t:'합성곱 신경망 CNN' },
+    { no:'04', t:'순환 신경망과 시퀀스' },
+    { no:'05', t:'비지도 학습과 표상' },
+    { no:'06', t:'핵심 논문' },
+  ];
+  function buildNav(cur) {
+    const tb = document.querySelector('.topbar');
+    if (tb) tb.innerHTML =
+      '<a class="home" href="index.html">← 기말 문제은행 26문항</a>' +
+      '<span class="ch-mini">갈래 ' + cur + ' / 06</span>';
+    const ol = document.querySelector('.ch-nav ol');
+    if (ol) ol.innerHTML = SUBS.map(c =>
+      '<li><a href="' + c.no + '.html"' + (c.no === cur ? ' class="current"' : '') + '>' + c.t + '</a></li>').join('');
+    const foot = document.querySelector('.ch-foot');
+    if (foot) {
+      const i = SUBS.findIndex(c => c.no === cur);
+      const prev = i > 0 ? SUBS[i - 1] : { t: '표지로', _href: 'index.html' };
+      const next = i < SUBS.length - 1 ? SUBS[i + 1] : { t: '표지로', _href: 'index.html' };
+      const hp = prev._href || (prev.no + '.html');
+      const hn = next._href || (next.no + '.html');
+      foot.innerHTML =
+        '<a href="' + hp + '"><div class="dir">← 이전</div><div class="ti">' + prev.t + '</div></a>' +
+        '<a href="' + hn + '" class="next"><div class="dir">다음 →</div><div class="ti">' + next.t + '</div></a>';
+    }
+  }
+
+  // 위젯 21 — 분산 표상 용량
+  function distRep(canvas, n) {
+    const css = getComputedStyle(document.documentElement);
+    const C = {
+      structure: css.getPropertyValue('--structure').trim() || '#2D5B7A',
+      style: css.getPropertyValue('--style').trim() || '#C0492E',
+      faint: css.getPropertyValue('--ink-faint').trim() || '#8E8576',
+      ink: css.getPropertyValue('--ink').trim() || '#26221C',
+    };
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+    const local = n;
+    const dist = Math.pow(2, n);
+    // 로그 스케일 막대
+    const maxLog = Math.log2(Math.pow(2, 20));
+    const baseY = H - 56, maxH = baseY - 50;
+    function bar(x, label, val, color) {
+      const h = Math.max(4, (Math.log2(val + 1) / maxLog) * maxH);
+      ctx.fillStyle = color;
+      ctx.fillRect(x, baseY - h, 150, h);
+      ctx.font = '600 15px monospace'; ctx.fillStyle = color;
+      ctx.textAlign = 'center';
+      const txt = val >= 10000 ? val.toLocaleString('en-US') : ('' + val);
+      ctx.fillText(txt, x + 75, baseY - h - 10);
+      ctx.font = '12px monospace'; ctx.fillStyle = C.faint;
+      ctx.fillText(label, x + 75, baseY + 22);
+      ctx.textAlign = 'left';
+    }
+    ctx.textAlign = 'center';
+    ctx.font = '12px monospace'; ctx.fillStyle = C.faint;
+    ctx.fillText('구별 가능한 개념 수 (로그 스케일)', W / 2, 28);
+    ctx.textAlign = 'left';
+    bar(W / 2 - 200, '국소 표상 = n', local, C.structure);
+    bar(W / 2 + 50, '분산 표상 = 2ⁿ', dist, C.style);
+    // 유닛 패턴 미니 그림 (n개 칸, 한 예시 이진 코드)
+    ctx.font = '11px monospace'; ctx.fillStyle = C.faint;
+    ctx.fillText('유닛 ' + n + '개의 한 활성 패턴 예:', 24, H - 18);
+    const cw = Math.min(16, (W - 230) / n);
+    for (let i = 0; i < n; i++) {
+      const on = ((i * 7 + 3) % 5) < 2;  // 결정적 예시 패턴
+      ctx.fillStyle = on ? C.style : '#fff';
+      ctx.strokeStyle = 'rgba(38,34,28,.25)';
+      ctx.fillRect(220 + i * (cw + 2), H - 30, cw, 16);
+      ctx.strokeRect(220 + i * (cw + 2), H - 30, cw, 16);
+    }
+  }
+
+  window.addEventListener('load', () => {
+    buildNav('05');
+    if (window.NST && NST.accordion) NST.accordion(document);
+    const cv = document.getElementById('distrep');
+    const dv = document.querySelector('.dv');
+    const nb = document.getElementById('nbits');
+    if (cv && nb) {
+      const draw = () => { dv.textContent = nb.value; distRep(cv, +nb.value); };
+      nb.addEventListener('input', draw); draw();
+    }
+    if (window.renderMathInElement) renderMathInElement(document.body, {
+      delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }],
+      throwOnError: false,
+    });
+  });
+</script>
+</body>
+</html>

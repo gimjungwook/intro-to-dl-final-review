@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>STEP 22 · Q20 · 비지도 학습이 다운스트림 과제를 돕는 이유</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script defer src="../assets/widgets.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+
+<header class="qbar">
+  <a class="home" href="index.html">← 26문항 목록</a>
+  <span class="grp">🧭 비지도 학습과 표상</span>
+  <span class="step">STEP <b>22</b> / 26</span>
+</header>
+
+<main class="qpage">
+  <header class="qhead">
+    <span class="kicker">🧭 비지도 학습과 표상 · 22 / 26</span>
+    <h1>🧭 Q20 · 비지도 학습이 다운스트림 과제를 돕는 이유</h1>
+    <p class="qtext">Why is unsupervised learning helpful for the downstream tasks like classification?</p>
+  </header>
+
+    <div class="prose">
+      
+      
+
+      <p>핵심 가정은 <strong>“입력 분포 $p(x)$의 구조가 $p(y\mid x)$에 대한 정보를 담고 있다”</strong>는 것이다. 분류하려는 라벨 $y$를 만들어 내는 변동 인자(factors of variation)는, 입력 $x$의 분포 모양을 결정하는 인자와 상당 부분 겹친다.</p>
+
+      <p>구체적으로, 같은 클래스의 예제들은 입력 공간에서 <strong>군집을 이루거나 같은 매니폴드 위에 놓인다</strong>. 비지도 학습은 라벨 없이도 이 군집·매니폴드·변동 인자를 발견해, $x$의 <strong>좋은 표현</strong>(잘 분리되고 매끄러운)을 만든다. 그 표현 공간에서는 분류 경계가 단순해져, <strong>더 적은 라벨로</strong> 학습되고 더 잘 일반화된다.</p>
+
+      <p>실용적으로 두 방식으로 쓰인다. ① <strong>사전훈련/초기화</strong> — 대량의 비라벨 데이터로 표현을 먼저 배워 좋은 초기값(정칙화 효과, 유리한 수렴 분지)으로 삼고 작은 라벨로 미세조정. ② <strong>준지도 학습</strong> — 표현을 지도·비지도 과제가 공유. 예로 언어모델(비지도)로 배운 단어 임베딩이 다운스트림 자연어 과제를 돕고, 오토인코더가 배운 에지·질감이 시각 분류를 돕는다.</p>
+
+      <p>단, 만능은 아니다. 이 도움은 <strong>비지도로 배운 특징이 실제로 $y$와 관련 있을 때만</strong> 성립한다. $p(x)$의 구조와 $p(y\mid x)$가 무관하면(예: 라벨이 입력의 사소한 측면에만 의존) 비지도 사전훈련은 도움이 안 되거나 해로울 수 있다.</p>
+
+      <div class="model-answer">
+        <div class="ma-label">🎯 Model Answer (English)</div>
+        <p class="ma-en">The core assumption is that the structure of the input distribution $p(x)$ carries information about $p(y\mid x)$: the factors of variation that shape $p(x)$ overlap substantially with the factors we want to predict. Examples of one class cluster together or lie on a shared manifold, and unsupervised learning discovers these clusters, manifolds and factors without labels, producing a <strong>good representation of $x$</strong> in which the decision boundary becomes simple — so the downstream classifier needs fewer labels and generalises better. In practice it is used as pre-training/initialisation (learn from abundant unlabelled data, then fine-tune) or as semi-supervised shared representations, e.g. word embeddings from a language model or edges and textures from an autoencoder. The caveat: it helps only when the unsupervised features are actually relevant to $y$ — if $p(x)$ and $p(y\mid x)$ are unrelated, it may not help.</p>
+      </div>
+
+      <p class="skel-h">📝 시험 답안 골격</p>
+      <ul class="checklist">
+        <li>핵심 — $p(x)$의 구조가 $p(y|x)$의 정보를 담음. 군집/매니폴드/변동 인자가 라벨과 겹침.</li>
+        <li>비지도가 좋은 표현 발견 → 표현 공간에서 분류 단순, 적은 라벨로 일반화.</li>
+        <li>사전훈련/초기화 + 준지도. 예 단어 임베딩·오토인코더 특징. 단 $p(x)$가 $y$와 관련될 때만.</li>
+      </ul>
+    </div>
+
+    
+
+  <div class="qprog">
+    <div class="qprog-track"><div class="qprog-fill" style="width:84.6%"></div></div>
+    <div class="qprog-txt"><b>22</b> / 26 문항 · 비지도 학습과 표상</div>
+  </div>
+
+  <nav class="qnav">
+    <a href="q19.html"><div class="dir">← 이전 · STEP 21</div><div class="ti">🧭 Q19 정칙화된 오토인코더(regularized autoencoders)</div></a>
+    <a class="next" href="q21.html"><div class="dir">다음 · STEP 23 →</div><div class="ti">🧭 Q21 분산 표상(distributed representation) — compact vs sparse</div></a>
+  </nav>
+</main>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'정칙화와 일반화' },
+    { no:'02', t:'최적화와 하이퍼파라미터' },
+    { no:'03', t:'합성곱 신경망 CNN' },
+    { no:'04', t:'순환 신경망과 시퀀스' },
+    { no:'05', t:'비지도 학습과 표상' },
+    { no:'06', t:'핵심 논문' },
+  ];
+  function buildNav(cur) {
+    const tb = document.querySelector('.topbar');
+    if (tb) tb.innerHTML =
+      '<a class="home" href="index.html">← 기말 문제은행 26문항</a>' +
+      '<span class="ch-mini">갈래 ' + cur + ' / 06</span>';
+    const ol = document.querySelector('.ch-nav ol');
+    if (ol) ol.innerHTML = SUBS.map(c =>
+      '<li><a href="' + c.no + '.html"' + (c.no === cur ? ' class="current"' : '') + '>' + c.t + '</a></li>').join('');
+    const foot = document.querySelector('.ch-foot');
+    if (foot) {
+      const i = SUBS.findIndex(c => c.no === cur);
+      const prev = i > 0 ? SUBS[i - 1] : { t: '표지로', _href: 'index.html' };
+      const next = i < SUBS.length - 1 ? SUBS[i + 1] : { t: '표지로', _href: 'index.html' };
+      const hp = prev._href || (prev.no + '.html');
+      const hn = next._href || (next.no + '.html');
+      foot.innerHTML =
+        '<a href="' + hp + '"><div class="dir">← 이전</div><div class="ti">' + prev.t + '</div></a>' +
+        '<a href="' + hn + '" class="next"><div class="dir">다음 →</div><div class="ti">' + next.t + '</div></a>';
+    }
+  }
+
+  // 위젯 21 — 분산 표상 용량
+  function distRep(canvas, n) {
+    const css = getComputedStyle(document.documentElement);
+    const C = {
+      structure: css.getPropertyValue('--structure').trim() || '#2D5B7A',
+      style: css.getPropertyValue('--style').trim() || '#C0492E',
+      faint: css.getPropertyValue('--ink-faint').trim() || '#8E8576',
+      ink: css.getPropertyValue('--ink').trim() || '#26221C',
+    };
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+    const local = n;
+    const dist = Math.pow(2, n);
+    // 로그 스케일 막대
+    const maxLog = Math.log2(Math.pow(2, 20));
+    const baseY = H - 56, maxH = baseY - 50;
+    function bar(x, label, val, color) {
+      const h = Math.max(4, (Math.log2(val + 1) / maxLog) * maxH);
+      ctx.fillStyle = color;
+      ctx.fillRect(x, baseY - h, 150, h);
+      ctx.font = '600 15px monospace'; ctx.fillStyle = color;
+      ctx.textAlign = 'center';
+      const txt = val >= 10000 ? val.toLocaleString('en-US') : ('' + val);
+      ctx.fillText(txt, x + 75, baseY - h - 10);
+      ctx.font = '12px monospace'; ctx.fillStyle = C.faint;
+      ctx.fillText(label, x + 75, baseY + 22);
+      ctx.textAlign = 'left';
+    }
+    ctx.textAlign = 'center';
+    ctx.font = '12px monospace'; ctx.fillStyle = C.faint;
+    ctx.fillText('구별 가능한 개념 수 (로그 스케일)', W / 2, 28);
+    ctx.textAlign = 'left';
+    bar(W / 2 - 200, '국소 표상 = n', local, C.structure);
+    bar(W / 2 + 50, '분산 표상 = 2ⁿ', dist, C.style);
+    // 유닛 패턴 미니 그림 (n개 칸, 한 예시 이진 코드)
+    ctx.font = '11px monospace'; ctx.fillStyle = C.faint;
+    ctx.fillText('유닛 ' + n + '개의 한 활성 패턴 예:', 24, H - 18);
+    const cw = Math.min(16, (W - 230) / n);
+    for (let i = 0; i < n; i++) {
+      const on = ((i * 7 + 3) % 5) < 2;  // 결정적 예시 패턴
+      ctx.fillStyle = on ? C.style : '#fff';
+      ctx.strokeStyle = 'rgba(38,34,28,.25)';
+      ctx.fillRect(220 + i * (cw + 2), H - 30, cw, 16);
+      ctx.strokeRect(220 + i * (cw + 2), H - 30, cw, 16);
+    }
+  }
+
+  window.addEventListener('load', () => {
+    buildNav('05');
+    if (window.NST && NST.accordion) NST.accordion(document);
+    const cv = document.getElementById('distrep');
+    const dv = document.querySelector('.dv');
+    const nb = document.getElementById('nbits');
+    if (cv && nb) {
+      const draw = () => { dv.textContent = nb.value; distRep(cv, +nb.value); };
+      nb.addEventListener('input', draw); draw();
+    }
+    if (window.renderMathInElement) renderMathInElement(document.body, {
+      delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }],
+      throwOnError: false,
+    });
+  });
+</script>
+</body>
+</html>

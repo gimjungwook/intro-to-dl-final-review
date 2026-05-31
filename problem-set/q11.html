@@ -3,120 +3,33 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>갈래 3 / 합성곱 신경망(CNN) — 기말 문제은행 풀이</title>
+<title>STEP 15 · Q11 · 무한히 강한 사전(infinitely strong prior)이 CNN에 더해지는 방식</title>
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <script defer src="../assets/widgets.js"></script>
-<style>
-  .qtext { max-width: var(--measure); margin: .2rem auto 1.3rem; padding: .7rem 1rem; font-family: var(--mono); font-size: .8rem; color: var(--ink-soft); background: var(--paper-2); border-radius: 8px; border-left: 2px solid var(--structure-lo); line-height: 1.6; }
-  .prose h2[id] { scroll-margin-top: 4.5rem; }
-  .skel-h { max-width: var(--measure); margin: 1.6rem auto .4rem; padding-inline: 1.4rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .14em; text-transform: uppercase; color: var(--style); }
-</style>
 </head>
 <body>
 <div class="scroll-progress"></div>
-<div class="topbar"></div>
 
-<div class="ch-layout">
-  <aside class="ch-nav"><nav><ol></ol></nav></aside>
-  <main class="ch-main">
+<header class="qbar">
+  <a class="home" href="index.html">← 26문항 목록</a>
+  <span class="grp">🖼️ 합성곱 신경망 CNN</span>
+  <span class="step">STEP <b>15</b> / 26</span>
+</header>
 
-    <header class="ch-head">
-      <span class="kicker">갈래 3 / 합성곱 신경망(CNN) · Q9·10·11</span>
-      <h1>이미지의 구조를<br><span class="t-structure">네트워크에 새겨</span> 넣다</h1>
-      <p class="lede">CNN의 세 문항은 사실 한 줄거리다 — “자연 이미지에 맞는 사전(prior)을 모델 구조에 박으면, 같은 일을 완전연결망의 수억분의 1 파라미터로 더 잘 한다.” 그 사전이 얼마나 강한지, 무엇을 얻고 무엇을 잃는지를 본다.</p>
-    </header>
+<main class="qpage">
+  <header class="qhead">
+    <span class="kicker">🖼️ 합성곱 신경망 CNN · 15 / 26</span>
+    <h1>🧲 Q11 · 무한히 강한 사전(infinitely strong prior)이 CNN에 더해지는 방식</h1>
+    <p class="qtext">How is the infinitely strong prior added to CNN?</p>
+  </header>
 
-    <!-- ===================== Q9 ===================== -->
     <div class="prose">
-      <h2 id="q9">🖼️ Q9 · CNN이 이미지에 특히 강력한 이유</h2>
-      <p class="qtext">Why is CNN powerful especially on image data?</p>
-
-      <p>완전연결층을 256×256 이미지에 그대로 쓰면 한 출력 픽셀이 입력 6만 5천여 픽셀과 모두 연결되어, 한 층의 가중치가 수십억 개에 이른다. CNN은 같은 일을 <strong>세 가지 구조적 속성</strong>으로 수백 배~수억 배 적은 파라미터로 해낸다. 셋은 모두 자연 이미지의 통계적 사실에서 나온다.</p>
-
-      <div class="symbols"><tbody>
-        <tr><td>희소 상호작용</td><td>한 출력은 작은 창(예: 3×3)에만 연결. “한 픽셀의 의미는 멀리가 아니라 주변에서 결정된다”는 국소성 사실.</td></tr>
-        <tr><td>파라미터 공유</td><td>같은 커널을 이미지 전 위치에서 사용. “수직 에지는 어디에 있든 수직 에지”라는 정상성(stationarity) 사실.</td></tr>
-        <tr><td>변환 등가성</td><td>입력이 옮겨지면 특징맵도 같이 옮겨짐(파라미터 공유의 자동 결과).</td></tr>
-      </tbody></div>
-
-      <p>이로부터 세 가지 위력이 나온다. ① <strong>파라미터·메모리 격감</strong> — 입력 크기와 무관하게 한 커널의 가중치 수가 고정된다. ② <strong>통계적 효율</strong> — 한 위치에서 배운 패턴 감지기가 모든 위치에 자동 일반화된다. 완전연결층은 위치마다 따로 배워야 한다. ③ <strong>계층적 특징</strong> — 층이 깊어질수록 수용 영역이 커져, 얕은 층의 에지가 질감, 부분, 물체로 단계적으로 조합된다. 여기에 풀링이 더해지면 작은 평행이동에 둔감한 <strong>근사 불변성</strong>(<a href="#q10">Q10</a>)까지 얻는다.</p>
-
-      <div class="analogy">
-        완전연결망이 <b>“그림의 모든 위치마다 별도의 검사관을 두는 것”</b>이라면, CNN은 <b>“잘 훈련된 검사관 한 명이 같은 잣대를 들고 그림 전체를 훑는 것”</b>이다. 검사관을 한 번 키우면 어디서든 같은 패턴을 알아보고, 인건비(파라미터)도 한 명분이면 된다.
-      </div>
-
-      <p>이 모든 이득은 “이미지가 국소적이고 정상적”이라는 사전이 데이터에 잘 맞기 때문에 공짜로 얻어진다. 그 사전이 얼마나 강한지는 <a href="#q11">Q11</a>에서 “무한히 강한 사전”으로 정리한다.</p>
-
-      <div class="model-answer">
-        <div class="ma-label">🎯 Model Answer (English)</div>
-        <p class="ma-en">A fully connected layer on a 256×256 image would link each output to about 65,000 inputs, giving billions of weights per layer. A CNN does the same job with far fewer parameters through three structural properties drawn from the statistics of natural images: <strong>sparse interactions</strong> (each output sees only a small local window), <strong>parameter sharing</strong> (the same kernel is applied at every position), and <strong>equivariant representations</strong> (shifting the input shifts the feature map). These yield a massive reduction in parameters and memory that is independent of image size, statistical efficiency (a pattern learned at one location automatically generalises to all locations), and hierarchical features — as depth grows the receptive field, edges combine into textures, parts, and finally objects. Adding pooling further produces approximate invariance to small translations.</p>
-      </div>
-
-      <p class="skel-h">📝 시험 답안 골격</p>
-      <ul class="checklist">
-        <li>완전연결의 파라미터 폭발 → CNN의 세 속성: 희소 상호작용 · 파라미터 공유 · 변환 등가성.</li>
-        <li>위력 — 파라미터/메모리 격감, 통계적 효율(위치 일반화), 깊이에 따른 계층적 특징. + 풀링의 근사 불변성.</li>
-        <li>근거 — 국소성·정상성이라는 자연 이미지 사실에 사전이 맞기 때문.</li>
-      </ul>
-    </div>
-
-    <!-- ===================== Q10 ===================== -->
-    <div class="prose">
-      <h2 id="q10">🔁 Q10 · CNN의 평행이동 불변성(translation invariance)</h2>
-      <p class="qtext">What is translation invariance with CNN?</p>
-
-      <p>이 문항의 핵심은 두 개념을 정확히 구분하는 데 있다.</p>
-      <div class="cmp">
-        <div class="card gatys">
-          <h4>등가성 (equivariance)</h4>
-          <ul>
-            <li>입력이 움직이면 <b>출력도 같이 움직인다</b>.</li>
-            <li>$f(\text{Shift}(x)) = \text{Shift}(f(x))$.</li>
-            <li><b>합성곱 자체</b>가 가진 성질.</li>
-          </ul>
-        </div>
-        <div class="card modern">
-          <h4>불변성 (invariance)</h4>
-          <ul>
-            <li>입력이 움직여도 <b>출력은 그대로</b>다.</li>
-            <li>$f(\text{Shift}(x)) = f(x)$.</li>
-            <li><b>풀링</b>이 더해질 때 비로소 (근사적으로) 생김.</li>
-          </ul>
-        </div>
-      </div>
-
-      <p>흔한 오해는 “CNN은 평행이동 불변이다”라고 뭉뚱그리는 것이다. 정확히는 <strong>합성곱 층은 등가적이지 불변이 아니다</strong>. 고양이를 오른쪽으로 옮기면 특징맵의 활성도 오른쪽으로 옮겨 간다(등가). 불변성은 그 위에 <strong>풀링</strong>이 얹힐 때 생긴다. 최대 풀링은 한 영역에서 가장 강한 반응만 남기므로, 그 영역 안에서 입력이 조금 움직여도 출력이 변하지 않는다 — <strong>작은 평행이동에 대한 근사 불변성</strong>이다.</p>
-
-      <div class="widget">
-        <div class="widget-frame">
-          <div class="widget-label"><span class="lab-no">위젯 10</span><span>입력을 밀어 보라 — 특징맵은 따라가고(등가), 풀링은 버틴다(불변)</span></div>
-          <div id="poolinv"></div>
-        </div>
-        <p class="widget-cap">입력의 신호 위치를 슬라이더로 옮기면, 합성곱 특징맵(가운데)의 활성도 같은 방향으로 옮겨 간다(등가성). 그러나 풀링 출력(아래)은 신호가 같은 풀링 창 안에서 움직이는 한 변하지 않는다(근사 불변성). 창을 벗어날 만큼 크게 옮기면 풀링 출력도 바뀐다 — 불변성이 “작은” 이동에만 성립함을 보여 준다.</p>
-      </div>
-
-      <p>왜 둘 다 필요한가? 과제가 다르기 때문이다. “고양이가 어디 있는가”(위치 추정)에는 등가성이, “고양이가 있는가”(분류)에는 불변성이 필요하다. CNN은 합성곱으로 등가성을 제공하고 풀링으로 근사 불변성을 쌓아, 깊어질수록 점점 더 큰 이동에 둔감해진다. 단, 풀링이 주는 불변성은 <strong>국소적이고 근사적</strong>이라는 점, 그리고 큰 평행이동에 대한 견고함은 파라미터 공유와 깊은 풀링의 합작이라는 점을 함께 적어 주면 완성도가 높다.</p>
-
-      <div class="model-answer">
-        <div class="ma-label">🎯 Model Answer (English)</div>
-        <p class="ma-en">The key is to distinguish two concepts. <strong>Equivariance</strong> means "when the input shifts, the output shifts the same way", $f(\text{Shift}(x)) = \text{Shift}(f(x))$ — this is what convolution itself provides. <strong>Invariance</strong> means "the output is unchanged when the input shifts", $f(\text{Shift}(x)) = f(x)$ — convolution alone does <em>not</em> give this. Translation invariance appears only when <strong>pooling</strong> is added: max pooling keeps the strongest response in a region, so a small shift within that region leaves the output unchanged, producing approximate invariance to small translations. Classification needs invariance ("is there a cat?"), whereas localisation needs equivariance ("where is the cat?"); a CNN supplies equivariance through convolution and stacks pooling to build up invariance, which is therefore local and only approximate.</p>
-      </div>
-
-      <p class="skel-h">📝 시험 답안 골격</p>
-      <ul class="checklist">
-        <li>등가성(움직이면 따라감, 합성곱) vs 불변성(움직여도 그대로, 풀링)을 먼저 구분.</li>
-        <li>합성곱은 등가적이지 불변이 아님. 최대 풀링이 영역 내 최강 반응만 남겨 작은 이동에 근사 불변.</li>
-        <li>분류엔 불변성, 위치추정엔 등가성. 풀링 불변성은 국소·근사.</li>
-      </ul>
-    </div>
-
-    <!-- ===================== Q11 ===================== -->
-    <div class="prose">
-      <h2 id="q11">🧲 Q11 · 무한히 강한 사전(infinitely strong prior)이 CNN에 더해지는 방식</h2>
-      <p class="qtext">How is the infinitely strong prior added to CNN?</p>
+      
+      
 
       <p>사전(prior)이란 데이터를 보기 전에 “어떤 파라미터가 그럴듯한가”에 대한 믿음을 담은 확률분포다. 사전의 세기는 그 분포의 좁기로 정해진다.</p>
       <div class="symbols"><tbody>
@@ -146,9 +59,18 @@
       </ul>
     </div>
 
-    <nav class="ch-foot"></nav>
-  </main>
-</div>
+    
+
+  <div class="qprog">
+    <div class="qprog-track"><div class="qprog-fill" style="width:57.7%"></div></div>
+    <div class="qprog-txt"><b>15</b> / 26 문항 · 합성곱 신경망 CNN</div>
+  </div>
+
+  <nav class="qnav">
+    <a href="q10.html"><div class="dir">← 이전 · STEP 14</div><div class="ti">🖼️ Q10 CNN의 평행이동 불변성(translation invariance)</div></a>
+    <a class="next" href="q12.html"><div class="dir">다음 · STEP 16 →</div><div class="ti">🔁 Q12 RNN은 재귀 신경망(recursive NN)의 특수 경우</div></a>
+  </nav>
+</main>
 
 <script>
   const SUBS = [

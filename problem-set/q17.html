@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>STEP 19 · Q17 · 느린 특징 분석(Slow Feature Analysis, SFA)</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script defer src="../assets/widgets.js"></script>
+</head>
+<body>
+<div class="scroll-progress"></div>
+
+<header class="qbar">
+  <a class="home" href="index.html">← 26문항 목록</a>
+  <span class="grp">🧭 비지도 학습과 표상</span>
+  <span class="step">STEP <b>19</b> / 26</span>
+</header>
+
+<main class="qpage">
+  <header class="qhead">
+    <span class="kicker">🧭 비지도 학습과 표상 · 19 / 26</span>
+    <h1>🐢 Q17 · 느린 특징 분석(Slow Feature Analysis, SFA)</h1>
+    <p class="qtext">What is slow feature analysis (SFA)?</p>
+  </header>
+
+    <div class="prose">
+      
+      
+
+      <p>SFA는 <strong>느림 원리(slowness principle)</strong>에 기반한 비지도 특징 학습 기법이다. 핵심 가정은 “환경의 중요한 고수준 특징은 원시 감각 입력보다 <strong>천천히 변한다</strong>”는 것이다.</p>
+
+      <div class="analogy">
+        얼룩말이 화면을 가로질러 달릴 때, 한 픽셀의 값은 검정↔흰색을 <b>매 순간 빠르게</b> 오간다(줄무늬가 지나가므로). 그러나 “얼룩말이 있다”라는 사실은 <b>여러 프레임에 걸쳐 천천히</b> 변한다. 빠르게 진동하는 픽셀이 아니라 천천히 변하는 “얼룩말의 존재”야말로 우리가 원하는 특징이다.
+      </div>
+
+      <p>SFA는 입력의 시계열에서, 시간에 따라 <strong>가능한 한 천천히 변하는</strong> 특징 $f(x)$를 학습한다. 목적함수는 특징의 시간 변화율(제곱)을 최소화하는 것이다.</p>
+      <div class="math-block">$$ \min_{f}\ \mathbb{E}\big[(f(x_{t+1}) - f(x_t))^2\big] $$</div>
+      <p>그냥 두면 $f$가 상수가 되어 버린다(아무것도 안 변하면 가장 느리다). 그래서 두 제약을 건다 — <strong>평균 0, 분산 1</strong>(상수 같은 자명해 배제)과 <strong>특징 간 무상관/직교</strong>(모든 특징이 같은 느린 신호로 붕괴하는 것 방지). 그 결과 특징들이 느린 순서대로 정렬되어 나온다. 선형 SFA는 고윳값 문제로 효율적으로 풀리며, 비선형은 입력을 비선형 확장한 뒤 같은 절차를 쓴다. SFA가 학습하는 천천히 변하는 인자는 시각 피질의 복합 세포나 장소 세포 같은 <strong>불변 표현</strong>과 연결되어, “불변성을 비지도로 배운다”는 관점의 대표 예다.</p>
+
+      <div class="model-answer">
+        <div class="ma-label">🎯 Model Answer (English)</div>
+        <p class="ma-en">SFA is an unsupervised feature-learning method built on the <strong>slowness principle</strong>: the meaningful high-level features of an environment vary slowly compared with the raw sensory input — a zebra crossing the view flips a pixel rapidly between black and white, yet "a zebra is present" changes slowly. SFA learns features $f(x)$ from a time series that change as slowly as possible, minimising the squared time-derivative $\mathbb{E}[(f(x_{t+1})-f(x_t))^2]$. To rule out the trivial constant solution it imposes <strong>zero mean and unit variance</strong>, and to stop every feature collapsing onto the same slow signal it requires the features to be <strong>decorrelated/orthogonal</strong>. Linear SFA reduces to an eigenvalue problem, and the slow features it recovers correspond to invariant representations such as complex cells — a classic example of learning invariances without labels.</p>
+      </div>
+
+      <p class="skel-h">📝 시험 답안 골격</p>
+      <ul class="checklist">
+        <li>느림 원리 — 고수준 특징은 원시 입력보다 천천히 변함(얼룩말 픽셀 vs 존재).</li>
+        <li>목적 — 시간 변화율 $\mathbb{E}[(f(x_{t+1})-f(x_t))^2]$ 최소화.</li>
+        <li>제약 — 평균0·분산1(자명해 배제) + 직교(붕괴 방지). 불변 특징을 비지도로 학습.</li>
+      </ul>
+    </div>
+
+    
+
+  <div class="qprog">
+    <div class="qprog-track"><div class="qprog-fill" style="width:73.1%"></div></div>
+    <div class="qprog-txt"><b>19</b> / 26 문항 · 비지도 학습과 표상</div>
+  </div>
+
+  <nav class="qnav">
+    <a href="q14.html"><div class="dir">← 이전 · STEP 18</div><div class="ti">🔁 Q14 RNN vs CNN — 파라미터 공유와 측면 연결</div></a>
+    <a class="next" href="q18.html"><div class="dir">다음 · STEP 20 →</div><div class="ti">🧭 Q18 오토인코더 vs PCA</div></a>
+  </nav>
+</main>
+
+<script>
+  const SUBS = [
+    { no:'01', t:'정칙화와 일반화' },
+    { no:'02', t:'최적화와 하이퍼파라미터' },
+    { no:'03', t:'합성곱 신경망 CNN' },
+    { no:'04', t:'순환 신경망과 시퀀스' },
+    { no:'05', t:'비지도 학습과 표상' },
+    { no:'06', t:'핵심 논문' },
+  ];
+  function buildNav(cur) {
+    const tb = document.querySelector('.topbar');
+    if (tb) tb.innerHTML =
+      '<a class="home" href="index.html">← 기말 문제은행 26문항</a>' +
+      '<span class="ch-mini">갈래 ' + cur + ' / 06</span>';
+    const ol = document.querySelector('.ch-nav ol');
+    if (ol) ol.innerHTML = SUBS.map(c =>
+      '<li><a href="' + c.no + '.html"' + (c.no === cur ? ' class="current"' : '') + '>' + c.t + '</a></li>').join('');
+    const foot = document.querySelector('.ch-foot');
+    if (foot) {
+      const i = SUBS.findIndex(c => c.no === cur);
+      const prev = i > 0 ? SUBS[i - 1] : { t: '표지로', _href: 'index.html' };
+      const next = i < SUBS.length - 1 ? SUBS[i + 1] : { t: '표지로', _href: 'index.html' };
+      const hp = prev._href || (prev.no + '.html');
+      const hn = next._href || (next.no + '.html');
+      foot.innerHTML =
+        '<a href="' + hp + '"><div class="dir">← 이전</div><div class="ti">' + prev.t + '</div></a>' +
+        '<a href="' + hn + '" class="next"><div class="dir">다음 →</div><div class="ti">' + next.t + '</div></a>';
+    }
+  }
+
+  // 위젯 21 — 분산 표상 용량
+  function distRep(canvas, n) {
+    const css = getComputedStyle(document.documentElement);
+    const C = {
+      structure: css.getPropertyValue('--structure').trim() || '#2D5B7A',
+      style: css.getPropertyValue('--style').trim() || '#C0492E',
+      faint: css.getPropertyValue('--ink-faint').trim() || '#8E8576',
+      ink: css.getPropertyValue('--ink').trim() || '#26221C',
+    };
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+    const local = n;
+    const dist = Math.pow(2, n);
+    // 로그 스케일 막대
+    const maxLog = Math.log2(Math.pow(2, 20));
+    const baseY = H - 56, maxH = baseY - 50;
+    function bar(x, label, val, color) {
+      const h = Math.max(4, (Math.log2(val + 1) / maxLog) * maxH);
+      ctx.fillStyle = color;
+      ctx.fillRect(x, baseY - h, 150, h);
+      ctx.font = '600 15px monospace'; ctx.fillStyle = color;
+      ctx.textAlign = 'center';
+      const txt = val >= 10000 ? val.toLocaleString('en-US') : ('' + val);
+      ctx.fillText(txt, x + 75, baseY - h - 10);
+      ctx.font = '12px monospace'; ctx.fillStyle = C.faint;
+      ctx.fillText(label, x + 75, baseY + 22);
+      ctx.textAlign = 'left';
+    }
+    ctx.textAlign = 'center';
+    ctx.font = '12px monospace'; ctx.fillStyle = C.faint;
+    ctx.fillText('구별 가능한 개념 수 (로그 스케일)', W / 2, 28);
+    ctx.textAlign = 'left';
+    bar(W / 2 - 200, '국소 표상 = n', local, C.structure);
+    bar(W / 2 + 50, '분산 표상 = 2ⁿ', dist, C.style);
+    // 유닛 패턴 미니 그림 (n개 칸, 한 예시 이진 코드)
+    ctx.font = '11px monospace'; ctx.fillStyle = C.faint;
+    ctx.fillText('유닛 ' + n + '개의 한 활성 패턴 예:', 24, H - 18);
+    const cw = Math.min(16, (W - 230) / n);
+    for (let i = 0; i < n; i++) {
+      const on = ((i * 7 + 3) % 5) < 2;  // 결정적 예시 패턴
+      ctx.fillStyle = on ? C.style : '#fff';
+      ctx.strokeStyle = 'rgba(38,34,28,.25)';
+      ctx.fillRect(220 + i * (cw + 2), H - 30, cw, 16);
+      ctx.strokeRect(220 + i * (cw + 2), H - 30, cw, 16);
+    }
+  }
+
+  window.addEventListener('load', () => {
+    buildNav('05');
+    if (window.NST && NST.accordion) NST.accordion(document);
+    const cv = document.getElementById('distrep');
+    const dv = document.querySelector('.dv');
+    const nb = document.getElementById('nbits');
+    if (cv && nb) {
+      const draw = () => { dv.textContent = nb.value; distRep(cv, +nb.value); };
+      nb.addEventListener('input', draw); draw();
+    }
+    if (window.renderMathInElement) renderMathInElement(document.body, {
+      delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }],
+      throwOnError: false,
+    });
+  });
+</script>
+</body>
+</html>
