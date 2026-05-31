@@ -27,30 +27,21 @@
     <p class="qtext">As regularization, what kind of tricks can we take regarding data? (pretraining with unlabeled data, data augmentation, noise injection, etc.)</p>
   </header>
 
-    <div class="prose">
-      
-      
-
-      <p>“데이터로 거는 정칙화”의 공통 원리는 <strong>“모델이 학습 분포를 더 넓고 더 현실적으로 보게 만들어, 좁은 훈련 표본을 통째로 외우지 못하게 한다”</strong>이다. 세 갈래로 정리한다.</p>
-
-      <h3>1. 데이터 증강 (data augmentation)</h3>
-      <p>라벨을 보존하는 변환으로 한 표본에서 여러 표본을 만든다. 이미지라면 평행이동, 회전, 크기 변경, 자르기, 좌우 반전, 색·밝기 흔들기. 이는 “이런 변환을 가해도 라벨은 그대로다”라는 <strong>불변성 사전을 데이터로 가르치는 것</strong>이다. 가장 효과가 큰 곳은 물체 인식 같은 분류 과제다. 단, <em>변환이 의미를 바꾸면 안 된다</em> — 손글씨 숫자에 좌우 반전을 쓰면 6과 9, b와 d가 뒤바뀌어 오히려 해롭다.</p>
-
-      <h3>2. 노이즈 주입 (noise injection)</h3>
-      <p>잡음을 어디에 넣느냐로 나뉜다.</p>
-      <div class="symbols"><tbody>
-        <tr><td>입력에</td><td>입력에 작은 잡음 추가. 일부 모델에서는 가중치에 거는 $L^2$ 벌점(Tikhonov)과 수학적으로 동등. 데이터 증강의 한 형태로도 볼 수 있다.</td></tr>
-        <tr><td>은닉 유닛에</td><td>드롭아웃 — 유닛을 무작위로 끈다. 곱셈 잡음이자, 지수적으로 많은 부분망의 앙상블 근사.</td></tr>
-        <tr><td>가중치에</td><td>가중치에 잡음을 주면 손실이 평평한 최소점(작은 변동에 둔감한 해)을 선호하게 된다 — 더 강건한 해.</td></tr>
-        <tr><td>라벨에</td><td>라벨 평활(label smoothing). 정답 확률을 1 대신 $1-\epsilon$로 둬, 라벨에도 잡음이 있음을 인정하고 소프트맥스의 과신을 막는다.</td></tr>
-      </tbody></div>
-
-      <h3>3. 비라벨 데이터로 사전훈련 (semi-supervised / unsupervised pretraining)</h3>
-      <p>라벨은 비싸지만 비라벨 데이터는 흔하다. 오토인코더나 언어모델처럼 라벨 없이 입력의 구조를 먼저 배운 표현을 초기값으로 삼고, 작은 라벨 데이터로 미세조정한다. 이는 <strong>입력 분포 $p(x)$에 대한 지식을 $p(y\mid x)$ 학습의 사전으로 옮기는 것</strong>이다(왜 이것이 통하는지는 <a href="q20.html">Q20</a>에서 깊이 다룬다).</p>
-
-      <div class="analogy">
-        세 트릭은 모두 <b>“시험 범위를 넓게 공부시키는 방법”</b>이다. 증강은 같은 문제를 여러 각도로 변형해 풀게 하고, 노이즈는 일부러 흐린 문제로도 풀게 하며, 사전훈련은 시험 과목 이전에 기초 교양을 먼저 쌓게 한다. 셋 다 “좁은 기출만 외우는” 과적합을 막는다.
-      </div>
+<div class="prose">
+<p>🧪 “데이터로 거는 정칙화”의 공통 원리: 모델이 학습 분포를 <strong>더 넓고 현실적으로</strong> 보게 만들어 좁은 표본을 통째로 외우지 못하게 한다 🚫🧠.</p>
+<h3>1️⃣ Data Augmentation (데이터 증강)</h3>
+<p>📸 라벨을 보존하는 변환으로 한 장에서 여러 장을 만든다 — translation, rotation, scaling, crop, flip, color jitter. “이런 변환에도 라벨은 그대로”라는 <strong>invariance</strong>(불변성)를 데이터로 가르치는 것. 효과 최고는 이미지 분류 👍. 단 ⚠️ 의미를 바꾸는 변환은 금물 — 손글씨 숫자에 좌우 flip을 쓰면 6↔9, b↔d가 뒤집혀 오히려 해롭다.</p>
+<h3>2️⃣ Noise Injection (노이즈 주입)</h3>
+<div class="symbols"><tbody>
+<tr><td>🎚️ Input</td><td>입력에 작은 잡음 → 일부 모델에선 가중치 $L^2$ 벌점(Tikhonov)과 동등. augmentation의 한 형태.</td></tr>
+<tr><td>🕳️ Hidden</td><td><strong>Dropout</strong> — 유닛을 무작위로 끔. 곱셈 잡음이자 지수적으로 많은 부분망의 <strong>ensemble</strong>(앙상블) 근사.</td></tr>
+<tr><td>⚖️ Weights</td><td>가중치 잡음 → flat minima(작은 변동에 둔감한 해)를 선호 → 더 robust.</td></tr>
+<tr><td>🏷️ Labels</td><td><strong>Label smoothing</strong> — 정답 확률을 1 대신 $1-\epsilon$로. 라벨에도 잡음이 있음을 인정하고 softmax 과신을 막음.</td></tr>
+</tbody></div>
+<h3>3️⃣ Unsupervised / Semi-supervised Pretraining</h3>
+<p>🌍 라벨은 비싸지만 비라벨 데이터는 흔하다. autoencoder나 language model로 입력 구조를 먼저 배운 표현을 초기값으로 삼고 작은 라벨 데이터로 <strong>fine-tuning</strong>. 즉 입력 분포 $p(x)$의 지식을 $p(y\mid x)$ 학습의 prior로 옮기는 것 🔁. (자세히: 같은 클래스 예제들이 입력 공간에서 뭉치거나 같은 manifold 위에 놓이는데, 이 구조를 미리 배우면 분류 경계가 단순해져 적은 라벨로도 잘 일반화된다.)</p>
+<div class="analogy">📚 세 트릭 모두 “시험 범위를 넓게 공부시키는 법”. 증강 = 같은 문제를 여러 각도로, 노이즈 = 흐린 문제로도, 사전훈련 = 시험 전에 기초 교양부터. 셋 다 “기출만 외우는” 과적합을 막는다.</div>
+</div>
 
       <div class="model-answer">
         <div class="ma-label">🎯 Model Answer (English)</div>
@@ -63,9 +54,6 @@
         <li>증강(라벨 보존 변환, 불변성 주입) · 노이즈(입력·은닉=드롭아웃·가중치·라벨=평활) · 비라벨 사전훈련/전이.</li>
         <li>증강은 의미를 바꾸지 않는 변환만, 입력 노이즈 ≈ L2, 사전훈련은 p(x) 지식을 p(y|x)로 전이.</li>
       </ul>
-    </div>
-
-    
 
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:11.5%"></div></div>

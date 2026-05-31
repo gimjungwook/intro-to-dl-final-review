@@ -27,40 +27,17 @@
     <p class="qtext">When the dataset is small compared to the model size, what kind of regularization approaches can we take?</p>
   </header>
 
-    <div class="prose">
-      
-      
-
-      <p>이 질문의 뿌리는 <strong>편향-분산 트레이드오프</strong>다. 모델의 표현 용량(capacity)이 데이터 양에 비해 크면, 모델은 데이터의 신호뿐 아니라 잡음까지 외워 버린다. 훈련 오차는 0에 가까워지지만 새 데이터에서는 크게 틀린다 — 전형적인 고분산(high variance) 과적합이다. 정칙화의 본질은 <strong>“우리가 미리 알고 있는 사전 지식(prior)을 모델에 주입해, 잡음을 외우는 자유를 빼앗는 것”</strong>이다. 데이터가 적을수록 이 사전의 비중을 키워야 한다.</p>
-
-      <div class="analogy">
-        데이터가 적은 상황은 <b>“점 세 개만 주고 곡선을 그려 보라”</b>는 것과 같다. 점 세 개를 정확히 지나는 곡선은 무한히 많다. 아무 제약이 없으면 출제자는 가장 구불구불한 괴물 곡선을 그린다. 정칙화는 “되도록 매끄럽게 그려라”, “좌우 대칭일 것이다”, “비슷한 문제의 답을 참고하라” 같은 <b>사전 믿음</b>을 더해 답의 후보를 좁히는 일이다.
-      </div>
-
-      <p>작은 데이터셋에서 동원할 수 있는 접근들을 “무엇을 제약하는가”로 분류하면 다음과 같다.</p>
-
-      <h3>1. 가중치 자체를 제약 — 파라미터 노름 벌점</h3>
-      <p>비용 함수에 가중치 크기 벌점을 더한다. $\tilde{J}(\theta) = J(\theta) + \alpha\,\Omega(\theta)$. <strong>L2(가중치 감쇠, weight decay)</strong>는 $\Omega = \tfrac{1}{2}\lVert w\rVert_2^2$로 큰 가중치에 이차 비용을 매겨 해를 원점 쪽으로 당기고, <strong>L1</strong>은 $\Omega = \lVert w\rVert_1$로 일부 가중치를 정확히 0으로 만들어 희소성과 자동 특징 선택을 유도한다. 베이지안 관점에서 L2는 가중치에 가우시안 사전을, L1은 라플라스 사전을 건 MAP 추정과 같다.</p>
-
-      <h3>2. 자유 파라미터 수를 줄임 — 공유와 묶기</h3>
-      <p>같은 파라미터를 여러 위치에서 재사용하면 학습할 자유도가 줄어 데이터가 적어도 견딘다. CNN의 커널 공유, RNN의 시간축 공유가 대표적이다(<a href="q2.html">Q2</a>에서 상세). 다중 과제 학습(multi-task learning)도 공유 표현을 통해 각 과제에 효과적으로 더 많은 데이터를 주는 효과를 낸다.</p>
-
-      <h3>3. 데이터를 늘리거나 흔듦 — 증강과 노이즈</h3>
-      <p>적은 데이터를 라벨 보존 변환으로 부풀리는 데이터 증강, 입력·은닉·가중치·라벨에 잡음을 주입하는 기법이 여기 속한다(<a href="q3.html">Q3</a>에서 상세). 드롭아웃은 은닉 유닛에 곱셈 잡음을 주는 동시에 지수적으로 많은 부분망의 앙상블(bagging) 근사로 작동한다.</p>
-
-      <h3>4. 학습 과정을 일찍 멈춤 — 조기 종료</h3>
-      <p>검증 오차가 더 이상 줄지 않으면 학습을 멈춘다(early stopping). 사실상 가장 흔히 쓰는 정칙화이며, 이차 근사 아래에서 <strong>L2 정칙화와 동등</strong>함이 알려져 있다 — 학습 스텝 수가 유효 가중치 크기를 제한하기 때문이다. 추가 비용이 거의 없고 검증 데이터만 있으면 된다.</p>
-
-      <h3>5. 외부 지식을 끌어옴 — 사전훈련과 전이</h3>
-      <p>라벨이 풍부한 다른 과제나 대량의 비라벨 데이터에서 표현을 먼저 배운 뒤(전이학습, 비지도 사전훈련) 우리의 작은 데이터로 미세조정한다. 작은 데이터로는 결코 배울 수 없는 일반적 특징(에지, 단어 의미 등)을 외부에서 가져오는 것이라, 데이터가 적을수록 효과가 크다.</p>
-
-      <div class="symbols"><tbody>
-        <tr><td>L2 / L1</td><td>가중치 크기에 벌점 — 매끄럽고 단순한 해 선호.</td></tr>
-        <tr><td>공유 · 묶기</td><td>자유 파라미터 수를 구조적으로 축소.</td></tr>
-        <tr><td>증강 · 노이즈</td><td>유효 데이터 양 증가, 불변성 주입, 앙상블 근사(드롭아웃).</td></tr>
-        <tr><td>조기 종료</td><td>학습 스텝으로 유효 용량 제한 (≈ L2).</td></tr>
-        <tr><td>사전훈련 · 전이</td><td>외부 데이터의 사전 지식을 초기값으로 주입.</td></tr>
-      </tbody></div>
+<div class="prose">
+<p>🎯 이 문제의 뿌리는 <strong>bias-variance tradeoff</strong>다. 모델의 <strong>capacity</strong>(표현 용량)가 데이터 양보다 크면 모델이 신호뿐 아니라 잡음까지 외워버린다 😵 — 훈련 오차는 0에 가깝지만 새 데이터에선 무너지는 <strong>overfitting</strong>(과적합)이다.</p>
+<p>💡 정칙화(<strong>regularization</strong>)의 본질은 “우리가 미리 아는 <strong>prior</strong>(사전 지식)를 모델에 넣어, 잡음을 외울 자유를 빼앗는 것”. 데이터가 적을수록 이 prior 비중을 키운다.</p>
+<div class="analogy">📐 점 3개만 주고 곡선을 그리라면 그 점을 지나는 곡선은 무한히 많다. 제약이 없으면 가장 구불구불한 괴물 곡선이 나온다 🐙. 정칙화는 “매끄럽게 그려”, “대칭일 것” 같은 <b>믿음</b>을 더해 답 후보를 좁히는 일이다.</div>
+<h3>🔧 작은 데이터에서 쓸 수 있는 손잡이들</h3>
+<p>🏋️ <strong>Parameter norm penalty</strong> — 비용에 가중치 크기 벌점을 더한다. <strong>L2 (weight decay)</strong>는 $\tilde J = J + \alpha\lVert w\rVert_2^2$로 큰 가중치를 원점으로 당기고, <strong>L1</strong>은 일부 가중치를 정확히 0으로 만들어 <strong>sparsity</strong>(희소성)와 자동 특징 선택을 유도한다. 베이지안으로 보면 L2 = Gaussian prior, L1 = Laplace prior.</p>
+<p>🔗 <strong>Parameter sharing / tying</strong> — 같은 파라미터를 여러 곳에서 재사용해 자유도를 줄인다(CNN 커널은 공간 전체, RNN 가중치는 시간 전체에서 동일). <strong>Multi-task learning</strong>도 표현을 공유해 사실상 데이터를 늘리는 효과.</p>
+<p>🧪 <strong>Data augmentation & noise injection</strong> — 라벨을 바꾸지 않는 변환으로 데이터를 부풀리고, 입력·은닉(<strong>dropout</strong>)·가중치·라벨(<strong>label smoothing</strong>)에 잡음을 넣어 암기를 막는다.</p>
+<p>⏱️ <strong>Early stopping</strong> — 검증 오차가 더 안 줄면 학습을 멈춘다. 이차 근사 아래에서 L2와 수학적으로 동등하고 비용이 거의 없다.</p>
+<p>🌍 <strong>Transfer learning / unsupervised pretraining</strong> — 큰 외부 데이터나 대량의 비라벨 데이터에서 표현을 먼저 배우고 작은 데이터로 <strong>fine-tuning</strong>. 작은 데이터로는 결코 못 배울 일반 특징(edge, 단어 의미)을 빌려오므로 데이터가 적을수록 효과가 커진다 ⬆️.</p>
+</div>
 
       <div class="model-answer">
         <div class="ma-label">🎯 Model Answer (English)</div>
@@ -73,9 +50,6 @@
         <li>벌점(L2/L1) · 파라미터 공유 · 데이터 증강과 노이즈 · 드롭아웃 · 조기 종료 · 비지도 사전훈련/전이를 나열.</li>
         <li>데이터가 적을수록 사전의 비중을 키운다, 특히 전이학습의 효과가 커진다고 마무리.</li>
       </ul>
-    </div>
-
-    
 
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:3.8%"></div></div>

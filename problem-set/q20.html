@@ -27,17 +27,12 @@
     <p class="qtext">Why is unsupervised learning helpful for the downstream tasks like classification?</p>
   </header>
 
-    <div class="prose">
-      
-      
-
-      <p>핵심 가정은 <strong>“입력 분포 $p(x)$의 구조가 $p(y\mid x)$에 대한 정보를 담고 있다”</strong>는 것이다. 분류하려는 라벨 $y$를 만들어 내는 변동 인자(factors of variation)는, 입력 $x$의 분포 모양을 결정하는 인자와 상당 부분 겹친다.</p>
-
-      <p>구체적으로, 같은 클래스의 예제들은 입력 공간에서 <strong>군집을 이루거나 같은 매니폴드 위에 놓인다</strong>. 비지도 학습은 라벨 없이도 이 군집·매니폴드·변동 인자를 발견해, $x$의 <strong>좋은 표현</strong>(잘 분리되고 매끄러운)을 만든다. 그 표현 공간에서는 분류 경계가 단순해져, <strong>더 적은 라벨로</strong> 학습되고 더 잘 일반화된다.</p>
-
-      <p>실용적으로 두 방식으로 쓰인다. ① <strong>사전훈련/초기화</strong> — 대량의 비라벨 데이터로 표현을 먼저 배워 좋은 초기값(정칙화 효과, 유리한 수렴 분지)으로 삼고 작은 라벨로 미세조정. ② <strong>준지도 학습</strong> — 표현을 지도·비지도 과제가 공유. 예로 언어모델(비지도)로 배운 단어 임베딩이 다운스트림 자연어 과제를 돕고, 오토인코더가 배운 에지·질감이 시각 분류를 돕는다.</p>
-
-      <p>단, 만능은 아니다. 이 도움은 <strong>비지도로 배운 특징이 실제로 $y$와 관련 있을 때만</strong> 성립한다. $p(x)$의 구조와 $p(y\mid x)$가 무관하면(예: 라벨이 입력의 사소한 측면에만 의존) 비지도 사전훈련은 도움이 안 되거나 해로울 수 있다.</p>
+<div class="prose">
+<p>🧭 핵심 가정: <strong>입력 분포 $p(x)$의 구조가 $p(y\mid x)$에 대한 정보를 담고 있다</strong>. 분류하려는 라벨 $y$를 만드는 변동 인자(factors of variation)는, 입력 $x$의 분포 모양을 결정하는 인자와 상당 부분 겹친다 🔗.</p>
+<p>🪐 구체적으로 같은 클래스 예제들은 입력 공간에서 <strong>cluster</strong>를 이루거나 같은 <strong>manifold</strong> 위에 놓인다. 비지도 학습은 라벨 없이 이 cluster·manifold·변동 인자를 발견해 $x$의 <strong>좋은 representation</strong>(잘 분리되고 매끄러운)을 만든다. 그 표현 공간에선 decision boundary가 단순해져 <strong>더 적은 라벨</strong>로 학습되고 더 잘 일반화된다 📈.</p>
+<p>🔧 실무 두 방식: ① <strong>Pretraining / initialization</strong> — 대량 비라벨 데이터로 표현을 먼저 배워 좋은 초기값(정칙화 효과, 유리한 수렴 분지)으로 삼고 작은 라벨로 fine-tuning. ② <strong>Semi-supervised</strong> — 표현을 지도·비지도 과제가 공유. 예 🗣️ language model로 배운 word embedding이 다운스트림 NLP를 돕고, autoencoder가 배운 edge·texture가 비전 분류를 돕는다.</p>
+<p>⚠️ 단 만능 아님 — 이 도움은 <strong>비지도로 배운 특징이 실제로 $y$와 관련 있을 때만</strong> 성립한다. $p(x)$의 구조와 $p(y\mid x)$가 무관하면(라벨이 입력의 사소한 측면에만 의존) 비지도 사전훈련이 도움 안 되거나 해로울 수 있다.</p>
+</div>
 
       <div class="model-answer">
         <div class="ma-label">🎯 Model Answer (English)</div>
@@ -50,9 +45,6 @@
         <li>비지도가 좋은 표현 발견 → 표현 공간에서 분류 단순, 적은 라벨로 일반화.</li>
         <li>사전훈련/초기화 + 준지도. 예 단어 임베딩·오토인코더 특징. 단 $p(x)$가 $y$와 관련될 때만.</li>
       </ul>
-    </div>
-
-    
 
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:84.6%"></div></div>

@@ -27,29 +27,23 @@
     <p class="qtext">What is the main point of the adversarial examples?</p>
   </header>
 
-    <div class="prose">
-      
-      
-
-      <p>적대적 예제란, 사람 눈에는 원본과 구별되지 않을 만큼 작지만 <strong>의도적으로 설계된 섭동</strong> $\eta$를 더했을 때 높은 정확도의 네트워크가 <strong>엉뚱한 클래스로 높은 확신을 가지고 오분류</strong>하게 만드는 입력이다. 대표적 생성법이 FGSM이다.</p>
-      <div class="math-block">$$ \tilde{x} = x + \epsilon\,\operatorname{sign}\!\big(\nabla_x J(\theta, x, y)\big) $$</div>
-      <p class="math-note">손실을 가장 빨리 키우는 방향(기울기 부호)으로 각 픽셀을 $\epsilon$만큼만 민다. $\lVert\eta\rVert_\infty=\epsilon$로 작게 유지된다.</p>
-
-      <p>핵심은 이 현상의 원인이 <em>“모델이 너무 복잡하고 비선형이라 생긴 기현상”이 아니라, 오히려 정반대로 “모델이 고차원에서 지나치게 선형적이기 때문”</em>이라는 Goodfellow의 <strong>선형성 가설(linear explanation)</strong>이다. 선형 함수 $w^\top x$를 생각하자. 섭동 $\eta=\epsilon\,\operatorname{sign}(w)$를 더하면 출력 변화는</p>
-      <div class="math-block">$$ w^\top(x+\eta) - w^\top x = \epsilon\, w^\top \operatorname{sign}(w) = \epsilon \lVert w\rVert_1 = \epsilon \sum_{i=1}^{n} |w_i| $$</div>
-      <p class="math-note">픽셀 하나당 변화는 $\epsilon$로 미미하지만, 차원 $n$에 걸쳐 모두 같은 방향으로 더해져 출력 변화는 $n$에 비례해 커진다.</p>
-
-      <p>즉 각 차원의 변화는 사람이 못 느낄 만큼 작아도, 차원이 수만 개면 그 작은 변화들이 <strong>전부 같은 방향으로 합쳐져</strong> 활성값을 크게 흔든다. ReLU·LSTM 등 현대 구성요소가 의도적으로 거의 선형(piecewise linear)이라 최적화가 쉬운데, 바로 그 선형성이 적대적 취약성의 대가다.</p>
-
-      <div class="widget">
+<div class="prose">
+<p>👾 <strong>Adversarial example</strong>이란, 사람 눈엔 원본과 똑같아 보이지만 <strong>의도적으로 설계된 미세 섭동</strong> $\eta$를 더해 높은 정확도의 네트워크가 <strong>엉뚱한 클래스로 high confidence 오분류</strong>하게 만드는 입력이다. 대표 생성법이 <strong>FGSM</strong> 🎯.</p>
+<div class="math-block">$$ \tilde{x} = x + \epsilon\,\operatorname{sign}\!\big(\nabla_x J(\theta,x,y)\big) $$</div>
+<p class="math-note">손실을 가장 빨리 키우는 방향(gradient 부호)으로 각 픽셀을 $\epsilon$만큼만 민다. $\lVert\eta\rVert_\infty=\epsilon$로 작게 유지.</p>
+<p>💥 핵심은 원인이다. <em>“모델이 너무 복잡·비선형이라”가 아니라 정반대로 “고차원에서 너무 <strong>linear</strong>(선형)하기 때문”</em>이라는 <strong>linear explanation</strong>(선형성 가설). 선형 반응 $w^\top x$에 섭동 $\eta=\epsilon\,\operatorname{sign}(w)$를 더하면 출력 변화는:</p>
+<div class="math-block">$$ w^\top(x+\eta)-w^\top x = \epsilon\,\lVert w\rVert_1 = \epsilon\sum_{i=1}^{n}|w_i| $$</div>
+<p class="math-note">픽셀당 변화는 $\epsilon$로 미미하지만, 차원 $n$에 걸쳐 같은 방향으로 모두 더해져 출력 변화는 $n$에 비례해 폭증.</p>
+<p>🧩 즉 각 차원 변화는 사람이 못 느낄 만큼 작아도 차원이 수만 개면 전부 같은 방향으로 합쳐져 활성값을 크게 흔든다. ReLU·LSTM 등 현대 부품이 일부러 거의 piecewise-linear라 최적화가 쉬운데, 그 선형성이 곧 취약성의 대가 ⚔️.</p>
+<div class="widget">
         <div class="widget-frame">
           <div class="widget-label"><span class="lab-no">위젯 22</span><span>선형 누적 — 작은 섭동이 차원 수만큼 쌓인다</span></div>
           <div id="advlin"></div>
         </div>
         <p class="widget-cap">픽셀당 섭동 크기 $\epsilon$은 그대로 두고 입력 차원 $n$만 키워 보라. 픽셀 하나의 변화(왼쪽 막대)는 늘 작지만, 출력 활성값의 총 변화 $\epsilon\lVert w\rVert_1$(오른쪽)는 차원에 비례해 폭증한다. 고차원이 적대적 예제를 가능케 하는 메커니즘이다.</p>
       </div>
-
-      <p>함의는 두 가지다. 첫째, <strong>보안</strong> — 분류기를 속이는 입력을 값싸게 만들 수 있다. 둘째, 흥미롭게도 <strong>정칙화</strong> — 적대적 예제를 훈련 데이터에 섞는 <strong>적대적 훈련</strong>은 결정 경계를 데이터에서 멀어지게 밀어 강건성과 일반화를 동시에 높인다. 적대적 예제는 “모델이 의미를 이해한 게 아니라 표면적 선형 통계를 학습했다”는 사실을 드러내는 진단 도구이기도 하다. FGSM과 선형 가설의 단계별 해설은 <a href="../p1-fgsm/index.html">P1 FGSM 사이트</a>에 따로 있다.</p>
+<p>🛡️ 함의 둘: ① <strong>security</strong> — 분류기를 값싸게 속일 수 있다. ② 흥미롭게도 <strong>regularization</strong> — adversarial example을 훈련에 섞는 <strong>adversarial training</strong>은 decision boundary를 데이터에서 멀리 밀어 robustness와 generalization을 함께 높인다. 적대적 예제는 “모델이 의미가 아니라 표면적 선형 통계를 배웠다”는 진단 도구이기도 하다 🔬.</p>
+</div>
 
       <div class="model-answer">
         <div class="ma-label">🎯 Model Answer (English)</div>
@@ -62,9 +56,6 @@
         <li>핵심 원인은 비선형이 아니라 <b>고차원에서의 선형성</b>: 출력 변화 $=\epsilon\lVert w\rVert_1$가 차원 $n$에 비례.</li>
         <li>함의 — 보안 위협이자, 적대적 훈련이라는 정칙화 기회. 모델이 의미가 아닌 선형 통계를 학습했음을 폭로.</li>
       </ul>
-    </div>
-
-    
 
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:15.4%"></div></div>

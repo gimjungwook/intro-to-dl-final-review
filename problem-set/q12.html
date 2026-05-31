@@ -27,19 +27,12 @@
     <p class="qtext">Why is RNN a special case of recursive neural network?</p>
   </header>
 
-    <div class="prose">
-      
-      
-
-      <p>두 모델의 공통점부터 보자. 둘 다 <strong>같은 파라미터를 구조의 모든 노드에서 반복 적용</strong>해, 자식 표현들을 부모 표현으로 합친다. 차이는 그 “구조”의 모양이다.</p>
-
-      <p><strong>재귀 신경망</strong>은 일반적인 <strong>트리(또는 DAG) 구조</strong> 위에서 작동한다. 예컨대 문장의 구문 분석 트리에서, 같은 합성 함수가 두 자식 구를 한 부모 구로 합치는 일을 트리 전체에 재귀적으로 적용한다. <strong>순환 신경망(RNN)</strong>은 이 구조가 <strong>사슬(chain), 즉 한 줄로 늘어선 퇴화한 트리</strong>인 특수 경우다. 매 시점의 노드는 자식이 하나(직전 상태)뿐이고, 거기에 현재 입력을 더해 다음 상태를 만든다.</p>
-
-      <div class="analogy">
-        재귀 신경망이 <b>“가지를 자유롭게 뻗는 나무”</b>라면, RNN은 <b>“가지 없이 곧게 자란 대나무”</b>다. 둘 다 같은 마디(파라미터)를 반복해 자라지만, 대나무는 트리의 모든 분기 가능성을 한 줄로 좁힌 특수한 나무다.
-      </div>
-
-      <p>이 관점이 알려 주는 실용적 사실이 있다. RNN은 사슬이라 <strong>깊이가 시퀀스 길이 $n$에 비례</strong>해 선형으로 깊어진다. 반면 균형 잡힌 이진 트리 재귀망은 깊이가 $\log n$에 그친다. 깊이가 얕을수록 기울기가 통과해야 할 곱셈 단계가 적어, 일반 재귀망은 긴 의존성에서 기울기 소실(<a href="q13.html">Q13</a>)에 더 강할 수 있다. 즉 RNN을 “재귀망의 사슬 특수 경우”로 보면, 그 장단점이 구조의 깊이에서 따라 나옴을 한눈에 이해할 수 있다.</p>
+<div class="prose">
+<p>🌳 공통점부터: <strong>Recursive NN</strong>과 <strong>RNN(Recurrent NN)</strong> 둘 다 <strong>같은 파라미터를 구조의 모든 노드에 반복 적용</strong>해 자식 표현을 부모 표현으로 합친다. 차이는 그 “구조”의 모양 🌲 vs 🎍.</p>
+<p>🌲 <strong>Recursive neural network</strong>는 일반적인 <strong>tree (또는 DAG) 구조</strong> 위에서 작동한다. 예: 문장의 <strong>parse tree</strong>에서 같은 합성 함수가 두 자식 구를 한 부모 구로 합치는 일을 트리 전체에 재귀 적용. 🎍 <strong>RNN</strong>은 이 구조가 <strong>chain</strong>(사슬), 즉 한 줄로 늘어선 <em>퇴화한 트리</em>인 특수 경우다. 매 시점 노드는 자식이 하나(직전 hidden state)뿐이고 거기에 현재 입력을 더해 다음 상태를 만든다.</p>
+<div class="analogy">🎋 recursive NN = 가지를 자유롭게 뻗는 나무, RNN = 가지 없이 곧게 자란 대나무. 둘 다 같은 마디(파라미터)를 반복해 자라지만, 대나무는 트리의 모든 분기를 한 줄로 좁힌 특수한 나무.</div>
+<p>📏 이 관점이 주는 실용적 사실: RNN은 chain이라 <strong>depth가 sequence length $n$에 비례</strong>해 선형으로 깊어진다. 반면 균형 잡힌 binary tree 재귀망은 depth가 $\log n$에 그친다 — depth가 얕을수록 gradient가 통과할 곱셈 단계가 적어, tree가 긴 의존성(long-range dependency)과 gradient 보존에 더 유리할 수 있다 ✅.</p>
+</div>
 
       <div class="model-answer">
         <div class="ma-label">🎯 Model Answer (English)</div>
@@ -52,9 +45,6 @@
         <li>재귀망 = 일반 트리/DAG 구조. RNN = 그 구조가 사슬(퇴화 트리)인 특수 경우.</li>
         <li>결과 — RNN 깊이 $\propto n$, 균형 트리 $\propto\log n$ → 트리가 긴 의존성·기울기에 유리할 수 있음.</li>
       </ul>
-    </div>
-
-    
 
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:61.5%"></div></div>

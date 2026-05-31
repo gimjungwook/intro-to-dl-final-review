@@ -27,23 +27,14 @@
     <p class="qtext">Describe radial basis function networks. And discuss why it does not have the adversarial example issue.</p>
   </header>
 
-    <div class="prose">
-      
-      
-
-      <p>방사 기저 함수(Radial Basis Function, RBF) 네트워크는 은닉 유닛이 입력과 <strong>원형(radial) 거리</strong>에 반응하는 네트워크다. 각 유닛은 프로토타입(중심) $\mu_i$를 가지며, 입력이 그 중심에 가까울 때만 강하게 켜진다.</p>
-      <div class="math-block">$$ h_i(x) = \exp\!\Big(-\beta_i \,\lVert x - \mu_i\rVert_2^2\Big), \qquad \hat{y} = \sum_i w_i\, h_i(x) $$</div>
-      <p class="math-note">$\mu_i$ 근처에서 1에 가깝게 켜지고, 멀어지면 가우시안으로 빠르게 0으로 꺼진다.</p>
-
-      <p>이것이 ReLU 같은 보통 유닛과 결정적으로 다른 점은, 활성 함수가 <strong>선형이 아니라 거리에 따라 빠르게 포화(0으로 꺼짐)</strong>한다는 것이다. 보통 유닛 $w^\top x$는 입력이 어느 방향으로 가든 같은 방향으로 끝없이 반응하므로(<a href="q22.html">Q22</a>의 선형 누적), 작은 섭동이 차원에 걸쳐 쌓여 활성값을 크게 흔들 수 있다. 반면 RBF 유닛은 “중심에서 멀어졌다”는 사실에 의해 곧장 꺼져 버린다. 섭동을 차원에 걸쳐 쌓아도 그 결과가 <strong>중심에서 더 멀어지게 만들 뿐</strong>이라 응답은 오히려 줄어든다. 누적이 작동할 선형 경로가 없는 것이다.</p>
-
-      <div class="analogy">
-        보통 유닛은 <b>“어느 방향에서 와도 반응하는 무지향성 마이크”</b>라, 사방에서 들어온 작은 잡음이 합쳐져 큰 소리가 된다. RBF 유닛은 <b>“특정 지점만 듣는 지향성 마이크”</b>라, 그 지점을 벗어난 잡음은 아무리 더해도 들리지 않는다.
-      </div>
-
-      <p>그 결과 RBF 네트워크는 <strong>훈련 데이터 근처에서만 높은 확신</strong>을 갖고, 데이터에서 먼 입력에는 모든 클래스에 낮은 확신을 보인다 — 사실상 “나는 모른다”라고 답한다. 적대적 예제는 데이터에서 멀리 밀어내는 입력이므로, RBF는 자연스럽게 낮은 확신으로 거부한다. 적대적 예제에 잘 속지 않는 이유다.</p>
-
-      <p>대가도 분명하다. RBF 유닛은 좁은 영역에서만 켜지므로 입력 공간을 덮으려면 많은 유닛이 필요하고, 학습이 어렵고, 보지 못한 영역으로의 일반화가 약하다. Goodfellow는 RBF 네트워크가 적대적 예제에 강건하지만 그 대가로 <strong>정확도가 낮다</strong>고 지적한다. 강건성과 정확도 사이의 트레이드오프를 보여 주는 교과서적 예다.</p>
+<div class="prose">
+<p>🎯 <strong>RBF (Radial Basis Function) network</strong>는 은닉 유닛이 입력과 <strong>prototype center</strong>(중심) $\mu_i$ 사이의 <em>거리</em>에 반응하는 네트워크다. 입력이 중심에 가까울 때만 강하게 켜진다 🔆.</p>
+<div class="math-block">$$ h_i(x) = \exp\!\Big(-\beta_i\,\lVert x-\mu_i\rVert_2^2\Big), \qquad \hat y = \sum_i w_i\,h_i(x) $$</div>
+<p class="math-note">$\mu_i$ 근처에서 1에 가깝게 켜지고, 멀어지면 Gaussian으로 빠르게 0으로 꺼진다(saturate).</p>
+<p>🆚 ReLU 같은 보통 유닛과 결정적 차이: 활성이 <strong>선형이 아니라 거리에 따라 빠르게 포화</strong>한다. 보통 유닛 $w^\top x$는 어느 방향으로 가든 끝없이 반응해서, 작은 섭동이 차원에 걸쳐 쌓여 활성값을 크게 흔들 수 있다(이게 adversarial example의 원리 👾). 반면 RBF 유닛은 “중심에서 멀어졌다”는 사실만으로 곧장 꺼진다 🔅 — 섭동을 아무리 쌓아도 입력이 <strong>중심에서 더 멀어질 뿐</strong>이라 응답은 오히려 줄어든다. 누적이 작동할 <strong>linear path</strong>가 없는 것.</p>
+<div class="analogy">🎤 보통 유닛은 “어느 방향에서 와도 반응하는 무지향성 마이크” — 사방의 작은 잡음이 합쳐져 큰 소리가 된다. RBF 유닛은 “특정 지점만 듣는 지향성 마이크” — 그 지점을 벗어난 잡음은 아무리 더해도 안 들린다.</div>
+<p>🤷 그 결과 RBF는 <strong>훈련 데이터 근처에서만 high confidence</strong>, 먼 입력엔 모든 클래스에 낮은 확신 — 사실상 “나는 모른다”라고 답한다. adversarial example은 데이터에서 멀리 미는 입력이므로 RBF가 자연히 거부 🛑. 단 대가: 좁은 영역만 커버해 유닛이 많이 필요하고, 학습이 어렵고, 일반화가 약하다. Goodfellow도 “RBF는 robust하지만 <strong>accuracy</strong>가 낮다”고 지적 — <strong>robustness–accuracy tradeoff</strong>의 교과서적 예 ⚖️.</p>
+</div>
 
       <div class="model-answer">
         <div class="ma-label">🎯 Model Answer (English)</div>
@@ -56,9 +47,6 @@
         <li>적대적 면역 이유 — 선형 누적 경로가 없음. 섭동은 입력을 중심에서 멀어지게 해 응답을 오히려 줄임. 데이터 근처에서만 고확신.</li>
         <li>트레이드오프 — 강건하지만 학습 어렵고 정확도/일반화가 낮음.</li>
       </ul>
-    </div>
-
-    
 
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:19.2%"></div></div>

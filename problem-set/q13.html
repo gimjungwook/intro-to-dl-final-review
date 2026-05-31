@@ -27,23 +27,16 @@
     <p class="qtext">How does LSTM overcome the ‘memory-fade-away’ issue?</p>
   </header>
 
-    <div class="prose">
-      
-      
-
-      <p>왜 기억이 사라지는가? 바닐라 RNN에서 은닉 상태는 매 시점 같은 순환 가중치 행렬과 곱해진다. 그래서 $t$ 스텝 전의 정보가 현재에 주는 영향(기울기)은 대략 그 행렬을 $t$번 곱한 것에 비례한다.</p>
-      <div class="math-block">$$ \frac{\partial h_t}{\partial h_{t-k}} \;\propto\; \prod_{i} W \;\sim\; W^{k} $$</div>
-      <p class="math-note">최대 고윳값이 1보다 작으면 $W^k\to 0$ — 기억이 지수적으로 소실. 1보다 크면 폭발(<a href="q7.html">Q7</a>).</p>
-
-      <p>탄젠트 활성의 도함수도 1보다 작아 이 소실을 부추긴다. 결국 수십 스텝 전의 정보는 현재에 거의 영향을 주지 못한다 — 긴 의존성을 못 배우는 “기억 소실”이다.</p>
-
-      <p>LSTM의 해법은 <strong>셀 상태(cell state) $c_t$와 게이트(gate)</strong>다. 셀 상태는 행렬 곱이 아니라 <strong>덧셈</strong>으로 갱신되며, 거의 1에 가까운 자기 순환(self-loop)을 가진다.</p>
-      <div class="math-block">$$ c_t = f_t \odot c_{t-1} + i_t \odot g_t $$</div>
-      <p class="math-note">$f_t$ 망각 게이트, $i_t$ 입력 게이트, $g_t$ 새 후보. 망각 게이트가 1에 가까우면 $c_t\approx c_{t-1}$로 정보가 그대로 보존된다.</p>
-
-      <p>이 덧셈형 자기 순환을 <strong>상수 오류 회전목마(Constant Error Carousel, CEC)</strong>라 부른다. 망각 게이트 $f_t\approx 1$이고 입력이 작으면 셀 상태가 거의 변하지 않고, 그 경로를 따라 흐르는 기울기도 행렬 반복 곱 없이 $\approx 1$로 유지된다 — 지수적 소실이 사라진다. 세 게이트는 각각 “무엇을 지울지(망각)”, “무엇을 새로 쓸지(입력)”, “무엇을 밖으로 내보낼지(출력)”를 데이터로부터 학습한다. 즉 <strong>네트워크가 언제 기억하고 언제 잊을지를 스스로 조절</strong>한다.</p>
-
-      <div class="widget">
+<div class="prose">
+<p>😶‍🌫️ 왜 기억이 사라지나? 바닐라 RNN의 hidden state는 매 시점 같은 순환 가중치 행렬과 곱해진다. 그래서 $k$ 스텝 전 입력이 현재에 주는 영향(gradient)은 대략 그 행렬을 $k$번 곱한 것에 비례:</p>
+<div class="math-block">$$ \frac{\partial h_t}{\partial h_{t-k}} \;\sim\; W^{k} $$</div>
+<p class="math-note">최대 eigenvalue가 1보다 작으면 $W^k\to 0$ → <strong>vanishing gradient</strong>(기억 소실). 1보다 크면 <strong>exploding</strong>(폭발).</p>
+<p>tanh 활성의 도함수도 1보다 작아 소실을 부추긴다 📉. 결국 수십 스텝 전 정보는 현재에 거의 영향을 못 준다 — long-range dependency를 못 배우는 “memory fade-away”.</p>
+<p>🧠 <strong>LSTM</strong>의 해법은 <strong>cell state</strong> $c_t$와 <strong>gate</strong>들이다. cell state는 행렬 곱이 아니라 <strong>덧셈</strong>으로 갱신되며 거의 1에 가까운 self-loop를 가진다:</p>
+<div class="math-block">$$ c_t = f_t \odot c_{t-1} + i_t \odot g_t $$</div>
+<p class="math-note">$f_t$ forget gate, $i_t$ input gate, $g_t$ 새 후보. forget gate가 1에 가까우면 $c_t\approx c_{t-1}$로 정보가 그대로 보존된다.</p>
+<p>🎠 이 덧셈형 self-loop가 <strong>Constant Error Carousel (CEC)</strong>. forget gate $f_t\approx1$이고 입력이 작으면 cell state가 거의 안 변하고, 그 경로를 따라 흐르는 gradient도 행렬 반복 곱 없이 $\approx1$로 유지된다 → 지수적 소실이 사라진다 ✅. 세 gate(🚪 forget=무엇을 지울지, 📥 input=무엇을 쓸지, 📤 output=무엇을 내보낼지)는 데이터로부터 학습된다 — 즉 네트워크가 <strong>언제 기억하고 언제 잊을지를 스스로 조절</strong>한다.</p>
+<div class="widget">
         <div class="widget-frame">
           <div class="widget-label"><span class="lab-no">위젯 13</span><span>20 스텝 뒤에도 남는 신호 — 바닐라 RNN vs LSTM</span></div>
           <canvas id="lstmmem" class="widget-canvas" width="720" height="320"></canvas>
@@ -57,6 +50,7 @@
         </div>
         <p class="widget-cap">바닐라 RNN(파랑)은 가중치·활성에 묶인 고정 감쇠율로 신호가 지수적으로 사라진다. LSTM(빨강)은 망각 게이트 f를 1에 가깝게 학습하면 $f^t\approx1$로 신호를 수십 스텝 보존한다. f를 낮추면 LSTM도 의도적으로 잊을 수 있음을 본다.</p>
       </div>
+</div>
 
       <div class="model-answer">
         <div class="ma-label">🎯 Model Answer (English)</div>
@@ -69,9 +63,6 @@
         <li>해법 — 셀 상태의 덧셈형 갱신 $c_t=f_t\odot c_{t-1}+i_t\odot g_t$ + 게이트. CEC로 기울기 $\approx1$ 보존.</li>
         <li>게이트(망각·입력·출력)로 언제 기억/망각할지 학습. 행렬 반복 곱이 없어 소실 제거.</li>
       </ul>
-    </div>
-
-    
 
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:65.4%"></div></div>

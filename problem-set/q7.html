@@ -27,21 +27,13 @@
     <p class="qtext">As an optimization challenge, what is the relation between cliffs and exploding gradient?</p>
   </header>
 
-    <div class="prose">
-      
-      
-
-      <p>깊은 네트워크나 RNN의 손실 곡면에는 <strong>절벽(cliff)</strong>이 흔하다 — 평평하던 지형이 갑자기 거의 수직으로 떨어지는 영역이다. 이런 절벽은 여러 층(또는 여러 시간 스텝)에 걸쳐 가중치가 <strong>반복적으로 곱해지기 때문</strong>에 생긴다. 비슷한 큰 가중치를 여러 번 곱하면 출력과 그 기울기가 지수적으로 커지는 구간이 만들어진다.</p>
-
-      <p>둘의 관계는 <strong>원인과 증상</strong>으로 보면 명확하다. <strong>절벽은 기하학적 원인</strong>이고, <strong>기울기 폭발은 그 절벽 가장자리에서 나타나는 증상</strong>이다. 절벽 근처에서 기울기의 크기는 폭발적으로 커진다. 보통의 학습률로 그 거대한 기울기에 보폭을 곱하면, 파라미터가 한 번에 아주 먼 곳으로 <strong>날아가 버려</strong> 그동안의 학습을 통째로 망친다.</p>
-
-      <div class="analogy">
-        절벽 가장자리에 선 등산객을 떠올리자. 발밑 경사(기울기)가 절벽이라 무한대에 가깝다. 평소처럼 “경사 × 보폭”으로 한 걸음을 떼면 <b>절벽 아래 수 킬로미터 밖으로 내던져진다</b>. 절벽이라는 지형(원인)이 거대한 한 걸음(폭발이라는 증상)을 낳는 것이다.
-      </div>
-
-      <p>RNN에서 이 현상은 시간축에서 두드러진다. 역전파가 시간을 거슬러 가며 순환 가중치 행렬을 반복 곱하는데, 그 최대 고윳값이 1보다 크면 기울기가 시간 스텝 수에 따라 지수적으로 커진다 — 바로 기울기 폭발이고, 손실 곡면에는 그에 대응하는 절벽이 생긴다(반대로 1보다 작으면 기울기 소실, <a href="q13.html">Q13</a>).</p>
-
-      <p>처방은 <strong>기울기 클리핑</strong>(<a href="q15.html">Q15</a>)이다. 방향은 그대로 두되 보폭의 크기만 상한으로 잘라, 절벽을 만나도 멀리 내던져지지 않고 가장자리를 따라 조심스럽게 내려가게 한다.</p>
+<div class="prose">
+<p>🧗 깊은 네트워크나 RNN의 손실 곡면에는 <strong>cliff</strong>(절벽)이 흔하다 — 평평하던 지형이 갑자기 거의 수직으로 떨어지는 영역 📉. 여러 층(또는 여러 시간 스텝)에 걸쳐 가중치가 <strong>반복적으로 곱해지기 때문</strong>에 생긴다. 비슷한 큰 가중치를 여러 번 곱하면 출력과 gradient가 지수적으로 커지는 구간이 만들어진다.</p>
+<p>🔗 둘의 관계는 <strong>원인과 증상</strong>: <strong>cliff = 기하학적 원인</strong>, <strong>exploding gradient = 그 절벽 가장자리의 증상</strong>. 절벽 근처에서 gradient 크기가 폭증하고, 보통 learning rate로 그 거대한 gradient에 보폭을 곱하면 파라미터가 한 번에 멀리 <strong>날아가</strong> 그동안의 학습을 통째로 망친다 💥.</p>
+<div class="analogy">🪂 절벽 끝에 선 등산객 — 발밑 경사(gradient)가 거의 무한대. 평소처럼 “경사 × 보폭”으로 한 걸음 떼면 절벽 아래 수 km 밖으로 내던져진다. 절벽이라는 지형(원인)이 거대한 한 걸음(폭발=증상)을 낳는다.</div>
+<p>⏳ RNN에선 시간축에서 두드러진다. backprop이 시간을 거슬러 순환 가중치 행렬을 반복 곱하는데, 그 최대 <strong>eigenvalue</strong>(고윳값)가 1보다 크면 gradient가 시간 스텝 수에 따라 지수적으로 커진다 = exploding(반대로 1보다 작으면 vanishing, 즉 기억 소실 😶‍🌫️).</p>
+<p>✂️ 처방은 <strong>gradient clipping</strong>: 방향은 그대로 두고 크기만 상한 $\tau$로 자른다 — $\lVert g\rVert>\tau$면 $g\leftarrow\tau\,g/\lVert g\rVert$. 절벽을 만나도 멀리 안 날아가고 가장자리를 따라 조심히 내려간다 🧗‍♀️.</p>
+</div>
 
       <div class="model-answer">
         <div class="ma-label">🎯 Model Answer (English)</div>
@@ -54,9 +46,6 @@
         <li>기울기 폭발 = 절벽 근처에서 기울기 크기가 폭증하는 증상. 보폭 곱하면 파라미터가 멀리 날아감.</li>
         <li>RNN에서는 순환행렬 최대고윳값 &gt;1 → 시간에 지수적 폭발. 처방 = 기울기 클리핑(Q15).</li>
       </ul>
-    </div>
-
-    
 
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:34.6%"></div></div>

@@ -27,25 +27,17 @@
     <p class="qtext">Why is CNN powerful especially on image data?</p>
   </header>
 
-    <div class="prose">
-      
-      
-
-      <p>완전연결층을 256×256 이미지에 그대로 쓰면 한 출력 픽셀이 입력 6만 5천여 픽셀과 모두 연결되어, 한 층의 가중치가 수십억 개에 이른다. CNN은 같은 일을 <strong>세 가지 구조적 속성</strong>으로 수백 배~수억 배 적은 파라미터로 해낸다. 셋은 모두 자연 이미지의 통계적 사실에서 나온다.</p>
-
-      <div class="symbols"><tbody>
-        <tr><td>희소 상호작용</td><td>한 출력은 작은 창(예: 3×3)에만 연결. “한 픽셀의 의미는 멀리가 아니라 주변에서 결정된다”는 국소성 사실.</td></tr>
-        <tr><td>파라미터 공유</td><td>같은 커널을 이미지 전 위치에서 사용. “수직 에지는 어디에 있든 수직 에지”라는 정상성(stationarity) 사실.</td></tr>
-        <tr><td>변환 등가성</td><td>입력이 옮겨지면 특징맵도 같이 옮겨짐(파라미터 공유의 자동 결과).</td></tr>
-      </tbody></div>
-
-      <p>이로부터 세 가지 위력이 나온다. ① <strong>파라미터·메모리 격감</strong> — 입력 크기와 무관하게 한 커널의 가중치 수가 고정된다. ② <strong>통계적 효율</strong> — 한 위치에서 배운 패턴 감지기가 모든 위치에 자동 일반화된다. 완전연결층은 위치마다 따로 배워야 한다. ③ <strong>계층적 특징</strong> — 층이 깊어질수록 수용 영역이 커져, 얕은 층의 에지가 질감, 부분, 물체로 단계적으로 조합된다. 여기에 풀링이 더해지면 작은 평행이동에 둔감한 <strong>근사 불변성</strong>(<a href="q10.html">Q10</a>)까지 얻는다.</p>
-
-      <div class="analogy">
-        완전연결망이 <b>“그림의 모든 위치마다 별도의 검사관을 두는 것”</b>이라면, CNN은 <b>“잘 훈련된 검사관 한 명이 같은 잣대를 들고 그림 전체를 훑는 것”</b>이다. 검사관을 한 번 키우면 어디서든 같은 패턴을 알아보고, 인건비(파라미터)도 한 명분이면 된다.
-      </div>
-
-      <p>이 모든 이득은 “이미지가 국소적이고 정상적”이라는 사전이 데이터에 잘 맞기 때문에 공짜로 얻어진다. 그 사전이 얼마나 강한지는 <a href="q11.html">Q11</a>에서 “무한히 강한 사전”으로 정리한다.</p>
+<div class="prose">
+<p>🖼️ 완전연결(<strong>fully connected</strong>)층을 256×256 이미지에 그대로 쓰면 한 출력 픽셀이 입력 6만 5천여 픽셀과 모두 연결돼 한 층 가중치가 수십억 개 😵. <strong>CNN</strong>은 같은 일을 <strong>세 가지 구조적 속성</strong>으로 수백~수억 배 적은 파라미터로 해낸다. 셋 다 자연 이미지의 통계적 사실에서 나온다.</p>
+<div class="symbols"><tbody>
+<tr><td>🔬 Sparse interactions</td><td>한 출력은 작은 창(예 3×3)에만 연결. “한 픽셀의 의미는 멀리가 아니라 주변에서 결정”이라는 locality(국소성).</td></tr>
+<tr><td>🔁 Parameter sharing</td><td>같은 kernel을 이미지 전 위치에 사용. “수직 edge는 어디 있든 수직 edge”라는 stationarity(정상성).</td></tr>
+<tr><td>➡️ Equivariance</td><td>입력이 옮겨지면 feature map도 같이 옮겨짐(parameter sharing의 자동 결과).</td></tr>
+</tbody></div>
+<p>💪 여기서 세 위력: ① <strong>파라미터·메모리 격감</strong> — 입력 크기와 무관하게 kernel 가중치 수 고정. ② <strong>통계적 효율</strong> — 한 위치에서 배운 패턴 감지기가 모든 위치에 자동 일반화(완전연결은 위치마다 따로 배워야 함). ③ <strong>계층적 특징</strong> — 층이 깊어질수록 <strong>receptive field</strong>(수용 영역)가 커져 edge → texture → part → object로 단계 조합 🧱.</p>
+<div class="analogy">🕵️ 완전연결망 = 그림의 모든 위치마다 별도 검사관을 두는 것. CNN = 잘 훈련된 검사관 한 명이 같은 잣대로 그림 전체를 훑는 것. 한 번 키우면 어디서든 같은 패턴을 알아보고 인건비(파라미터)도 한 명분.</div>
+<p>🎁 여기에 <strong>pooling</strong>이 더해지면 작은 평행이동에 둔감한 <strong>approximate invariance</strong>(근사 불변성)까지 얻는다. 이 모든 이득은 “이미지가 국소적이고 정상적”이라는 prior가 데이터에 잘 맞아 공짜로 얻어지는 것이다 ✅.</p>
+</div>
 
       <div class="model-answer">
         <div class="ma-label">🎯 Model Answer (English)</div>
@@ -58,9 +50,6 @@
         <li>위력 — 파라미터/메모리 격감, 통계적 효율(위치 일반화), 깊이에 따른 계층적 특징. + 풀링의 근사 불변성.</li>
         <li>근거 — 국소성·정상성이라는 자연 이미지 사실에 사전이 맞기 때문.</li>
       </ul>
-    </div>
-
-    
 
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:50.0%"></div></div>

@@ -27,41 +27,30 @@
     <p class="qtext">What is translation invariance with CNN?</p>
   </header>
 
-    <div class="prose">
-      
-      
-
-      <p>이 문항의 핵심은 두 개념을 정확히 구분하는 데 있다.</p>
-      <div class="cmp">
-        <div class="card gatys">
-          <h4>등가성 (equivariance)</h4>
-          <ul>
-            <li>입력이 움직이면 <b>출력도 같이 움직인다</b>.</li>
-            <li>$f(\text{Shift}(x)) = \text{Shift}(f(x))$.</li>
-            <li><b>합성곱 자체</b>가 가진 성질.</li>
-          </ul>
-        </div>
-        <div class="card modern">
-          <h4>불변성 (invariance)</h4>
-          <ul>
-            <li>입력이 움직여도 <b>출력은 그대로</b>다.</li>
-            <li>$f(\text{Shift}(x)) = f(x)$.</li>
-            <li><b>풀링</b>이 더해질 때 비로소 (근사적으로) 생김.</li>
-          </ul>
-        </div>
-      </div>
-
-      <p>흔한 오해는 “CNN은 평행이동 불변이다”라고 뭉뚱그리는 것이다. 정확히는 <strong>합성곱 층은 등가적이지 불변이 아니다</strong>. 고양이를 오른쪽으로 옮기면 특징맵의 활성도 오른쪽으로 옮겨 간다(등가). 불변성은 그 위에 <strong>풀링</strong>이 얹힐 때 생긴다. 최대 풀링은 한 영역에서 가장 강한 반응만 남기므로, 그 영역 안에서 입력이 조금 움직여도 출력이 변하지 않는다 — <strong>작은 평행이동에 대한 근사 불변성</strong>이다.</p>
-
-      <div class="widget">
+<div class="prose">
+<p>🔁 이 문제의 핵심은 두 개념을 정확히 구분하는 것 👇.</p>
+<div class="cmp">
+  <div class="card gatys"><h4>➡️ Equivariance (등가성)</h4><ul>
+    <li>입력이 움직이면 <b>출력도 같이 움직임</b>.</li>
+    <li>$f(\text{Shift}(x)) = \text{Shift}(f(x))$.</li>
+    <li><b>convolution 자체</b>의 성질.</li>
+  </ul></div>
+  <div class="card modern"><h4>🛡️ Invariance (불변성)</h4><ul>
+    <li>입력이 움직여도 <b>출력 그대로</b>.</li>
+    <li>$f(\text{Shift}(x)) = f(x)$.</li>
+    <li><b>pooling</b>이 더해질 때 (근사적으로) 생김.</li>
+  </ul></div>
+</div>
+<p>⚠️ 흔한 오해: “CNN은 평행이동 불변”이라고 뭉뚱그리는 것. 정확히는 <strong>convolution 층은 equivariant이지 invariant가 아니다</strong>. 고양이를 오른쪽으로 옮기면 feature map의 활성도 오른쪽으로 옮겨간다(equivariance). invariance는 그 위에 <strong>pooling</strong>이 얹힐 때 생긴다 — <strong>max pooling</strong>은 한 영역에서 가장 강한 반응만 남기므로 그 영역 안에서 입력이 조금 움직여도 출력이 안 변한다 = <strong>작은 평행이동에 대한 근사 불변성</strong> 🎯.</p>
+<div class="widget">
         <div class="widget-frame">
           <div class="widget-label"><span class="lab-no">위젯 10</span><span>입력을 밀어 보라 — 특징맵은 따라가고(등가), 풀링은 버틴다(불변)</span></div>
           <div id="poolinv"></div>
         </div>
         <p class="widget-cap">입력의 신호 위치를 슬라이더로 옮기면, 합성곱 특징맵(가운데)의 활성도 같은 방향으로 옮겨 간다(등가성). 그러나 풀링 출력(아래)은 신호가 같은 풀링 창 안에서 움직이는 한 변하지 않는다(근사 불변성). 창을 벗어날 만큼 크게 옮기면 풀링 출력도 바뀐다 — 불변성이 “작은” 이동에만 성립함을 보여 준다.</p>
       </div>
-
-      <p>왜 둘 다 필요한가? 과제가 다르기 때문이다. “고양이가 어디 있는가”(위치 추정)에는 등가성이, “고양이가 있는가”(분류)에는 불변성이 필요하다. CNN은 합성곱으로 등가성을 제공하고 풀링으로 근사 불변성을 쌓아, 깊어질수록 점점 더 큰 이동에 둔감해진다. 단, 풀링이 주는 불변성은 <strong>국소적이고 근사적</strong>이라는 점, 그리고 큰 평행이동에 대한 견고함은 파라미터 공유와 깊은 풀링의 합작이라는 점을 함께 적어 주면 완성도가 높다.</p>
+<p>🤔 왜 둘 다 필요? 과제가 다르기 때문 — “고양이가 <em>어디</em> 있나”(localization)엔 equivariance, “고양이가 <em>있나</em>”(classification)엔 invariance. CNN은 convolution으로 equivariance를 주고 pooling으로 invariance를 쌓아 깊어질수록 점점 더 큰 이동에 둔감해진다. 단 pooling이 주는 invariance는 <strong>국소적·근사적</strong>이고, 큰 평행이동에 대한 견고함은 parameter sharing과 깊은 pooling의 합작이다 🧩.</p>
+</div>
 
       <div class="model-answer">
         <div class="ma-label">🎯 Model Answer (English)</div>
@@ -74,9 +63,6 @@
         <li>합성곱은 등가적이지 불변이 아님. 최대 풀링이 영역 내 최강 반응만 남겨 작은 이동에 근사 불변.</li>
         <li>분류엔 불변성, 위치추정엔 등가성. 풀링 불변성은 국소·근사.</li>
       </ul>
-    </div>
-
-    
 
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:53.8%"></div></div>

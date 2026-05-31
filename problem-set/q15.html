@@ -27,21 +27,14 @@
     <p class="qtext">What is gradient clipping?</p>
   </header>
 
-    <div class="prose">
-      
-      
-
-      <p>기울기 클리핑은 기울기의 <strong>크기가 임계값을 넘으면 방향은 보존한 채 크기만 임계값으로 줄이는</strong> 기법이다. 가장 흔한 노름 클리핑은 다음과 같다.</p>
-      <div class="math-block">$$ \text{if } \lVert g\rVert > \tau:\quad g \leftarrow \tau\,\frac{g}{\lVert g\rVert} $$</div>
-      <p class="math-note">기울기 벡터를 임계값 $\tau$ 길이로 정규화. 방향은 그대로, 길이만 상한.</p>
-
-      <p>이것은 <a href="q7.html">Q7</a>의 절벽/기울기 폭발에 대한 직접 처방이다. 절벽 근처에서 기울기가 폭발하면 한 걸음에 파라미터가 멀리 날아가는데, 클리핑은 그 한 걸음의 보폭을 안전한 상한으로 묶는다. 핵심은 <strong>방향을 바꾸지 않는다</strong>는 점이다 — 여전히 내리막 방향으로 가되, 절벽 아래로 내던져지지 않을 만큼만 간다.</p>
-
-      <div class="analogy">
-        클리핑은 <b>자동차의 속도 제한 장치</b>와 같다. 운전자가 가속 페달(기울기)을 아무리 세게 밟아도 시속 100km를 넘지 않게 막는다. 가려는 방향(핸들)은 그대로 두고 속도만 잘라, 급경사에서 차가 통제를 벗어나 날아가는 일을 막는다.
-      </div>
-
-      <p>RNN 학습의 사실상 표준 안전장치다. 요소별로 $[-v, v]$에 자르는 방식도 있으나, 노름 클리핑이 방향을 보존하므로 더 선호된다.</p>
+<div class="prose">
+<p>✂️ <strong>Gradient clipping</strong>은 gradient의 <strong>크기가 임계값을 넘으면 방향은 보존한 채 크기만 임계값으로 줄이는</strong> 기법이다. 가장 흔한 <strong>norm clipping</strong>:</p>
+<div class="math-block">$$ \text{if } \lVert g\rVert > \tau:\quad g \leftarrow \tau\,\frac{g}{\lVert g\rVert} $$</div>
+<p class="math-note">gradient 벡터를 임계값 $\tau$ 길이로 정규화. 방향 그대로, 길이만 상한.</p>
+<p>🧗 이건 <strong>cliff / exploding gradient</strong>에 대한 직접 처방이다. 깊은 망·RNN에선 가중치가 여러 층(시간 스텝)에 반복 곱해져 손실 곡면에 거의 수직인 절벽이 생기고, 그 근처에서 gradient가 폭증한다. 보통 보폭을 곱하면 파라미터가 한 번에 멀리 날아가는데 💥, clipping은 그 한 걸음을 안전한 상한으로 묶는다. 핵심은 <strong>방향을 안 바꾼다</strong>는 점 — 여전히 내리막으로 가되 절벽 아래로 안 떨어질 만큼만 간다.</p>
+<div class="analogy">🚗 clipping = 자동차 속도 제한 장치. 가속 페달(gradient)을 아무리 세게 밟아도 100km/h를 못 넘게 막는다. 핸들(방향)은 그대로 두고 속도만 잘라 급경사에서 통제 이탈을 막는다.</div>
+<p>🔧 RNN 학습의 사실상 표준 안전장치. 요소별로 $[-v,v]$에 자르는 방식도 있으나 norm clipping이 방향을 보존해 더 선호된다 ✅.</p>
+</div>
 
       <div class="model-answer">
         <div class="ma-label">🎯 Model Answer (English)</div>
@@ -54,9 +47,6 @@
         <li>목적 — 절벽/기울기 폭발(Q7) 처방. 한 걸음이 파라미터를 멀리 날리는 것을 방지.</li>
         <li>RNN 표준. 방향 보존이 핵심.</li>
       </ul>
-    </div>
-
-    
 
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:42.3%"></div></div>

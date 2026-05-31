@@ -27,22 +27,16 @@
     <p class="qtext">Why do we need regularized autoencoders and how can we make them?</p>
   </header>
 
-    <div class="prose">
-      
-      
-
-      <p><strong>왜 필요한가.</strong> 오토인코더의 용량이 충분히 크면(특히 은닉 차원이 입력 이상인 과완전 경우, 혹은 강력한 비선형) <strong>항등함수(identity)를 그대로 외워</strong> 입력을 출력으로 복사할 수 있다. 복원 오차는 0이지만 배운 것은 아무것도 없다. 미완전(은닉&lt;입력) 오토인코더조차 충분히 강력하면 표본을 암기할 수 있다. 우리가 원하는 것은 “복사”가 아니라 <strong>데이터의 의미 있는 구조</strong>다. 정칙화는 복원 외의 추가 목표를 부과해, 용량과 무관하게 쓸모 있는 표현을 배우도록 강제한다.</p>
-
-      <p><strong>어떻게 만드는가.</strong> 추가 목표가 무엇이냐로 세 종류로 나뉜다.</p>
-      <div class="symbols"><tbody>
-        <tr><td>희소 AE</td><td>은닉 활성에 벌점 $\Omega(h)=\lambda\lVert h\rVert_1$. 대부분 유닛을 0 근처로 눌러 희소·부분 기반(parts-based) 특징을 학습.</td></tr>
-        <tr><td>잡음 제거 AE<br>(DAE)</td><td>입력을 일부러 손상시켜 $\tilde{x}$를 넣고 <b>깨끗한 $x$</b>를 복원하게 학습. 입력이 손상돼 단순 복사가 불가능 → 데이터 매니폴드를 배워야 복원 가능. 매니폴드로 향하는 벡터장을 학습.</td></tr>
-        <tr><td>수축 AE<br>(CAE)</td><td>인코더 야코비안의 프로베니우스 노름 $\lVert \partial h/\partial x\rVert_F^2$에 벌점. 표현이 입력의 작은 변화에 둔감(수축)해져, 데이터가 놓인 방향(접선)만 민감하게 잡음.</td></tr>
-      </tbody></div>
-
-      <div class="analogy">
-        정칙화 없는 오토인코더는 <b>“받아쓰기 시험에서 문제지를 그대로 베껴 내는 학생”</b>이다. 만점이지만 이해는 0이다. 희소·잡음제거·수축 정칙화는 각각 “핵심 단어만 적어라”, “일부 글자를 지운 문제를 복원하라”, “문제가 조금 바뀌어도 같은 답을 써라”라는 추가 규칙을 걸어, 베끼기 대신 <b>내용을 이해하게</b> 만든다.
-      </div>
+<div class="prose">
+<p>🧹 <strong>왜 필요?</strong> autoencoder의 capacity가 충분히 크면(특히 은닉 차원 ≥ 입력인 <strong>overcomplete</strong> 경우) <strong>identity function</strong>(항등함수)을 그대로 외워 입력을 출력으로 복사할 수 있다 📋. 복원 오차는 0이지만 배운 건 아무것도 없다. 우리가 원하는 건 “복사”가 아니라 <strong>데이터의 의미 있는 구조</strong>. 정칙화는 복원 외의 추가 목표를 부과해 capacity와 무관하게 쓸모 있는 표현을 배우게 강제한다 ✅.</p>
+<p>🛠️ <strong>어떻게 만드나</strong> — 추가 목표가 무엇이냐로 갈린다:</p>
+<div class="symbols"><tbody>
+<tr><td>✨ Sparse AE</td><td>은닉 활성에 벌점 $\Omega(h)=\lambda\lVert h\rVert_1$. 대부분 유닛을 0 근처로 눌러 희소·부분 기반(parts-based) 특징 학습.</td></tr>
+<tr><td>🌫️ Denoising AE (DAE)</td><td>입력을 일부러 손상시켜 $\tilde x$를 넣고 <b>깨끗한 $x$</b>를 복원하게 학습. 입력이 손상돼 단순 복사가 불가능 → 데이터 manifold를 배워야 복원 가능. manifold로 향하는 vector field를 학습.</td></tr>
+<tr><td>🤏 Contractive AE (CAE)</td><td>encoder Jacobian의 Frobenius norm $\lVert\partial h/\partial x\rVert_F^2$에 벌점. 표현이 입력의 작은 변화에 둔감(수축)해져 데이터가 놓인 방향(tangent)만 민감하게 잡음.</td></tr>
+</tbody></div>
+<div class="analogy">📝 정칙화 없는 AE = 받아쓰기에서 문제지를 그대로 베껴 내는 학생(만점이나 이해 0). sparse·denoising·contractive 정칙화는 각각 “핵심 단어만 적어”, “일부 글자 지운 문제를 복원해”, “문제가 조금 바뀌어도 같은 답을 써”라는 규칙을 걸어 베끼기 대신 <b>내용을 이해</b>하게 만든다.</div>
+</div>
 
       <div class="model-answer">
         <div class="ma-label">🎯 Model Answer (English)</div>
@@ -55,9 +49,6 @@
         <li>희소 — 은닉에 $L_1$ 벌점(부분 기반). 잡음제거(DAE) — 손상입력→깨끗복원(매니폴드 학습).</li>
         <li>수축(CAE) — 야코비안 노름 벌점으로 입력 변화에 둔감(접선만 민감).</li>
       </ul>
-    </div>
-
-    
 
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:80.8%"></div></div>

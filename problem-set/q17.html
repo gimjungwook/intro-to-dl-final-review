@@ -27,19 +27,14 @@
     <p class="qtext">What is slow feature analysis (SFA)?</p>
   </header>
 
-    <div class="prose">
-      
-      
-
-      <p>SFA는 <strong>느림 원리(slowness principle)</strong>에 기반한 비지도 특징 학습 기법이다. 핵심 가정은 “환경의 중요한 고수준 특징은 원시 감각 입력보다 <strong>천천히 변한다</strong>”는 것이다.</p>
-
-      <div class="analogy">
-        얼룩말이 화면을 가로질러 달릴 때, 한 픽셀의 값은 검정↔흰색을 <b>매 순간 빠르게</b> 오간다(줄무늬가 지나가므로). 그러나 “얼룩말이 있다”라는 사실은 <b>여러 프레임에 걸쳐 천천히</b> 변한다. 빠르게 진동하는 픽셀이 아니라 천천히 변하는 “얼룩말의 존재”야말로 우리가 원하는 특징이다.
-      </div>
-
-      <p>SFA는 입력의 시계열에서, 시간에 따라 <strong>가능한 한 천천히 변하는</strong> 특징 $f(x)$를 학습한다. 목적함수는 특징의 시간 변화율(제곱)을 최소화하는 것이다.</p>
-      <div class="math-block">$$ \min_{f}\ \mathbb{E}\big[(f(x_{t+1}) - f(x_t))^2\big] $$</div>
-      <p>그냥 두면 $f$가 상수가 되어 버린다(아무것도 안 변하면 가장 느리다). 그래서 두 제약을 건다 — <strong>평균 0, 분산 1</strong>(상수 같은 자명해 배제)과 <strong>특징 간 무상관/직교</strong>(모든 특징이 같은 느린 신호로 붕괴하는 것 방지). 그 결과 특징들이 느린 순서대로 정렬되어 나온다. 선형 SFA는 고윳값 문제로 효율적으로 풀리며, 비선형은 입력을 비선형 확장한 뒤 같은 절차를 쓴다. SFA가 학습하는 천천히 변하는 인자는 시각 피질의 복합 세포나 장소 세포 같은 <strong>불변 표현</strong>과 연결되어, “불변성을 비지도로 배운다”는 관점의 대표 예다.</p>
+<div class="prose">
+<p>🐢 <strong>SFA (Slow Feature Analysis)</strong>는 <strong>slowness principle</strong>(느림 원리)에 기반한 비지도 특징 학습이다. 핵심 가정: “환경의 중요한 고수준 특징은 원시 감각 입력보다 <strong>천천히 변한다</strong>”.</p>
+<div class="analogy">🦓 얼룩말이 화면을 가로질러 달릴 때, 한 픽셀 값은 검정↔흰색을 <b>매 순간 빠르게</b> 오간다(줄무늬가 지나가므로). 그러나 “얼룩말이 있다”는 사실은 <b>여러 프레임에 걸쳐 천천히</b> 변한다. 빠르게 진동하는 픽셀이 아니라 천천히 변하는 “얼룩말의 존재”가 우리가 원하는 특징.</div>
+<p>🎯 SFA는 시계열에서 시간에 따라 <strong>가능한 한 천천히 변하는</strong> 특징 $f(x)$를 학습한다. 목적함수는 시간 변화율(제곱) 최소화:</p>
+<div class="math-block">$$ \min_{f}\ \mathbb{E}\big[(f(x_{t+1}) - f(x_t))^2\big] $$</div>
+<p>🧷 그냥 두면 $f$가 상수로 도망간다(아무것도 안 변하면 가장 느리니까). 그래서 두 제약을 건다: <strong>zero mean, unit variance</strong>($\mathbb{E}[f]=0,\ \mathbb{E}[f^2]=1$ — 자명한 상수해 배제)와 특징 간 <strong>decorrelation / orthogonality</strong>(모든 특징이 같은 느린 신호로 붕괴하는 것 방지). 그 결과 특징들이 느린 순서로 정렬돼 나온다 📊.</p>
+<p>🔬 선형 SFA는 <strong>eigenvalue problem</strong>으로 효율적으로 풀리고, 비선형은 입력을 비선형 확장한 뒤 같은 절차를 쓴다. SFA가 뽑는 천천히 변하는 인자는 시각 피질의 complex cell이나 place cell 같은 <strong>invariant representation</strong>과 연결돼, “불변성을 비지도로 배운다”의 대표 예다 🧠.</p>
+</div>
 
       <div class="model-answer">
         <div class="ma-label">🎯 Model Answer (English)</div>
@@ -52,9 +47,6 @@
         <li>목적 — 시간 변화율 $\mathbb{E}[(f(x_{t+1})-f(x_t))^2]$ 최소화.</li>
         <li>제약 — 평균0·분산1(자명해 배제) + 직교(붕괴 방지). 불변 특징을 비지도로 학습.</li>
       </ul>
-    </div>
-
-    
 
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:73.1%"></div></div>

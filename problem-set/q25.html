@@ -27,27 +27,21 @@
     <p class="qtext">What is the main point of the “Attention is all you need” paper?</p>
   </header>
 
-    <div class="prose">
-      
-      
-
-      <p>한 문장 핵심 — <strong>순환(RNN)도 합성곱(CNN)도 없이, 오직 (셀프) 어텐션만으로 시퀀스를 모델링할 수 있다.</strong> 이 구조가 Transformer다.</p>
-
-      <p>셀프 어텐션은 각 위치에 대해, <strong>모든 위치의 값(value)을 가중합</strong>한다. 가중치는 그 위치의 질의(query)와 다른 위치들의 키(key)가 얼마나 닮았는지를 소프트맥스로 정규화한 것이다.</p>
-      <div class="math-block">$$ \text{Attention}(Q,K,V) = \operatorname{softmax}\!\Big(\frac{QK^\top}{\sqrt{d_k}}\Big)V $$</div>
-      <p class="math-note">$QK^\top$로 모든 위치 쌍의 유사도를 재고, $\sqrt{d_k}$로 크기를 조정한 뒤 소프트맥스로 가중, 그 가중치로 값 $V$를 합산.</p>
-
-      <p>왜 중요한가? <a href="q14.html">Q14</a>에서 본 RNN과 CNN의 두 한계를 동시에 넘기 때문이다. ① <strong>긴 의존성</strong> — 어떤 두 위치든 한 번의 어텐션으로 직접 연결된다(경로 길이 $O(1)$). RNN처럼 여러 스텝을 거치며 기억이 소실되지도, CNN처럼 깊이를 쌓아야 멀리 닿지도 않는다. ② <strong>병렬성</strong> — 모든 위치를 동시에 계산한다. RNN의 순차 의존성이 없어 GPU에서 훨씬 빠르게 학습된다.</p>
-
-      <div class="widget">
+<div class="prose">
+<p>🔭 한 문장 핵심: <strong>순환(RNN)도 합성곱(CNN)도 없이, 오직 (self-)attention만으로 시퀀스를 모델링</strong>할 수 있다. 이 구조가 <strong>Transformer</strong>다.</p>
+<p>🎯 <strong>Self-attention</strong>은 각 위치에 대해 <strong>모든 위치의 value를 가중합</strong>한다. 가중치는 그 위치의 <strong>query</strong>와 다른 위치들의 <strong>key</strong>가 얼마나 닮았는지를 softmax로 정규화한 것:</p>
+<div class="math-block">$$ \text{Attention}(Q,K,V) = \operatorname{softmax}\!\Big(\frac{QK^\top}{\sqrt{d_k}}\Big)V $$</div>
+<p class="math-note">$QK^\top$로 모든 위치 쌍의 유사도를 재고, $\sqrt{d_k}$로 크기 조정 후 softmax로 가중, 그 가중치로 value $V$를 합산.</p>
+<p>💪 왜 중요? RNN과 CNN의 두 한계를 동시에 넘기 때문이다. ① <strong>긴 의존성</strong> — 어떤 두 위치든 한 번의 attention으로 직접 연결(<strong>path length $O(1)$</strong>). RNN처럼 여러 스텝을 거치며 기억이 소실되지도, CNN처럼 depth를 쌓아야 멀리 닿지도 않는다 ✅. ② <strong>병렬성</strong> — 모든 위치를 동시에 계산. RNN의 순차 의존성이 없어 GPU에서 훨씬 빠르게 학습 ⚡.</p>
+<div class="widget">
         <div class="widget-frame">
           <div class="widget-label"><span class="lab-no">위젯 25</span><span>셀프 어텐션 — 한 단어를 누르면 무엇에 주목하는지 보인다</span></div>
           <div id="attn" style="padding:1.6rem 1.2rem 1.2rem;background:#fff;"></div>
         </div>
         <p class="widget-cap">아래 문장의 한 단어(질의)를 눌러 보라. 그 단어가 다른 단어들에 얼마나 주목하는지(어텐션 가중치)가 색의 진하기로 나타난다. 대명사 “그것은”을 누르면 “동물은”에 강하게 주목한다 — 셀프 어텐션이 한 번에 멀리 떨어진 단어를 직접 연결함을 보여 준다.</p>
       </div>
-
-      <p>순환이 없으니 순서 정보가 사라진다 — 그래서 위치 인코딩(positional encoding)을 더해 순서를 주입하고, 여러 종류의 관계를 동시에 보도록 멀티헤드 어텐션을 쓴다. 이 단순하고 병렬적인 구조가 이후 BERT, GPT를 비롯한 대규모 언어모델의 토대가 되었다. 부품별 분해는 <a href="../p3-transformer/index.html">P3 Transformer 사이트</a>에 따로 있다.</p>
+<p>🧭 순환이 없으니 순서 정보가 사라진다 — 그래서 <strong>positional encoding</strong>을 더해 순서를 주입하고, 여러 종류의 관계를 동시에 보도록 <strong>multi-head attention</strong>을 쓴다. 이 단순하고 병렬적인 구조가 이후 BERT·GPT를 비롯한 대규모 언어모델의 토대가 되었다 🏛️.</p>
+</div>
 
       <div class="model-answer">
         <div class="ma-label">🎯 Model Answer (English)</div>
@@ -60,9 +54,6 @@
         <li>$\operatorname{softmax}(QK^\top/\sqrt{d_k})V$ — 모든 위치 쌍을 직접 연결.</li>
         <li>이점 — 긴 의존성 경로 $O(1)$ + 완전 병렬. 보조 = 위치 인코딩·멀티헤드.</li>
       </ul>
-    </div>
-
-    
 
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:96.2%"></div></div>

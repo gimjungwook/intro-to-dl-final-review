@@ -27,24 +27,17 @@
     <p class="qtext">How is the infinitely strong prior added to CNN?</p>
   </header>
 
-    <div class="prose">
-      
-      
-
-      <p>사전(prior)이란 데이터를 보기 전에 “어떤 파라미터가 그럴듯한가”에 대한 믿음을 담은 확률분포다. 사전의 세기는 그 분포의 좁기로 정해진다.</p>
-      <div class="symbols"><tbody>
-        <tr><td>약한 사전</td><td>분산이 큰 분포. 어떤 값이든 허용하되 약하게 선호 — 예: L2의 가우시안 사전.</td></tr>
-        <tr><td>강한 사전</td><td>분산이 작은 분포. 특정 값들에 강하게 쏠림.</td></tr>
-        <tr><td>무한히 강한 사전</td><td>일부 파라미터에 <b>확률 0</b>을 줘 아예 금지. 그 값은 표현조차 불가능.</td></tr>
-      </tbody></div>
-
-      <p>CNN은 <strong>완전연결층에 무한히 강한 사전을 건 것</strong>으로 정확히 해석된다. 그 사전은 가중치에 대해 두 가지를 “반드시”라고 못 박는다. ① 한 유닛의 가중치는 작은 수용 영역 <strong>바깥에서는 0이어야</strong> 한다(국소성). ② 공간상 이웃한 위치들의 가중치는 <strong>서로 같아야</strong> 한다(공유). 이 두 조건을 어기는 가중치 배치에는 사전 확률 0이 부여되어, <em>학습으로도 결코 도달할 수 없다</em>. 같은 식으로 <strong>풀링</strong>은 “각 유닛은 작은 평행이동에 불변이어야 한다”는 무한히 강한 사전이다.</p>
-
-      <div class="analogy">
-        L2 정칙화가 <b>“안전벨트는 매면 좋다”</b>는 권고(약한 사전, 어기면 비싸지만 가능)라면, CNN의 구조 제약은 <b>“안전벨트 없이는 시동이 안 걸린다”</b>는 설계(무한히 강한 사전, 위반 자체가 불가능)다.
-      </div>
-
-      <p>이 관점이 왜 유용한가? 첫째, <strong>언제 CNN이 도움이 되고 언제 해가 되는지</strong>를 예측하게 해 준다. 사전이 데이터에 맞으면(자연 이미지: 국소적·정상적) 압도적으로 효율적이지만, 맞지 않으면 — 예컨대 칼럼 순서에 의미가 없는 표 형식 데이터나 격자 이웃 개념이 다른 그래프 데이터 — 모델이 표현조차 못 하는 패턴이 생겨 <strong>과소적합</strong>한다. 둘째, <strong>벤치마크 비교의 함정</strong>을 일깨운다. CNN과 완전연결망을 같은 과제로 비교할 때, CNN이 이기는 것은 “더 똑똑해서”가 아니라 “그 과제에 맞는 사전을 미리 받았기” 때문일 수 있다. 사전이 부적절한 과제에서는 그 우위가 사라진다.</p>
+<div class="prose">
+<p>🧲 <strong>Prior</strong>란 데이터를 보기 전 “어떤 파라미터가 그럴듯한가”에 대한 믿음을 담은 확률분포. prior의 <em>세기</em>는 그 분포가 얼마나 좁은지로 정해진다.</p>
+<div class="symbols"><tbody>
+<tr><td>🪶 Weak prior</td><td>분산 큰 분포. 어떤 값이든 허용하되 약하게 선호 — 예: L2의 Gaussian prior.</td></tr>
+<tr><td>🧱 Strong prior</td><td>분산 작은 분포. 특정 값들에 강하게 쏠림.</td></tr>
+<tr><td>♾️ Infinitely strong prior</td><td>일부 파라미터에 <b>확률 0</b>을 줘 아예 금지. 그 값은 표현조차 불가능.</td></tr>
+</tbody></div>
+<p>🎯 <strong>CNN = 완전연결층에 infinitely strong prior를 건 것</strong>으로 정확히 해석된다. 그 prior는 가중치에 두 가지를 “반드시”라고 못 박는다: ① 한 유닛의 가중치는 작은 <strong>receptive field</strong> <strong>바깥에선 0</strong>이어야 함(locality), ② 공간상 이웃 위치들의 가중치는 <strong>서로 같아야</strong> 함(sharing). 이 둘을 어기는 가중치 배치엔 prior 확률 0이 부여돼 <em>학습으로도 결코 도달 불가</em> 🚫. 같은 식으로 <strong>pooling</strong>은 “각 유닛은 작은 평행이동에 invariant해야 한다”는 infinitely strong prior다.</p>
+<div class="analogy">🚘 L2 정칙화가 “안전벨트는 매면 좋다”는 권고(weak prior — 어기면 비싸지만 가능)라면, CNN의 구조 제약은 “안전벨트 없이는 시동이 안 걸린다”는 설계(infinitely strong prior — 위반 자체가 불가능).</div>
+<p>💡 왜 유용? ① <strong>언제 CNN이 득이고 실인지</strong> 예측 가능 — prior가 데이터에 맞으면(자연 이미지: 국소적·정상적) 압도적 효율, 안 맞으면(칼럼 순서가 무의미한 표 형식 데이터, 이웃 개념이 다른 graph 데이터) 표현 못 하는 패턴이 생겨 <strong>underfitting</strong> 📉. ② <strong>벤치마크 함정</strong> — CNN이 완전연결망을 이기는 건 “더 똑똑해서”가 아니라 “그 과제에 맞는 prior를 미리 받아서”일 수 있다. prior가 부적절한 과제에선 그 우위가 사라진다 ⚖️.</p>
+</div>
 
       <div class="model-answer">
         <div class="ma-label">🎯 Model Answer (English)</div>
@@ -57,9 +50,6 @@
         <li>CNN = 완전연결층 + 무한히 강한 사전: ①수용영역 밖 가중치=0(국소) ②이웃 위치 가중치 동일(공유). 풀링 = 작은 이동 불변 사전.</li>
         <li>유용성 — 사전이 데이터에 맞으면 효율, 안 맞으면 과소적합. 벤치마크 비교의 함정 경고.</li>
       </ul>
-    </div>
-
-    
 
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:57.7%"></div></div>

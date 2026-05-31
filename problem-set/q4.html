@@ -27,27 +27,15 @@
     <p class="qtext">Describe and compare the gradient descent method and the Newton method.</p>
   </header>
 
-    <div class="prose">
-      
-      
-
-      <p>두 방법 모두 비용 $J(\theta)$를 최소화하지만, 곡면에 대해 쓰는 정보의 차수가 다르다. 경사하강은 <strong>1차(기울기)</strong>만, 뉴턴법은 <strong>2차(곡률, 헤시안)</strong>까지 쓴다.</p>
-
-      <p><strong>경사하강법(gradient descent)</strong>은 현재 지점의 기울기 반대 방향으로 일정 보폭만큼 내려간다.</p>
-      <div class="math-block">$$ \theta \leftarrow \theta - \epsilon\, \nabla_\theta J(\theta) $$</div>
-      <p>기울기는 “가장 가파른 내리막 방향”만 알려 줄 뿐 <em>얼마나 멀리 가야 바닥인지</em>는 모른다. 그래서 학습률 $\epsilon$을 사람이 정해야 하고, 곡면이 방향마다 기울기가 크게 다른 <strong>병든 조건수(ill-conditioned)</strong> 골짜기에서는 가파른 축을 따라 좌우로 튕기며 완만한 축으로는 거의 못 나아가는 지그재그가 생긴다.</p>
-
-      <p><strong>뉴턴법(Newton's method)</strong>은 현재 지점에서 비용을 2차(이차) 함수로 근사하고, 그 근사 포물면의 최소점으로 단번에 이동한다.</p>
-      <div class="math-block">$$ \theta \leftarrow \theta - H^{-1}\, \nabla_\theta J(\theta), \qquad H = \nabla^2_\theta J(\theta) $$</div>
-      <p>헤시안 $H^{-1}$이 방향마다 곡률로 보폭을 자동 조정하므로, 순수 이차 함수라면 <strong>단 한 걸음</strong>에 바닥에 도달하고 조건수 문제에 면역이다.</p>
-
-      <div class="analogy">
-        경사하강은 <b>“안개 속에서 발밑 경사만 보고 한 걸음씩 내려가는 등산객”</b>이다. 방향은 알아도 보폭은 감으로 정한다. 뉴턴법은 <b>“골짜기 전체 지형도를 펼쳐 보고 바닥 좌표로 곧장 점프하는 사람”</b>이다. 단, 지형도(헤시안)를 매번 그리고 뒤집는 비용이 막대하다.
-      </div>
-
-      <p>그래서 딥러닝에서는 뉴턴법을 거의 쓰지 못한다. 이유가 셋이다. ① <strong>비용</strong> — 파라미터가 $n$개면 헤시안은 $n\times n$, 역행렬 계산이 $O(n^3)$이다. $n$이 수백만~수십억인 딥넷에서는 불가능하다. ② <strong>안장점 위험</strong> — 비볼록 곡면의 안장점에서 $H$가 양의 정부호가 아니면 뉴턴 스텝이 오히려 안장점이나 극대점으로 끌려간다. ③ <strong>비볼록성</strong> — 국소 이차 근사가 멀리서는 부정확하다. 실제로는 모멘텀, RMSProp, Adam 같은 <strong>곡률을 값싸게 근사하는 1차 방법</strong>으로 두 세계의 절충을 취한다.</p>
-
-      <div class="widget">
+<div class="prose">
+<p>⛰️ 둘 다 비용 $J(\theta)$를 최소화하지만 곡면 정보의 <em>차수</em>가 다르다. <strong>Gradient descent</strong>는 <strong>1차(gradient)</strong>만, <strong>Newton's method</strong>는 <strong>2차(curvature, Hessian)</strong>까지 쓴다.</p>
+<p>🚶 <strong>Gradient descent</strong>: 기울기 반대 방향으로 일정 보폭.</p>
+<div class="math-block">$$ \theta \leftarrow \theta - \epsilon\,\nabla_\theta J(\theta) $$</div>
+<p>gradient는 “가장 가파른 내리막 방향”만 알려줄 뿐 <em>얼마나 가야 바닥인지</em>는 모른다 🤔. 그래서 <strong>learning rate</strong> $\epsilon$을 사람이 정해야 하고, 방향마다 기울기가 크게 다른 <strong>ill-conditioned</strong>(병든 조건수) 골짜기에선 가파른 축을 좌우로 튕기는 zig-zag가 생긴다 〰️.</p>
+<p>🦘 <strong>Newton's method</strong>: 비용을 2차 함수로 근사하고 그 포물면의 최소점으로 단번에 점프.</p>
+<div class="math-block">$$ \theta \leftarrow \theta - H^{-1}\,\nabla_\theta J(\theta), \qquad H = \nabla^2_\theta J(\theta) $$</div>
+<p>Hessian $H^{-1}$이 방향마다 곡률로 보폭을 자동 조정 → 순수 2차 함수면 <strong>단 한 걸음</strong>에 바닥, ill-conditioning에 면역 ✅.</p>
+<div class="widget">
         <div class="widget-frame">
           <div class="widget-label"><span class="lab-no">위젯 04</span><span>병든 골짜기 — 경사하강의 지그재그 vs 뉴턴의 한 걸음</span></div>
           <canvas id="gdnewton" class="widget-canvas" width="720" height="380"></canvas>
@@ -61,6 +49,9 @@
         </div>
         <p class="widget-cap">조건수 κ를 키워 골짜기를 찌그러뜨릴수록 경사하강(빨강)은 가파른 축을 좌우로 튕기며 더 많은 걸음을 허비한다. 뉴턴법(파랑)은 곡률을 알기에 κ와 무관하게 늘 한 걸음에 바닥으로 점프한다.</p>
       </div>
+<div class="analogy">🌫️ 경사하강 = 안개 속에서 발밑 경사만 보고 한 걸음씩 내려가는 등산객(보폭은 감). 뉴턴 = 골짜기 지형도를 펼쳐 바닥 좌표로 곧장 점프하는 사람. 단 지형도(Hessian)를 매번 그리고 뒤집는 비용이 막대 💸.</div>
+<p>🚫 그래서 딥러닝에선 Newton을 거의 못 쓴다. ① <strong>비용</strong> — 파라미터 $n$개면 $H$는 $n\times n$, 역행렬이 $O(n^3)$. $n$이 수백만~수십억이면 불가능. ② <strong>saddle point 위험</strong> — 비볼록 곡면의 안장점에서 $H$가 positive-definite가 아니면 Newton step이 안장점·극대점으로 끌려감. ③ <strong>non-convex</strong> — 국소 2차 근사가 멀리선 부정확. 그래서 실제론 momentum, RMSProp, Adam 같은 <strong>곡률을 값싸게 근사하는 1차 방법</strong>으로 절충한다 🤝.</p>
+</div>
 
       <div class="model-answer">
         <div class="ma-label">🎯 Model Answer (English)</div>
@@ -73,9 +64,6 @@
         <li>뉴턴은 곡률로 보폭 자동조정 → 조건수 면역, 이차함수는 1걸음. 경사하강은 ill-conditioned에서 지그재그.</li>
         <li>딥넷에서 뉴턴 못 쓰는 이유 — $O(n^3)$ 비용, 안장점에서 비양정부호, 비볼록. → 모멘텀/Adam이 절충.</li>
       </ul>
-    </div>
-
-    
 
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:23.1%"></div></div>
