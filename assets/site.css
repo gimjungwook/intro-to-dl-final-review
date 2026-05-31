@@ -597,6 +597,39 @@ hr.rule { max-width: var(--measure); margin: 3rem auto; border: none; border-top
 /* 토스 코드 칩 */
 .term { font-family: var(--mono); font-size: .88em; background: var(--structure-bg); color: #1B64DA; padding: .1em .42em; border-radius: 6px; letter-spacing: -.01em; }
 
+/* ============================================================
+   problem-set 단일 문항 레이아웃 (한 페이지 = 한 문항)
+   ============================================================ */
+.qtext { max-width: var(--measure); margin: .2rem auto 1.5rem; padding: .9rem 1.15rem; font-family: var(--mono); font-size: .82rem; color: var(--ink-soft); background: var(--paper-2); border: 1px solid var(--line); border-radius: 12px; line-height: 1.6; }
+.skel-h { max-width: var(--measure); margin: 1.9rem auto .5rem; padding-inline: 1.4rem; font-family: var(--mono); font-size: .74rem; letter-spacing: .1em; text-transform: uppercase; color: var(--style); font-weight: 700; }
+.prose h2[id] { scroll-margin-top: 5rem; }
+
+.qbar { position: sticky; top: 0; z-index: 40; display: flex; align-items: center; justify-content: space-between; gap: .8rem; padding: .8rem 1.4rem; background: rgba(242,244,246,.86); backdrop-filter: blur(12px) saturate(1.2); border-bottom: 1px solid var(--line); }
+.qbar .home { font-family: var(--mono); font-size: .74rem; color: var(--ink-soft); text-decoration: none; font-weight: 600; white-space: nowrap; }
+.qbar .home:hover { color: var(--structure); }
+.qbar .grp { font-family: var(--mono); font-size: .7rem; letter-spacing: .04em; color: var(--structure); background: var(--structure-bg); padding: .32rem .72rem; border-radius: 999px; font-weight: 700; white-space: nowrap; }
+.qbar .step { font-family: var(--mono); font-size: .74rem; color: var(--ink-faint); white-space: nowrap; }
+.qbar .step b { color: var(--ink); }
+
+.qpage { max-width: 44rem; margin: 0 auto; padding: 2.6rem 0 5rem; }
+.qhead { padding: 0 1.4rem; margin-bottom: 1.2rem; }
+.qhead .kicker { display: block; margin-bottom: .9rem; }
+.qhead h1 { font-size: clamp(1.9rem, 4.6vw, 2.9rem); margin: 0 0 1.1rem; line-height: 1.2; }
+
+.qnav { display: flex; align-items: stretch; gap: .8rem; max-width: var(--measure); margin: 3rem auto 0; padding-inline: 1.4rem; }
+.qnav a { flex: 1; text-decoration: none; padding: 1rem 1.2rem; background: #fff; border: 1px solid var(--line); border-radius: 16px; transition: transform .15s var(--ease), border-color .15s, box-shadow .15s; }
+.qnav a:hover { border-color: var(--structure-lo); transform: translateY(-2px); box-shadow: var(--shadow-plate); }
+.qnav .dir { font-family: var(--mono); font-size: .68rem; letter-spacing: .1em; color: var(--ink-faint); text-transform: uppercase; }
+.qnav .ti { font-weight: 700; color: var(--ink); margin-top: .28rem; font-size: .95rem; }
+.qnav .next { text-align: right; }
+.qnav .next .ti { color: var(--structure); }
+
+.qprog { max-width: var(--measure); margin: 1.5rem auto 0; padding-inline: 1.4rem; }
+.qprog-track { height: 8px; background: var(--paper-sink); border-radius: 999px; overflow: hidden; }
+.qprog-fill { height: 100%; background: linear-gradient(90deg, var(--structure), #6AABFF); border-radius: 999px; transition: width .4s var(--ease); }
+.qprog-txt { margin-top: .55rem; font-family: var(--mono); font-size: .72rem; color: var(--ink-faint); text-align: center; }
+.qprog-txt b { color: var(--structure); }
+
 /* 접근성: 모션 줄이기 */
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: .001ms !important; transition-duration: .001ms !important; scroll-behavior: auto; }
