@@ -33,22 +33,54 @@
   </div>
 
 <div class="prose">
-<p>🪞 둘 다 입력을 저차원 code로 압축했다 복원하며 핵심 구조를 잡는다. 결정적 차이는 <strong>linear냐 non-linear냐</strong>.</p>
-<p>📐 <strong>PCA</strong>는 분산이 가장 큰 직교 방향(<strong>principal components</strong>)을 찾아 그 부분공간에 <strong>linear</strong> 투영한다(복원도 linear). 핵심 사실: <strong>은닉층 하나 + linear 활성 + squared error를 쓰는 autoencoder는 PCA와 같은 부분공간을 학습</strong>한다 → linear autoencoder = PCA 🟰.</p>
-<p>🌀 <strong>Autoencoder</strong>는 encoder $f$와 decoder $g$에 <strong>non-linear 활성·여러 층</strong>을 둘 수 있어, PCA의 평평한 linear 부분공간을 넘어 <strong>휘어진 manifold</strong>까지 학습한다 → autoencoder는 PCA의 non-linear 일반화.</p>
-<div class="cmp">
-  <div class="card gatys"><h4>📐 PCA</h4><ul>
-    <li>linear 부분공간(평면)만.</li>
-    <li>closed-form 해, deterministic, 성분이 분산 순 정렬.</li>
-    <li>local minima 없음, 해석 쉬움. 표현력 제한.</li>
-  </ul></div>
-  <div class="card modern"><h4>🌀 Autoencoder</h4><ul>
-    <li>non-linear manifold까지. 표현력 큼.</li>
-    <li>gradient descent 학습, 깊게 쌓기 가능.</li>
-    <li>지나치게 강력하면 identity를 외울 위험 → regularization 필요.</li>
-  </ul></div>
-</div>
-<div class="analogy">🗺️ PCA = 종이를 평평하게 펴서 그림자(투영)를 보는 것. autoencoder = 종이를 자유롭게 접고 휘어(non-linear) 데이터가 실제로 놓인 굽은 면(manifold)을 따라가는 것. 데이터가 곡면 위에 있으면 후자가 훨씬 잘 잡는다.</div>
+<p>🪞 PCA와 Autoencoder는 비슷한 일을 하는 두 모델이다. 둘 다 입력을 저차원 표현(code)으로 압축한 뒤 다시 원본에 가깝게 복원하는 방식으로 데이터의 핵심 구조를 학습한다. 결정적 차이는 <strong>선형이냐 비선형이냐</strong>에 있고, 사실 둘은 같은 가족이라고 볼 수 있다.</p>
+
+<h4>📐 PCA (주성분 분석, Principal Component Analysis)</h4>
+<p>PCA는 데이터에서 분산이 가장 큰 방향들을 찾아 그 방향으로 데이터를 투영(projection)한다. "주성분(principal components)"이라 부르는 이 방향들은 서로 직교한다.</p>
+<p>예를 들어 2차원 데이터가 대각선 방향으로 길게 펴져 있다면, 첫 번째 주성분은 그 대각선 방향이 된다. 데이터를 그 방향으로 투영하면 정보 손실을 최소화하면서 1차원으로 압축할 수 있다.</p>
+<p>중요한 점은 PCA의 모든 동작이 <strong>선형(linear)</strong>이라는 것이다. 압축(데이터를 주성분 방향에 투영)도 선형이고, 복원(투영 결과로부터 원본 추정)도 선형이다. 따라서 PCA가 학습할 수 있는 구조는 <strong>"선형 부분공간(평평한 면)"</strong>으로 제한된다.</p>
+
+<h4>🔑 핵심 사실: Linear Autoencoder = PCA</h4>
+<p>이 사실이 두 모델의 관계를 가장 명확히 보여준다. <strong>은닉층이 하나만 있고, 활성 함수가 선형(없음)이고, 손실 함수가 제곱 오차인 autoencoder는 PCA와 정확히 같은 부분공간을 학습한다</strong>.</p>
+<p>즉 가장 단순한 형태의 autoencoder는 PCA 그 자체다. 이걸 알면 autoencoder의 본질이 명확해진다 — autoencoder는 PCA의 일반화다.</p>
+
+<h4>🌀 Autoencoder의 일반화</h4>
+<p>일반적인 autoencoder는 두 부분으로 이루어진다. <strong>Encoder</strong>는 입력을 저차원 code로 압축하고, <strong>Decoder</strong>는 그 code로부터 원본을 복원한다. 학습은 "원본과 복원의 차이"를 최소화하도록 한다.</p>
+<p>PCA와 달리 autoencoder는 <strong>비선형 활성 함수(ReLU, sigmoid 등)와 여러 layer</strong>를 쓸 수 있다. 그 결과 PCA의 평평한 선형 부분공간을 넘어, <strong>휘어진 면(manifold)</strong>까지 학습할 수 있다.</p>
+<p>예를 들어 데이터가 "원 모양"으로 분포해 있다면, PCA는 그걸 평평한 직선으로만 근사할 수 있어 정보 손실이 크다. 하지만 비선형 autoencoder는 그 원의 곡선 자체를 따라가는 표현을 학습할 수 있다.</p>
+
+<div class="analogy">🗺️ PCA를 종이를 평평하게 편 채로 데이터의 그림자를 비추는 것에 비유할 수 있다. 그림자는 항상 평평한 면 위에만 그려진다. Autoencoder는 종이를 자유롭게 접고 휘어서, 데이터가 실제로 놓인 곡면을 따라가는 것이다. 데이터가 곡면 위에 분포해 있다면, 후자가 훨씬 자연스러운 표현을 학습한다.</div>
+
+<h4>⚖️ 두 모델의 trade-off</h4>
+<p><strong>PCA의 장점</strong></p>
+<ul>
+  <li>닫힌 해(closed-form solution)가 있어 한 번의 행렬 계산으로 즉시 풀린다 — 학습 시간이 사실상 0.</li>
+  <li>결정론적(deterministic)이라 매번 같은 결과가 나온다.</li>
+  <li>주성분들이 분산 크기 순으로 자동 정렬된다 — 첫 번째 성분이 가장 중요한 방향이라는 게 명확.</li>
+  <li>local minimum 같은 학습 어려움이 없다.</li>
+  <li>해석이 쉽다 — 각 주성분이 데이터의 어떤 방향을 나타내는지 직관적으로 본다.</li>
+</ul>
+<p><strong>PCA의 단점</strong></p>
+<ul>
+  <li>선형 구조만 잡을 수 있어 표현력이 제한적이다.</li>
+  <li>휘어진 manifold나 복잡한 비선형 관계는 잡지 못한다.</li>
+</ul>
+<p><strong>Autoencoder의 장점</strong></p>
+<ul>
+  <li>비선형 활성과 여러 layer로 표현력이 매우 크다.</li>
+  <li>휘어진 manifold도 학습 가능하다.</li>
+  <li>깊이 쌓으면 계층적 표현(예: 이미지의 edge → texture → object)이 자동으로 형성된다.</li>
+</ul>
+<p><strong>Autoencoder의 단점</strong></p>
+<ul>
+  <li>Gradient descent로 학습해야 하니 시간과 비용이 든다.</li>
+  <li>모델이 지나치게 강력하면 <strong>그냥 입력을 그대로 외워서 출력하는 identity 함수</strong>를 학습해버릴 위험이 있다 — 압축이 무의미해진다. 이걸 막기 위해 정칙화(예: code 차원을 좁히기, sparsity 제약, denoising 등)가 필요하다.</li>
+  <li>local minimum, 학습 안정성 등 일반 신경망의 문제를 그대로 떠안는다.</li>
+  <li>해석이 PCA만큼 명확하지 않다.</li>
+</ul>
+
+<h4>📌 정리</h4>
+<p>"PCA와 autoencoder의 차이는?"에 대한 핵심 답은 다음과 같다. <strong>PCA는 선형, autoencoder는 비선형이며, autoencoder는 PCA의 비선형 일반화다</strong>. 가장 단순한 linear autoencoder는 PCA와 같은 결과를 학습한다. 데이터에 비선형 구조가 있으면 autoencoder가 PCA보다 훨씬 풍부한 표현을 잡지만, 그 표현력의 대가로 학습 비용·해석 어려움·정칙화 필요성이 따라온다.</p>
 </div>
 
       <div class="model-answer">
