@@ -29,7 +29,7 @@
 
   <div class="q-interpret">
     <div class="qi-label">📌 질문 해석</div>
-    <p>“비지도 학습이 왜 분류 같은 <strong>다운스트림 과제</strong>에 도움이 되나?” 핵심은 <strong>$p(x)$의 구조가 $p(y\mid x)$의 정보를 담는다</strong>는 가정.</p>
+    <p>“비지도 학습이 왜 분류 같은 <strong>다운스트림 과제</strong>에 도움이 되나?” 핵심은 <strong>입력 분포의 구조가 라벨 예측에 대한 정보를 담는다</strong>는 가정.</p>
   </div>
 
 <div class="prose">
@@ -69,7 +69,7 @@
 
       <div class="model-answer">
         <div class="ma-label">🎯 Model Answer (English)</div>
-        <p class="ma-en">The core assumption is that the structure of the input distribution $p(x)$ carries information about $p(y\mid x)$: the factors of variation that shape $p(x)$ overlap substantially with the factors we want to predict. Examples of one class cluster together or lie on a shared manifold, and unsupervised learning discovers these clusters, manifolds and factors without labels, producing a <strong>good representation of $x$</strong> in which the decision boundary becomes simple — so the downstream classifier needs fewer labels and generalises better. In practice it is used as pre-training/initialisation (learn from abundant unlabelled data, then fine-tune) or as semi-supervised shared representations, e.g. word embeddings from a language model or edges and textures from an autoencoder. The caveat: it helps only when the unsupervised features are actually relevant to $y$ — if $p(x)$ and $p(y\mid x)$ are unrelated, it may not help.</p>
+        <p class="ma-en">The core assumption is that the structure of the input distribution carries information about the label distribution: the factors of variation that shape the inputs overlap substantially with the factors we want to predict. Examples of one class cluster together or lie on a shared manifold, and unsupervised learning discovers these clusters, manifolds and factors without labels, producing a <strong>good representation of the input</strong> in which the decision boundary becomes simple — so the downstream classifier needs fewer labels and generalises better. In practice it is used as pre-training/initialisation (learn from abundant unlabelled data, then fine-tune) or as semi-supervised shared representations, e.g. word embeddings from a language model or edges and textures from an autoencoder. The caveat: it helps only when the unsupervised features are actually relevant to the label — if the input distribution structure and the label predictor are unrelated, it may not help.</p>
       </div>
 
       <p class="skel-h">📝 시험 답안 골격</p>

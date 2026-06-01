@@ -59,7 +59,7 @@
 
       <div class="model-answer">
         <div class="ma-label">🎯 Model Answer (English)</div>
-        <p class="ma-en">Both encode the prior that certain parameters are related; they differ in how hard that constraint is. <strong>Parameter tying</strong> adds a soft penalty such as $\lVert w_A - w_B\rVert^2$ that pulls two <em>separate</em> parameter sets close together, used when two related models or tasks should resemble each other. <strong>Parameter sharing</strong> forces parameters to be <em>exactly identical</em> — they are literally the same memory — as in CNN kernels reused across spatial positions or RNN weights reused across time steps. Sharing is the limiting case of tying with an infinite penalty, so it acts as an infinitely strong prior; it additionally saves memory and grants translation equivariance for free.</p>
+        <p class="ma-en">Both encode the prior that certain parameters are related; they differ in how hard that constraint is. <strong>Parameter tying</strong> adds a soft penalty on the distance between two parameter sets that pulls them close together (each set still kept separate), used when two related models or tasks should resemble each other. <strong>Parameter sharing</strong> forces parameters to be <em>exactly identical</em> — they are literally the same memory — as in CNN kernels reused across spatial positions or RNN weights reused across time steps. Sharing is the limiting case of tying with an infinite penalty, so it acts as an infinitely strong prior; it additionally saves memory and grants translation equivariance for free.</p>
       </div>
 
       <p class="skel-h">📝 시험 답안 골격</p>

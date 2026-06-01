@@ -58,7 +58,7 @@
 
       <div class="model-answer">
         <div class="ma-label">🎯 Model Answer (English)</div>
-        <p class="ma-en">Gradient clipping rescales the gradient whenever its norm exceeds a threshold $\tau$, while <strong>preserving its direction</strong>: if $\lVert g\rVert > \tau$ then $g \leftarrow \tau\,g/\lVert g\rVert$. It is the direct remedy for cliffs and exploding gradients (Q7): when the gradient blows up near a cliff, clipping caps the step so the parameters are not catapulted away, yet the descent direction is unchanged — like a car's speed limiter that bounds how fast you go without changing where you steer. It is a standard safeguard in RNN training; an element-wise variant clipping each component to $[-v, v]$ exists, but norm clipping is preferred because it keeps the direction intact.</p>
+        <p class="ma-en">Gradient clipping rescales the gradient whenever its magnitude exceeds a threshold, while <strong>preserving its direction</strong>: if the gradient is too large, rescale it down to the threshold size in the same direction. It is the direct remedy for cliffs and exploding gradients (Q7): when the gradient blows up near a cliff, clipping caps the step so the parameters are not catapulted away, yet the descent direction is unchanged — like a car's speed limiter that bounds how fast you go without changing where you steer. It is a standard safeguard in RNN training; an element-wise variant clipping each component to a fixed range exists, but norm clipping is preferred because it keeps the direction intact.</p>
       </div>
 
       <p class="skel-h">📝 시험 답안 골격</p>

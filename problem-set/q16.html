@@ -70,14 +70,14 @@
           </div>
           <button class="btn ghost" id="reroll">새 무작위 ↻</button>
         </div>
-        <p class="widget-cap">위쪽 곡선이 “중요한 하이퍼파라미터”의 진짜 성능, 옆 축은 “중요하지 않은 파라미터”다. 그리드(왼쪽)는 중요한 축을 $\sqrt N$개 값만 훑지만, 무작위(오른쪽)는 N개의 서로 다른 값을 훑어 봉우리를 맞힐 확률이 높다.</p>
+        <p class="widget-cap">위쪽 곡선이 “중요한 하이퍼파라미터”의 진짜 성능, 옆 축은 “중요하지 않은 파라미터”다. 그리드(왼쪽)는 중요한 축을 sqrt(N) 개 값만 훑지만, 무작위(오른쪽)는 N개의 서로 다른 값을 훑어 봉우리를 맞힐 확률이 높다.</p>
       </div>
 <p>🧠 더 똑똑한 후속은 <strong>Bayesian optimization</strong> — 지금까지 결과로 성능 곡면의 surrogate 모델을 세우고 다음 시도값을 영리하게 고른다. 하지만 단순함·병렬성·강건함 덕에 random search가 여전히 강력한 기본값이다 ✅.</p>
 </div>
 
       <div class="model-answer">
         <div class="ma-label">🎯 Model Answer (English)</div>
-        <p class="ma-en">Both search hyperparameters that gradient descent cannot tune. <strong>Grid search</strong> picks a few candidate values per hyperparameter and tries every combination (the Cartesian product), so the number of trials grows exponentially with the number of hyperparameters. <strong>Random search</strong> instead samples each hyperparameter from a distribution for a fixed number of trials. Random usually wins because typically only a few hyperparameters matter: a $3\times3$ grid tests only 3 distinct values of each parameter, whereas 9 random trials test 9 distinct values of the important one — exploring it three times more finely for the same budget. Bayesian optimisation is the smarter successor, but random search remains a strong, trivially parallelisable baseline.</p>
+        <p class="ma-en">Both search hyperparameters that gradient descent cannot tune. <strong>Grid search</strong> picks a few candidate values per hyperparameter and tries every combination (the Cartesian product), so the number of trials grows exponentially with the number of hyperparameters. <strong>Random search</strong> instead samples each hyperparameter from a distribution for a fixed number of trials. Random usually wins because typically only a few hyperparameters matter: a 3-by-3 grid tests only 3 distinct values of each parameter, whereas 9 random trials test 9 distinct values of the important one — exploring it three times more finely for the same budget. Bayesian optimisation is the smarter successor, but random search remains a strong, trivially parallelisable baseline.</p>
       </div>
 
       <p class="skel-h">📝 시험 답안 골격</p>

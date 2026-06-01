@@ -63,7 +63,7 @@
 
       <div class="model-answer">
         <div class="ma-label">🎯 Model Answer (English)</div>
-        <p class="ma-en">Momentum accumulates an exponentially decaying moving average of past gradients into a <strong>velocity</strong> term: $v \leftarrow \alpha v - \epsilon\nabla J$, then $\theta \leftarrow \theta + v$. It helps because in an ill-conditioned ravine the oscillating directions reverse every step and cancel out on average, while the consistent downhill direction accumulates and accelerates — like a heavy ball rolling that coasts through small bumps (mini-batch noise) and shallow dips (poor local minima). With $\alpha = 0.9$ the effective step is amplified about tenfold (terminal velocity $\epsilon\lVert g\rVert/(1-\alpha)$). Nesterov momentum refines this by evaluating the gradient at the look-ahead position, correcting before it overshoots.</p>
+        <p class="ma-en">Momentum accumulates an exponentially decaying moving average of past gradients into a <strong>velocity</strong> term, and the parameters move by that velocity each step. It helps because in an ill-conditioned ravine the oscillating directions reverse every step and cancel out on average, while the consistent downhill direction accumulates and accelerates — like a heavy ball rolling that coasts through small bumps (mini-batch noise) and shallow dips (poor local minima). With a typical momentum coefficient of 0.9 the effective step is amplified roughly tenfold along consistent directions. Nesterov momentum refines this by evaluating the gradient at the look-ahead position (where momentum is about to take you), correcting before it overshoots.</p>
       </div>
 
       <p class="skel-h">📝 시험 답안 골격</p>

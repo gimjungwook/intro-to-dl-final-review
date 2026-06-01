@@ -29,7 +29,7 @@
 
   <div class="q-interpret">
     <div class="qi-label">📌 질문 해석</div>
-    <p>세 갈래 — ① <strong>distributed representation</strong>이 무엇인지, ② <strong>왜 그렇게 중요한지</strong>($2^n$), ③ <strong>compact vs sparse</strong> 비교.</p>
+    <p>세 갈래 — ① <strong>distributed representation</strong>이 무엇인지, ② <strong>왜 그렇게 중요한지</strong> (n개 유닛으로 2의 n제곱 영역 표현), ③ <strong>compact vs sparse</strong> 비교.</p>
   </div>
 
 <div class="prose">
@@ -69,7 +69,7 @@
             <input type="range" id="nbits" class="s-structure" min="1" max="20" value="8">
           </div>
         </div>
-        <p class="widget-cap">유닛 수 n을 키워 보라. 국소 표상이 구별하는 개념 수(파랑)는 n으로 선형으로 늘지만, 분산 표상의 구별 수(빨강)는 $2^n$으로 폭증한다. n=20이면 국소는 20개, 분산은 100만 개를 넘는다.</p>
+        <p class="widget-cap">유닛 수 n을 키워 보라. 국소 표상이 구별하는 개념 수(파랑)는 n으로 선형으로 늘지만, 분산 표상의 구별 수(빨강)는 2의 n제곱으로 폭증한다. n=20이면 국소는 20개, 분산은 100만 개를 넘는다.</p>
       </div>
 <h4>🎛️ 세 가지 표상 모드 비교</h4>
 <p>"분산 표상"이라고 해도 한 가지가 아니다. 한 번에 몇 개 유닛이 동시에 활성화되느냐에 따라 세 가지 모드로 나뉘며, 각각 trade-off가 다르다.</p>
@@ -109,7 +109,7 @@
 
       <div class="model-answer">
         <div class="ma-label">🎯 Model Answer (English)</div>
-        <p class="ma-en">A <strong>distributed representation</strong> encodes a concept as a <em>pattern of activity over many units</em>, with each unit helping to represent many concepts; the opposite is a local (one-hot) representation, one unit per concept. It matters because its capacity is exponential: $n$ binary features can distinguish up to $2^n$ regions, whereas $n$ local units distinguish only $n$. This is the source of generalisation — features are reused across concepts, so having seen "red car" and "blue truck" the model generalises to an unseen "red truck" — and the statistical efficiency ($O(n)$ parameters describing $O(2^n)$ regions) behind deep learning. Comparing the modes: <strong>local</strong> (exactly one unit active; $n$ concepts; no reuse; most interpretable), <strong>dense/compact</strong> distributed (many units active; capacity up to $2^n$; maximal efficiency but entangled and hard to interpret), and <strong>sparse</strong> distributed ($k$ of $n$ active; capacity $\binom{n}{k}$ still huge, but more interpretable, robust, and energy-efficient) — a trade-off between capacity, interpretability, and robustness.</p>
+        <p class="ma-en">A <strong>distributed representation</strong> encodes a concept as a <em>pattern of activity over many units</em>, with each unit helping to represent many concepts; the opposite is a local (one-hot) representation, one unit per concept. It matters because its capacity is exponential: n binary features can distinguish up to 2 to the n regions, whereas n local units distinguish only n. This is the source of generalisation — features are reused across concepts, so having seen "red car" and "blue truck" the model generalises to an unseen "red truck" — and the statistical efficiency (linearly many parameters describing exponentially many regions) behind deep learning. Comparing the modes: <strong>local</strong> (exactly one unit active; n concepts; no reuse; most interpretable), <strong>dense/compact</strong> distributed (many units active; capacity up to 2 to the n; maximal efficiency but entangled and hard to interpret), and <strong>sparse</strong> distributed (k of n active; capacity is the number of ways to choose k from n — still huge, but more interpretable, robust, and energy-efficient) — a trade-off between capacity, interpretability, and robustness.</p>
       </div>
 
       <p class="skel-h">📝 시험 답안 골격</p>

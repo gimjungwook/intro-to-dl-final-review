@@ -77,19 +77,19 @@
           </div>
           <div class="legend"><span><i style="background:var(--structure)"></i>바닐라 RNN(고정 감쇠)</span><span><i style="background:var(--style)"></i>LSTM(f 조절)</span></div>
         </div>
-        <p class="widget-cap">바닐라 RNN(파랑)은 가중치·활성에 묶인 고정 감쇠율로 신호가 지수적으로 사라진다. LSTM(빨강)은 망각 게이트 f를 1에 가깝게 학습하면 $f^t\approx1$로 신호를 수십 스텝 보존한다. f를 낮추면 LSTM도 의도적으로 잊을 수 있음을 본다.</p>
+        <p class="widget-cap">바닐라 RNN(파랑)은 가중치·활성에 묶인 고정 감쇠율로 신호가 지수적으로 사라진다. LSTM(빨강)은 망각 게이트 f를 1에 가깝게 학습하면 신호를 수십 스텝 보존한다 (f를 t번 곱해도 1에 가까움). f를 낮추면 LSTM도 의도적으로 잊을 수 있음을 본다.</p>
       </div>
 </div>
 
       <div class="model-answer">
         <div class="ma-label">🎯 Model Answer (English)</div>
-        <p class="ma-en">In a vanilla RNN the hidden state is multiplied by the same recurrent weight matrix at every step, so the influence of an input $k$ steps back scales like $W^k$; if the largest eigenvalue is below 1 the gradient <strong>vanishes exponentially</strong> (and the $\tanh$ derivative, being below 1, worsens it), so long-range dependencies are lost. The LSTM fixes this with a <strong>cell state that is updated additively and gated</strong>: $c_t = f_t \odot c_{t-1} + i_t \odot g_t$. This additive self-loop is the <strong>Constant Error Carousel</strong> — when the forget gate $f_t \approx 1$ the cell state is preserved and the gradient flows along it at roughly 1, with no repeated matrix multiplication, so it does not vanish. The forget, input, and output gates let the network learn <em>when</em> to keep, write, and expose information.</p>
+        <p class="ma-en">In a vanilla RNN the hidden state is multiplied by the same recurrent weight matrix at every step, so the influence of an input k steps back scales like the matrix multiplied k times; if the largest eigenvalue is below 1 the gradient <strong>vanishes exponentially</strong> (and the tanh derivative, being below 1, worsens it), so long-range dependencies are lost. The LSTM fixes this with a <strong>cell state that is updated additively and gated</strong>: the new cell state is the previous cell state weighted by a forget gate plus a new candidate weighted by an input gate. This additive self-loop is the <strong>Constant Error Carousel</strong> — when the forget gate is close to 1 the cell state is preserved and the gradient flows along it at roughly 1, with no repeated matrix multiplication, so it does not vanish. The forget, input, and output gates let the network learn <em>when</em> to keep, write, and expose information.</p>
       </div>
 
       <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
-        <li>원인 — 바닐라 RNN은 순환행렬 반복 곱 $\sim W^k$ → 고윳값&lt;1이면 지수 소실(+tanh 도함수&lt;1).</li>
-        <li>해법 — 셀 상태의 덧셈형 갱신 $c_t=f_t\odot c_{t-1}+i_t\odot g_t$ + 게이트. CEC로 기울기 $\approx1$ 보존.</li>
+        <li>원인 — 바닐라 RNN은 순환 가중치 행렬이 반복 곱해짐. 가장 큰 확대 비율(eigenvalue)이 1보다 작으면 기울기가 지수적으로 소실. tanh 도함수가 항상 1보다 작아 더 악화.</li>
+        <li>해법 — cell state를 곱셈이 아닌 덧셈으로 갱신 + forget/input/output gate로 정보 흐름 제어. CEC(Constant Error Carousel)로 기울기가 약 1로 유지되어 소실되지 않음.</li>
         <li>게이트(망각·입력·출력)로 언제 기억/망각할지 학습. 행렬 반복 곱이 없어 소실 제거.</li>
       </ul>
 

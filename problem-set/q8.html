@@ -29,7 +29,7 @@
 
   <div class="q-interpret">
     <div class="qi-label">📌 질문 해석</div>
-    <p>“<strong>weight space symmetry</strong>란?” 정의 + 대표 예(은닉 유닛 교환) + <strong>$m!$개의 동등 최소점</strong>이라는 함의까지.</p>
+    <p>“<strong>weight space symmetry</strong>란?” 정의 + 대표 예(은닉 유닛 교환) + <strong>m! 개의 동등 최소점</strong>이라는 함의까지.</p>
   </div>
 
 <div class="prose">
@@ -59,7 +59,7 @@
 
       <div class="model-answer">
         <div class="ma-label">🎯 Model Answer (English)</div>
-        <p class="ma-en">Weight-space symmetry is the fact that <strong>many different weight settings implement exactly the same input–output function</strong>, so the network is non-identifiable — you cannot recover unique weights from the function. The most common case is hidden-unit permutation: swapping the incoming and outgoing weights of two hidden units leaves the computed function unchanged, so $m$ units yield at least $m!$ equivalent configurations; odd activations such as $\tanh$ add a sign-flip symmetry. The consequences are that the loss has at least $m!$ equivalent global minima, that this is one source of non-convexity, and that an individual weight value has no absolute meaning — but since all copies are equivalent, the symmetry itself does not make optimisation harder.</p>
+        <p class="ma-en">Weight-space symmetry is the fact that <strong>many different weight settings implement exactly the same input-output function</strong>, so the network is non-identifiable — you cannot recover unique weights from the function. The most common case is hidden-unit permutation: swapping the incoming and outgoing weights of two hidden units leaves the computed function unchanged, so m units yield at least m! (m factorial) equivalent configurations; odd activations such as tanh add a sign-flip symmetry. The consequences are that the loss has at least m! equivalent global minima, that this is one source of non-convexity, and that an individual weight value has no absolute meaning — but since all copies are equivalent, the symmetry itself does not make optimisation harder.</p>
       </div>
 
       <p class="skel-h">📝 시험 답안 골격</p>

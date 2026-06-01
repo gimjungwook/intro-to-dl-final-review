@@ -74,14 +74,14 @@
           <div class="widget-label"><span class="lab-no">위젯 22</span><span>선형 누적 — 작은 섭동이 차원 수만큼 쌓인다</span></div>
           <div id="advlin"></div>
         </div>
-        <p class="widget-cap">픽셀당 섭동 크기 $\epsilon$은 그대로 두고 입력 차원 $n$만 키워 보라. 픽셀 하나의 변화(왼쪽 막대)는 늘 작지만, 출력 활성값의 총 변화 $\epsilon\lVert w\rVert_1$(오른쪽)는 차원에 비례해 폭증한다. 고차원이 적대적 예제를 가능케 하는 메커니즘이다.</p>
+        <p class="widget-cap">픽셀당 섭동 크기는 그대로 두고 입력 차원 n만 키워 보라. 픽셀 하나의 변화(왼쪽 막대)는 늘 작지만, 출력 활성값의 총 변화(오른쪽)는 차원에 비례해 폭증한다. 고차원이 적대적 예제를 가능케 하는 메커니즘이다.</p>
       </div>
 <p>🛡️ 함의 둘: ① <strong>security</strong> — 분류기를 값싸게 속일 수 있다. ② 흥미롭게도 <strong>regularization</strong> — adversarial example을 훈련에 섞는 <strong>adversarial training</strong>은 decision boundary를 데이터에서 멀리 밀어 robustness와 generalization을 함께 높인다. 적대적 예제는 “모델이 의미가 아니라 표면적 선형 통계를 배웠다”는 진단 도구이기도 하다 🔬.</p>
 </div>
 
       <div class="model-answer">
         <div class="ma-label">🎯 Model Answer (English)</div>
-        <p class="ma-en">An adversarial example is an input carrying a tiny, deliberately crafted perturbation — imperceptible to a human — that makes a high-accuracy network <strong>misclassify with high confidence</strong> (e.g. FGSM: $\tilde{x} = x + \epsilon\,\operatorname{sign}(\nabla_x J)$). The main point is its cause: <strong>not excessive non-linearity, but excessive linearity in high dimensions</strong>. For a linear response $w^\top x$, the perturbation $\eta = \epsilon\,\operatorname{sign}(w)$ shifts the output by $\epsilon\lVert w\rVert_1$, which grows with the input dimension $n$ — each component changes by a negligible $\epsilon$, yet thousands of aligned changes sum to a large shift. This is both a security threat and, usefully, a regulariser: adversarial training pushes decision boundaries away from the data and improves generalisation.</p>
+        <p class="ma-en">An adversarial example is an input carrying a tiny, deliberately crafted perturbation — imperceptible to a human — that makes a high-accuracy network <strong>misclassify with high confidence</strong> (e.g. FGSM, which nudges each pixel slightly in the direction that increases the loss). The main point is its cause: <strong>not excessive non-linearity, but excessive linearity in high dimensions</strong>. For a linear response, moving each input dimension by a tiny amount in the gradient's direction shifts the output by an amount that grows with the input dimension — each component changes negligibly, yet thousands of aligned changes sum to a large shift. This is both a security threat and, usefully, a regulariser: adversarial training pushes decision boundaries away from the data and improves generalisation.</p>
       </div>
 
       <p class="skel-h">📝 시험 답안 골격</p>
