@@ -33,11 +33,35 @@
   </div>
 
 <div class="prose">
-<p>🔭 한 문장 핵심: <strong>순환(RNN)도 합성곱(CNN)도 없이, 오직 (self-)attention만으로 시퀀스를 모델링</strong>할 수 있다. 이 구조가 <strong>Transformer</strong>다.</p>
-<p>🎯 <strong>Self-attention</strong>은 각 위치에 대해 <strong>모든 위치의 value를 가중합</strong>한다. 가중치는 그 위치의 <strong>query</strong>와 다른 위치들의 <strong>key</strong>가 얼마나 닮았는지를 softmax로 정규화한 것:</p>
-<div class="math-block">$$ \text{Attention}(Q,K,V) = \operatorname{softmax}\!\Big(\frac{QK^\top}{\sqrt{d_k}}\Big)V $$</div>
-<p class="math-note">$QK^\top$로 모든 위치 쌍의 유사도를 재고, $\sqrt{d_k}$로 크기 조정 후 softmax로 가중, 그 가중치로 value $V$를 합산.</p>
-<p>💪 왜 중요? RNN과 CNN의 두 한계를 동시에 넘기 때문이다. ① <strong>긴 의존성</strong> — 어떤 두 위치든 한 번의 attention으로 직접 연결(<strong>path length $O(1)$</strong>). RNN처럼 여러 스텝을 거치며 기억이 소실되지도, CNN처럼 depth를 쌓아야 멀리 닿지도 않는다 ✅. ② <strong>병렬성</strong> — 모든 위치를 동시에 계산. RNN의 순차 의존성이 없어 GPU에서 훨씬 빠르게 학습 ⚡.</p>
+<p>🔭 Vaswani 외 2017년 발표한 "Attention Is All You Need"는 현대 자연어 처리의 모든 흐름을 바꾼 논문이다. ChatGPT, BERT, GPT, Claude 같은 모든 현대 대규모 언어 모델의 기반이 된 Transformer 아키텍처가 이 논문에서 처음 제안됐다.</p>
+
+<h4>📖 한 문장 핵심</h4>
+<p>이 논문의 main point는 한 문장으로 요약할 수 있다 — <strong>"순환(RNN)도 합성곱(CNN)도 없이, 오직 self-attention만으로 시퀀스를 모델링할 수 있다"</strong>는 것이다. 그 결과 만들어진 아키텍처가 Transformer다.</p>
+<p>이 주장이 왜 충격적이었는지 이해하려면 당시의 맥락을 봐야 한다. 2017년 이전까지 시퀀스 데이터(텍스트, 음성, 시계열) 처리의 표준은 RNN(특히 LSTM)이었고, 일부 task에서는 CNN이 쓰였다. 이 논문은 "이 둘이 사실 필요 없다. attention 하나면 충분하다"고 주장했고, 실험으로 입증했다 — 번역 task에서 더 적은 학습 시간으로 더 좋은 성능을 냈다.</p>
+
+<h4>🎯 Self-Attention의 작동 원리</h4>
+<p>Self-attention은 시퀀스의 각 위치(예: 한 문장의 각 단어)가 <strong>같은 시퀀스의 모든 위치의 정보를 가중합으로 받아들이는</strong> 방식이다. 핵심 개념을 세 가지로 나누어 보자.</p>
+<p><strong>1) Query, Key, Value 세 가지 표현</strong> — 각 위치(단어)는 세 가지 다른 벡터 표현을 만든다.</p>
+<ul>
+  <li><strong>Query</strong>: "내가 무엇을 찾고 있는가" — 그 단어가 다른 단어들로부터 어떤 정보를 가져오고 싶은지</li>
+  <li><strong>Key</strong>: "내가 무엇을 가지고 있는가" — 그 단어가 다른 단어들의 검색에 매칭될 때 보여주는 정보</li>
+  <li><strong>Value</strong>: "내가 실제로 전달할 정보" — 매칭이 되면 실제로 다른 단어에 전달되는 내용</li>
+</ul>
+<p>도서관 비유로 설명하면, query는 책 검색어, key는 책 표지의 키워드, value는 책 안의 실제 내용이다. 검색어와 표지가 잘 맞는 책의 내용을 가져오는 것이 attention이다.</p>
+<p><strong>2) 유사도 계산</strong> — 한 단어의 query와 모든 단어들의 key 사이의 유사도를 계산한다. 유사도가 높을수록 그 단어로부터 많은 정보를 가져오겠다는 뜻이다.</p>
+<p><strong>3) 가중합</strong> — 유사도를 softmax로 정규화해서 "attention weight"를 만든 뒤, 그 가중치로 모든 위치의 value를 가중합한다. 결과적으로 한 단어가 다른 모든 단어의 정보를 자기와의 관련성에 따라 적절히 흡수하는 셈이다.</p>
+
+<h4>💪 RNN과 CNN의 두 한계를 동시에 넘다</h4>
+<p>왜 이 단순한 메커니즘이 그렇게 강력한가? 핵심은 <strong>RNN과 CNN이 각각 가지고 있던 두 가지 큰 한계를 동시에 극복</strong>한다는 점이다.</p>
+<p><strong>1) 긴 의존성 문제 해결 (vs RNN)</strong></p>
+<p>RNN은 한 위치에서 멀리 떨어진 다른 위치까지 정보가 도달하려면 그 사이의 모든 timestep을 거쳐야 한다. 시퀀스 길이가 100이면 100 step을 통과하면서 vanishing gradient에 의해 정보가 사라지기 쉽다.</p>
+<p>Self-attention은 정반대다. <strong>시퀀스 안의 어떤 두 위치도 단 한 번의 attention 연산으로 직접 연결</strong>된다 — "path length가 1"이라고 표현한다. 100 단어가 떨어진 두 단어의 관계도 한 번에 잡힌다. 정보가 중간 단계를 거치지 않으니 길이에 따라 약해지지 않는다.</p>
+<p>예를 들어 "그것은(it)"이라는 대명사가 문장 앞쪽의 "강아지"를 가리키는 경우, RNN은 그 사이의 모든 단어를 통과하면서 연결을 만들어야 한다. Self-attention은 "그것은"의 query가 "강아지"의 key에 직접 강한 attention weight를 줘서 바로 연결한다.</p>
+<p><strong>2) 병렬화 (vs RNN)</strong></p>
+<p>RNN은 timestep t의 hidden state가 t-1의 결과에 의존하므로 순차 계산이 강제된다 — 한 번에 한 timestep씩 계산할 수밖에 없다. GPU의 병렬 처리 능력을 활용 못 한다.</p>
+<p>Self-attention은 <strong>모든 위치를 동시에 처리</strong>한다. 100개 단어의 모든 attention 계산이 행렬 곱셈으로 한 번에 끝난다. GPU에서 압도적으로 빠르다.</p>
+<p><strong>3) 표현력 (vs CNN)</strong></p>
+<p>CNN은 한 layer 안에서 작은 수용 영역만 보니, 멀리 떨어진 위치까지 닿으려면 layer를 여러 개 쌓아야 한다. Self-attention은 한 layer 안에서 시퀀스 전체를 직접 본다 — depth가 적어도 멀리까지 닿는다.</p>
 <div class="widget">
         <div class="widget-frame">
           <div class="widget-label"><span class="lab-no">위젯 25</span><span>셀프 어텐션 — 한 단어를 누르면 무엇에 주목하는지 보인다</span></div>
@@ -45,7 +69,19 @@
         </div>
         <p class="widget-cap">아래 문장의 한 단어(질의)를 눌러 보라. 그 단어가 다른 단어들에 얼마나 주목하는지(어텐션 가중치)가 색의 진하기로 나타난다. 대명사 “그것은”을 누르면 “동물은”에 강하게 주목한다 — 셀프 어텐션이 한 번에 멀리 떨어진 단어를 직접 연결함을 보여 준다.</p>
       </div>
-<p>🧭 순환이 없으니 순서 정보가 사라진다 — 그래서 <strong>positional encoding</strong>을 더해 순서를 주입하고, 여러 종류의 관계를 동시에 보도록 <strong>multi-head attention</strong>을 쓴다. 이 단순하고 병렬적인 구조가 이후 BERT·GPT를 비롯한 대규모 언어모델의 토대가 되었다 🏛️.</p>
+<h4>🧭 보조 장치: Positional Encoding과 Multi-head Attention</h4>
+<p>Self-attention만 쓰면 두 가지 보조 장치가 추가로 필요하다.</p>
+<p><strong>Positional Encoding (위치 인코딩)</strong> — RNN과 달리 self-attention은 자체적으로 "단어의 순서" 정보를 가지지 않는다. 단어 집합으로만 보고 순서를 모른다. "강아지가 사람을 물었다"와 "사람이 강아지를 물었다"가 같은 결과가 나올 수 있다.</p>
+<p>그래서 각 위치에 그 위치를 나타내는 고유한 벡터(positional encoding)를 추가로 더해준다. 모델은 그 위치 벡터를 통해 "이 단어가 몇 번째 위치인지"를 인식하게 된다.</p>
+<p><strong>Multi-head Attention (다중 헤드)</strong> — 한 번의 attention으로는 한 종류의 관계만 잡을 수 있다. 그런데 문장에는 여러 종류의 관계가 동시에 존재한다 — 문법적 관계(주어-동사), 의미적 관계(대명사-지시 대상), 인과 관계 등.</p>
+<p>이 모든 관계를 한 번에 잡기 위해 여러 개(예: 8개)의 attention을 병렬로 수행하고 그 결과를 합친다. 각 "head"가 다른 종류의 관계를 담당하도록 학습된다.</p>
+
+<h4>🏛️ 역사적 의의</h4>
+<p>이 단순하고 병렬적인 구조가 이후 자연어 처리의 모든 흐름을 바꾸었다. 2018년 BERT가 Transformer encoder를 활용해 NLP 벤치마크를 휩쓸었고, GPT는 Transformer decoder로 텍스트 생성의 패러다임을 바꿨다. 이후 모든 대규모 언어 모델(GPT-3, GPT-4, Claude, Gemini 등)이 Transformer를 기반으로 한다.</p>
+<p>비전 분야에서도 Vision Transformer(ViT)가 등장해 이미지 분야에까지 Transformer가 확장됐다. 음성, 강화학습, 단백질 구조 예측(AlphaFold) 등 시퀀스를 다루는 거의 모든 분야에서 Transformer가 표준이 되었다.</p>
+
+<h4>📌 정리</h4>
+<p>"Attention Is All You Need의 main point는?"에 대한 답은 다음과 같다. <strong>RNN과 CNN 없이 self-attention만으로 시퀀스를 모델링하는 Transformer 아키텍처를 제안한 것</strong>이다. Self-attention은 시퀀스의 모든 위치 쌍을 한 번에 직접 연결해서 (1) RNN의 vanishing gradient 문제를 해결하고, (2) 완전 병렬 계산을 가능하게 한다. Positional encoding과 multi-head attention이 보조 장치로 추가된다. 이 구조가 BERT, GPT 등을 통해 현대 자연어 처리와 인공지능 전반의 토대가 되었다.</p>
 </div>
 
       <div class="model-answer">
@@ -56,8 +92,8 @@
       <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>핵심 — 순환/합성곱 없이 셀프 어텐션만으로 시퀀스 모델링(Transformer).</li>
-        <li>$\operatorname{softmax}(QK^\top/\sqrt{d_k})V$ — 모든 위치 쌍을 직접 연결.</li>
-        <li>이점 — 긴 의존성 경로 $O(1)$ + 완전 병렬. 보조 = 위치 인코딩·멀티헤드.</li>
+        <li>Query, Key, Value 세 표현으로 모든 위치 쌍을 직접 연결. Query-Key 유사도를 가중치로 Value를 합산.</li>
+        <li>이점 — 긴 의존성 path 1, 완전 병렬 계산. 보조 장치 = positional encoding (순서 주입), multi-head attention (여러 관계 동시).</li>
       </ul>
 
   
