@@ -33,24 +33,31 @@
   </div>
 
 <div class="prose">
-<h3>🔄 Parameter sharing — 무엇의 축으로 공유하나</h3>
-<p>둘 다 파라미터를 공유하지만 공유하는 <strong>축</strong>이 다르다. <strong>CNN은 space(공간) 축</strong>으로 공유한다 — 같은 kernel이 이미지 전 위치에 적용. <strong>RNN은 time(시간) 축</strong>으로 공유한다 — 같은 transition 가중치가 모든 시점에 적용. 목적은 같다: 자유 파라미터를 줄이고, 한 위치/시점에서 배운 걸 다른 위치/시점에 일반화하고, 각각 공간 equivariance·시간 equivariance를 얻는다.</p>
-<h3>↔️ Lateral connection — 멀리 떨어진 입력에 어떻게 닿나</h3>
-<p>결정적 차이가 여기 있다. <strong>RNN은 lateral(recurrent) connection이 있다</strong> — 같은 층의 유닛이 시간축을 따라 서로 연결돼 $t$ 시점 상태가 $t{+}1$로 전달된다. 정보가 hidden state에 실려 시퀀스를 따라 <em>옆으로</em> 흐른다 🚶‍♂️➡️🚶‍♂️. <strong>CNN은 한 층 안에 lateral connection이 없다</strong> — 각 출력은 자기 receptive field만 보고 독립 계산되고, 멀리 떨어진 입력을 통합하려면 <strong>층을 더 쌓아 receptive field를 키우는</strong> 수밖에 없다 🧱.</p>
-<div class="cmp">
-  <div class="card gatys"><h4>🖼️ CNN</h4><ul>
-    <li>공유 축 = <b>space</b>.</li>
-    <li>lateral connection <b>없음</b>. 먼 입력엔 <b>depth</b>로 닿음.</li>
-    <li>위치별 출력 독립 → <b>병렬화</b> 쉬움 ⚡.</li>
-  </ul></div>
-  <div class="card modern"><h4>🔁 RNN</h4><ul>
-    <li>공유 축 = <b>time</b>.</li>
-    <li>lateral(recurrent) connection <b>있음</b>. 먼 시점엔 <b>state 전달</b>로 닿음.</li>
-    <li>순차 계산 → 병렬화 어렵고 vanishing 위험 ⏳.</li>
-  </ul></div>
-</div>
-<div class="analogy">🏢 CNN = 각자 자기 구역만 보는 감시원을 층층이 쌓아 점점 넓은 시야를 만드는 조직. RNN = 한 전령이 메모(state)를 들고 줄을 따라 차례로 전달하는 방식. 전자는 동시에 일하지만 멀리 보려면 층이 필요하고, 후자는 한 줄로 멀리 전하지만 순서대로여서 느리고 메모가 흐려질 수 있다.</div>
-<p>📝 요약: 공유 축(space vs time)과 먼 의존성에 닿는 방식(depth vs lateral recurrence)이 두 모델의 성격을 가른다. RNN의 lateral connection은 원리상 무한한 문맥을 주지만 순차성·소실의 대가가 따르고, CNN의 무측면-depth 방식은 병렬성을 주지만 receptive field가 depth에 묶인다. 참고로 이 두 한계를 함께 넘은 것이 <strong>self-attention</strong>(Transformer) — 어떤 두 위치든 한 번에 직접 연결하면서 완전 병렬이다 🔭.</p>
+<p>⚖️ RNN과 CNN을 두 가지 축에서 비교해야 한다. 첫째는 <strong>파라미터 공유</strong>, 둘째는 <strong>측면 연결(lateral connection)</strong>이다. 두 모델 모두 파라미터를 공유한다는 점은 비슷하지만 무엇을 따라 공유하는지가 다르고, 측면 연결의 유무는 두 모델의 본질적 차이를 만든다.</p>
+
+<h4>🔄 1. Parameter Sharing — 어떤 축으로 공유하는가</h4>
+<p>두 모델 모두 같은 가중치를 반복해서 재사용한다는 점에서는 같다. 하지만 그 가중치가 무엇을 따라 반복되는지가 다르다.</p>
+<p><strong>CNN은 공간(space) 축으로 공유</strong>한다. 3×3 합성곱 필터 하나가 이미지의 모든 위치에서 동일하게 적용된다. 왼쪽 위든 오른쪽 아래든 같은 필터를 쓴다. 이건 "수직 엣지는 화면 어디에 있든 수직 엣지"라는 공간 정상성(spatial stationarity) prior를 모델 구조에 박은 것이다.</p>
+<p><strong>RNN은 시간(time) 축으로 공유</strong>한다. 같은 transition 가중치 행렬이 모든 timestep에서 동일하게 적용된다. timestep t=1에서 hidden state를 업데이트하는 가중치와 t=100에서 업데이트하는 가중치가 정확히 같다. 이건 "시간 어디에서든 같은 규칙으로 다음 상태를 만든다"는 시간 정상성(temporal stationarity) prior다.</p>
+<p>둘 다 목적은 같다. 첫째, 자유 파라미터 수를 크게 줄인다. 둘째, 한 위치(혹은 시점)에서 배운 패턴이 다른 위치(혹은 시점)로 자동 일반화된다. 셋째, 각각 공간 equivariance와 시간 equivariance를 얻는다.</p>
+
+<h4>↔️ 2. Lateral Connection — 멀리 떨어진 입력에 어떻게 닿는가</h4>
+<p>이게 두 모델의 결정적 차이다. <strong>측면 연결(lateral connection)</strong>은 "같은 layer 안에서 옆에 있는 유닛끼리 서로 연결되어 있는가?"를 의미한다.</p>
+<p><strong>RNN은 측면 연결을 가진다 (recurrent connection)</strong>. 시점 t의 hidden state가 시점 t+1의 hidden state로 직접 전달된다. 정보가 같은 layer 안에서 시간 축을 따라 옆으로 흘러간다. 그래서 시점 1의 정보가 hidden state에 실린 채로 시점 100까지 전달될 수 있다 — 원리상 무한한 거리의 의존성을 표현 가능하다.</p>
+<p><strong>CNN은 같은 layer 안에 측면 연결이 없다</strong>. 한 layer의 각 출력은 자기 위치의 작은 수용 영역만 보고 독립적으로 계산된다. 옆 위치의 출력과는 직접 연결되지 않는다.</p>
+<p>그럼 CNN은 어떻게 멀리 떨어진 입력 정보를 통합할까? 답은 <strong>depth로 해결</strong>한다. Layer를 깊이 쌓을수록 수용 영역이 점점 커진다 — 첫 layer는 3×3만 보지만, 두 번째 layer는 첫 layer의 3×3 출력을 보니 실질적으로 입력의 5×5를 보고, 세 번째는 7×7, … 식으로 확장된다. 충분히 깊이 쌓으면 결국 이미지 전체를 다 본다.</p>
+
+<h4>🆚 두 접근의 trade-off</h4>
+<p>이 차이가 실용적 특성으로 이어진다.</p>
+<p><strong>CNN의 강점</strong>: 각 위치의 출력이 독립적으로 계산되니 GPU에서 완벽히 병렬 처리된다. 1,000장 이미지를 동시에 처리할 수 있다.</p>
+<p><strong>CNN의 약점</strong>: 멀리 떨어진 입력에 닿으려면 depth가 필요하고, 그만큼 layer 수가 많아진다. 표현력이 receptive field에 묶인다.</p>
+<p><strong>RNN의 강점</strong>: 측면 연결로 원리상 무한한 거리의 의존성을 표현 가능. 시퀀스 길이에 모델 깊이가 따라가지 않아도 된다.</p>
+<p><strong>RNN의 약점</strong>: 시점 t의 계산이 시점 t-1의 결과를 기다려야 하니 순차 계산이 강제된다 — 병렬화가 어렵다. 또한 측면 연결로 정보가 시간을 거슬러 전달되는 동안 vanishing/exploding gradient 문제에 시달린다.</p>
+
+<div class="analogy">🏢 CNN을 비유하자면 각자 자기 구역만 보는 감시원들을 층층이 쌓아 위로 갈수록 점점 넓은 시야를 합치는 조직과 같다. 모든 감시원이 동시에 일하지만, 화면 끝과 끝의 정보를 합치려면 충분히 높은 층까지 정보가 올라가야 한다. RNN은 한 명의 전령이 메모(hidden state)를 들고 줄을 따라 차례로 다음 사람에게 전달하는 방식이다. 한 줄로 멀리까지 전달할 수 있지만, 순서대로 전달해야 하니 시간이 걸리고, 메모가 중간에 흐려지거나 손상될 위험이 있다.</div>
+
+<h4>🔭 두 한계를 모두 넘은 모델: Self-attention (Transformer)</h4>
+<p>참고로 위 두 한계를 함께 극복한 것이 self-attention 기반 Transformer다. Self-attention은 시퀀스의 <strong>어떤 두 위치도 한 번에 직접 연결</strong>한다 — 측면 연결로 순차 전달할 필요가 없으니 RNN의 vanishing gradient 문제가 사라지고, 동시에 위치 간 연결이 병렬로 계산되니 CNN처럼 GPU 효율도 좋다. RNN의 무한 문맥 표현력과 CNN의 병렬성을 모두 얻은 셈이다. 이게 Transformer가 현대 NLP를 지배하게 된 핵심 이유다.</p>
 </div>
 
       <div class="model-answer">
