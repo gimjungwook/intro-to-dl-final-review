@@ -33,13 +33,17 @@
   </div>
 
 <div class="prose">
-<p>⛰️ 둘 다 비용 $J(\theta)$를 최소화하지만 곡면 정보의 <em>차수</em>가 다르다. <strong>Gradient descent</strong>는 <strong>1차(gradient)</strong>만, <strong>Newton's method</strong>는 <strong>2차(curvature, Hessian)</strong>까지 쓴다.</p>
-<p>🚶 <strong>Gradient descent</strong>: 기울기 반대 방향으로 일정 보폭.</p>
-<div class="math-block">$$ \theta \leftarrow \theta - \epsilon\,\nabla_\theta J(\theta) $$</div>
-<p>gradient는 “가장 가파른 내리막 방향”만 알려줄 뿐 <em>얼마나 가야 바닥인지</em>는 모른다 🤔. 그래서 <strong>learning rate</strong> $\epsilon$을 사람이 정해야 하고, 방향마다 기울기가 크게 다른 <strong>ill-conditioned</strong>(병든 조건수) 골짜기에선 가파른 축을 좌우로 튕기는 zig-zag가 생긴다 〰️.</p>
-<p>🦘 <strong>Newton's method</strong>: 비용을 2차 함수로 근사하고 그 포물면의 최소점으로 단번에 점프.</p>
-<div class="math-block">$$ \theta \leftarrow \theta - H^{-1}\,\nabla_\theta J(\theta), \qquad H = \nabla^2_\theta J(\theta) $$</div>
-<p>Hessian $H^{-1}$이 방향마다 곡률로 보폭을 자동 조정 → 순수 2차 함수면 <strong>단 한 걸음</strong>에 바닥, ill-conditioning에 면역 ✅.</p>
+<p>⛰️ 두 방법 모두 손실 함수를 최소화한다는 같은 목표를 갖지만, 곡면 정보를 얼마나 자세히 쓰느냐가 다르다. <strong>Gradient descent</strong>는 손실 곡면의 1차 정보(기울기 = 어느 방향이 내리막인가)만 본다. <strong>Newton's method</strong>는 한 단계 더 나아가 2차 정보(곡률 = 그 내리막이 얼마나 가파른가)까지 본다.</p>
+
+<h4>🚶 Gradient Descent (경사하강법)</h4>
+<p>현재 위치에서 기울기를 계산하고, 그 반대 방향으로 일정 보폭만큼 이동한다. 보폭 크기는 learning rate라 부르는 하이퍼파라미터로 사람이 정한다.</p>
+<p>장점은 <strong>계산이 싸다</strong>는 것 — 기울기 한 번 구하면 한 step. 단점은 <strong>곡면의 모양을 모른다</strong>는 것이다. "어느 방향이 내리막인지"는 알지만, "얼마나 더 가면 바닥인지"는 모른다. 그래서 learning rate를 너무 크게 잡으면 바닥을 지나쳐 반대편 골짜기로 튕겨 나가고, 너무 작게 잡으면 수렴이 한없이 느려진다.</p>
+<p>특히 골짜기가 한쪽 방향으로는 가파르고 다른 방향으로는 완만한 형태(ill-conditioned, 즉 조건수가 큰 골짜기)에서 문제가 심각해진다. 가파른 방향으로는 한 걸음만 잘못 디뎌도 반대편 벽에 튕기고, 완만한 방향으로는 거의 진전이 없다. 결과적으로 좌우로 지그재그 튕기며 골짜기를 따라 천천히 내려가는 형국이 된다.</p>
+
+<h4>🦘 Newton's Method (뉴턴법)</h4>
+<p>현재 위치에서 손실 곡면을 2차 함수(포물면)로 근사한 뒤, 그 포물면의 최소점으로 한 번에 점프한다. 곡률 정보 — 즉 "이 방향은 가파르고, 저 방향은 완만하다"는 데이터 — 를 알고 있으니, 각 방향마다 적절한 보폭이 자동으로 결정된다.</p>
+<p>이론적 장점은 강력하다. 손실이 진짜 2차 함수라면 <strong>단 한 걸음에 정확히 바닥에 도착한다</strong>. ill-conditioned 골짜기에서도 곡률을 이미 알고 있으니 지그재그 없이 직접 바닥으로 향한다. 조건수에 면역이 있다.</p>
+<p>비유로 보면, 경사하강은 안개 속에서 발밑 경사만 보고 한 걸음씩 더듬어 내려가는 등산객이다. 보폭(learning rate)은 감으로 정한다. 뉴턴법은 골짜기 전체 지형도를 펼쳐 보고 바닥 좌표를 계산해 한 번에 점프하는 사람이다. 한 걸음에 도착하지만, 그 지형도(Hessian)를 매번 그리는 비용이 막대하다.</p>
 <div class="widget">
         <div class="widget-frame">
           <div class="widget-label"><span class="lab-no">위젯 04</span><span>병든 골짜기 — 경사하강의 지그재그 vs 뉴턴의 한 걸음</span></div>
@@ -54,8 +58,17 @@
         </div>
         <p class="widget-cap">조건수 κ를 키워 골짜기를 찌그러뜨릴수록 경사하강(빨강)은 가파른 축을 좌우로 튕기며 더 많은 걸음을 허비한다. 뉴턴법(파랑)은 곡률을 알기에 κ와 무관하게 늘 한 걸음에 바닥으로 점프한다.</p>
       </div>
-<div class="analogy">🌫️ 경사하강 = 안개 속에서 발밑 경사만 보고 한 걸음씩 내려가는 등산객(보폭은 감). 뉴턴 = 골짜기 지형도를 펼쳐 바닥 좌표로 곧장 점프하는 사람. 단 지형도(Hessian)를 매번 그리고 뒤집는 비용이 막대 💸.</div>
-<p>🚫 그래서 딥러닝에선 Newton을 거의 못 쓴다. ① <strong>비용</strong> — 파라미터 $n$개면 $H$는 $n\times n$, 역행렬이 $O(n^3)$. $n$이 수백만~수십억이면 불가능. ② <strong>saddle point 위험</strong> — 비볼록 곡면의 안장점에서 $H$가 positive-definite가 아니면 Newton step이 안장점·극대점으로 끌려감. ③ <strong>non-convex</strong> — 국소 2차 근사가 멀리선 부정확. 그래서 실제론 momentum, RMSProp, Adam 같은 <strong>곡률을 값싸게 근사하는 1차 방법</strong>으로 절충한다 🤝.</p>
+<h4>🚫 왜 딥러닝에서 뉴턴법은 거의 못 쓰는가</h4>
+<p>이론적으로 강력하지만 딥러닝 실무에선 거의 사용 불가능하다. 이유는 세 가지다.</p>
+<p><strong>계산 비용</strong> — 파라미터가 n개면 곡률 정보(Hessian)는 n×n 크기 행렬이고, 이걸 뒤집는 비용은 파라미터 수의 세제곱에 비례한다. 현대 딥러닝 모델은 파라미터가 수백만에서 수십억 개라, 이 비용이 천문학적이다. 한 step에 뉴턴 한 번 = 며칠씩 걸린다.</p>
+<p><strong>안장점 위험</strong> — 뉴턴법은 "현재 위치 근처의 2차 근사 곡면의 최소점"으로 점프한다. 그런데 깊은 신경망의 손실 곡면은 비볼록(non-convex)이라 곡면 위에 수많은 <strong>안장점</strong>(어떤 방향으로는 내리막, 다른 방향으로는 오르막인 지점)이 있다. 안장점 근처에서는 2차 근사가 양의 정부호(positive-definite)가 아니라, 뉴턴법이 오히려 안장점이나 극대점 쪽으로 끌려가는 일이 발생한다. 최소점을 향해 가야 할 알고리즘이 반대로 움직이는 셈이다.</p>
+<p><strong>국소 근사의 한계</strong> — 2차 근사는 현재 위치 근처에서만 정확하다. 손실 곡면이 멀리서 보면 복잡하게 휘어 있으니, 한 걸음에 멀리 점프하려 하면 그 점프가 엉뚱한 위치로 데려갈 위험이 있다.</p>
+
+<h4>🤝 실무 절충: Adam 계열 옵티마이저</h4>
+<p>그래서 실제 딥러닝에선 뉴턴법을 직접 쓰는 대신, <strong>곡률 정보를 싸게 근사하는 1차 방법</strong>들을 쓴다. Momentum은 과거 기울기를 누적해 "관성"을 더하고, RMSProp은 방향마다 보폭을 자동 조정한다. Adam은 둘을 합친 것으로, 현대 딥러닝의 사실상 표준 옵티마이저다.</p>
+<p>이런 방법들은 진짜 곡률을 계산하지 않지만, 기울기의 통계(평균·분산)를 추적해서 사실상 곡률에 적응하는 효과를 낸다. 뉴턴법만큼 정밀하진 않아도, 1차 계산 비용으로 ill-conditioning 문제를 상당 부분 완화할 수 있다.</p>
+
+<div class="analogy">🌫️ 경사하강은 안개 속에서 발밑 경사만 보고 한 걸음씩 내려가는 등산객이다. 보폭(learning rate)은 감으로 정해야 한다. 뉴턴법은 골짜기 지형도를 펼쳐서 바닥 좌표로 곧장 점프하는 사람인데, 그 지형도를 매번 그리는 비용이 너무 막대하다. Adam은 그 중간 — 지형도는 못 그리지만 최근 몇 걸음의 흔적으로 "어느 방향이 가파르고 어느 방향이 완만한지" 대충 감을 잡아 보폭을 조정한다.</div>
 </div>
 
       <div class="model-answer">
@@ -65,9 +78,9 @@
 
       <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
-        <li>경사하강 = 1차(기울기), 뉴턴 = 2차(헤시안). 식 $\theta-\epsilon\nabla J$ vs $\theta-H^{-1}\nabla J$.</li>
-        <li>뉴턴은 곡률로 보폭 자동조정 → 조건수 면역, 이차함수는 1걸음. 경사하강은 ill-conditioned에서 지그재그.</li>
-        <li>딥넷에서 뉴턴 못 쓰는 이유 — $O(n^3)$ 비용, 안장점에서 비양정부호, 비볼록. → 모멘텀/Adam이 절충.</li>
+        <li>경사하강 = 1차(기울기만), 뉴턴 = 2차(곡률까지). 경사하강은 보폭 사람이 정해야, 뉴턴은 곡률이 자동 결정.</li>
+        <li>뉴턴은 ill-conditioned 골짜기에 면역, 순수 2차 함수면 한 걸음에 바닥. 경사하강은 지그재그.</li>
+        <li>딥러닝에서 뉴턴 못 쓰는 이유 — 계산 비용 (파라미터 수의 세제곱), 안장점 위험, 비볼록 곡면에서 국소 근사 부정확. → 모멘텀·Adam이 절충.</li>
       </ul>
 
   
