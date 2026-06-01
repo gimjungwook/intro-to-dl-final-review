@@ -37,11 +37,81 @@
 <p>💡 정칙화(<strong>regularization</strong>)의 본질은 “우리가 미리 아는 <strong>prior</strong>(사전 지식)를 모델에 넣어, 잡음을 외울 자유를 빼앗는 것”. 데이터가 적을수록 이 prior 비중을 키운다.</p>
 <div class="analogy">📐 점 3개만 주고 곡선을 그리라면 그 점을 지나는 곡선은 무한히 많다. 제약이 없으면 가장 구불구불한 괴물 곡선이 나온다 🐙. 정칙화는 “매끄럽게 그려”, “대칭일 것” 같은 <b>믿음</b>을 더해 답 후보를 좁히는 일이다.</div>
 <h3>🔧 작은 데이터에서 쓸 수 있는 손잡이들</h3>
-<p>🏋️ <strong>Parameter norm penalty</strong> — 비용에 가중치 크기 벌점을 더한다. <strong>L2 (weight decay)</strong>는 $\tilde J = J + \alpha\lVert w\rVert_2^2$로 큰 가중치를 원점으로 당기고, <strong>L1</strong>은 일부 가중치를 정확히 0으로 만들어 <strong>sparsity</strong>(희소성)와 자동 특징 선택을 유도한다. 베이지안으로 보면 L2 = Gaussian prior, L1 = Laplace prior.</p>
-<p>🔗 <strong>Parameter sharing / tying</strong> — 같은 파라미터를 여러 곳에서 재사용해 자유도를 줄인다(CNN 커널은 공간 전체, RNN 가중치는 시간 전체에서 동일). <strong>Multi-task learning</strong>도 표현을 공유해 사실상 데이터를 늘리는 효과.</p>
-<p>🧪 <strong>Data augmentation & noise injection</strong> — 라벨을 바꾸지 않는 변환으로 데이터를 부풀리고, 입력·은닉(<strong>dropout</strong>)·가중치·라벨(<strong>label smoothing</strong>)에 잡음을 넣어 암기를 막는다.</p>
-<p>⏱️ <strong>Early stopping</strong> — 검증 오차가 더 안 줄면 학습을 멈춘다. 이차 근사 아래에서 L2와 수학적으로 동등하고 비용이 거의 없다.</p>
-<p>🌍 <strong>Transfer learning / unsupervised pretraining</strong> — 큰 외부 데이터나 대량의 비라벨 데이터에서 표현을 먼저 배우고 작은 데이터로 <strong>fine-tuning</strong>. 작은 데이터로는 결코 못 배울 일반 특징(edge, 단어 의미)을 빌려오므로 데이터가 적을수록 효과가 커진다 ⬆️.</p>
+
+<h4>🏋️ 1. Parameter Norm Penalty (벌점)</h4>
+<p><strong>L2 (weight decay)</strong> — 비용에 가중치의 제곱 합을 더한다:</p>
+<p>$$\tilde J(w) = J(w) + \alpha\lVert w\rVert_2^2 = J(w) + \alpha\sum_i w_i^2$$</p>
+<p>기울기는 $\nabla_w \tilde J = \nabla_w J + 2\alpha w$이고, 경사하강 한 step은</p>
+<p>$$w \leftarrow (1 - 2\eta\alpha)\,w - \eta\nabla_w J$$</p>
+<p>로 정리된다. 즉 매 step마다 $w$가 $(1-2\eta\alpha)$배로 줄어든다 — <strong>원점으로 끌어당기는</strong> 효과가 이름(weight <em>decay</em>)의 이유다.</p>
+<p><strong>L1</strong> — 절대값 합을 벌점으로 쓴다: $\tilde J = J + \alpha\sum_i |w_i|$. 기울기는 $\alpha \cdot \text{sign}(w_i)$로, 부호만 보고 크기와 무관하게 일정 속도로 0 쪽으로 밀어낸다. 그래서 작은 가중치도 <strong>정확히 0에 도달</strong>해 자동 특징 선택(sparsity)이 일어난다.</p>
+<p><strong>기하학적 차이</strong>: 같은 손실 등고선 위에서 L2 제약은 원, L1 제약은 마름모다. 마름모의 모서리는 좌표축 위에 있으므로 등고선이 그 모서리에서 처음 만나는 경우가 많고, 그 좌표는 정확히 0이 된다 → L1 sparsity.</p>
+<p><strong>베이지안 해석</strong>: MAP 추정 = 최대우도 + log prior. Gaussian prior $\mathcal{N}(0, \sigma^2)$의 log는 $-\frac{1}{2\sigma^2}w^2$ → L2. Laplace prior $\frac{1}{2b}e^{-|w|/b}$의 log는 $-\frac{1}{b}|w|$ → L1. <strong>벌점 = 가중치에 대한 prior</strong>이고, 데이터가 적을수록 prior 비중($\alpha$)을 키운다.</p>
+
+<h4>🔗 2. Parameter Sharing / Tying (파라미터 공유)</h4>
+<p>같은 weight를 여러 곳에서 재사용 = <strong>free parameter 수를 구조적으로 줄인다</strong>. 모델 표현력은 유지하면서 자유도만 깎는 강한 정칙화다.</p>
+<p><strong>CNN 예시</strong> — 28×28 입력에서 100 채널 출력을 만들 때:</p>
+<ul>
+  <li>FC layer: $28 \cdot 28 \cdot 100 = 78{,}400$ weights</li>
+  <li>Conv 3×3: $3 \cdot 3 \cdot 100 = 900$ weights (커널이 모든 공간 위치에서 동일)</li>
+</ul>
+<p>약 <strong>87배</strong> 적은 파라미터다. 이게 가능한 이유는 이미지에 <strong>translation invariance</strong>(평행이동 등가)라는 사전 지식을 구조에 내장하기 때문 — "강아지 패턴은 어디 있든 강아지"라는 믿음을 모델 아키텍처가 가정한다.</p>
+<p><strong>RNN</strong>도 마찬가지로 같은 weight matrix $W_h$를 모든 timestep에서 재사용해 <strong>time invariance</strong>(시간 무관) prior를 주입한다.</p>
+<p><strong>Multi-task learning</strong>: 여러 task가 hidden layer를 공유하면 표현이 task 간 평균화 효과를 받아 사실상 데이터 양이 늘어난 것과 같다.</p>
+
+<h4>🧪 3. Data Augmentation & Noise Injection (증강·잡음)</h4>
+<p><strong>Data augmentation</strong> — 라벨을 바꾸지 않는 변환으로 데이터셋을 부풀린다:</p>
+<ul>
+  <li>이미지: rotation, crop, flip, color jitter, mixup</li>
+  <li>텍스트: synonym swap, back-translation</li>
+  <li>오디오: time stretch, pitch shift</li>
+</ul>
+<p>모델은 "이런 변형에 답이 같다"는 invariance를 학습하게 되고, 사실상 데이터가 N배 늘어난 효과가 난다.</p>
+<p><strong>입력 noise</strong>: $x \to x + \epsilon, \epsilon \sim \mathcal{N}(0, \sigma^2)$. Bishop(1995)은 이게 가중치에 대한 L2 정칙화와 근사적으로 동등하다는 걸 보였다.</p>
+<p><strong>Dropout</strong> — 가장 강력한 noise injection 정칙화:</p>
+<ul>
+  <li>학습 시: 각 hidden unit을 확률 $p$(보통 0.5)로 0으로 만든다</li>
+  <li>매 미니배치마다 다른 sub-network가 학습된다</li>
+  <li>추론 시: 전체 network 사용, 출력 weight를 $(1-p)$배로 스케일</li>
+</ul>
+<p><strong>앙상블 해석</strong>: $n$개 unit이 있으면 $2^n$개의 sub-network가 존재하고, dropout은 그들의 암묵적 평균을 학습하는 것과 같다. <strong>Co-adaptation 차단</strong>: 한 unit이 다른 특정 unit에 의존하지 못하므로, 각 unit이 단독으로도 유의미한 feature를 학습하게 된다 → 표현이 강건해진다.</p>
+<p><strong>Label smoothing</strong> — one-hot 타깃 $y$ 대신 $(1-\epsilon)\,y + \epsilon/K$를 쓴다. 정답에 100% 확신을 주지 않아 overconfidence를 막고 calibration이 좋아진다.</p>
+
+<h4>⏱️ 4. Early Stopping (조기 종료)</h4>
+<p><strong>메커니즘</strong>: 매 epoch마다 validation loss를 측정 → patience epoch 동안 개선이 없으면 학습 중단 → 가장 좋았던 epoch의 weight를 복원. 비용은 거의 0이다(val 1회 측정 + checkpoint 저장).</p>
+<p><strong>왜 L2와 동치인가</strong>(quadratic 근사 아래) — 최적점 $w^*$ 근처에서 손실을 2차 근사하면:</p>
+<p>$$J(w) \approx J(w^*) + \tfrac{1}{2}(w - w^*)^T H (w - w^*)$$</p>
+<p>경사하강 $t$ step 후의 weight는</p>
+<p>$$w^{(t)} - w^* = (I - \eta H)^t (w^{(0)} - w^*)$$</p>
+<p>로 표현된다. $t$가 작을수록 $w$가 초기값(보통 0 근처)에 가까이 머무른다 — 즉 <strong>iteration 수 $t$가 정칙화 강도</strong> 역할을 한다($t \leftrightarrow 1/\alpha$). 학습을 일찍 끊으면 가중치가 작은 채로 멈추니, 결과적으로 L2 패널티가 가중치를 작게 유지한 것과 같은 효과가 난다.</p>
+
+<h4>🌍 5. Transfer Learning / Unsupervised Pretraining (전이·사전훈련)</h4>
+<p><strong>전이학습</strong>:</p>
+<ol>
+  <li><em>Pretrain</em>: 큰 source dataset(ImageNet, Common Crawl 등)으로 모델을 학습</li>
+  <li><em>Fine-tune</em>: 작은 target dataset로 마지막 layer만 또는 전체를 낮은 learning rate로 조정</li>
+</ol>
+<p><strong>왜 작은 데이터에서 효과가 큰가</strong>:</p>
+<ul>
+  <li>target alone — capacity ≫ data → 과적합 확정</li>
+  <li>pretrained init — 이미 좋은 weight = 가설 공간이 사실상 축소된 것과 같다 = <strong>강력한 implicit prior</strong></li>
+  <li>low-level feature(edge, texture, 단어 의미)는 task 사이에 공통적이고, 작은 target 데이터만으로는 절대 못 배울 일반 표현을 source에서 빌려온다</li>
+</ul>
+<p><strong>Unsupervised pretraining</strong>(autoencoder, BERT의 MLM, GPT 등): label 없이 학습 가능 → 데이터가 사실상 무한대(인터넷 전체). 표현을 먼저 배우고 작은 labeled data로 head만 학습하면 labeled 데이터의 한계를 우회할 수 있다.</p>
+<p><strong>효과 크기 법칙</strong>: target dataset이 작을수록 transfer 이득이 커진다. 데이터가 1억 장이면 from scratch도 괜찮지만, 1,000장이면 pretrained 없이는 거의 불가능하다.</p>
+
+<h4>🧠 한 줄 매핑(시험 답안용)</h4>
+<table style="width:100%;border-collapse:collapse;font-size:.86rem;margin:1rem 0;">
+<thead><tr style="background:#f6f3ed;"><th style="text-align:left;padding:.4rem .6rem;border-bottom:1px solid #d6cfbf;">손잡이</th><th style="text-align:left;padding:.4rem .6rem;border-bottom:1px solid #d6cfbf;">핵심 prior</th><th style="text-align:left;padding:.4rem .6rem;border-bottom:1px solid #d6cfbf;">한 줄 요약</th></tr></thead>
+<tbody>
+<tr><td style="padding:.35rem .6rem;border-bottom:1px solid #ebe6da;">L2 / L1</td><td style="padding:.35rem .6rem;border-bottom:1px solid #ebe6da;">가중치 = 작음</td><td style="padding:.35rem .6rem;border-bottom:1px solid #ebe6da;">큰 weight 벌점 → 단순 모델</td></tr>
+<tr><td style="padding:.35rem .6rem;border-bottom:1px solid #ebe6da;">Sharing</td><td style="padding:.35rem .6rem;border-bottom:1px solid #ebe6da;">위치 / 시간 무관</td><td style="padding:.35rem .6rem;border-bottom:1px solid #ebe6da;">CNN / RNN 구조 = 자유도 ↓</td></tr>
+<tr><td style="padding:.35rem .6rem;border-bottom:1px solid #ebe6da;">Augmentation</td><td style="padding:.35rem .6rem;border-bottom:1px solid #ebe6da;">라벨 불변 변환</td><td style="padding:.35rem .6rem;border-bottom:1px solid #ebe6da;">데이터 N배 + noise robust</td></tr>
+<tr><td style="padding:.35rem .6rem;border-bottom:1px solid #ebe6da;">Dropout</td><td style="padding:.35rem .6rem;border-bottom:1px solid #ebe6da;">unit = 독립 작동</td><td style="padding:.35rem .6rem;border-bottom:1px solid #ebe6da;">sub-network 앙상블</td></tr>
+<tr><td style="padding:.35rem .6rem;border-bottom:1px solid #ebe6da;">Early stop</td><td style="padding:.35rem .6rem;border-bottom:1px solid #ebe6da;">iteration ∝ 1 / α</td><td style="padding:.35rem .6rem;border-bottom:1px solid #ebe6da;">학습 일찍 끊기 = L2 동치</td></tr>
+<tr><td style="padding:.35rem .6rem;">Transfer</td><td style="padding:.35rem .6rem;">source = target prior</td><td style="padding:.35rem .6rem;">외부 지식 import, 데이터 작을수록 효과 ↑</td></tr>
+</tbody>
+</table>
 </div>
 
       <div class="model-answer">
