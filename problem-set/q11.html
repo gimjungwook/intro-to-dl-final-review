@@ -33,15 +33,34 @@
   </div>
 
 <div class="prose">
-<p>🧲 <strong>Prior</strong>란 데이터를 보기 전 “어떤 파라미터가 그럴듯한가”에 대한 믿음을 담은 확률분포. prior의 <em>세기</em>는 그 분포가 얼마나 좁은지로 정해진다.</p>
-<div class="symbols"><tbody>
-<tr><td>🪶 Weak prior</td><td>분산 큰 분포. 어떤 값이든 허용하되 약하게 선호 — 예: L2의 Gaussian prior.</td></tr>
-<tr><td>🧱 Strong prior</td><td>분산 작은 분포. 특정 값들에 강하게 쏠림.</td></tr>
-<tr><td>♾️ Infinitely strong prior</td><td>일부 파라미터에 <b>확률 0</b>을 줘 아예 금지. 그 값은 표현조차 불가능.</td></tr>
-</tbody></div>
-<p>🎯 <strong>CNN = 완전연결층에 infinitely strong prior를 건 것</strong>으로 정확히 해석된다. 그 prior는 가중치에 두 가지를 “반드시”라고 못 박는다: ① 한 유닛의 가중치는 작은 <strong>receptive field</strong> <strong>바깥에선 0</strong>이어야 함(locality), ② 공간상 이웃 위치들의 가중치는 <strong>서로 같아야</strong> 함(sharing). 이 둘을 어기는 가중치 배치엔 prior 확률 0이 부여돼 <em>학습으로도 결코 도달 불가</em> 🚫. 같은 식으로 <strong>pooling</strong>은 “각 유닛은 작은 평행이동에 invariant해야 한다”는 infinitely strong prior다.</p>
-<div class="analogy">🚘 L2 정칙화가 “안전벨트는 매면 좋다”는 권고(weak prior — 어기면 비싸지만 가능)라면, CNN의 구조 제약은 “안전벨트 없이는 시동이 안 걸린다”는 설계(infinitely strong prior — 위반 자체가 불가능).</div>
-<p>💡 왜 유용? ① <strong>언제 CNN이 득이고 실인지</strong> 예측 가능 — prior가 데이터에 맞으면(자연 이미지: 국소적·정상적) 압도적 효율, 안 맞으면(칼럼 순서가 무의미한 표 형식 데이터, 이웃 개념이 다른 graph 데이터) 표현 못 하는 패턴이 생겨 <strong>underfitting</strong> 📉. ② <strong>벤치마크 함정</strong> — CNN이 완전연결망을 이기는 건 “더 똑똑해서”가 아니라 “그 과제에 맞는 prior를 미리 받아서”일 수 있다. prior가 부적절한 과제에선 그 우위가 사라진다 ⚖️.</p>
+<p>🧲 이 질문은 CNN을 새로운 시각에서 바라보게 한다 — CNN을 단순히 "이미지에 잘 맞는 모델"이 아니라 <strong>"완전연결망에 매우 강한 사전 지식을 주입한 것"</strong>으로 해석하는 관점이다.</p>
+
+<h4>📚 Prior의 세기란 무엇인가</h4>
+<p>Prior(사전 지식)란 데이터를 보기 전에 "어떤 파라미터 값이 그럴듯한가"에 대한 우리의 믿음이다. 보통 확률 분포 형태로 표현한다. Prior의 "세기"는 그 분포가 얼마나 좁은지로 결정된다.</p>
+<ul>
+  <li><strong>약한 prior(weak)</strong>: 분포가 넓다. 어떤 값이든 허용하지만 일부 값을 약간 더 선호한다. L2 정칙화의 Gaussian prior가 대표적이다 — 모든 가중치 값을 허용하되 0 근처를 약간 더 선호한다.</li>
+  <li><strong>강한 prior(strong)</strong>: 분포가 좁다. 특정 값 근처에만 확률이 몰려 있다.</li>
+  <li><strong>무한히 강한 prior(infinitely strong)</strong>: 일부 파라미터 값에 확률을 정확히 0으로 부여한다. 즉 그 값은 <strong>아예 표현 불가능</strong>하다. 학습이 아무리 시도해도 도달할 수 없는 영역이 생긴다.</li>
+</ul>
+
+<h4>🎯 CNN = 완전연결망 + 두 개의 무한히 강한 prior</h4>
+<p>이 관점에서 CNN을 보면 정확한 해석이 가능하다. CNN은 완전연결망(fully-connected layer)에 다음 두 가지 무한히 강한 prior를 더한 것과 정확히 같다.</p>
+<p><strong>1) 국소성(Locality)</strong> — "한 출력 뉴런의 가중치는 작은 수용 영역 밖에서는 반드시 0이어야 한다." 완전연결망이라면 한 출력이 입력 전체에 연결되지만, CNN의 prior는 "멀리 떨어진 위치와의 연결은 금지"라고 못박는다. 학습 가능한 영역에서 그런 연결은 아예 존재하지 않는다.</p>
+<p><strong>2) 파라미터 공유(Sharing)</strong> — "공간상 이웃 위치들의 가중치는 반드시 서로 같아야 한다." 완전연결망이라면 위치마다 다른 가중치가 가능하지만, CNN의 prior는 "위치가 달라도 가중치는 같아야 한다"고 강제한다.</p>
+<p>두 prior 모두 이를 어기는 가중치 배치에 확률 0을 부여하니, 그런 배치는 학습으로 절대 도달할 수 없다. 모델 구조 자체가 그 제약을 강요한다.</p>
+
+<h4>💧 Pooling도 마찬가지</h4>
+<p>Pooling layer도 같은 시각에서 해석할 수 있다. Pooling이 거는 prior는 <strong>"각 유닛은 작은 평행이동에 invariant해야 한다"</strong>는 명제다. Max pooling이 영역의 최댓값만 남기는 동작은, "이 영역 안에서의 위치 변화는 출력에 영향을 미쳐서는 안 된다"는 prior를 강제하는 것이다.</p>
+
+<div class="analogy">🚘 L2 정칙화가 "안전벨트는 매면 좋다"는 권고에 가깝다면 (어기면 비싸지만 가능), CNN의 구조 제약은 "안전벨트 없이는 시동이 안 걸린다"는 설계에 가깝다 (위반 자체가 물리적으로 불가능). 전자는 약한 prior, 후자는 무한히 강한 prior다.</div>
+
+<h4>💡 이 관점이 왜 유용한가</h4>
+<p><strong>1) CNN이 언제 효과적이고 언제 손해인지 예측 가능</strong></p>
+<p>Prior가 데이터에 잘 맞으면 CNN은 압도적으로 효율적이다. 자연 이미지는 실제로 국소적(locality)이고 정상적(stationarity)이라, CNN의 prior가 정확히 맞아떨어진다. 그래서 같은 데이터로 fully-connected망보다 훨씬 잘 작동한다.</p>
+<p>반대로 prior가 데이터에 안 맞으면 CNN은 표현할 수 없는 패턴이 생겨 underfitting이 발생한다. 예를 들어 표 형식(tabular) 데이터는 칼럼 순서에 의미가 없는데, CNN을 적용하면 "이웃 칼럼이 관련 있다"는 prior가 잘못된 가정이 되어 성능이 나빠진다. 그래프 데이터도 비슷하다 — "이웃" 개념이 평면 그리드와 다르므로 일반 CNN의 prior가 맞지 않는다.</p>
+<p><strong>2) 벤치마크 비교의 함정 경고</strong></p>
+<p>CNN이 완전연결망을 이기는 결과를 보고 "CNN이 더 똑똑한 모델이다"라고 결론짓는 건 위험하다. 실제로는 <strong>그 task에 맞는 prior를 미리 받아서</strong> 이긴 것일 수 있다. 다른 prior가 더 잘 맞는 task에서는 그 우위가 사라진다.</p>
+<p>이 관점은 모델 선택의 본질을 보여준다: <strong>"어떤 모델이 best?"가 아니라 "내 데이터에 어떤 prior가 맞나?"</strong>를 먼저 물어야 한다. 자연 이미지에는 CNN이, 시퀀스 데이터에는 RNN/Transformer가, 그래프 데이터에는 GNN이 효과적인 이유가 여기에 있다 — 각각이 그 데이터 유형의 통계적 구조에 맞는 prior를 모델 구조에 내장하고 있기 때문이다.</p>
 </div>
 
       <div class="model-answer">
