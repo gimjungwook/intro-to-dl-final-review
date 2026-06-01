@@ -33,24 +33,68 @@
   </div>
 
 <div class="prose">
-<p>🤖 둘 다 <strong>Transformer</strong>로 만들어졌지만, <strong>Transformer의 어느 절반을 쓰는지</strong>와 <strong>어떤 목표로 학습하는지</strong>가 다르다.</p>
-<div class="cmp">
-  <div class="card gatys"><h4>📖 BERT — Encoder, 양방향</h4><ul>
-    <li>Transformer <b>encoder</b> 스택.</li>
-    <li><b>Bidirectional</b> self-attention — 각 토큰이 좌우 문맥을 모두 봄.</li>
-    <li>학습 = <b>Masked LM</b>(가린 토큰 맞히기) + Next Sentence Prediction.</li>
-    <li>생성엔 부적합.</li>
-  </ul></div>
-  <div class="card modern"><h4>✍️ GPT — Decoder, 단방향</h4><ul>
-    <li>Transformer <b>decoder</b> 스택.</li>
-    <li><b>Unidirectional</b>(causal mask) — 각 토큰이 이전 토큰만 봄.</li>
-    <li>학습 = <b>Autoregressive LM</b>(다음 토큰 예측).</li>
-    <li>왼쪽→오른쪽 생성에 강함.</li>
-  </ul></div>
-</div>
-<p>🔑 핵심 대비는 <strong>양방향 encoder vs 단방향 decoder</strong>. BERT는 한 토큰을 이해할 때 양옆 문맥을 모두 쓰므로 <strong>전체 문맥이 필요한 understanding 과제</strong>에 강하다 — 문장 분류, NER(개체명 인식), 추출형 QA, 문장 embedding/검색 🔍. GPT는 이전 토큰만 보고 다음을 예측하도록 학습돼 <strong>generation 과제</strong>에 강하다 — 글 이어쓰기, 대화, 개방형 응답, few-shot ✨.</p>
-<div class="analogy">📝 BERT = 빈칸 채우기 시험을 풀며 문장 전체를 읽고 이해하는 독해가(앞뒤를 다 봐야 빈칸 정답). GPT = 다음 문장을 계속 써 내려가는 이야기꾼(지금까지 쓴 것만 보고 다음을 정함).</div>
-<p>🧭 <strong>언제 무엇을</strong>: 입력 전체를 받아 분류·추출·검색하는 <em>이해</em> 과제 → BERT. 텍스트를 만들어 내는 <em>생성</em> 과제 → GPT. 같은 Transformer 부품을 어느 방향으로 쓰느냐가 “이해에 강한가, 생성에 강한가”를 가른다.</p>
+<p>🤖 BERT와 GPT는 둘 다 Transformer(Q25)에서 출발한 모델이지만 서로 매우 다른 방식으로 활용한다. 같은 부품을 어떻게 조립하느냐가 두 모델의 성격을 결정한다.</p>
+
+<h4>📐 공통 출발점: Transformer</h4>
+<p>먼저 Transformer 자체를 떠올려보자. 원래 Transformer는 encoder와 decoder 두 부분으로 이루어진 모델이었다 — 입력 시퀀스(예: 영어 문장)를 encoder가 받아 표현으로 만들고, decoder가 그 표현을 보면서 출력 시퀀스(예: 한국어 번역)를 한 단어씩 생성한다.</p>
+<p>BERT와 GPT는 이 Transformer를 다르게 활용한다. <strong>BERT는 encoder 부분만 사용</strong>하고, <strong>GPT는 decoder 부분만 사용</strong>한다. 그리고 각각 다른 방식으로 학습한다.</p>
+
+<h4>📖 BERT — Encoder, 양방향 (Bidirectional Encoder Representations from Transformers)</h4>
+<p><strong>구조</strong>: Transformer encoder를 여러 층 쌓은 것이다. Encoder의 self-attention은 한 가지 특성을 갖는데 — 각 위치가 시퀀스의 <strong>모든 위치를 볼 수 있다</strong>는 점이다. 즉 한 단어가 자기 왼쪽 단어들뿐 아니라 오른쪽 단어들까지 동시에 참조한다. 이걸 "양방향(bidirectional)" attention이라고 한다.</p>
+<p><strong>학습 방식 1: Masked Language Modeling (MLM)</strong></p>
+<p>BERT의 핵심 학습 방식이다. 입력 문장에서 일부 단어(보통 15%)를 무작위로 [MASK] 토큰으로 가리고, 모델이 그 가려진 단어가 무엇이었는지 맞히도록 학습시킨다.</p>
+<p>예를 들어 "강아지가 [MASK] 위에서 잠을 자고 있다"가 입력되면, 모델은 [MASK] 자리가 "소파"였는지 "침대"였는지 "방석"이었는지 맞춰야 한다. 이를 위해 모델은 <strong>가려진 위치의 양쪽 문맥(왼쪽의 "강아지가"와 오른쪽의 "위에서 잠을 자고 있다")을 모두 활용</strong>한다.</p>
+<p><strong>학습 방식 2: Next Sentence Prediction (NSP)</strong></p>
+<p>두 문장이 주어졌을 때 두 번째 문장이 첫 번째 문장의 자연스러운 연속인지를 맞히는 task다. 문서 수준의 맥락을 학습하도록 한다.</p>
+<p><strong>BERT의 특징</strong>: 양방향 attention과 MLM 학습 덕분에 BERT는 텍스트의 <strong>이해(understanding)</strong>에 매우 강하다. 한 단어의 의미를 그 단어 양쪽 문맥을 모두 고려해 파악할 수 있다.</p>
+<p>다만 텍스트 생성(generation)에는 부적합하다. 왜냐하면 생성은 본질적으로 "이전 단어들로부터 다음 단어를 만드는" 작업인데, BERT는 양방향으로 학습되어 "다음에 올 단어를 예측"하도록 훈련되지 않았기 때문이다.</p>
+
+<h4>✍️ GPT — Decoder, 단방향 (Generative Pre-trained Transformer)</h4>
+<p><strong>구조</strong>: Transformer decoder를 여러 층 쌓은 것이다. Decoder의 self-attention은 BERT와 정반대 특성을 갖는다 — 각 위치가 <strong>자기 자신과 그 앞쪽 위치들만 볼 수 있다</strong>. 뒤쪽 위치는 볼 수 없도록 attention 자체에 차단막(causal mask)이 적용된다. 이걸 "단방향(unidirectional)" 또는 "causal" attention이라고 한다.</p>
+<p>왜 이런 제약을 거는가? 생성 task의 본질 때문이다. 모델이 "다음 단어"를 예측할 때 이미 그 다음 단어를 보고 있다면 학습이 의미가 없다 (답을 보고 답을 맞히는 것과 같다). 그래서 학습 중에도 모델이 미래 단어를 보지 못하도록 강제하는 것이다.</p>
+<p><strong>학습 방식: Autoregressive Language Modeling</strong></p>
+<p>입력 시퀀스의 매 위치에서 "이 위치까지 본 단어들로 다음 단어를 예측"하도록 학습한다. "강아지가 소파 위에서" 다음에 무엇이 올 확률이 가장 높은지 — 예를 들어 "잠을 자고 있다"의 "잠" — 를 맞추는 식이다.</p>
+<p>학습이 끝나면 모델은 어떤 시작 텍스트가 주어졌을 때 그 뒤를 자연스럽게 이어 쓸 수 있다. 한 단어를 생성하고, 그 단어를 입력에 추가한 뒤 다음 단어를 생성하고, 이걸 반복한다. 이게 ChatGPT 같은 대화 모델의 기본 작동 방식이다.</p>
+<p><strong>GPT의 특징</strong>: 단방향 attention과 autoregressive 학습 덕분에 GPT는 텍스트 <strong>생성(generation)</strong>에 매우 강하다. 글쓰기, 대화, 코드 생성, 창작 등 새로운 텍스트를 만들어내는 작업에 자연스럽다.</p>
+
+<div class="analogy">📝 BERT를 빈칸 채우기 시험을 푸는 독해가에 비유할 수 있다. 빈칸 정답을 맞히려면 빈칸 앞뒤를 모두 읽어야 하니, BERT는 자연스럽게 양방향 문맥을 다 활용한다. 반면 GPT는 "다음 문장을 계속 써 내려가는 이야기꾼"이다. 지금까지 쓴 것만 보고 다음 단어를 결정하니 단방향이 자연스럽다. 시험과 글쓰기는 서로 다른 방식의 사고를 요구하듯, 이해와 생성도 다른 모델 구조에서 잘 작동한다.</div>
+
+<h4>🆚 직접 비교</h4>
+<table style="width:100%;border-collapse:collapse;font-size:.86rem;margin:1rem 0;">
+<thead><tr style="background:#f6f3ed;">
+<th style="text-align:left;padding:.4rem .6rem;border-bottom:1px solid #d6cfbf;">측면</th>
+<th style="text-align:left;padding:.4rem .6rem;border-bottom:1px solid #d6cfbf;">BERT</th>
+<th style="text-align:left;padding:.4rem .6rem;border-bottom:1px solid #d6cfbf;">GPT</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:.35rem .6rem;border-bottom:1px solid #ebe6da;">사용 부품</td><td style="padding:.35rem .6rem;border-bottom:1px solid #ebe6da;">Transformer Encoder</td><td style="padding:.35rem .6rem;border-bottom:1px solid #ebe6da;">Transformer Decoder</td></tr>
+<tr><td style="padding:.35rem .6rem;border-bottom:1px solid #ebe6da;">Attention 방향</td><td style="padding:.35rem .6rem;border-bottom:1px solid #ebe6da;">양방향 (좌우 모두 봄)</td><td style="padding:.35rem .6rem;border-bottom:1px solid #ebe6da;">단방향 (왼쪽만 봄)</td></tr>
+<tr><td style="padding:.35rem .6rem;border-bottom:1px solid #ebe6da;">학습 목표</td><td style="padding:.35rem .6rem;border-bottom:1px solid #ebe6da;">가려진 단어 맞히기 (MLM)</td><td style="padding:.35rem .6rem;border-bottom:1px solid #ebe6da;">다음 단어 예측 (Autoregressive)</td></tr>
+<tr><td style="padding:.35rem .6rem;border-bottom:1px solid #ebe6da;">강점</td><td style="padding:.35rem .6rem;border-bottom:1px solid #ebe6da;">이해 (understanding)</td><td style="padding:.35rem .6rem;border-bottom:1px solid #ebe6da;">생성 (generation)</td></tr>
+<tr><td style="padding:.35rem .6rem;">자연스러운 task</td><td style="padding:.35rem .6rem;">분류, 임베딩, 검색</td><td style="padding:.35rem .6rem;">글쓰기, 대화, 코드 생성</td></tr>
+</tbody>
+</table>
+
+<h4>🧭 언제 무엇을 쓰는가</h4>
+<p><strong>BERT를 쓰는 경우 — 이해 task</strong></p>
+<ul>
+  <li><strong>문장 분류</strong>: 감정 분석, 스팸 분류, 주제 분류 등 — 텍스트 전체를 받아 하나의 라벨을 예측</li>
+  <li><strong>Named Entity Recognition (NER, 개체명 인식)</strong>: 문장에서 사람 이름, 지명, 조직명 등을 찾기 — 각 단어의 분류라 양방향 문맥이 중요</li>
+  <li><strong>추출형 질문 응답</strong>: 본문에서 답이 되는 구간을 찾기 — 본문 전체 이해 필요</li>
+  <li><strong>문장 임베딩과 검색</strong>: 문장을 벡터로 만들어 유사한 문서 검색 — 의미 이해가 핵심</li>
+</ul>
+<p><strong>GPT를 쓰는 경우 — 생성 task</strong></p>
+<ul>
+  <li><strong>텍스트 이어쓰기</strong>: 시작 부분을 주면 자연스럽게 계속 작성</li>
+  <li><strong>대화 시스템</strong>: ChatGPT 같은 대화형 AI</li>
+  <li><strong>창작</strong>: 소설, 시, 마케팅 카피 생성</li>
+  <li><strong>코드 생성</strong>: GitHub Copilot 같은 코드 작성 도구</li>
+  <li><strong>Few-shot learning</strong>: 몇 개 예시만 주고 새 task를 즉시 수행 — GPT의 in-context learning 능력 활용</li>
+  <li><strong>개방형 응답</strong>: 자유 형식의 질문에 답하기</li>
+</ul>
+
+<h4>📌 정리</h4>
+<p>BERT와 GPT의 차이는 <strong>"같은 Transformer 부품을 어떻게 활용하느냐"</strong>로 정리된다. BERT는 encoder + 양방향 attention + MLM 학습으로 이해 task에 강하고, GPT는 decoder + 단방향 attention + autoregressive 학습으로 생성 task에 강하다. 입력 전체를 받아 분류·추출·검색하는 이해가 목적이면 BERT, 새 텍스트를 만들어내는 생성이 목적이면 GPT를 선택하면 된다. 현대 LLM의 두 큰 흐름이 이 두 모델 계열에서 출발한다.</p>
 </div>
 
       <div class="model-answer">
