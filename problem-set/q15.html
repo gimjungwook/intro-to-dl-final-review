@@ -33,12 +33,27 @@
   </div>
 
 <div class="prose">
-<p>✂️ <strong>Gradient clipping</strong>은 gradient의 <strong>크기가 임계값을 넘으면 방향은 보존한 채 크기만 임계값으로 줄이는</strong> 기법이다. 가장 흔한 <strong>norm clipping</strong>:</p>
-<div class="math-block">$$ \text{if } \lVert g\rVert > \tau:\quad g \leftarrow \tau\,\frac{g}{\lVert g\rVert} $$</div>
-<p class="math-note">gradient 벡터를 임계값 $\tau$ 길이로 정규화. 방향 그대로, 길이만 상한.</p>
-<p>🧗 이건 <strong>cliff / exploding gradient</strong>에 대한 직접 처방이다. 깊은 망·RNN에선 가중치가 여러 층(시간 스텝)에 반복 곱해져 손실 곡면에 거의 수직인 절벽이 생기고, 그 근처에서 gradient가 폭증한다. 보통 보폭을 곱하면 파라미터가 한 번에 멀리 날아가는데 💥, clipping은 그 한 걸음을 안전한 상한으로 묶는다. 핵심은 <strong>방향을 안 바꾼다</strong>는 점 — 여전히 내리막으로 가되 절벽 아래로 안 떨어질 만큼만 간다.</p>
-<div class="analogy">🚗 clipping = 자동차 속도 제한 장치. 가속 페달(gradient)을 아무리 세게 밟아도 100km/h를 못 넘게 막는다. 핸들(방향)은 그대로 두고 속도만 잘라 급경사에서 통제 이탈을 막는다.</div>
-<p>🔧 RNN 학습의 사실상 표준 안전장치. 요소별로 $[-v,v]$에 자르는 방식도 있으나 norm clipping이 방향을 보존해 더 선호된다 ✅.</p>
+<p>✂️ Gradient clipping은 단순하지만 매우 효과적인 안전장치다. 핵심 아이디어는 <strong>"기울기가 너무 커지면 방향은 그대로 두고 크기만 잘라낸다"</strong>는 것이다.</p>
+
+<h4>📐 작동 방식</h4>
+<p>매 학습 step마다 기울기를 계산한 직후, 그 기울기의 크기를 측정한다. 사전에 정한 임계값(threshold)이 있는데, 측정한 크기가 그 임계값보다 작으면 평소처럼 그대로 사용한다. 임계값보다 크면 <strong>기울기 벡터를 정확히 임계값 크기로 줄인다 — 방향은 그대로 유지한 채</strong>.</p>
+<p>예를 들어 임계값이 5인데 기울기 크기가 100으로 측정됐다면, 그 기울기를 길이 5로 정규화한다. 방향은 원래 100짜리 기울기와 정확히 같지만, 크기만 안전한 수준으로 잘라낸다.</p>
+<p>이걸 보통 norm clipping이라고 부른다. 다른 변형으로는 element-wise clipping(각 성분을 따로따로 [-v, v] 범위로 자르기)이 있지만, 그 방식은 방향이 약간 틀어진다 — 그래서 norm clipping이 더 선호된다.</p>
+
+<h4>🧗 왜 필요한가: 절벽과 기울기 폭발 처방</h4>
+<p>Gradient clipping은 <strong>cliff(절벽)와 exploding gradient</strong> 문제에 대한 직접 처방이다 (Q7 참조).</p>
+<p>깊은 신경망이나 RNN에서는 가중치가 여러 layer(또는 timestep)에 걸쳐 반복적으로 곱해진다. 그 결과 손실 곡면에 거의 수직에 가까운 절벽 영역이 생기고, 그 절벽 가장자리에서 측정되는 기울기는 천문학적으로 크다.</p>
+<p>이때 평소처럼 "기울기 × 학습률" 식으로 한 걸음을 떼면, 그 거대한 기울기에 학습률을 곱한 결과는 모델 파라미터를 한 번에 수십, 수백 단위로 멀리 점프시킨다. <strong>그동안 쌓아온 학습 결과가 단 한 번의 잘못된 점프로 모두 날아간다</strong>.</p>
+<p>Gradient clipping이 이 한 걸음을 안전한 상한에 묶어둔다. 절벽 가장자리에서도 한 걸음의 크기가 임계값을 넘지 않으니, 파라미터가 안전한 거리 안에서만 이동한다. 핵심은 <strong>방향을 바꾸지 않는다</strong>는 점이다 — 여전히 내리막을 향해 가되, 절벽 아래로 떨어지지 않을 만큼만 가는 것이다.</p>
+
+<div class="analogy">🚗 Gradient clipping을 자동차의 속도 제한 장치(speed limiter)에 비유할 수 있다. 가속 페달(기울기)을 아무리 세게 밟아도 100km/h를 넘지 못하게 자동으로 막아준다. 운전자가 핸들(방향)을 어디로 돌릴지는 그대로 두지만, 속도만큼은 안전한 상한으로 제한한다. 급경사 내리막에서도 통제를 잃지 않고 내려갈 수 있다.</div>
+
+<h4>🔧 실용적 가치</h4>
+<p>Gradient clipping은 거의 모든 RNN/LSTM 학습 코드에 기본 옵션으로 포함되어 있을 만큼 표준화되어 있다. 임계값으로 보통 1.0이나 5.0 같은 작은 값을 쓰는데, task와 모델에 따라 조정한다.</p>
+<p>구현이 매우 단순하다 (몇 줄짜리 코드)는 점과, 거의 항상 학습 안정성을 높여준다는 점에서 비용 대비 효과가 매우 크다. 폭발이 발생하지 않는 모델에서도 안전장치로 활성화해두는 게 보통이다 — clipping이 발동되지 않으면 아무 일도 일어나지 않으니 손해가 없다.</p>
+
+<h4>🤝 다른 안정화 기법과의 관계</h4>
+<p>Gradient clipping이 가장 단순한 처방이지만, 더 근본적인 해결책들도 있다. LSTM과 GRU는 cell state의 덧셈 갱신으로 vanishing/exploding gradient 문제 자체를 줄이고, Transformer는 RNN 구조 자체를 self-attention으로 대체했다. 그래도 이 더 발전한 모델들에서조차 학습 안정성을 위해 gradient clipping을 함께 쓰는 경우가 많다 — 단순함과 효과가 검증된 표준 도구다.</p>
 </div>
 
       <div class="model-answer">
@@ -48,7 +63,7 @@
 
       <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
-        <li>정의 — $\lVert g\rVert>\tau$면 $g\leftarrow\tau g/\lVert g\rVert$. 방향 보존, 크기만 상한.</li>
+        <li>정의 — 기울기 크기가 임계값을 넘으면 임계값 크기로 정규화. 방향 보존, 크기만 상한 적용.</li>
         <li>목적 — 절벽/기울기 폭발(Q7) 처방. 한 걸음이 파라미터를 멀리 날리는 것을 방지.</li>
         <li>RNN 표준. 방향 보존이 핵심.</li>
       </ul>
