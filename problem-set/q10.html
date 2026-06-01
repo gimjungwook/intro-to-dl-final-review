@@ -33,20 +33,24 @@
   </div>
 
 <div class="prose">
-<p>🔁 이 문제의 핵심은 두 개념을 정확히 구분하는 것 👇.</p>
-<div class="cmp">
-  <div class="card gatys"><h4>➡️ Equivariance (등가성)</h4><ul>
-    <li>입력이 움직이면 <b>출력도 같이 움직임</b>.</li>
-    <li>$f(\text{Shift}(x)) = \text{Shift}(f(x))$.</li>
-    <li><b>convolution 자체</b>의 성질.</li>
-  </ul></div>
-  <div class="card modern"><h4>🛡️ Invariance (불변성)</h4><ul>
-    <li>입력이 움직여도 <b>출력 그대로</b>.</li>
-    <li>$f(\text{Shift}(x)) = f(x)$.</li>
-    <li><b>pooling</b>이 더해질 때 (근사적으로) 생김.</li>
-  </ul></div>
-</div>
-<p>⚠️ 흔한 오해: “CNN은 평행이동 불변”이라고 뭉뚱그리는 것. 정확히는 <strong>convolution 층은 equivariant이지 invariant가 아니다</strong>. 고양이를 오른쪽으로 옮기면 feature map의 활성도 오른쪽으로 옮겨간다(equivariance). invariance는 그 위에 <strong>pooling</strong>이 얹힐 때 생긴다 — <strong>max pooling</strong>은 한 영역에서 가장 강한 반응만 남기므로 그 영역 안에서 입력이 조금 움직여도 출력이 안 변한다 = <strong>작은 평행이동에 대한 근사 불변성</strong> 🎯.</p>
+<p>🔁 이 문제의 핵심은 사람들이 자주 헷갈리는 두 개념을 정확히 구분하는 것이다. <strong>Equivariance(등가성)</strong>와 <strong>Invariance(불변성)</strong>은 비슷해 보이지만 완전히 다른 의미다.</p>
+
+<h4>➡️ Equivariance (등가성) — "함께 움직인다"</h4>
+<p>입력을 옆으로 옮기면 출력도 옆으로 옮겨지는 성질이다. 입력의 변화가 그대로 출력에 반영된다.</p>
+<p>예를 들어 고양이 사진을 입력으로 넣었을 때 CNN이 고양이 얼굴 위치에서 강하게 활성화된다고 하자. 같은 사진을 오른쪽으로 100픽셀 옮긴 뒤 입력으로 넣으면, CNN의 feature map도 정확히 오른쪽으로 같은 양만큼 옮겨진 위치에서 활성화된다. 입력 이동을 출력이 "따라간다".</p>
+<p>이 성질은 <strong>convolution layer 자체의 본질적 성질</strong>이다. 같은 필터가 모든 위치에서 동일하게 적용되니, 어디서든 같은 패턴에 같은 반응을 한다.</p>
+
+<h4>🛡️ Invariance (불변성) — "변하지 않는다"</h4>
+<p>입력이 옆으로 옮겨져도 출력은 그대로인 성질이다. "고양이가 어디 있든 고양이는 고양이" 같은 정보를 출력에 담을 때 필요하다.</p>
+<p>중요한 점은 <strong>convolution layer만으로는 invariance가 만들어지지 않는다</strong>는 것이다. Convolution은 equivariance만 주지 invariance는 안 준다.</p>
+
+<h4>⚠️ 가장 흔한 오해</h4>
+<p>"CNN은 평행이동 불변이다"라고 뭉뚱그려 말하는 경우가 많은데 부정확하다. 정확히는 <strong>convolution layer는 equivariant이지 invariant가 아니다</strong>. Invariance는 그 위에 다른 layer가 더해질 때 생긴다.</p>
+
+<h4>🎯 Invariance는 어디서 오는가: Pooling</h4>
+<p>Translation invariance를 만드는 핵심은 <strong>pooling layer</strong>다. Max pooling은 작은 영역(예: 2×2)에서 가장 큰 활성값 하나만 남기고 나머지를 버린다.</p>
+<p>왜 이게 invariance를 만드는가. 고양이 눈이 영역 안 어디로 움직이든, 그 영역의 최댓값을 취하면 출력은 거의 같다 — 어차피 그 영역 안에 있다는 사실은 변하지 않으니까. <strong>입력이 영역 안에서 조금 움직여도 출력이 안 변한다 = 작은 평행이동에 대한 근사 불변성</strong>이 생긴 것이다.</p>
+<p>"근사"라는 단서가 중요하다. 평행이동이 너무 커서 신호가 영역 밖으로 빠져나가면 invariance가 깨진다. 즉 pooling이 주는 invariance는 <strong>작은 이동에 한해서만 성립</strong>한다.</p>
 <div class="widget">
         <div class="widget-frame">
           <div class="widget-label"><span class="lab-no">위젯 10</span><span>입력을 밀어 보라 — 특징맵은 따라가고(등가), 풀링은 버틴다(불변)</span></div>
@@ -54,7 +58,21 @@
         </div>
         <p class="widget-cap">입력의 신호 위치를 슬라이더로 옮기면, 합성곱 특징맵(가운데)의 활성도 같은 방향으로 옮겨 간다(등가성). 그러나 풀링 출력(아래)은 신호가 같은 풀링 창 안에서 움직이는 한 변하지 않는다(근사 불변성). 창을 벗어날 만큼 크게 옮기면 풀링 출력도 바뀐다 — 불변성이 “작은” 이동에만 성립함을 보여 준다.</p>
       </div>
-<p>🤔 왜 둘 다 필요? 과제가 다르기 때문 — “고양이가 <em>어디</em> 있나”(localization)엔 equivariance, “고양이가 <em>있나</em>”(classification)엔 invariance. CNN은 convolution으로 equivariance를 주고 pooling으로 invariance를 쌓아 깊어질수록 점점 더 큰 이동에 둔감해진다. 단 pooling이 주는 invariance는 <strong>국소적·근사적</strong>이고, 큰 평행이동에 대한 견고함은 parameter sharing과 깊은 pooling의 합작이다 🧩.</p>
+<h4>🤔 둘 다 왜 필요한가</h4>
+<p>두 성질이 모두 중요한 이유는 task가 다르기 때문이다.</p>
+<ul>
+  <li><strong>"고양이가 어디 있나"</strong>를 알고 싶다면(객체 검출, 위치 추정) equivariance가 필요하다 — 위치 정보가 출력에 반영되어야 한다.</li>
+  <li><strong>"고양이가 있나 없나"</strong>만 알고 싶다면(분류 task) invariance가 필요하다 — 위치는 무시하고 "있다 vs 없다"만 답하면 된다.</li>
+</ul>
+<p>CNN은 양쪽을 다 다룰 수 있는 구조다. Convolution layer는 equivariance를 제공하고, 그 위에 pooling을 쌓아 점차 invariance를 키운다. <strong>깊어질수록 점점 더 큰 평행이동에 둔감</strong>해진다 — 얕은 layer에서는 위치를 정확히 반영하고, 깊은 layer에서는 "어디에 있든 고양이는 고양이"라는 추상화가 일어난다.</p>
+
+<h4>🧩 큰 평행이동에 대한 robustness</h4>
+<p>단 한 번의 pooling이 주는 invariance는 작은 이동에만 통한다. 큰 평행이동(예: 고양이가 화면 왼쪽에서 오른쪽으로 이동)에 대한 robustness는 두 가지가 합작해서 만든다:</p>
+<ol>
+  <li><strong>Parameter sharing</strong> — 같은 필터가 모든 위치에서 작동하니, 위치가 바뀌어도 그 위치에서 같은 패턴이 감지된다.</li>
+  <li><strong>여러 층의 pooling 누적</strong> — 깊이 갈수록 효과적 수용 영역이 커지고, 큰 영역 안의 작은 이동에 둔감해진다.</li>
+</ol>
+<p>완전한 invariance는 아니지만, 실용적으로 "고양이가 화면 어디에 있든 분류 가능"한 수준의 robustness를 달성한다.</p>
 </div>
 
       <div class="model-answer">
