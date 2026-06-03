@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
-<script defer src="qbank-data.js"></script>
+<script defer src="qbank-data.js?v=ko2"></script>
 <style>
   .wrap { max-width: 70rem; margin: 0 auto; padding: 1.4rem 1.4rem 5rem; }
   .home-link a { font-family: var(--mono); font-size:.74rem; color: var(--ink-faint); text-decoration:none; }
@@ -73,7 +73,7 @@
 <div class="wrap">
   <div class="home-link"><a href="index.html">← 26문항 카드 목록</a> &nbsp;·&nbsp; <a href="../index.html">메인 표지</a></div>
   <h1>26문항 <em>요약 한눈에</em> 🗂️</h1>
-  <p class="sub">교수님 배포 Problem Set for Final 26문항을 표로 압축. 각 행 = 영문 원문 질문 + “시험 답안 골격” 3줄. 우측 <b>EN</b> 토글로 영어 모범답안도 펼침. Q번호 → 상세 풀이. 직접 풀려면 <a href="답안작성.html">답안 작성 페이지</a>로.</p>
+  <p class="sub">교수님 배포 Problem Set for Final 26문항을 표로 압축. 각 행 = 영문 원문 질문 + “시험 답안 골격” 3줄 + 🇰🇷 한국어 모범답안(기본 표시). 우측 토글로 KO/EN 모범답안을 켜고 끌 수 있음. Q번호 → 상세 풀이. 직접 풀려면 <a href="답안작성.html">답안 작성 페이지</a>로.</p>
 
   <div class="toolbar">
     <input type="search" id="q" placeholder="검색 — 키워드/제목/영문 (dropout, 모멘텀, BERT…)">
@@ -93,7 +93,7 @@
 </div>
 
 <script>
-let curPart='all', curQ='', showEn=false, showKo=false;
+let curPart='all', curQ='', showEn=false, showKo=true;
 function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function render(){
   const out=document.getElementById('out'); const data=window.QBANK||[];
@@ -126,7 +126,7 @@ document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{do
 document.getElementById('toggleKo').addEventListener('click',function(){showKo=!showKo;this.classList.toggle('on',showKo);document.getElementById('out').classList.toggle('show-ko',showKo);});
 document.getElementById('toggleEn').addEventListener('click',function(){showEn=!showEn;this.classList.toggle('on',showEn);document.getElementById('out').classList.toggle('show-en',showEn);});
 document.getElementById('q').addEventListener('input',e=>{curQ=e.target.value;render();});
-window.addEventListener('load',render);
+window.addEventListener('load',()=>{ document.getElementById('toggleKo').classList.toggle('on',showKo); document.getElementById('toggleEn').classList.toggle('on',showEn); render(); });
 </script>
 </body>
 </html>
