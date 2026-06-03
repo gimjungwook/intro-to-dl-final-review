@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>딥러닝 개론 기말 — 26문항 답안 작성 + AI 채점용 내보내기</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script defer src="qbank-data.js"></script>
+<style>
+  .wrap { max-width: 46rem; margin: 0 auto; padding: 1.4rem 1.4rem 6rem; }
+  .home-link a { font-family: var(--mono); font-size:.74rem; color: var(--ink-faint); text-decoration:none; }
+  .home-link a:hover { color: var(--structure); }
+  h1 { font-size: clamp(1.8rem,4.4vw,2.7rem); margin:.5rem 0 .5rem; line-height:1.12; }
+  h1 em { color: var(--style,#C0492E); font-style:normal; }
+  .sub { color: var(--ink-soft); font-size:.94rem; line-height:1.65; }
+  .sub b { color: var(--ink); }
+  .bar { position: sticky; top:0; z-index:10; background: rgba(255,255,255,.95); backdrop-filter: blur(8px); border-bottom:1px solid var(--line); padding:.8rem 0; margin:1.2rem 0 1.6rem; display:flex; flex-wrap:wrap; gap:.5rem; align-items:center; }
+  .prog { font-family: var(--mono); font-size:.8rem; color: var(--ink-soft); margin-right:auto; }
+  .prog b { color: var(--structure); }
+  .btn { font-family: var(--mono); font-size:.78rem; padding:.55rem .85rem; border-radius:9px; border:1px solid var(--line); background:#fff; color: var(--ink); cursor:pointer; transition:.15s; }
+  .btn:hover { border-color: var(--structure-lo); }
+  .btn.primary { background: var(--style,#C0492E); color:#fff; border-color: var(--style,#C0492E); }
+  .btn.primary:hover { filter:brightness(1.08); }
+  .btn.ghost { color: var(--ink-faint); }
+  .g-head { display:flex; align-items:center; gap:.6rem; margin:2.4rem 0 1rem; padding-bottom:.4rem; border-bottom:2px solid var(--line); }
+  .g-head .g-emoji { font-size:1.3rem; } .g-head h2 { margin:0; font-size:1.3rem; }
+  .card { border:1px solid var(--line); border-radius:16px; padding:1.1rem 1.2rem 1.2rem; margin-bottom:1rem; background:#fff; }
+  .card.done { border-color: var(--structure-lo); background: linear-gradient(180deg,#fff,var(--paper-2)); }
+  .chead { display:flex; align-items:baseline; gap:.6rem; flex-wrap:wrap; }
+  .chead .qn { font-family: var(--mono); font-weight:700; color: var(--structure); font-size:.92rem; }
+  .chead h3 { font-family: var(--serif,Georgia); margin:0; font-size:1.1rem; flex:1; }
+  .chead .step { font-family: var(--mono); font-size:.64rem; color: var(--ink-faint); }
+  .qen { font-family: var(--mono); font-size:.8rem; color: var(--ink-soft); background: var(--paper-2); border-left:2px solid var(--structure-lo); border-radius:8px; padding:.6rem .8rem; margin:.7rem 0; line-height:1.55; }
+  textarea { width:100%; min-height:120px; resize:vertical; font-family: var(--mono); font-size:.86rem; line-height:1.6; padding:.7rem .8rem; border:1px solid var(--line); border-radius:9px; background:#fff; color: var(--ink); box-sizing:border-box; }
+  textarea:focus { outline:none; border-color: var(--structure); }
+  .meta-row { display:flex; justify-content:space-between; align-items:center; margin-top:.5rem; gap:1rem; flex-wrap:wrap; }
+  .hint-t { font-family: var(--mono); font-size:.72rem; color: var(--structure); cursor:pointer; user-select:none; }
+  .hint-t:hover { text-decoration:underline; }
+  .wc { font-family: var(--mono); font-size:.68rem; color: var(--ink-faint); }
+  .hint { display:none; border-top:1px dashed var(--line); margin-top:.7rem; padding-top:.5rem; }
+  .hint.open { display:block; }
+  .hint .hl { font-family: var(--mono); font-size:.68rem; letter-spacing:.06em; color: var(--ink-faint); text-transform:uppercase; }
+  ul.kg { margin:.3rem 0 .8rem; padding-left:1.1rem; }
+  ul.kg li { font-size:.83rem; color: var(--ink-soft); line-height:1.5; margin:.2rem 0; }
+  ul.kg li::marker { color: var(--structure-lo); }
+  .ma-en { padding:.6rem .75rem; background:#fff6f3; border-left:2px solid var(--style,#C0492E); border-radius:8px; font-size:.81rem; line-height:1.55; color:#6b3a2e; }
+  .toast { position: fixed; bottom:1.4rem; left:50%; transform:translateX(-50%) translateY(20px); background: var(--ink,#222); color:#fff; font-family: var(--mono); font-size:.82rem; padding:.7rem 1.2rem; border-radius:11px; opacity:0; transition:.25s; pointer-events:none; z-index:50; }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+  dialog { border:1px solid var(--line); border-radius:16px; padding:0; max-width:760px; width:92%; box-shadow: var(--shadow-plate); }
+  dialog::backdrop { background: rgba(20,18,14,.42); }
+  .dlg-head { display:flex; justify-content:space-between; align-items:center; padding:1rem 1.2rem; border-bottom:1px solid var(--line); }
+  .dlg-head h4 { margin:0; font-family: var(--serif,Georgia); font-size:1.1rem; }
+  .dlg-body { padding:1rem 1.2rem; } .dlg-body p { font-size:.86rem; color: var(--ink-soft); line-height:1.6; margin:0 0 .7rem; }
+  .dlg-body textarea { min-height:280px; font-size:.74rem; }
+  .dlg-foot { display:flex; gap:.6rem; justify-content:flex-end; padding:.4rem 1.2rem 1.2rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="home-link"><a href="요약.html">← 26문항 요약 표</a> &nbsp;·&nbsp; <a href="index.html">카드 목록</a></div>
+  <h1>26문항 <em>직접 답안 작성</em> ✍</h1>
+  <p class="sub">머리로 먼저 답을 쓴다. 각 칸은 브라우저에 자동 저장(localStorage). 다 쓰면 위 <b>“채점용 내보내기”</b>로 질문 + 채점 기준 + 영어 모범답안 + 내 답을 한 덩어리 JSON으로 복사해, 다른 AI에 붙여넣어 채점시킨다. “힌트”는 채점 전엔 안 보는 걸 권장.</p>
+
+  <div class="bar">
+    <span class="prog">작성 <b id="pdone">0</b> / 26</span>
+    <button class="btn primary" id="export">📋 채점용 내보내기</button>
+    <button class="btn" id="exportJson">JSON만 복사</button>
+    <button class="btn" id="dl">⬇ 파일</button>
+    <button class="btn ghost" id="reset">초기화</button>
+  </div>
+
+  <div id="out"></div>
+</div>
+
+<dialog id="dlg">
+  <div class="dlg-head"><h4>🎯 채점용 내보내기</h4><button class="btn ghost" id="dlgClose">닫기</button></div>
+  <div class="dlg-body">
+    <p>전체를 복사해 채점용 AI(ChatGPT, Gemini 등)에 붙여넣으면, 26문항을 채점 기준 + 영어 모범답안에 대조해 채점한다. 미작성 문항은 빈 답으로 표시된다.</p>
+    <textarea id="dlgText" readonly></textarea>
+  </div>
+  <div class="dlg-foot"><button class="btn primary" id="dlgCopy">📋 복사</button></div>
+</dialog>
+<div class="toast" id="toast"></div>
+
+<script>
+const KEY='dlqa_ps_v1_';
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function getAns(q){ return localStorage.getItem(KEY+q)||''; }
+function setAns(q,v){ if(v) localStorage.setItem(KEY+q,v); else localStorage.removeItem(KEY+q); }
+function countDone(){ return (window.QBANK||[]).filter(d=>getAns(d.q).trim()).length; }
+function updProg(){ document.getElementById('pdone').textContent=countDone(); }
+function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),1900); }
+
+function render(){
+  const out=document.getElementById('out'); const data=window.QBANK||[];
+  let html=''; let lastPart=0;
+  for(const d of data){
+    if(d.part!==lastPart){ lastPart=d.part; html+='<div class="g-head"><span class="g-emoji">'+d.partEmoji+'</span><h2>'+esc(d.partName)+'</h2></div>'; }
+    const ans=getAns(d.q);
+    html+='<div class="card'+(ans.trim()?' done':'')+'" id="card-'+d.q+'">'+
+      '<div class="chead"><span class="qn">'+d.emoji+' Q'+d.q+'</span><h3>'+esc(d.title)+'</h3><span class="step">STEP '+d.step+'</span></div>'+
+      '<div class="qen">'+esc(d.qtext)+'</div>'+
+      '<textarea data-q="'+d.q+'" placeholder="여기에 내 답을 작성…">'+esc(ans)+'</textarea>'+
+      '<div class="meta-row"><span class="hint-t" data-h="'+d.q+'">▸ 힌트(채점 기준 + 영어 모범답안) 보기</span><span class="wc" id="wc-'+d.q+'"></span></div>'+
+      '<div class="hint" id="hint-'+d.q+'"><div class="hl">시험 답안 골격</div><ul class="kg">'+d.skeleton.map(b=>'<li>'+esc(b)+'</li>').join('')+'</ul><div class="hl">🎯 Model Answer (English)</div><div class="ma-en">'+esc(d.modelEn)+'</div></div>'+
+    '</div>';
+  }
+  out.innerHTML=html;
+  out.querySelectorAll('textarea').forEach(ta=>{
+    const q=ta.dataset.q;
+    const upd=()=>{ const wc=document.getElementById('wc-'+q); if(wc) wc.textContent=ta.value.trim()? ta.value.trim().length+'자':''; };
+    upd();
+    ta.addEventListener('input',()=>{ setAns(q,ta.value); document.getElementById('card-'+q).classList.toggle('done',!!ta.value.trim()); upd(); updProg(); });
+  });
+  out.querySelectorAll('.hint-t').forEach(h=>h.addEventListener('click',()=>{
+    const box=document.getElementById('hint-'+h.dataset.h); const open=box.classList.toggle('open');
+    h.textContent=(open?'▾ 힌트 접기':'▸ 힌트(채점 기준 + 영어 모범답안) 보기');
+    if(open&&window.renderMathInElement) renderMathInElement(box,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],throwOnError:false});
+  }));
+  if(window.renderMathInElement) renderMathInElement(out,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],throwOnError:false});
+  updProg();
+}
+
+function buildPayload(){
+  const data=window.QBANK||[];
+  return {
+    course:'딥러닝 개론 (Introduction to Deep Learning) — 기말 공식 문제은행 26문항',
+    textbook:'Goodfellow, Bengio, Courville (2016) 7-15장 + 강의 3개 논문',
+    exam_date:'2026-06-04',
+    total:data.length, answered:countDone(),
+    answers:data.map(d=>({ q:d.q, step:d.step, part:d.partName, title:d.title,
+      question_en:d.qtext, reference_points:d.skeleton, model_answer_en:d.modelEn,
+      my_answer:getAns(d.q).trim() }))
+  };
+}
+const GRADE_PROMPT=
+`너는 딥러닝 개론(Goodfellow et al. 2016) 기말 채점 조교다. 아래 JSON은 26문항 각각에 대해 (1) 영문 원문 질문 question_en, (2) 만점 채점 기준 reference_points(시험 답안 골격), (3) 영어 모범답안 model_answer_en, (4) 학생이 쓴 my_answer 를 담는다.
+
+각 문항을 다음 형식으로 채점하라(문항당 5점):
+- 점수 n/5 — reference_points를 모두 짚으면 만점, 빠지거나 틀린 만큼 감점.
+- ✅ 맞은 점 / ⚠️ 빠진 점 / ❌ 틀린 점을 각 한 줄.
+- 한 문장 교정 코멘트.
+my_answer가 비면 "미작성"으로 표시하고 모범답안 핵심 2-3줄 제시.
+마지막에 총점(/130), 가장 약한 갈래 Top 3, 내일 시험 전 우선 복습 순서를 정리하라.
+
+[데이터]
+`;
+document.getElementById('export').addEventListener('click',()=>{ document.getElementById('dlgText').value=GRADE_PROMPT+JSON.stringify(buildPayload(),null,2); document.getElementById('dlg').showModal(); });
+document.getElementById('dlgCopy').addEventListener('click',async()=>{ const t=document.getElementById('dlgText').value; try{ await navigator.clipboard.writeText(t); toast('복사됨 — AI에 붙여넣기'); }catch{ const ta=document.getElementById('dlgText'); ta.select(); document.execCommand('copy'); toast('복사됨'); } });
+document.getElementById('dlgClose').addEventListener('click',()=>document.getElementById('dlg').close());
+document.getElementById('exportJson').addEventListener('click',async()=>{ try{ await navigator.clipboard.writeText(JSON.stringify(buildPayload(),null,2)); toast('JSON 복사됨'); }catch{ toast('복사 실패 — 내보내기 창 사용'); } });
+document.getElementById('dl').addEventListener('click',()=>{ const b=new Blob([JSON.stringify(buildPayload(),null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='딥러닝개론-기말-내답안.json'; a.click(); URL.revokeObjectURL(a.href); toast('파일 저장됨'); });
+document.getElementById('reset').addEventListener('click',()=>{ if(!confirm('작성한 26문항 답안을 모두 지운다. 계속?')) return; (window.QBANK||[]).forEach(d=>localStorage.removeItem(KEY+d.q)); render(); toast('초기화됨'); });
+window.addEventListener('load',render);
+</script>
+</body>
+</html>

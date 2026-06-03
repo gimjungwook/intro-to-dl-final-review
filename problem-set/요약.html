@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>딥러닝 개론 기말 — 26문항 요약 한눈에</title>
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script defer src="qbank-data.js"></script>
+<style>
+  .wrap { max-width: 70rem; margin: 0 auto; padding: 1.4rem 1.4rem 5rem; }
+  .home-link a { font-family: var(--mono); font-size:.74rem; color: var(--ink-faint); text-decoration:none; }
+  .home-link a:hover { color: var(--structure); }
+  h1 { font-size: clamp(1.9rem,4.6vw,3rem); margin:.5rem 0 .5rem; line-height:1.12; }
+  h1 em { color: var(--structure); font-style:normal; }
+  .sub { color: var(--ink-soft); font-size:.96rem; line-height:1.65; max-width:42rem; }
+  .sub a { color: var(--structure); }
+  .toolbar { position: sticky; top:0; z-index:6; background: rgba(255,255,255,.93); backdrop-filter: blur(7px); display:flex; flex-wrap:wrap; gap:.5rem; align-items:center; padding:.8rem 0; margin:1.3rem 0 .3rem; border-bottom:1px solid var(--line); }
+  .toolbar input[type=search] { flex:1; min-width:190px; font-family: var(--mono); font-size:.84rem; padding:.5rem .7rem; border:1px solid var(--line); border-radius:9px; background:#fff; color: var(--ink); }
+  .chip { font-family: var(--mono); font-size:.72rem; padding:.42rem .75rem; border:1px solid var(--line); border-radius:999px; background:#fff; color: var(--ink-soft); cursor:pointer; transition:.15s; }
+  .chip:hover { border-color: var(--structure-lo); color: var(--ink); }
+  .chip.on { background: var(--structure); color:#fff; border-color: var(--structure); }
+  .toggle-en { font-family: var(--mono); font-size:.72rem; padding:.42rem .75rem; border:1px solid var(--line); border-radius:999px; background:#fff; color: var(--ink-soft); cursor:pointer; }
+  .toggle-en.on { background: var(--style, #C0492E); color:#fff; border-color: var(--style, #C0492E); }
+  .g-head { display:flex; align-items:center; gap:.7rem; margin:2.3rem 0 .2rem; padding-bottom:.45rem; border-bottom:2px solid var(--line); }
+  .g-head .g-emoji { font-size:1.4rem; }
+  .g-head h2 { margin:0; font-size:1.4rem; }
+  .g-head .g-count { font-family: var(--mono); font-size:.72rem; color: var(--ink-faint); background: var(--paper-2); border:1px solid var(--line); padding:.25rem .6rem; border-radius:999px; margin-left:auto; }
+  table.qt { width:100%; border-collapse: collapse; margin:.7rem 0 .3rem; }
+  table.qt th { text-align:left; font-family: var(--mono); font-size:.66rem; letter-spacing:.1em; text-transform:uppercase; color: var(--ink-faint); padding:.5rem .6rem; border-bottom:1px solid var(--line); }
+  table.qt td { padding:.75rem .6rem; border-bottom:1px solid var(--line-soft); vertical-align:top; }
+  table.qt tr:hover td { background: var(--paper-2); }
+  .qn { white-space:nowrap; }
+  .qn a { font-family: var(--mono); font-weight:700; color: var(--structure); text-decoration:none; font-size:.92rem; }
+  .qn a:hover { text-decoration:underline; }
+  .qn .step { display:block; font-family: var(--mono); font-size:.62rem; color: var(--ink-faint); font-weight:400; margin-top:.15rem; }
+  .qtitle { font-family: var(--serif, Georgia); font-weight:700; font-size:1.02rem; color: var(--ink); display:block; margin-bottom:.3rem; }
+  .qen { font-family: var(--mono); font-size:.74rem; color: var(--ink-soft); line-height:1.5; }
+  ul.kg { margin:0; padding-left:1.05rem; }
+  ul.kg li { font-size:.85rem; color: var(--ink-soft); line-height:1.5; margin:.22rem 0; }
+  ul.kg li::marker { color: var(--structure-lo); }
+  .ma-en { display:none; margin-top:.6rem; padding:.6rem .75rem; background:#fff6f3; border-left:2px solid var(--style,#C0492E); border-radius:8px; font-size:.82rem; line-height:1.55; color:#6b3a2e; }
+  .show-en .ma-en { display:block; }
+  .colq{width:7%;} .colt{width:34%;} .colk{width:51%;} .cols{width:8%;}
+  .src { font-family: var(--mono); font-size:.7rem; color: var(--ink-faint); white-space:nowrap; }
+  .empty { color: var(--ink-faint); font-family: var(--mono); font-size:.84rem; padding:2rem; text-align:center; }
+  .cta { display:inline-flex; gap:.4rem; align-items:center; font-family: var(--mono); font-size:.8rem; color:#fff; background: var(--style,#C0492E); padding:.6rem 1rem; border-radius:9px; text-decoration:none; margin-top:1.3rem; }
+  .cta:hover { filter:brightness(1.07); }
+  @media (max-width:760px){ .colt{display:none;} .qen{display:none;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="home-link"><a href="index.html">← 26문항 카드 목록</a> &nbsp;·&nbsp; <a href="../index.html">메인 표지</a></div>
+  <h1>26문항 <em>요약 한눈에</em> 🗂️</h1>
+  <p class="sub">교수님 배포 Problem Set for Final 26문항을 표로 압축. 각 행 = 영문 원문 질문 + “시험 답안 골격” 3줄. 우측 <b>EN</b> 토글로 영어 모범답안도 펼침. Q번호 → 상세 풀이. 직접 풀려면 <a href="답안작성.html">답안 작성 페이지</a>로.</p>
+
+  <div class="toolbar">
+    <input type="search" id="q" placeholder="검색 — 키워드/제목/영문 (dropout, 모멘텀, BERT…)">
+    <span class="chip on" data-p="all">전체</span>
+    <span class="chip" data-p="1">🛡️ 정칙화</span>
+    <span class="chip" data-p="2">⚙️ 최적화</span>
+    <span class="chip" data-p="3">🖼️ CNN</span>
+    <span class="chip" data-p="4">🔁 RNN</span>
+    <span class="chip" data-p="5">🧭 표상</span>
+    <span class="chip" data-p="6">📜 논문</span>
+    <span class="toggle-en" id="toggleEn">🎯 EN 모범답안</span>
+  </div>
+
+  <div id="out"></div>
+  <a class="cta" href="답안작성.html">✍ 26문항 직접 답안 작성 → AI 채점용 JSON 내보내기</a>
+</div>
+
+<script>
+let curPart='all', curQ='', showEn=false;
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function render(){
+  const out=document.getElementById('out'); const data=window.QBANK||[];
+  const q=curQ.trim().toLowerCase(); let html='', shown=0; let seen=new Set();
+  // group by part preserving step order
+  for(let p=1;p<=6;p++){
+    if(curPart!=='all'&&String(p)!==curPart) continue;
+    const rows=data.filter(d=>d.part===p).filter(d=>{ if(!q) return true; const hay=(d.title+' '+d.qtext+' '+d.skeleton.join(' ')+' '+d.modelEn+' Q'+d.q).toLowerCase(); return hay.includes(q); });
+    if(!rows.length) continue; shown+=rows.length;
+    html+='<div class="g-head"><span class="g-emoji">'+rows[0].partEmoji+'</span><h2>'+esc(rows[0].partName)+'</h2><span class="g-count">'+rows.length+'문항</span></div>';
+    html+='<table class="qt"><colgroup><col class="colq"><col class="colt"><col class="colk"><col class="cols"></colgroup><thead><tr><th>문항</th><th>제목 / 영문 원문</th><th>시험 답안 골격 · 영어 모범답안</th><th>출처</th></tr></thead><tbody>';
+    for(const d of rows){
+      html+='<tr>'+
+        '<td class="qn"><a href="q'+d.q+'.html">'+d.emoji+' Q'+d.q+'</a><span class="step">STEP '+d.step+'</span></td>'+
+        '<td><span class="qtitle">'+esc(d.title)+'</span><span class="qen">'+esc(d.qtext)+'</span></td>'+
+        '<td><ul class="kg">'+d.skeleton.map(b=>'<li>'+esc(b)+'</li>').join('')+'</ul>'+
+        '<div class="ma-en">🎯 '+esc(d.modelEn)+'</div></td>'+
+        '<td class="src">'+esc(d.partName)+'</td>'+
+      '</tr>';
+    }
+    html+='</tbody></table>';
+  }
+  out.innerHTML = shown? html : '<div class="empty">검색 결과 없음.</div>';
+  out.classList.toggle('show-en', showEn);
+  if(window.renderMathInElement) renderMathInElement(out,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],throwOnError:false});
+}
+document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');curPart=c.dataset.p;render();}));
+document.getElementById('toggleEn').addEventListener('click',function(){showEn=!showEn;this.classList.toggle('on',showEn);document.getElementById('out').classList.toggle('show-en',showEn);});
+document.getElementById('q').addEventListener('input',e=>{curQ=e.target.value;render();});
+window.addEventListener('load',render);
+</script>
+</body>
+</html>
