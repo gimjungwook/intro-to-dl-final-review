@@ -202,7 +202,7 @@
 function psetCopy(btn){
   var main=document.querySelector('main.qpage'); if(!main) return;
   var c=main.cloneNode(true);
-  c.querySelectorAll('.widget,.qnav,.qprog,.katex-mathml,.copyfab,script,canvas').forEach(function(e){e.remove();});
+  c.querySelectorAll('.widget,.qnav,.qprog,.katex-mathml,.copyfab,script,canvas,.lang[hidden]').forEach(function(e){e.remove();});
   c.style.position='absolute'; c.style.left='-99999px'; c.style.top='0';
   document.body.appendChild(c);
   var t=(c.innerText||c.textContent||'').replace(/\n{3,}/g,'\n\n').trim();
