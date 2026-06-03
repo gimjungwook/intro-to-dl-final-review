@@ -18,6 +18,7 @@
   <a class="home" href="index.html">← 26문항 목록</a>
   <span class="grp">🛡️ 정칙화와 일반화</span>
   <span class="step">STEP <b>2</b> / 26</span>
+  <div class="langtog"><button data-l="ko" class="on">KO</button><button data-l="en">EN</button></div>
 </header>
 
 <main class="qpage">
@@ -27,7 +28,8 @@
     <p class="qtext">Explain the parameter tying and parameter sharing.</p>
   </header>
 
-  <div class="q-interpret">
+  <div class="lang ko">
+<div class="q-interpret">
     <div class="qi-label">📌 질문 해석</div>
     <p>“<strong>parameter tying</strong>과 <strong>parameter sharing</strong>을 설명하라.” 두 용어의 정의 + <strong>둘의 차이(강제의 세기)</strong> + 대표 예시(CNN/RNN)를 함께 보여야 한다.</p>
   </div>
@@ -56,20 +58,44 @@
 <p>실무에서는 sharing이 훨씬 흔하다. CNN과 RNN, 그리고 그 변형들(Transformer의 multi-head attention에서도 weight를 head 간 공유하는 변형이 있다) 모두 sharing을 핵심 도구로 쓴다. 이유는 (가) 메모리 절감 효과가 크고, (나) "같은 패턴이 어디 있든 같다"라는 가정이 이미지·시퀀스·텍스트에 잘 맞기 때문이다.</p>
 <p>반면 tying은 "완전히 같지는 않지만 관련 있다"를 표현해야 할 때 쓴다. 멀티태스크 학습에서 task별 head는 다르되 공통 layer는 가깝게 유지하고 싶을 때, 또는 한 모델의 인코더와 디코더가 비슷한 표현을 다루도록 부드럽게 묶고 싶을 때 적합하다.</p>
 </div>
+  </div>
 
-      <div class="model-answer">
+  <div class="lang en" hidden>
+<div class="q-interpret"><div class="qi-label">📌 What the question asks</div>
+    <p>“Explain <strong>parameter tying</strong> and <strong>parameter sharing</strong>” — give each definition, the difference (how hard the constraint is), and an example.</p>
+  </div>
+<div class="prose">
+<p>🔗 Both encode the <strong>prior</strong> that some parameters are related. The difference is the <em>strength</em> of the constraint 💪.</p>
+<div class="cmp">
+  <div class="card gatys"><h4>🪢 Parameter Tying</h4><ul>
+    <li>Softly penalize two sets to be <b>close</b>: $\Omega(w_A,w_B)=\lVert w_A-w_B\rVert_2^2$.</li>
+    <li>Parameters stay <b>separate</b> but are pulled together.</li>
+    <li>e.g. a supervised model ↔ unsupervised model on the same input; domain adaptation.</li>
+  </ul></div>
+  <div class="card modern"><h4>🔒 Parameter Sharing</h4><ul>
+    <li>Force parameters to be <b>exactly equal</b> — the same memory.</li>
+    <li>A <b>hard constraint</b>, not a penalty.</li>
+    <li>e.g. CNN kernels (across space), RNN weights (across time).</li>
+  </ul></div>
+</div>
+<p>✨ Key relation: <strong>sharing is the limit of tying</strong> with an infinite penalty (the distance is forced to 0) 🟰. So tying = “should be similar” (weak prior), sharing = “must be equal” (<strong>infinitely strong prior</strong>).</p>
+<div class="analogy">🎓 Tying = putting two students in one group so their answers resemble each other (separate answer sheets). Sharing = the two writing on a single shared sheet — identical answers are forced, and there is one sheet to grade.</div>
+<p>🛠️ Sharing is more common: it saves memory and matches the “same pattern anywhere” assumption of images/sequences, and it grants <strong>translation equivariance</strong> for free. Tying fits when two models should be related but not identical.</p>
+</div>
+  </div>
+
+  <div class="model-answer">
         <div class="ma-label">🎯 Model Answer (English)</div>
         <p class="ma-en">Both encode the prior that certain parameters are related; they differ in how hard that constraint is. <strong>Parameter tying</strong> adds a soft penalty on the distance between two parameter sets that pulls them close together (each set still kept separate), used when two related models or tasks should resemble each other. <strong>Parameter sharing</strong> forces parameters to be <em>exactly identical</em> — they are literally the same memory — as in CNN kernels reused across spatial positions or RNN weights reused across time steps. Sharing is the limiting case of tying with an infinite penalty, so it acts as an infinitely strong prior; it additionally saves memory and grants translation equivariance for free.</p>
       </div>
 
-      <p class="skel-h">📝 시험 답안 골격</p>
+  <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>묶기 = 부드러운 벌점으로 두 파라미터를 가깝게. 공유 = 정확히 같은 파라미터(하드 제약, 같은 메모리).</li>
         <li>공유는 묶기의 극단(거리 벌점 무한대) = 무한히 강한 사전.</li>
         <li>공유 예 CNN·RNN, 묶기 예 지도/비지도 결합·도메인 적응. 공유는 메모리 절감 + 등가성 보너스.</li>
       </ul>
 
-  
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:7.7%"></div></div>
     <div class="qprog-txt"><b>2</b> / 26 문항 · 정칙화와 일반화</div>
@@ -181,6 +207,21 @@ function psetCopy(btn){
   else { fallback(t,done); }
   function fallback(text,cb){ var ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.left='-9999px'; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(ta); cb(); }
 }
+</script>
+<script>
+(function(){
+  function applyLang(l){
+    document.querySelectorAll('.lang').forEach(function(e){ e.hidden = !e.classList.contains(l); });
+    document.querySelectorAll('.langtog button').forEach(function(b){ b.classList.toggle('on', b.dataset.l===l); });
+  }
+  var saved='ko'; try{ saved=localStorage.getItem('psetLang')||'ko'; }catch(e){}
+  document.addEventListener('DOMContentLoaded', function(){
+    applyLang(saved);
+    document.querySelectorAll('.langtog button').forEach(function(b){
+      b.addEventListener('click', function(){ var l=b.dataset.l; try{localStorage.setItem('psetLang',l);}catch(e){} applyLang(l); });
+    });
+  });
+})();
 </script>
 </body>
 </html>

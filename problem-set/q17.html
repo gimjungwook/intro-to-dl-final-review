@@ -18,6 +18,7 @@
   <a class="home" href="index.html">← 26문항 목록</a>
   <span class="grp">🧭 비지도 학습과 표상</span>
   <span class="step">STEP <b>19</b> / 26</span>
+  <div class="langtog"><button data-l="ko" class="on">KO</button><button data-l="en">EN</button></div>
 </header>
 
 <main class="qpage">
@@ -27,7 +28,8 @@
     <p class="qtext">What is slow feature analysis (SFA)?</p>
   </header>
 
-  <div class="q-interpret">
+  <div class="lang ko">
+<div class="q-interpret">
     <div class="qi-label">📌 질문 해석</div>
     <p>“<strong>slow feature analysis(SFA)</strong>란?” 느림 원리 + 목적함수(시간 변화율 최소화) + <strong>자명해를 막는 제약</strong>까지.</p>
   </div>
@@ -61,20 +63,34 @@
 <p>실제로 SFA를 영상에 적용하면, 시각 피질에서 발견되는 <strong>complex cell</strong>(여러 방향에서 같은 패턴에 반응하는 세포)이나, 해마의 <strong>place cell</strong>(공간상 같은 위치에서 반응하는 세포)과 비슷한 표현이 자동으로 학습된다.</p>
 <p>레이블 없이도 "무엇이 일관되게 유지되는가"라는 정보만으로 의미 있는 추상 표현을 뽑아낼 수 있다는 점에서, SFA는 비지도 표현 학습의 우아한 사례다. 라벨이 비싸지만 시간 정보는 공짜인 환경(예: 비디오, 음성, 센서 데이터)에서 특히 유용하다.</p>
 </div>
+  </div>
 
-      <div class="model-answer">
+  <div class="lang en" hidden>
+<div class="q-interpret"><div class="qi-label">📌 What the question asks</div>
+    <p>“What is <strong>slow feature analysis (SFA)</strong>?” The slowness principle, the objective, and the constraints.</p>
+  </div>
+<div class="prose">
+<p>🐢 <strong>SFA</strong> is unsupervised feature learning on the <strong>slowness principle</strong>: important high-level features vary slowly relative to raw input.</p>
+<div class="analogy">🦓 As a zebra crosses the view, a single pixel flips black↔white rapidly (stripes pass), but “a zebra is present” changes slowly across frames. We want the slow signal, not the fast-flickering pixel.</div>
+<p>🎯 SFA learns features $f(x)$ that change as slowly as possible over time:</p>
+<div class="math-block">$$ \min_{f}\ \mathbb{E}\big[(f(x_{t+1}) - f(x_t))^2\big] $$</div>
+<p>🧷 To avoid the trivial constant solution, it imposes <strong>zero mean, unit variance</strong> ($\mathbb{E}[f]=0,\ \mathbb{E}[f^2]=1$) and feature <strong>decorrelation / orthogonality</strong> (so all features don't collapse onto the same slow signal). Features come out ordered by slowness 📊.</p>
+<p>🔬 Linear SFA solves as an <strong>eigenvalue problem</strong>; nonlinear SFA expands the input first. Its slow factors correspond to <strong>invariant representations</strong> like complex cells — learning invariances without labels 🧠.</p>
+</div>
+  </div>
+
+  <div class="model-answer">
         <div class="ma-label">🎯 Model Answer (English)</div>
         <p class="ma-en">SFA is an unsupervised feature-learning method built on the <strong>slowness principle</strong>: the meaningful high-level features of an environment vary slowly compared with the raw sensory input — a zebra crossing the view flips a pixel rapidly between black and white, yet "a zebra is present" changes slowly. SFA learns features from a time series that change as slowly as possible, minimising the squared difference between consecutive time steps' feature values. To rule out the trivial constant solution it imposes <strong>zero mean and unit variance</strong>, and to stop every feature collapsing onto the same slow signal it requires the features to be <strong>decorrelated/orthogonal</strong>. Linear SFA reduces to an eigenvalue problem, and the slow features it recovers correspond to invariant representations such as complex cells — a classic example of learning invariances without labels.</p>
       </div>
 
-      <p class="skel-h">📝 시험 답안 골격</p>
+  <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>느림 원리 — 고수준 특징은 원시 입력보다 천천히 변함(얼룩말 픽셀 vs 존재).</li>
         <li>목적 — 시간 따라 다음 프레임 특징과 현재 프레임 특징의 차이(시간 변화량)를 최소화.</li>
         <li>제약 — 평균0·분산1(자명해 배제) + 직교(붕괴 방지). 불변 특징을 비지도로 학습.</li>
       </ul>
 
-  
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:73.1%"></div></div>
     <div class="qprog-txt"><b>19</b> / 26 문항 · 비지도 학습과 표상</div>
@@ -195,6 +211,21 @@ function psetCopy(btn){
   else { fallback(t,done); }
   function fallback(text,cb){ var ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.left='-9999px'; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(ta); cb(); }
 }
+</script>
+<script>
+(function(){
+  function applyLang(l){
+    document.querySelectorAll('.lang').forEach(function(e){ e.hidden = !e.classList.contains(l); });
+    document.querySelectorAll('.langtog button').forEach(function(b){ b.classList.toggle('on', b.dataset.l===l); });
+  }
+  var saved='ko'; try{ saved=localStorage.getItem('psetLang')||'ko'; }catch(e){}
+  document.addEventListener('DOMContentLoaded', function(){
+    applyLang(saved);
+    document.querySelectorAll('.langtog button').forEach(function(b){
+      b.addEventListener('click', function(){ var l=b.dataset.l; try{localStorage.setItem('psetLang',l);}catch(e){} applyLang(l); });
+    });
+  });
+})();
 </script>
 </body>
 </html>

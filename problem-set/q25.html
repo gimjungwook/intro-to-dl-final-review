@@ -18,6 +18,7 @@
   <a class="home" href="index.html">← 26문항 목록</a>
   <span class="grp">📜 핵심 논문</span>
   <span class="step">STEP <b>25</b> / 26</span>
+  <div class="langtog"><button data-l="ko" class="on">KO</button><button data-l="en">EN</button></div>
 </header>
 
 <main class="qpage">
@@ -27,7 +28,8 @@
     <p class="qtext">What is the main point of the “Attention is all you need” paper?</p>
   </header>
 
-  <div class="q-interpret">
+  <div class="lang ko">
+<div class="q-interpret">
     <div class="qi-label">📌 질문 해석</div>
     <p>“이 논문(<strong>Attention Is All You Need</strong>)의 main point는?” 한 문장 — <strong>순환·합성곱 없이 self-attention만으로</strong> 시퀀스를 모델링.</p>
   </div>
@@ -62,13 +64,7 @@
 <p>Self-attention은 <strong>모든 위치를 동시에 처리</strong>한다. 100개 단어의 모든 attention 계산이 행렬 곱셈으로 한 번에 끝난다. GPU에서 압도적으로 빠르다.</p>
 <p><strong>3) 표현력 (vs CNN)</strong></p>
 <p>CNN은 한 layer 안에서 작은 수용 영역만 보니, 멀리 떨어진 위치까지 닿으려면 layer를 여러 개 쌓아야 한다. Self-attention은 한 layer 안에서 시퀀스 전체를 직접 본다 — depth가 적어도 멀리까지 닿는다.</p>
-<div class="widget">
-        <div class="widget-frame">
-          <div class="widget-label"><span class="lab-no">위젯 25</span><span>셀프 어텐션 — 한 단어를 누르면 무엇에 주목하는지 보인다</span></div>
-          <div id="attn" style="padding:1.6rem 1.2rem 1.2rem;background:#fff;"></div>
-        </div>
-        <p class="widget-cap">아래 문장의 한 단어(질의)를 눌러 보라. 그 단어가 다른 단어들에 얼마나 주목하는지(어텐션 가중치)가 색의 진하기로 나타난다. 대명사 “그것은”을 누르면 “동물은”에 강하게 주목한다 — 셀프 어텐션이 한 번에 멀리 떨어진 단어를 직접 연결함을 보여 준다.</p>
-      </div>
+
 <h4>🧭 보조 장치: Positional Encoding과 Multi-head Attention</h4>
 <p>Self-attention만 쓰면 두 가지 보조 장치가 추가로 필요하다.</p>
 <p><strong>Positional Encoding (위치 인코딩)</strong> — RNN과 달리 self-attention은 자체적으로 "단어의 순서" 정보를 가지지 않는다. 단어 집합으로만 보고 순서를 모른다. "강아지가 사람을 물었다"와 "사람이 강아지를 물었다"가 같은 결과가 나올 수 있다.</p>
@@ -83,20 +79,43 @@
 <h4>📌 정리</h4>
 <p>"Attention Is All You Need의 main point는?"에 대한 답은 다음과 같다. <strong>RNN과 CNN 없이 self-attention만으로 시퀀스를 모델링하는 Transformer 아키텍처를 제안한 것</strong>이다. Self-attention은 시퀀스의 모든 위치 쌍을 한 번에 직접 연결해서 (1) RNN의 vanishing gradient 문제를 해결하고, (2) 완전 병렬 계산을 가능하게 한다. Positional encoding과 multi-head attention이 보조 장치로 추가된다. 이 구조가 BERT, GPT 등을 통해 현대 자연어 처리와 인공지능 전반의 토대가 되었다.</p>
 </div>
+  </div>
 
-      <div class="model-answer">
+  <div class="lang en" hidden>
+<div class="q-interpret"><div class="qi-label">📌 What the question asks</div>
+    <p>“What is the <strong>main point</strong> of <em>Attention Is All You Need</em>?” One line: sequences with attention only — no recurrence or convolution.</p>
+  </div>
+<div class="prose">
+<p>🔭 The single point: sequences can be modeled with <strong>only (self-)attention — no recurrence, no convolution</strong>. This is the <strong>Transformer</strong>.</p>
+<p>🎯 <strong>Self-attention</strong> computes, for each position, a weighted sum of all positions' <strong>values</strong>; weights are the softmax of <strong>query</strong>–<strong>key</strong> similarities:</p>
+<div class="math-block">$$ \text{Attention}(Q,K,V) = \operatorname{softmax}\!\Big(\frac{QK^\top}{\sqrt{d_k}}\Big)V $$</div>
+<p class="math-note">$QK^\top$ scores all position pairs, scaled by $\sqrt{d_k}$, softmaxed, then mixes $V$.</p>
+<p>💪 Why it matters — it beats both RNN and CNN limits at once: ① <strong>long-range</strong> — any two positions connect directly in one step (<strong>path length $O(1)$</strong>), no vanishing, no stacked depth ✅; ② <strong>parallelism</strong> — all positions computed at once, far faster on GPUs ⚡.</p>
+
+<p>🧭 With no recurrence, order is lost — so <strong>positional encoding</strong> injects order, and <strong>multi-head attention</strong> attends to several relations at once. This simple, parallel design became the basis of BERT, GPT, and modern LLMs 🏛️.</p>
+</div>
+  </div>
+
+  <div class="widget">
+        <div class="widget-frame">
+          <div class="widget-label"><span class="lab-no">위젯 25</span><span>셀프 어텐션 — 한 단어를 누르면 무엇에 주목하는지 보인다</span></div>
+          <div id="attn" style="padding:1.6rem 1.2rem 1.2rem;background:#fff;"></div>
+        </div>
+        <p class="widget-cap">아래 문장의 한 단어(질의)를 눌러 보라. 그 단어가 다른 단어들에 얼마나 주목하는지(어텐션 가중치)가 색의 진하기로 나타난다. 대명사 “그것은”을 누르면 “동물은”에 강하게 주목한다 — 셀프 어텐션이 한 번에 멀리 떨어진 단어를 직접 연결함을 보여 준다.</p>
+      </div>
+
+  <div class="model-answer">
         <div class="ma-label">🎯 Model Answer (English)</div>
         <p class="ma-en">The single point is that sequences can be modelled <strong>without any recurrence or convolution, using only (self-)attention</strong> — the Transformer. Self-attention computes, for each position, a weighted sum of all positions' values, where the weights come from the softmax of query-key similarities. This matters because it overcomes the two limits of RNNs and CNNs at once: any two positions are connected directly in a single step (path length is constant), so long-range dependencies are captured with no vanishing gradients and no stacked depth; and all positions are computed in parallel with no sequential dependency, making GPU training far faster. Because order information is otherwise lost, positional encoding is added, and multi-head attention lets the model attend to several relationships at once.</p>
       </div>
 
-      <p class="skel-h">📝 시험 답안 골격</p>
+  <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>핵심 — 순환/합성곱 없이 셀프 어텐션만으로 시퀀스 모델링(Transformer).</li>
         <li>Query, Key, Value 세 표현으로 모든 위치 쌍을 직접 연결. Query-Key 유사도를 가중치로 Value를 합산.</li>
         <li>이점 — 긴 의존성 path 1, 완전 병렬 계산. 보조 장치 = positional encoding (순서 주입), multi-head attention (여러 관계 동시).</li>
       </ul>
 
-  
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:96.2%"></div></div>
     <div class="qprog-txt"><b>25</b> / 26 문항 · 핵심 논문</div>
@@ -205,6 +224,21 @@ function psetCopy(btn){
   else { fallback(t,done); }
   function fallback(text,cb){ var ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.left='-9999px'; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(ta); cb(); }
 }
+</script>
+<script>
+(function(){
+  function applyLang(l){
+    document.querySelectorAll('.lang').forEach(function(e){ e.hidden = !e.classList.contains(l); });
+    document.querySelectorAll('.langtog button').forEach(function(b){ b.classList.toggle('on', b.dataset.l===l); });
+  }
+  var saved='ko'; try{ saved=localStorage.getItem('psetLang')||'ko'; }catch(e){}
+  document.addEventListener('DOMContentLoaded', function(){
+    applyLang(saved);
+    document.querySelectorAll('.langtog button').forEach(function(b){
+      b.addEventListener('click', function(){ var l=b.dataset.l; try{localStorage.setItem('psetLang',l);}catch(e){} applyLang(l); });
+    });
+  });
+})();
 </script>
 </body>
 </html>

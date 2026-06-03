@@ -18,6 +18,7 @@
   <a class="home" href="index.html">← 26문항 목록</a>
   <span class="grp">⚙️ 최적화와 하이퍼파라미터</span>
   <span class="step">STEP <b>6</b> / 26</span>
+  <div class="langtog"><button data-l="ko" class="on">KO</button><button data-l="en">EN</button></div>
 </header>
 
 <main class="qpage">
@@ -27,7 +28,8 @@
     <p class="qtext">Describe and compare the gradient descent method and the Newton method.</p>
   </header>
 
-  <div class="q-interpret">
+  <div class="lang ko">
+<div class="q-interpret">
     <div class="qi-label">📌 질문 해석</div>
     <p>“<strong>gradient descent</strong>와 <strong>Newton's method</strong>를 기술하고 비교하라.” 각 정의 + <strong>1차 vs 2차(곡률 사용)</strong> 차이 + 딥러닝에서의 실용성까지.</p>
   </div>
@@ -44,7 +46,40 @@
 <p>현재 위치에서 손실 곡면을 2차 함수(포물면)로 근사한 뒤, 그 포물면의 최소점으로 한 번에 점프한다. 곡률 정보 — 즉 "이 방향은 가파르고, 저 방향은 완만하다"는 데이터 — 를 알고 있으니, 각 방향마다 적절한 보폭이 자동으로 결정된다.</p>
 <p>이론적 장점은 강력하다. 손실이 진짜 2차 함수라면 <strong>단 한 걸음에 정확히 바닥에 도착한다</strong>. ill-conditioned 골짜기에서도 곡률을 이미 알고 있으니 지그재그 없이 직접 바닥으로 향한다. 조건수에 면역이 있다.</p>
 <p>비유로 보면, 경사하강은 안개 속에서 발밑 경사만 보고 한 걸음씩 더듬어 내려가는 등산객이다. 보폭(learning rate)은 감으로 정한다. 뉴턴법은 골짜기 전체 지형도를 펼쳐 보고 바닥 좌표를 계산해 한 번에 점프하는 사람이다. 한 걸음에 도착하지만, 그 지형도(Hessian)를 매번 그리는 비용이 막대하다.</p>
-<div class="widget">
+
+<h4>🚫 왜 딥러닝에서 뉴턴법은 거의 못 쓰는가</h4>
+<p>이론적으로 강력하지만 딥러닝 실무에선 거의 사용 불가능하다. 이유는 세 가지다.</p>
+<p><strong>계산 비용</strong> — 파라미터가 n개면 곡률 정보(Hessian)는 n×n 크기 행렬이고, 이걸 뒤집는 비용은 파라미터 수의 세제곱에 비례한다. 현대 딥러닝 모델은 파라미터가 수백만에서 수십억 개라, 이 비용이 천문학적이다. 한 step에 뉴턴 한 번 = 며칠씩 걸린다.</p>
+<p><strong>안장점 위험</strong> — 뉴턴법은 "현재 위치 근처의 2차 근사 곡면의 최소점"으로 점프한다. 그런데 깊은 신경망의 손실 곡면은 비볼록(non-convex)이라 곡면 위에 수많은 <strong>안장점</strong>(어떤 방향으로는 내리막, 다른 방향으로는 오르막인 지점)이 있다. 안장점 근처에서는 2차 근사가 양의 정부호(positive-definite)가 아니라, 뉴턴법이 오히려 안장점이나 극대점 쪽으로 끌려가는 일이 발생한다. 최소점을 향해 가야 할 알고리즘이 반대로 움직이는 셈이다.</p>
+<p><strong>국소 근사의 한계</strong> — 2차 근사는 현재 위치 근처에서만 정확하다. 손실 곡면이 멀리서 보면 복잡하게 휘어 있으니, 한 걸음에 멀리 점프하려 하면 그 점프가 엉뚱한 위치로 데려갈 위험이 있다.</p>
+
+<h4>🤝 실무 절충: Adam 계열 옵티마이저</h4>
+<p>그래서 실제 딥러닝에선 뉴턴법을 직접 쓰는 대신, <strong>곡률 정보를 싸게 근사하는 1차 방법</strong>들을 쓴다. Momentum은 과거 기울기를 누적해 "관성"을 더하고, RMSProp은 방향마다 보폭을 자동 조정한다. Adam은 둘을 합친 것으로, 현대 딥러닝의 사실상 표준 옵티마이저다.</p>
+<p>이런 방법들은 진짜 곡률을 계산하지 않지만, 기울기의 통계(평균·분산)를 추적해서 사실상 곡률에 적응하는 효과를 낸다. 뉴턴법만큼 정밀하진 않아도, 1차 계산 비용으로 ill-conditioning 문제를 상당 부분 완화할 수 있다.</p>
+
+<div class="analogy">🌫️ 경사하강은 안개 속에서 발밑 경사만 보고 한 걸음씩 내려가는 등산객이다. 보폭(learning rate)은 감으로 정해야 한다. 뉴턴법은 골짜기 지형도를 펼쳐서 바닥 좌표로 곧장 점프하는 사람인데, 그 지형도를 매번 그리는 비용이 너무 막대하다. Adam은 그 중간 — 지형도는 못 그리지만 최근 몇 걸음의 흔적으로 "어느 방향이 가파르고 어느 방향이 완만한지" 대충 감을 잡아 보폭을 조정한다.</div>
+</div>
+  </div>
+
+  <div class="lang en" hidden>
+<div class="q-interpret"><div class="qi-label">📌 What the question asks</div>
+    <p>“Describe and compare <strong>gradient descent</strong> and <strong>Newton's method</strong>” — definitions, the 1st- vs 2nd-order difference, and practicality in deep learning.</p>
+  </div>
+<div class="prose">
+<p>⛰️ Both minimize $J(\theta)$ but use different orders of information. <strong>Gradient descent</strong> uses only the <strong>1st order (gradient)</strong>; <strong>Newton's method</strong> uses the <strong>2nd order (curvature / Hessian)</strong>.</p>
+<p>🚶 <strong>Gradient descent</strong>: step opposite the gradient.</p>
+<div class="math-block">$$ \theta \leftarrow \theta - \epsilon\,\nabla_\theta J(\theta) $$</div>
+<p>The gradient gives only the steepest-descent direction, not how far to go 🤔. So the <strong>learning rate</strong> $\epsilon$ is hand-tuned, and on <strong>ill-conditioned</strong> valleys it zig-zags 〰️.</p>
+<p>🦘 <strong>Newton's method</strong>: fit a local quadratic and jump to its minimum.</p>
+<div class="math-block">$$ \theta \leftarrow \theta - H^{-1}\,\nabla_\theta J(\theta), \qquad H = \nabla^2_\theta J(\theta) $$</div>
+<p>The inverse Hessian rescales each direction by its curvature → one step on a pure quadratic, immune to ill-conditioning ✅.</p>
+
+<div class="analogy">🌫️ Gradient descent = a hiker in fog feeling the slope underfoot, guessing stride length. Newton = someone reading the full valley map and jumping straight to the bottom — but drawing and inverting that map (the Hessian) is expensive 💸.</div>
+<p>🚫 So Newton is rarely usable in deep learning: ① inverting the $n\times n$ Hessian costs $O(n^3)$ for millions of parameters; ② near a <strong>saddle point</strong> a non-positive-definite $H$ drags the step the wrong way; ③ the local quadratic is poor on <strong>non-convex</strong> surfaces. In practice we use cheap curvature-aware first-order methods — momentum, RMSProp, Adam 🤝.</p>
+</div>
+  </div>
+
+  <div class="widget">
         <div class="widget-frame">
           <div class="widget-label"><span class="lab-no">위젯 04</span><span>병든 골짜기 — 경사하강의 지그재그 vs 뉴턴의 한 걸음</span></div>
           <canvas id="gdnewton" class="widget-canvas" width="720" height="380"></canvas>
@@ -58,32 +93,19 @@
         </div>
         <p class="widget-cap">조건수 κ를 키워 골짜기를 찌그러뜨릴수록 경사하강(빨강)은 가파른 축을 좌우로 튕기며 더 많은 걸음을 허비한다. 뉴턴법(파랑)은 곡률을 알기에 κ와 무관하게 늘 한 걸음에 바닥으로 점프한다.</p>
       </div>
-<h4>🚫 왜 딥러닝에서 뉴턴법은 거의 못 쓰는가</h4>
-<p>이론적으로 강력하지만 딥러닝 실무에선 거의 사용 불가능하다. 이유는 세 가지다.</p>
-<p><strong>계산 비용</strong> — 파라미터가 n개면 곡률 정보(Hessian)는 n×n 크기 행렬이고, 이걸 뒤집는 비용은 파라미터 수의 세제곱에 비례한다. 현대 딥러닝 모델은 파라미터가 수백만에서 수십억 개라, 이 비용이 천문학적이다. 한 step에 뉴턴 한 번 = 며칠씩 걸린다.</p>
-<p><strong>안장점 위험</strong> — 뉴턴법은 "현재 위치 근처의 2차 근사 곡면의 최소점"으로 점프한다. 그런데 깊은 신경망의 손실 곡면은 비볼록(non-convex)이라 곡면 위에 수많은 <strong>안장점</strong>(어떤 방향으로는 내리막, 다른 방향으로는 오르막인 지점)이 있다. 안장점 근처에서는 2차 근사가 양의 정부호(positive-definite)가 아니라, 뉴턴법이 오히려 안장점이나 극대점 쪽으로 끌려가는 일이 발생한다. 최소점을 향해 가야 할 알고리즘이 반대로 움직이는 셈이다.</p>
-<p><strong>국소 근사의 한계</strong> — 2차 근사는 현재 위치 근처에서만 정확하다. 손실 곡면이 멀리서 보면 복잡하게 휘어 있으니, 한 걸음에 멀리 점프하려 하면 그 점프가 엉뚱한 위치로 데려갈 위험이 있다.</p>
 
-<h4>🤝 실무 절충: Adam 계열 옵티마이저</h4>
-<p>그래서 실제 딥러닝에선 뉴턴법을 직접 쓰는 대신, <strong>곡률 정보를 싸게 근사하는 1차 방법</strong>들을 쓴다. Momentum은 과거 기울기를 누적해 "관성"을 더하고, RMSProp은 방향마다 보폭을 자동 조정한다. Adam은 둘을 합친 것으로, 현대 딥러닝의 사실상 표준 옵티마이저다.</p>
-<p>이런 방법들은 진짜 곡률을 계산하지 않지만, 기울기의 통계(평균·분산)를 추적해서 사실상 곡률에 적응하는 효과를 낸다. 뉴턴법만큼 정밀하진 않아도, 1차 계산 비용으로 ill-conditioning 문제를 상당 부분 완화할 수 있다.</p>
-
-<div class="analogy">🌫️ 경사하강은 안개 속에서 발밑 경사만 보고 한 걸음씩 내려가는 등산객이다. 보폭(learning rate)은 감으로 정해야 한다. 뉴턴법은 골짜기 지형도를 펼쳐서 바닥 좌표로 곧장 점프하는 사람인데, 그 지형도를 매번 그리는 비용이 너무 막대하다. Adam은 그 중간 — 지형도는 못 그리지만 최근 몇 걸음의 흔적으로 "어느 방향이 가파르고 어느 방향이 완만한지" 대충 감을 잡아 보폭을 조정한다.</div>
-</div>
-
-      <div class="model-answer">
+  <div class="model-answer">
         <div class="ma-label">🎯 Model Answer (English)</div>
         <p class="ma-en"><strong>Gradient descent</strong> is a first-order method that moves the parameters against the gradient by a fixed step size (learning rate). It is cheap per step but blind to curvature, so the learning rate must be tuned by hand and it zig-zags on ill-conditioned surfaces. <strong>Newton's method</strong> is second-order: it uses the inverse Hessian to rescale each direction by its curvature, reaching the minimum of a pure quadratic in a single step and being immune to ill-conditioning. In deep learning Newton is rarely usable: inverting the Hessian costs cubic time in the number of parameters (millions to billions), it can be attracted to saddle points when the Hessian is not positive-definite, and the local quadratic model is inaccurate on non-convex loss surfaces. We therefore use cheap curvature-aware first-order methods such as momentum, RMSProp, and Adam.</p>
       </div>
 
-      <p class="skel-h">📝 시험 답안 골격</p>
+  <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>경사하강 = 1차(기울기만), 뉴턴 = 2차(곡률까지). 경사하강은 보폭 사람이 정해야, 뉴턴은 곡률이 자동 결정.</li>
         <li>뉴턴은 ill-conditioned 골짜기에 면역, 순수 2차 함수면 한 걸음에 바닥. 경사하강은 지그재그.</li>
         <li>딥러닝에서 뉴턴 못 쓰는 이유 — 계산 비용 (파라미터 수의 세제곱), 안장점 위험, 비볼록 곡면에서 국소 근사 부정확. → 모멘텀·Adam이 절충.</li>
       </ul>
 
-  
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:23.1%"></div></div>
     <div class="qprog-txt"><b>6</b> / 26 문항 · 최적화와 하이퍼파라미터</div>
@@ -291,6 +313,21 @@ function psetCopy(btn){
   else { fallback(t,done); }
   function fallback(text,cb){ var ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.left='-9999px'; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(ta); cb(); }
 }
+</script>
+<script>
+(function(){
+  function applyLang(l){
+    document.querySelectorAll('.lang').forEach(function(e){ e.hidden = !e.classList.contains(l); });
+    document.querySelectorAll('.langtog button').forEach(function(b){ b.classList.toggle('on', b.dataset.l===l); });
+  }
+  var saved='ko'; try{ saved=localStorage.getItem('psetLang')||'ko'; }catch(e){}
+  document.addEventListener('DOMContentLoaded', function(){
+    applyLang(saved);
+    document.querySelectorAll('.langtog button').forEach(function(b){
+      b.addEventListener('click', function(){ var l=b.dataset.l; try{localStorage.setItem('psetLang',l);}catch(e){} applyLang(l); });
+    });
+  });
+})();
 </script>
 </body>
 </html>

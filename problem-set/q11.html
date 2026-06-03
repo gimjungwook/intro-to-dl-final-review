@@ -18,6 +18,7 @@
   <a class="home" href="index.html">← 26문항 목록</a>
   <span class="grp">🖼️ 합성곱 신경망 CNN</span>
   <span class="step">STEP <b>15</b> / 26</span>
+  <div class="langtog"><button data-l="ko" class="on">KO</button><button data-l="en">EN</button></div>
 </header>
 
 <main class="qpage">
@@ -27,7 +28,8 @@
     <p class="qtext">How is the infinitely strong prior added to CNN?</p>
   </header>
 
-  <div class="q-interpret">
+  <div class="lang ko">
+<div class="q-interpret">
     <div class="qi-label">📌 질문 해석</div>
     <p>“<strong>infinitely strong prior</strong>가 CNN에 어떻게 더해지나?” prior의 세기 개념 + CNN이 거는 <strong>두 가지 제약(국소성·공유)</strong>을 prior로 해석.</p>
   </div>
@@ -62,20 +64,37 @@
 <p>CNN이 완전연결망을 이기는 결과를 보고 "CNN이 더 똑똑한 모델이다"라고 결론짓는 건 위험하다. 실제로는 <strong>그 task에 맞는 prior를 미리 받아서</strong> 이긴 것일 수 있다. 다른 prior가 더 잘 맞는 task에서는 그 우위가 사라진다.</p>
 <p>이 관점은 모델 선택의 본질을 보여준다: <strong>"어떤 모델이 best?"가 아니라 "내 데이터에 어떤 prior가 맞나?"</strong>를 먼저 물어야 한다. 자연 이미지에는 CNN이, 시퀀스 데이터에는 RNN/Transformer가, 그래프 데이터에는 GNN이 효과적인 이유가 여기에 있다 — 각각이 그 데이터 유형의 통계적 구조에 맞는 prior를 모델 구조에 내장하고 있기 때문이다.</p>
 </div>
+  </div>
 
-      <div class="model-answer">
+  <div class="lang en" hidden>
+<div class="q-interpret"><div class="qi-label">📌 What the question asks</div>
+    <p>“How is the <strong>infinitely strong prior</strong> added to a CNN?” Define prior strength, then read CNN's two constraints (locality, sharing) as a prior.</p>
+  </div>
+<div class="prose">
+<p>🧲 A <strong>prior</strong> is a distribution over parameters saying which values are plausible before data; its <em>strength</em> is how narrow it is.</p>
+<div class="symbols"><tbody>
+<tr><td>🪶 Weak prior</td><td>wide distribution — mildly discourages, e.g. L2's Gaussian prior.</td></tr>
+<tr><td>🧱 Strong prior</td><td>narrow distribution — strongly concentrated.</td></tr>
+<tr><td>♾️ Infinitely strong</td><td>zero probability on some parameters — forbidden, cannot even be represented.</td></tr>
+</tbody></div>
+<p>🎯 A <strong>CNN = a fully connected layer with an infinitely strong prior</strong>: ① a unit's weights must be <strong>zero outside a small receptive field</strong> (locality), and ② neighboring positions' weights must be <strong>identical</strong> (sharing). Any violating configuration has zero prior probability and can never be learned 🚫. Likewise <strong>pooling</strong> is an infinitely strong prior that each unit be invariant to small shifts.</p>
+<div class="analogy">🚘 If L2 says “seatbelts are advisable” (weak — violable but costly), a CNN's structure says “the engine won't start without a seatbelt” (infinitely strong — violation is impossible).</div>
+<p>💡 Usefulness: ① predicts when CNNs help (prior fits the data — natural images) vs hurt (tabular/graph data where they <strong>underfit</strong> 📉); ② a <strong>benchmark caveat</strong> — a CNN may beat a fully connected net not by being smarter but by receiving a prior that fits the task ⚖️.</p>
+</div>
+  </div>
+
+  <div class="model-answer">
         <div class="ma-label">🎯 Model Answer (English)</div>
         <p class="ma-en">A prior is a distribution over parameters that says which values are plausible before seeing data, and its strength is how narrow that distribution is. A weak prior (e.g. L2's Gaussian) merely discourages some values, whereas an <strong>infinitely strong prior assigns zero probability to certain parameters, forbidding them entirely</strong>. A CNN is exactly a fully connected layer carrying an infinitely strong prior on its weights: (1) a unit's weights must be zero outside a small receptive field (locality), and (2) the weights of neighbouring spatial positions must be identical (sharing) — any configuration that violates these has zero prior probability and can never be learned. Pooling is likewise an infinitely strong prior that each unit should be invariant to small translations. This view predicts when a CNN helps (when the prior matches the data, e.g. natural images) versus hurts (tabular or graph data, where it underfits), and warns that comparing a CNN against a fully connected net is unfair when the CNN's built-in prior happens to suit the task.</p>
       </div>
 
-      <p class="skel-h">📝 시험 답안 골격</p>
+  <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>사전의 세기 = 분포의 좁기. 무한히 강한 사전 = 일부 파라미터에 확률 0(금지).</li>
         <li>CNN = 완전연결층 + 무한히 강한 사전: ①수용영역 밖 가중치=0(국소) ②이웃 위치 가중치 동일(공유). 풀링 = 작은 이동 불변 사전.</li>
         <li>유용성 — 사전이 데이터에 맞으면 효율, 안 맞으면 과소적합. 벤치마크 비교의 함정 경고.</li>
       </ul>
 
-  
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:57.7%"></div></div>
     <div class="qprog-txt"><b>15</b> / 26 문항 · 합성곱 신경망 CNN</div>
@@ -209,6 +228,21 @@ function psetCopy(btn){
   else { fallback(t,done); }
   function fallback(text,cb){ var ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.left='-9999px'; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(ta); cb(); }
 }
+</script>
+<script>
+(function(){
+  function applyLang(l){
+    document.querySelectorAll('.lang').forEach(function(e){ e.hidden = !e.classList.contains(l); });
+    document.querySelectorAll('.langtog button').forEach(function(b){ b.classList.toggle('on', b.dataset.l===l); });
+  }
+  var saved='ko'; try{ saved=localStorage.getItem('psetLang')||'ko'; }catch(e){}
+  document.addEventListener('DOMContentLoaded', function(){
+    applyLang(saved);
+    document.querySelectorAll('.langtog button').forEach(function(b){
+      b.addEventListener('click', function(){ var l=b.dataset.l; try{localStorage.setItem('psetLang',l);}catch(e){} applyLang(l); });
+    });
+  });
+})();
 </script>
 </body>
 </html>

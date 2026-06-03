@@ -18,6 +18,7 @@
   <a class="home" href="index.html">← 26문항 목록</a>
   <span class="grp">🖼️ 합성곱 신경망 CNN</span>
   <span class="step">STEP <b>13</b> / 26</span>
+  <div class="langtog"><button data-l="ko" class="on">KO</button><button data-l="en">EN</button></div>
 </header>
 
 <main class="qpage">
@@ -27,7 +28,8 @@
     <p class="qtext">Why is CNN powerful especially on image data?</p>
   </header>
 
-  <div class="q-interpret">
+  <div class="lang ko">
+<div class="q-interpret">
     <div class="qi-label">📌 질문 해석</div>
     <p>“CNN이 <strong>특히 이미지</strong>에서 강력한 이유는?” 세 가지 구조적 속성을 <strong>자연 이미지의 통계</strong>와 연결해 설명하라는 뜻.</p>
   </div>
@@ -64,20 +66,37 @@
 <h4>✅ 핵심 정리</h4>
 <p>CNN의 강력함은 "이미지가 국소적이고(locality) 정상적이다(stationarity)"라는 prior가 자연 이미지에 정확히 맞기 때문이다. 다른 종류의 데이터(예: 시퀀스가 아니거나 위치 정보가 무의미한 데이터)에 CNN을 적용하면 같은 위력이 나오지 않는다. 즉 CNN의 성공은 모델 구조와 데이터 통계의 정밀한 매칭에서 온다.</p>
 </div>
+  </div>
 
-      <div class="model-answer">
+  <div class="lang en" hidden>
+<div class="q-interpret"><div class="qi-label">📌 What the question asks</div>
+    <p>“Why is CNN powerful <strong>especially on images</strong>?” Explain the three structural properties and tie them to image statistics.</p>
+  </div>
+<div class="prose">
+<p>🖼️ A <strong>fully connected</strong> layer on a 256×256 image links each output to ~65k inputs — billions of weights per layer 😵. A <strong>CNN</strong> does the same job with far fewer parameters via three structural properties drawn from image statistics.</p>
+<div class="symbols"><tbody>
+<tr><td>🔬 Sparse interactions</td><td>each output sees only a small window (e.g. 3×3) — locality: a pixel's meaning is set by its neighbors.</td></tr>
+<tr><td>🔁 Parameter sharing</td><td>the same kernel everywhere — stationarity: a vertical edge is a vertical edge anywhere.</td></tr>
+<tr><td>➡️ Equivariance</td><td>shift the input and the feature map shifts too (a free consequence of sharing).</td></tr>
+</tbody></div>
+<p>💪 Three powers follow: ① parameter/memory savings independent of image size; ② statistical efficiency — a detector learned at one place generalizes to all places; ③ hierarchical features — depth grows the <strong>receptive field</strong>, so edges → textures → parts → objects 🧱.</p>
+<div class="analogy">🕵️ A fully connected net posts a separate inspector at every location; a CNN sends one well-trained inspector with one ruler across the whole image — learned once, recognized everywhere, at one inspector's cost.</div>
+<p>🎁 Add <strong>pooling</strong> and you also get <strong>approximate invariance</strong> to small shifts. All of this is free because the “local and stationary” prior fits natural images ✅.</p>
+</div>
+  </div>
+
+  <div class="model-answer">
         <div class="ma-label">🎯 Model Answer (English)</div>
         <p class="ma-en">A fully connected layer on a 256×256 image would link each output to about 65,000 inputs, giving billions of weights per layer. A CNN does the same job with far fewer parameters through three structural properties drawn from the statistics of natural images: <strong>sparse interactions</strong> (each output sees only a small local window), <strong>parameter sharing</strong> (the same kernel is applied at every position), and <strong>equivariant representations</strong> (shifting the input shifts the feature map). These yield a massive reduction in parameters and memory that is independent of image size, statistical efficiency (a pattern learned at one location automatically generalises to all locations), and hierarchical features — as depth grows the receptive field, edges combine into textures, parts, and finally objects. Adding pooling further produces approximate invariance to small translations.</p>
       </div>
 
-      <p class="skel-h">📝 시험 답안 골격</p>
+  <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>완전연결의 파라미터 폭발 → CNN의 세 속성: 희소 상호작용 · 파라미터 공유 · 변환 등가성.</li>
         <li>위력 — 파라미터/메모리 격감, 통계적 효율(위치 일반화), 깊이에 따른 계층적 특징. + 풀링의 근사 불변성.</li>
         <li>근거 — 국소성·정상성이라는 자연 이미지 사실에 사전이 맞기 때문.</li>
       </ul>
 
-  
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:50.0%"></div></div>
     <div class="qprog-txt"><b>13</b> / 26 문항 · 합성곱 신경망 CNN</div>
@@ -211,6 +230,21 @@ function psetCopy(btn){
   else { fallback(t,done); }
   function fallback(text,cb){ var ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.left='-9999px'; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(ta); cb(); }
 }
+</script>
+<script>
+(function(){
+  function applyLang(l){
+    document.querySelectorAll('.lang').forEach(function(e){ e.hidden = !e.classList.contains(l); });
+    document.querySelectorAll('.langtog button').forEach(function(b){ b.classList.toggle('on', b.dataset.l===l); });
+  }
+  var saved='ko'; try{ saved=localStorage.getItem('psetLang')||'ko'; }catch(e){}
+  document.addEventListener('DOMContentLoaded', function(){
+    applyLang(saved);
+    document.querySelectorAll('.langtog button').forEach(function(b){
+      b.addEventListener('click', function(){ var l=b.dataset.l; try{localStorage.setItem('psetLang',l);}catch(e){} applyLang(l); });
+    });
+  });
+})();
 </script>
 </body>
 </html>

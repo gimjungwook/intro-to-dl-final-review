@@ -18,6 +18,7 @@
   <a class="home" href="index.html">← 26문항 목록</a>
   <span class="grp">🧭 비지도 학습과 표상</span>
   <span class="step">STEP <b>23</b> / 26</span>
+  <div class="langtog"><button data-l="ko" class="on">KO</button><button data-l="en">EN</button></div>
 </header>
 
 <main class="qpage">
@@ -27,7 +28,8 @@
     <p class="qtext">What is distributed representation? Why is it so important in deep learning? Compare compact and sparse representations.</p>
   </header>
 
-  <div class="q-interpret">
+  <div class="lang ko">
+<div class="q-interpret">
     <div class="qi-label">📌 질문 해석</div>
     <p>세 갈래 — ① <strong>distributed representation</strong>이 무엇인지, ② <strong>왜 그렇게 중요한지</strong> (n개 유닛으로 2의 n제곱 영역 표현), ③ <strong>compact vs sparse</strong> 비교.</p>
   </div>
@@ -58,19 +60,7 @@
 <h4>📊 통계적 효율</h4>
 <p>분산 표상이 가진 또 다른 강력한 측면은 통계적 효율(statistical efficiency)이다. n개 파라미터로 2^n 개 영역을 기술할 수 있으니, 학습할 파라미터 수에 비해 표현 가능한 개념의 수가 지수적으로 많다.</p>
 <p>이게 <strong>딥러닝이 비교적 적은 데이터로도 강력한 일반화 능력을 보이는 근본 이유</strong> 중 하나다. 학습할 파라미터 수에 비해 표현 공간이 훨씬 크니, 데이터에서 추출한 정보가 효율적으로 압축되어 저장된다.</p>
-<div class="widget">
-        <div class="widget-frame">
-          <div class="widget-label"><span class="lab-no">위젯 21</span><span>같은 n개 유닛 — 국소는 n개, 분산은 2ⁿ개를 구별한다</span></div>
-          <canvas id="distrep" class="widget-canvas" width="720" height="300"></canvas>
-        </div>
-        <div class="widget-controls">
-          <div class="slider" style="max-width:360px;">
-            <label>유닛 수 n <b class="dv">8</b></label>
-            <input type="range" id="nbits" class="s-structure" min="1" max="20" value="8">
-          </div>
-        </div>
-        <p class="widget-cap">유닛 수 n을 키워 보라. 국소 표상이 구별하는 개념 수(파랑)는 n으로 선형으로 늘지만, 분산 표상의 구별 수(빨강)는 2의 n제곱으로 폭증한다. n=20이면 국소는 20개, 분산은 100만 개를 넘는다.</p>
-      </div>
+
 <h4>🎛️ 세 가지 표상 모드 비교</h4>
 <p>"분산 표상"이라고 해도 한 가지가 아니다. 한 번에 몇 개 유닛이 동시에 활성화되느냐에 따라 세 가지 모드로 나뉘며, 각각 trade-off가 다르다.</p>
 <div class="cmp">
@@ -106,20 +96,59 @@
 </ul>
 <p>실제 딥러닝에서는 hidden layer가 어떤 활성 함수를 쓰느냐, 어떤 정칙화가 걸리느냐에 따라 이 스펙트럼의 어딘가에 위치한다. ReLU 같은 활성 함수는 자연스럽게 약간의 sparsity를 유도하고, L1 정칙화나 sparse autoencoder의 sparsity 벌점은 명시적으로 sparse distributed 형태로 끌어당긴다.</p>
 </div>
+  </div>
 
-      <div class="model-answer">
+  <div class="lang en" hidden>
+<div class="q-interpret"><div class="qi-label">📌 What the question asks</div>
+    <p>Three parts — ① what a <strong>distributed representation</strong> is, ② why it matters ($2^n$), and ③ compact vs sparse.</p>
+  </div>
+<div class="prose">
+<p>🌈 A <strong>distributed representation</strong> encodes a concept as a <strong>pattern over many units</strong>, each unit helping represent many concepts. The opposite is <strong>local / one-hot</strong> (one unit per concept).</p>
+<p>💥 Why it matters: capacity is <strong>exponential</strong>. $n$ binary features distinguish up to <strong>$2^n$</strong> regions; $n$ local units only $n$. This drives <strong>generalization</strong> — features are reused, so seeing “red + car” and “blue + truck” generalizes to an unseen “red + truck” 🚗🟥 — and the <strong>statistical efficiency</strong> ($O(n)$ parameters describe $O(2^n)$ regions) behind deep learning.</p>
+
+<p>🎛️ <strong>Three modes</strong> — how many units fire at once:</p>
+<div class="cmp">
+  <div class="card gatys"><h4>📍 Local (one-hot)</h4><ul>
+    <li>Exactly one unit active.</li>
+    <li>$n$ units → $n$ concepts; no reuse.</li>
+    <li>Most interpretable.</li>
+  </ul></div>
+  <div class="card modern"><h4>🧊 Dense distributed</h4><ul>
+    <li>Many units active.</li>
+    <li>Capacity up to $2^n$; max efficiency.</li>
+    <li>Hard to interpret; features may entangle.</li>
+  </ul></div>
+</div>
+<p>🎯 <strong>Sparse distributed</strong> is the middle ground — only $k$ of $n$ units active. Capacity $\binom{n}{k}$ is still huge, while few active units make it <strong>interpretable, robust, and energy-efficient</strong> (brain-like 🧠). Summary: local = simple, dense = max capacity, sparse = balance of capacity, interpretability, and robustness ⚖️.</p>
+</div>
+  </div>
+
+  <div class="widget">
+        <div class="widget-frame">
+          <div class="widget-label"><span class="lab-no">위젯 21</span><span>같은 n개 유닛 — 국소는 n개, 분산은 2ⁿ개를 구별한다</span></div>
+          <canvas id="distrep" class="widget-canvas" width="720" height="300"></canvas>
+        </div>
+        <div class="widget-controls">
+          <div class="slider" style="max-width:360px;">
+            <label>유닛 수 n <b class="dv">8</b></label>
+            <input type="range" id="nbits" class="s-structure" min="1" max="20" value="8">
+          </div>
+        </div>
+        <p class="widget-cap">유닛 수 n을 키워 보라. 국소 표상이 구별하는 개념 수(파랑)는 n으로 선형으로 늘지만, 분산 표상의 구별 수(빨강)는 2의 n제곱으로 폭증한다. n=20이면 국소는 20개, 분산은 100만 개를 넘는다.</p>
+      </div>
+
+  <div class="model-answer">
         <div class="ma-label">🎯 Model Answer (English)</div>
         <p class="ma-en">A <strong>distributed representation</strong> encodes a concept as a <em>pattern of activity over many units</em>, with each unit helping to represent many concepts; the opposite is a local (one-hot) representation, one unit per concept. It matters because its capacity is exponential: n binary features can distinguish up to 2 to the n regions, whereas n local units distinguish only n. This is the source of generalisation — features are reused across concepts, so having seen "red car" and "blue truck" the model generalises to an unseen "red truck" — and the statistical efficiency (linearly many parameters describing exponentially many regions) behind deep learning. Comparing the modes: <strong>local</strong> (exactly one unit active; n concepts; no reuse; most interpretable), <strong>dense/compact</strong> distributed (many units active; capacity up to 2 to the n; maximal efficiency but entangled and hard to interpret), and <strong>sparse</strong> distributed (k of n active; capacity is the number of ways to choose k from n — still huge, but more interpretable, robust, and energy-efficient) — a trade-off between capacity, interpretability, and robustness.</p>
       </div>
 
-      <p class="skel-h">📝 시험 답안 골격</p>
+  <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>분산 표상 — 개념=여러 유닛의 패턴, 각 유닛=여러 개념에 참여. 반대 = 국소/원-핫.</li>
         <li>중요성 — n개 특징으로 2^n 개 영역 구별 가능, 특징 재사용으로 본 적 없는 조합에 일반화. n개 파라미터로 2^n 개 영역을 기술하는 통계적 효율.</li>
         <li>비교 — 국소(1개 활성, 해석 쉬움, 용량 작음) / 조밀(다수 활성, 용량 최대, 특징 얽힘) / 희소(k개 활성, 용량 크면서 해석·강건성·생물학적 유사).</li>
       </ul>
 
-  
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:88.5%"></div></div>
     <div class="qprog-txt"><b>23</b> / 26 문항 · 비지도 학습과 표상</div>
@@ -240,6 +269,21 @@ function psetCopy(btn){
   else { fallback(t,done); }
   function fallback(text,cb){ var ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.left='-9999px'; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(ta); cb(); }
 }
+</script>
+<script>
+(function(){
+  function applyLang(l){
+    document.querySelectorAll('.lang').forEach(function(e){ e.hidden = !e.classList.contains(l); });
+    document.querySelectorAll('.langtog button').forEach(function(b){ b.classList.toggle('on', b.dataset.l===l); });
+  }
+  var saved='ko'; try{ saved=localStorage.getItem('psetLang')||'ko'; }catch(e){}
+  document.addEventListener('DOMContentLoaded', function(){
+    applyLang(saved);
+    document.querySelectorAll('.langtog button').forEach(function(b){
+      b.addEventListener('click', function(){ var l=b.dataset.l; try{localStorage.setItem('psetLang',l);}catch(e){} applyLang(l); });
+    });
+  });
+})();
 </script>
 </body>
 </html>

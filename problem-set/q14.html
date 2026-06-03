@@ -18,6 +18,7 @@
   <a class="home" href="index.html">← 26문항 목록</a>
   <span class="grp">🔁 순환 신경망과 시퀀스</span>
   <span class="step">STEP <b>18</b> / 26</span>
+  <div class="langtog"><button data-l="ko" class="on">KO</button><button data-l="en">EN</button></div>
 </header>
 
 <main class="qpage">
@@ -27,7 +28,8 @@
     <p class="qtext">Compare RNN and CNN in terms of parameter sharing and lateral connection.</p>
   </header>
 
-  <div class="q-interpret">
+  <div class="lang ko">
+<div class="q-interpret">
     <div class="qi-label">📌 질문 해석</div>
     <p>“RNN과 CNN을 <strong>parameter sharing</strong>과 <strong>lateral connection</strong> 관점에서 비교하라.” 두 관점 각각에서 둘을 대비시키는 게 핵심.</p>
   </div>
@@ -59,20 +61,46 @@
 <h4>🔭 두 한계를 모두 넘은 모델: Self-attention (Transformer)</h4>
 <p>참고로 위 두 한계를 함께 극복한 것이 self-attention 기반 Transformer다. Self-attention은 시퀀스의 <strong>어떤 두 위치도 한 번에 직접 연결</strong>한다 — 측면 연결로 순차 전달할 필요가 없으니 RNN의 vanishing gradient 문제가 사라지고, 동시에 위치 간 연결이 병렬로 계산되니 CNN처럼 GPU 효율도 좋다. RNN의 무한 문맥 표현력과 CNN의 병렬성을 모두 얻은 셈이다. 이게 Transformer가 현대 NLP를 지배하게 된 핵심 이유다.</p>
 </div>
+  </div>
 
-      <div class="model-answer">
+  <div class="lang en" hidden>
+<div class="q-interpret"><div class="qi-label">📌 What the question asks</div>
+    <p>“Compare RNN and CNN in terms of <strong>parameter sharing</strong> and <strong>lateral connection</strong>” — contrast them under each lens.</p>
+  </div>
+<div class="prose">
+<h3>🔄 Parameter sharing — which axis?</h3>
+<p>Both share, but along different axes. A <strong>CNN shares across space</strong> (the same kernel at every position); an <strong>RNN shares across time</strong> (the same transition at every step). Both cut free parameters, generalize across positions/times, and give equivariance.</p>
+<h3>↔️ Lateral connection — how to reach distant inputs</h3>
+<p>The decisive difference. An <strong>RNN has lateral (recurrent) connections</strong>: the unit at step $t$ feeds the unit at $t{+}1$, so information flows sideways via the hidden state 🚶‍♂️➡️🚶‍♂️. A <strong>CNN has none within a layer</strong>: each output uses only its receptive field, and distant inputs are reached only by <strong>stacking layers</strong> to enlarge it 🧱.</p>
+<div class="cmp">
+  <div class="card gatys"><h4>🖼️ CNN</h4><ul>
+    <li>Shares across <b>space</b>.</li>
+    <li>No lateral connection; reaches far via <b>depth</b>.</li>
+    <li>Independent outputs → easy <b>parallelism</b> ⚡.</li>
+  </ul></div>
+  <div class="card modern"><h4>🔁 RNN</h4><ul>
+    <li>Shares across <b>time</b>.</li>
+    <li>Lateral (recurrent) connection; reaches far via <b>state passing</b>.</li>
+    <li>Sequential → hard to parallelize, vanishing risk ⏳.</li>
+  </ul></div>
+</div>
+<div class="analogy">🏢 A CNN is guards each watching their own zone, stacked in layers for a wider view. An RNN is one courier carrying a memo (state) down a line. The former works in parallel but needs depth to see far; the latter passes far in one line but is sequential and the memo can blur.</div>
+<p>📝 In short: sharing axis (space vs time) and reach (depth vs lateral recurrence) define their characters. RNN recurrence gives unbounded context but pays with sequentiality and vanishing; CNN depth gives parallelism but a depth-bounded receptive field. <strong>Self-attention</strong> (Transformer) later overcomes both — connecting any two positions directly, fully in parallel 🔭.</p>
+</div>
+  </div>
+
+  <div class="model-answer">
         <div class="ma-label">🎯 Model Answer (English)</div>
         <p class="ma-en">Both share parameters, but along different axes. A <strong>CNN shares across space</strong> — the same kernel is applied at every spatial position — whereas an <strong>RNN shares across time</strong> — the same transition weights are applied at every time step; both cut the number of free parameters, generalise what is learned across positions or times, and grant a form of equivariance. The decisive difference is the <strong>lateral connection</strong>: an RNN <em>has</em> lateral (recurrent) connections, so the unit at one time step feeds the unit at the next, and information flows sideways along the sequence through the hidden state; a CNN has <em>no</em> lateral connections within a layer — each output is computed independently from its local receptive field, and distant inputs are reached only by stacking layers to enlarge that field. Thus a CNN parallelises easily but its context is bounded by depth, while an RNN reaches arbitrarily far through recurrence but is sequential and prone to vanishing gradients (self-attention later overcomes both — Q25).</p>
       </div>
 
-      <p class="skel-h">📝 시험 답안 골격</p>
+  <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>공유 축 — CNN=공간, RNN=시간. 둘 다 파라미터 절감 + 위치/시점 일반화 + 등가성.</li>
         <li>측면 연결 — RNN 있음(순환, 상태가 옆으로 흐름), CNN 없음(먼 입력엔 깊이로 닿음).</li>
         <li>대가 — CNN 병렬·수용영역 한계, RNN 무한문맥이나 순차·소실. (→ self-attention이 절충, Q25.)</li>
       </ul>
 
-  
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:69.2%"></div></div>
     <div class="qprog-txt"><b>18</b> / 26 문항 · 순환 신경망과 시퀀스</div>
@@ -184,6 +212,21 @@ function psetCopy(btn){
   else { fallback(t,done); }
   function fallback(text,cb){ var ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.left='-9999px'; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(ta); cb(); }
 }
+</script>
+<script>
+(function(){
+  function applyLang(l){
+    document.querySelectorAll('.lang').forEach(function(e){ e.hidden = !e.classList.contains(l); });
+    document.querySelectorAll('.langtog button').forEach(function(b){ b.classList.toggle('on', b.dataset.l===l); });
+  }
+  var saved='ko'; try{ saved=localStorage.getItem('psetLang')||'ko'; }catch(e){}
+  document.addEventListener('DOMContentLoaded', function(){
+    applyLang(saved);
+    document.querySelectorAll('.langtog button').forEach(function(b){
+      b.addEventListener('click', function(){ var l=b.dataset.l; try{localStorage.setItem('psetLang',l);}catch(e){} applyLang(l); });
+    });
+  });
+})();
 </script>
 </body>
 </html>

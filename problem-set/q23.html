@@ -18,6 +18,7 @@
   <a class="home" href="index.html">← 26문항 목록</a>
   <span class="grp">🛡️ 정칙화와 일반화</span>
   <span class="step">STEP <b>5</b> / 26</span>
+  <div class="langtog"><button data-l="ko" class="on">KO</button><button data-l="en">EN</button></div>
 </header>
 
 <main class="qpage">
@@ -27,7 +28,8 @@
     <p class="qtext">Describe radial basis function networks. And discuss why it does not have the adversarial example issue.</p>
   </header>
 
-  <div class="q-interpret">
+  <div class="lang ko">
+<div class="q-interpret">
     <div class="qi-label">📌 질문 해석</div>
     <p>두 갈래 질문 — ① <strong>RBF network가 무엇인지</strong> 기술하고, ② <strong>왜 adversarial example에 강한지</strong> 논하라. 구조와 robust 이유를 연결해야 한다.</p>
   </div>
@@ -69,20 +71,34 @@
 <h4>📌 정리</h4>
 <p>"왜 RBF는 적대적 예제 문제가 없나?"에 대한 답은 다음과 같다. RBF 뉴런은 중심에서 멀어지면 즉시 포화돼 0이 되는 비선형 구조라, <strong>적대적 공격이 활용하는 "선형성 누적 경로"가 존재하지 않는다</strong>. 어느 방향으로 섭동을 가해도 활성이 줄어들 뿐 커지지 않는다. 대신 좁은 영역 커버, 학습 어려움, 약한 일반화라는 대가를 지불한다 — robustness와 accuracy의 trade-off다.</p>
 </div>
+  </div>
 
-      <div class="model-answer">
+  <div class="lang en" hidden>
+<div class="q-interpret"><div class="qi-label">📌 What the question asks</div>
+    <p>Two parts — ① describe the <strong>RBF network</strong>, and ② discuss <strong>why it resists adversarial examples</strong>. Connect structure to robustness.</p>
+  </div>
+<div class="prose">
+<p>🎯 An <strong>RBF (Radial Basis Function) network</strong> has hidden units that respond to the <em>distance</em> from a <strong>prototype center</strong> $\mu_i$ — firing only near it 🔆.</p>
+<div class="math-block">$$ h_i(x) = \exp\!\Big(-\beta_i\,\lVert x-\mu_i\rVert_2^2\Big), \qquad \hat y = \sum_i w_i\,h_i(x) $$</div>
+<p class="math-note">Near $\mu_i$ it is ~1; far away it saturates to 0 as a Gaussian.</p>
+<p>🆚 Unlike a linear unit $w^\top x$ (which responds endlessly in some direction, letting tiny perturbations accumulate), an RBF unit simply <strong>switches off</strong> once the input leaves its center 🔅. Perturbations only push the input <em>farther</em> from the center, <em>lowering</em> the response — there is no <strong>linear path</strong> to accumulate along.</p>
+<div class="analogy">🎤 A normal unit is an omnidirectional mic — small noise from all directions sums into a loud signal. An RBF unit is a shotgun mic — noise off-target adds up to nothing.</div>
+<p>🤷 So the RBF is confident only near training data and effectively says “I don't know” elsewhere, rejecting adversarial inputs 🛑. The cost: many units are needed, training is hard, and generalization is weaker — a clear <strong>robustness–accuracy tradeoff</strong> ⚖️.</p>
+</div>
+  </div>
+
+  <div class="model-answer">
         <div class="ma-label">🎯 Model Answer (English)</div>
         <p class="ma-en">A radial basis function (RBF) network has hidden units that respond to the <strong>distance from a prototype centre</strong>: each unit's activation peaks when the input matches the centre and falls off as a Gaussian when the input moves away. Each unit fires only near its centre and saturates to zero far away. It resists adversarial examples precisely because it is <strong>not linear</strong>: there is no linear path along which tiny per-dimension perturbations can accumulate into a large response — moving the input in any direction merely takes it further from the centre and <em>lowers</em> the activation. As a result the network is confident only near the training data and effectively reports "I don't know" elsewhere, so adversarial inputs are rejected with low confidence. The cost is lower accuracy and harder training — a clear robustness-accuracy trade-off.</p>
       </div>
 
-      <p class="skel-h">📝 시험 답안 골격</p>
+  <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>RBF 유닛 — 중심점으로부터의 거리에 가우시안으로 반응, 멀면 0으로 포화. 입력 공간의 좁은 영역만 담당.</li>
         <li>적대적 면역 이유 — 선형 누적 경로가 없음. 섭동은 입력을 중심에서 멀어지게 해 응답을 오히려 줄임. 데이터 근처에서만 고확신.</li>
         <li>트레이드오프 — 강건하지만 학습 어렵고 정확도/일반화가 낮음.</li>
       </ul>
 
-  
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:19.2%"></div></div>
     <div class="qprog-txt"><b>5</b> / 26 문항 · 정칙화와 일반화</div>
@@ -194,6 +210,21 @@ function psetCopy(btn){
   else { fallback(t,done); }
   function fallback(text,cb){ var ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.left='-9999px'; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(ta); cb(); }
 }
+</script>
+<script>
+(function(){
+  function applyLang(l){
+    document.querySelectorAll('.lang').forEach(function(e){ e.hidden = !e.classList.contains(l); });
+    document.querySelectorAll('.langtog button').forEach(function(b){ b.classList.toggle('on', b.dataset.l===l); });
+  }
+  var saved='ko'; try{ saved=localStorage.getItem('psetLang')||'ko'; }catch(e){}
+  document.addEventListener('DOMContentLoaded', function(){
+    applyLang(saved);
+    document.querySelectorAll('.langtog button').forEach(function(b){
+      b.addEventListener('click', function(){ var l=b.dataset.l; try{localStorage.setItem('psetLang',l);}catch(e){} applyLang(l); });
+    });
+  });
+})();
 </script>
 </body>
 </html>

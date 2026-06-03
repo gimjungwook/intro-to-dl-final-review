@@ -18,6 +18,7 @@
   <a class="home" href="index.html">← 26문항 목록</a>
   <span class="grp">🧭 비지도 학습과 표상</span>
   <span class="step">STEP <b>20</b> / 26</span>
+  <div class="langtog"><button data-l="ko" class="on">KO</button><button data-l="en">EN</button></div>
 </header>
 
 <main class="qpage">
@@ -27,7 +28,8 @@
     <p class="qtext">Compare Autoencoder and PCA.</p>
   </header>
 
-  <div class="q-interpret">
+  <div class="lang ko">
+<div class="q-interpret">
     <div class="qi-label">📌 질문 해석</div>
     <p>“<strong>autoencoder와 PCA를 비교하라.</strong>” 핵심은 <strong>linear AE = PCA</strong>이고 non-linear AE가 그걸 일반화한다는 점.</p>
   </div>
@@ -82,20 +84,44 @@
 <h4>📌 정리</h4>
 <p>"PCA와 autoencoder의 차이는?"에 대한 핵심 답은 다음과 같다. <strong>PCA는 선형, autoencoder는 비선형이며, autoencoder는 PCA의 비선형 일반화다</strong>. 가장 단순한 linear autoencoder는 PCA와 같은 결과를 학습한다. 데이터에 비선형 구조가 있으면 autoencoder가 PCA보다 훨씬 풍부한 표현을 잡지만, 그 표현력의 대가로 학습 비용·해석 어려움·정칙화 필요성이 따라온다.</p>
 </div>
+  </div>
 
-      <div class="model-answer">
+  <div class="lang en" hidden>
+<div class="q-interpret"><div class="qi-label">📌 What the question asks</div>
+    <p>“Compare <strong>autoencoder and PCA</strong>” — the key is that a linear AE equals PCA and a nonlinear AE generalizes it.</p>
+  </div>
+<div class="prose">
+<p>🪞 Both compress to a low-dimensional code and reconstruct. The decisive difference is <strong>linear vs nonlinear</strong>.</p>
+<p>📐 <strong>PCA</strong> finds the orthogonal directions of greatest variance (<strong>principal components</strong>) and projects <strong>linearly</strong>. Key fact: a one-hidden-layer autoencoder with <strong>linear</strong> activations and squared error learns the same subspace — a linear autoencoder <em>is</em> PCA 🟰.</p>
+<p>🌀 An <strong>autoencoder</strong> can use <strong>nonlinear</strong> activations and many layers, generalizing PCA's flat subspace to <strong>curved manifolds</strong>.</p>
+<div class="cmp">
+  <div class="card gatys"><h4>📐 PCA</h4><ul>
+    <li>Linear subspace (flat) only.</li>
+    <li>Closed-form, deterministic, ordered components.</li>
+    <li>No local minima, interpretable. Limited expressiveness.</li>
+  </ul></div>
+  <div class="card modern"><h4>🌀 Autoencoder</h4><ul>
+    <li>Nonlinear manifolds; high expressiveness.</li>
+    <li>Trained by gradient descent, stackable.</li>
+    <li>If too powerful, risks copying the input → needs regularization.</li>
+  </ul></div>
+</div>
+<div class="analogy">🗺️ PCA flattens the paper and reads a shadow (projection). An autoencoder folds and bends the paper (nonlinear) to follow the curved surface (manifold) the data actually lies on — far better when the data is curved.</div>
+</div>
+  </div>
+
+  <div class="model-answer">
         <div class="ma-label">🎯 Model Answer (English)</div>
         <p class="ma-en">Both compress the input to a low-dimensional code and reconstruct it. <strong>PCA</strong> finds the orthogonal directions of greatest variance and projects <em>linearly</em> onto that subspace; crucially, a one-hidden-layer autoencoder with linear activations and squared-error loss learns the same subspace as PCA, so a linear autoencoder <em>is</em> PCA. An <strong>autoencoder</strong> can use non-linear activations and multiple layers, so it generalises PCA from a flat linear subspace to <strong>curved manifolds</strong>, giving far greater representational power. Trade-offs: PCA has a closed-form, deterministic solution with ordered components and is easy to interpret, whereas a non-linear autoencoder is more flexible but trained by gradient descent and, if too powerful, risks simply copying the input — hence the need for regularisation (Q19).</p>
       </div>
 
-      <p class="skel-h">📝 시험 답안 골격</p>
+  <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>선형 AE(은닉1·선형·MSE) = PCA. 비선형 AE는 PCA의 비선형 일반화(매니폴드).</li>
         <li>PCA — 선형 부분공간, 닫힌 해, 정렬된 성분, 해석 쉬움.</li>
         <li>AE — 비선형·깊이로 표현력↑, 단 항등 학습 위험 → 정칙화 필요.</li>
       </ul>
 
-  
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:76.9%"></div></div>
     <div class="qprog-txt"><b>20</b> / 26 문항 · 비지도 학습과 표상</div>
@@ -216,6 +242,21 @@ function psetCopy(btn){
   else { fallback(t,done); }
   function fallback(text,cb){ var ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.left='-9999px'; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(ta); cb(); }
 }
+</script>
+<script>
+(function(){
+  function applyLang(l){
+    document.querySelectorAll('.lang').forEach(function(e){ e.hidden = !e.classList.contains(l); });
+    document.querySelectorAll('.langtog button').forEach(function(b){ b.classList.toggle('on', b.dataset.l===l); });
+  }
+  var saved='ko'; try{ saved=localStorage.getItem('psetLang')||'ko'; }catch(e){}
+  document.addEventListener('DOMContentLoaded', function(){
+    applyLang(saved);
+    document.querySelectorAll('.langtog button').forEach(function(b){
+      b.addEventListener('click', function(){ var l=b.dataset.l; try{localStorage.setItem('psetLang',l);}catch(e){} applyLang(l); });
+    });
+  });
+})();
 </script>
 </body>
 </html>

@@ -18,6 +18,7 @@
   <a class="home" href="index.html">← 26문항 목록</a>
   <span class="grp">🖼️ 합성곱 신경망 CNN</span>
   <span class="step">STEP <b>14</b> / 26</span>
+  <div class="langtog"><button data-l="ko" class="on">KO</button><button data-l="en">EN</button></div>
 </header>
 
 <main class="qpage">
@@ -27,7 +28,8 @@
     <p class="qtext">What is translation invariance with CNN?</p>
   </header>
 
-  <div class="q-interpret">
+  <div class="lang ko">
+<div class="q-interpret">
     <div class="qi-label">📌 질문 해석</div>
     <p>“CNN의 <strong>translation invariance</strong>란?” 사실은 <strong>equivariance와 invariance를 구분</strong>하고, 불변성이 어디서(pooling) 생기는지가 핵심.</p>
   </div>
@@ -51,13 +53,7 @@
 <p>Translation invariance를 만드는 핵심은 <strong>pooling layer</strong>다. Max pooling은 작은 영역(예: 2×2)에서 가장 큰 활성값 하나만 남기고 나머지를 버린다.</p>
 <p>왜 이게 invariance를 만드는가. 고양이 눈이 영역 안 어디로 움직이든, 그 영역의 최댓값을 취하면 출력은 거의 같다 — 어차피 그 영역 안에 있다는 사실은 변하지 않으니까. <strong>입력이 영역 안에서 조금 움직여도 출력이 안 변한다 = 작은 평행이동에 대한 근사 불변성</strong>이 생긴 것이다.</p>
 <p>"근사"라는 단서가 중요하다. 평행이동이 너무 커서 신호가 영역 밖으로 빠져나가면 invariance가 깨진다. 즉 pooling이 주는 invariance는 <strong>작은 이동에 한해서만 성립</strong>한다.</p>
-<div class="widget">
-        <div class="widget-frame">
-          <div class="widget-label"><span class="lab-no">위젯 10</span><span>입력을 밀어 보라 — 특징맵은 따라가고(등가), 풀링은 버틴다(불변)</span></div>
-          <div id="poolinv"></div>
-        </div>
-        <p class="widget-cap">입력의 신호 위치를 슬라이더로 옮기면, 합성곱 특징맵(가운데)의 활성도 같은 방향으로 옮겨 간다(등가성). 그러나 풀링 출력(아래)은 신호가 같은 풀링 창 안에서 움직이는 한 변하지 않는다(근사 불변성). 창을 벗어날 만큼 크게 옮기면 풀링 출력도 바뀐다 — 불변성이 “작은” 이동에만 성립함을 보여 준다.</p>
-      </div>
+
 <h4>🤔 둘 다 왜 필요한가</h4>
 <p>두 성질이 모두 중요한 이유는 task가 다르기 때문이다.</p>
 <ul>
@@ -74,20 +70,52 @@
 </ol>
 <p>완전한 invariance는 아니지만, 실용적으로 "고양이가 화면 어디에 있든 분류 가능"한 수준의 robustness를 달성한다.</p>
 </div>
+  </div>
 
-      <div class="model-answer">
+  <div class="lang en" hidden>
+<div class="q-interpret"><div class="qi-label">📌 What the question asks</div>
+    <p>“What is <strong>translation invariance</strong> in CNNs?” The key is distinguishing it from equivariance and showing where invariance comes from (pooling).</p>
+  </div>
+<div class="prose">
+<p>🔁 The crux is two concepts 👇.</p>
+<div class="cmp">
+  <div class="card gatys"><h4>➡️ Equivariance</h4><ul>
+    <li>Input moves → <b>output moves too</b>.</li>
+    <li>$f(\text{Shift}(x)) = \text{Shift}(f(x))$.</li>
+    <li>Property of <b>convolution itself</b>.</li>
+  </ul></div>
+  <div class="card modern"><h4>🛡️ Invariance</h4><ul>
+    <li>Input moves → <b>output unchanged</b>.</li>
+    <li>$f(\text{Shift}(x)) = f(x)$.</li>
+    <li>Arises (approximately) when <b>pooling</b> is added.</li>
+  </ul></div>
+</div>
+<p>⚠️ Common mistake: “CNNs are translation-invariant.” Precisely, <strong>convolution is equivariant, not invariant</strong>. Move a cat right and its activation moves right (equivariance). Invariance appears with <strong>pooling</strong> — <strong>max pooling</strong> keeps the strongest response in a region, so small shifts inside it leave the output unchanged = <strong>approximate invariance to small translations</strong> 🎯.</p>
+
+<p>🤔 Why both? Different tasks — localization (“where is the cat?”) needs equivariance, classification (“is there a cat?”) needs invariance. A CNN supplies equivariance via convolution and stacks pooling to build invariance, which is therefore local and approximate 🧩.</p>
+</div>
+  </div>
+
+  <div class="widget">
+        <div class="widget-frame">
+          <div class="widget-label"><span class="lab-no">위젯 10</span><span>입력을 밀어 보라 — 특징맵은 따라가고(등가), 풀링은 버틴다(불변)</span></div>
+          <div id="poolinv"></div>
+        </div>
+        <p class="widget-cap">입력의 신호 위치를 슬라이더로 옮기면, 합성곱 특징맵(가운데)의 활성도 같은 방향으로 옮겨 간다(등가성). 그러나 풀링 출력(아래)은 신호가 같은 풀링 창 안에서 움직이는 한 변하지 않는다(근사 불변성). 창을 벗어날 만큼 크게 옮기면 풀링 출력도 바뀐다 — 불변성이 “작은” 이동에만 성립함을 보여 준다.</p>
+      </div>
+
+  <div class="model-answer">
         <div class="ma-label">🎯 Model Answer (English)</div>
         <p class="ma-en">The key is to distinguish two concepts. <strong>Equivariance</strong> means "when the input shifts, the output shifts the same way" — this is what convolution itself provides. <strong>Invariance</strong> means "the output is unchanged when the input shifts" — convolution alone does <em>not</em> give this. Translation invariance appears only when <strong>pooling</strong> is added: max pooling keeps the strongest response in a region, so a small shift within that region leaves the output unchanged, producing approximate invariance to small translations. Classification needs invariance ("is there a cat?"), whereas localisation needs equivariance ("where is the cat?"); a CNN supplies equivariance through convolution and stacks pooling to build up invariance, which is therefore local and only approximate.</p>
       </div>
 
-      <p class="skel-h">📝 시험 답안 골격</p>
+  <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>등가성(움직이면 따라감, 합성곱) vs 불변성(움직여도 그대로, 풀링)을 먼저 구분.</li>
         <li>합성곱은 등가적이지 불변이 아님. 최대 풀링이 영역 내 최강 반응만 남겨 작은 이동에 근사 불변.</li>
         <li>분류엔 불변성, 위치추정엔 등가성. 풀링 불변성은 국소·근사.</li>
       </ul>
 
-  
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:53.8%"></div></div>
     <div class="qprog-txt"><b>14</b> / 26 문항 · 합성곱 신경망 CNN</div>
@@ -221,6 +249,21 @@ function psetCopy(btn){
   else { fallback(t,done); }
   function fallback(text,cb){ var ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.left='-9999px'; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(ta); cb(); }
 }
+</script>
+<script>
+(function(){
+  function applyLang(l){
+    document.querySelectorAll('.lang').forEach(function(e){ e.hidden = !e.classList.contains(l); });
+    document.querySelectorAll('.langtog button').forEach(function(b){ b.classList.toggle('on', b.dataset.l===l); });
+  }
+  var saved='ko'; try{ saved=localStorage.getItem('psetLang')||'ko'; }catch(e){}
+  document.addEventListener('DOMContentLoaded', function(){
+    applyLang(saved);
+    document.querySelectorAll('.langtog button').forEach(function(b){
+      b.addEventListener('click', function(){ var l=b.dataset.l; try{localStorage.setItem('psetLang',l);}catch(e){} applyLang(l); });
+    });
+  });
+})();
 </script>
 </body>
 </html>

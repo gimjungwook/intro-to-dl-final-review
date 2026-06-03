@@ -18,6 +18,7 @@
   <a class="home" href="index.html">← 26문항 목록</a>
   <span class="grp">⚙️ 최적화와 하이퍼파라미터</span>
   <span class="step">STEP <b>7</b> / 26</span>
+  <div class="langtog"><button data-l="ko" class="on">KO</button><button data-l="en">EN</button></div>
 </header>
 
 <main class="qpage">
@@ -27,7 +28,8 @@
     <p class="qtext">Compare the batch gradient, stochastic gradient and mini-batch gradient descent methods.</p>
   </header>
 
-  <div class="q-interpret">
+  <div class="lang ko">
+<div class="q-interpret">
     <div class="qi-label">📌 질문 해석</div>
     <p>“<strong>batch / stochastic / mini-batch</strong> gradient descent를 비교하라.” 셋을 <strong>업데이트당 예제 수</strong>라는 한 축으로 꿰고 trade-off를 보이는 게 핵심.</p>
   </div>
@@ -56,20 +58,45 @@
 <p>미니배치 기울기의 잡음에는 의외의 부수 효과가 있다. 너무 큰 배치(예: 8192 이상)로 학습하면 기울기가 매우 정확해지지만, 그 결과 모델이 <strong>sharp minimum</strong>(좁고 가파른 골짜기 바닥)에 정착하는 경향이 있다. Sharp minimum은 훈련 데이터에는 잘 맞지만 새 데이터에서 무너지기 쉽다.</p>
 <p>반면 적당한 크기 미니배치의 잡음은 모델을 <strong>flat minimum</strong>(넓고 완만한 골짜기 바닥) 쪽으로 유도한다. Flat minimum은 작은 변동에도 손실이 안정적이라 새 데이터에 더 잘 일반화된다. 즉 미니배치 잡음 자체가 약한 정칙화 역할을 한다 — 너무 크게 잡으면 오히려 일반화 성능이 떨어지는 이유다.</p>
 </div>
+  </div>
 
-      <div class="model-answer">
+  <div class="lang en" hidden>
+<div class="q-interpret"><div class="qi-label">📌 What the question asks</div>
+    <p>“Compare <strong>batch / stochastic / mini-batch</strong> gradient descent” — thread them along one axis (examples per update) and show the trade-off.</p>
+  </div>
+<div class="prose">
+<p>🍱 The only difference: <strong>how many examples estimate the gradient per update</strong>. Since the cost is an average over examples, so is the true gradient — it is a question of how many to estimate it from.</p>
+<div class="cmp">
+  <div class="card gatys"><h4>🏛️ Batch (full) GD</h4><ul>
+    <li><b>Whole training set</b> per update.</li>
+    <li>Most accurate, smooth convergence.</li>
+    <li>One update per epoch → slow, memory-heavy, impractical at scale 😮‍💨.</li>
+  </ul></div>
+  <div class="card modern"><h4>🎲 Stochastic GD (1)</h4><ul>
+    <li><b>One example</b> per update.</li>
+    <li>Frequent updates; noise helps escape shallow minima / saddles.</li>
+    <li>High variance, no GPU vectorization, jittery 📈📉.</li>
+  </ul></div>
+</div>
+<p>🎯 <strong>Mini-batch GD</strong> ($m\approx32$–256) is the standard sweet spot for two reasons.</p>
+<p>📊 ① <strong>Statistical efficiency</strong>: the estimate's standard error scales as $1/\sqrt{m}$ — diminishing returns favor small-ish batches. ⚡ ② <strong>Hardware efficiency</strong>: the GPU processes the whole batch in parallel.</p>
+<div class="analogy">🗳️ Batch = poll the whole nation, then decide once. SGD = ask one passer-by and decide instantly. Mini-batch = ask a representative sample of 200 — accurate enough, yet fast and frequent.</div>
+<p>🎁 Bonus: mini-batch noise is a mild <strong>regularizer</strong> — overly large batches can generalize worse.</p>
+</div>
+  </div>
+
+  <div class="model-answer">
         <div class="ma-label">🎯 Model Answer (English)</div>
         <p class="ma-en">The three differ only in how many examples estimate the gradient per update. <strong>Batch (full) gradient descent</strong> uses the whole training set: the gradient is exact and convergence smooth, but each update needs a full pass and large memory, which is impractical on large data. <strong>Stochastic gradient descent (SGD)</strong> uses a single example per update: updates are frequent and the noise helps escape shallow minima and saddle points, but the gradient is high-variance and cannot exploit GPU vectorisation. <strong>Mini-batch gradient descent</strong> uses m examples (typically 32-256) and is the modern standard, because the estimate's accuracy improves only as the square root of the batch size — diminishing returns favour small-ish batches — and GPUs process the whole batch in parallel; its residual noise even acts as a mild regulariser by steering training toward flat minima that generalise better.</p>
       </div>
 
-      <p class="skel-h">📝 시험 답안 골격</p>
+  <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>차이는 업데이트당 예제 수: 전체 / 1개 / m개.</li>
         <li>배치=정확하나 느리고 메모리↑, SGD=잦고 잡음 탈출 도움이나 분산↑·벡터화 불가, 미니배치=절충.</li>
         <li>미니배치가 표준인 이유 — 표본 늘려도 정확도는 제곱근으로만 좋아짐 (수확 체감) + GPU 병렬효율 + 잡음의 약한 정칙화 (flat minimum 선호).</li>
       </ul>
 
-  
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:26.9%"></div></div>
     <div class="qprog-txt"><b>7</b> / 26 문항 · 최적화와 하이퍼파라미터</div>
@@ -277,6 +304,21 @@ function psetCopy(btn){
   else { fallback(t,done); }
   function fallback(text,cb){ var ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.left='-9999px'; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(ta); cb(); }
 }
+</script>
+<script>
+(function(){
+  function applyLang(l){
+    document.querySelectorAll('.lang').forEach(function(e){ e.hidden = !e.classList.contains(l); });
+    document.querySelectorAll('.langtog button').forEach(function(b){ b.classList.toggle('on', b.dataset.l===l); });
+  }
+  var saved='ko'; try{ saved=localStorage.getItem('psetLang')||'ko'; }catch(e){}
+  document.addEventListener('DOMContentLoaded', function(){
+    applyLang(saved);
+    document.querySelectorAll('.langtog button').forEach(function(b){
+      b.addEventListener('click', function(){ var l=b.dataset.l; try{localStorage.setItem('psetLang',l);}catch(e){} applyLang(l); });
+    });
+  });
+})();
 </script>
 </body>
 </html>

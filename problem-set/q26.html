@@ -18,6 +18,7 @@
   <a class="home" href="index.html">← 26문항 목록</a>
   <span class="grp">📜 핵심 논문</span>
   <span class="step">STEP <b>26</b> / 26</span>
+  <div class="langtog"><button data-l="ko" class="on">KO</button><button data-l="en">EN</button></div>
 </header>
 
 <main class="qpage">
@@ -27,7 +28,8 @@
     <p class="qtext">Compare BERT and GPT in terms of the Transformer architecture. And when can we use BERT or GPT?</p>
   </header>
 
-  <div class="q-interpret">
+  <div class="lang ko">
+<div class="q-interpret">
     <div class="qi-label">📌 질문 해석</div>
     <p>“<strong>BERT와 GPT</strong>를 Transformer 구조 관점에서 비교하고, 언제 무엇을 쓰는지.” encoder/decoder·양방향/단방향 대비가 핵심.</p>
   </div>
@@ -96,20 +98,46 @@
 <h4>📌 정리</h4>
 <p>BERT와 GPT의 차이는 <strong>"같은 Transformer 부품을 어떻게 활용하느냐"</strong>로 정리된다. BERT는 encoder + 양방향 attention + MLM 학습으로 이해 task에 강하고, GPT는 decoder + 단방향 attention + autoregressive 학습으로 생성 task에 강하다. 입력 전체를 받아 분류·추출·검색하는 이해가 목적이면 BERT, 새 텍스트를 만들어내는 생성이 목적이면 GPT를 선택하면 된다. 현대 LLM의 두 큰 흐름이 이 두 모델 계열에서 출발한다.</p>
 </div>
+  </div>
 
-      <div class="model-answer">
+  <div class="lang en" hidden>
+<div class="q-interpret"><div class="qi-label">📌 What the question asks</div>
+    <p>“Compare <strong>BERT and GPT</strong> in terms of the Transformer, and when to use each.” Encoder/decoder and bidirectional/unidirectional are the core contrast.</p>
+  </div>
+<div class="prose">
+<p>🤖 Both are built from the <strong>Transformer</strong>, differing in <strong>which half</strong> and <strong>which training objective</strong>.</p>
+<div class="cmp">
+  <div class="card gatys"><h4>📖 BERT — Encoder, bidirectional</h4><ul>
+    <li>Transformer <b>encoder</b> stack.</li>
+    <li><b>Bidirectional</b> self-attention — each token sees both sides.</li>
+    <li>Trained by <b>Masked LM</b> + Next Sentence Prediction.</li>
+    <li>Not naturally generative.</li>
+  </ul></div>
+  <div class="card modern"><h4>✍️ GPT — Decoder, unidirectional</h4><ul>
+    <li>Transformer <b>decoder</b> stack.</li>
+    <li><b>Unidirectional</b> (causal mask) — each token sees only previous tokens.</li>
+    <li>Trained as an <b>autoregressive LM</b> (next-token).</li>
+    <li>Strong at left-to-right generation.</li>
+  </ul></div>
+</div>
+<p>🔑 The core contrast is <strong>bidirectional encoder vs unidirectional decoder</strong>. BERT uses full context, so it excels at <strong>understanding</strong> — classification, NER, extractive QA, sentence embeddings 🔍. GPT predicts the next token, so it excels at <strong>generation</strong> — completion, dialogue, open-ended and few-shot ✨.</p>
+<div class="analogy">📝 BERT is a reader doing fill-in-the-blank — it must see both sides to answer. GPT is a storyteller continuing the text — it decides the next word from what's written so far.</div>
+<p>🧭 <strong>When</strong>: understanding/encoding (classify, extract, retrieve) → BERT; generating text → GPT. Same Transformer parts, used in different directions.</p>
+</div>
+  </div>
+
+  <div class="model-answer">
         <div class="ma-label">🎯 Model Answer (English)</div>
         <p class="ma-en">Both are built from the Transformer but use different halves and objectives. <strong>BERT</strong> is a Transformer <strong>encoder</strong> with <strong>bidirectional</strong> self-attention (each token sees both left and right context), trained by masked language modelling (predict masked tokens) plus next-sentence prediction; it excels at <strong>understanding</strong> tasks that need full context — classification, named-entity recognition, extractive question answering, sentence embeddings — but is not naturally generative. <strong>GPT</strong> is a Transformer <strong>decoder</strong> with <strong>unidirectional</strong> (causally masked) self-attention (each token sees only previous tokens), trained as an autoregressive language model (predict the next token); it excels at <strong>generation</strong> — completion, dialogue, open-ended and few-shot tasks. In short: use BERT for understanding/encoding tasks and GPT for generation.</p>
       </div>
 
-      <p class="skel-h">📝 시험 답안 골격</p>
+  <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>공통 Transformer. BERT = 인코더·양방향·마스크LM, GPT = 디코더·단방향(인과)·자기회귀LM.</li>
         <li>BERT는 전체 문맥 이해(분류·NER·QA·임베딩), GPT는 생성(이어쓰기·대화·few-shot).</li>
         <li>고르는 기준 — 이해 과제면 BERT, 생성 과제면 GPT.</li>
       </ul>
 
-  
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:100.0%"></div></div>
     <div class="qprog-txt"><b>26</b> / 26 문항 · 핵심 논문</div>
@@ -218,6 +246,21 @@ function psetCopy(btn){
   else { fallback(t,done); }
   function fallback(text,cb){ var ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.left='-9999px'; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(ta); cb(); }
 }
+</script>
+<script>
+(function(){
+  function applyLang(l){
+    document.querySelectorAll('.lang').forEach(function(e){ e.hidden = !e.classList.contains(l); });
+    document.querySelectorAll('.langtog button').forEach(function(b){ b.classList.toggle('on', b.dataset.l===l); });
+  }
+  var saved='ko'; try{ saved=localStorage.getItem('psetLang')||'ko'; }catch(e){}
+  document.addEventListener('DOMContentLoaded', function(){
+    applyLang(saved);
+    document.querySelectorAll('.langtog button').forEach(function(b){
+      b.addEventListener('click', function(){ var l=b.dataset.l; try{localStorage.setItem('psetLang',l);}catch(e){} applyLang(l); });
+    });
+  });
+})();
 </script>
 </body>
 </html>

@@ -18,6 +18,7 @@
   <a class="home" href="index.html">← 26문항 목록</a>
   <span class="grp">🛡️ 정칙화와 일반화</span>
   <span class="step">STEP <b>1</b> / 26</span>
+  <div class="langtog"><button data-l="ko" class="on">KO</button><button data-l="en">EN</button></div>
 </header>
 
 <main class="qpage">
@@ -27,7 +28,8 @@
     <p class="qtext">When the dataset is small compared to the model size, what kind of regularization approaches can we take?</p>
   </header>
 
-  <div class="q-interpret">
+  <div class="lang ko">
+<div class="q-interpret">
     <div class="qi-label">📌 질문 해석</div>
     <p>이 문제는 “데이터가 모델보다 작을 때 쓸 수 있는 정칙화 <strong>접근들</strong>”을 묻는다 — 한 기법이 아니라 <strong>여러 방법을 분류해 나열</strong>하고, 각각이 왜 작은 데이터에서 과적합을 막는지까지 엮어야 만점.</p>
   </div>
@@ -93,20 +95,36 @@
 </tbody>
 </table>
 </div>
+  </div>
 
-      <div class="model-answer">
+  <div class="lang en" hidden>
+<div class="q-interpret"><div class="qi-label">📌 What the question asks</div>
+    <p>Lists the <strong>regularization approaches</strong> available when the dataset is small relative to model size — name and group several methods and tie each to why it curbs overfitting.</p>
+  </div>
+<div class="prose">
+<p>🎯 The root is the <strong>bias–variance tradeoff</strong>. When <strong>capacity</strong> far exceeds what the data constrains, the model memorizes noise 😵 — near-zero training error but poor test error (<strong>overfitting</strong>). Regularization injects a <strong>prior</strong> that removes the freedom to memorize; the smaller the data, the heavier this prior should weigh.</p>
+<div class="analogy">📐 Given only three points, infinitely many curves pass through them; with no constraint the wildest one wins 🐙. Regularization adds beliefs (“be smooth”, “be symmetric”) that narrow the candidates.</div>
+<h3>🔧 Handles you can pull on small data</h3>
+<p>🏋️ <strong>Parameter norm penalty</strong> — add a size penalty: $\tilde J = J + \alpha\lVert w\rVert_2^2$. <strong>L2 (weight decay)</strong> pulls weights toward 0; <strong>L1</strong> zeroes some, giving <strong>sparsity</strong> and automatic feature selection. (Bayesian view: L2 = Gaussian prior, L1 = Laplace prior.)</p>
+<p>🔗 <strong>Parameter sharing / tying</strong> — reuse parameters across positions (CNN kernels) or time (RNN weights) to cut degrees of freedom. <strong>Multi-task learning</strong> shares representations too.</p>
+<p>🧪 <strong>Data augmentation & noise injection</strong> — label-preserving transforms, plus noise on inputs, weights, hidden units (<strong>dropout</strong>), and labels (<strong>label smoothing</strong>).</p>
+<p>⏱️ <strong>Early stopping</strong> — stop when validation error stops improving; under a quadratic approximation it is equivalent to L2, and nearly free.</p>
+<p>🌍 <strong>Transfer learning / unsupervised pretraining</strong> — learn features from large external or unlabeled data, then <strong>fine-tune</strong>. The biggest payoff comes when your data is tiny ⬆️.</p>
+</div>
+  </div>
+
+  <div class="model-answer">
         <div class="ma-label">🎯 Model Answer (English)</div>
         <p class="ma-en">When the model has far more capacity than the small dataset can constrain, it overfits by memorising noise, so the cure is to <strong>inject prior knowledge that shrinks the hypothesis space</strong>. The main approaches are: (1) parameter-norm penalties — L2 weight decay and L1 sparsity; (2) parameter sharing or tying to reduce the number of free parameters; (3) data augmentation and noise injection (on inputs, weights, hidden units via dropout, and labels via label smoothing); (4) early stopping, which is equivalent to L2 under a quadratic approximation; and (5) transfer learning or unsupervised pre-training, which import knowledge learned from external data. The smaller the dataset, the more weight these priors should carry, and transfer learning becomes especially valuable.</p>
       </div>
 
-      <p class="skel-h">📝 시험 답안 골격</p>
+  <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>핵심 한 줄 — 데이터 부족 = 고분산 과적합. 정칙화 = 사전 지식 주입으로 가설 공간 축소.</li>
         <li>벌점(L2/L1) · 파라미터 공유 · 데이터 증강과 노이즈 · 드롭아웃 · 조기 종료 · 비지도 사전훈련/전이를 나열.</li>
         <li>데이터가 적을수록 사전의 비중을 키운다, 특히 전이학습의 효과가 커진다고 마무리.</li>
       </ul>
 
-  
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:3.8%"></div></div>
     <div class="qprog-txt"><b>1</b> / 26 문항 · 정칙화와 일반화</div>
@@ -218,6 +236,21 @@ function psetCopy(btn){
   else { fallback(t,done); }
   function fallback(text,cb){ var ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.left='-9999px'; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(ta); cb(); }
 }
+</script>
+<script>
+(function(){
+  function applyLang(l){
+    document.querySelectorAll('.lang').forEach(function(e){ e.hidden = !e.classList.contains(l); });
+    document.querySelectorAll('.langtog button').forEach(function(b){ b.classList.toggle('on', b.dataset.l===l); });
+  }
+  var saved='ko'; try{ saved=localStorage.getItem('psetLang')||'ko'; }catch(e){}
+  document.addEventListener('DOMContentLoaded', function(){
+    applyLang(saved);
+    document.querySelectorAll('.langtog button').forEach(function(b){
+      b.addEventListener('click', function(){ var l=b.dataset.l; try{localStorage.setItem('psetLang',l);}catch(e){} applyLang(l); });
+    });
+  });
+})();
 </script>
 </body>
 </html>

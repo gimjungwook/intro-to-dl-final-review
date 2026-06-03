@@ -18,6 +18,7 @@
   <a class="home" href="index.html">← 26문항 목록</a>
   <span class="grp">🧭 비지도 학습과 표상</span>
   <span class="step">STEP <b>21</b> / 26</span>
+  <div class="langtog"><button data-l="ko" class="on">KO</button><button data-l="en">EN</button></div>
 </header>
 
 <main class="qpage">
@@ -27,7 +28,8 @@
     <p class="qtext">Why do we need regularized autoencoders and how can we make them?</p>
   </header>
 
-  <div class="q-interpret">
+  <div class="lang ko">
+<div class="q-interpret">
     <div class="qi-label">📌 질문 해석</div>
     <p>두 갈래 — ① <strong>왜 regularized autoencoder가 필요한지</strong>(항등함수 문제), ② <strong>어떻게 만드는지</strong>(sparse·denoising·contractive).</p>
   </div>
@@ -66,20 +68,36 @@
 <h4>📌 정리</h4>
 <p>Regularized autoencoder가 필요한 이유는 <strong>capacity가 충분한 일반 autoencoder가 identity 함수로 도망가버리기 때문</strong>이다. 정칙화는 복원 외의 추가 목표를 부과해 이를 막는다. 대표 방식 셋은 sparse(희소성), denoising(잡음 복원), contractive(입력 변화 둔감성)이며, 각각 데이터의 다른 측면을 강조한다. 모두 capacity를 강제로 줄이지 않으면서도 의미 있는 표현 학습을 유도하는 우아한 해법이다.</p>
 </div>
+  </div>
 
-      <div class="model-answer">
+  <div class="lang en" hidden>
+<div class="q-interpret"><div class="qi-label">📌 What the question asks</div>
+    <p>Two parts — ① why <strong>regularized autoencoders</strong> are needed (the identity problem), and ② how to build them (sparse, denoising, contractive).</p>
+  </div>
+<div class="prose">
+<p>🧹 <strong>Why:</strong> with enough capacity (especially <strong>overcomplete</strong>, hidden ≥ input), an autoencoder can learn the <strong>identity function</strong> — copying input to output with zero error but learning nothing 📋. Regularization adds an objective beyond reconstruction so a useful representation is learned regardless of capacity ✅.</p>
+<p>🛠️ <strong>How</strong> — by the extra objective:</p>
+<div class="symbols"><tbody>
+<tr><td>✨ Sparse AE</td><td>penalty $\Omega(h)=\lambda\lVert h\rVert_1$ on hidden activations → most units near 0, parts-based features.</td></tr>
+<tr><td>🌫️ Denoising AE</td><td>corrupt the input $\tilde x$, reconstruct the <b>clean</b> $x$ → copying is impossible, so it must learn the data manifold (a vector field pointing toward it).</td></tr>
+<tr><td>🤏 Contractive AE</td><td>penalize the encoder Jacobian norm $\lVert\partial h/\partial x\rVert_F^2$ → insensitive to small input changes, sensitive only along the manifold's tangent.</td></tr>
+</tbody></div>
+<div class="analogy">📝 An unregularized AE is a student who copies the question sheet verbatim — full marks, zero understanding. Sparse / denoising / contractive add rules (“write only key words”, “restore the partly-erased question”, “give the same answer if the question changes slightly”) that force understanding instead of copying.</div>
+</div>
+  </div>
+
+  <div class="model-answer">
         <div class="ma-label">🎯 Model Answer (English)</div>
         <p class="ma-en"><strong>Why:</strong> an autoencoder with enough capacity — especially an over-complete one whose hidden layer is at least as large as the input — can simply learn the <strong>identity function</strong>, copying input to output with zero reconstruction error while learning nothing useful. Regularisation imposes an additional objective beyond reconstruction so a useful representation is learned regardless of capacity. <strong>How:</strong> (1) a <strong>sparse</strong> autoencoder adds a sparsity penalty on the hidden activations, forcing most units to zero and learning parts-based features; (2) a <strong>denoising</strong> autoencoder corrupts the input and trains the network to reconstruct the clean version, so copying is impossible and it must learn the data manifold; (3) a <strong>contractive</strong> autoencoder penalises how much the code changes when the input changes slightly (the Jacobian norm), making the code insensitive to small input changes and sensitive only along the manifold.</p>
       </div>
 
-      <p class="skel-h">📝 시험 답안 골격</p>
+  <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>필요 이유 — 용량 큰 AE는 항등함수를 외워 복사만 함(배움 0). 복원 외 목표를 부과해야 유용 표현.</li>
         <li>희소 — 은닉 활성에 희소성 벌점(parts-based 표현). 잡음제거(DAE) — 손상 입력→깨끗 복원(데이터 manifold 학습).</li>
         <li>수축(CAE) — 입력 변화에 따른 code 변화량 벌점으로 입력 잡음에 둔감, manifold 접선 방향만 민감.</li>
       </ul>
 
-  
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:80.8%"></div></div>
     <div class="qprog-txt"><b>21</b> / 26 문항 · 비지도 학습과 표상</div>
@@ -200,6 +218,21 @@ function psetCopy(btn){
   else { fallback(t,done); }
   function fallback(text,cb){ var ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.left='-9999px'; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(ta); cb(); }
 }
+</script>
+<script>
+(function(){
+  function applyLang(l){
+    document.querySelectorAll('.lang').forEach(function(e){ e.hidden = !e.classList.contains(l); });
+    document.querySelectorAll('.langtog button').forEach(function(b){ b.classList.toggle('on', b.dataset.l===l); });
+  }
+  var saved='ko'; try{ saved=localStorage.getItem('psetLang')||'ko'; }catch(e){}
+  document.addEventListener('DOMContentLoaded', function(){
+    applyLang(saved);
+    document.querySelectorAll('.langtog button').forEach(function(b){
+      b.addEventListener('click', function(){ var l=b.dataset.l; try{localStorage.setItem('psetLang',l);}catch(e){} applyLang(l); });
+    });
+  });
+})();
 </script>
 </body>
 </html>

@@ -18,6 +18,7 @@
   <a class="home" href="index.html">← 26문항 목록</a>
   <span class="grp">🧭 비지도 학습과 표상</span>
   <span class="step">STEP <b>22</b> / 26</span>
+  <div class="langtog"><button data-l="ko" class="on">KO</button><button data-l="en">EN</button></div>
 </header>
 
 <main class="qpage">
@@ -27,7 +28,8 @@
     <p class="qtext">Why is unsupervised learning helpful for the downstream tasks like classification?</p>
   </header>
 
-  <div class="q-interpret">
+  <div class="lang ko">
+<div class="q-interpret">
     <div class="qi-label">📌 질문 해석</div>
     <p>“비지도 학습이 왜 분류 같은 <strong>다운스트림 과제</strong>에 도움이 되나?” 핵심은 <strong>입력 분포의 구조가 라벨 예측에 대한 정보를 담는다</strong>는 가정.</p>
   </div>
@@ -66,20 +68,32 @@
 <h4>🎯 정리</h4>
 <p>"비지도 학습이 왜 분류 같은 다운스트림 task에 도움이 되나?"에 대한 답은 다음과 같다. <strong>입력 분포의 구조가 라벨에 대한 정보를 담기 때문</strong>이다. 비지도 학습은 라벨 없이 이 구조(cluster, manifold, 변동 인자)를 발견해 좋은 표현을 만들고, 그 표현 위에서 분류 같은 task가 훨씬 적은 라벨로도 잘 학습된다. 단 비지도 특징과 라벨이 실제로 관련 있을 때만 효과가 있다.</p>
 </div>
+  </div>
 
-      <div class="model-answer">
+  <div class="lang en" hidden>
+<div class="q-interpret"><div class="qi-label">📌 What the question asks</div>
+    <p>“Why does <strong>unsupervised learning help downstream tasks</strong> like classification?” The key assumption: $p(x)$'s structure informs $p(y\mid x)$.</p>
+  </div>
+<div class="prose">
+<p>🧭 Core assumption: the structure of the input distribution $p(x)$ <strong>carries information about $p(y\mid x)$</strong>. The factors of variation that shape $p(x)$ overlap with what we want to predict 🔗.</p>
+<p>🪐 Examples of one class form <strong>clusters</strong> or lie on a shared <strong>manifold</strong>. Unsupervised learning discovers these without labels, producing a <strong>good representation</strong> of $x$ in which the decision boundary is simple — so the classifier needs fewer labels and generalizes better 📈.</p>
+<p>🔧 Two uses: ① <strong>pretraining / initialization</strong> — learn from abundant unlabeled data, then fine-tune; ② <strong>semi-supervised</strong> shared representations — e.g. 🗣️ word embeddings from a language model help downstream NLP, and autoencoder edges/textures help vision.</p>
+<p>⚠️ Not magic — it helps only when the unsupervised features are actually relevant to $y$. If $p(x)$ and $p(y\mid x)$ are unrelated, pretraining may not help, or may hurt.</p>
+</div>
+  </div>
+
+  <div class="model-answer">
         <div class="ma-label">🎯 Model Answer (English)</div>
         <p class="ma-en">The core assumption is that the structure of the input distribution carries information about the label distribution: the factors of variation that shape the inputs overlap substantially with the factors we want to predict. Examples of one class cluster together or lie on a shared manifold, and unsupervised learning discovers these clusters, manifolds and factors without labels, producing a <strong>good representation of the input</strong> in which the decision boundary becomes simple — so the downstream classifier needs fewer labels and generalises better. In practice it is used as pre-training/initialisation (learn from abundant unlabelled data, then fine-tune) or as semi-supervised shared representations, e.g. word embeddings from a language model or edges and textures from an autoencoder. The caveat: it helps only when the unsupervised features are actually relevant to the label — if the input distribution structure and the label predictor are unrelated, it may not help.</p>
       </div>
 
-      <p class="skel-h">📝 시험 답안 골격</p>
+  <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>핵심 — 입력 분포 구조가 라벨에 대한 정보를 담음. 군집/매니폴드/변동 인자가 라벨과 겹침.</li>
         <li>비지도 학습이 좋은 표현을 발견 → 그 표현 공간에서 분류 단순화, 적은 라벨로 일반화.</li>
         <li>실무 — 사전훈련/초기화 + 반지도 학습. 예: BERT 단어 임베딩, autoencoder 시각 특징. 단 비지도 특징이 라벨과 관련될 때만 효과.</li>
       </ul>
 
-  
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:84.6%"></div></div>
     <div class="qprog-txt"><b>22</b> / 26 문항 · 비지도 학습과 표상</div>
@@ -200,6 +214,21 @@ function psetCopy(btn){
   else { fallback(t,done); }
   function fallback(text,cb){ var ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.left='-9999px'; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(ta); cb(); }
 }
+</script>
+<script>
+(function(){
+  function applyLang(l){
+    document.querySelectorAll('.lang').forEach(function(e){ e.hidden = !e.classList.contains(l); });
+    document.querySelectorAll('.langtog button').forEach(function(b){ b.classList.toggle('on', b.dataset.l===l); });
+  }
+  var saved='ko'; try{ saved=localStorage.getItem('psetLang')||'ko'; }catch(e){}
+  document.addEventListener('DOMContentLoaded', function(){
+    applyLang(saved);
+    document.querySelectorAll('.langtog button').forEach(function(b){
+      b.addEventListener('click', function(){ var l=b.dataset.l; try{localStorage.setItem('psetLang',l);}catch(e){} applyLang(l); });
+    });
+  });
+})();
 </script>
 </body>
 </html>

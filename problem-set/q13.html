@@ -18,6 +18,7 @@
   <a class="home" href="index.html">← 26문항 목록</a>
   <span class="grp">🔁 순환 신경망과 시퀀스</span>
   <span class="step">STEP <b>17</b> / 26</span>
+  <div class="langtog"><button data-l="ko" class="on">KO</button><button data-l="en">EN</button></div>
 </header>
 
 <main class="qpage">
@@ -27,7 +28,8 @@
     <p class="qtext">How does LSTM overcome the ‘memory-fade-away’ issue?</p>
   </header>
 
-  <div class="q-interpret">
+  <div class="lang ko">
+<div class="q-interpret">
     <div class="qi-label">📌 질문 해석</div>
     <p>“LSTM이 <strong>memory-fade-away</strong>를 어떻게 극복하나?” 먼저 <strong>왜 사라지는지(vanishing gradient)</strong>, 그다음 <strong>해법(cell state + gate)</strong> 순서로.</p>
   </div>
@@ -65,7 +67,28 @@
 <h4>🌟 결과</h4>
 <p>이 메커니즘 덕분에 LSTM은 100 timestep 이상 떨어진 정보도 안정적으로 학습할 수 있다. 긴 문장의 앞부분과 뒷부분 사이 의존성, 수백 frame의 비디오에서 초반과 후반의 관계, 긴 음성 시퀀스의 장기 맥락 등을 잡아낸다. 바닐라 RNN으로는 사실상 불가능하던 task들이 LSTM으로 풀린 이유다.</p>
 <p>현대에는 LSTM의 단순화 버전인 GRU(Gated Recurrent Unit)나, 시퀀스 처리에서 RNN 계열을 대체한 Transformer 같은 모델들이 있지만, "곱셈을 덧셈으로 바꾸고 gate로 조절"한다는 LSTM의 핵심 아이디어는 이후 모든 시퀀스 모델 설계에 깊은 영향을 끼쳤다.</p>
-<div class="widget">
+
+</div>
+  </div>
+
+  <div class="lang en" hidden>
+<div class="q-interpret"><div class="qi-label">📌 What the question asks</div>
+    <p>“How does the <strong>LSTM</strong> overcome memory fade?” First why it fades (vanishing gradient), then the fix (cell state + gates).</p>
+  </div>
+<div class="prose">
+<p>😶‍🌫️ Why memory fades: a vanilla RNN multiplies the hidden state by the same recurrent matrix each step, so an input $k$ steps back influences the present like $W^k$.</p>
+<div class="math-block">$$ \frac{\partial h_t}{\partial h_{t-k}} \;\sim\; W^{k} $$</div>
+<p class="math-note">Largest eigenvalue &lt; 1 → $W^k\to 0$ (<strong>vanishing</strong>); &gt; 1 → <strong>exploding</strong>.</p>
+<p>The $\tanh$ derivative (&lt; 1) makes it worse 📉, so long-range dependencies are lost.</p>
+<p>🧠 The <strong>LSTM</strong> adds a <strong>cell state</strong> $c_t$ updated <strong>additively</strong> and controlled by <strong>gates</strong>:</p>
+<div class="math-block">$$ c_t = f_t \odot c_{t-1} + i_t \odot g_t $$</div>
+<p class="math-note">$f_t$ forget, $i_t$ input, $g_t$ candidate. With $f_t\approx1$, $c_t\approx c_{t-1}$ — information is preserved.</p>
+<p>🎠 This additive self-loop is the <strong>Constant Error Carousel (CEC)</strong>: when $f_t\approx1$ the gradient flows along the cell state at ~1 with no repeated matrix multiply, so it does not vanish ✅. The gates (🚪 forget, 📥 input, 📤 output) are learned — the network decides <strong>when to remember and when to forget</strong>.</p>
+
+</div>
+  </div>
+
+  <div class="widget">
         <div class="widget-frame">
           <div class="widget-label"><span class="lab-no">위젯 13</span><span>20 스텝 뒤에도 남는 신호 — 바닐라 RNN vs LSTM</span></div>
           <canvas id="lstmmem" class="widget-canvas" width="720" height="320"></canvas>
@@ -79,21 +102,19 @@
         </div>
         <p class="widget-cap">바닐라 RNN(파랑)은 가중치·활성에 묶인 고정 감쇠율로 신호가 지수적으로 사라진다. LSTM(빨강)은 망각 게이트 f를 1에 가깝게 학습하면 신호를 수십 스텝 보존한다 (f를 t번 곱해도 1에 가까움). f를 낮추면 LSTM도 의도적으로 잊을 수 있음을 본다.</p>
       </div>
-</div>
 
-      <div class="model-answer">
+  <div class="model-answer">
         <div class="ma-label">🎯 Model Answer (English)</div>
         <p class="ma-en">In a vanilla RNN the hidden state is multiplied by the same recurrent weight matrix at every step, so the influence of an input k steps back scales like the matrix multiplied k times; if the largest eigenvalue is below 1 the gradient <strong>vanishes exponentially</strong> (and the tanh derivative, being below 1, worsens it), so long-range dependencies are lost. The LSTM fixes this with a <strong>cell state that is updated additively and gated</strong>: the new cell state is the previous cell state weighted by a forget gate plus a new candidate weighted by an input gate. This additive self-loop is the <strong>Constant Error Carousel</strong> — when the forget gate is close to 1 the cell state is preserved and the gradient flows along it at roughly 1, with no repeated matrix multiplication, so it does not vanish. The forget, input, and output gates let the network learn <em>when</em> to keep, write, and expose information.</p>
       </div>
 
-      <p class="skel-h">📝 시험 답안 골격</p>
+  <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>원인 — 바닐라 RNN은 순환 가중치 행렬이 반복 곱해짐. 가장 큰 확대 비율(eigenvalue)이 1보다 작으면 기울기가 지수적으로 소실. tanh 도함수가 항상 1보다 작아 더 악화.</li>
         <li>해법 — cell state를 곱셈이 아닌 덧셈으로 갱신 + forget/input/output gate로 정보 흐름 제어. CEC(Constant Error Carousel)로 기울기가 약 1로 유지되어 소실되지 않음.</li>
         <li>게이트(망각·입력·출력)로 언제 기억/망각할지 학습. 행렬 반복 곱이 없어 소실 제거.</li>
       </ul>
 
-  
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:65.4%"></div></div>
     <div class="qprog-txt"><b>17</b> / 26 문항 · 순환 신경망과 시퀀스</div>
@@ -205,6 +226,21 @@ function psetCopy(btn){
   else { fallback(t,done); }
   function fallback(text,cb){ var ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.left='-9999px'; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(ta); cb(); }
 }
+</script>
+<script>
+(function(){
+  function applyLang(l){
+    document.querySelectorAll('.lang').forEach(function(e){ e.hidden = !e.classList.contains(l); });
+    document.querySelectorAll('.langtog button').forEach(function(b){ b.classList.toggle('on', b.dataset.l===l); });
+  }
+  var saved='ko'; try{ saved=localStorage.getItem('psetLang')||'ko'; }catch(e){}
+  document.addEventListener('DOMContentLoaded', function(){
+    applyLang(saved);
+    document.querySelectorAll('.langtog button').forEach(function(b){
+      b.addEventListener('click', function(){ var l=b.dataset.l; try{localStorage.setItem('psetLang',l);}catch(e){} applyLang(l); });
+    });
+  });
+})();
 </script>
 </body>
 </html>

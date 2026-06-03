@@ -18,6 +18,7 @@
   <a class="home" href="index.html">← 26문항 목록</a>
   <span class="grp">🔁 순환 신경망과 시퀀스</span>
   <span class="step">STEP <b>16</b> / 26</span>
+  <div class="langtog"><button data-l="ko" class="on">KO</button><button data-l="en">EN</button></div>
 </header>
 
 <main class="qpage">
@@ -27,7 +28,8 @@
     <p class="qtext">Why is RNN a special case of recursive neural network?</p>
   </header>
 
-  <div class="q-interpret">
+  <div class="lang ko">
+<div class="q-interpret">
     <div class="qi-label">📌 질문 해석</div>
     <p>“RNN이 왜 recursive NN의 <strong>특수 경우</strong>인가?” 두 모델의 공통점 + <strong>구조의 차이(chain vs tree)</strong>를 짚으면 된다.</p>
   </div>
@@ -58,20 +60,32 @@
 <h4>📌 정리</h4>
 <p>"왜 RNN이 recursive NN의 특수 경우인가?"에 대한 답은 다음과 같다. 두 모델은 "같은 파라미터를 구조 전체에 반복 적용한다"는 핵심 원리를 공유한다. 그 구조가 일반적인 트리이면 recursive NN이고, 사슬 형태로 좁혀지면 RNN이다. 따라서 RNN은 recursive NN의 특수 한 경우이며, 그 사슬 구조는 단순함의 대가로 학습의 어려움(긴 시퀀스에서의 gradient 문제)을 함께 떠안는다.</p>
 </div>
+  </div>
 
-      <div class="model-answer">
+  <div class="lang en" hidden>
+<div class="q-interpret"><div class="qi-label">📌 What the question asks</div>
+    <p>“Why is an <strong>RNN a special case</strong> of a recursive network?” Show the shared mechanism, then the structural difference (chain vs tree).</p>
+  </div>
+<div class="prose">
+<p>🌳 Both a <strong>recursive NN</strong> and an <strong>RNN</strong> apply the <strong>same parameters at every node of a structure</strong>, merging children into a parent. The difference is the shape 🌲 vs 🎍.</p>
+<p>🌲 A <strong>recursive neural network</strong> works on a general <strong>tree (or DAG)</strong> — e.g. a sentence's <strong>parse tree</strong>, where one composition function merges two child phrases. 🎍 An <strong>RNN</strong> is the case where that structure is a <strong>chain</strong> — a degenerate, linear tree: each step's node has one child (the previous hidden state) plus the current input.</p>
+<div class="analogy">🎋 A recursive NN is a tree branching freely; an RNN is bamboo growing straight without branches. Both repeat the same node (parameters), but bamboo narrows all branching to a single line.</div>
+<p>📏 A practical consequence: an RNN's <strong>depth grows linearly with sequence length $n$</strong>, while a balanced binary recursive tree grows as $\log n$ — shallower depth means fewer multiplications for gradients, so trees can be friendlier to long-range dependencies ✅.</p>
+</div>
+  </div>
+
+  <div class="model-answer">
         <div class="ma-label">🎯 Model Answer (English)</div>
         <p class="ma-en">Both apply the <strong>same parameters repeatedly across the nodes of a structure</strong>, combining children into a parent representation. A <strong>recursive neural network</strong> operates on a general tree (or DAG) structure — for example a sentence's parse tree, where one composition function merges two child phrases into a parent. An <strong>RNN</strong> is the special case in which that structure is a <strong>chain — a degenerate, linear tree</strong>: each step's node has a single child (the previous state) plus the current input. So an RNN is a recursive network whose topology has been narrowed to a path. A practical consequence is that an RNN's depth grows linearly with the sequence length, whereas a balanced recursive tree grows only logarithmically, so trees can be gentler on gradients over long dependencies.</p>
       </div>
 
-      <p class="skel-h">📝 시험 답안 골격</p>
+  <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>공통 — 같은 파라미터를 구조의 모든 노드에 반복 적용해 자식→부모로 합침.</li>
         <li>재귀망 = 일반 트리/DAG 구조. RNN = 그 구조가 사슬(퇴화 트리)인 특수 경우.</li>
         <li>결과 — RNN 깊이는 시퀀스 길이 n에 비례, 균형 트리는 log n에 그침. 트리가 긴 의존성·기울기 보존에 유리할 수 있음.</li>
       </ul>
 
-  
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:61.5%"></div></div>
     <div class="qprog-txt"><b>16</b> / 26 문항 · 순환 신경망과 시퀀스</div>
@@ -183,6 +197,21 @@ function psetCopy(btn){
   else { fallback(t,done); }
   function fallback(text,cb){ var ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.left='-9999px'; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(ta); cb(); }
 }
+</script>
+<script>
+(function(){
+  function applyLang(l){
+    document.querySelectorAll('.lang').forEach(function(e){ e.hidden = !e.classList.contains(l); });
+    document.querySelectorAll('.langtog button').forEach(function(b){ b.classList.toggle('on', b.dataset.l===l); });
+  }
+  var saved='ko'; try{ saved=localStorage.getItem('psetLang')||'ko'; }catch(e){}
+  document.addEventListener('DOMContentLoaded', function(){
+    applyLang(saved);
+    document.querySelectorAll('.langtog button').forEach(function(b){
+      b.addEventListener('click', function(){ var l=b.dataset.l; try{localStorage.setItem('psetLang',l);}catch(e){} applyLang(l); });
+    });
+  });
+})();
 </script>
 </body>
 </html>

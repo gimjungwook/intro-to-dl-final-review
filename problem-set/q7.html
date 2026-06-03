@@ -18,6 +18,7 @@
   <a class="home" href="index.html">← 26문항 목록</a>
   <span class="grp">⚙️ 최적화와 하이퍼파라미터</span>
   <span class="step">STEP <b>9</b> / 26</span>
+  <div class="langtog"><button data-l="ko" class="on">KO</button><button data-l="en">EN</button></div>
 </header>
 
 <main class="qpage">
@@ -27,7 +28,8 @@
     <p class="qtext">As an optimization challenge, what is the relation between cliffs and exploding gradient?</p>
   </header>
 
-  <div class="q-interpret">
+  <div class="lang ko">
+<div class="q-interpret">
     <div class="qi-label">📌 질문 해석</div>
     <p>“<strong>cliff</strong>와 <strong>exploding gradient</strong>의 관계는?” 둘을 따로가 아니라 <strong>원인(절벽)–증상(폭발)</strong>으로 연결하라는 질문.</p>
   </div>
@@ -58,20 +60,33 @@
 <p>기울기 폭발에 대한 표준 처방은 <strong>gradient clipping</strong>이다. 매 step에서 기울기의 크기를 측정하고, 사전에 정한 임계값보다 크면 그 임계값에 맞춰 잘라낸다. <strong>방향은 그대로 두고 크기만 제한</strong>한다.</p>
 <p>등산객 비유로 돌아가면, 절벽을 만나도 "발밑 경사가 아무리 가팔라도 한 걸음의 길이는 1m를 넘기지 않는다"고 규칙을 정해두는 것과 같다. 절벽 아래로 날아가지 않고 가장자리를 따라 조심스럽게 내려간다. 단순하지만 매우 효과적이라, 거의 모든 RNN·LSTM 학습 코드에 기본으로 들어가 있다.</p>
 </div>
+  </div>
 
-      <div class="model-answer">
+  <div class="lang en" hidden>
+<div class="q-interpret"><div class="qi-label">📌 What the question asks</div>
+    <p>“What is the relation between <strong>cliffs</strong> and <strong>exploding gradients</strong>?” Connect them as cause (cliff) and symptom (explosion).</p>
+  </div>
+<div class="prose">
+<p>🧗 Deep nets and RNNs often have <strong>cliffs</strong> — nearly vertical drops on the loss surface 📉 — formed because weights are <strong>multiplied repeatedly</strong> across layers or time steps, producing regions where output and gradient grow exponentially.</p>
+<p>🔗 Cause and symptom: the <strong>cliff is the geometric cause</strong>, the <strong>exploding gradient is the symptom</strong> at its edge. There the gradient blows up, so a normal-sized step hurls the parameters far away and wrecks training 💥.</p>
+<div class="analogy">🪂 A hiker at a cliff edge — the slope underfoot is near-infinite. Stepping as usual (“slope × stride”) flings you kilometers below. The terrain (cause) produces the giant step (symptom).</div>
+<p>⏳ In RNNs this is the time axis: backprop multiplies the recurrent matrix repeatedly, and a largest <strong>eigenvalue</strong> &gt; 1 makes the gradient grow exponentially in the number of steps (vs &lt; 1 → vanishing, i.e. memory fade 😶‍🌫️).</p>
+<p>✂️ The remedy is <strong>gradient clipping</strong>: keep the direction, cap the size — $\lVert g\rVert>\tau \Rightarrow g\leftarrow\tau\,g/\lVert g\rVert$ — so you descend the cliff carefully instead of flying off 🧗‍♀️.</p>
+</div>
+  </div>
+
+  <div class="model-answer">
         <div class="ma-label">🎯 Model Answer (English)</div>
         <p class="ma-en">Cliffs are regions of the loss surface that drop almost vertically; they arise in deep networks and RNNs because weights are <strong>multiplied repeatedly</strong> across layers or time steps. The relation is one of cause and symptom: the <strong>cliff is the geometric cause</strong>, and the <strong>exploding gradient is the symptom</strong> at its edge. Near a cliff the gradient magnitude blows up, so a normal-sized step hurls the parameters far away and destroys prior progress. In RNNs this occurs when the recurrent weight matrix's largest eigenvalue exceeds 1, making the gradient grow exponentially with the number of time steps. The standard remedy is gradient clipping (Q15), which caps the step size while keeping its direction.</p>
       </div>
 
-      <p class="skel-h">📝 시험 답안 골격</p>
+  <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>절벽 = 가중치 반복 곱으로 생긴 거의 수직인 손실 영역(기하학적 원인).</li>
         <li>기울기 폭발 = 절벽 근처에서 기울기 크기가 폭증하는 증상. 보폭 곱하면 파라미터가 멀리 날아감.</li>
         <li>RNN에서는 순환 가중치 행렬의 가장 큰 확대 비율이 1보다 크면 시간 축을 따라 기울기가 지수적으로 폭발. (반대로 작으면 소실 → LSTM·GRU 등장 배경.) 처방 = 기울기 클리핑(방향 유지, 크기만 상한 적용).</li>
       </ul>
 
-  
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:34.6%"></div></div>
     <div class="qprog-txt"><b>9</b> / 26 문항 · 최적화와 하이퍼파라미터</div>
@@ -279,6 +294,21 @@ function psetCopy(btn){
   else { fallback(t,done); }
   function fallback(text,cb){ var ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.left='-9999px'; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(ta); cb(); }
 }
+</script>
+<script>
+(function(){
+  function applyLang(l){
+    document.querySelectorAll('.lang').forEach(function(e){ e.hidden = !e.classList.contains(l); });
+    document.querySelectorAll('.langtog button').forEach(function(b){ b.classList.toggle('on', b.dataset.l===l); });
+  }
+  var saved='ko'; try{ saved=localStorage.getItem('psetLang')||'ko'; }catch(e){}
+  document.addEventListener('DOMContentLoaded', function(){
+    applyLang(saved);
+    document.querySelectorAll('.langtog button').forEach(function(b){
+      b.addEventListener('click', function(){ var l=b.dataset.l; try{localStorage.setItem('psetLang',l);}catch(e){} applyLang(l); });
+    });
+  });
+})();
 </script>
 </body>
 </html>

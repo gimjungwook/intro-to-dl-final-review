@@ -18,6 +18,7 @@
   <a class="home" href="index.html">← 26문항 목록</a>
   <span class="grp">⚙️ 최적화와 하이퍼파라미터</span>
   <span class="step">STEP <b>10</b> / 26</span>
+  <div class="langtog"><button data-l="ko" class="on">KO</button><button data-l="en">EN</button></div>
 </header>
 
 <main class="qpage">
@@ -27,7 +28,8 @@
     <p class="qtext">What is the weight space symmetry?</p>
   </header>
 
-  <div class="q-interpret">
+  <div class="lang ko">
+<div class="q-interpret">
     <div class="qi-label">📌 질문 해석</div>
     <p>“<strong>weight space symmetry</strong>란?” 정의 + 대표 예(은닉 유닛 교환) + <strong>m! 개의 동등 최소점</strong>이라는 함의까지.</p>
   </div>
@@ -56,20 +58,33 @@
 <p>"손실 곡면이 m! 개의 동등 최소점을 가진다면 학습이 그 미로에 갇히지 않을까?"라는 걱정이 들 수 있다. 다행히 모든 사본이 <strong>완전히 동등한 성능</strong>을 내므로 어느 사본에 도달하든 상관없다. 학습이 그 중 한 사본을 찾으면 그걸로 끝이다.</p>
 <p>즉 weight space symmetry는 곡면을 복잡하게 만들지만, 그 자체로는 최적화를 특별히 어렵게 만들지 않는다. 진짜 어려움은 saddle point나 sharp minimum 같은 다른 문제에서 온다.</p>
 </div>
+  </div>
 
-      <div class="model-answer">
+  <div class="lang en" hidden>
+<div class="q-interpret"><div class="qi-label">📌 What the question asks</div>
+    <p>“What is <strong>weight space symmetry</strong>?” Definition + the canonical example (unit permutation) + the $m!$-minima implication.</p>
+  </div>
+<div class="prose">
+<p>🔀 <strong>Weight space symmetry</strong>: <strong>different weight settings implement exactly the same function</strong>. A network is <strong>non-identifiable</strong> — you cannot invert the function to unique weights 🕵️.</p>
+<p>🔁 The common case is <strong>hidden-unit permutation</strong>: swap the incoming and outgoing weights of two hidden units and the function is unchanged — they just trade labels. With $m$ units there are $m!$ arrangements, so <strong>at least $m!$ equivalent weight settings</strong> exist 🤯.</p>
+<div class="analogy">🎻 If first- and second-chair violinists swap seats but play the same parts identically, the audience hears the same music. The seating ($m!$ ways) varies; the music (function) is one.</div>
+<p>➕ With odd activations like $\tanh$, flipping the signs of a unit's in- and out-weights also leaves the function unchanged (<strong>sign-flip symmetry</strong>). These multiply into a huge number of equivalent settings per function.</p>
+<p>📌 Implications: ① at least $m!$ equivalent <strong>global minima</strong> (any is fine); ② one source of non-convexity; ③ <strong>individual weight values carry no absolute meaning</strong>. Since all copies are equivalent, the symmetry itself does not make optimization harder 😌.</p>
+</div>
+  </div>
+
+  <div class="model-answer">
         <div class="ma-label">🎯 Model Answer (English)</div>
         <p class="ma-en">Weight-space symmetry is the fact that <strong>many different weight settings implement exactly the same input-output function</strong>, so the network is non-identifiable — you cannot recover unique weights from the function. The most common case is hidden-unit permutation: swapping the incoming and outgoing weights of two hidden units leaves the computed function unchanged, so m units yield at least m! (m factorial) equivalent configurations; odd activations such as tanh add a sign-flip symmetry. The consequences are that the loss has at least m! equivalent global minima, that this is one source of non-convexity, and that an individual weight value has no absolute meaning — but since all copies are equivalent, the symmetry itself does not make optimisation harder.</p>
       </div>
 
-      <p class="skel-h">📝 시험 답안 골격</p>
+  <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>정의 — 다른 가중치가 같은 함수를 구현(비식별 모델).</li>
         <li>은닉 유닛 m개 재배열 → m! 개 동등 설정. tanh 같은 홀함수 활성에선 부호반전 대칭 추가.</li>
         <li>함의 — 동등 전역최소 m! 개, 비볼록성의 한 원인, 개별 가중치 값은 절대 의미 없음 (해석 위험). 단 모든 사본이 동등 성능이라 최적화가 더 어려워지지는 않음.</li>
       </ul>
 
-  
   <div class="qprog">
     <div class="qprog-track"><div class="qprog-fill" style="width:38.5%"></div></div>
     <div class="qprog-txt"><b>10</b> / 26 문항 · 최적화와 하이퍼파라미터</div>
@@ -277,6 +292,21 @@ function psetCopy(btn){
   else { fallback(t,done); }
   function fallback(text,cb){ var ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.left='-9999px'; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(ta); cb(); }
 }
+</script>
+<script>
+(function(){
+  function applyLang(l){
+    document.querySelectorAll('.lang').forEach(function(e){ e.hidden = !e.classList.contains(l); });
+    document.querySelectorAll('.langtog button').forEach(function(b){ b.classList.toggle('on', b.dataset.l===l); });
+  }
+  var saved='ko'; try{ saved=localStorage.getItem('psetLang')||'ko'; }catch(e){}
+  document.addEventListener('DOMContentLoaded', function(){
+    applyLang(saved);
+    document.querySelectorAll('.langtog button').forEach(function(b){
+      b.addEventListener('click', function(){ var l=b.dataset.l; try{localStorage.setItem('psetLang',l);}catch(e){} applyLang(l); });
+    });
+  });
+})();
 </script>
 </body>
 </html>
