@@ -4,8 +4,6 @@
    2극 의미색 유지: 구조(콘텐츠)=쿨/블루, 스타일(질감)=웜/레드.
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Spline+Sans+Mono:wght@400;500&display=swap');
-
 :root {
   /* 배경 / 잉크 — 토스 라이트 */
   --paper:        #F2F4F6;   /* 앱 배경 (옅은 회색) */

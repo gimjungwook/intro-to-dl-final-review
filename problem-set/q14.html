@@ -161,7 +161,7 @@
     // 축
     ctx.strokeStyle = 'rgba(38,34,28,.18)'; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(padL, padT); ctx.lineTo(padL, padT + plotH); ctx.lineTo(padL + plotW, padT + plotH); ctx.stroke();
-    ctx.font = '11px monospace'; ctx.fillStyle = C.faint;
+    ctx.font = '11px Pretendard, sans-serif'; ctx.fillStyle = C.faint;
     ctx.fillText('남은 신호', 6, padT + 6); ctx.fillText('1.0', 24, padT + 6); ctx.fillText('0', 36, padT + plotH + 4);
     ctx.fillText('시간 스텝 t →', padL + plotW - 90, padT + plotH + 24);
 
@@ -176,7 +176,7 @@
     curve(f, C.style);
 
     // 20스텝 잔존값 라벨
-    ctx.font = '12px monospace';
+    ctx.font = '12px Pretendard, sans-serif';
     ctx.fillStyle = C.structure; ctx.fillText('RNN t=20: ' + Math.pow(vanilla, 20).toFixed(3), padL + 10, padT + 18);
     ctx.fillStyle = C.style; ctx.fillText('LSTM t=20: ' + Math.pow(f, 20).toFixed(3), padL + 10, padT + 36);
   }
@@ -205,12 +205,13 @@ function psetCopy(btn){
   var cur=on?on.getAttribute('data-l'):'ko';
   var c=main.cloneNode(true);
   c.querySelectorAll('.lang').forEach(function(e){ if(!e.classList.contains(cur)) e.remove(); });
-  c.querySelectorAll('.widget,.qnav,.qprog,.katex-mathml,.copyfab,script,canvas').forEach(function(e){e.remove();});
+  c.querySelectorAll('.widget,.qnav,.qprog,.katex-mathml,.copyfab,script,canvas,.qhead h1,.qhead .kicker').forEach(function(e){e.remove();});
+  if(cur==='en'){ c.querySelectorAll('.skel-h,.checklist').forEach(function(e){e.remove();}); }
   c.style.position='absolute'; c.style.left='-99999px'; c.style.top='0';
   document.body.appendChild(c);
-  var t=(c.innerText||c.textContent||'').replace(/\n{3,}/g,'\n\n').trim();
+  var t=(c.innerText||c.textContent||'').replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n').trim();
   document.body.removeChild(c);
-  function done(){ btn.textContent='✅ 복사됨 ('+cur.toUpperCase()+')'; setTimeout(function(){btn.textContent='📋 본문 복사';},1500); }
+  function done(){ btn.textContent='\u2705 \ubcf5\uc0ac\ub428 ('+cur.toUpperCase()+')'; setTimeout(function(){btn.textContent='\ud83d\udccb \ubcf8\ubb38 \ubcf5\uc0ac';},1500); }
   if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(done,function(){fallback(t,done);}); }
   else { fallback(t,done); }
   function fallback(text,cb){ var ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.left='-9999px'; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(ta); cb(); }

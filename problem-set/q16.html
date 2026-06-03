@@ -34,7 +34,9 @@
     <p>“hyperparameter search에서 <strong>grid search</strong>와 <strong>random search</strong>란?” 각 정의 + <strong>왜 random이 종종 이기는지</strong>가 핵심 포인트.</p>
   </div>
 <div class="prose">
-<p>🎰 <strong>Hyperparameter</strong>(learning rate, 층 수, 정칙화 계수 등)는 gradient descent로 학습되지 않으니 바깥에서 탐색해야 한다. 두 기본 전략:</p>
+<p>🧩 먼저 용어부터. 모델에는 두 종류의 “설정값”이 있다. <strong>parameter</strong>(가중치)는 데이터를 보며 학습으로 <em>저절로</em> 정해진다. 반면 <strong>hyperparameter</strong>는 학습이 <em>시작되기 전에</em> 사람이 정하는 값으로, “어떻게 학습할지”를 좌우한다 — learning rate(보폭의 크기), 층 수, 정칙화 강도 등. 이건 gradient descent로 못 배운다(미분이 안 됨) 🚫. 그래서 여러 후보를 직접 시도해 보고 <strong>검증 데이터</strong>에서 가장 좋은 조합을 고르는 <strong>탐색(search)</strong>이 필요하다 🔎.</p>
+<div class="analogy">🍳 요리로 비유하면: 간(소금 양)은 맛보며 조절하니 학습되는 <b>parameter</b>다. 하지만 오븐 온도와 굽는 시간은 굽기 <em>전에</em> 정해야 하고 정답 공식이 없는 <b>hyperparameter</b>다. 그래서 여러 온도·시간으로 직접 구워 보고 가장 잘 된 조합을 고른다 — 이게 hyperparameter search다.</div>
+<p>🎰 그렇다면 그 “여러 후보를 어떻게 고를까?” 두 가지 기본 전략이 있다 — <strong>Hyperparameter</strong>(learning rate, 층 수, 정칙화 계수 등)를 탐색하는 grid search와 random search:</p>
 <div class="cmp">
   <div class="card gatys"><h4>🔲 Grid Search</h4><ul>
     <li>각 하이퍼파라미터마다 후보 값 몇 개를 정해 <b>모든 조합</b>(Cartesian product) 시도.</li>
@@ -57,7 +59,9 @@
     <p>“What are <strong>grid search</strong> and <strong>random search</strong>?” Definitions plus why random often wins.</p>
   </div>
 <div class="prose">
-<p>🎰 <strong>Hyperparameters</strong> (learning rate, depth, regularization strength) are not learned by gradient descent, so we search them externally. Two basic strategies:</p>
+<p>🧩 First, the terms. A model has two kinds of “settings”. <strong>Parameters</strong> (weights) are set <em>automatically</em> by training on data. <strong>Hyperparameters</strong> are chosen by a human <em>before</em> training and decide <em>how</em> training happens — learning rate, number of layers, regularization strength. They cannot be learned by gradient descent (they aren't differentiable) 🚫, so we must <strong>search</strong>: try several candidates and keep whichever does best on a <strong>validation set</strong> 🔎.</p>
+<div class="analogy">🍳 Like cooking: you adjust the salt by tasting, so salt is a learned <b>parameter</b>. But the oven temperature and baking time must be set <em>before</em> baking and have no formula — they are <b>hyperparameters</b>. So you bake a few with different settings and keep the best. That is hyperparameter search.</div>
+<p>🎰 So how do we pick those candidates? Two basic strategies for searching <strong>hyperparameters</strong> (learning rate, depth, regularization strength) — grid search and random search:</p>
 <div class="cmp">
   <div class="card gatys"><h4>🔲 Grid Search</h4><ul>
     <li>Pick a few values per hyperparameter; try <b>every combination</b> (Cartesian product).</li>
@@ -199,7 +203,7 @@
     ctx.beginPath(); ctx.arc(sx, sy, 5, 0, 7); ctx.fillStyle = C.structure; ctx.fill();
 
     // 시작점 라벨
-    ctx.font = '12px monospace'; ctx.fillStyle = C.faint;
+    ctx.font = '12px Pretendard, sans-serif'; ctx.fillStyle = C.faint;
     ctx.fillText('시작', sx + 8, sy - 6);
     ctx.fillStyle = C.style; ctx.fillText('경사하강 ' + (path.length - 1) + '걸음', 16, 24);
     ctx.fillStyle = C.structure; ctx.fillText('뉴턴 1걸음', 16, 44);
@@ -242,11 +246,11 @@
         ctx.beginPath(); ctx.arc(px, top + plotH, 2.6, 0, 7);
         ctx.fillStyle = C.style; ctx.fill();
       });
-      ctx.font = '13px monospace'; ctx.fillStyle = C.ink;
+      ctx.font = '13px Pretendard, sans-serif'; ctx.fillStyle = C.ink;
       ctx.fillText(title, ox, top - 12);
       // 서로 다른 x값 개수
       const distinct = new Set(pts.map(p => Math.round(p[0] * 100) / 100)).size;
-      ctx.font = '11px monospace'; ctx.fillStyle = C.faint;
+      ctx.font = '11px Pretendard, sans-serif'; ctx.fillStyle = C.faint;
       ctx.fillText('중요 축에서 시험한 서로 다른 값: ' + distinct, ox, top + plotH + 22);
     }
 
@@ -262,7 +266,7 @@
     panel(pad, '그리드 탐색 (' + g + '×' + g + ')', gpts);
     panel(pad * 2 + panelW, '무작위 탐색 (N=' + N + ')', rpts);
 
-    ctx.font = '11px monospace'; ctx.fillStyle = C.synth;
+    ctx.font = '11px Pretendard, sans-serif'; ctx.fillStyle = C.synth;
     ctx.fillText('황토색 곡선 = 중요 파라미터의 진짜 성능 (봉우리를 맞히는 게 목표)', pad, 30);
   }
 
@@ -303,12 +307,13 @@ function psetCopy(btn){
   var cur=on?on.getAttribute('data-l'):'ko';
   var c=main.cloneNode(true);
   c.querySelectorAll('.lang').forEach(function(e){ if(!e.classList.contains(cur)) e.remove(); });
-  c.querySelectorAll('.widget,.qnav,.qprog,.katex-mathml,.copyfab,script,canvas').forEach(function(e){e.remove();});
+  c.querySelectorAll('.widget,.qnav,.qprog,.katex-mathml,.copyfab,script,canvas,.qhead h1,.qhead .kicker').forEach(function(e){e.remove();});
+  if(cur==='en'){ c.querySelectorAll('.skel-h,.checklist').forEach(function(e){e.remove();}); }
   c.style.position='absolute'; c.style.left='-99999px'; c.style.top='0';
   document.body.appendChild(c);
-  var t=(c.innerText||c.textContent||'').replace(/\n{3,}/g,'\n\n').trim();
+  var t=(c.innerText||c.textContent||'').replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n').trim();
   document.body.removeChild(c);
-  function done(){ btn.textContent='✅ 복사됨 ('+cur.toUpperCase()+')'; setTimeout(function(){btn.textContent='📋 본문 복사';},1500); }
+  function done(){ btn.textContent='\u2705 \ubcf5\uc0ac\ub428 ('+cur.toUpperCase()+')'; setTimeout(function(){btn.textContent='\ud83d\udccb \ubcf8\ubb38 \ubcf5\uc0ac';},1500); }
   if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(done,function(){fallback(t,done);}); }
   else { fallback(t,done); }
   function fallback(text,cb){ var ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.left='-9999px'; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(ta); cb(); }

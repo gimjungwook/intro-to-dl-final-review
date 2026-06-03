@@ -153,22 +153,22 @@
       const h = Math.max(4, (Math.log2(val + 1) / maxLog) * maxH);
       ctx.fillStyle = color;
       ctx.fillRect(x, baseY - h, 150, h);
-      ctx.font = '600 15px monospace'; ctx.fillStyle = color;
+      ctx.font = '600 15px Pretendard, sans-serif'; ctx.fillStyle = color;
       ctx.textAlign = 'center';
       const txt = val >= 10000 ? val.toLocaleString('en-US') : ('' + val);
       ctx.fillText(txt, x + 75, baseY - h - 10);
-      ctx.font = '12px monospace'; ctx.fillStyle = C.faint;
+      ctx.font = '12px Pretendard, sans-serif'; ctx.fillStyle = C.faint;
       ctx.fillText(label, x + 75, baseY + 22);
       ctx.textAlign = 'left';
     }
     ctx.textAlign = 'center';
-    ctx.font = '12px monospace'; ctx.fillStyle = C.faint;
+    ctx.font = '12px Pretendard, sans-serif'; ctx.fillStyle = C.faint;
     ctx.fillText('구별 가능한 개념 수 (로그 스케일)', W / 2, 28);
     ctx.textAlign = 'left';
     bar(W / 2 - 200, '국소 표상 = n', local, C.structure);
     bar(W / 2 + 50, '분산 표상 = 2ⁿ', dist, C.style);
     // 유닛 패턴 미니 그림 (n개 칸, 한 예시 이진 코드)
-    ctx.font = '11px monospace'; ctx.fillStyle = C.faint;
+    ctx.font = '11px Pretendard, sans-serif'; ctx.fillStyle = C.faint;
     ctx.fillText('유닛 ' + n + '개의 한 활성 패턴 예:', 24, H - 18);
     const cw = Math.min(16, (W - 230) / n);
     for (let i = 0; i < n; i++) {
@@ -204,12 +204,13 @@ function psetCopy(btn){
   var cur=on?on.getAttribute('data-l'):'ko';
   var c=main.cloneNode(true);
   c.querySelectorAll('.lang').forEach(function(e){ if(!e.classList.contains(cur)) e.remove(); });
-  c.querySelectorAll('.widget,.qnav,.qprog,.katex-mathml,.copyfab,script,canvas').forEach(function(e){e.remove();});
+  c.querySelectorAll('.widget,.qnav,.qprog,.katex-mathml,.copyfab,script,canvas,.qhead h1,.qhead .kicker').forEach(function(e){e.remove();});
+  if(cur==='en'){ c.querySelectorAll('.skel-h,.checklist').forEach(function(e){e.remove();}); }
   c.style.position='absolute'; c.style.left='-99999px'; c.style.top='0';
   document.body.appendChild(c);
-  var t=(c.innerText||c.textContent||'').replace(/\n{3,}/g,'\n\n').trim();
+  var t=(c.innerText||c.textContent||'').replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n').trim();
   document.body.removeChild(c);
-  function done(){ btn.textContent='✅ 복사됨 ('+cur.toUpperCase()+')'; setTimeout(function(){btn.textContent='📋 본문 복사';},1500); }
+  function done(){ btn.textContent='\u2705 \ubcf5\uc0ac\ub428 ('+cur.toUpperCase()+')'; setTimeout(function(){btn.textContent='\ud83d\udccb \ubcf8\ubb38 \ubcf5\uc0ac';},1500); }
   if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(done,function(){fallback(t,done);}); }
   else { fallback(t,done); }
   function fallback(text,cb){ var ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.left='-9999px'; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(ta); cb(); }
