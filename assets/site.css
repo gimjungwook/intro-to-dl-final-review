@@ -28,9 +28,10 @@
   --synth-bg:     #FEF3DD;
 
   /* 타이포 — 토스는 전부 산세리프(Pretendard) */
-  --serif:  'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', system-ui, sans-serif;
-  --sans:   'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', system-ui, sans-serif;
-  --mono:   'Spline Sans Mono', 'SFMono-Regular', ui-monospace, monospace;
+  --serif:  'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
+  --sans:   'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
+  /* Latin/숫자는 Spline mono, 한글은 Spline에 없으므로 Pretendard로 폴백(OS 무관 일관) */
+  --mono:   'Spline Sans Mono', 'Pretendard', 'SFMono-Regular', 'Malgun Gothic', ui-monospace, monospace;
 
   --measure: 40rem;      /* 본문 읽기 폭 */
   --wide:    72rem;      /* 위젯 등 넓은 폭 */
