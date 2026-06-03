@@ -17,7 +17,7 @@
   h1 em { color: var(--style,#C0492E); font-style:normal; }
   .sub { color: var(--ink-soft); font-size:.94rem; line-height:1.65; }
   .sub b { color: var(--ink); }
-  .bar { position: sticky; top:0; z-index:10; background: rgba(255,255,255,.95); backdrop-filter: blur(8px); border-bottom:1px solid var(--line); padding:.8rem 0; margin:1.2rem 0 1.6rem; display:flex; flex-wrap:wrap; gap:.5rem; align-items:center; }
+  .qa-bar { position: sticky; top:0; z-index:10; background: rgba(255,255,255,.95); backdrop-filter: blur(8px); border-bottom:1px solid var(--line); padding:.8rem 0; margin:1.2rem 0 1.6rem; display:flex; flex-wrap:wrap; gap:.5rem; align-items:center; }
   .prog { font-family: var(--mono); font-size:.8rem; color: var(--ink-soft); margin-right:auto; }
   .prog b { color: var(--structure); }
   .btn { font-family: var(--mono); font-size:.78rem; padding:.55rem .85rem; border-radius:9px; border:1px solid var(--line); background:#fff; color: var(--ink); cursor:pointer; transition:.15s; }
@@ -64,7 +64,7 @@
   <h1>26문항 <em>직접 답안 작성</em> ✍</h1>
   <p class="sub">머리로 먼저 답을 쓴다. 각 칸은 브라우저에 자동 저장(localStorage). 다 쓰면 위 <b>“채점용 내보내기”</b>로 질문 + 채점 기준 + 영어 모범답안 + 내 답을 한 덩어리 JSON으로 복사해, 다른 AI에 붙여넣어 채점시킨다. “힌트”는 채점 전엔 안 보는 걸 권장.</p>
 
-  <div class="bar">
+  <div class="qa-bar">
     <span class="prog">작성 <b id="pdone">0</b> / 26</span>
     <button class="btn primary" id="export">📋 채점용 내보내기</button>
     <button class="btn" id="exportJson">JSON만 복사</button>
