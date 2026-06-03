@@ -179,5 +179,21 @@
     });
   });
 </script>
+<button class="copyfab" onclick="psetCopy(this)">📋 본문 복사</button>
+<script>
+function psetCopy(btn){
+  var main=document.querySelector('main.qpage'); if(!main) return;
+  var c=main.cloneNode(true);
+  c.querySelectorAll('.widget,.qnav,.qprog,.katex-mathml,.copyfab,script,canvas').forEach(function(e){e.remove();});
+  c.style.position='absolute'; c.style.left='-99999px'; c.style.top='0';
+  document.body.appendChild(c);
+  var t=(c.innerText||c.textContent||'').replace(/\n{3,}/g,'\n\n').trim();
+  document.body.removeChild(c);
+  function done(){ btn.textContent='✅ 복사됨'; setTimeout(function(){btn.textContent='📋 본문 복사';},1500); }
+  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(done,function(){fallback(t,done);}); }
+  else { fallback(t,done); }
+  function fallback(text,cb){ var ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.left='-9999px'; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(ta); cb(); }
+}
+</script>
 </body>
 </html>
