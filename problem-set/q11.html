@@ -35,6 +35,8 @@
   </div>
 
 <div class="prose">
+<div class="analogy">🧲 한 줄 직관: <b>prior(사전)</b>는 모델한테 미리 주는 <b>규칙</b>이다. <b>약한 규칙</b> = "가중치를 되도록 작게 둬"(어겨도 됨, 벌점만 받음). <b>무한히 강한 규칙</b> = "이런 모양의 가중치는 아예 금지"(어길 수조차 없음). CNN은 완전연결망에 "이런 가중치만 허용!"이라는 절대 규칙 두 개를 박아 넣은 모델이다.</div>
+<p>🔍 아주 작은 예: 완전연결망에선 출력 뉴런 하나가 입력 100만 픽셀 <em>전부</em>와 제멋대로 연결될 수 있다. CNN은 여기에 두 규칙을 강제한다 — ① “<b>가까운 3×3 픽셀만 봐라</b>”(나머지 연결은 0으로 금지), ② “<b>모든 위치에서 똑같은 3×3 자(=kernel)를 써라</b>”. 이 두 규칙을 어기는 가중치는 CNN이 <em>표현조차</em> 못 한다. 바로 이 “표현조차 못 한다”가 <strong>무한히 강한 사전</strong>의 뜻이다. 아래에서 단계별로 본다 👇.</p>
 <p>🧲 이 질문은 CNN을 새로운 시각에서 바라보게 한다 — CNN을 단순히 "이미지에 잘 맞는 모델"이 아니라 <strong>"완전연결망에 매우 강한 사전 지식을 주입한 것"</strong>으로 해석하는 관점이다.</p>
 
 <h4>📚 Prior의 세기란 무엇인가</h4>
@@ -71,6 +73,8 @@
     <p>“How is the <strong>infinitely strong prior</strong> added to a CNN?” Define prior strength, then read CNN's two constraints (locality, sharing) as a prior.</p>
   </div>
 <div class="prose">
+<div class="analogy">🧲 One-line intuition: a <b>prior</b> is a <b>rule</b> you give the model in advance. A <b>weak rule</b> = "keep the weights small if you can" (breakable, just penalized). An <b>infinitely strong rule</b> = "weights of this shape are simply forbidden" (cannot be broken at all). A CNN bakes two such absolute rules into a fully connected layer.</div>
+<p>🔍 A tiny example: in a fully connected net one output neuron may connect to <em>all</em> million input pixels however it likes. A CNN enforces two rules — ① “<b>look only at a nearby 3×3 patch</b>” (all other connections forced to 0), and ② “<b>use the same 3×3 ruler (kernel) at every position</b>”. Weights that break these rules cannot even be <em>represented</em> by a CNN — and that "cannot even be represented" is exactly what <strong>an infinitely strong prior</strong> means. We build it up step by step below 👇.</p>
 <p>🧲 A <strong>prior</strong> is a distribution over parameters saying which values are plausible before data; its <em>strength</em> is how narrow it is.</p>
 <div class="symbols"><tbody>
 <tr><td>🪶 Weak prior</td><td>wide distribution — mildly discourages, e.g. L2's Gaussian prior.</td></tr>
