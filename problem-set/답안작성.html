@@ -47,6 +47,7 @@
   ul.kg li { font-size:.83rem; color: var(--ink-soft); line-height:1.5; margin:.2rem 0; }
   ul.kg li::marker { color: var(--structure-lo); }
   .ma-en { padding:.6rem .75rem; background:#fff6f3; border-left:2px solid var(--style,#C0492E); border-radius:8px; font-size:.81rem; line-height:1.55; color:#6b3a2e; }
+  .ma-ko { padding:.6rem .75rem; background:#eef4ff; border-left:2px solid var(--structure); border-radius:8px; font-size:.86rem; line-height:1.6; color:#1d3a5f; margin-bottom:.6rem; }
   .toast { position: fixed; bottom:1.4rem; left:50%; transform:translateX(-50%) translateY(20px); background: var(--ink,#222); color:#fff; font-family: var(--mono); font-size:.82rem; padding:.7rem 1.2rem; border-radius:11px; opacity:0; transition:.25s; pointer-events:none; z-index:50; }
   .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
   dialog { border:1px solid var(--line); border-radius:16px; padding:0; max-width:760px; width:92%; box-shadow: var(--shadow-plate); }
@@ -71,6 +72,7 @@
   ul.kg li { font-size:1rem; font-weight:450; color:var(--ink-soft); line-height:1.6; }
   .hint .hl { font-size:.82rem; font-weight:800; }
   .ma-en { font-size:1rem; font-weight:450; line-height:1.65; }
+  .ma-ko { font-size:1rem; font-weight:450; line-height:1.7; }
   .prog { font-size:.98rem; font-weight:600; }
   .btn { font-size:.9rem; font-weight:700; letter-spacing:0; }
   .dlg-head h4 { font-size:1.25rem; font-weight:800; }
@@ -124,7 +126,7 @@ function render(){
       '<div class="qen">'+esc(d.qtext)+'</div>'+
       '<textarea data-q="'+d.q+'" placeholder="여기에 내 답을 작성…">'+esc(ans)+'</textarea>'+
       '<div class="meta-row"><span class="hint-t" data-h="'+d.q+'">▸ 힌트(채점 기준 + 영어 모범답안) 보기</span><span class="wc" id="wc-'+d.q+'"></span></div>'+
-      '<div class="hint" id="hint-'+d.q+'"><div class="hl">시험 답안 골격</div><ul class="kg">'+d.skeleton.map(b=>'<li>'+esc(b)+'</li>').join('')+'</ul><div class="hl">🎯 Model Answer (English)</div><div class="ma-en">'+esc(d.modelEn)+'</div></div>'+
+      '<div class="hint" id="hint-'+d.q+'"><div class="hl">시험 답안 골격</div><ul class="kg">'+d.skeleton.map(b=>'<li>'+esc(b)+'</li>').join('')+'</ul><div class="hl">🇰🇷 모범답안 (한국어)</div><div class="ma-ko">'+esc(d.modelKo||'')+'</div><div class="hl">🎯 Model Answer (English)</div><div class="ma-en">'+esc(d.modelEn)+'</div></div>'+
     '</div>';
   }
   out.innerHTML=html;
@@ -151,7 +153,7 @@ function buildPayload(){
     exam_date:'2026-06-04',
     total:data.length, answered:countDone(),
     answers:data.map(d=>({ q:d.q, step:d.step, part:d.partName, title:d.title,
-      question_en:d.qtext, reference_points:d.skeleton, model_answer_en:d.modelEn,
+      question_en:d.qtext, reference_points:d.skeleton, model_answer_ko:d.modelKo||'', model_answer_en:d.modelEn,
       my_answer:getAns(d.q).trim() }))
   };
 }

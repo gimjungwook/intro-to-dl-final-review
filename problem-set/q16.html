@@ -100,6 +100,11 @@
         <p class="ma-en">Both search hyperparameters that gradient descent cannot tune. <strong>Grid search</strong> picks a few candidate values per hyperparameter and tries every combination (the Cartesian product), so the number of trials grows exponentially with the number of hyperparameters. <strong>Random search</strong> instead samples each hyperparameter from a distribution for a fixed number of trials. Random usually wins because typically only a few hyperparameters matter: a 3-by-3 grid tests only 3 distinct values of each parameter, whereas 9 random trials test 9 distinct values of the important one — exploring it three times more finely for the same budget. Bayesian optimisation is the smarter successor, but random search remains a strong, trivially parallelisable baseline.</p>
       </div>
 
+  <div class="model-answer">
+        <div class="ma-label">🇰🇷 모범답안 (한국어)</div>
+        <p class="ma-ko ma-en">둘 다 경사하강이 못 맞추는 하이퍼파라미터를 탐색한다. 그리드 탐색은 하이퍼파라미터마다 몇 개의 후보값을 정해 모든 조합(데카르트 곱)을 시도하므로 시도 수가 하이퍼파라미터 수에 지수적으로 증가한다. 무작위 탐색은 대신 각 하이퍼파라미터를 분포에서 정해진 횟수만큼 표본추출한다. 보통 소수의 하이퍼파라미터만 중요하기 때문에 무작위가 유리하다: 3×3 그리드는 각 파라미터의 서로 다른 값을 3개만 시험하지만, 9번의 무작위 시도는 중요한 파라미터의 서로 다른 값을 9개 시험해 같은 예산으로 3배 더 촘촘히 탐색한다. 베이지안 최적화가 더 똑똑한 후속이지만, 무작위 탐색은 병렬화가 자명한 강력한 기준선으로 남아 있다.</p>
+      </div>
+
   <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>그리드 = 후보값들의 모든 조합. 무작위 = 분포에서 N번 추출.</li>

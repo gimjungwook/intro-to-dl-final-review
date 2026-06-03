@@ -131,6 +131,11 @@
         <p class="ma-en">Both are built from the Transformer but use different halves and objectives. <strong>BERT</strong> is a Transformer <strong>encoder</strong> with <strong>bidirectional</strong> self-attention (each token sees both left and right context), trained by masked language modelling (predict masked tokens) plus next-sentence prediction; it excels at <strong>understanding</strong> tasks that need full context — classification, named-entity recognition, extractive question answering, sentence embeddings — but is not naturally generative. <strong>GPT</strong> is a Transformer <strong>decoder</strong> with <strong>unidirectional</strong> (causally masked) self-attention (each token sees only previous tokens), trained as an autoregressive language model (predict the next token); it excels at <strong>generation</strong> — completion, dialogue, open-ended and few-shot tasks. In short: use BERT for understanding/encoding tasks and GPT for generation.</p>
       </div>
 
+  <div class="model-answer">
+        <div class="ma-label">🇰🇷 모범답안 (한국어)</div>
+        <p class="ma-ko ma-en">둘 다 트랜스포머로 만들어졌지만 다른 절반과 목표를 쓴다. BERT는 양방향 셀프 어텐션을 가진 트랜스포머 인코더로(각 토큰이 좌우 문맥을 모두 봄), 마스크 언어모델링(가려진 토큰 예측)과 다음 문장 예측으로 학습한다; 전체 문맥이 필요한 이해 과제 — 분류, 개체명 인식, 추출형 질의응답, 문장 임베딩 — 에 강하지만 본질적으로 생성형은 아니다. GPT는 단방향(인과 마스크) 셀프 어텐션을 가진 트랜스포머 디코더로(각 토큰이 이전 토큰만 봄), 자기회귀 언어모델(다음 토큰 예측)로 학습한다; 생성 — 완성, 대화, 개방형 및 퓨샷 과제 — 에 강하다. 요약하면, 이해/인코딩 과제엔 BERT, 생성엔 GPT를 쓴다.</p>
+      </div>
+
   <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>공통 Transformer. BERT = 인코더·양방향·마스크LM, GPT = 디코더·단방향(인과)·자기회귀LM.</li>

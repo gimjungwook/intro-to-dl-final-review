@@ -74,6 +74,11 @@
         <p class="ma-en">An adversarial example is an input carrying a tiny, deliberately crafted perturbation — imperceptible to a human — that makes a high-accuracy network <strong>misclassify with high confidence</strong> (e.g. FGSM, which nudges each pixel slightly in the direction that increases the loss). The main point is its cause: <strong>not excessive non-linearity, but excessive linearity in high dimensions</strong>. For a linear response, moving each input dimension by a tiny amount in the gradient's direction shifts the output by an amount that grows with the input dimension — each component changes negligibly, yet thousands of aligned changes sum to a large shift. This is both a security threat and, usefully, a regulariser: adversarial training pushes decision boundaries away from the data and improves generalisation.</p>
       </div>
 
+  <div class="model-answer">
+        <div class="ma-label">🇰🇷 모범답안 (한국어)</div>
+        <p class="ma-ko ma-en">적대적 예제(adversarial example)는 사람 눈에 안 보일 만큼 작지만 의도적으로 설계된 섭동을 더해, 고정확도 모델이 높은 확신으로 오분류하게 만드는 입력이다(예: 손실을 키우는 방향으로 각 픽셀을 살짝 미는 FGSM). 핵심은 그 원인이 과도한 비선형성이 아니라 고차원에서의 과도한 선형성이라는 점이다. 선형 반응에서 각 입력 차원을 기울기 방향으로 조금씩만 밀면 출력 변화는 차원 수에 비례해 커진다 — 성분 하나의 변화는 미미하지만 수만 개의 정렬된 변화가 합쳐져 큰 이동이 된다. 이는 보안 위협이면서 동시에 유용한 정칙화이기도 하다: 적대적 훈련은 결정 경계를 데이터에서 멀리 밀어 일반화를 높인다.</p>
+      </div>
+
   <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>정의 — 사람 눈에 안 보이는 의도적 미세 섭동으로 고정확도 모델을 고확신 오분류시키는 입력. 대표 생성법 FGSM (손실 증가 방향으로 각 픽셀 살짝 이동).</li>

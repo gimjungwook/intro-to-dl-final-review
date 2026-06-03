@@ -92,6 +92,11 @@
         <p class="ma-en">A prior is a distribution over parameters that says which values are plausible before seeing data, and its strength is how narrow that distribution is. A weak prior (e.g. L2's Gaussian) merely discourages some values, whereas an <strong>infinitely strong prior assigns zero probability to certain parameters, forbidding them entirely</strong>. A CNN is exactly a fully connected layer carrying an infinitely strong prior on its weights: (1) a unit's weights must be zero outside a small receptive field (locality), and (2) the weights of neighbouring spatial positions must be identical (sharing) — any configuration that violates these has zero prior probability and can never be learned. Pooling is likewise an infinitely strong prior that each unit should be invariant to small translations. This view predicts when a CNN helps (when the prior matches the data, e.g. natural images) versus hurts (tabular or graph data, where it underfits), and warns that comparing a CNN against a fully connected net is unfair when the CNN's built-in prior happens to suit the task.</p>
       </div>
 
+  <div class="model-answer">
+        <div class="ma-label">🇰🇷 모범답안 (한국어)</div>
+        <p class="ma-ko ma-en">사전(prior)은 데이터를 보기 전에 어떤 파라미터 값이 그럴듯한지에 대한 분포이고, 그 강도는 분포가 얼마나 좁은가다. 약한 사전(예: L2의 가우시안)은 일부 값을 억제할 뿐이지만, 무한히 강한 사전은 특정 파라미터에 0 확률을 줘 완전히 금지한다. CNN은 정확히, 가중치에 무한히 강한 사전을 건 완전연결층이다: (1) 유닛의 가중치는 작은 수용영역 밖에선 0이어야 하고(국소성), (2) 이웃 공간 위치의 가중치는 동일해야 한다(공유) — 이를 어기는 설정은 사전 확률이 0이라 결코 학습될 수 없다. 풀링도 각 유닛이 작은 평행이동에 불변해야 한다는 무한히 강한 사전이다. 이 관점은 사전이 데이터와 맞을 때(자연 이미지) CNN이 도움 되고 안 맞을 때(표/그래프 데이터) 과소적합함을 예측하며, CNN의 내장 사전이 마침 과제에 맞을 때 완전연결망과 비교하는 것은 불공정함을 경고한다.</p>
+      </div>
+
   <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>사전의 세기 = 분포의 좁기. 무한히 강한 사전 = 일부 파라미터에 확률 0(금지).</li>

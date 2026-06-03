@@ -92,6 +92,11 @@
         <p class="ma-en">A radial basis function (RBF) network has hidden units that respond to the <strong>distance from a prototype centre</strong>: each unit's activation peaks when the input matches the centre and falls off as a Gaussian when the input moves away. Each unit fires only near its centre and saturates to zero far away. It resists adversarial examples precisely because it is <strong>not linear</strong>: there is no linear path along which tiny per-dimension perturbations can accumulate into a large response — moving the input in any direction merely takes it further from the centre and <em>lowers</em> the activation. As a result the network is confident only near the training data and effectively reports "I don't know" elsewhere, so adversarial inputs are rejected with low confidence. The cost is lower accuracy and harder training — a clear robustness-accuracy trade-off.</p>
       </div>
 
+  <div class="model-answer">
+        <div class="ma-label">🇰🇷 모범답안 (한국어)</div>
+        <p class="ma-ko ma-en">방사 기저 함수(RBF) 네트워크는 은닉 유닛이 프로토타입 중심으로부터의 거리에 반응한다 — 입력이 중심과 일치하면 활성이 최대가 되고 멀어지면 가우시안으로 0까지 떨어진다. 각 유닛은 자기 중심 근처에서만 켜지고 멀리서는 0으로 포화한다. 적대적 예제에 강한 이유는 바로 선형이 아니기 때문이다: 차원별 미세 섭동이 큰 반응으로 누적될 선형 경로가 없어, 입력을 어느 방향으로 밀어도 중심에서 멀어져 활성이 오히려 줄어든다. 그 결과 네트워크는 훈련 데이터 근처에서만 확신하고 그 밖에서는 사실상 '모른다'고 답해, 적대적 입력을 낮은 확신으로 거부한다. 대가는 낮은 정확도와 어려운 학습 — 강건성과 정확도의 명확한 트레이드오프다.</p>
+      </div>
+
   <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>RBF 유닛 — 중심점으로부터의 거리에 가우시안으로 반응, 멀면 0으로 포화. 입력 공간의 좁은 영역만 담당.</li>

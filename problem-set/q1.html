@@ -118,6 +118,11 @@
         <p class="ma-en">When the model has far more capacity than the small dataset can constrain, it overfits by memorising noise, so the cure is to <strong>inject prior knowledge that shrinks the hypothesis space</strong>. The main approaches are: (1) parameter-norm penalties — L2 weight decay and L1 sparsity; (2) parameter sharing or tying to reduce the number of free parameters; (3) data augmentation and noise injection (on inputs, weights, hidden units via dropout, and labels via label smoothing); (4) early stopping, which is equivalent to L2 under a quadratic approximation; and (5) transfer learning or unsupervised pre-training, which import knowledge learned from external data. The smaller the dataset, the more weight these priors should carry, and transfer learning becomes especially valuable.</p>
       </div>
 
+  <div class="model-answer">
+        <div class="ma-label">🇰🇷 모범답안 (한국어)</div>
+        <p class="ma-ko ma-en">모델 용량(capacity)이 작은 데이터가 제약할 수 있는 수준보다 훨씬 크면 잡음까지 외워 과적합하므로, 처방은 가설 공간을 좁히는 사전 지식(prior)을 주입하는 것이다. 주요 접근은 (1) 파라미터 노름 벌점 — L2 가중치 감쇠(weight decay)와 L1 희소성, (2) 자유 파라미터 수를 줄이는 파라미터 공유(sharing)나 묶기(tying), (3) 데이터 증강과 노이즈 주입(입력, 가중치, 드롭아웃으로 은닉 유닛, 라벨 평활로 라벨), (4) 이차 근사 아래 L2와 동등한 조기 종료(early stopping), (5) 외부 데이터에서 배운 지식을 가져오는 전이학습(transfer learning)이나 비지도 사전훈련이다. 데이터가 적을수록 이 사전들의 비중을 키워야 하며 특히 전이학습의 효과가 커진다.</p>
+      </div>
+
   <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>핵심 한 줄 — 데이터 부족 = 고분산 과적합. 정칙화 = 사전 지식 주입으로 가설 공간 축소.</li>

@@ -87,6 +87,11 @@
         <p class="ma-en">The core assumption is that the structure of the input distribution carries information about the label distribution: the factors of variation that shape the inputs overlap substantially with the factors we want to predict. Examples of one class cluster together or lie on a shared manifold, and unsupervised learning discovers these clusters, manifolds and factors without labels, producing a <strong>good representation of the input</strong> in which the decision boundary becomes simple — so the downstream classifier needs fewer labels and generalises better. In practice it is used as pre-training/initialisation (learn from abundant unlabelled data, then fine-tune) or as semi-supervised shared representations, e.g. word embeddings from a language model or edges and textures from an autoencoder. The caveat: it helps only when the unsupervised features are actually relevant to the label — if the input distribution structure and the label predictor are unrelated, it may not help.</p>
       </div>
 
+  <div class="model-answer">
+        <div class="ma-label">🇰🇷 모범답안 (한국어)</div>
+        <p class="ma-ko ma-en">핵심 가정은 입력 분포의 구조가 라벨 분포에 대한 정보를 담는다는 것이다: 입력을 빚는 변동 요인이 우리가 예측하려는 요인과 상당히 겹친다. 한 클래스의 표본들은 함께 모이거나 공유 다양체 위에 놓이고, 비지도 학습은 라벨 없이 이 군집, 다양체, 요인을 발견해 결정 경계가 단순해지는 좋은 입력 표상을 만든다 — 그래서 다운스트림 분류기가 더 적은 라벨로 더 잘 일반화한다. 실무에선 사전훈련/초기화(풍부한 비라벨 데이터에서 배우고 미세조정)나 준지도 공유 표상으로 쓰며, 언어모델의 단어 임베딩이나 오토인코더의 에지/질감이 예다. 단서: 비지도 특징이 실제로 라벨과 관련 있을 때만 도움이 된다 — 입력 분포 구조와 라벨 예측기가 무관하면 도움이 안 될 수 있다.</p>
+      </div>
+
   <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>핵심 — 입력 분포 구조가 라벨에 대한 정보를 담음. 군집/매니폴드/변동 인자가 라벨과 겹침.</li>

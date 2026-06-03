@@ -84,6 +84,11 @@
         <p class="ma-en">SFA is an unsupervised feature-learning method built on the <strong>slowness principle</strong>: the meaningful high-level features of an environment vary slowly compared with the raw sensory input — a zebra crossing the view flips a pixel rapidly between black and white, yet "a zebra is present" changes slowly. SFA learns features from a time series that change as slowly as possible, minimising the squared difference between consecutive time steps' feature values. To rule out the trivial constant solution it imposes <strong>zero mean and unit variance</strong>, and to stop every feature collapsing onto the same slow signal it requires the features to be <strong>decorrelated/orthogonal</strong>. Linear SFA reduces to an eigenvalue problem, and the slow features it recovers correspond to invariant representations such as complex cells — a classic example of learning invariances without labels.</p>
       </div>
 
+  <div class="model-answer">
+        <div class="ma-label">🇰🇷 모범답안 (한국어)</div>
+        <p class="ma-ko ma-en">느린 특징 분석(SFA)은 느림 원리(slowness principle)에 기반한 비지도 특징 학습법이다: 환경의 의미 있는 고수준 특징은 원시 감각 입력에 비해 천천히 변한다 — 얼룩말이 화면을 가로지르면 픽셀은 흑백을 빠르게 오가지만 '얼룩말이 있다'는 천천히 변한다. SFA는 시계열에서 가능한 한 천천히 변하는 특징을 학습하며, 연속한 시간 단계의 특징값 차이의 제곱을 최소화한다. 자명한 상수 해를 배제하려 평균 0, 분산 1을 부과하고, 모든 특징이 같은 느린 신호로 붕괴하는 것을 막으려 특징들이 서로 비상관/직교하도록 요구한다. 선형 SFA는 고윳값 문제로 귀결되며, 복원되는 느린 특징은 복합 세포(complex cell) 같은 불변 표상에 해당한다 — 라벨 없이 불변성을 배우는 고전적 예다.</p>
+      </div>
+
   <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>느림 원리 — 고수준 특징은 원시 입력보다 천천히 변함(얼룩말 픽셀 vs 존재).</li>

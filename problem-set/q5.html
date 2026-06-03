@@ -90,6 +90,11 @@
         <p class="ma-en">The three differ only in how many examples estimate the gradient per update. <strong>Batch (full) gradient descent</strong> uses the whole training set: the gradient is exact and convergence smooth, but each update needs a full pass and large memory, which is impractical on large data. <strong>Stochastic gradient descent (SGD)</strong> uses a single example per update: updates are frequent and the noise helps escape shallow minima and saddle points, but the gradient is high-variance and cannot exploit GPU vectorisation. <strong>Mini-batch gradient descent</strong> uses m examples (typically 32-256) and is the modern standard, because the estimate's accuracy improves only as the square root of the batch size — diminishing returns favour small-ish batches — and GPUs process the whole batch in parallel; its residual noise even acts as a mild regulariser by steering training toward flat minima that generalise better.</p>
       </div>
 
+  <div class="model-answer">
+        <div class="ma-label">🇰🇷 모범답안 (한국어)</div>
+        <p class="ma-ko ma-en">셋은 한 번의 갱신에 몇 개의 표본으로 기울기를 추정하느냐만 다르다. 배치(전체) 경사하강은 전체 훈련셋을 써 기울기가 정확하고 수렴이 매끄럽지만, 갱신마다 전체 순회와 큰 메모리가 필요해 대규모 데이터에선 비현실적이다. 확률적 경사하강(SGD)은 갱신당 한 표본만 써 갱신이 잦고 잡음이 얕은 최소점과 안장점 탈출을 돕지만, 기울기 분산이 크고 GPU 벡터화를 못 쓴다. 미니배치 경사하강은 m개(보통 32~256) 표본을 써 현대 표준인데, 추정 정확도가 배치 크기의 제곱근으로만 좋아져(수확 체감) 작은 배치가 유리하고 GPU가 배치 전체를 병렬 처리하기 때문이다. 남은 잡음은 평평한 최소점으로 유도해 일반화를 돕는 약한 정칙화 역할도 한다.</p>
+      </div>
+
   <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>차이는 업데이트당 예제 수: 전체 / 1개 / m개.</li>

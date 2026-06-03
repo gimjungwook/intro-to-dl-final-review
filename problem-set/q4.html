@@ -99,6 +99,11 @@
         <p class="ma-en"><strong>Gradient descent</strong> is a first-order method that moves the parameters against the gradient by a fixed step size (learning rate). It is cheap per step but blind to curvature, so the learning rate must be tuned by hand and it zig-zags on ill-conditioned surfaces. <strong>Newton's method</strong> is second-order: it uses the inverse Hessian to rescale each direction by its curvature, reaching the minimum of a pure quadratic in a single step and being immune to ill-conditioning. In deep learning Newton is rarely usable: inverting the Hessian costs cubic time in the number of parameters (millions to billions), it can be attracted to saddle points when the Hessian is not positive-definite, and the local quadratic model is inaccurate on non-convex loss surfaces. We therefore use cheap curvature-aware first-order methods such as momentum, RMSProp, and Adam.</p>
       </div>
 
+  <div class="model-answer">
+        <div class="ma-label">🇰🇷 모범답안 (한국어)</div>
+        <p class="ma-ko ma-en">경사하강법(gradient descent)은 고정 보폭(학습률)만큼 기울기 반대 방향으로 움직이는 1차 방법이다. 스텝당 비용은 싸지만 곡률을 모르므로 학습률을 손으로 맞춰야 하고 조건수가 나쁜 곡면에서 지그재그한다. 뉴턴법(Newton's method)은 2차 방법으로, 헤시안 역행렬로 각 방향을 곡률에 맞춰 재조정해 순수 이차함수의 최소점에 한 번에 도달하고 나쁜 조건수에 영향받지 않는다. 딥러닝에서 뉴턴법은 거의 못 쓴다: 헤시안 역행렬 계산이 파라미터 수(수백만~수십억)의 3제곱 비용이고, 헤시안이 양정치가 아니면 안장점에 끌리며, 비볼록 손실면에서 국소 이차 근사가 부정확하다. 그래서 모멘텀, RMSProp, Adam 같은 값싼 곡률 인식형 1차 방법을 쓴다.</p>
+      </div>
+
   <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>경사하강 = 1차(기울기만), 뉴턴 = 2차(곡률까지). 경사하강은 보폭 사람이 정해야, 뉴턴은 곡률이 자동 결정.</li>

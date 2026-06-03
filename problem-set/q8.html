@@ -78,6 +78,11 @@
         <p class="ma-en">Weight-space symmetry is the fact that <strong>many different weight settings implement exactly the same input-output function</strong>, so the network is non-identifiable — you cannot recover unique weights from the function. The most common case is hidden-unit permutation: swapping the incoming and outgoing weights of two hidden units leaves the computed function unchanged, so m units yield at least m! (m factorial) equivalent configurations; odd activations such as tanh add a sign-flip symmetry. The consequences are that the loss has at least m! equivalent global minima, that this is one source of non-convexity, and that an individual weight value has no absolute meaning — but since all copies are equivalent, the symmetry itself does not make optimisation harder.</p>
       </div>
 
+  <div class="model-answer">
+        <div class="ma-label">🇰🇷 모범답안 (한국어)</div>
+        <p class="ma-ko ma-en">가중치 공간 대칭성(weight space symmetry)은 서로 다른 여러 가중치 설정이 정확히 같은 입출력 함수를 구현해, 네트워크가 식별 불가능(non-identifiable)하다는 사실이다 — 함수로부터 유일한 가중치를 복원할 수 없다. 가장 흔한 경우는 은닉 유닛 치환이다: 두 은닉 유닛의 입력 가중치와 출력 가중치를 맞바꿔도 계산 함수가 변하지 않아, m개 유닛은 최소 m!(m 팩토리얼)개의 등가 설정을 낳고, tanh 같은 홀함수는 부호 반전 대칭을 더한다. 결과적으로 손실은 최소 m!개의 등가 전역 최소점을 가지며, 이것이 비볼록성의 한 원인이고, 개별 가중치 값은 절대적 의미가 없다 — 다만 모든 복제가 등가이므로 대칭성 자체가 최적화를 어렵게 하진 않는다.</p>
+      </div>
+
   <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>정의 — 다른 가중치가 같은 함수를 구현(비식별 모델).</li>

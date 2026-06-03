@@ -108,6 +108,11 @@
         <p class="ma-en">In a vanilla RNN the hidden state is multiplied by the same recurrent weight matrix at every step, so the influence of an input k steps back scales like the matrix multiplied k times; if the largest eigenvalue is below 1 the gradient <strong>vanishes exponentially</strong> (and the tanh derivative, being below 1, worsens it), so long-range dependencies are lost. The LSTM fixes this with a <strong>cell state that is updated additively and gated</strong>: the new cell state is the previous cell state weighted by a forget gate plus a new candidate weighted by an input gate. This additive self-loop is the <strong>Constant Error Carousel</strong> — when the forget gate is close to 1 the cell state is preserved and the gradient flows along it at roughly 1, with no repeated matrix multiplication, so it does not vanish. The forget, input, and output gates let the network learn <em>when</em> to keep, write, and expose information.</p>
       </div>
 
+  <div class="model-answer">
+        <div class="ma-label">🇰🇷 모범답안 (한국어)</div>
+        <p class="ma-ko ma-en">기본 RNN은 매 단계 은닉 상태에 같은 순환 가중치 행렬을 곱하므로 k단계 전 입력의 영향이 행렬을 k번 곱한 만큼 스케일된다; 최대 고윳값이 1보다 작으면 기울기가 지수적으로 소실되고(1보다 작은 tanh 도함수가 더 악화) 장기 의존성을 잃는다. LSTM은 덧셈으로 갱신되고 게이트로 제어되는 셀 상태(cell state)로 이를 해결한다: 새 셀 상태 = 망각 게이트로 가중한 이전 셀 상태 + 입력 게이트로 가중한 새 후보. 이 덧셈 자기 루프가 상수 오류 회전목마(Constant Error Carousel)다 — 망각 게이트가 1에 가까우면 셀 상태가 보존되고 기울기가 그 길을 따라 약 1로 흘러 반복 행렬 곱이 없어 소실되지 않는다. 망각/입력/출력 게이트가 정보를 언제 유지, 기록, 노출할지 학습하게 한다.</p>
+      </div>
+
   <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>원인 — 바닐라 RNN은 순환 가중치 행렬이 반복 곱해짐. 가장 큰 확대 비율(eigenvalue)이 1보다 작으면 기울기가 지수적으로 소실. tanh 도함수가 항상 1보다 작아 더 악화.</li>

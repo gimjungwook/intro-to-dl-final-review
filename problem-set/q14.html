@@ -94,6 +94,11 @@
         <p class="ma-en">Both share parameters, but along different axes. A <strong>CNN shares across space</strong> — the same kernel is applied at every spatial position — whereas an <strong>RNN shares across time</strong> — the same transition weights are applied at every time step; both cut the number of free parameters, generalise what is learned across positions or times, and grant a form of equivariance. The decisive difference is the <strong>lateral connection</strong>: an RNN <em>has</em> lateral (recurrent) connections, so the unit at one time step feeds the unit at the next, and information flows sideways along the sequence through the hidden state; a CNN has <em>no</em> lateral connections within a layer — each output is computed independently from its local receptive field, and distant inputs are reached only by stacking layers to enlarge that field. Thus a CNN parallelises easily but its context is bounded by depth, while an RNN reaches arbitrarily far through recurrence but is sequential and prone to vanishing gradients (self-attention later overcomes both — Q25).</p>
       </div>
 
+  <div class="model-answer">
+        <div class="ma-label">🇰🇷 모범답안 (한국어)</div>
+        <p class="ma-ko ma-en">둘 다 파라미터를 공유하지만 축이 다르다. CNN은 공간에 걸쳐 공유하고(같은 커널을 모든 공간 위치에), RNN은 시간에 걸쳐 공유한다(같은 전이 가중치를 모든 시간 단계에); 둘 다 자유 파라미터 수를 줄이고 배운 것을 위치/시간에 일반화하며 일종의 등가성을 준다. 결정적 차이는 측면(lateral) 연결이다: RNN은 측면(순환) 연결이 있어 한 시간 단계의 유닛이 다음 유닛으로 이어지고 정보가 은닉 상태를 통해 시퀀스를 따라 옆으로 흐른다; CNN은 한 층 안에 측면 연결이 없어 각 출력이 자기 국소 수용영역에서 독립적으로 계산되고, 먼 입력은 층을 쌓아 수용영역을 넓혀야만 닿는다. 따라서 CNN은 병렬화가 쉽지만 문맥이 깊이에 한정되고, RNN은 순환으로 임의로 멀리 닿지만 순차적이고 기울기 소실에 취약하다(셀프 어텐션이 나중에 둘 다 극복 — Q25).</p>
+      </div>
+
   <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>공유 축 — CNN=공간, RNN=시간. 둘 다 파라미터 절감 + 위치/시점 일반화 + 등가성.</li>

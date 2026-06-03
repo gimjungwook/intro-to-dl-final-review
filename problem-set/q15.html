@@ -78,6 +78,11 @@
         <p class="ma-en">Gradient clipping rescales the gradient whenever its magnitude exceeds a threshold, while <strong>preserving its direction</strong>: if the gradient is too large, rescale it down to the threshold size in the same direction. It is the direct remedy for cliffs and exploding gradients (Q7): when the gradient blows up near a cliff, clipping caps the step so the parameters are not catapulted away, yet the descent direction is unchanged — like a car's speed limiter that bounds how fast you go without changing where you steer. It is a standard safeguard in RNN training; an element-wise variant clipping each component to a fixed range exists, but norm clipping is preferred because it keeps the direction intact.</p>
       </div>
 
+  <div class="model-answer">
+        <div class="ma-label">🇰🇷 모범답안 (한국어)</div>
+        <p class="ma-ko ma-en">기울기 클리핑(gradient clipping)은 기울기 크기가 임계값을 넘으면 방향은 보존한 채 크기만 재조정한다: 너무 크면 같은 방향으로 임계값 크기까지 줄인다. 절벽과 기울기 폭발(Q7)의 직접 처방으로, 절벽 근처에서 기울기가 폭증할 때 보폭을 제한해 파라미터가 멀리 튕겨 나가지 않게 하되 하강 방향은 그대로 둔다 — 어디로 핸들을 꺾을지는 안 바꾸고 속도만 제한하는 차량의 속도 제한기와 같다. RNN 학습의 표준 안전장치이며, 각 성분을 고정 범위로 자르는 원소별 변형도 있지만 방향을 온전히 보존하는 노름 클리핑이 선호된다.</p>
+      </div>
+
   <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>정의 — 기울기 크기가 임계값을 넘으면 임계값 크기로 정규화. 방향 보존, 크기만 상한 적용.</li>

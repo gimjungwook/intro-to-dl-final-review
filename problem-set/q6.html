@@ -83,6 +83,11 @@
         <p class="ma-en">Momentum accumulates an exponentially decaying moving average of past gradients into a <strong>velocity</strong> term, and the parameters move by that velocity each step. It helps because in an ill-conditioned ravine the oscillating directions reverse every step and cancel out on average, while the consistent downhill direction accumulates and accelerates — like a heavy ball rolling that coasts through small bumps (mini-batch noise) and shallow dips (poor local minima). With a typical momentum coefficient of 0.9 the effective step is amplified roughly tenfold along consistent directions. Nesterov momentum refines this by evaluating the gradient at the look-ahead position (where momentum is about to take you), correcting before it overshoots.</p>
       </div>
 
+  <div class="model-answer">
+        <div class="ma-label">🇰🇷 모범답안 (한국어)</div>
+        <p class="ma-ko ma-en">모멘텀(momentum)은 과거 기울기의 지수 감쇠 이동평균을 속도(velocity) 항에 누적하고, 파라미터는 매 스텝 그 속도만큼 움직인다. 조건수가 나쁜 협곡에서 진동하는 방향은 매 스텝 부호가 뒤집혀 평균적으로 상쇄되고, 일관되게 내리막인 방향은 누적되어 가속되기 때문에 도움이 된다 — 무거운 공이 굴러 작은 요철(미니배치 잡음)과 얕은 웅덩이(나쁜 국소 최소점)를 관성으로 통과하는 것과 같다. 흔한 모멘텀 계수 0.9에서는 일관된 방향의 유효 보폭이 약 10배 증폭된다. 네스테로프 모멘텀(Nesterov)은 모멘텀이 데려갈 미리보기 위치에서 기울기를 평가해 과도하게 넘어가기 전에 보정한다.</p>
+      </div>
+
   <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>정의 — 과거 기울기의 지수평균을 "속도"에 누적, 매 step에서 그 속도만큼 이동. 관성 계수 (보통 0.9)가 과거 속도 유지 비율.</li>

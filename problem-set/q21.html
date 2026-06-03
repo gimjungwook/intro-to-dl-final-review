@@ -142,6 +142,11 @@
         <p class="ma-en">A <strong>distributed representation</strong> encodes a concept as a <em>pattern of activity over many units</em>, with each unit helping to represent many concepts; the opposite is a local (one-hot) representation, one unit per concept. It matters because its capacity is exponential: n binary features can distinguish up to 2 to the n regions, whereas n local units distinguish only n. This is the source of generalisation — features are reused across concepts, so having seen "red car" and "blue truck" the model generalises to an unseen "red truck" — and the statistical efficiency (linearly many parameters describing exponentially many regions) behind deep learning. Comparing the modes: <strong>local</strong> (exactly one unit active; n concepts; no reuse; most interpretable), <strong>dense/compact</strong> distributed (many units active; capacity up to 2 to the n; maximal efficiency but entangled and hard to interpret), and <strong>sparse</strong> distributed (k of n active; capacity is the number of ways to choose k from n — still huge, but more interpretable, robust, and energy-efficient) — a trade-off between capacity, interpretability, and robustness.</p>
       </div>
 
+  <div class="model-answer">
+        <div class="ma-label">🇰🇷 모범답안 (한국어)</div>
+        <p class="ma-ko ma-en">분산 표상(distributed representation)은 한 개념을 여러 유닛에 걸친 활성 패턴으로 부호화하고 각 유닛은 여러 개념 표현에 기여한다; 반대는 개념당 유닛 하나인 국소(one-hot) 표상이다. 중요한 이유는 용량이 지수적이기 때문이다: n개 이진 특징은 최대 2의 n제곱 영역을 구분하지만 n개 국소 유닛은 n개만 구분한다. 이것이 일반화의 원천이며 — 특징이 개념 간 재사용되어 '빨간 차'와 '파란 트럭'을 본 모델이 못 본 '빨간 트럭'으로 일반화 — 딥러닝을 떠받치는 통계적 효율(선형 개수의 파라미터로 지수적 개수의 영역 기술)이다. 모드 비교: 국소(정확히 한 유닛 활성; n개 개념; 재사용 없음; 해석 최고), 조밀/콤팩트 분산(많은 유닛 활성; 용량 최대 2의 n제곱; 효율 최대지만 얽혀 해석 어려움), 희소 분산(n 중 k 활성; 용량은 n에서 k를 고르는 경우의 수 — 여전히 거대하지만 더 해석 가능, 강건, 에너지 효율적) — 용량, 해석성, 강건성 사이의 트레이드오프다.</p>
+      </div>
+
   <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>분산 표상 — 개념=여러 유닛의 패턴, 각 유닛=여러 개념에 참여. 반대 = 국소/원-핫.</li>

@@ -109,6 +109,11 @@
         <p class="ma-en">The single point is that sequences can be modelled <strong>without any recurrence or convolution, using only (self-)attention</strong> — the Transformer. Self-attention computes, for each position, a weighted sum of all positions' values, where the weights come from the softmax of query-key similarities. This matters because it overcomes the two limits of RNNs and CNNs at once: any two positions are connected directly in a single step (path length is constant), so long-range dependencies are captured with no vanishing gradients and no stacked depth; and all positions are computed in parallel with no sequential dependency, making GPU training far faster. Because order information is otherwise lost, positional encoding is added, and multi-head attention lets the model attend to several relationships at once.</p>
       </div>
 
+  <div class="model-answer">
+        <div class="ma-label">🇰🇷 모범답안 (한국어)</div>
+        <p class="ma-ko ma-en">단 하나의 핵심은, 순환이나 합성곱 없이 오직 (셀프) 어텐션만으로 시퀀스를 모델링할 수 있다는 것 — 트랜스포머(Transformer)다. 셀프 어텐션은 각 위치에 대해 모든 위치 값의 가중합을 계산하며, 가중치는 쿼리-키 유사도의 소프트맥스에서 나온다. 이것이 중요한 이유는 RNN과 CNN의 두 한계를 한 번에 극복하기 때문이다: 임의의 두 위치가 단 한 단계로 직접 연결되어(경로 길이 상수) 기울기 소실 없이, 깊이를 쌓지 않고 장기 의존성을 포착하며; 모든 위치가 순차 의존성 없이 병렬로 계산되어 GPU 학습이 훨씬 빠르다. 순서 정보가 사라지므로 위치 인코딩(positional encoding)을 더하고, 멀티헤드 어텐션이 여러 관계를 동시에 주목하게 한다.</p>
+      </div>
+
   <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>핵심 — 순환/합성곱 없이 셀프 어텐션만으로 시퀀스 모델링(Transformer).</li>

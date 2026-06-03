@@ -43,6 +43,8 @@
   ul.kg li::marker { color: var(--structure-lo); }
   .ma-en { display:none; margin-top:.6rem; padding:.6rem .75rem; background:#fff6f3; border-left:2px solid var(--style,#C0492E); border-radius:8px; font-size:.82rem; line-height:1.55; color:#6b3a2e; }
   .show-en .ma-en { display:block; }
+  .ma-ko { display:none; margin-top:.6rem; padding:.6rem .75rem; background:#eef4ff; border-left:2px solid var(--structure); border-radius:8px; font-size:.86rem; line-height:1.6; color:#1d3a5f; }
+  .show-ko .ma-ko { display:block; }
   .colq{width:7%;} .colt{width:34%;} .colk{width:51%;} .cols{width:8%;}
   .src { font-family: var(--mono); font-size:.7rem; color: var(--ink-faint); white-space:nowrap; }
   .empty { color: var(--ink-faint); font-family: var(--mono); font-size:.84rem; padding:2rem; text-align:center; }
@@ -82,6 +84,7 @@
     <span class="chip" data-p="4">🔁 RNN</span>
     <span class="chip" data-p="5">🧭 표상</span>
     <span class="chip" data-p="6">📜 논문</span>
+    <span class="toggle-en" id="toggleKo">🇰🇷 KO 모범답안</span>
     <span class="toggle-en" id="toggleEn">🎯 EN 모범답안</span>
   </div>
 
@@ -90,7 +93,7 @@
 </div>
 
 <script>
-let curPart='all', curQ='', showEn=false;
+let curPart='all', curQ='', showEn=false, showKo=false;
 function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function render(){
   const out=document.getElementById('out'); const data=window.QBANK||[];
@@ -107,6 +110,7 @@ function render(){
         '<td class="qn"><a href="q'+d.q+'.html">'+d.emoji+' Q'+d.q+'</a><span class="step">STEP '+d.step+'</span></td>'+
         '<td><span class="qtitle">'+esc(d.title)+'</span><span class="qen">'+esc(d.qtext)+'</span></td>'+
         '<td><ul class="kg">'+d.skeleton.map(b=>'<li>'+esc(b)+'</li>').join('')+'</ul>'+
+        '<div class="ma-ko">🇰🇷 '+esc(d.modelKo||'')+'</div>'+
         '<div class="ma-en">🎯 '+esc(d.modelEn)+'</div></td>'+
         '<td class="src">'+esc(d.partName)+'</td>'+
       '</tr>';
@@ -115,9 +119,11 @@ function render(){
   }
   out.innerHTML = shown? html : '<div class="empty">검색 결과 없음.</div>';
   out.classList.toggle('show-en', showEn);
+  out.classList.toggle('show-ko', showKo);
   if(window.renderMathInElement) renderMathInElement(out,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],throwOnError:false});
 }
 document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');curPart=c.dataset.p;render();}));
+document.getElementById('toggleKo').addEventListener('click',function(){showKo=!showKo;this.classList.toggle('on',showKo);document.getElementById('out').classList.toggle('show-ko',showKo);});
 document.getElementById('toggleEn').addEventListener('click',function(){showEn=!showEn;this.classList.toggle('on',showEn);document.getElementById('out').classList.toggle('show-en',showEn);});
 document.getElementById('q').addEventListener('input',e=>{curQ=e.target.value;render();});
 window.addEventListener('load',render);

@@ -109,6 +109,11 @@
         <p class="ma-en">The key is to distinguish two concepts. <strong>Equivariance</strong> means "when the input shifts, the output shifts the same way" — this is what convolution itself provides. <strong>Invariance</strong> means "the output is unchanged when the input shifts" — convolution alone does <em>not</em> give this. Translation invariance appears only when <strong>pooling</strong> is added: max pooling keeps the strongest response in a region, so a small shift within that region leaves the output unchanged, producing approximate invariance to small translations. Classification needs invariance ("is there a cat?"), whereas localisation needs equivariance ("where is the cat?"); a CNN supplies equivariance through convolution and stacks pooling to build up invariance, which is therefore local and only approximate.</p>
       </div>
 
+  <div class="model-answer">
+        <div class="ma-label">🇰🇷 모범답안 (한국어)</div>
+        <p class="ma-ko ma-en">핵심은 두 개념의 구분이다. 등가성(equivariance)은 '입력이 이동하면 출력도 같은 방식으로 이동한다'로, 합성곱 자체가 주는 것이다. 불변성(invariance)은 '입력이 이동해도 출력이 변하지 않는다'로, 합성곱만으로는 안 된다. 평행이동 불변성은 풀링을 더해야 나타난다: 맥스 풀링은 한 영역에서 가장 강한 반응을 남기므로 그 영역 안에서의 작은 이동은 출력을 바꾸지 않아 작은 평행이동에 근사 불변이 된다. 분류는 불변성('고양이가 있나?')이, 위치 추정은 등가성('고양이가 어디?')이 필요하다. CNN은 합성곱으로 등가성을 주고 풀링을 쌓아 불변성을 만들기에, 불변성은 국소적이고 근사적이다.</p>
+      </div>
+
   <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>등가성(움직이면 따라감, 합성곱) vs 불변성(움직여도 그대로, 풀링)을 먼저 구분.</li>

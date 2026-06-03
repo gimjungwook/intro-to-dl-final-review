@@ -90,6 +90,11 @@
         <p class="ma-en">A fully connected layer on a 256×256 image would link each output to about 65,000 inputs, giving billions of weights per layer. A CNN does the same job with far fewer parameters through three structural properties drawn from the statistics of natural images: <strong>sparse interactions</strong> (each output sees only a small local window), <strong>parameter sharing</strong> (the same kernel is applied at every position), and <strong>equivariant representations</strong> (shifting the input shifts the feature map). These yield a massive reduction in parameters and memory that is independent of image size, statistical efficiency (a pattern learned at one location automatically generalises to all locations), and hierarchical features — as depth grows the receptive field, edges combine into textures, parts, and finally objects. Adding pooling further produces approximate invariance to small translations.</p>
       </div>
 
+  <div class="model-answer">
+        <div class="ma-label">🇰🇷 모범답안 (한국어)</div>
+        <p class="ma-ko ma-en">256×256 이미지에 완전연결층을 쓰면 각 출력이 약 65,000개 입력과 연결되어 층당 수십억 개 가중치가 된다. CNN은 자연 이미지의 통계에서 끌어낸 세 가지 구조적 성질로 같은 일을 훨씬 적은 파라미터로 한다: 희소 상호작용(각 출력은 작은 국소 창만 봄), 파라미터 공유(같은 커널을 모든 위치에 적용), 등가 표상(입력이 이동하면 특징맵도 이동). 이로써 이미지 크기와 무관한 막대한 파라미터/메모리 절감, 통계적 효율(한 위치에서 배운 패턴이 모든 위치에 자동 일반화), 계층적 특징(깊이가 커지며 수용영역이 넓어지고 에지→질감→부분→물체로 결합)을 얻는다. 풀링을 더하면 작은 평행이동에 대한 근사 불변성까지 생긴다.</p>
+      </div>
+
   <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>완전연결의 파라미터 폭발 → CNN의 세 속성: 희소 상호작용 · 파라미터 공유 · 변환 등가성.</li>

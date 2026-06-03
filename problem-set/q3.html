@@ -84,6 +84,11 @@
         <p class="ma-en">These tricks regularise by making the model see a <strong>broader, more realistic input distribution</strong> so it cannot simply memorise the small training set. (1) <strong>Data augmentation</strong> generates new labelled examples through label-preserving transforms — translation, rotation, scaling, cropping, flips, colour jitter — which teaches the model known invariances, but the transform must never change the meaning (a horizontal flip ruins digit recognition by swapping 6 and 9). (2) <strong>Noise injection</strong> adds noise to inputs (close to an L2 penalty), to hidden units (dropout), to weights (favouring flat, robust minima), or to labels (label smoothing, which prevents an over-confident softmax). (3) <strong>Unsupervised or semi-supervised pre-training</strong> learns structure from abundant unlabelled data and transfers it as a prior or initialisation for the supervised task.</p>
       </div>
 
+  <div class="model-answer">
+        <div class="ma-label">🇰🇷 모범답안 (한국어)</div>
+        <p class="ma-ko ma-en">이 트릭들은 모델이 더 넓고 현실적인 입력 분포를 보게 만들어 작은 훈련셋을 통째로 외우지 못하게 함으로써 정칙화한다. (1) 데이터 증강은 라벨 보존 변환(평행이동, 회전, 크기 변경, 자르기, 반전, 색 흔들기)으로 새 표본을 만들어 알려진 불변성을 가르치지만, 변환이 의미를 바꿔선 안 된다(좌우 반전은 6과 9를 뒤바꿔 숫자 인식을 망친다). (2) 노이즈 주입은 입력에(L2 벌점에 근접), 은닉 유닛에(드롭아웃), 가중치에(평평하고 강건한 최소점 선호), 라벨에(과신을 막는 라벨 평활) 잡음을 더한다. (3) 비지도/준지도 사전훈련은 풍부한 비라벨 데이터에서 구조를 배워 지도 과제의 사전이나 초기값으로 전이한다.</p>
+      </div>
+
   <p class="skel-h">📝 시험 답안 골격</p>
       <ul class="checklist">
         <li>공통 원리 — 모델이 학습 분포를 더 넓게 보게 해 표본 암기를 막음.</li>
